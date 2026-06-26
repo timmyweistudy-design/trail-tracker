@@ -4,8 +4,8 @@
   "description": "搜尋登山與親子步道、分級，並記錄路徑、里程、步數與卡路里",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#f4f6f3",
-  "theme_color": "#205c39",
+  "background_color": "#f4f1e8",
+  "theme_color": "#16301f",
   "orientation": "portrait",
   "lang": "zh-Hant",
   "icons": [
