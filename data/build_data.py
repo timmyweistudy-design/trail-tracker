@@ -263,6 +263,21 @@ def map_osm(e):
     ent = [{"lat": round(lat, 6), "lon": round(lon, 6), "height": None, "memo": "步道範圍中心"}]
     length_km = OSM_LENGTHS.get(e.get("id")) or _osm_distance_km(t)
     diff = grade_by_length(length_km)
+
+    # OSM 多無完整介紹 → 用既有標籤拼出簡介
+    guide = t.get("description") or ""
+    extra = []
+    if t.get("from") and t.get("to"):
+        extra.append(f"路線：{t['from']} → {t['to']}")
+    if t.get("network"):
+        net = {"iwn": "國際級", "nwn": "國家級", "rwn": "區域級", "lwn": "地方級"}.get(t["network"], t["network"])
+        extra.append(f"步道系統：{net}")
+    if t.get("note"):
+        extra.append(t["note"])
+    if extra:
+        guide = (guide + "\n" if guide else "") + "　".join(extra)
+    if not guide:
+        guide = "此為社群（OpenStreetMap）收錄之步道，詳細介紹有限，可點下方連結查更多資訊。"
     # 親子友善不靠長度推斷（缺路面/地形資訊）；交由 is_family_friendly 以描述關鍵字保守判定
     return make_trail(
         source="osm", sid=e.get("id"), name=name,
@@ -270,7 +285,7 @@ def map_osm(e):
         length_km=length_km,
         position=nearest_county(lat, lon),
         system=t.get("network"), admin=t.get("operator"),
-        entrances=ent, guide=t.get("description"),
+        entrances=ent, guide=guide,
         url=t.get("url") or t.get("website"))
 
 

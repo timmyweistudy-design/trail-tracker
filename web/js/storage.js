@@ -22,8 +22,9 @@ const Store = (() => {
   function deleteRecord(id) {
     localStorage.setItem(RK, JSON.stringify(getRecords().filter(r => r.id !== id)));
   }
+  function clearRecords() { localStorage.removeItem(RK); }
 
-  return { getProfile, saveProfile, weight, height, getRecords, addRecord, deleteRecord };
+  return { getProfile, saveProfile, weight, height, getRecords, addRecord, deleteRecord, clearRecords };
 })();
 
 // 公用：兩點 haversine 距離（公尺）

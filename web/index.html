@@ -62,7 +62,10 @@
     <div class="field"><label>身高（公分）</label><input id="pfHeight" type="number" inputmode="numeric" min="100" max="220" placeholder="170"></div>
     <button class="btn primary" id="btnSaveProfile">儲存</button>
 
-    <div class="section-title">行程紀錄</div>
+    <div class="hist-head">
+      <span class="section-title" style="margin:0">行程紀錄</span>
+      <button class="btn-clear-all" id="btnClearAll" style="display:none">清除全部</button>
+    </div>
     <div id="historyList"></div>
   </section>
 

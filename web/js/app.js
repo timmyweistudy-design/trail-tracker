@@ -144,6 +144,33 @@ function openDetail(id) {
   const t = TRAILS.find(x => x.id === id);
   if (!t) return;
   const d = t.difficulty || 0;
+  // 只列出有資料的欄位（OSM 步道欄位較少，避免顯示空白「—」）
+  const kv = [];
+  if (t.length_km != null) kv.push(["長度", `${t.length_km} km${t.source === "osm" ? "（估）" : ""}`]);
+  if (t.alt_high != null || t.alt_low != null) kv.push(["海拔範圍", `${t.alt_low ?? "?"}–${t.alt_high ?? "?"} m`]);
+  if (t.ascent != null) kv.push(["累積爬升", `${Math.round(t.ascent)} m`]);
+  if (t.tour) kv.push(["預估時間", t.tour]);
+  const kvHtml = kv.length
+    ? `<div class="kv">${kv.map(([l, v]) => `<div class="item"><div class="l">${l}</div><div class="v">${v}</div></div>`).join("")}</div>`
+    : "";
+
+  const metaBits = [];
+  if (t.pave) metaBits.push(`🛤 ${t.pave}`);
+  if (t.best_season) metaBits.push(`🍂 ${t.best_season}`);
+  if (t.transport?.car) metaBits.push("🚗 可開車");
+  if (t.transport?.m_bus || t.transport?.l_bus) metaBits.push("🚌 有公車");
+  const metaHtml = metaBits.length
+    ? `<div class="item" style="background:var(--bg);border-radius:12px;padding:10px 12px;margin-bottom:12px">
+         <div class="l" style="font-size:11.5px;color:var(--ink-soft)">路面・季節・交通</div>
+         <div style="font-size:13.5px;margin-top:4px">${metaBits.join("　")}</div></div>`
+    : "";
+
+  const nav = t.lat ? `https://www.google.com/maps/dir/?api=1&destination=${t.lat},${t.lon}` : "";
+  const moreSearch = `https://www.google.com/search?q=${encodeURIComponent(t.name + " 步道")}`;
+  const credit = t.source === "forestry"
+    ? "資料來源：林業及自然保育署 開放資料"
+    : "資料來源：OpenStreetMap 貢獻者（社群步道，詳細資料有限）";
+
   $("#detailBody").innerHTML = `
     <h2>${t.name}</h2>
     <div class="badges">
@@ -152,22 +179,18 @@ function openDetail(id) {
       <span class="badge ghost">${t.region || ""}</span>
     </div>
     ${gradeExplain(t)}
-    <div class="kv">
-      <div class="item"><div class="l">長度</div><div class="v">${t.length_km != null ? t.length_km + " km" : "—"}</div></div>
-      <div class="item"><div class="l">海拔範圍</div><div class="v">${t.alt_low ?? "?"}–${t.alt_high ?? "?"} m</div></div>
-      <div class="item"><div class="l">累積爬升</div><div class="v">${t.ascent != null ? Math.round(t.ascent) + " m" : "—"}</div></div>
-      <div class="item"><div class="l">預估時間</div><div class="v">${t.tour || "—"}</div></div>
+    ${kvHtml}
+    ${metaHtml}
+    ${t.guide ? `<div class="guide">${t.guide.replace(/\n/g, "<br>")}</div>` : ""}
+    <div class="link-row">
+      ${nav ? `<a class="link-btn" href="${nav}" target="_blank" rel="noopener">🧭 Google 地圖導航</a>` : ""}
+      <a class="link-btn" href="${moreSearch}" target="_blank" rel="noopener">🔍 查更多步道資訊</a>
+      ${t.url ? `<a class="link-btn" href="${t.url}" target="_blank" rel="noopener">↗ 官方/原始頁面</a>` : ""}
     </div>
-    <div class="item" style="background:var(--bg);border-radius:12px;padding:10px 12px;margin-bottom:12px">
-      <div class="l" style="font-size:11.5px;color:var(--ink-soft)">路面・季節・交通</div>
-      <div style="font-size:13.5px;margin-top:4px">🛤 ${t.pave || "—"}　🍂 ${t.best_season || "四季"}　${t.transport?.car ? "🚗 可開車" : ""} ${t.transport?.m_bus || t.transport?.l_bus ? "🚌 有公車" : ""}</div>
-    </div>
-    ${t.guide ? `<div class="guide">${t.guide}</div>` : ""}
     <div class="section-title" style="margin-top:18px">🍜 步道周邊美食</div>
     <div id="foodBox"><div class="food-loading">尋找附近美食中…</div></div>
     <button class="btn primary" id="btnGoRecord">📍 在此步道開始記錄</button>
-    ${t.url ? `<a class="btn ghost" href="${t.url}" target="_blank" rel="noopener" style="text-decoration:none;text-align:center">查看官方頁面 ↗</a>` : ""}
-    <div style="font-size:11px;color:var(--ink-soft);text-align:center;margin-top:14px">資料來源：林業及自然保育署 開放資料</div>
+    <div style="font-size:11px;color:var(--ink-soft);text-align:center;margin-top:14px">${credit}</div>
   `;
   $("#sheetMask").classList.add("show");
   $("#detailSheet").classList.add("show");
@@ -296,21 +319,41 @@ $("#btnSaveProfile").addEventListener("click", () => {
   Store.saveProfile({ weight: Number($("#pfWeight").value) || 60, height: Number($("#pfHeight").value) || 170 });
   toast("已儲存個人資料");
 });
+$("#btnClearAll").addEventListener("click", () => {
+  if (confirm("確定清除「全部」行程紀錄？此動作無法復原。")) {
+    Store.clearRecords();
+    renderHistory();
+    toast("已清除全部行程");
+  }
+});
 
 function renderHistory() {
   const recs = Store.getRecords();
   const wrap = $("#historyList");
+  const clearBtn = $("#btnClearAll");
+  if (clearBtn) clearBtn.style.display = recs.length ? "block" : "none";
   if (!recs.length) { wrap.innerHTML = `<div class="empty"><span class="big">🚶</span>還沒有行程紀錄<br>到「記錄」分頁開始你的第一條路線</div>`; return; }
   wrap.innerHTML = recs.map(r => `
-    <div class="hist-card">
-      <div class="top"><b>${r.trailName || "自由路線"}</b><span class="date">${new Date(r.date).toLocaleString("zh-TW", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span></div>
+    <div class="hist-card" data-id="${r.id}">
+      <div class="top">
+        <b>${r.trailName || "自由路線"}</b>
+        <span class="date">${new Date(r.date).toLocaleString("zh-TW", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+      </div>
       <div class="row">
         <span>📏 <b>${r.distanceKm.toFixed(2)}</b> km</span>
         <span>👣 <b>${r.steps.toLocaleString()}</b> 步</span>
         <span>🔥 <b>${r.kcal}</b> 大卡</span>
         <span>⏱ <b>${fmtTime(r.elapsedMs)}</b></span>
       </div>
+      <button class="hist-del" data-id="${r.id}" aria-label="刪除這筆">🗑 刪除</button>
     </div>`).join("");
+  wrap.querySelectorAll(".hist-del").forEach(b => b.addEventListener("click", () => {
+    if (confirm("確定刪除這筆行程紀錄？")) {
+      Store.deleteRecord(b.dataset.id);
+      renderHistory();
+      toast("已刪除");
+    }
+  }));
 }
 
 // ---------- 分級說明按鈕 ----------

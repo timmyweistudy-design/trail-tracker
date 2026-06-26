@@ -130,6 +130,11 @@ body {
 .kv .item .l { font-size: 11.5px; color: var(--ink-soft); }
 .kv .item .v { font-size: 16px; font-weight: 700; margin-top: 2px; }
 .guide { font-size: 14px; line-height: 1.65; color: #38453c; }
+.link-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 4px; }
+.link-btn { flex: 1 1 auto; text-align: center; text-decoration: none; background: var(--bg);
+  border: 1px solid var(--line); border-radius: 12px; padding: 11px 12px; font-size: 13.5px;
+  font-weight: 600; color: var(--brand-dark); white-space: nowrap; }
+.link-btn:active { background: #e8eee9; }
 .btn {
   display: block; width: 100%; border: none; border-radius: 14px; padding: 15px;
   font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 14px;
@@ -168,6 +173,12 @@ body {
 .hist-card .top .date { font-size: 12px; color: var(--ink-soft); }
 .hist-card .row { display: flex; gap: 16px; margin-top: 8px; font-size: 13px; color: var(--ink-soft); }
 .hist-card .row b { color: var(--brand-dark); }
+.hist-del { margin-top: 10px; background: none; border: 1px solid var(--line); color: var(--danger);
+  border-radius: 10px; padding: 7px 12px; font-size: 12.5px; cursor: pointer; }
+.hist-del:active { background: #fdecea; }
+.hist-head { display: flex; justify-content: space-between; align-items: center; }
+.btn-clear-all { background: none; border: 1px solid var(--line); color: var(--danger);
+  border-radius: 10px; padding: 6px 12px; font-size: 12.5px; cursor: pointer; font-weight: 600; }
 
 .field { margin-bottom: 14px; }
 .field label { display: block; font-size: 13px; color: var(--ink-soft); margin-bottom: 6px; font-weight: 600; }
