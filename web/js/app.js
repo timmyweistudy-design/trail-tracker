@@ -186,11 +186,6 @@ function openDetail(id) {
     ${kvHtml}
     ${metaHtml}
     ${t.guide ? `<div class="guide">${t.guide.replace(/\n/g, "<br>")}</div>` : ""}
-    ${t.wiki_extract ? `<div class="wiki-box">
-      <div class="wiki-h">📖 維基百科簡介</div>
-      <div class="guide">${t.wiki_extract}</div>
-      <a class="wiki-credit" href="${t.wiki_url || "#"}" target="_blank" rel="noopener">資料來源：維基百科（CC BY-SA）↗</a>
-    </div>` : ""}
     <div class="link-row">
       ${nav ? `<a class="link-btn" href="${nav}" target="_blank" rel="noopener">🧭 Google 地圖導航</a>` : ""}
       <a class="link-btn" href="${moreSearch}" target="_blank" rel="noopener">🔍 查更多步道資訊</a>

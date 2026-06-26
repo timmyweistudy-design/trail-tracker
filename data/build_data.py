@@ -400,33 +400,14 @@ def _fetch(url):
         return out.stdout.decode("utf-8-sig")
 
 
-# 維基百科描述補充（enrich_wiki.py 產生），加在步道上做為「維基簡介」並標註來源
-_wiki_file = HERE / "wiki_cache.json"
-
-
-def apply_wiki(trails):
-    if not _wiki_file.exists():
-        return 0
-    wiki = json.loads(_wiki_file.read_text(encoding="utf-8"))
-    n = 0
-    for t in trails:
-        w = wiki.get(t["name"])
-        if w:
-            t["wiki_extract"] = w["extract"]
-            t["wiki_url"] = w.get("url")
-            n += 1
-    return n
-
-
 def main():
     trails = collect()
-    wiki_n = apply_wiki(trails)
     by_source = {}
     for t in trails:
         by_source[t["source"]] = by_source.get(t["source"], 0) + 1
     with_geo = sum(1 for t in trails if t["lat"])
     family = sum(1 for t in trails if t["family_friendly"])
-    print(f"[merge] 合併後共 {len(trails)} 條 {by_source}；有座標 {with_geo}；親子友善 {family}；維基簡介 {wiki_n}")
+    print(f"[merge] 合併後共 {len(trails)} 條 {by_source}；有座標 {with_geo}；親子友善 {family}")
 
     OUT_JSON.write_text(json.dumps(trails, ensure_ascii=False, indent=2), encoding="utf-8")
     OUT_JS.write_text("// 自動產生，請勿手改 (來源: build_data.py)\n"
