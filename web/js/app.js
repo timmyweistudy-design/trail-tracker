@@ -327,7 +327,14 @@ function openDetail(id) {
     if (geom && geom.length) {
       const lines = geom.map(seg => L.polyline(seg, { color: "#d2542e", weight: 4, opacity: .9 }));
       lines.forEach(l => l.addTo(detailOverlay));
-      t.entrances.forEach(e => L.marker([e.lat, e.lon]).addTo(detailOverlay));
+      // #8 起點/終點標示（用最長段的端點；判斷環狀）
+      const main = geom.reduce((a, b) => (b.length > a.length ? b : a), geom[0]);
+      const start = main[0], end = main[main.length - 1];
+      const loop = haversine({ lat: start[0], lon: start[1] }, { lat: end[0], lon: end[1] }) < 120;
+      L.circleMarker(start, { radius: 7, color: "#fff", weight: 2, fillColor: "#2f7d4f", fillOpacity: 1 })
+        .addTo(detailOverlay).bindPopup(loop ? "起／終點（環狀）" : "起點");
+      if (!loop) L.circleMarker(end, { radius: 7, color: "#fff", weight: 2, fillColor: "#d2542e", fillOpacity: 1 })
+        .addTo(detailOverlay).bindPopup("終點");
       const grp = L.featureGroup(lines);
       detailMap.fitBounds(grp.getBounds(), { padding: [20, 20] });
     } else if (t.lat) {
@@ -341,9 +348,11 @@ function openDetail(id) {
 
   $("#btnGoRecord").addEventListener("click", () => {
     closeDetail();
+    selectedTrailGeo = geoOf(t);            // #9 供記錄頁疊圖與偏離判斷
     document.querySelector('.tab[data-view="record"]').click();
     $("#recStatus").textContent = `已選擇「${t.name}」，按開始記錄`;
     Recorder._trailName = t.name;
+    setTimeout(() => { initRecMap(); drawSelectedRoute(); }, 80);
   });
   const lnk = $("#lnkGradeAll");
   if (lnk) lnk.addEventListener("click", e => { e.preventDefault(); openGradeInfo(); });
@@ -449,7 +458,27 @@ function closeDetail() {
 $("#sheetMask").addEventListener("click", closeDetail);
 
 // ---------- 記錄頁 ----------
-let guideLine = null;
+let guideLine = null, selectedTrailGeo = null, routeRefLayer = null;
+function drawSelectedRoute() {
+  if (!recMap) return;
+  if (routeRefLayer) { recMap.removeLayer(routeRefLayer); routeRefLayer = null; }
+  if (!selectedTrailGeo || !selectedTrailGeo.length) return;
+  routeRefLayer = L.layerGroup(selectedTrailGeo.map(seg =>
+    L.polyline(seg, { color: "#2f7d4f", weight: 4, opacity: .55, dashArray: "6 6" }))).addTo(recMap);
+  const b = L.featureGroup(selectedTrailGeo.map(s => L.polyline(s))).getBounds();
+  if (b.isValid()) recMap.fitBounds(b, { padding: [20, 20] });
+}
+// 點到步道路線的最短距離（公尺）
+function distToRoute(lat, lon) {
+  if (!selectedTrailGeo) return null;
+  let min = Infinity;
+  for (const seg of selectedTrailGeo)
+    for (const p of seg) {
+      const d = haversine({ lat, lon }, { lat: p[0], lon: p[1] });
+      if (d < min) min = d;
+    }
+  return min;
+}
 function initRecMap() {
   if (!recMap) {
     recMap = L.map("recMap", { zoomControl: false }).setView([25.033, 121.564], 15);
@@ -488,8 +517,17 @@ Recorder.onUpdate(s => {
   $("#stPace").textContent = s.pace;
   if ($("#stElev")) $("#stElev").textContent = `↑${Math.round(s.ascent || 0)} ↓${Math.round(s.descent || 0)}`;
   if (s.error) $("#recStatus").innerHTML = `⚠️ ${s.error}（可改用模擬模式）`;
-  else if (s.state === "running") $("#recStatus").innerHTML = `<span class="live">記錄中</span>`;
-  else if (s.state === "paused") $("#recStatus").textContent = "已暫停";
+  else if (s.state === "running") {
+    // #9 偏離步道路線提醒
+    let off = null;
+    if (selectedTrailGeo && s.track.length) {
+      const last = s.track[s.track.length - 1];
+      off = distToRoute(last.lat, last.lon);
+    }
+    $("#recStatus").innerHTML = (off != null && off > 60)
+      ? `<span class="offroute">⚠️ 偏離步道約 ${Math.round(off)}m，請確認方向</span>`
+      : `<span class="live">記錄中${off != null ? "・在路線上" : ""}</span>`;
+  } else if (s.state === "paused") $("#recStatus").textContent = "已暫停";
 
   if (s.state === "running" && s.track.length && !recPreloaded) {
     recPreloaded = true;                       // 只在首個定位點觸發一次
@@ -596,11 +634,12 @@ function renderHistory() {
         <span class="date">${new Date(r.date).toLocaleString("zh-TW", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
       </div>
       <div class="row">
-        <span>📏 <b>${r.distanceKm.toFixed(2)}</b> km</span>
+        <span>📏 <b>${r.distanceKm.toFixed(2)}</b> km${r.distance3DKm && r.distance3DKm > r.distanceKm + 0.05 ? ` <small>(含坡度 ${r.distance3DKm.toFixed(2)})</small>` : ""}</span>
         <span>👣 <b>${r.steps.toLocaleString()}</b> 步</span>
         <span>🔥 <b>${r.kcal}</b> 大卡</span>
         <span>⏱ <b>${fmtTime(r.elapsedMs)}</b></span>
       </div>
+      ${r.ascent ? `<div class="row"><span>⛰️ 爬升 <b>↑${r.ascent}</b>m${r.descent ? ` 下降 <b>↓${r.descent}</b>m` : ""}</span></div>` : ""}
       <div class="hist-actions">
         <button class="hist-gpx" data-id="${r.id}">⬇️ GPX</button>
         <button class="hist-del" data-id="${r.id}" aria-label="刪除這筆">🗑 刪除</button>

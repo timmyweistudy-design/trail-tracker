@@ -14,6 +14,8 @@ import subprocess
 import time
 from pathlib import Path
 
+from geomutil import haversine as _hav, douglas_peucker, chain_ways, polyline_len
+
 HERE = Path(__file__).parent
 RAW = HERE / "osm_paths_raw.json"     # {way_id: {name,lat,lon,len,surface,sac,tv}}
 DONE = HERE / "osm_paths_tiles.json"  # 已完成的格子
@@ -81,30 +83,15 @@ def fetch_tile(bbox):
     return None
 
 
-def decimate(g, min_gap=25, cap=80):
-    """抽稀幾何：相鄰點間距 >= min_gap 公尺才保留，最多 cap 點，含頭尾。"""
-    if len(g) <= 2:
-        return [[round(p["lat"], 5), round(p["lon"], 5)] for p in g]
-    out = [g[0]]
-    for p in g[1:-1]:
-        if haversine((out[-1]["lat"], out[-1]["lon"]), (p["lat"], p["lon"])) >= min_gap:
-            out.append(p)
-    out.append(g[-1])
-    if len(out) > cap:
-        step = len(out) / cap
-        out = [out[int(i * step)] for i in range(cap)]
-    return [[round(p["lat"], 5), round(p["lon"], 5)] for p in out]
-
-
 def way_record(w):
     g = w["geometry"]
     t = w["tags"]
-    length = sum(haversine((g[i]["lat"], g[i]["lon"]), (g[i + 1]["lat"], g[i + 1]["lon"]))
-                 for i in range(len(g) - 1))
+    pts = [[round(p["lat"], 6), round(p["lon"], 6)] for p in g]   # 存完整幾何，合併時再簡化
+    length = polyline_len(pts)
     mid = g[len(g) // 2]
     return {"name": t["name"], "lat": mid["lat"], "lon": mid["lon"], "len": length,
             "surface": t.get("surface"), "sac": t.get("sac_scale"),
-            "tv": t.get("trail_visibility"), "geom": decimate(g)}
+            "tv": t.get("trail_visibility"), "geom": pts}
 
 
 def crawl():
@@ -169,14 +156,19 @@ def merge(raw):
         for c in clusters:
             if not is_trail(name, c["surface"], c["sac"], c["tv"]):
                 continue
-            tot = sum(p[2] for p in c["pts"])
-            lat = sum(p[0] for p in c["pts"]) / len(c["pts"])
-            lon = sum(p[1] for p in c["pts"]) / len(c["pts"])
+            # 連接成有序連續線，再保形簡化；長度依連接後路線計算
+            chains = chain_ways(c["lines"])
+            chains = [douglas_peucker(ch, 12) for ch in chains if len(ch) >= 2]
+            if not chains:
+                continue
+            tot = sum(polyline_len(ch) for ch in chains)
+            longest = max(chains, key=polyline_len)
+            mid = longest[len(longest) // 2]
             trails.append({
-                "name": name, "lat": round(lat, 6), "lon": round(lon, 6),
+                "name": name, "lat": round(mid[0], 6), "lon": round(mid[1], 6),
                 "length_km": round(tot / 1000, 2),
                 "surface": SURF_ZH.get(c["surface"], c["surface"]),
-                "sac": c["sac"], "lines": c["lines"],
+                "sac": c["sac"], "lines": chains,
             })
     return trails
 

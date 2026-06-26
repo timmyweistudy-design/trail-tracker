@@ -3,6 +3,7 @@ data/raw_trail.json
 data/osm_cache.json
 data/osm_paths_raw.json
 data/osm_paths_tiles.json
+data/osm_routes_tiles.json
 data/*.cache
 
 # 系統 / 編輯器

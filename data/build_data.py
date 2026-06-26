@@ -18,6 +18,8 @@ import math
 import urllib.request
 from pathlib import Path
 
+from geomutil import polyline_len as _poly_len
+
 HERE = Path(__file__).parent
 OUT_JS = HERE.parent / "web" / "js" / "trails-data.js"
 OUT_GEO = HERE.parent / "web" / "js" / "trails-geo.js"
@@ -254,6 +256,12 @@ if _osm_len_file.exists():
     OSM_LENGTHS = {int(k): v for k, v in
                    json.loads(_osm_len_file.read_text(encoding="utf-8")).items()}
 
+# crawl_routes.py 產生的關係路線幾何 {relation_id(str): lines}
+OSM_ROUTES_GEOM = {}
+_osm_routes_file = HERE / "osm_routes_geom.json"
+if _osm_routes_file.exists():
+    OSM_ROUTES_GEOM = json.loads(_osm_routes_file.read_text(encoding="utf-8"))
+
 
 def map_osm(e):
     t = e.get("tags", {})
@@ -262,8 +270,21 @@ def map_osm(e):
     if not (lat and 21 < lat < 26 and 119 < lon < 122.5):
         return None
     name = t.get("name:zh") or t.get("name")
+    geom = OSM_ROUTES_GEOM.get(str(e.get("id")))   # 關係路線幾何
+    # 有幾何時用幾何中點為定位、幾何長度更準
+    if geom:
+        longest = max(geom, key=len)
+        mp = longest[len(longest) // 2]
+        lat, lon = mp[0], mp[1]
+        glen = sum(_poly_len(ch) for ch in geom) / 1000
+        if glen > 0.05:
+            OSM_LENGTHS_OVERRIDE = round(glen, 2)
+        else:
+            OSM_LENGTHS_OVERRIDE = None
+    else:
+        OSM_LENGTHS_OVERRIDE = None
     ent = [{"lat": round(lat, 6), "lon": round(lon, 6), "height": None, "memo": "步道範圍中心"}]
-    length_km = OSM_LENGTHS.get(e.get("id")) or _osm_distance_km(t)
+    length_km = OSM_LENGTHS_OVERRIDE or OSM_LENGTHS.get(e.get("id")) or _osm_distance_km(t)
     diff = grade_by_length(length_km)
 
     # OSM 多無完整介紹 → 用既有標籤拼出簡介
@@ -288,7 +309,7 @@ def map_osm(e):
         position=nearest_county(lat, lon),
         system=t.get("network"), admin=t.get("operator"),
         entrances=ent, guide=guide,
-        url=t.get("url") or t.get("website"))
+        url=t.get("url") or t.get("website"), geometry=geom)
 
 
 # --- OSM 具名步道 way（crawl_paths.py 預先爬好的 osm_paths.json）---
@@ -345,6 +366,7 @@ def collect():
             print(f"[source] {s['name']}: {len(mapped)} 條")
         except Exception as e:  # noqa: BLE001
             print(f"[source] {s['name']}: 失敗（略過）- {e}")
+    borrow_geometry(trails)   # 去重前讓 forestry 借同名 osm 的幾何
     return merge(trails)
 
 
@@ -428,10 +450,33 @@ def apply_conditions(trails):
     return n
 
 
+def borrow_geometry(trails):
+    """無幾何的步道（主要 forestry）以同名、最近的有幾何步道借用路線。
+    需在去重前呼叫（去重會移除與 forestry 同名的 osm）。"""
+    from geomutil import haversine as _hv
+    by_name = {}
+    for t in trails:
+        if t.get("geometry") and t["lat"]:
+            by_name.setdefault(t["name"], []).append(t)
+    n = 0
+    for t in trails:
+        if t.get("geometry") or not t["lat"]:
+            continue
+        cands = by_name.get(t["name"], [])
+        if not cands:
+            continue
+        best = min(cands, key=lambda c: _hv((t["lat"], t["lon"]), (c["lat"], c["lon"])))
+        if _hv((t["lat"], t["lon"]), (best["lat"], best["lon"])) < 30000:   # 同名且 <30km
+            t["geometry"] = best["geometry"]
+            n += 1
+    return n
+
+
 def main():
     trails = collect()
     cond_n = apply_conditions(trails)
-    print(f"[condition] 套用路況/警示 {cond_n} 條")
+    geo_n = sum(1 for t in trails if t.get("geometry"))
+    print(f"[condition] 套用路況/警示 {cond_n} 條；有路線幾何 {geo_n} 條")
     by_source = {}
     for t in trails:
         by_source[t["source"]] = by_source.get(t["source"], 0) + 1

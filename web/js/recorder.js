@@ -11,11 +11,15 @@ const Recorder = (() => {
 
   let state = "idle";          // idle | running | paused
   let watchId = null, simTimer = null, ticker = null;
+  const SMOOTH = 0.6;          // EMA 平滑係數（越大越貼近原始）
   let track = [];              // [{lat, lon, t}] 僅存通過過濾的軌跡點
-  let distance = 0;            // 公尺（實際移動）
+  let distance = 0;            // 公尺（水平實際移動）
+  let dist3D = 0;              // 公尺（含坡度 3D 距離）
   let ascent = 0;              // 累積爬升（公尺，已去抖動）
   let descent = 0;             // 累積下降（公尺，已去抖動）
   let refAlt = null;           // 高度去抖動基準
+  let lastFixAlt = null;       // 上一個被接受點的高度（算 3D 用）
+  let smLat = null, smLon = null;   // EMA 平滑後座標
   let elapsedMs = 0, lastResume = 0;   // 總計時（碼表，含休息）
   let movingMs = 0;            // 實際移動時間（卡路里用）
   let lastFix = null;          // 上一個被接受的定位點
@@ -66,7 +70,7 @@ const Recorder = (() => {
     // 配速用移動時間（實際走路快慢，不含休息）
     const paceSec = (km > 0.01 && movingMs > 0) ? (movingMs / 1000) / km : 0;
     return {
-      state, track, distanceKm: km, steps: steps(), kcal: calories(),
+      state, track, distanceKm: km, distance3DKm: dist3D / 1000, steps: steps(), kcal: calories(),
       elapsedMs: ms, movingMs, ascent, descent, speedKmh: kmh,
       pace: paceSec ? `${Math.floor(paceSec / 60)}'${String(Math.round(paceSec % 60)).padStart(2, "0")}` : "--",
     };
@@ -76,10 +80,14 @@ const Recorder = (() => {
   function push(lat, lon, alt, acc) {
     if (acc != null && acc > MAX_ACC) return;        // 訊號太差，忽略
     const now = Date.now();
-    const p = { lat, lon, t: now };
+    // #7 EMA 平滑座標，降低 GPS 雜訊鋸齒
+    if (smLat == null) { smLat = lat; smLon = lon; }
+    else { smLat = SMOOTH * lat + (1 - SMOOTH) * smLat; smLon = SMOOTH * lon + (1 - SMOOTH) * smLon; }
+    const p = { lat: smLat, lon: smLon, t: now };
 
     if (!lastFix) {                                  // 第一個點：設為錨點
       lastFix = p; if (refAlt == null && alt != null) refAlt = alt;
+      if (alt != null) lastFixAlt = alt;
       track.push(p); cb(snapshot()); return;
     }
 
@@ -90,6 +98,14 @@ const Recorder = (() => {
     }
     if (d <= MAX_JUMP) {                             // 視為真實移動
       distance += d;
+      // #10 3D 距離：加垂直分量，坡度限 100% 以抑制 GPS 高度雜訊
+      let seg3 = d;
+      if (alt != null && lastFixAlt != null) {
+        let dz = Math.max(-d, Math.min(d, alt - lastFixAlt));
+        seg3 = Math.sqrt(d * d + dz * dz);
+      }
+      dist3D += seg3;
+      if (alt != null) lastFixAlt = alt;
       movingMs += now - lastFix.t;
       updateElevation(alt);                          // 去抖動後累積爬升/下降
       track.push(p);
@@ -126,7 +142,7 @@ const Recorder = (() => {
 
   function start(sim) {
     if (state === "running") return;
-    if (state === "idle") { track = []; distance = 0; ascent = 0; descent = 0; refAlt = null; elapsedMs = 0; movingMs = 0; lastFix = null; }
+    if (state === "idle") { track = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; lastFixAlt = null; smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; }
     lastResume = Date.now();
     state = "running";
     if (sim) startSim(); else if (!startGPS()) { state = "idle"; return; }
@@ -140,6 +156,7 @@ const Recorder = (() => {
     state = "paused";
     lastFix = null;          // 恢復後重新設錨點，避免把暫停期間算成移動
     refAlt = null;           // 高度也重新設基準
+    lastFixAlt = null; smLat = null; smLon = null;
     stopSources();
     cb(snapshot());
   }
@@ -159,11 +176,11 @@ const Recorder = (() => {
     const result = track.length > 1 ? {
       id: "r" + Date.now(),
       date: new Date().toISOString(),
-      distanceKm: snap.distanceKm, steps: snap.steps, kcal: snap.kcal,
+      distanceKm: snap.distanceKm, distance3DKm: snap.distance3DKm, steps: snap.steps, kcal: snap.kcal,
       elapsedMs: snap.elapsedMs, ascent: Math.round(ascent), descent: Math.round(descent), track: track.slice(),
     } : null;
-    state = "idle"; track = []; distance = 0; ascent = 0; descent = 0; refAlt = null; elapsedMs = 0; movingMs = 0;
-    lastFix = null; simPos = null;
+    state = "idle"; track = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; lastFixAlt = null;
+    smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; simPos = null;
     cb(snapshot());
     return result;
   }
