@@ -1,0 +1,5 @@
+# Cloudflare Worker 設定：即時步道路況代理
+# 由 Cloudflare Workers Builds（連接此 repo）用 `npx wrangler deploy` 部署。
+name = "trail-conditions"
+main = "worker/conditions-proxy.js"
+compatibility_date = "2025-06-01"
