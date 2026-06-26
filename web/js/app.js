@@ -106,6 +106,7 @@ function matches(t) {
   if (filterOpen && isClosed(t)) return false;
   if (filterGeo && !geoOf(t)) return false;
   if (curFilter === "fav" && !Store.isFav(t.id)) return false;
+  if (curFilter === "done" && !Store.trailLog(t.id).done) return false;
   if (curFilter === "family" && !t.family_friendly) return false;
   if (curFilter === "d1" && t.difficulty !== 1) return false;
   if (curFilter === "d2" && t.difficulty !== 2) return false;
@@ -136,6 +137,7 @@ function trailCard(t) {
     </div>
     <div class="badges">
       <span class="badge diff d${d}">${t.difficulty_label}</span>
+      ${Store.trailLog(t.id).done ? `<span class="badge done">✓ 已完成</span>` : ""}
       ${closed ? `<span class="badge closed">⚠️ ${t.condition.status}</span>` : ""}
       ${t.family_friendly ? `<span class="badge family">👨‍👩‍👧 親子友善</span>` : ""}
       ${t.permit && t.permit !== "無" ? `<span class="badge ghost">需入山證</span>` : ""}
@@ -276,6 +278,18 @@ function gradeExplain(t) {
   </div>`;
 }
 
+// 我的步記區塊
+function myLogHtml(t) {
+  const lg = Store.trailLog(t.id);
+  const stars = [1, 2, 3, 4, 5].map(n => `<span class="rate-star${(lg.rating || 0) >= n ? " on" : ""}" data-r="${n}">★</span>`).join("");
+  return `<div class="mylog">
+    <div class="section-title" style="margin-top:16px">📒 我的步記</div>
+    <button class="btn ghost logdone${lg.done ? " done" : ""}" id="logDone">${lg.done ? "✓ 已完成這條步道" : "標記為已完成"}</button>
+    <div class="rate-row">我的評分 <span class="rate-stars" id="rateStars">${stars}</span></div>
+    <textarea id="logNote" class="log-note" placeholder="寫點筆記（自動儲存）…">${(lg.note || "").replace(/</g, "&lt;")}</textarea>
+  </div>`;
+}
+
 // ---------- 詳情面板 ----------
 function openDetail(id) {
   const t = TRAILS.find(x => x.id === id);
@@ -328,8 +342,10 @@ function openDetail(id) {
     <div class="link-row">
       ${nav ? `<a class="link-btn" href="${nav}" target="_blank" rel="noopener">🧭 Google 地圖導航</a>` : ""}
       <a class="link-btn" href="${moreSearch}" target="_blank" rel="noopener">🔍 查更多步道資訊</a>
+      <button class="link-btn" id="btnShareTrail">↗ 分享步道</button>
       ${t.url ? `<a class="link-btn" href="${t.url}" target="_blank" rel="noopener">↗ 官方/原始頁面</a>` : ""}
     </div>
+    ${myLogHtml(t)}
     <button class="btn ghost" id="btnOffline" style="margin-top:10px">⬇️ 預載此步道離線地圖</button>
     <div id="offlineBox" class="offline-box" style="display:none"></div>
     <div class="section-title" style="margin-top:18px">🍜 步道周邊美食</div>
@@ -395,6 +411,37 @@ function openDetail(id) {
     const added = Store.toggleFav(t.id);
     favD.classList.toggle("on", added); favD.textContent = added ? "★ 已收藏" : "☆ 收藏";
     toast(added ? "已加入收藏" : "已移除收藏");
+  });
+
+  // 我的步記
+  const logDone = $("#logDone");
+  if (logDone) logDone.addEventListener("click", () => {
+    const done = !Store.trailLog(t.id).done;
+    Store.setTrailLog(t.id, { done });
+    logDone.classList.toggle("done", done);
+    logDone.textContent = done ? "✓ 已完成這條步道" : "標記為已完成";
+    toast(done ? "已標記完成 🎉" : "已取消完成");
+  });
+  $("#rateStars") && $("#rateStars").querySelectorAll(".rate-star").forEach(st =>
+    st.addEventListener("click", () => {
+      const r = +st.dataset.r;
+      Store.setTrailLog(t.id, { rating: r });
+      $("#rateStars").querySelectorAll(".rate-star").forEach(s => s.classList.toggle("on", +s.dataset.r <= r));
+      toast(`已評 ${r} 星`);
+    }));
+  const note = $("#logNote");
+  if (note) note.addEventListener("input", () => {
+    clearTimeout(note._tm); note._tm = setTimeout(() => Store.setTrailLog(t.id, { note: note.value }), 600);
+  });
+
+  // 分享步道（含深連結 ?trail=id）
+  const shareT = $("#btnShareTrail");
+  if (shareT) shareT.addEventListener("click", () => {
+    const url = `${location.origin}${location.pathname}?trail=${encodeURIComponent(t.id)}`;
+    const text = `${t.name}（${t.difficulty_label}${t.length_km ? " · " + t.length_km + "km" : ""}）— 步道誌`;
+    if (navigator.share) navigator.share({ title: t.name, text, url }).catch(() => {});
+    else if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => toast("步道連結已複製"));
+    else window.open(url, "_blank");
   });
 }
 async function loadPhoto(t) {
@@ -538,7 +585,10 @@ function openTrackReview(rec) {
       <div class="item"><div class="l">步數</div><div class="v">${(rec.steps || 0).toLocaleString()}</div></div>
       ${t3 && t3 > km + 0.05 ? `<div class="item"><div class="l">含坡度距離</div><div class="v">${t3.toFixed(2)} km</div></div>` : ""}
     </div>
-    <button class="btn ghost" id="trackGpx">⬇️ 匯出 GPX</button>`;
+    <div class="link-row">
+      <button class="link-btn" id="trackGpx">⬇️ 匯出 GPX</button>
+      <button class="link-btn" id="trackShare">↗ 分享行程</button>
+    </div>`;
   $("#trackMask").classList.add("show");
   $("#trackSheet").classList.add("show");
   $("#trackSheet").scrollTop = 0;
@@ -559,6 +609,12 @@ function openTrackReview(rec) {
     trackMap.invalidateSize();
   }, 120);
   $("#trackGpx").addEventListener("click", () => { GPX.exportRecord(rec); toast("已匯出 GPX"); });
+  $("#trackShare").addEventListener("click", () => {
+    const text = `我走了 ${rec.trailName || "自由路線"}：${km.toFixed(2)} km、爬升 ↑${rec.ascent || 0}m、${rec.kcal} 大卡、${fmtTime(rec.elapsedMs)} ⛰️ — 步道誌`;
+    if (navigator.share) navigator.share({ title: "我的健行紀錄", text }).catch(() => {});
+    else if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast("已複製,可貼給朋友"));
+    else toast(text);
+  });
 }
 function closeTrackReview() { $("#trackMask").classList.remove("show"); $("#trackSheet").classList.remove("show"); }
 $("#trackMask").addEventListener("click", closeTrackReview);
@@ -823,3 +879,8 @@ buildRegionChips();
 render();
 loadProfile();
 restoreActiveRecording();
+// 深連結 ?trail=id → 直接開啟該步道
+(function () {
+  const id = new URLSearchParams(location.search).get("trail");
+  if (id && TRAILS.some(t => t.id === id)) setTimeout(() => openDetail(id), 200);
+})();

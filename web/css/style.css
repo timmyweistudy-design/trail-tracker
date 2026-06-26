@@ -163,6 +163,17 @@ body {
 .badge.ghost { background: var(--surface-2); color: var(--ink-soft); }
 .badge.src { background: #eef1ec; color: #788173; font-weight: 500; }
 .badge.closed { background: #f8e3df; color: var(--danger); }
+.badge.done { background: var(--brand); color: #f4f1e8; }
+
+/* 我的步記 */
+.mylog .logdone { margin-top: 8px; }
+.mylog .logdone.done { background: var(--brand); color: #f4f1e8; border-color: var(--brand); }
+.rate-row { display: flex; align-items: center; gap: 10px; margin: 12px 0; font-size: 13.5px; color: var(--ink-soft); }
+.rate-star { font-size: 26px; color: #d9d2c0; cursor: pointer; transition: .12s; }
+.rate-star.on { color: #e3a417; }
+.rate-star:active { transform: scale(1.25); }
+.log-note { width: 100%; min-height: 64px; border: 1px solid var(--line); border-radius: var(--r-sm); padding: 11px; font-size: 14px; font-family: var(--sans); background: var(--surface); color: var(--ink); resize: vertical; }
+.log-note:focus { outline: none; border-color: var(--brand-mid); box-shadow: 0 0 0 3px var(--brand-soft); }
 
 /* 收藏星 */
 .fav-star { position: absolute; top: 12px; right: 12px; background: none; border: none;

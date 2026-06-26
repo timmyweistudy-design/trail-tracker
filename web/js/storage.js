@@ -36,8 +36,20 @@ const Store = (() => {
     return i === -1;   // true = 已加入
   }
 
+  // 我的步記（已完成 / 評分 / 筆記）
+  const LK = "tt_log";
+  function getLog() { try { return JSON.parse(localStorage.getItem(LK)) || {}; } catch { return {}; } }
+  function trailLog(id) { return getLog()[id] || {}; }
+  function setTrailLog(id, patch) {
+    const l = getLog();
+    l[id] = Object.assign({}, l[id], patch);
+    if (!l[id].done && !l[id].rating && !(l[id].note || "").trim()) delete l[id];   // 空的就移除
+    localStorage.setItem(LK, JSON.stringify(l));
+  }
+  function doneCount() { return Object.values(getLog()).filter(v => v.done).length; }
+
   return { getProfile, saveProfile, weight, height, getRecords, addRecord, deleteRecord, clearRecords,
-           getFavs, isFav, toggleFav };
+           getFavs, isFav, toggleFav, trailLog, setTrailLog, doneCount };
 })();
 
 // 公用：兩點 haversine 距離（公尺）
