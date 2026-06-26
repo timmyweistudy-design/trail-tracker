@@ -920,6 +920,8 @@ buildRegionChips();
 render();
 loadProfile();
 restoreActiveRecording();
+// 即時路況（若有設定代理）→ 抓最新並重繪
+if (typeof Conditions !== "undefined") Conditions.refresh(TRAILS).then(n => { if (n > 0) render(); });
 // 深連結 ?trail=id → 直接開啟該步道
 (function () {
   const id = new URLSearchParams(location.search).get("trail");

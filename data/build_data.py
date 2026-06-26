@@ -421,6 +421,15 @@ SOURCES = [
 ]
 
 
+import re as _re
+# 名稱含這些字＝完全廢棄/拆除/停用的步道，剔除
+ABANDONED = _re.compile(r"廢林道|廢棄|已廢|荒廢|拆除|停用|消失的|不復存在")
+
+
+def is_abandoned(name):
+    return bool(name and ABANDONED.search(name))
+
+
 def collect():
     """跑遍所有來源，單一來源失敗不影響其他來源。"""
     trails = []
@@ -432,6 +441,9 @@ def collect():
             print(f"[source] {s['name']}: {len(mapped)} 條")
         except Exception as e:  # noqa: BLE001
             print(f"[source] {s['name']}: 失敗（略過）- {e}")
+    before = len(trails)
+    trails = [t for t in trails if not is_abandoned(t["name"])]
+    print(f"[clean] 剔除廢棄/拆除步道 {before - len(trails)} 條")
     borrow_geometry(trails)   # 去重前讓 forestry 借同名 osm 的幾何
     return merge(trails)
 

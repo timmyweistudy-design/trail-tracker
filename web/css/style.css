@@ -217,6 +217,8 @@ body {
 .grade-mask { z-index: 60; }
 .grade-sheet { z-index: 70; }
 .grade-sheet .sheet-close { background: var(--surface-2); color: var(--ink); }
+/* isolation：把 Leaflet 內部高 z-index 圖層關在容器內，避免穿透蓋過面板（修兩張地圖重疊） */
+#detailMap, #recMap, #trackMap, #browseMap { isolation: isolate; }
 #detailMap, #recMap, #trackMap { height: 210px; width: 100%; background: var(--surface-2); }
 #trackMap { border-bottom: 1px solid var(--line); }
 .track-date { font-size: 12.5px; color: var(--ink-soft); font-family: var(--num); margin: -4px 0 6px; }
@@ -340,6 +342,9 @@ body {
 
 /* ---------- 通用 ---------- */
 .section-title { font-family: var(--serif); font-size: 14px; color: var(--brand-deep); font-weight: 700; margin: 20px 4px 9px; letter-spacing: 1px; }
+/* 詳情頁各區塊加細分隔線，層次更清楚 */
+.sheet-body .section-title { border-top: 1px solid var(--line-soft); padding-top: 17px; margin-top: 18px; }
+.sheet-body .section-title:first-child { border-top: none; padding-top: 0; }
 .empty { text-align: center; color: var(--ink-soft); padding: 48px 20px; font-size: 14px; line-height: 1.7; }
 .empty .big { font-size: 44px; display: block; margin-bottom: 12px; opacity: .8; }
 
