@@ -20,8 +20,10 @@ const Recorder = (() => {
   let refAlt = null;           // 高度去抖動基準
   let lastFixAlt = null;       // 上一個被接受點的高度（算 3D 用）
   let smLat = null, smLon = null;   // EMA 平滑後座標
-  let elapsedMs = 0, lastResume = 0;   // 總計時（碼表，含休息）
+  let elapsedMs = 0, lastResume = 0;   // 總計時（碼表）
   let movingMs = 0;            // 實際移動時間（卡路里用）
+  const AUTO_PAUSE_MS = 90000; // 靜止超過此時間→自動暫停計時
+  let autoPaused = false, lastMoveAt = 0, lowPower = false;
   let lastFix = null;          // 上一個被接受的定位點
   let lastPersist = 0;         // 上次存檔時間（節流）
   let simPos = null;
@@ -39,7 +41,15 @@ const Recorder = (() => {
     return kmh < 3.2 ? 2.8 : kmh < 4.8 ? 3.5 : kmh < 6.4 ? 5.0 : kmh < 8 ? 7.0 : 8.3;
   }
 
-  function elapsed() { return elapsedMs + (state === "running" ? Date.now() - lastResume : 0); }
+  function elapsed() { return elapsedMs + ((state === "running" && !autoPaused) ? Date.now() - lastResume : 0); }
+
+  // 自動暫停：靜止過久凍結計時（由 ticker 每秒檢查）
+  function checkAutoPause() {
+    if (state === "running" && !autoPaused && lastMoveAt && Date.now() - lastMoveAt > AUTO_PAUSE_MS) {
+      elapsedMs += Date.now() - lastResume;   // 結算到此刻，凍結時鐘
+      autoPaused = true;
+    }
+  }
 
   // 高度去抖動：累積爬升/下降只計顯著變化，過濾 GPS 高度雜訊
   function updateElevation(alt) {
@@ -71,7 +81,7 @@ const Recorder = (() => {
     // 配速用移動時間（實際走路快慢，不含休息）
     const paceSec = (km > 0.01 && movingMs > 0) ? (movingMs / 1000) / km : 0;
     return {
-      state, track, distanceKm: km, distance3DKm: dist3D / 1000, steps: steps(), kcal: calories(),
+      state, autoPaused, track, distanceKm: km, distance3DKm: dist3D / 1000, steps: steps(), kcal: calories(),
       elapsedMs: ms, movingMs, ascent, descent, speedKmh: kmh,
       pace: paceSec ? `${Math.floor(paceSec / 60)}'${String(Math.round(paceSec % 60)).padStart(2, "0")}` : "--",
     };
@@ -98,6 +108,8 @@ const Recorder = (() => {
       cb(snapshot()); return;
     }
     if (d <= MAX_JUMP) {                             // 視為真實移動
+      if (autoPaused) { lastResume = Date.now(); autoPaused = false; }   // 移動→自動恢復計時
+      lastMoveAt = Date.now();
       distance += d;
       // #10 3D 距離：加垂直分量，坡度限 100% 以抑制 GPS 高度雜訊
       let seg3 = d;
@@ -123,10 +135,13 @@ const Recorder = (() => {
     watchId = navigator.geolocation.watchPosition(
       pos => push(pos.coords.latitude, pos.coords.longitude, pos.coords.altitude, pos.coords.accuracy),
       err => cb({ ...snapshot(), error: err.message }),
-      { enableHighAccuracy: true, maximumAge: 1000, timeout: 15000 }
+      // 省電模式：關高精度、容許較舊定位，降低 GPS 耗電
+      lowPower ? { enableHighAccuracy: false, maximumAge: 8000, timeout: 20000 }
+               : { enableHighAccuracy: true, maximumAge: 1000, timeout: 15000 }
     );
     return true;
   }
+  function setLowPower(on) { lowPower = !!on; }
 
   // --- 模擬：從台北市區附近隨機漫步 ---
   function startSim() {
@@ -147,15 +162,17 @@ const Recorder = (() => {
     if (state === "idle") { track = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; lastFixAlt = null; smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; }
     lastResume = Date.now();
     state = "running";
+    autoPaused = false; lastMoveAt = Date.now();   // 開始/繼續都重設靜止計時
     if (sim) startSim(); else if (!startGPS()) { state = "idle"; return; }
-    ticker = setInterval(() => cb(snapshot()), 1000);
+    ticker = setInterval(() => { checkAutoPause(); cb(snapshot()); }, 1000);
     persist();
     cb(snapshot());
   }
 
   function pause() {
     if (state !== "running") return;
-    elapsedMs += Date.now() - lastResume;
+    elapsedMs += autoPaused ? 0 : Date.now() - lastResume;   // 已自動暫停則不重複結算
+    autoPaused = false;
     state = "paused";
     lastFix = null;          // 恢復後重新設錨點，避免把暫停期間算成移動
     refAlt = null;           // 高度也重新設基準
@@ -174,7 +191,8 @@ const Recorder = (() => {
   }
 
   function stop() {
-    if (state === "running") elapsedMs += Date.now() - lastResume;
+    if (state === "running" && !autoPaused) elapsedMs += Date.now() - lastResume;
+    autoPaused = false;
     stopSources();
     const snap = snapshot();
     const result = track.length > 1 ? {
@@ -217,5 +235,5 @@ const Recorder = (() => {
     return snapshot();
   }
 
-  return { start, pause, resume, stop, snapshot, onUpdate, getState: () => state, hasActive, restore };
+  return { start, pause, resume, stop, snapshot, onUpdate, getState: () => state, hasActive, restore, setLowPower };
 })();

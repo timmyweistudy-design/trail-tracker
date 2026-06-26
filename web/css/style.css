@@ -308,6 +308,8 @@ body {
 .rec-status .offroute { color: var(--danger); font-weight: 700; }
 @keyframes blink { 50% { opacity: .25; } }
 .sim-toggle { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12.5px; color: var(--ink-soft); margin-top: 13px; }
+.rec-opts { display: flex; gap: 18px; justify-content: center; margin-top: 13px; }
+.rec-opts .sim-toggle { margin-top: 0; }
 
 /* ---------- 通用 ---------- */
 .section-title { font-family: var(--serif); font-size: 14px; color: var(--brand-deep); font-weight: 700; margin: 20px 4px 9px; letter-spacing: 1px; }

@@ -627,7 +627,13 @@ Recorder.onUpdate(s => {
   $("#stTime").textContent = fmtTime(s.elapsedMs);
   $("#stPace").textContent = s.pace;
   if ($("#stElev")) $("#stElev").textContent = `↑${Math.round(s.ascent || 0)} ↓${Math.round(s.descent || 0)}`;
+  // #11 每公里震動提示
+  if (s.state === "running" && !s.autoPaused) {
+    const kmDone = Math.floor(s.distanceKm);
+    if (kmDone > lastKmMilestone) { lastKmMilestone = kmDone; if (navigator.vibrate) navigator.vibrate([120, 60, 120]); }
+  }
   if (s.error) $("#recStatus").innerHTML = `⚠️ ${s.error}（可改用模擬模式）`;
+  else if (s.state === "running" && s.autoPaused) $("#recStatus").innerHTML = `<span class="offroute">⏸ 自動暫停（偵測到靜止，移動即恢復）</span>`;
   else if (s.state === "running") {
     // #9 偏離步道路線提醒
     let off = null;
@@ -652,6 +658,25 @@ Recorder.onUpdate(s => {
     recMarker.setLatLng(last);
     if (s.state === "running") recMap.panTo(last);
   }
+});
+
+// 省電模式 + 分享即時位置 + 公里里程碑
+let lastKmMilestone = 0;
+$("#lowPowerToggle").addEventListener("change", e => {
+  Recorder.setLowPower(e.target.checked);
+  toast(e.target.checked ? "已開省電模式（下次定位生效）" : "已關省電模式");
+});
+$("#btnShareLoc").addEventListener("click", () => {
+  if (!navigator.geolocation) { toast("此裝置不支援定位"); return; }
+  toast("定位中…");
+  navigator.geolocation.getCurrentPosition(pos => {
+    const { latitude: la, longitude: lo } = pos.coords;
+    const url = `https://www.google.com/maps?q=${la.toFixed(6)},${lo.toFixed(6)}`;
+    const text = `我目前的位置：${url}`;
+    if (navigator.share) navigator.share({ title: "我的即時位置", text, url }).catch(() => {});
+    else if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast("位置連結已複製，可貼給聯絡人"));
+    else window.open(url, "_blank");
+  }, () => toast("定位失敗，請允許定位權限"), { enableHighAccuracy: true, timeout: 10000 });
 });
 
 // 開始記錄時，背景預載當前位置周邊圖磚（保險，避免途中失去訊號）
@@ -683,7 +708,7 @@ $("#btnPause").addEventListener("click", () => {
 });
 $("#btnStop").addEventListener("click", () => {
   const rec = Recorder.stop();
-  recPreloaded = false;                        // 下次記錄重新預載
+  recPreloaded = false; lastKmMilestone = 0;   // 下次記錄重新預載/里程碑
   $("#btnStart").textContent = "▶ 開始";
   $("#btnStart").style.display = "block";
   $("#btnPause").style.display = "none";
@@ -784,7 +809,7 @@ function restoreActiveRecording() {
   if (!Recorder.hasActive || !Recorder.hasActive()) return;
   const s = Recorder.restore();
   if (!s) return;
-  recPreloaded = true;
+  recPreloaded = true; lastKmMilestone = Math.floor(s.distanceKm);
   $("#btnStart").textContent = "▶ 繼續";
   $("#btnStart").style.display = "block";
   $("#btnPause").style.display = "none";
