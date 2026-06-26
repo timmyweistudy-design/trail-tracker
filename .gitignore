@@ -18,3 +18,4 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+data/tw_counties.geojson

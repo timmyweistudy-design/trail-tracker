@@ -75,17 +75,20 @@ def to_float(v):
         return None
 
 
-def is_family_friendly(diff, length_km, pave, guide):
+def is_family_friendly(diff, length_km, pave, guide, ascent=None):
     # 難度「進階(3)」以上一律不算親子友善（避免進階步道又標親子的矛盾）
     if diff is None or diff > 2:
         return False
+    # 爬升大（>180m）即使短程也不適合帶小孩
+    if ascent is not None and ascent > 180:
+        return False
     if diff == 0:           # 無障礙級本就適合親子
         return True
-    # 親子(1)、大眾(2)：需有佐證——描述關鍵字，或「鋪面 + 短程(≤3km)」
+    # 親子(1)、大眾(2)：需有佐證——描述關鍵字，或「鋪面 + 短程(≤3.5km)」
     if any(k in (guide or "") for k in FAMILY_KEYWORDS):
         return True
     paved = any(k in (pave or "") for k in PAVED_KEYWORDS)
-    return length_km is not None and length_km <= 3 and paved
+    return length_km is not None and length_km <= 3.5 and paved
 
 
 def region_of(position):
@@ -108,7 +111,7 @@ def make_trail(*, source, sid, name, difficulty=None, length_km=None,
     ascent = ascent_override if ascent_override is not None else \
         ((alt_high - alt_low) if (alt_high is not None and alt_low is not None) else None)
     family = family_override if family_override is not None else \
-        is_family_friendly(difficulty, length_km, pave, guide)
+        is_family_friendly(difficulty, length_km, pave, guide, ascent)
     label = DIFF_LABEL.get(difficulty, "未分級")
     if difficulty and difficulty_estimated:
         label += "(估)"
@@ -189,6 +192,45 @@ def nearest_county(lat, lon):
         if d < bestd:
             bestd, best = d, name
     return best
+
+
+# --- 縣市精準歸屬：point-in-polygon（g0v 縣市邊界 GeoJSON）---
+def _norm_county(name):
+    name = (name or "").replace("台", "臺")        # 台→臺，與既有命名一致
+    return "桃園市" if name == "桃園縣" else name   # 2010 舊資料桃園縣→桃園市
+
+
+COUNTY_POLYS = []   # [(name, (s,w,n,e), [outer_ring,...])]
+_geo_file = HERE / "tw_counties.geojson"
+if _geo_file.exists():
+    _gj = json.loads(_geo_file.read_text(encoding="utf-8"))
+    for _f in _gj.get("features", []):
+        _nm = _norm_county(_f["properties"].get("COUNTYNAME") or _f["properties"].get("name"))
+        _g = _f["geometry"]
+        _polys = _g["coordinates"] if _g["type"] == "MultiPolygon" else [_g["coordinates"]]
+        _rings = [poly[0] for poly in _polys]      # 只取外環
+        _pts = [p for r in _rings for p in r]
+        _lons = [p[0] for p in _pts]; _lats = [p[1] for p in _pts]
+        COUNTY_POLYS.append((_nm, (min(_lats), min(_lons), max(_lats), max(_lons)), _rings))
+
+
+def _in_ring(lat, lon, ring):
+    inside = False
+    n = len(ring); j = n - 1
+    for i in range(n):
+        xi, yi = ring[i][0], ring[i][1]   # lon, lat
+        xj, yj = ring[j][0], ring[j][1]
+        if ((yi > lat) != (yj > lat)) and (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi):
+            inside = not inside
+        j = i
+    return inside
+
+
+def county_of(lat, lon):
+    for name, (s, w, n, e), rings in COUNTY_POLYS:
+        if s <= lat <= n and w <= lon <= e and any(_in_ring(lat, lon, r) for r in rings):
+            return name
+    return nearest_county(lat, lon)   # 離島/邊界外退回中心點法
 
 
 OVERPASS_MIRRORS = [
@@ -329,7 +371,7 @@ def map_osm(e):
         source="osm", sid=e.get("id"), name=name,
         difficulty=diff, difficulty_estimated=diff is not None,
         length_km=length_km,
-        position=nearest_county(lat, lon),
+        position=county_of(lat, lon),
         system=t.get("network"), admin=t.get("operator"),
         entrances=ent, guide=guide, ascent_override=asc,
         url=t.get("url") or t.get("website"), geometry=geom)
@@ -366,7 +408,7 @@ def map_osm_path(p):
         source="osm_path", sid=f"{p['name']}-{round(lat,4)}", name=p["name"],
         difficulty=diff, difficulty_estimated=True,
         length_km=length_km, pave=pave, ascent_override=asc,
-        position=nearest_county(lat, lon),
+        position=county_of(lat, lon),
         entrances=[{"lat": round(lat, 6), "lon": round(lon, 6), "height": None, "memo": "步道範圍中心"}],
         guide=guide, geometry=p.get("lines"))
 
@@ -496,10 +538,24 @@ def borrow_geometry(trails):
     return n
 
 
+def disambiguate_names(trails):
+    """同名步道（多為通用名如「生態步道」）加上地區以區分。"""
+    from collections import Counter
+    cnt = Counter(t["name"] for t in trails)
+    n = 0
+    for t in trails:
+        if cnt[t["name"]] >= 3 and t.get("region") and t["region"] not in t["name"]:
+            t["name"] = f"{t['name']}（{t['region']}）"
+            n += 1
+    return n
+
+
 def main():
     trails = collect()
     cond_n = apply_conditions(trails)
+    dis_n = disambiguate_names(trails)
     geo_n = sum(1 for t in trails if t.get("geometry"))
+    print(f"[name] 同名加地區區分 {dis_n} 條")
     print(f"[condition] 套用路況/警示 {cond_n} 條；有路線幾何 {geo_n} 條")
     by_source = {}
     for t in trails:
