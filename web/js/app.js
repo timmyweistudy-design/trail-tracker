@@ -301,6 +301,10 @@ Recorder.onUpdate(s => {
   else if (s.state === "running") $("#recStatus").innerHTML = `<span class="live">記錄中</span>`;
   else if (s.state === "paused") $("#recStatus").textContent = "已暫停";
 
+  if (s.state === "running" && s.track.length && !recPreloaded) {
+    recPreloaded = true;                       // 只在首個定位點觸發一次
+    preloadAround(s.track[0].lat, s.track[0].lon);
+  }
   if (recLine && s.track.length) {
     const pts = s.track.map(p => [p.lat, p.lon]);
     recLine.setLatLngs(pts);
@@ -310,6 +314,18 @@ Recorder.onUpdate(s => {
     if (s.state === "running") recMap.panTo(last);
   }
 });
+
+// 開始記錄時，背景預載當前位置周邊圖磚（保險，避免途中失去訊號）
+let recPreloaded = false;
+async function preloadAround(lat, lon) {
+  const m = 0.018;   // 約 ±2km
+  const bbox = { n: lat + m, s: lat - m, e: lon + m, w: lon - m };
+  const tiles = Offline.tileList(bbox, 14, 16);
+  try {
+    await Offline.download(tiles, () => {});
+    toast(`已預載周邊離線地圖（${tiles.length} 張）`);
+  } catch { /* 靜默 */ }
+}
 
 function sim() { return $("#simToggle").checked; }
 $("#btnStart").addEventListener("click", () => {
@@ -328,6 +344,7 @@ $("#btnPause").addEventListener("click", () => {
 });
 $("#btnStop").addEventListener("click", () => {
   const rec = Recorder.stop();
+  recPreloaded = false;                        // 下次記錄重新預載
   $("#btnStart").textContent = "▶ 開始";
   $("#btnStart").style.display = "block";
   $("#btnPause").style.display = "none";
