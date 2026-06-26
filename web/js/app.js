@@ -22,6 +22,10 @@ function openGradeInfo() {
       綜合海拔、坡度、危險地形、天候、路況、長度等 10 項因子評定。
     </p>
     <div class="grade-list">${rows}</div>
+    <div class="grade-note" style="margin-top:14px">
+      <b>👨‍👩‍👧 「親子友善」徽章</b>是另一個獨立標記（不是難度等級）：代表這條步道
+      <b>難度低、路程短、路面好走</b>，特別適合帶小孩。一條步道可能同時是「輕鬆」難度又被標為「親子友善」。
+    </div>
     <p style="font-size:11.5px;color:var(--ink-soft);line-height:1.6;margin-top:14px">
       標示「<b>估</b>」的步道為社群（OpenStreetMap）資料，依步道實際長度推估等級，僅供參考；
       林業署步道則為官方正式分級。出發前請再查詢即時路況與天氣。

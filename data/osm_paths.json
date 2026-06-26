@@ -176,6 +176,14 @@
   "sac": null
  },
  {
+  "name": "(廢棄林道)",
+  "lat": 22.913337,
+  "lon": 120.52409,
+  "length_km": 0.21,
+  "surface": null,
+  "sac": null
+ },
+ {
   "name": "部落步道",
   "lat": 22.10474,
   "lon": 120.803239,
@@ -260,6 +268,46 @@
   "lat": 25.006823,
   "lon": 121.97699,
   "length_km": 0.62,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "艱難路線",
+  "lat": 22.741684,
+  "lon": 120.667579,
+  "length_km": 1.48,
+  "surface": "未鋪面",
+  "sac": null
+ },
+ {
+  "name": "艱難路線",
+  "lat": 23.95089,
+  "lon": 121.191727,
+  "length_km": 0.11,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "艱難路線",
+  "lat": 24.271257,
+  "lon": 120.990109,
+  "length_km": 0.3,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "艱難路線",
+  "lat": 24.792177,
+  "lon": 121.445097,
+  "length_km": 1.08,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "艱難路線",
+  "lat": 24.744127,
+  "lon": 121.194303,
+  "length_km": 0.26,
   "surface": null,
   "sac": null
  },
@@ -412,6 +460,14 @@
   "lat": 22.217497,
   "lon": 120.804291,
   "length_km": 0.71,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "步道",
+  "lat": 24.907079,
+  "lon": 121.174787,
+  "length_km": 0.31,
   "surface": null,
   "sac": null
  },
@@ -776,6 +832,14 @@
   "sac": null
  },
  {
+  "name": "防火巷",
+  "lat": 24.375576,
+  "lon": 121.338551,
+  "length_km": 1.25,
+  "surface": null,
+  "sac": "demanding_mountain_hiking"
+ },
+ {
   "name": "鹽埕路103巷",
   "lat": 22.966109,
   "lon": 120.189134,
@@ -968,6 +1032,14 @@
   "sac": null
  },
  {
+  "name": "(廢棄產道)",
+  "lat": 22.920248,
+  "lon": 120.529681,
+  "length_km": 0.23,
+  "surface": null,
+  "sac": null
+ },
+ {
   "name": "瀨頭林道",
   "lat": 23.359911,
   "lon": 120.664535,
@@ -985,9 +1057,9 @@
  },
  {
   "name": "高中林道",
-  "lat": 23.155158,
-  "lon": 120.698016,
-  "length_km": 5.05,
+  "lat": 23.155868,
+  "lon": 120.702496,
+  "length_km": 12.87,
   "surface": null,
   "sac": null
  },
@@ -2825,9 +2897,9 @@
  },
  {
   "name": "馬崙白姑步道",
-  "lat": 24.191841,
-  "lon": 121.082272,
-  "length_km": 6.74,
+  "lat": 24.195276,
+  "lon": 121.094713,
+  "length_km": 7.04,
   "surface": null,
   "sac": null
  },
@@ -3376,6 +3448,14 @@
   "sac": null
  },
  {
+  "name": "大湖桶山路徑",
+  "lat": 24.264075,
+  "lon": 120.907677,
+  "length_km": 0.41,
+  "surface": null,
+  "sac": null
+ },
+ {
   "name": "木棧道",
   "lat": 23.960628,
   "lon": 120.849975,
@@ -3481,9 +3561,9 @@
  },
  {
   "name": "綠水文山步道",
-  "lat": 24.186013,
-  "lon": 121.502267,
-  "length_km": 3.31,
+  "lat": 24.187861,
+  "lon": 121.501131,
+  "length_km": 4.56,
   "surface": null,
   "sac": null
  },
@@ -3593,9 +3673,9 @@
  },
  {
   "name": "研海林道(上線)",
-  "lat": 24.127528,
-  "lon": 121.499069,
-  "length_km": 2.43,
+  "lat": 24.12568,
+  "lon": 121.484616,
+  "length_km": 9.21,
   "surface": null,
   "sac": null
  },
@@ -3633,10 +3713,10 @@
  },
  {
   "name": "祖輪山登山步道",
-  "lat": 24.220597,
-  "lon": 121.496794,
-  "length_km": 2.09,
-  "surface": null,
+  "lat": 24.218524,
+  "lon": 121.493196,
+  "length_km": 2.29,
+  "surface": "蓮花池步道",
   "sac": "hiking"
  },
  {
@@ -3784,6 +3864,14 @@
   "sac": null
  },
  {
+  "name": "太加縱走山徑",
+  "lat": 24.474734,
+  "lon": 121.483831,
+  "length_km": 1.25,
+  "surface": null,
+  "sac": null
+ },
+ {
   "name": "木棧梯",
   "lat": 24.601644,
   "lon": 121.744923,
@@ -3905,9 +3993,9 @@
  },
  {
   "name": "石壁潭生態步道",
-  "lat": 24.757244,
-  "lon": 121.107624,
-  "length_km": 2.27,
+  "lat": 24.757076,
+  "lon": 121.107785,
+  "length_km": 2.37,
   "surface": null,
   "sac": null
  },
@@ -3948,6 +4036,14 @@
   "lat": 24.608493,
   "lon": 120.988954,
   "length_km": 8.29,
+  "surface": null,
+  "sac": "hiking"
+ },
+ {
+  "name": "神仙象縱走",
+  "lat": 24.556722,
+  "lon": 120.960741,
+  "length_km": 3.11,
   "surface": null,
   "sac": "hiking"
  },
@@ -4406,6 +4502,14 @@
   "length_km": 1.28,
   "surface": null,
   "sac": "mountain_hiking"
+ },
+ {
+  "name": "森林浴步道",
+  "lat": 24.260445,
+  "lon": 121.006678,
+  "length_km": 2.8,
+  "surface": null,
+  "sac": null
  },
  {
   "name": "哈盆越嶺步道",
@@ -5816,6 +5920,14 @@
   "sac": null
  },
  {
+  "name": "替代路段",
+  "lat": 24.853963,
+  "lon": 121.475205,
+  "length_km": 0.13,
+  "surface": "未鋪面",
+  "sac": null
+ },
+ {
   "name": "直接上稜",
   "lat": 24.85307,
   "lon": 121.518678,
@@ -6862,6 +6974,14 @@
   "length_km": 0.81,
   "surface": null,
   "sac": null
+ },
+ {
+  "name": "小粗坑古道",
+  "lat": 24.811636,
+  "lon": 121.221813,
+  "length_km": 0.97,
+  "surface": "泥土",
+  "sac": "mountain_hiking"
  },
  {
   "name": "獅頭山登山步道",
@@ -8800,6 +8920,14 @@
   "sac": "alpine_hiking"
  },
  {
+  "name": "拉繩峭壁",
+  "lat": 24.94514,
+  "lon": 121.423069,
+  "length_km": 0.01,
+  "surface": "岩石",
+  "sac": "alpine_hiking"
+ },
+ {
   "name": "南勢湖古道",
   "lat": 25.211886,
   "lon": 121.602478,
@@ -9173,6 +9301,4062 @@
   "lon": 119.952276,
   "length_km": 0.45,
   "surface": null,
+  "sac": null
+ },
+ {
+  "name": "北大武登山步道",
+  "lat": 22.617641,
+  "lon": 120.701506,
+  "length_km": 1.32,
+  "surface": "未鋪面",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "北大武登山步道",
+  "lat": 22.617387,
+  "lon": 120.752179,
+  "length_km": 4.32,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "旗靈縱走",
+  "lat": 22.904207,
+  "lon": 120.505938,
+  "length_km": 2.55,
+  "surface": "未鋪面",
+  "sac": null
+ },
+ {
+  "name": "觀音山環山路線",
+  "lat": 22.725256,
+  "lon": 120.373624,
+  "length_km": 0.42,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "金字面山步道",
+  "lat": 22.903566,
+  "lon": 120.509342,
+  "length_km": 0.83,
+  "surface": "未鋪面",
+  "sac": "demanding_mountain_hiking"
+ },
+ {
+  "name": "尾寮山登山路線",
+  "lat": 22.860659,
+  "lon": 120.667856,
+  "length_km": 4.44,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "(封閉)",
+  "lat": 22.871238,
+  "lon": 120.651347,
+  "length_km": 0.09,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "中寮山登山路線",
+  "lat": 22.807476,
+  "lon": 120.419059,
+  "length_km": 0.42,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "拜龍母山路線",
+  "lat": 22.849414,
+  "lon": 120.657461,
+  "length_km": 2.89,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "尾寮山步道",
+  "lat": 22.863752,
+  "lon": 120.649795,
+  "length_km": 2.4,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "扇平林道",
+  "lat": 22.967342,
+  "lon": 120.687966,
+  "length_km": 1.06,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "笠頂山區的山徑",
+  "lat": 22.659786,
+  "lon": 120.647652,
+  "length_km": 0.96,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "建物連通道",
+  "lat": 22.885312,
+  "lon": 120.494286,
+  "length_km": 0.01,
+  "surface": "泥土",
+  "sac": null
+ },
+ {
+  "name": "麒麟山開光坪登山步道",
+  "lat": 22.803421,
+  "lon": 120.391548,
+  "length_km": 0.28,
+  "surface": "鋪面",
+  "sac": null
+ },
+ {
+  "name": "旗尾山步道",
+  "lat": 22.901067,
+  "lon": 120.505402,
+  "length_km": 4.38,
+  "surface": "未鋪面",
+  "sac": null
+ },
+ {
+  "name": "旗尾山步道",
+  "lat": 22.923312,
+  "lon": 120.530723,
+  "length_km": 0.95,
+  "surface": "未鋪面",
+  "sac": null
+ },
+ {
+  "name": "鱈葉根山登山路線",
+  "lat": 22.660084,
+  "lon": 120.685568,
+  "length_km": 1.58,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "半屏山北峰路線",
+  "lat": 22.702993,
+  "lon": 120.31632,
+  "length_km": 0.56,
+  "surface": "未鋪面",
+  "sac": null
+ },
+ {
+  "name": "半屏山北峰路線(路徑不明顯)",
+  "lat": 22.704331,
+  "lon": 120.318396,
+  "length_km": 0.04,
+  "surface": "未鋪面",
+  "sac": null
+ },
+ {
+  "name": "半屏山好漢坡",
+  "lat": 22.702745,
+  "lon": 120.313884,
+  "length_km": 0.29,
+  "surface": "泥土",
+  "sac": null
+ },
+ {
+  "name": "勞吾勞吾產步道",
+  "lat": 22.682756,
+  "lon": 120.645822,
+  "length_km": 1.83,
+  "surface": "泥土",
+  "sac": null
+ },
+ {
+  "name": "大貢占山步道",
+  "lat": 22.978892,
+  "lon": 120.621418,
+  "length_km": 2.14,
+  "surface": "水泥",
+  "sac": null
+ },
+ {
+  "name": "安坡山登山路線",
+  "lat": 22.804907,
+  "lon": 120.635106,
+  "length_km": 0.3,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "半屏山石頭步道",
+  "lat": 22.701254,
+  "lon": 120.314077,
+  "length_km": 0.11,
+  "surface": "碎石",
+  "sac": null
+ },
+ {
+  "name": "桃花心木步道",
+  "lat": 22.894809,
+  "lon": 120.593803,
+  "length_km": 0.81,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "廣善堂登山步道",
+  "lat": 22.91329,
+  "lon": 120.527564,
+  "length_km": 2.15,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "美濃越嶺古道",
+  "lat": 22.920898,
+  "lon": 120.529966,
+  "length_km": 2.49,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "(鬆陡不宜下行)",
+  "lat": 22.920884,
+  "lon": 120.528397,
+  "length_km": 0.17,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "靈山步道",
+  "lat": 22.909568,
+  "lon": 120.515113,
+  "length_km": 0.12,
+  "surface": "未鋪面",
+  "sac": null
+ },
+ {
+  "name": "虎頭山山徑",
+  "lat": 22.865177,
+  "lon": 120.468739,
+  "length_km": 0.1,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "旗美山步道",
+  "lat": 22.887852,
+  "lon": 120.4952,
+  "length_km": 0.28,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "雷打石西路線",
+  "lat": 22.921716,
+  "lon": 120.531915,
+  "length_km": 0.44,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "盤龍峽谷 一線天",
+  "lat": 22.868932,
+  "lon": 120.35338,
+  "length_km": 0.29,
+  "surface": "泥土",
+  "sac": "hiking"
+ },
+ {
+  "name": "芙蓉步道",
+  "lat": 22.860118,
+  "lon": 120.344288,
+  "length_km": 0.66,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "半屏湖山步道",
+  "lat": 22.690391,
+  "lon": 120.306749,
+  "length_km": 0.08,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "澄清湖圓山-景觀木棧道",
+  "lat": 22.655875,
+  "lon": 120.346287,
+  "length_km": 0.19,
+  "surface": "木棧道",
+  "sac": null
+ },
+ {
+  "name": "三八嶺古道",
+  "lat": 22.802785,
+  "lon": 120.406383,
+  "length_km": 0.48,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "北大武山登山口聯絡道路",
+  "lat": 22.620717,
+  "lon": 120.704109,
+  "length_km": 1.59,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "阿禮-好茶越嶺道",
+  "lat": 22.715693,
+  "lon": 120.748283,
+  "length_km": 4.66,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "日湯真山登山步道",
+  "lat": 22.626286,
+  "lon": 120.706785,
+  "length_km": 2.37,
+  "surface": "未鋪面",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "屯子山步道",
+  "lat": 22.891068,
+  "lon": 120.747561,
+  "length_km": 5.02,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "楓山步道",
+  "lat": 22.86813,
+  "lon": 120.98241,
+  "length_km": 2.16,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "蝴蝶谷步道",
+  "lat": 22.915198,
+  "lon": 121.08235,
+  "length_km": 0.18,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "一場山登山路線",
+  "lat": 22.752867,
+  "lon": 120.806257,
+  "length_km": 16.17,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "知本林道",
+  "lat": 22.709473,
+  "lon": 120.984879,
+  "length_km": 5.72,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "知本越嶺古道",
+  "lat": 22.695259,
+  "lon": 120.962871,
+  "length_km": 13.61,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "知本越嶺古道",
+  "lat": 22.702209,
+  "lon": 120.894961,
+  "length_km": 5.32,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "井步山古道",
+  "lat": 22.733136,
+  "lon": 120.747025,
+  "length_km": 3.19,
+  "surface": "未鋪面",
+  "sac": "demanding_mountain_hiking"
+ },
+ {
+  "name": "霧台山登山步道",
+  "lat": 22.74682,
+  "lon": 120.742114,
+  "length_km": 0.76,
+  "surface": "未鋪面",
+  "sac": null
+ },
+ {
+  "name": "霧台山南峰登山步道",
+  "lat": 22.744487,
+  "lon": 120.743401,
+  "length_km": 0.11,
+  "surface": "未鋪面",
+  "sac": null
+ },
+ {
+  "name": "永康林道",
+  "lat": 22.932768,
+  "lon": 121.094582,
+  "length_km": 2.24,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "麻里烏山路徑",
+  "lat": 22.607105,
+  "lon": 120.928631,
+  "length_km": 0.4,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "朗吾呂山步道",
+  "lat": 22.766647,
+  "lon": 120.817749,
+  "length_km": 3.85,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "蘇鐵自然保留區管聯絡道路",
+  "lat": 22.872109,
+  "lon": 121.035643,
+  "length_km": 2.19,
+  "surface": "泥土",
+  "sac": null
+ },
+ {
+  "name": "下中里登山路徑",
+  "lat": 22.896514,
+  "lon": 121.082189,
+  "length_km": 0.15,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "北大武新登山口新路",
+  "lat": 22.615111,
+  "lon": 120.701434,
+  "length_km": 0.79,
+  "surface": "碎石",
+  "sac": null
+ },
+ {
+  "name": "京大山西北峰線",
+  "lat": 22.88837,
+  "lon": 120.716574,
+  "length_km": 1.98,
+  "surface": "未鋪面",
+  "sac": null
+ },
+ {
+  "name": "神趾山登山路線",
+  "lat": 22.762569,
+  "lon": 120.773751,
+  "length_km": 5.27,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "栗松溫泉山徑",
+  "lat": 23.19754,
+  "lon": 121.034937,
+  "length_km": 0.8,
+  "surface": "泥土",
+  "sac": "demanding_mountain_hiking"
+ },
+ {
+  "name": "南橫古道遺跡",
+  "lat": 23.138236,
+  "lon": 121.087527,
+  "length_km": 0.55,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "古道遺跡",
+  "lat": 23.17448,
+  "lon": 121.041233,
+  "length_km": 0.25,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "戒茂斯步道",
+  "lat": 23.242381,
+  "lon": 121.009293,
+  "length_km": 0.24,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "塔關山登山路線",
+  "lat": 23.258483,
+  "lon": 120.939471,
+  "length_km": 1.92,
+  "surface": "未鋪面",
+  "sac": null
+ },
+ {
+  "name": "那瑪夏林道",
+  "lat": 23.213062,
+  "lon": 120.723537,
+  "length_km": 3.73,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "黑水塘路徑",
+  "lat": 23.26733,
+  "lon": 120.986868,
+  "length_km": 0.09,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "霧鹿林道",
+  "lat": 23.151017,
+  "lon": 120.960221,
+  "length_km": 8.61,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "摩刻南山登山路徑",
+  "lat": 23.173927,
+  "lon": 121.019066,
+  "length_km": 3.25,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "小關山林道後段",
+  "lat": 23.156646,
+  "lon": 120.857374,
+  "length_km": 6.82,
+  "surface": null,
+  "sac": "difficult_alpine_hiking"
+ },
+ {
+  "name": "戶比屋山登山路徑",
+  "lat": 23.122551,
+  "lon": 120.833621,
+  "length_km": 2.21,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "小關山登山步道",
+  "lat": 23.153027,
+  "lon": 120.86544,
+  "length_km": 1.94,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "北生明賞螢步道",
+  "lat": 23.262604,
+  "lon": 120.712029,
+  "length_km": 0.2,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "小關山神池步道",
+  "lat": 23.157865,
+  "lon": 120.857568,
+  "length_km": 1.32,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "向榮山路徑",
+  "lat": 23.247397,
+  "lon": 120.981073,
+  "length_km": 0.65,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "米棧古道",
+  "lat": 23.797589,
+  "lon": 121.531096,
+  "length_km": 2.02,
+  "surface": "未鋪面",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "北加都蘭路線",
+  "lat": 23.740063,
+  "lon": 121.561211,
+  "length_km": 0.92,
+  "surface": null,
+  "sac": "demanding_mountain_hiking"
+ },
+ {
+  "name": "青于步道",
+  "lat": 23.753991,
+  "lon": 121.563471,
+  "length_km": 0.15,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "彰師大後山步道",
+  "lat": 24.080577,
+  "lon": 120.552789,
+  "length_km": 0.96,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "松柏嶺登廟步道",
+  "lat": 23.827832,
+  "lon": 120.627579,
+  "length_km": 1.3,
+  "surface": "柏油",
+  "sac": "hiking"
+ },
+ {
+  "name": "田中森林登山步道",
+  "lat": 23.852677,
+  "lon": 120.611659,
+  "length_km": 0.58,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "田中森林登山步道(南線)",
+  "lat": 23.849094,
+  "lon": 120.613706,
+  "length_km": 1.51,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "女鬼橋",
+  "lat": 24.180568,
+  "lon": 120.600144,
+  "length_km": 0.1,
+  "surface": "水泥",
+  "sac": null
+ },
+ {
+  "name": "敦化街24巷",
+  "lat": 23.982751,
+  "lon": 120.679393,
+  "length_km": 0.09,
+  "surface": "水泥",
+  "sac": "hiking"
+ },
+ {
+  "name": "山湖步道",
+  "lat": 23.89319,
+  "lon": 120.625373,
+  "length_km": 1.49,
+  "surface": "鵝卵石",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "十八彎古道(挑鹽古道)",
+  "lat": 23.880437,
+  "lon": 120.624147,
+  "length_km": 0.74,
+  "surface": "鵝卵石",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "猴探井登山步道",
+  "lat": 23.90939,
+  "lon": 120.629574,
+  "length_km": 0.44,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "香山森林步道",
+  "lat": 23.840778,
+  "lon": 120.615661,
+  "length_km": 0.53,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "大肚山萬里長城步道",
+  "lat": 24.149962,
+  "lon": 120.562042,
+  "length_km": 0.09,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "楊桃步道",
+  "lat": 23.941069,
+  "lon": 120.621887,
+  "length_km": 0.2,
+  "surface": "水泥",
+  "sac": null
+ },
+ {
+  "name": "隴頂古道",
+  "lat": 23.947678,
+  "lon": 120.623836,
+  "length_km": 1.63,
+  "surface": "鵝卵石",
+  "sac": null
+ },
+ {
+  "name": "廟後步道",
+  "lat": 23.854956,
+  "lon": 120.627832,
+  "length_km": 0.35,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "廣天宮步道",
+  "lat": 23.949229,
+  "lon": 120.608277,
+  "length_km": 0.68,
+  "surface": "泥土",
+  "sac": null
+ },
+ {
+  "name": "隴頂古道廣天宮支線",
+  "lat": 23.948686,
+  "lon": 120.616859,
+  "length_km": 0.32,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "八卦山休憩步道",
+  "lat": 23.855887,
+  "lon": 120.616527,
+  "length_km": 0.86,
+  "surface": "壓實土石",
+  "sac": null
+ },
+ {
+  "name": "田中森林公園登山步道(北線)",
+  "lat": 23.850573,
+  "lon": 120.615575,
+  "length_km": 1.15,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "苳柏步道",
+  "lat": 23.824938,
+  "lon": 120.614571,
+  "length_km": 0.81,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "臥雲橋",
+  "lat": 23.828879,
+  "lon": 120.62894,
+  "length_km": 0.03,
+  "surface": "柏油",
+  "sac": "hiking"
+ },
+ {
+  "name": "清水橋",
+  "lat": 23.827579,
+  "lon": 120.628216,
+  "length_km": 0.03,
+  "surface": "柏油",
+  "sac": "hiking"
+ },
+ {
+  "name": "碧山古道",
+  "lat": 23.971766,
+  "lon": 120.637344,
+  "length_km": 0.49,
+  "surface": "鵝卵石",
+  "sac": null
+ },
+ {
+  "name": "十八觀音步道",
+  "lat": 23.961525,
+  "lon": 120.621439,
+  "length_km": 1.22,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "東興~井仔頭步道",
+  "lat": 23.865413,
+  "lon": 120.612956,
+  "length_km": 2.98,
+  "surface": "泥土",
+  "sac": null
+ },
+ {
+  "name": "大肚山旗開得勝步道",
+  "lat": 24.148183,
+  "lon": 120.558656,
+  "length_km": 0.03,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "坑口山路跡",
+  "lat": 24.048228,
+  "lon": 120.697243,
+  "length_km": 0.33,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "撼龍步道",
+  "lat": 23.907686,
+  "lon": 120.667792,
+  "length_km": 0.77,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "素密達步道",
+  "lat": 23.817015,
+  "lon": 120.638327,
+  "length_km": 1.17,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "中央嶺步道",
+  "lat": 23.878767,
+  "lon": 120.618055,
+  "length_km": 0.64,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "園區串連步道C線",
+  "lat": 23.882655,
+  "lon": 120.616631,
+  "length_km": 0.05,
+  "surface": "泥土",
+  "sac": "hiking"
+ },
+ {
+  "name": "橫山觀日步道",
+  "lat": 23.8889,
+  "lon": 120.627655,
+  "length_km": 0.09,
+  "surface": "泥土",
+  "sac": "hiking"
+ },
+ {
+  "name": "灣仔口山登山路線",
+  "lat": 24.023944,
+  "lon": 120.577249,
+  "length_km": 0.14,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "校內通道",
+  "lat": 23.967216,
+  "lon": 120.57211,
+  "length_km": 0.05,
+  "surface": "石板",
+  "sac": null
+ },
+ {
+  "name": "北合歡山步道",
+  "lat": 24.174953,
+  "lon": 121.286725,
+  "length_km": 2.17,
+  "surface": "未鋪面",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "奇萊北峰步道",
+  "lat": 24.115586,
+  "lon": 121.330923,
+  "length_km": 1.47,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "奇萊山步道",
+  "lat": 24.11888,
+  "lon": 121.313964,
+  "length_km": 4.48,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "奇萊北稜",
+  "lat": 24.132202,
+  "lon": 121.335653,
+  "length_km": 3.08,
+  "surface": null,
+  "sac": "alpine_hiking"
+ },
+ {
+  "name": "卡羅樓奇萊南峰步道",
+  "lat": 24.087226,
+  "lon": 121.321314,
+  "length_km": 0.01,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "西合歡山步道",
+  "lat": 24.170723,
+  "lon": 121.255658,
+  "length_km": 6.42,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "能高越嶺古道",
+  "lat": 24.049788,
+  "lon": 121.241218,
+  "length_km": 11.06,
+  "surface": "未鋪面",
+  "sac": "hiking"
+ },
+ {
+  "name": "能高越嶺古道",
+  "lat": 24.027155,
+  "lon": 121.321414,
+  "length_km": 11.22,
+  "surface": null,
+  "sac": "hiking"
+ },
+ {
+  "name": "南華山步道",
+  "lat": 24.042708,
+  "lon": 121.283091,
+  "length_km": 3.94,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "奇萊主山南峰步道",
+  "lat": 24.057471,
+  "lon": 121.281948,
+  "length_km": 1.26,
+  "surface": "泥土",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "梅松山步道",
+  "lat": 24.150858,
+  "lon": 121.219816,
+  "length_km": 3.69,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "再生山步道",
+  "lat": 24.018484,
+  "lon": 121.210446,
+  "length_km": 5.85,
+  "surface": null,
+  "sac": "hiking"
+ },
+ {
+  "name": "再生-能高",
+  "lat": 23.991381,
+  "lon": 121.234472,
+  "length_km": 6.42,
+  "surface": null,
+  "sac": "hiking"
+ },
+ {
+  "name": "馬赫波岩窟路徑",
+  "lat": 23.997179,
+  "lon": 121.191192,
+  "length_km": 2.07,
+  "surface": null,
+  "sac": "hiking"
+ },
+ {
+  "name": "奇萊主峰步道",
+  "lat": 24.095433,
+  "lon": 121.319048,
+  "length_km": 3.31,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "北萬大山~武令山主峰步道",
+  "lat": 23.985693,
+  "lon": 121.170953,
+  "length_km": 2.02,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "奧萬大~北萬大山步道",
+  "lat": 23.976284,
+  "lon": 121.173111,
+  "length_km": 6.84,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "白姑南山登山路線",
+  "lat": 24.137765,
+  "lon": 121.11331,
+  "length_km": 5.31,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "烏帽子登山路線",
+  "lat": 23.879771,
+  "lon": 121.216718,
+  "length_km": 3.35,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "碧池探索路線(無明顯路跡)",
+  "lat": 24.177051,
+  "lon": 121.284433,
+  "length_km": 0.3,
+  "surface": "未鋪面",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "蕨山登山路線",
+  "lat": 24.200447,
+  "lon": 121.418318,
+  "length_km": 3.42,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "小奇萊山步道",
+  "lat": 24.132256,
+  "lon": 121.295457,
+  "length_km": 0.05,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "台14甲34K登山口",
+  "lat": 24.15001,
+  "lon": 121.284346,
+  "length_km": 0.02,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "合歡山南峰路線",
+  "lat": 24.123014,
+  "lon": 121.27105,
+  "length_km": 0.47,
+  "surface": "未鋪面",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "能高越嶺雲天宮高繞路線",
+  "lat": 24.05697,
+  "lon": 121.220489,
+  "length_km": 3.15,
+  "surface": "泥土",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "聖湖梳子堰",
+  "lat": 23.84327,
+  "lon": 121.446502,
+  "length_km": 0.03,
+  "surface": null,
+  "sac": "demanding_mountain_hiking"
+ },
+ {
+  "name": "合流點路線",
+  "lat": 23.950817,
+  "lon": 121.187217,
+  "length_km": 1.38,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "日本帝國廢電線桿路線",
+  "lat": 24.181133,
+  "lon": 121.286098,
+  "length_km": 2.06,
+  "surface": "未鋪面",
+  "sac": "difficult_alpine_hiking"
+ },
+ {
+  "name": "金杏真路",
+  "lat": 23.897955,
+  "lon": 121.219906,
+  "length_km": 1.73,
+  "surface": "未鋪面",
+  "sac": null
+ },
+ {
+  "name": "合歡山南峰步道",
+  "lat": 24.126434,
+  "lon": 121.269679,
+  "length_km": 0.57,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "樓梯",
+  "lat": 23.801305,
+  "lon": 121.45277,
+  "length_km": 0.02,
+  "surface": "泥土",
+  "sac": null
+ },
+ {
+  "name": "走廊",
+  "lat": 23.801432,
+  "lon": 121.452594,
+  "length_km": 0.08,
+  "surface": "泥土",
+  "sac": null
+ },
+ {
+  "name": "屏風山新路",
+  "lat": 24.17214,
+  "lon": 121.323597,
+  "length_km": 1.77,
+  "surface": "泥土",
+  "sac": null
+ },
+ {
+  "name": "金馬路線",
+  "lat": 24.179542,
+  "lon": 121.37045,
+  "length_km": 0.61,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "黑岩山",
+  "lat": 24.187328,
+  "lon": 121.359816,
+  "length_km": 1.72,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "母安山西路線",
+  "lat": 24.029135,
+  "lon": 121.177044,
+  "length_km": 0.17,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "摩里克安山登山路線",
+  "lat": 24.18376,
+  "lon": 121.191273,
+  "length_km": 2.0,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "立鷹山步道",
+  "lat": 24.07905,
+  "lon": 121.170296,
+  "length_km": 0.6,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "七號隧道",
+  "lat": 24.189101,
+  "lon": 121.481546,
+  "length_km": 0.27,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "八號隧道",
+  "lat": 24.190697,
+  "lon": 121.478201,
+  "length_km": 0.02,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "白姑南山東稜",
+  "lat": 24.150757,
+  "lon": 121.139677,
+  "length_km": 7.09,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "櫻櫻峰東北峰登山路徑",
+  "lat": 24.119056,
+  "lon": 121.246025,
+  "length_km": 0.18,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "溪床路徑 (不定)",
+  "lat": 24.024517,
+  "lon": 121.18671,
+  "length_km": 0.48,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "溪床小徑 (不定)",
+  "lat": 24.018948,
+  "lon": 121.189671,
+  "length_km": 0.07,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "鳶嘴稍來山步道",
+  "lat": 24.240043,
+  "lon": 120.964821,
+  "length_km": 5.93,
+  "surface": "泥土",
+  "sac": "demanding_mountain_hiking"
+ },
+ {
+  "name": "千兩山步道",
+  "lat": 24.37556,
+  "lon": 120.948074,
+  "length_km": 3.44,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "三角山步道",
+  "lat": 24.416143,
+  "lon": 120.783485,
+  "length_km": 1.29,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "三角山A線步道",
+  "lat": 24.421143,
+  "lon": 120.782852,
+  "length_km": 0.5,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "橫嶺山步道",
+  "lat": 24.230397,
+  "lon": 120.94204,
+  "length_km": 0.57,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "加里山哈堪尼連走",
+  "lat": 24.508706,
+  "lon": 121.032306,
+  "length_km": 5.14,
+  "surface": "泥土",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "出雲古道",
+  "lat": 24.454117,
+  "lon": 120.867788,
+  "length_km": 0.33,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "三通嶺",
+  "lat": 24.430525,
+  "lon": 120.754119,
+  "length_km": 1.05,
+  "surface": "碎石",
+  "sac": null
+ },
+ {
+  "name": "象鼻古道",
+  "lat": 24.363594,
+  "lon": 120.948,
+  "length_km": 0.87,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "加里山步道鹿場主線",
+  "lat": 24.520836,
+  "lon": 121.020727,
+  "length_km": 3.5,
+  "surface": "泥土",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "向天湖山(光天高山)登山步道",
+  "lat": 24.569532,
+  "lon": 121.027936,
+  "length_km": 1.53,
+  "surface": "未鋪面",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "檜山巨木群步道",
+  "lat": 24.503357,
+  "lon": 121.096797,
+  "length_km": 2.94,
+  "surface": "木棧道",
+  "sac": "hiking"
+ },
+ {
+  "name": "拾丸山登山路線",
+  "lat": 24.302501,
+  "lon": 121.05232,
+  "length_km": 3.19,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "香茅古道",
+  "lat": 24.373236,
+  "lon": 120.724718,
+  "length_km": 1.63,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "火炎山山徑-北鞍線",
+  "lat": 24.377311,
+  "lon": 120.73272,
+  "length_km": 1.08,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "三角山B線步道",
+  "lat": 24.422923,
+  "lon": 120.782553,
+  "length_km": 0.76,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "加里山鐵道段(小木屋到哈堪尼叉)",
+  "lat": 24.513444,
+  "lon": 121.025522,
+  "length_km": 1.85,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "橫嶺山自然步道",
+  "lat": 24.233251,
+  "lon": 120.931781,
+  "length_km": 8.07,
+  "surface": "未鋪面",
+  "sac": null
+ },
+ {
+  "name": "向天湖山(光天高山)環湖段",
+  "lat": 24.576386,
+  "lon": 121.03724,
+  "length_km": 2.79,
+  "surface": "泥土",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "三角湖登山路線",
+  "lat": 24.585934,
+  "lon": 121.037698,
+  "length_km": 0.7,
+  "surface": "泥土",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "古油井步道",
+  "lat": 24.459646,
+  "lon": 120.853538,
+  "length_km": 0.83,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "中和街四段301巷",
+  "lat": 24.246524,
+  "lon": 120.808374,
+  "length_km": 0.06,
+  "surface": "未鋪面",
+  "sac": null
+ },
+ {
+  "name": "加里山步道",
+  "lat": 24.523062,
+  "lon": 121.024081,
+  "length_km": 0.01,
+  "surface": null,
+  "sac": "hiking"
+ },
+ {
+  "name": "鹿場大山北坑山連稜古道",
+  "lat": 24.489425,
+  "lon": 121.061565,
+  "length_km": 6.03,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "東河林道",
+  "lat": 24.538671,
+  "lon": 121.054775,
+  "length_km": 0.43,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "烏石坑林道",
+  "lat": 24.278115,
+  "lon": 120.943885,
+  "length_km": 2.01,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "烏石坑林道(530林道)",
+  "lat": 24.279776,
+  "lon": 120.939637,
+  "length_km": 0.02,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "摩天嶺林道",
+  "lat": 24.305268,
+  "lon": 120.96445,
+  "length_km": 9.63,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "麻必浩林道",
+  "lat": 24.363171,
+  "lon": 120.987875,
+  "length_km": 1.25,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "阿畢崎古道",
+  "lat": 24.520666,
+  "lon": 120.878726,
+  "length_km": 1.68,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "木馬古道",
+  "lat": 24.26201,
+  "lon": 121.009376,
+  "length_km": 2.95,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "加里山山徑(中線)",
+  "lat": 24.515698,
+  "lon": 121.007746,
+  "length_km": 1.51,
+  "surface": "泥土",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "泰安登山步道",
+  "lat": 24.321506,
+  "lon": 120.749576,
+  "length_km": 0.48,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "隘勇古道",
+  "lat": 24.322398,
+  "lon": 120.752209,
+  "length_km": 0.92,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "山椒山登山步道",
+  "lat": 24.26105,
+  "lon": 120.971422,
+  "length_km": 2.95,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "12.3K 替代道路",
+  "lat": 24.31863,
+  "lon": 121.063784,
+  "length_km": 1.56,
+  "surface": null,
+  "sac": "difficult_alpine_hiking"
+ },
+ {
+  "name": "石門古道",
+  "lat": 24.548623,
+  "lon": 121.033811,
+  "length_km": 1.54,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "鞍馬山東北峰路線",
+  "lat": 24.27195,
+  "lon": 121.021323,
+  "length_km": 0.62,
+  "surface": "泥土",
+  "sac": null
+ },
+ {
+  "name": "上谷關山步道",
+  "lat": 24.205637,
+  "lon": 121.016036,
+  "length_km": 0.44,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "大鹿林道8.7k上南比林山路徑",
+  "lat": 24.528186,
+  "lon": 121.090873,
+  "length_km": 2.17,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "象鼻山登山路線",
+  "lat": 24.360747,
+  "lon": 120.942465,
+  "length_km": 0.32,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "百川山東峰路線",
+  "lat": 24.306282,
+  "lon": 120.997958,
+  "length_km": 0.87,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "百川山路線",
+  "lat": 24.3075,
+  "lon": 120.983233,
+  "length_km": 2.56,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "小東河山與大龍山登山路線",
+  "lat": 24.561193,
+  "lon": 120.995554,
+  "length_km": 2.55,
+  "surface": "泥土",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "打鹿坑山登山路線",
+  "lat": 24.478275,
+  "lon": 120.860861,
+  "length_km": 0.25,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "南勢山東南峰登山路線",
+  "lat": 24.405187,
+  "lon": 120.92611,
+  "length_km": 0.95,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "馬都安古道",
+  "lat": 24.424667,
+  "lon": 120.936138,
+  "length_km": 1.39,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "黃麻園山登山路線",
+  "lat": 24.414377,
+  "lon": 120.834374,
+  "length_km": 0.43,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "山羊凸山登山路線",
+  "lat": 24.513775,
+  "lon": 120.864546,
+  "length_km": 0.65,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "大籠山路徑",
+  "lat": 24.293753,
+  "lon": 120.782327,
+  "length_km": 0.13,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "大樹山",
+  "lat": 24.306744,
+  "lon": 120.77173,
+  "length_km": 0.37,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "枋壁頂山",
+  "lat": 24.298492,
+  "lon": 120.75502,
+  "length_km": 0.7,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "頂埔山路跡",
+  "lat": 24.289381,
+  "lon": 120.826374,
+  "length_km": 0.46,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "楓樹崠山路徑",
+  "lat": 24.245309,
+  "lon": 120.883639,
+  "length_km": 1.09,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "頭庄山路徑",
+  "lat": 24.216095,
+  "lon": 120.850225,
+  "length_km": 1.88,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "公籠頂路徑",
+  "lat": 24.270749,
+  "lon": 120.834729,
+  "length_km": 0.22,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "石圍牆東北峰",
+  "lat": 24.300167,
+  "lon": 120.768126,
+  "length_km": 0.43,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "尾文坑山路徑",
+  "lat": 24.281165,
+  "lon": 120.892474,
+  "length_km": 0.53,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "北坑山登山路線",
+  "lat": 24.597351,
+  "lon": 120.87724,
+  "length_km": 0.09,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "龍船子山登山路線",
+  "lat": 24.445592,
+  "lon": 120.844662,
+  "length_km": 0.32,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "雞隆山登山路線",
+  "lat": 24.425531,
+  "lon": 120.839477,
+  "length_km": 0.36,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "後壁山基點路徑",
+  "lat": 24.308219,
+  "lon": 120.786544,
+  "length_km": 0.1,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "雞冠山登山路線(較緩)",
+  "lat": 24.389187,
+  "lon": 120.840133,
+  "length_km": 0.1,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "雞冠山登山路線(陡峭)",
+  "lat": 24.390128,
+  "lon": 120.840169,
+  "length_km": 0.12,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "南勢山北峰登山路線",
+  "lat": 24.41584,
+  "lon": 120.923957,
+  "length_km": 0.23,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "平石山西北峰路徑",
+  "lat": 24.266066,
+  "lon": 121.033793,
+  "length_km": 0.04,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "平石山路徑",
+  "lat": 24.249379,
+  "lon": 121.04731,
+  "length_km": 0.74,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "埋伏坪步道",
+  "lat": 24.286635,
+  "lon": 120.914558,
+  "length_km": 0.4,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "反水山路徑",
+  "lat": 24.389526,
+  "lon": 120.906921,
+  "length_km": 0.74,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "石觀音山路徑",
+  "lat": 24.543814,
+  "lon": 120.889846,
+  "length_km": 0.4,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "槺榔埔山登山路線",
+  "lat": 24.536226,
+  "lon": 120.760273,
+  "length_km": 0.79,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "馬來山路徑",
+  "lat": 24.230824,
+  "lon": 121.084822,
+  "length_km": 1.25,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "麻竹坑山路徑",
+  "lat": 24.222673,
+  "lon": 120.872735,
+  "length_km": 0.32,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "綠色古道",
+  "lat": 24.540031,
+  "lon": 120.906006,
+  "length_km": 0.33,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "穿霧隘勇古道",
+  "lat": 24.274077,
+  "lon": 120.873893,
+  "length_km": 5.5,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "南坑山西北峰登山路線",
+  "lat": 24.368993,
+  "lon": 120.985382,
+  "length_km": 1.3,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "寮水山登山路徑",
+  "lat": 24.217412,
+  "lon": 120.766221,
+  "length_km": 0.09,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "大湖山至寮水山登山路徑",
+  "lat": 24.218436,
+  "lon": 120.754844,
+  "length_km": 1.36,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "林牛山北稜",
+  "lat": 24.226562,
+  "lon": 120.737398,
+  "length_km": 0.36,
+  "surface": "未鋪面",
+  "sac": null
+ },
+ {
+  "name": "光天高山水管路",
+  "lat": 24.57233,
+  "lon": 121.022654,
+  "length_km": 1.43,
+  "surface": "泥土",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "230林道4.7k沿雪霸界稜下雪山坑(2022/12/11濬戎高義薇婷)",
+  "lat": 24.31437,
+  "lon": 121.0167,
+  "length_km": 2.41,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "龍王峽谷一號步道",
+  "lat": 24.557394,
+  "lon": 120.782585,
+  "length_km": 0.29,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "龍王峽谷二號步道",
+  "lat": 24.556967,
+  "lon": 120.783237,
+  "length_km": 0.13,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "龍王峽谷三號步道",
+  "lat": 24.55646,
+  "lon": 120.785737,
+  "length_km": 0.29,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "龍王峽谷步道",
+  "lat": 24.556584,
+  "lon": 120.782687,
+  "length_km": 0.54,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "觀音山林道接川棟林道",
+  "lat": 24.276366,
+  "lon": 120.906372,
+  "length_km": 0.3,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "和興山步道",
+  "lat": 24.523873,
+  "lon": 120.8994,
+  "length_km": 4.72,
+  "surface": "泥土",
+  "sac": null
+ },
+ {
+  "name": "石坑山（向天湖山西北峰西）登山路線",
+  "lat": 24.581028,
+  "lon": 121.001439,
+  "length_km": 0.72,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "蓬萊山登山路線",
+  "lat": 24.543768,
+  "lon": 120.986391,
+  "length_km": 1.21,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "坪林坑山登山路線",
+  "lat": 24.32343,
+  "lon": 120.873007,
+  "length_km": 0.22,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "四十二份坪步道",
+  "lat": 24.538051,
+  "lon": 120.965006,
+  "length_km": 0.42,
+  "surface": "鋪面",
+  "sac": null
+ },
+ {
+  "name": "烏石坑口山登山路徑",
+  "lat": 24.30291,
+  "lon": 120.927218,
+  "length_km": 0.29,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "小東河步道",
+  "lat": 24.570684,
+  "lon": 120.994608,
+  "length_km": 0.88,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "雪山主峰翠池步道",
+  "lat": 24.384652,
+  "lon": 121.227295,
+  "length_km": 1.19,
+  "surface": "碎石",
+  "sac": null
+ },
+ {
+  "name": "雪劍線步道",
+  "lat": 24.313834,
+  "lon": 121.208349,
+  "length_km": 15.78,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "710林道",
+  "lat": 24.376548,
+  "lon": 121.355602,
+  "length_km": 6.52,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "雪山主峰-志佳陽大山路線",
+  "lat": 24.374371,
+  "lon": 121.238964,
+  "length_km": 4.11,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "鎮西堡巨木群步道B區",
+  "lat": 24.540915,
+  "lon": 121.29193,
+  "length_km": 0.88,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "鎮西堡巨木群步道",
+  "lat": 24.550311,
+  "lon": 121.291571,
+  "length_km": 1.53,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "蓮花池步道",
+  "lat": 24.216759,
+  "lon": 121.488339,
+  "length_km": 1.96,
+  "surface": null,
+  "sac": "hiking"
+ },
+ {
+  "name": "喀拉業山登山路徑",
+  "lat": 24.438927,
+  "lon": 121.314586,
+  "length_km": 2.89,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "霞喀羅古道",
+  "lat": 24.570055,
+  "lon": 121.241975,
+  "length_km": 8.41,
+  "surface": null,
+  "sac": "hiking"
+ },
+ {
+  "name": "霞喀羅古道",
+  "lat": 24.57097,
+  "lon": 121.194843,
+  "length_km": 12.1,
+  "surface": null,
+  "sac": "hiking"
+ },
+ {
+  "name": "加羅湖山徑",
+  "lat": 24.478088,
+  "lon": 121.474619,
+  "length_km": 2.57,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "閂山步道",
+  "lat": 24.26869,
+  "lon": 121.316055,
+  "length_km": 2.88,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "池有山登山步道",
+  "lat": 24.418759,
+  "lon": 121.298284,
+  "length_km": 3.43,
+  "surface": null,
+  "sac": "demanding_mountain_hiking"
+ },
+ {
+  "name": "桃山登山步道",
+  "lat": 24.417001,
+  "lon": 121.306716,
+  "length_km": 4.0,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "司馬庫斯神木群步道",
+  "lat": 24.576077,
+  "lon": 121.351455,
+  "length_km": 5.81,
+  "surface": "木棧道",
+  "sac": null
+ },
+ {
+  "name": "蕃社跡山步道",
+  "lat": 24.55101,
+  "lon": 121.351984,
+  "length_km": 6.22,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "720林道",
+  "lat": 24.400368,
+  "lon": 121.341837,
+  "length_km": 6.39,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "志佳陽大山步道",
+  "lat": 24.333966,
+  "lon": 121.271606,
+  "length_km": 5.7,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "103線林道",
+  "lat": 24.613782,
+  "lon": 121.467057,
+  "length_km": 4.22,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "102線林道(廢棄)",
+  "lat": 24.60495,
+  "lon": 121.480649,
+  "length_km": 14.28,
+  "surface": "泥土",
+  "sac": null
+ },
+ {
+  "name": "凱蘭特崑山步道(黑森林水源路)",
+  "lat": 24.39578,
+  "lon": 121.242767,
+  "length_km": 2.46,
+  "surface": "泥土",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "雪山北峰登山步道",
+  "lat": 24.404346,
+  "lon": 121.240877,
+  "length_km": 2.48,
+  "surface": null,
+  "sac": "demanding_mountain_hiking"
+ },
+ {
+  "name": "鴛鴦湖步道",
+  "lat": 24.577154,
+  "lon": 121.406571,
+  "length_km": 1.13,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "雪山南峰步道",
+  "lat": 24.373076,
+  "lon": 121.237521,
+  "length_km": 0.59,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "民都有山登山步道",
+  "lat": 24.577724,
+  "lon": 121.128696,
+  "length_km": 3.25,
+  "surface": "泥土",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "觀霧瀑布步道",
+  "lat": 24.500932,
+  "lon": 121.117594,
+  "length_km": 1.42,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "雪山主峰步道----黑森林路段",
+  "lat": 24.394143,
+  "lon": 121.244219,
+  "length_km": 1.76,
+  "surface": "未鋪面",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "雪山主峰步道",
+  "lat": 24.385768,
+  "lon": 121.231612,
+  "length_km": 0.5,
+  "surface": "未鋪面",
+  "sac": "demanding_mountain_hiking"
+ },
+ {
+  "name": "麥巴來登山路線",
+  "lat": 24.604609,
+  "lon": 121.170127,
+  "length_km": 3.96,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "104線林道",
+  "lat": 24.594347,
+  "lon": 121.416921,
+  "length_km": 0.93,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "羅山林道南線",
+  "lat": 24.582669,
+  "lon": 121.170703,
+  "length_km": 7.34,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "嘉平林道",
+  "lat": 24.52484,
+  "lon": 121.470853,
+  "length_km": 17.22,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "文山溫泉步道",
+  "lat": 24.201681,
+  "lon": 121.490883,
+  "length_km": 0.13,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "鎮西堡巨木群步道A區",
+  "lat": 24.539808,
+  "lon": 121.288267,
+  "length_km": 1.6,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "眉有岩山步道",
+  "lat": 24.513619,
+  "lon": 121.383788,
+  "length_km": 2.79,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "島俱子山步道",
+  "lat": 24.536915,
+  "lon": 121.389636,
+  "length_km": 1.17,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "東保津寒山步道",
+  "lat": 24.567602,
+  "lon": 121.403295,
+  "length_km": 0.41,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "四圍仙山步道",
+  "lat": 24.565996,
+  "lon": 121.425397,
+  "length_km": 0.8,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "比壽潭山步道",
+  "lat": 24.245599,
+  "lon": 121.157033,
+  "length_km": 3.17,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "雪關山步道(大矢夫山)",
+  "lat": 24.279449,
+  "lon": 121.216414,
+  "length_km": 2.29,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "白姑大山(青山線)",
+  "lat": 24.22213,
+  "lon": 121.110712,
+  "length_km": 5.14,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "取水路",
+  "lat": 24.376531,
+  "lon": 121.238157,
+  "length_km": 0.05,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "死亡稜線",
+  "lat": 24.308667,
+  "lon": 121.409849,
+  "length_km": 5.32,
+  "surface": "碎石",
+  "sac": "difficult_alpine_hiking"
+ },
+ {
+  "name": "西高橋山登山路徑",
+  "lat": 24.561986,
+  "lon": 121.168585,
+  "length_km": 0.26,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "大同國中登烏帽子山路線",
+  "lat": 24.571065,
+  "lon": 121.475514,
+  "length_km": 1.62,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "養老山西北峰路線",
+  "lat": 24.584457,
+  "lon": 121.256442,
+  "length_km": 0.18,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "吹上山登山路線",
+  "lat": 24.250195,
+  "lon": 121.193414,
+  "length_km": 0.14,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "甘木林山路線",
+  "lat": 24.391557,
+  "lon": 121.246918,
+  "length_km": 0.7,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "林專山路徑",
+  "lat": 24.419629,
+  "lon": 121.241949,
+  "length_km": 2.25,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "草山登山路線",
+  "lat": 24.599904,
+  "lon": 121.483279,
+  "length_km": 0.4,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "馬望海山路線",
+  "lat": 24.534311,
+  "lon": 121.303163,
+  "length_km": 1.32,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "105線林道 (四圍仙山步道)",
+  "lat": 24.567977,
+  "lon": 121.421971,
+  "length_km": 0.74,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "732林道",
+  "lat": 24.290217,
+  "lon": 121.312661,
+  "length_km": 4.29,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "736林道",
+  "lat": 24.258695,
+  "lon": 121.336584,
+  "length_km": 3.17,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "檜山道路;根本古道",
+  "lat": 24.507402,
+  "lon": 121.18723,
+  "length_km": 6.69,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "檜山道路;根本古道",
+  "lat": 24.544439,
+  "lon": 121.193834,
+  "length_km": 4.76,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "馬達拉道路;高嶺古道",
+  "lat": 24.502218,
+  "lon": 121.165866,
+  "length_km": 7.32,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "林道溪谷上切路",
+  "lat": 24.567719,
+  "lon": 121.17829,
+  "length_km": 0.19,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "根本古道;檜山道路",
+  "lat": 24.536463,
+  "lon": 121.194896,
+  "length_km": 0.96,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "司立富瀑布步道",
+  "lat": 24.576305,
+  "lon": 121.343942,
+  "length_km": 0.75,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "迦南賞楓步道",
+  "lat": 24.578822,
+  "lon": 121.337019,
+  "length_km": 0.4,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "檜山道路",
+  "lat": 24.55958,
+  "lon": 121.188684,
+  "length_km": 3.59,
+  "surface": "泥土",
+  "sac": null
+ },
+ {
+  "name": "最低鞍直下古道路",
+  "lat": 24.551654,
+  "lon": 121.195998,
+  "length_km": 0.28,
+  "surface": "泥土",
+  "sac": null
+ },
+ {
+  "name": "平切茅草很多不明顯",
+  "lat": 24.54514,
+  "lon": 121.194452,
+  "length_km": 0.18,
+  "surface": "草地",
+  "sac": null
+ },
+ {
+  "name": "斷岩山登山路線",
+  "lat": 24.402867,
+  "lon": 121.371058,
+  "length_km": 1.6,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "羅葉尾溪步徑",
+  "lat": 24.395234,
+  "lon": 121.345632,
+  "length_km": 1.28,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "司馬庫斯神木群新闢步道",
+  "lat": 24.5755,
+  "lon": 121.368602,
+  "length_km": 0.83,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "南湖大山北壁",
+  "lat": 24.367137,
+  "lon": 121.438682,
+  "length_km": 0.57,
+  "surface": null,
+  "sac": "difficult_alpine_hiking"
+ },
+ {
+  "name": "南湖南稜(尖尖挖嘎奈)",
+  "lat": 24.353625,
+  "lon": 121.437054,
+  "length_km": 1.35,
+  "surface": "sandstone_&_slate",
+  "sac": "difficult_alpine_hiking"
+ },
+ {
+  "name": "太木山步道",
+  "lat": 24.273782,
+  "lon": 121.146478,
+  "length_km": 2.05,
+  "surface": null,
+  "sac": "demanding_mountain_hiking"
+ },
+ {
+  "name": "太木山上劍山道路",
+  "lat": 24.283888,
+  "lon": 121.166556,
+  "length_km": 2.54,
+  "surface": null,
+  "sac": "alpine_hiking"
+ },
+ {
+  "name": "The Dark Side of the Sword",
+  "lat": 24.293524,
+  "lon": 121.168934,
+  "length_km": 0.61,
+  "surface": null,
+  "sac": "difficult_alpine_hiking"
+ },
+ {
+  "name": "南湖中稜",
+  "lat": 24.366641,
+  "lon": 121.444917,
+  "length_km": 1.02,
+  "surface": null,
+  "sac": "demanding_mountain_hiking"
+ },
+ {
+  "name": "南峰北壁下降路",
+  "lat": 24.347783,
+  "lon": 121.435075,
+  "length_km": 0.16,
+  "surface": null,
+  "sac": "demanding_alpine_hiking"
+ },
+ {
+  "name": "東眼山自導式步道",
+  "lat": 24.824097,
+  "lon": 121.413858,
+  "length_km": 1.48,
+  "surface": null,
+  "sac": "hiking"
+ },
+ {
+  "name": "東眼山志繼山步道",
+  "lat": 24.833756,
+  "lon": 121.417206,
+  "length_km": 6.01,
+  "surface": null,
+  "sac": "hiking"
+ },
+ {
+  "name": "打牛崎步道",
+  "lat": 24.791945,
+  "lon": 121.209731,
+  "length_km": 1.26,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "飛鳳山步道",
+  "lat": 24.765713,
+  "lon": 121.112128,
+  "length_km": 1.03,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "好漢坡",
+  "lat": 24.811498,
+  "lon": 121.235222,
+  "length_km": 0.76,
+  "surface": null,
+  "sac": "hiking"
+ },
+ {
+  "name": "石門山登山步道",
+  "lat": 24.808921,
+  "lon": 121.229198,
+  "length_km": 0.26,
+  "surface": "泥土",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "大混山步道",
+  "lat": 24.690278,
+  "lon": 121.272098,
+  "length_km": 1.95,
+  "surface": "泥土",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "大混李棟山步道",
+  "lat": 24.690824,
+  "lon": 121.288359,
+  "length_km": 3.2,
+  "surface": "泥土",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "道下山步道",
+  "lat": 24.677885,
+  "lon": 121.263456,
+  "length_km": 2.9,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "石牛山登山路線",
+  "lat": 24.79215,
+  "lon": 121.252313,
+  "length_km": 1.94,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "北得拉曼巨木步道",
+  "lat": 24.736352,
+  "lon": 121.289348,
+  "length_km": 2.49,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "五寮尖攻頂右線",
+  "lat": 24.876392,
+  "lon": 121.365642,
+  "length_km": 0.14,
+  "surface": "未鋪面",
+  "sac": "demanding_mountain_hiking"
+ },
+ {
+  "name": "石壁腳路",
+  "lat": 24.875831,
+  "lon": 121.367596,
+  "length_km": 0.33,
+  "surface": null,
+  "sac": "hiking"
+ },
+ {
+  "name": "五寮尖路線",
+  "lat": 24.882565,
+  "lon": 121.369865,
+  "length_km": 1.77,
+  "surface": null,
+  "sac": "hiking"
+ },
+ {
+  "name": "鷄冠尖岩稜路線",
+  "lat": 24.880508,
+  "lon": 121.376124,
+  "length_km": 1.33,
+  "surface": "未鋪面",
+  "sac": "demanding_mountain_hiking"
+ },
+ {
+  "name": "五寮尖步道(上稜線路、撤退路線)",
+  "lat": 24.875736,
+  "lon": 121.368955,
+  "length_km": 0.06,
+  "surface": null,
+  "sac": "hiking"
+ },
+ {
+  "name": "五寮尖登山路線",
+  "lat": 24.8782,
+  "lon": 121.370185,
+  "length_km": 0.71,
+  "surface": null,
+  "sac": "hiking"
+ },
+ {
+  "name": "大艽芎古道",
+  "lat": 24.828911,
+  "lon": 121.28633,
+  "length_km": 0.92,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "東滿步道",
+  "lat": 24.814105,
+  "lon": 121.430233,
+  "length_km": 6.7,
+  "surface": null,
+  "sac": "hiking"
+ },
+ {
+  "name": "CT106",
+  "lat": 24.797144,
+  "lon": 121.448717,
+  "length_km": 2.84,
+  "surface": null,
+  "sac": "demanding_mountain_hiking"
+ },
+ {
+  "name": "CT104",
+  "lat": 24.789204,
+  "lon": 121.424476,
+  "length_km": 3.19,
+  "surface": null,
+  "sac": "demanding_mountain_hiking"
+ },
+ {
+  "name": "CT105",
+  "lat": 24.792825,
+  "lon": 121.435007,
+  "length_km": 2.64,
+  "surface": null,
+  "sac": "demanding_mountain_hiking"
+ },
+ {
+  "name": "騎龍古道",
+  "lat": 24.68928,
+  "lon": 121.138218,
+  "length_km": 0.92,
+  "surface": null,
+  "sac": "hiking"
+ },
+ {
+  "name": "溪洲山步道",
+  "lat": 24.817497,
+  "lon": 121.261809,
+  "length_km": 3.65,
+  "surface": "未鋪面",
+  "sac": "hiking"
+ },
+ {
+  "name": "籠山巖步道",
+  "lat": 24.874394,
+  "lon": 121.35904,
+  "length_km": 1.34,
+  "surface": null,
+  "sac": "hiking"
+ },
+ {
+  "name": "大棟山-青龍嶺登山步道",
+  "lat": 24.994867,
+  "lon": 121.390735,
+  "length_km": 2.14,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "光明山稜線步道",
+  "lat": 24.968219,
+  "lon": 121.362538,
+  "length_km": 3.14,
+  "surface": "泥土",
+  "sac": null
+ },
+ {
+  "name": "福源山步道",
+  "lat": 24.980248,
+  "lon": 121.363682,
+  "length_km": 2.13,
+  "surface": "泥土",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "鶯歌登山步道",
+  "lat": 24.973836,
+  "lon": 121.36917,
+  "length_km": 0.21,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "孫龍步道",
+  "lat": 24.961472,
+  "lon": 121.363267,
+  "length_km": 0.7,
+  "surface": "水泥",
+  "sac": "hiking"
+ },
+ {
+  "name": "高島縱走(山腰路)",
+  "lat": 24.646237,
+  "lon": 121.241372,
+  "length_km": 1.47,
+  "surface": "泥土",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "高台山登山路線",
+  "lat": 24.6593,
+  "lon": 121.224174,
+  "length_km": 1.29,
+  "surface": "泥土",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "高島縱走(稜線路)",
+  "lat": 24.639857,
+  "lon": 121.246218,
+  "length_km": 3.62,
+  "surface": "泥土",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "逐鹿山登山步道",
+  "lat": 24.835815,
+  "lon": 121.481325,
+  "length_km": 5.42,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "高甫山登山路線",
+  "lat": 24.774484,
+  "lon": 121.216096,
+  "length_km": 1.11,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "光城山登山路線",
+  "lat": 24.783784,
+  "lon": 121.285074,
+  "length_km": 0.44,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "CT101",
+  "lat": 24.798109,
+  "lon": 121.430952,
+  "length_km": 2.97,
+  "surface": null,
+  "sac": "demanding_mountain_hiking"
+ },
+ {
+  "name": "塔曼山步道",
+  "lat": 24.702646,
+  "lon": 121.437564,
+  "length_km": 2.86,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "高義吊橋",
+  "lat": 24.711708,
+  "lon": 121.364297,
+  "length_km": 0.09,
+  "surface": null,
+  "sac": "difficult_alpine_hiking"
+ },
+ {
+  "name": "鷹山登山步道",
+  "lat": 24.711353,
+  "lon": 121.367064,
+  "length_km": 1.42,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "101線林道(廢棄)",
+  "lat": 24.610145,
+  "lon": 121.491499,
+  "length_km": 1.05,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "兩份八古道",
+  "lat": 24.714524,
+  "lon": 121.19321,
+  "length_km": 0.99,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "舊遊樂園廢棄路線",
+  "lat": 24.804447,
+  "lon": 121.245825,
+  "length_km": 0.52,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "巫山步道",
+  "lat": 24.809295,
+  "lon": 121.471594,
+  "length_km": 0.84,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "庫魯山登山路線",
+  "lat": 24.652491,
+  "lon": 121.417953,
+  "length_km": 4.11,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "牛灶山步道",
+  "lat": 24.964975,
+  "lon": 121.364915,
+  "length_km": 0.56,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "小竹坑古道",
+  "lat": 24.808684,
+  "lon": 121.236537,
+  "length_km": 1.99,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "碧龍步道",
+  "lat": 24.962878,
+  "lon": 121.366235,
+  "length_km": 0.35,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "泰崗溫泉步道",
+  "lat": 24.622182,
+  "lon": 121.292365,
+  "length_km": 0.88,
+  "surface": "泥土",
+  "sac": null
+ },
+ {
+  "name": "熊空越嶺步道",
+  "lat": 24.855623,
+  "lon": 121.480723,
+  "length_km": 3.15,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "草嶺山步道",
+  "lat": 24.844823,
+  "lon": 121.297154,
+  "length_km": 1.27,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "打鐵寮古道捷徑",
+  "lat": 24.848148,
+  "lon": 121.311073,
+  "length_km": 0.4,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "油羅山登山路線",
+  "lat": 24.630171,
+  "lon": 121.174433,
+  "length_km": 4.87,
+  "surface": "泥土",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "狂風嶺步道",
+  "lat": 24.747651,
+  "lon": 121.289015,
+  "length_km": 1.72,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "西鶯山步道",
+  "lat": 24.961046,
+  "lon": 121.347287,
+  "length_km": 0.8,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "神龜步道",
+  "lat": 24.961042,
+  "lon": 121.368101,
+  "length_km": 0.45,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "幸福步道",
+  "lat": 24.968118,
+  "lon": 121.349356,
+  "length_km": 0.82,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "嘎色鬧登山路線",
+  "lat": 24.754379,
+  "lon": 121.318312,
+  "length_km": 7.6,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "嘎色鬧登山路線",
+  "lat": 24.770695,
+  "lon": 121.34662,
+  "length_km": 1.37,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "石壁路",
+  "lat": 24.747105,
+  "lon": 121.296793,
+  "length_km": 1.64,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "東湖步道",
+  "lat": 24.96629,
+  "lon": 121.352106,
+  "length_km": 0.38,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "蟾蜍山步道",
+  "lat": 24.849326,
+  "lon": 121.434276,
+  "length_km": 0.78,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "山車廣山登山路線",
+  "lat": 24.767544,
+  "lon": 121.484707,
+  "length_km": 4.98,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "福人登山步道",
+  "lat": 24.888067,
+  "lon": 121.156601,
+  "length_km": 3.61,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "茶亭古道",
+  "lat": 24.706555,
+  "lon": 121.133945,
+  "length_km": 0.58,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "香艽古道",
+  "lat": 24.830418,
+  "lon": 121.280615,
+  "length_km": 0.66,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "十一指古道",
+  "lat": 24.842364,
+  "lon": 121.278353,
+  "length_km": 0.32,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "五寮尖攻頂左線",
+  "lat": 24.876301,
+  "lon": 121.365351,
+  "length_km": 0.16,
+  "surface": "未鋪面",
+  "sac": "demanding_mountain_hiking"
+ },
+ {
+  "name": "濟公廟上稜線(溼滑)",
+  "lat": 24.878932,
+  "lon": 121.374256,
+  "length_km": 0.39,
+  "surface": "未鋪面",
+  "sac": null
+ },
+ {
+  "name": "雞冠尖稜線步道",
+  "lat": 24.876314,
+  "lon": 121.371211,
+  "length_km": 0.13,
+  "surface": "未鋪面",
+  "sac": "demanding_mountain_hiking"
+ },
+ {
+  "name": "2號攀岩繩索30米",
+  "lat": 24.875653,
+  "lon": 121.369632,
+  "length_km": 0.02,
+  "surface": "未鋪面",
+  "sac": "demanding_mountain_hiking"
+ },
+ {
+  "name": "峭壁雄風岩壁路線",
+  "lat": 24.875399,
+  "lon": 121.369536,
+  "length_km": 0.09,
+  "surface": "未鋪面",
+  "sac": "demanding_mountain_hiking"
+ },
+ {
+  "name": "峭壁雄風攀岩繩索",
+  "lat": 24.875422,
+  "lon": 121.369213,
+  "length_km": 0.02,
+  "surface": "未鋪面",
+  "sac": "demanding_mountain_hiking"
+ },
+ {
+  "name": "五寮尖步道",
+  "lat": 24.875616,
+  "lon": 121.367731,
+  "length_km": 0.4,
+  "surface": "未鋪面",
+  "sac": "demanding_mountain_hiking"
+ },
+ {
+  "name": "梯子",
+  "lat": 24.876822,
+  "lon": 121.365583,
+  "length_km": 0.01,
+  "surface": null,
+  "sac": "hiking"
+ },
+ {
+  "name": "大東坑山與石光古道間登山路線",
+  "lat": 24.820059,
+  "lon": 121.130757,
+  "length_km": 1.06,
+  "surface": "泥土",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "CT105-1",
+  "lat": 24.794145,
+  "lon": 121.441252,
+  "length_km": 1.24,
+  "surface": null,
+  "sac": "demanding_mountain_hiking"
+ },
+ {
+  "name": "組合山登山步道",
+  "lat": 24.84046,
+  "lon": 121.452721,
+  "length_km": 2.69,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "谷燕瀑布步道",
+  "lat": 24.624965,
+  "lon": 121.122397,
+  "length_km": 0.53,
+  "surface": "未鋪面",
+  "sac": null
+ },
+ {
+  "name": "石雲步道",
+  "lat": 24.982514,
+  "lon": 121.366052,
+  "length_km": 0.73,
+  "surface": "泥土",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "巴博庫魯山徑",
+  "lat": 24.667562,
+  "lon": 121.480616,
+  "length_km": 4.7,
+  "surface": "泥土",
+  "sac": null
+ },
+ {
+  "name": "連接步道",
+  "lat": 24.818097,
+  "lon": 121.450227,
+  "length_km": 0.29,
+  "surface": "碎石",
+  "sac": null
+ },
+ {
+  "name": "大湖頂山步道",
+  "lat": 24.994789,
+  "lon": 121.376789,
+  "length_km": 0.56,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "二坑步道",
+  "lat": 24.963353,
+  "lon": 121.36141,
+  "length_km": 0.45,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "北臨步道",
+  "lat": 24.966048,
+  "lon": 121.357168,
+  "length_km": 0.63,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "逃學步道",
+  "lat": 24.683957,
+  "lon": 121.138901,
+  "length_km": 0.43,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "羅山林道上線",
+  "lat": 24.620597,
+  "lon": 121.216672,
+  "length_km": 4.86,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "高坡彩虹瀑布步道",
+  "lat": 24.76733,
+  "lon": 121.349342,
+  "length_km": 0.48,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "峭壁雄風岩稜路線",
+  "lat": 24.875964,
+  "lon": 121.37012,
+  "length_km": 0.12,
+  "surface": "未鋪面",
+  "sac": "demanding_mountain_hiking"
+ },
+ {
+  "name": "五寮尖登山路線(市府路線)",
+  "lat": 24.880108,
+  "lon": 121.3734,
+  "length_km": 0.06,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "魯壁山步道",
+  "lat": 24.665261,
+  "lon": 121.276207,
+  "length_km": 0.64,
+  "surface": "泥土",
+  "sac": "hiking"
+ },
+ {
+  "name": "逐鹿山O型越嶺古道",
+  "lat": 24.853824,
+  "lon": 121.487018,
+  "length_km": 1.15,
+  "surface": "large-scale_collapse",
+  "sac": "demanding_alpine_hiking"
+ },
+ {
+  "name": "110線林道(崩塌無法穿越)",
+  "lat": 24.662681,
+  "lon": 121.483182,
+  "length_km": 0.44,
+  "surface": "泥土",
+  "sac": "difficult_alpine_hiking"
+ },
+ {
+  "name": "溪櫻步道",
+  "lat": 24.812373,
+  "lon": 121.259279,
+  "length_km": 0.9,
+  "surface": "未鋪面",
+  "sac": null
+ },
+ {
+  "name": "石崎步道",
+  "lat": 24.852206,
+  "lon": 121.17178,
+  "length_km": 0.42,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "妙音寺步道",
+  "lat": 24.973475,
+  "lon": 121.365385,
+  "length_km": 0.57,
+  "surface": "未鋪面",
+  "sac": null
+ },
+ {
+  "name": "長壽步道",
+  "lat": 24.959895,
+  "lon": 121.349793,
+  "length_km": 0.58,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "總裁步道",
+  "lat": 24.813134,
+  "lon": 121.258692,
+  "length_km": 0.35,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "峭壁雄風第三路徑",
+  "lat": 24.875574,
+  "lon": 121.369572,
+  "length_km": 0.03,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "古部落廢棄聯絡道",
+  "lat": 24.638124,
+  "lon": 121.38983,
+  "length_km": 7.49,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "紫竹林登山步道",
+  "lat": 24.968744,
+  "lon": 121.491349,
+  "length_km": 0.39,
+  "surface": "泥土",
+  "sac": "hiking"
+ },
+ {
+  "name": "景春步道支線",
+  "lat": 24.81274,
+  "lon": 121.235789,
+  "length_km": 0.6,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "李棟山步道",
+  "lat": 24.691358,
+  "lon": 121.305887,
+  "length_km": 1.14,
+  "surface": "泥土",
+  "sac": null
+ },
+ {
+  "name": "鶯歌石步道",
+  "lat": 24.960222,
+  "lon": 121.359624,
+  "length_km": 0.66,
+  "surface": "泥土",
+  "sac": null
+ },
+ {
+  "name": "柳杉林步道",
+  "lat": 24.878987,
+  "lon": 121.462337,
+  "length_km": 0.13,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "往圖書館曁資訊中心步道",
+  "lat": 24.943105,
+  "lon": 121.369352,
+  "length_km": 0.11,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "永吉公園步道",
+  "lat": 24.961599,
+  "lon": 121.335104,
+  "length_km": 0.54,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "觀日坪古道",
+  "lat": 24.756709,
+  "lon": 121.109862,
+  "length_km": 2.62,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "飛鳳古道",
+  "lat": 24.763081,
+  "lon": 121.157342,
+  "length_km": 0.19,
+  "surface": "水泥",
+  "sac": null
+ },
+ {
+  "name": "親子峰步道",
+  "lat": 24.818371,
+  "lon": 121.410345,
+  "length_km": 0.17,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "景春步道",
+  "lat": 24.811073,
+  "lon": 121.232101,
+  "length_km": 1.03,
+  "surface": null,
+  "sac": "hiking"
+ },
+ {
+  "name": "那羅山登山路線",
+  "lat": 24.685769,
+  "lon": 121.242377,
+  "length_km": 1.04,
+  "surface": "泥土",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "高島縱走",
+  "lat": 24.650935,
+  "lon": 121.23281,
+  "length_km": 1.55,
+  "surface": "泥土",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "打鐵寮古道",
+  "lat": 24.845182,
+  "lon": 121.311505,
+  "length_km": 1.4,
+  "surface": null,
+  "sac": "hiking"
+ },
+ {
+  "name": "鶯歌石山路徑",
+  "lat": 24.960064,
+  "lon": 121.358938,
+  "length_km": 0.05,
+  "surface": "泥土",
+  "sac": null
+ },
+ {
+  "name": "六畜古道",
+  "lat": 24.755884,
+  "lon": 121.234178,
+  "length_km": 1.19,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "楊梅保甲古道",
+  "lat": 24.887278,
+  "lon": 121.166297,
+  "length_km": 1.45,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "中坑山登山山徑",
+  "lat": 24.978131,
+  "lon": 121.381612,
+  "length_km": 0.98,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "親子峰山徑(艱難路線)",
+  "lat": 24.820981,
+  "lon": 121.413561,
+  "length_km": 1.49,
+  "surface": "未鋪面",
+  "sac": null
+ },
+ {
+  "name": "合脗頭山登山路線",
+  "lat": 24.800058,
+  "lon": 121.389851,
+  "length_km": 0.3,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "街口溪生態步道",
+  "lat": 24.881228,
+  "lon": 121.296828,
+  "length_km": 0.46,
+  "surface": "水泥",
+  "sac": null
+ },
+ {
+  "name": "大高坑山山徑",
+  "lat": 24.985127,
+  "lon": 121.388784,
+  "length_km": 0.07,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "橫坑子山登山路線",
+  "lat": 24.98767,
+  "lon": 121.398342,
+  "length_km": 0.58,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "羅屋窩步道",
+  "lat": 24.756551,
+  "lon": 121.116843,
+  "length_km": 0.9,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "田寮山.毬子山小徑",
+  "lat": 24.689472,
+  "lon": 121.119547,
+  "length_km": 1.31,
+  "surface": null,
+  "sac": "hiking"
+ },
+ {
+  "name": "尖石山相思園路線(私地封閉)",
+  "lat": 24.707879,
+  "lon": 121.226601,
+  "length_km": 0.24,
+  "surface": "泥土",
+  "sac": null
+ },
+ {
+  "name": "那羅山煤源山登山路線",
+  "lat": 24.696124,
+  "lon": 121.248405,
+  "length_km": 2.18,
+  "surface": "泥土",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "尖石山比麟山步道",
+  "lat": 24.701779,
+  "lon": 121.240832,
+  "length_km": 3.04,
+  "surface": "泥土",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "新梅小徑",
+  "lat": 24.91791,
+  "lon": 121.14468,
+  "length_km": 0.07,
+  "surface": null,
+  "sac": "hiking"
+ },
+ {
+  "name": "秀才窩幹線楊心國小河堤步道",
+  "lat": 24.911775,
+  "lon": 121.143129,
+  "length_km": 0.51,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "腰繞路",
+  "lat": 24.8235,
+  "lon": 121.427353,
+  "length_km": 0.8,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "南八五山登山路線",
+  "lat": 24.705231,
+  "lon": 121.275851,
+  "length_km": 0.16,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "枕頭山西南峰登山路線",
+  "lat": 24.808053,
+  "lon": 121.330308,
+  "length_km": 0.54,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "雪霧鬧山路線",
+  "lat": 24.744154,
+  "lon": 121.364222,
+  "length_km": 0.23,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "三層山登山路線",
+  "lat": 24.862703,
+  "lon": 121.309059,
+  "length_km": 0.8,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "田美山登山路徑",
+  "lat": 24.798911,
+  "lon": 121.326495,
+  "length_km": 0.34,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "水井石門水庫三角補點探勘路徑",
+  "lat": 24.817896,
+  "lon": 121.270015,
+  "length_km": 0.16,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "八角塘土地公廟步道",
+  "lat": 24.920893,
+  "lon": 121.194064,
+  "length_km": 0.03,
+  "surface": null,
+  "sac": "hiking"
+ },
+ {
+  "name": "高義蘭山登山路線",
+  "lat": 24.705798,
+  "lon": 121.335662,
+  "length_km": 0.48,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "北大尖湖路徑",
+  "lat": 24.914697,
+  "lon": 121.318933,
+  "length_km": 0.14,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "合流山登山路線",
+  "lat": 24.804176,
+  "lon": 121.368174,
+  "length_km": 0.16,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "娘子坑山(山豬湖)登山步道",
+  "lat": 24.90295,
+  "lon": 121.305505,
+  "length_km": 0.46,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "娘子坑山(旭橋路線)山徑",
+  "lat": 24.902081,
+  "lon": 121.306417,
+  "length_km": 0.08,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "新柑枰山-谷倉角",
+  "lat": 24.808661,
+  "lon": 121.286178,
+  "length_km": 1.46,
+  "surface": "泥土",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "大鼓亭步道",
+  "lat": 24.791211,
+  "lon": 121.210595,
+  "length_km": 0.31,
+  "surface": "未鋪面",
+  "sac": null
+ },
+ {
+  "name": "煤源山登山路線",
+  "lat": 24.702429,
+  "lon": 121.257645,
+  "length_km": 1.29,
+  "surface": "泥土",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "鹿彭沿稜",
+  "lat": 24.736147,
+  "lon": 121.137424,
+  "length_km": 1.11,
+  "surface": "泥土",
+  "sac": null
+ },
+ {
+  "name": "竹崙山山徑",
+  "lat": 24.90843,
+  "lon": 121.456216,
+  "length_km": 0.01,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "塔曼山路線",
+  "lat": 24.714409,
+  "lon": 121.446326,
+  "length_km": 2.19,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "上切稜線登比麟山捷徑",
+  "lat": 24.705578,
+  "lon": 121.233952,
+  "length_km": 0.12,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "赤柯山步道",
+  "lat": 24.743538,
+  "lon": 121.199035,
+  "length_km": 0.63,
+  "surface": null,
+  "sac": "hiking"
+ },
+ {
+  "name": "鳥嘴下山登山路線",
+  "lat": 24.71531,
+  "lon": 121.288632,
+  "length_km": 0.18,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "拉拉山步道",
+  "lat": 24.711302,
+  "lon": 121.439681,
+  "length_km": 0.09,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "東穗山登山路線",
+  "lat": 24.656212,
+  "lon": 121.270145,
+  "length_km": 1.03,
+  "surface": "泥土",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "大東坑山登山路線",
+  "lat": 24.8218,
+  "lon": 121.125712,
+  "length_km": 0.16,
+  "surface": "泥土",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "沙坑山西北稜線",
+  "lat": 24.740933,
+  "lon": 121.144884,
+  "length_km": 0.24,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "茄苳窩山東稜線",
+  "lat": 24.752131,
+  "lon": 121.134255,
+  "length_km": 0.35,
+  "surface": "泥土",
+  "sac": null
+ },
+ {
+  "name": "南華橋登山徑",
+  "lat": 24.752988,
+  "lon": 121.136292,
+  "length_km": 0.45,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "茄苳窩山西稜線",
+  "lat": 24.752054,
+  "lon": 121.129935,
+  "length_km": 0.71,
+  "surface": "泥土",
+  "sac": null
+ },
+ {
+  "name": "鬱杉山登山路線",
+  "lat": 24.805993,
+  "lon": 121.107072,
+  "length_km": 0.23,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "新潮嶺步道",
+  "lat": 24.99403,
+  "lon": 121.37194,
+  "length_km": 0.24,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "繩索",
+  "lat": 24.87539,
+  "lon": 121.369519,
+  "length_km": 0.02,
+  "surface": "未鋪面",
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "糯米橋",
+  "lat": 24.68944,
+  "lon": 121.13951,
+  "length_km": 0.01,
+  "surface": null,
+  "sac": "hiking"
+ },
+ {
+  "name": "巨木步道",
+  "lat": 24.711199,
+  "lon": 121.440167,
+  "length_km": 0.08,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "打鐵寮古道(龍過脈)",
+  "lat": 24.847328,
+  "lon": 121.304186,
+  "length_km": 0.44,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "五溪縱走線",
+  "lat": 24.849908,
+  "lon": 121.312205,
+  "length_km": 1.1,
+  "surface": null,
+  "sac": "hiking"
+ },
+ {
+  "name": "白石山主稜",
+  "lat": 24.851555,
+  "lon": 121.316615,
+  "length_km": 0.62,
+  "surface": null,
+  "sac": "hiking"
+ },
+ {
+  "name": "小楊梅步道",
+  "lat": 24.886169,
+  "lon": 121.146906,
+  "length_km": 0.83,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "鷹山東峰登山路線",
+  "lat": 24.710425,
+  "lon": 121.384619,
+  "length_km": 0.31,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "尖筆窩山登山路線",
+  "lat": 24.67577,
+  "lon": 121.141775,
+  "length_km": 0.2,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "三層山南峰登山路線",
+  "lat": 24.859863,
+  "lon": 121.306608,
+  "length_km": 0.44,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "金山面山西峰登山路線",
+  "lat": 24.871392,
+  "lon": 121.32203,
+  "length_km": 0.27,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "金面山北峰登山路線",
+  "lat": 24.87067,
+  "lon": 121.332933,
+  "length_km": 0.38,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "優霞雲登山路線",
+  "lat": 24.821201,
+  "lon": 121.380464,
+  "length_km": 0.08,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "牛角山北峰登山路線",
+  "lat": 24.788213,
+  "lon": 121.350367,
+  "length_km": 0.28,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "嘎色鬧山東南峰登山路線",
+  "lat": 24.763293,
+  "lon": 121.341376,
+  "length_km": 0.13,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "嘎色鬧山東峰登山路線",
+  "lat": 24.766876,
+  "lon": 121.336709,
+  "length_km": 0.35,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "新興山登山路線",
+  "lat": 24.640275,
+  "lon": 121.411133,
+  "length_km": 1.29,
+  "surface": null,
+  "sac": "mountain_hiking"
+ },
+ {
+  "name": "(溪床路徑, 不定)",
+  "lat": 24.650495,
+  "lon": 121.204722,
+  "length_km": 0.1,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "枕頭山東峰陡峭上山捷徑",
+  "lat": 24.813258,
+  "lon": 121.343394,
+  "length_km": 0.08,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "939峰南稜線",
+  "lat": 24.866543,
+  "lon": 121.464991,
+  "length_km": 0.93,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "高遶溪古圳步道",
+  "lat": 24.799887,
+  "lon": 121.283238,
+  "length_km": 1.44,
+  "surface": null,
+  "sac": null
+ },
+ {
+  "name": "CT103",
+  "lat": 24.790158,
+  "lon": 121.447837,
+  "length_km": 1.37,
+  "surface": null,
+  "sac": "demanding_mountain_hiking"
+ },
+ {
+  "name": "CT102",
+  "lat": 24.803357,
+  "lon": 121.438416,
+  "length_km": 0.82,
+  "surface": null,
+  "sac": "demanding_mountain_hiking"
+ },
+ {
+  "name": "往鬱杉山步道",
+  "lat": 24.802954,
+  "lon": 121.10575,
+  "length_km": 0.65,
+  "surface": "泥土",
+  "sac": null
+ },
+ {
+  "name": "石厝坑山西峰新路線(2026)",
+  "lat": 24.857074,
+  "lon": 121.309019,
+  "length_km": 0.6,
+  "surface": "泥土",
+  "sac": "demanding_mountain_hiking"
+ },
+ {
+  "name": "往血藤花徑",
+  "lat": 24.925483,
+  "lon": 121.342522,
+  "length_km": 0.14,
+  "surface": "泥土",
   "sac": null
  }
 ]

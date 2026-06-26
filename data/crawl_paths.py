@@ -65,13 +65,16 @@ def tiles():
 
 def fetch_tile(bbox):
     s, w, n, e = bbox
-    q = f'[out:json][timeout:80];way["highway"="path"]["name"]({s},{w},{n},{e});out geom;'
+    q = f'[out:json][timeout:120];way["highway"="path"]["name"]({s},{w},{n},{e});out geom;'
     for url in MIRRORS:
         try:
-            out = subprocess.run(["curl", "-s", "--max-time", "100", "-X", "POST", url,
+            out = subprocess.run(["curl", "-s", "--max-time", "140", "-X", "POST", url,
                                   "--data-urlencode", "data=" + q],
-                                 capture_output=True, timeout=110)
+                                 capture_output=True, timeout=150)
             data = json.loads(out.stdout.decode("utf-8"))
+            # Overpass 伺服器端逾時/錯誤會回 200＋空 elements＋remark → 換下一個鏡像重抓
+            if data.get("remark"):
+                continue
             return [e2 for e2 in data.get("elements", []) if e2["type"] == "way" and e2.get("geometry")]
         except Exception:  # noqa: BLE001
             continue
