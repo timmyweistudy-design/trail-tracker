@@ -103,10 +103,11 @@ def make_trail(*, source, sid, name, difficulty=None, length_km=None,
                alt_high=None, alt_low=None, pave=None, tour=None, best_season=None,
                position=None, system=None, admin=None, admin_phone=None, permit=None,
                transport=None, entrances=None, guide=None, url=None,
-               family_override=None, difficulty_estimated=False, geometry=None):
+               family_override=None, difficulty_estimated=False, geometry=None, ascent_override=None):
     """所有來源共用的正規化器，輸出統一的步道結構。"""
     entrances = entrances or []
-    ascent = (alt_high - alt_low) if (alt_high is not None and alt_low is not None) else None
+    ascent = ascent_override if ascent_override is not None else \
+        ((alt_high - alt_low) if (alt_high is not None and alt_low is not None) else None)
     family = family_override if family_override is not None else \
         is_family_friendly(difficulty, length_km, pave, guide)
     label = DIFF_LABEL.get(difficulty, "未分級")
@@ -249,6 +250,28 @@ def grade_by_length(km):
     return 5          # 25km 以上、需多日 → 困難級
 
 
+# 依累積爬升估難度（linng 與長度取較難者）；上限第5級
+def grade_by_ascent(asc):
+    if asc is None:
+        return None
+    if asc < 150:
+        return 1
+    if asc < 400:
+        return 2
+    if asc < 800:
+        return 3
+    if asc < 1500:
+        return 4
+    return 5
+
+
+# enrich_elevation.py 產生的沿線爬升 {trail_id: ascent_m}
+OSM_ASCENT = {}
+_osm_asc_file = HERE / "osm_ascent.json"
+if _osm_asc_file.exists():
+    OSM_ASCENT = json.loads(_osm_asc_file.read_text(encoding="utf-8"))
+
+
 # 由 enrich_osm.py 產生的長度快取 {relation_id: km}
 OSM_LENGTHS = {}
 _osm_len_file = HERE / "osm_lengths.json"
@@ -285,7 +308,8 @@ def map_osm(e):
         OSM_LENGTHS_OVERRIDE = None
     ent = [{"lat": round(lat, 6), "lon": round(lon, 6), "height": None, "memo": "步道範圍中心"}]
     length_km = OSM_LENGTHS_OVERRIDE or OSM_LENGTHS.get(e.get("id")) or _osm_distance_km(t)
-    diff = grade_by_length(length_km)
+    asc = OSM_ASCENT.get(f"osm-{e.get('id')}")
+    diff = max(grade_by_length(length_km) or 1, grade_by_ascent(asc) or 1) if (length_km or asc) else None
 
     # OSM 多無完整介紹 → 用既有標籤拼出簡介
     guide = t.get("description") or ""
@@ -308,7 +332,7 @@ def map_osm(e):
         length_km=length_km,
         position=nearest_county(lat, lon),
         system=t.get("network"), admin=t.get("operator"),
-        entrances=ent, guide=guide,
+        entrances=ent, guide=guide, ascent_override=asc,
         url=t.get("url") or t.get("website"), geometry=geom)
 
 
@@ -332,7 +356,8 @@ def map_osm_path(p):
     if not (lat and 21 < lat < 26.5 and 118 < lon < 122.5):
         return None
     length_km = p.get("length_km")
-    diff = grade_by_length(length_km)
+    asc = OSM_ASCENT.get(f"osm_path-{p['name']}-{round(lat, 4)}")
+    diff = max(grade_by_length(length_km) or 1, grade_by_ascent(asc) or 1) if (length_km or asc) else None
     sac_floor = SAC_LEVEL.get(p.get("sac"))
     if sac_floor:
         diff = max(diff or 1, sac_floor)
@@ -341,7 +366,7 @@ def map_osm_path(p):
     return make_trail(
         source="osm_path", sid=f"{p['name']}-{round(lat,4)}", name=p["name"],
         difficulty=diff, difficulty_estimated=True,
-        length_km=length_km, pave=pave,
+        length_km=length_km, pave=pave, ascent_override=asc,
         position=nearest_county(lat, lon),
         entrances=[{"lat": round(lat, 6), "lon": round(lon, 6), "height": None, "memo": "步道範圍中心"}],
         guide=guide, geometry=p.get("lines"))
