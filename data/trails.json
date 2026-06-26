@@ -6641,41 +6641,6 @@
     "url": null
   },
   {
-    "id": "osm-7394524",
-    "source": "osm",
-    "name": "桃山瀑布步道",
-    "difficulty": 2,
-    "difficulty_label": "大眾(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 4.25,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "新竹縣",
-    "position": "新竹縣",
-    "system": "nwn",
-    "admin": "雪霸國家公園",
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.405118,
-        "lon": 121.305395,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.405118,
-    "lon": 121.305395,
-    "guide": "步道系統：國家級",
-    "url": null
-  },
-  {
     "id": "osm-7411350",
     "source": "osm",
     "name": "康樂山親山步道",
@@ -7451,78 +7416,6 @@
     "lat": 24.19074,
     "lon": 121.498788,
     "guide": "步道系統：國家級",
-    "url": null
-  },
-  {
-    "id": "osm-7420691",
-    "source": "osm",
-    "name": "聖母登山步道",
-    "difficulty": 2,
-    "difficulty_label": "大眾(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 4.01,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "宜蘭縣",
-    "position": "宜蘭縣",
-    "system": "rwn",
-    "admin": "林業及自然保育署宜蘭分署",
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.843787,
-        "lon": 121.737669,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.843787,
-    "lon": 121.737669,
-    "guide": "步道系統：區域級",
-    "url": null,
-    "wiki_extract": "聖母登山步道，起點為台灣宜蘭縣礁溪鄉五峰旗瀑布風景區，終點為觀景平台。途經天主堂、涼亭、景觀平台及聖母山莊，並為通往三角崙山的中繼站，由林務局轄管。\n",
-    "wiki_url": "https://zh.wikipedia.org/wiki/%E8%81%96%E6%AF%8D%E7%99%BB%E5%B1%B1%E6%AD%A5%E9%81%93"
-  },
-  {
-    "id": "osm-7420718",
-    "source": "osm",
-    "name": "金瓜寮魚蕨步道",
-    "difficulty": 1,
-    "difficulty_label": "親子(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 1.15,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "新北市",
-    "position": "新北市",
-    "system": "rwn",
-    "admin": "羅東林區管理處",
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.901316,
-        "lon": 121.674835,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.901316,
-    "lon": 121.674835,
-    "guide": "步道系統：區域級",
     "url": null
   },
   {
@@ -8330,41 +8223,6 @@
     "lat": 24.980823,
     "lon": 121.575293,
     "guide": "步道系統：地方級",
-    "url": null
-  },
-  {
-    "id": "osm-7437329",
-    "source": "osm",
-    "name": "翠峰湖環山步道",
-    "difficulty": 2,
-    "difficulty_label": "大眾(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 3.85,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "宜蘭縣",
-    "position": "宜蘭縣",
-    "system": "rwn",
-    "admin": "林業及自然保育署宜蘭分署",
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.516079,
-        "lon": 121.605102,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.516079,
-    "lon": 121.605102,
-    "guide": "步道系統：區域級",
     "url": null
   },
   {
@@ -9770,41 +9628,6 @@
     "url": null
   },
   {
-    "id": "osm-7625011",
-    "source": "osm",
-    "name": "福巴越嶺國家步道",
-    "difficulty": 4,
-    "difficulty_label": "挑戰(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 17.34,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "宜蘭縣",
-    "position": "宜蘭縣",
-    "system": "nwn",
-    "admin": "林業及自然保育署",
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.742591,
-        "lon": 121.472184,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.742591,
-    "lon": 121.472184,
-    "guide": "有大型崩塌預計2019-12-31開放\n步道系統：國家級",
-    "url": null
-  },
-  {
     "id": "osm-7642222",
     "source": "osm",
     "name": "福州山步道",
@@ -9941,76 +9764,6 @@
     ],
     "lat": 24.792862,
     "lon": 120.983027,
-    "guide": "步道系統：地方級",
-    "url": null
-  },
-  {
-    "id": "osm-7794015",
-    "source": "osm",
-    "name": "虎頭山步道",
-    "difficulty": 1,
-    "difficulty_label": "親子(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 1.78,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "花蓮縣",
-    "position": "花蓮縣",
-    "system": "lwn",
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 23.498209,
-        "lon": 121.348109,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 23.498209,
-    "lon": 121.348109,
-    "guide": "步道系統：地方級",
-    "url": null
-  },
-  {
-    "id": "osm-7796360",
-    "source": "osm",
-    "name": "拳頭姆自然步道",
-    "difficulty": 1,
-    "difficulty_label": "親子(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 1.26,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "宜蘭縣",
-    "position": "宜蘭縣",
-    "system": "lwn",
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.657522,
-        "lon": 121.612236,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.657522,
-    "lon": 121.612236,
     "guide": "步道系統：地方級",
     "url": null
   },
@@ -10960,41 +10713,6 @@
     "url": null
   },
   {
-    "id": "osm-8653309",
-    "source": "osm",
-    "name": "八仙山主峰步道",
-    "difficulty": 3,
-    "difficulty_label": "進階(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 5.6,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "臺中市",
-    "position": "臺中市",
-    "system": "rwn",
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.171554,
-        "lon": 121.010554,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.171554,
-    "lon": 121.010554,
-    "guide": "步道系統：區域級",
-    "url": null
-  },
-  {
     "id": "osm-8653350",
     "source": "osm",
     "name": "德芙蘭生態步道",
@@ -11028,152 +10746,6 @@
     "lon": 120.973979,
     "guide": "步道系統：區域級",
     "url": null
-  },
-  {
-    "id": "osm-8653351",
-    "source": "osm",
-    "name": "德芙蘭步道",
-    "difficulty": 3,
-    "difficulty_label": "進階(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 5.01,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "臺中市",
-    "position": "臺中市",
-    "system": "rwn",
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.177534,
-        "lon": 120.954633,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.177534,
-    "lon": 120.954633,
-    "guide": "步道系統：區域級",
-    "url": null
-  },
-  {
-    "id": "osm-8653352",
-    "source": "osm",
-    "name": "東卯山步道",
-    "difficulty": 3,
-    "difficulty_label": "進階(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 5.84,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "臺中市",
-    "position": "臺中市",
-    "system": "rwn",
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.180545,
-        "lon": 120.946931,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.180545,
-    "lon": 120.946931,
-    "guide": "步道系統：區域級",
-    "url": null,
-    "wiki_extract": "谷關七雄，係指臺灣中部谷關一帶的七座中級山，即八仙山、馬崙山、屋我尾山、波津加山、東卯山、白毛山和唐麻丹山，由於山勢雄壯，高度落差與路線長度皆有一定難度，因而得名。此七座山皆屬農業部林業及自然保育署臺中分署轄區，但入山皆不須辦理入山證。除了八仙山以外，其餘六座山皆在參山國家風景區的梨山風景區範圍內。\n",
-    "wiki_url": "https://zh.wikipedia.org/wiki/%E8%B0%B7%E9%97%9C%E4%B8%83%E9%9B%84"
-  },
-  {
-    "id": "osm-8653365",
-    "source": "osm",
-    "name": "屋我尾山步道",
-    "difficulty": 3,
-    "difficulty_label": "進階(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 6.22,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "臺中市",
-    "position": "臺中市",
-    "system": "rwn",
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.209354,
-        "lon": 120.981211,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.209354,
-    "lon": 120.981211,
-    "guide": "步道系統：區域級",
-    "url": null,
-    "wiki_extract": "谷關七雄，係指臺灣中部谷關一帶的七座中級山，即八仙山、馬崙山、屋我尾山、波津加山、東卯山、白毛山和唐麻丹山，由於山勢雄壯，高度落差與路線長度皆有一定難度，因而得名。此七座山皆屬農業部林業及自然保育署臺中分署轄區，但入山皆不須辦理入山證。除了八仙山以外，其餘六座山皆在參山國家風景區的梨山風景區範圍內。\n",
-    "wiki_url": "https://zh.wikipedia.org/wiki/%E8%B0%B7%E9%97%9C%E4%B8%83%E9%9B%84"
-  },
-  {
-    "id": "osm-8653369",
-    "source": "osm",
-    "name": "唐麻丹山步道",
-    "difficulty": 3,
-    "difficulty_label": "進階(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 6.4,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "臺中市",
-    "position": "臺中市",
-    "system": "rwn",
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.162352,
-        "lon": 120.96824,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.162352,
-    "lon": 120.96824,
-    "guide": "步道系統：區域級",
-    "url": null,
-    "wiki_extract": "谷關七雄，係指臺灣中部谷關一帶的七座中級山，即八仙山、馬崙山、屋我尾山、波津加山、東卯山、白毛山和唐麻丹山，由於山勢雄壯，高度落差與路線長度皆有一定難度，因而得名。此七座山皆屬農業部林業及自然保育署臺中分署轄區，但入山皆不須辦理入山證。除了八仙山以外，其餘六座山皆在參山國家風景區的梨山風景區範圍內。\n",
-    "wiki_url": "https://zh.wikipedia.org/wiki/%E8%B0%B7%E9%97%9C%E4%B8%83%E9%9B%84"
   },
   {
     "id": "osm-8653372",
@@ -11244,80 +10816,6 @@
     "lon": 121.007715,
     "guide": "步道系統：區域級",
     "url": null
-  },
-  {
-    "id": "osm-8653382",
-    "source": "osm",
-    "name": "波津加山步道",
-    "difficulty": 2,
-    "difficulty_label": "大眾(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 3.4,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "臺中市",
-    "position": "臺中市",
-    "system": "rwn",
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.217671,
-        "lon": 121.009419,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.217671,
-    "lon": 121.009419,
-    "guide": "步道系統：區域級",
-    "url": null,
-    "wiki_extract": "谷關七雄，係指臺灣中部谷關一帶的七座中級山，即八仙山、馬崙山、屋我尾山、波津加山、東卯山、白毛山和唐麻丹山，由於山勢雄壯，高度落差與路線長度皆有一定難度，因而得名。此七座山皆屬農業部林業及自然保育署臺中分署轄區，但入山皆不須辦理入山證。除了八仙山以外，其餘六座山皆在參山國家風景區的梨山風景區範圍內。\n",
-    "wiki_url": "https://zh.wikipedia.org/wiki/%E8%B0%B7%E9%97%9C%E4%B8%83%E9%9B%84"
-  },
-  {
-    "id": "osm-8653387",
-    "source": "osm",
-    "name": "白毛山步道",
-    "difficulty": 3,
-    "difficulty_label": "進階(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 8.81,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "臺中市",
-    "position": "臺中市",
-    "system": "rwn",
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.164835,
-        "lon": 120.917498,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.164835,
-    "lon": 120.917498,
-    "guide": "步道系統：區域級",
-    "url": null,
-    "wiki_extract": "谷關七雄，係指臺灣中部谷關一帶的七座中級山，即八仙山、馬崙山、屋我尾山、波津加山、東卯山、白毛山和唐麻丹山，由於山勢雄壯，高度落差與路線長度皆有一定難度，因而得名。此七座山皆屬農業部林業及自然保育署臺中分署轄區，但入山皆不須辦理入山證。除了八仙山以外，其餘六座山皆在參山國家風景區的梨山風景區範圍內。\n",
-    "wiki_url": "https://zh.wikipedia.org/wiki/%E8%B0%B7%E9%97%9C%E4%B8%83%E9%9B%84"
   },
   {
     "id": "osm-8653390",
@@ -11425,78 +10923,6 @@
     "url": null
   },
   {
-    "id": "osm-8659405",
-    "source": "osm",
-    "name": "南澳古道",
-    "difficulty": 2,
-    "difficulty_label": "大眾(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 3.47,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "宜蘭縣",
-    "position": "宜蘭縣",
-    "system": "rwn",
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.425572,
-        "lon": 121.700253,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.425572,
-    "lon": 121.700253,
-    "guide": "步道系統：區域級　https://recreation.forest.gov.tw/Trail/RT?typ=3&tr_id=002",
-    "url": null,
-    "wiki_extract": "比亞豪山道，又稱比亞毫古道、舊武塔古道、南澳古道，是臺灣東北部一條早期泰雅族南澳群 與溪頭群（Mnibu'）間遷移的山道，日治時1919年整建為警備道，全徑在今宜蘭縣境內，連通東側南澳鄉南澳村，翻越中央山脈主脊最北段，至西側大同鄉四季村。\n",
-    "wiki_url": "https://zh.wikipedia.org/wiki/%E6%AF%94%E4%BA%9E%E8%B1%AA%E5%B1%B1%E9%81%93"
-  },
-  {
-    "id": "osm-8659421",
-    "source": "osm",
-    "name": "松羅步道",
-    "difficulty": 1,
-    "difficulty_label": "親子(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 1.83,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "宜蘭縣",
-    "position": "宜蘭縣",
-    "system": "rwn",
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.668921,
-        "lon": 121.556706,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.668921,
-    "lon": 121.556706,
-    "guide": "步道系統：區域級　https://recreation.forest.gov.tw/Trail/RT?typ=3&tr_id=006",
-    "url": null
-  },
-  {
     "id": "osm-8799346",
     "source": "osm",
     "name": "圓明寺步道",
@@ -11567,76 +10993,6 @@
     "url": null
   },
   {
-    "id": "osm-9151103",
-    "source": "osm",
-    "name": "檜木原始林步道",
-    "difficulty": 1,
-    "difficulty_label": "親子(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 1.03,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "宜蘭縣",
-    "position": "宜蘭縣",
-    "system": "rwn",
-    "admin": "羅東林區管理處",
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.493941,
-        "lon": 121.535079,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.493941,
-    "lon": 121.535079,
-    "guide": "步道系統：區域級",
-    "url": null
-  },
-  {
-    "id": "osm-9151235",
-    "source": "osm",
-    "name": "見晴懷古步道",
-    "difficulty": 1,
-    "difficulty_label": "親子(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 0.9,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "宜蘭縣",
-    "position": "宜蘭縣",
-    "system": "rwn",
-    "admin": "羅東林業管理處",
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.502029,
-        "lon": 121.524372,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.502029,
-    "lon": 121.524372,
-    "guide": "昔日山地運材軌道\n步道系統：區域級",
-    "url": null
-  },
-  {
     "id": "osm-9296111",
     "source": "osm",
     "name": "奇萊南華",
@@ -11668,41 +11024,6 @@
     ],
     "lat": 24.0447,
     "lon": 121.250679,
-    "guide": "步道系統：國家級",
-    "url": null
-  },
-  {
-    "id": "osm-9299801",
-    "source": "osm",
-    "name": "嘉明湖國家步道",
-    "difficulty": 3,
-    "difficulty_label": "進階(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 14.15,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "臺東縣",
-    "position": "臺東縣",
-    "system": "nwn",
-    "admin": "台東林管處",
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 23.272226,
-        "lon": 121.007971,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 23.272226,
-    "lon": 121.007971,
     "guide": "步道系統：國家級",
     "url": null
   },
@@ -11774,41 +11095,6 @@
     "lat": 25.184338,
     "lon": 121.501399,
     "guide": "步道系統：地方級",
-    "url": null
-  },
-  {
-    "id": "osm-9507391",
-    "source": "osm",
-    "name": "望洋山步道",
-    "difficulty": 1,
-    "difficulty_label": "親子(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 1.23,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "宜蘭縣",
-    "position": "宜蘭縣",
-    "system": "rwn",
-    "admin": "林業及自然保育署宜蘭分署",
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.510916,
-        "lon": 121.612613,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.510916,
-    "lon": 121.612613,
-    "guide": "步道系統：區域級",
     "url": null
   },
   {
@@ -12092,41 +11378,6 @@
     "url": null
   },
   {
-    "id": "osm-9792342",
-    "source": "osm",
-    "name": "劍龍稜 南子吝東南峰(豋山口路線)",
-    "difficulty": null,
-    "difficulty_label": "未分級",
-    "difficulty_estimated": false,
-    "family_friendly": false,
-    "length_km": null,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "基隆市",
-    "position": "基隆市",
-    "system": null,
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 25.11888,
-        "lon": 121.886019,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 25.11888,
-    "lon": 121.886019,
-    "guide": "此為社群（OpenStreetMap）收錄之步道，詳細介紹有限，可點下方連結查更多資訊。",
-    "url": null
-  },
-  {
     "id": "osm-9792349",
     "source": "osm",
     "name": "金礦本山六坑流金探「索」",
@@ -12372,146 +11623,6 @@
     "url": null
   },
   {
-    "id": "osm-10172030",
-    "source": "osm",
-    "name": "台灣山毛櫸步道",
-    "difficulty": 2,
-    "difficulty_label": "大眾(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 3.62,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "宜蘭縣",
-    "position": "宜蘭縣",
-    "system": "rwn",
-    "admin": "林業及自然保育署宜蘭分署",
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.506682,
-        "lon": 121.620375,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.506682,
-    "lon": 121.620375,
-    "guide": "步道系統：區域級",
-    "url": null
-  },
-  {
-    "id": "osm-10172031",
-    "source": "osm",
-    "name": "茂興懷舊步道",
-    "difficulty": 1,
-    "difficulty_label": "親子(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 1.99,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "宜蘭縣",
-    "position": "宜蘭縣",
-    "system": "rwn",
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.478448,
-        "lon": 121.532303,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.478448,
-    "lon": 121.532303,
-    "guide": "步道系統：區域級　https://recreation.forest.gov.tw/Trail/RT?typ=3&tr_id=016",
-    "url": null
-  },
-  {
-    "id": "osm-10172037",
-    "source": "osm",
-    "name": "新寮瀑布步道",
-    "difficulty": 1,
-    "difficulty_label": "親子(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 1.2,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "宜蘭縣",
-    "position": "宜蘭縣",
-    "system": "rwn",
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.603428,
-        "lon": 121.745264,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.603428,
-    "lon": 121.745264,
-    "guide": "步道系統：區域級　https://recreation.forest.gov.tw/Trail/RT?typ=3&tr_id=011",
-    "url": null
-  },
-  {
-    "id": "osm-10172047",
-    "source": "osm",
-    "name": "林美石磐步道",
-    "difficulty": 1,
-    "difficulty_label": "親子(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 1.72,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "宜蘭縣",
-    "position": "宜蘭縣",
-    "system": "rwn",
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.827538,
-        "lon": 121.730779,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.827538,
-    "lon": 121.730779,
-    "guide": "步道系統：區域級　https://recreation.forest.gov.tw/Trail/RT?typ=3&tr_id=008",
-    "url": null
-  },
-  {
     "id": "osm-10189851",
     "source": "osm",
     "name": "淡蘭古道南路",
@@ -12544,76 +11655,6 @@
     "lat": 24.893807,
     "lon": 121.726276,
     "guide": "步道系統：國家級",
-    "url": null
-  },
-  {
-    "id": "osm-10189856",
-    "source": "osm",
-    "name": "礁溪跑馬古道",
-    "difficulty": 3,
-    "difficulty_label": "進階(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 5.08,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "宜蘭縣",
-    "position": "宜蘭縣",
-    "system": "rwn",
-    "admin": "羅東林管處",
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.851515,
-        "lon": 121.776165,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.851515,
-    "lon": 121.776165,
-    "guide": "步道系統：區域級　https://recreation.forest.gov.tw/Trail/RT?typ=3&tr_id=007",
-    "url": null
-  },
-  {
-    "id": "osm-10276125",
-    "source": "osm",
-    "name": "九寮溪自然步道",
-    "difficulty": 2,
-    "difficulty_label": "大眾(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 4.24,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "宜蘭縣",
-    "position": "宜蘭縣",
-    "system": "rwn",
-    "admin": "大同鄉公所",
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.678843,
-        "lon": 121.587432,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.678843,
-    "lon": 121.587432,
-    "guide": "步道系統：區域級",
     "url": null
   },
   {
@@ -13144,216 +12185,6 @@
     "url": null
   },
   {
-    "id": "osm-10741898",
-    "source": "osm",
-    "name": "北得拉曼巨木步道",
-    "difficulty": 2,
-    "difficulty_label": "大眾(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 2.49,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "新竹縣",
-    "position": "新竹縣",
-    "system": "nwn",
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.736906,
-        "lon": 121.286024,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.736906,
-    "lon": 121.286024,
-    "guide": "步道系統：國家級",
-    "url": null
-  },
-  {
-    "id": "osm-10741906",
-    "source": "osm",
-    "name": "五指山登山步道",
-    "difficulty": 2,
-    "difficulty_label": "大眾(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 3.01,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "新竹縣",
-    "position": "新竹縣",
-    "system": null,
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.639528,
-        "lon": 121.091224,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.639528,
-    "lon": 121.091224,
-    "guide": "此為社群（OpenStreetMap）收錄之步道，詳細介紹有限，可點下方連結查更多資訊。",
-    "url": null
-  },
-  {
-    "id": "osm-10741910",
-    "source": "osm",
-    "name": "鳥嘴山登山步道",
-    "difficulty": 2,
-    "difficulty_label": "大眾(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 2.92,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "苗栗縣",
-    "position": "苗栗縣",
-    "system": null,
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.463863,
-        "lon": 120.979984,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.463863,
-    "lon": 120.979984,
-    "guide": "此為社群（OpenStreetMap）收錄之步道，詳細介紹有限，可點下方連結查更多資訊。",
-    "url": null
-  },
-  {
-    "id": "osm-10741919",
-    "source": "osm",
-    "name": "龍過脈森林步道",
-    "difficulty": 2,
-    "difficulty_label": "大眾(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 4.12,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "雲林縣",
-    "position": "雲林縣",
-    "system": "lwn",
-    "admin": "林業及自然保育署南投分署",
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 23.750629,
-        "lon": 120.624326,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 23.750629,
-    "lon": 120.624326,
-    "guide": "步道系統：地方級",
-    "url": null
-  },
-  {
-    "id": "osm-10741928",
-    "source": "osm",
-    "name": "石夢谷步道",
-    "difficulty": 2,
-    "difficulty_label": "大眾(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 4.36,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "嘉義縣",
-    "position": "嘉義縣",
-    "system": null,
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 23.564685,
-        "lon": 120.775796,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 23.564685,
-    "lon": 120.775796,
-    "guide": "此為社群（OpenStreetMap）收錄之步道，詳細介紹有限，可點下方連結查更多資訊。",
-    "url": null
-  },
-  {
-    "id": "osm-10741933",
-    "source": "osm",
-    "name": "四大天王山步道",
-    "difficulty": 2,
-    "difficulty_label": "大眾(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 3.28,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "嘉義縣",
-    "position": "嘉義縣",
-    "system": null,
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 23.509044,
-        "lon": 120.656537,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 23.509044,
-    "lon": 120.656537,
-    "guide": "此為社群（OpenStreetMap）收錄之步道，詳細介紹有限，可點下方連結查更多資訊。",
-    "url": null
-  },
-  {
     "id": "osm-10741941",
     "source": "osm",
     "name": "浸水營古道",
@@ -13389,41 +12220,6 @@
     "url": null,
     "wiki_extract": "浸水營古道，又稱三條崙古道，一般說法起點為屏東縣枋寮水底寮，途經玉泉村、崁頭營、歸化門越過中央山脈後，終點在臺東縣大武，古道長度約47公里，部分路段曾被交通部公路總局納編為縣道198號。現步道路段長15.4公里，為行政院農業委員會林務局規劃之國家步道系統的一部分。\n",
     "wiki_url": "https://zh.wikipedia.org/wiki/%E6%B5%B8%E6%B0%B4%E7%87%9F%E5%8F%A4%E9%81%93"
-  },
-  {
-    "id": "osm-10741943",
-    "source": "osm",
-    "name": "鯉魚山步道",
-    "difficulty": 1,
-    "difficulty_label": "親子(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 1.51,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "臺東縣",
-    "position": "臺東縣",
-    "system": null,
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 22.754007,
-        "lon": 121.142391,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 22.754007,
-    "lon": 121.142391,
-    "guide": "此為社群（OpenStreetMap）收錄之步道，詳細介紹有限，可點下方連結查更多資訊。",
-    "url": null
   },
   {
     "id": "osm-10742618",
@@ -13848,41 +12644,6 @@
     "url": null
   },
   {
-    "id": "osm-11144252",
-    "source": "osm",
-    "name": "都蘭山步道",
-    "difficulty": 2,
-    "difficulty_label": "大眾(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 3.43,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "臺東縣",
-    "position": "臺東縣",
-    "system": null,
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 22.883851,
-        "lon": 121.182323,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 22.883851,
-    "lon": 121.182323,
-    "guide": "此為社群（OpenStreetMap）收錄之步道，詳細介紹有限，可點下方連結查更多資訊。",
-    "url": null
-  },
-  {
     "id": "osm-11150737",
     "source": "osm",
     "name": "青龍山步道",
@@ -14020,76 +12781,6 @@
     "lat": 22.210523,
     "lon": 120.801118,
     "guide": "此為社群（OpenStreetMap）收錄之步道，詳細介紹有限，可點下方連結查更多資訊。",
-    "url": null
-  },
-  {
-    "id": "osm-11292688",
-    "source": "osm",
-    "name": "撒固兒步道",
-    "difficulty": 1,
-    "difficulty_label": "親子(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 1.33,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "花蓮縣",
-    "position": "花蓮縣",
-    "system": "lwn",
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.021144,
-        "lon": 121.577651,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.021144,
-    "lon": 121.577651,
-    "guide": "步道系統：地方級",
-    "url": null
-  },
-  {
-    "id": "osm-11292689",
-    "source": "osm",
-    "name": "佐倉步道",
-    "difficulty": 2,
-    "difficulty_label": "大眾(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 3.87,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "花蓮縣",
-    "position": "花蓮縣",
-    "system": "lwn",
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.018079,
-        "lon": 121.572076,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.018079,
-    "lon": 121.572076,
-    "guide": "步道系統：地方級",
     "url": null
   },
   {
@@ -14583,41 +13274,6 @@
     "url": null
   },
   {
-    "id": "osm-12340708",
-    "source": "osm",
-    "name": "石門山步道",
-    "difficulty": 2,
-    "difficulty_label": "大眾(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 2.06,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "屏東縣",
-    "position": "屏東縣",
-    "system": null,
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 22.109914,
-        "lon": 120.757938,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 22.109914,
-    "lon": 120.757938,
-    "guide": "此為社群（OpenStreetMap）收錄之步道，詳細介紹有限，可點下方連結查更多資訊。",
-    "url": null
-  },
-  {
     "id": "osm-12340764",
     "source": "osm",
     "name": "半屏山步道",
@@ -15003,148 +13659,6 @@
     "url": null
   },
   {
-    "id": "osm-12343502",
-    "source": "osm",
-    "name": "特富野古道",
-    "difficulty": 3,
-    "difficulty_label": "進階(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 6.21,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "嘉義縣",
-    "position": "嘉義縣",
-    "system": null,
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 23.477792,
-        "lon": 120.811664,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 23.477792,
-    "lon": 120.811664,
-    "guide": "此為社群（OpenStreetMap）收錄之步道，詳細介紹有限，可點下方連結查更多資訊。",
-    "url": null,
-    "wiki_extract": "特富野古道位於阿里山森林遊樂區中，舊稱水山古道，最早是由居住在阿里山的鄒族獵人所開闢。日治時期將特富野古道的後段改建為運送林木的水山線鐵路，2001年由林務局嘉義林管處整修為登山健行步道。目前的特富野古道有兩處入口，一端由阿里山鄉和信義鄉交界處的自忠進入，另一端則可以從阿里山特富野部落進入，全長6.3公里。步道前段為舊鐵道，較為平緩，沿途遍植柳杉；後段則是陡下的枕木階梯步道，為闊葉原始森林。\n",
-    "wiki_url": "https://zh.wikipedia.org/wiki/%E7%89%B9%E5%AF%8C%E9%87%8E%E5%8F%A4%E9%81%93"
-  },
-  {
-    "id": "osm-12343503",
-    "source": "osm",
-    "name": "瑞太古道",
-    "difficulty": 2,
-    "difficulty_label": "大眾(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 4.07,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "嘉義縣",
-    "position": "嘉義縣",
-    "system": null,
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 23.540219,
-        "lon": 120.69608,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 23.540219,
-    "lon": 120.69608,
-    "guide": "此為社群（OpenStreetMap）收錄之步道，詳細介紹有限，可點下方連結查更多資訊。",
-    "url": null
-  },
-  {
-    "id": "osm-12343504",
-    "source": "osm",
-    "name": "瑞奮古道",
-    "difficulty": 3,
-    "difficulty_label": "進階(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 5.97,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "嘉義縣",
-    "position": "嘉義縣",
-    "system": null,
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 23.526263,
-        "lon": 120.69296,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 23.526263,
-    "lon": 120.69296,
-    "guide": "此為社群（OpenStreetMap）收錄之步道，詳細介紹有限，可點下方連結查更多資訊。",
-    "url": null
-  },
-  {
-    "id": "osm-12343505",
-    "source": "osm",
-    "name": "土匪山步道",
-    "difficulty": 1,
-    "difficulty_label": "親子(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 0.89,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "嘉義縣",
-    "position": "嘉義縣",
-    "system": null,
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 23.422688,
-        "lon": 120.601337,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 23.422688,
-    "lon": 120.601337,
-    "guide": "此為社群（OpenStreetMap）收錄之步道，詳細介紹有限，可點下方連結查更多資訊。",
-    "url": null
-  },
-  {
     "id": "osm-12343506",
     "source": "osm",
     "name": "社口林場步道",
@@ -15177,76 +13691,6 @@
     "lat": 23.431394,
     "lon": 120.584947,
     "guide": "此為社群（OpenStreetMap）收錄之步道，詳細介紹有限，可點下方連結查更多資訊。",
-    "url": null
-  },
-  {
-    "id": "osm-12343507",
-    "source": "osm",
-    "name": "獨立山步道",
-    "difficulty": 1,
-    "difficulty_label": "親子(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 1.54,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "嘉義縣",
-    "position": "嘉義縣",
-    "system": null,
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 23.539103,
-        "lon": 120.606633,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 23.539103,
-    "lon": 120.606633,
-    "guide": "此為社群（OpenStreetMap）收錄之步道，詳細介紹有限，可點下方連結查更多資訊。",
-    "url": null
-  },
-  {
-    "id": "osm-12391587",
-    "source": "osm",
-    "name": "龍麟山步道",
-    "difficulty": 2,
-    "difficulty_label": "大眾(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 2.97,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "高雄市",
-    "position": "高雄市",
-    "system": "lwn",
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 23.011046,
-        "lon": 120.479602,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 23.011046,
-    "lon": 120.479602,
-    "guide": "步道系統：地方級",
     "url": null
   },
   {
@@ -15320,41 +13764,6 @@
     "url": null
   },
   {
-    "id": "osm-12391591",
-    "source": "osm",
-    "name": "麻荖漏步道",
-    "difficulty": 1,
-    "difficulty_label": "親子(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 1.03,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "臺東縣",
-    "position": "臺東縣",
-    "system": "lwn",
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 23.13098,
-        "lon": 121.343905,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 23.13098,
-    "lon": 121.343905,
-    "guide": "步道系統：地方級",
-    "url": null
-  },
-  {
     "id": "osm-12391592",
     "source": "osm",
     "name": "紅石步道",
@@ -15421,41 +13830,6 @@
     ],
     "lat": 23.198733,
     "lon": 121.034856,
-    "guide": "步道系統：地方級",
-    "url": null
-  },
-  {
-    "id": "osm-12391594",
-    "source": "osm",
-    "name": "大武觀海步道",
-    "difficulty": 1,
-    "difficulty_label": "親子(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 0.94,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "屏東縣",
-    "position": "屏東縣",
-    "system": "lwn",
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 22.357645,
-        "lon": 120.903847,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 22.357645,
-    "lon": 120.903847,
     "guide": "步道系統：地方級",
     "url": null
   },
@@ -16720,43 +15094,6 @@
     "lon": 121.555328,
     "guide": "步道系統：地方級",
     "url": null
-  },
-  {
-    "id": "osm-12628892",
-    "source": "osm",
-    "name": "南澳古道",
-    "difficulty": 2,
-    "difficulty_label": "大眾(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 2.06,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "花蓮縣",
-    "position": "花蓮縣",
-    "system": "lwn",
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 23.402964,
-        "lon": 121.471654,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 23.402964,
-    "lon": 121.471654,
-    "guide": "步道系統：地方級",
-    "url": null,
-    "wiki_extract": "比亞豪山道，又稱比亞毫古道、舊武塔古道、南澳古道，是臺灣東北部一條早期泰雅族南澳群 與溪頭群（Mnibu'）間遷移的山道，日治時1919年整建為警備道，全徑在今宜蘭縣境內，連通東側南澳鄉南澳村，翻越中央山脈主脊最北段，至西側大同鄉四季村。\n",
-    "wiki_url": "https://zh.wikipedia.org/wiki/%E6%AF%94%E4%BA%9E%E8%B1%AA%E5%B1%B1%E9%81%93"
   },
   {
     "id": "osm-12663411",
@@ -18780,13 +17117,13 @@
     "entrances": [
       {
         "lat": 23.506612,
-        "lon": 120.695043,
+        "lon": 120.695024,
         "height": null,
         "memo": "步道範圍中心"
       }
     ],
     "lat": 23.506612,
-    "lon": 120.695043,
+    "lon": 120.695024,
     "guide": "此為社群（OpenStreetMap）收錄之步道，詳細介紹有限，可點下方連結查更多資訊。",
     "url": null
   },
@@ -19243,41 +17580,6 @@
     "lat": 23.962037,
     "lon": 120.88739,
     "guide": "此為社群（OpenStreetMap）收錄之步道，詳細介紹有限，可點下方連結查更多資訊。",
-    "url": null
-  },
-  {
-    "id": "osm-13678172",
-    "source": "osm",
-    "name": "澀水森林步道",
-    "difficulty": 1,
-    "difficulty_label": "親子(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 1.38,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "南投縣",
-    "position": "南投縣",
-    "system": "lwn",
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 23.92925,
-        "lon": 120.917732,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 23.92925,
-    "lon": 120.917732,
-    "guide": "步道系統：地方級",
     "url": null
   },
   {
@@ -19808,41 +18110,6 @@
     "url": null
   },
   {
-    "id": "osm-13752976",
-    "source": "osm",
-    "name": "桃源里森林步道",
-    "difficulty": 1,
-    "difficulty_label": "親子(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 1.49,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "彰化縣",
-    "position": "彰化縣",
-    "system": "lwn",
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.061053,
-        "lon": 120.567969,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.061053,
-    "lon": 120.567969,
-    "guide": "步道系統：地方級",
-    "url": null
-  },
-  {
     "id": "osm-13831889",
     "source": "osm",
     "name": "巴博庫魯山徑",
@@ -19875,76 +18142,6 @@
     "lat": 24.664205,
     "lon": 121.477913,
     "guide": "此為社群（OpenStreetMap）收錄之步道，詳細介紹有限，可點下方連結查更多資訊。",
-    "url": null
-  },
-  {
-    "id": "osm-13831899",
-    "source": "osm",
-    "name": "哈盆越嶺步道",
-    "difficulty": 3,
-    "difficulty_label": "進階(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 6.94,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "宜蘭縣",
-    "position": "宜蘭縣",
-    "system": "rwn",
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.768579,
-        "lon": 121.536498,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.768579,
-    "lon": 121.536498,
-    "guide": "步道系統：區域級",
-    "url": null
-  },
-  {
-    "id": "osm-13831915",
-    "source": "osm",
-    "name": "東滿步道",
-    "difficulty": 3,
-    "difficulty_label": "進階(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 6.75,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "桃園市",
-    "position": "桃園市",
-    "system": "rwn",
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.812848,
-        "lon": 121.430998,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.812848,
-    "lon": 121.430998,
-    "guide": "步道系統：區域級",
     "url": null
   },
   {
@@ -21667,41 +19864,6 @@
     "url": null
   },
   {
-    "id": "osm-14260848",
-    "source": "osm",
-    "name": "塔曼山步道",
-    "difficulty": 2,
-    "difficulty_label": "大眾(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 2.86,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "宜蘭縣",
-    "position": "宜蘭縣",
-    "system": "lwn",
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.702835,
-        "lon": 121.439065,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.702835,
-    "lon": 121.439065,
-    "guide": "步道系統：地方級",
-    "url": null
-  },
-  {
     "id": "osm-14275328",
     "source": "osm",
     "name": "紫微保甲路步道",
@@ -23382,41 +21544,6 @@
     "url": null
   },
   {
-    "id": "osm-14577752",
-    "source": "osm",
-    "name": "鎮西堡巨木群步道",
-    "difficulty": 1,
-    "difficulty_label": "親子(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 1.53,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "新竹縣",
-    "position": "新竹縣",
-    "system": "lwn",
-    "admin": "林業及自然保育署新竹分署",
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.548325,
-        "lon": 121.29148,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.548325,
-    "lon": 121.29148,
-    "guide": "步道系統：地方級",
-    "url": null
-  },
-  {
     "id": "osm-14577753",
     "source": "osm",
     "name": "毒龍潭路線",
@@ -23450,43 +21577,6 @@
     "lon": 121.280011,
     "guide": "步道系統：地方級",
     "url": null
-  },
-  {
-    "id": "osm-14577755",
-    "source": "osm",
-    "name": "霞喀羅國家步道",
-    "difficulty": 4,
-    "difficulty_label": "挑戰(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 20.58,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "新竹縣",
-    "position": "新竹縣",
-    "system": "nwn",
-    "admin": "林業及自然保育署新竹分署",
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.570466,
-        "lon": 121.211515,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.570466,
-    "lon": 121.211515,
-    "guide": "步道系統：國家級",
-    "url": null,
-    "wiki_extract": "霞喀羅古道 是位於台灣新竹縣境內的一條步道，又名石鹿古道 、霞喀羅國家步道。\n",
-    "wiki_url": "https://zh.wikipedia.org/wiki/%E9%9C%9E%E5%96%80%E7%BE%85%E5%8F%A4%E9%81%93"
   },
   {
     "id": "osm-14577756",
@@ -23591,41 +21681,6 @@
     "lat": 22.915962,
     "lon": 120.601795,
     "guide": "步道系統：地方級",
-    "url": null
-  },
-  {
-    "id": "osm-14591179",
-    "source": "osm",
-    "name": "鐵杉林自然步道",
-    "difficulty": 1,
-    "difficulty_label": "親子(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 1.06,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "宜蘭縣",
-    "position": "宜蘭縣",
-    "system": "rwn",
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.495979,
-        "lon": 121.529732,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.495979,
-    "lon": 121.529732,
-    "guide": "步道系統：區域級",
     "url": null
   },
   {
@@ -24002,14 +22057,14 @@
     "transport": {},
     "entrances": [
       {
-        "lat": 24.934504,
-        "lon": 121.558137,
+        "lat": 24.934554,
+        "lon": 121.55816,
         "height": null,
         "memo": "步道範圍中心"
       }
     ],
-    "lat": 24.934504,
-    "lon": 121.558137,
+    "lat": 24.934554,
+    "lon": 121.55816,
     "guide": "步道系統：地方級",
     "url": null
   },
@@ -24360,41 +22415,6 @@
     ],
     "lat": 24.138202,
     "lon": 121.283807,
-    "guide": "步道系統：地方級",
-    "url": null
-  },
-  {
-    "id": "osm-14698658",
-    "source": "osm",
-    "name": "石門山步道",
-    "difficulty": 1,
-    "difficulty_label": "親子(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 1.01,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "花蓮縣",
-    "position": "花蓮縣",
-    "system": "lwn",
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 24.149802,
-        "lon": 121.284037,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 24.149802,
-    "lon": 121.284037,
     "guide": "步道系統：地方級",
     "url": null
   },
@@ -24994,41 +23014,6 @@
     "url": null
   },
   {
-    "id": "osm-14937224",
-    "source": "osm",
-    "name": "塔山步道",
-    "difficulty": 2,
-    "difficulty_label": "大眾(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 3.41,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "嘉義縣",
-    "position": "嘉義縣",
-    "system": null,
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 23.527054,
-        "lon": 120.81343,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 23.527054,
-    "lon": 120.81343,
-    "guide": "此為社群（OpenStreetMap）收錄之步道，詳細介紹有限，可點下方連結查更多資訊。",
-    "url": null
-  },
-  {
     "id": "osm-14951004",
     "source": "osm",
     "name": "小馬武窟山路線",
@@ -25130,41 +23115,6 @@
     ],
     "lat": 24.172869,
     "lon": 121.561241,
-    "guide": "步道系統：地方級",
-    "url": null
-  },
-  {
-    "id": "osm-15081134",
-    "source": "osm",
-    "name": "鈺鼎步道",
-    "difficulty": 1,
-    "difficulty_label": "親子(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 1.93,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "高雄市",
-    "position": "高雄市",
-    "system": "lwn",
-    "admin": "林業及自然保育署",
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 23.08906,
-        "lon": 120.512347,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 23.08906,
-    "lon": 120.512347,
     "guide": "步道系統：地方級",
     "url": null
   },
@@ -26347,14 +24297,14 @@
     "transport": {},
     "entrances": [
       {
-        "lat": 25.109174,
-        "lon": 121.863408,
+        "lat": 25.107207,
+        "lon": 121.864693,
         "height": null,
         "memo": "步道範圍中心"
       }
     ],
-    "lat": 25.109174,
-    "lon": 121.863408,
+    "lat": 25.107207,
+    "lon": 121.864693,
     "guide": "步道系統：地方級",
     "url": null
   },
@@ -26698,13 +24648,13 @@
     "entrances": [
       {
         "lat": 25.157646,
-        "lon": 121.523431,
+        "lon": 121.523408,
         "height": null,
         "memo": "步道範圍中心"
       }
     ],
     "lat": 25.157646,
-    "lon": 121.523431,
+    "lon": 121.523408,
     "guide": "台北天際線第六段 風櫃嘴到淡水。別名：環台北天際線、大台北天際線、環大台北天際線\n路線：風櫃嘴 → 淡水　步道系統：區域級",
     "url": "長距離步道：台北天際線步道施作構想 http://taiwanmt.nchu.edu.tw/2015/download/06-2%E9%BB%83%E7%A6%8F%E6%A3%AE.pdf"
   },
@@ -26873,13 +24823,13 @@
     "entrances": [
       {
         "lat": 25.124158,
-        "lon": 121.420561,
+        "lon": 121.420568,
         "height": null,
         "memo": "步道範圍中心"
       }
     ],
     "lat": 25.124158,
-    "lon": 121.420561,
+    "lon": 121.420568,
     "guide": "台北天際線第七段 淡水到林口。別名：環台北天際線、大台北天際線、環大台北天際線\n路線：淡水 → 林口　步道系統：區域級",
     "url": "長距離步道：台北天際線步道施作構想 http://taiwanmt.nchu.edu.tw/2015/download/06-2%E9%BB%83%E7%A6%8F%E6%A3%AE.pdf"
   },
@@ -27982,41 +25932,6 @@
     "lat": 25.120645,
     "lon": 121.599982,
     "guide": "步道系統：地方級",
-    "url": null
-  },
-  {
-    "id": "osm-17283282",
-    "source": "osm",
-    "name": "石門山步道",
-    "difficulty": 1,
-    "difficulty_label": "親子(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 1.18,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "屏東縣",
-    "position": "屏東縣",
-    "system": null,
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 22.113191,
-        "lon": 120.757962,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 22.113191,
-    "lon": 120.757962,
-    "guide": "此為社群（OpenStreetMap）收錄之步道，詳細介紹有限，可點下方連結查更多資訊。",
     "url": null
   },
   {
@@ -30785,41 +28700,6 @@
     "url": null
   },
   {
-    "id": "osm-18632104",
-    "source": "osm",
-    "name": "嘉南雲峰步道",
-    "difficulty": 2,
-    "difficulty_label": "大眾(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 3.33,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "嘉義縣",
-    "position": "嘉義縣",
-    "system": "rwn",
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 23.607347,
-        "lon": 120.723662,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 23.607347,
-    "lon": 120.723662,
-    "guide": "步道系統：區域級",
-    "url": null
-  },
-  {
     "id": "osm-18632105",
     "source": "osm",
     "name": "清溪步道",
@@ -31468,7 +29348,7 @@
     "best_season": null,
     "region": "嘉義縣",
     "position": "嘉義縣",
-    "system": "lwn",
+    "system": null,
     "admin": null,
     "admin_phone": null,
     "permit": null,
@@ -31476,14 +29356,14 @@
     "entrances": [
       {
         "lat": 23.529723,
-        "lon": 120.69761,
+        "lon": 120.697628,
         "height": null,
         "memo": "步道範圍中心"
       }
     ],
     "lat": 23.529723,
-    "lon": 120.69761,
-    "guide": "步道系統：地方級",
+    "lon": 120.697628,
+    "guide": "此為社群（OpenStreetMap）收錄之步道，詳細介紹有限，可點下方連結查更多資訊。",
     "url": null
   },
   {
@@ -31623,41 +29503,6 @@
     ],
     "lat": 24.176855,
     "lon": 120.99566,
-    "guide": "步道系統：地方級",
-    "url": null
-  },
-  {
-    "id": "osm-18977735",
-    "source": "osm",
-    "name": "撼龍步道",
-    "difficulty": 1,
-    "difficulty_label": "親子(估)",
-    "difficulty_estimated": true,
-    "family_friendly": false,
-    "length_km": 1.78,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "彰化縣",
-    "position": "彰化縣",
-    "system": "lwn",
-    "admin": null,
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 23.907678,
-        "lon": 120.662865,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 23.907678,
-    "lon": 120.662865,
     "guide": "步道系統：地方級",
     "url": null
   },
@@ -32889,41 +30734,6 @@
     "url": null
   },
   {
-    "id": "osm-20827813",
-    "source": "osm",
-    "name": "九九峰森林步道",
-    "difficulty": null,
-    "difficulty_label": "未分級",
-    "difficulty_estimated": false,
-    "family_friendly": false,
-    "length_km": null,
-    "alt_high": null,
-    "alt_low": null,
-    "ascent": null,
-    "pave": null,
-    "tour": null,
-    "best_season": null,
-    "region": "臺中市",
-    "position": "臺中市",
-    "system": "lwn",
-    "admin": "林業及自然保育署南投分署",
-    "admin_phone": null,
-    "permit": null,
-    "transport": {},
-    "entrances": [
-      {
-        "lat": 23.99766,
-        "lon": 120.772426,
-        "height": null,
-        "memo": "步道範圍中心"
-      }
-    ],
-    "lat": 23.99766,
-    "lon": 120.772426,
-    "guide": "步道系統：地方級",
-    "url": null
-  },
-  {
     "id": "osm-20956182",
     "source": "osm",
     "name": "湖桶古道",
@@ -32955,6 +30765,111 @@
     ],
     "lat": 24.934275,
     "lon": 121.756337,
+    "guide": "步道系統：地方級",
+    "url": null
+  },
+  {
+    "id": "osm-21013677",
+    "source": "osm",
+    "name": "南子吝步道",
+    "difficulty": null,
+    "difficulty_label": "未分級",
+    "difficulty_estimated": false,
+    "family_friendly": false,
+    "length_km": null,
+    "alt_high": null,
+    "alt_low": null,
+    "ascent": null,
+    "pave": null,
+    "tour": null,
+    "best_season": null,
+    "region": "基隆市",
+    "position": "基隆市",
+    "system": "lwn",
+    "admin": null,
+    "admin_phone": null,
+    "permit": null,
+    "transport": {},
+    "entrances": [
+      {
+        "lat": 25.120725,
+        "lon": 121.884632,
+        "height": null,
+        "memo": "步道範圍中心"
+      }
+    ],
+    "lat": 25.120725,
+    "lon": 121.884632,
+    "guide": "步道系統：地方級",
+    "url": null
+  },
+  {
+    "id": "osm-21013678",
+    "source": "osm",
+    "name": "劍龍稜路線",
+    "difficulty": null,
+    "difficulty_label": "未分級",
+    "difficulty_estimated": false,
+    "family_friendly": false,
+    "length_km": null,
+    "alt_high": null,
+    "alt_low": null,
+    "ascent": null,
+    "pave": null,
+    "tour": null,
+    "best_season": null,
+    "region": "基隆市",
+    "position": "基隆市",
+    "system": "lwn",
+    "admin": null,
+    "admin_phone": null,
+    "permit": null,
+    "transport": {},
+    "entrances": [
+      {
+        "lat": 25.111815,
+        "lon": 121.875747,
+        "height": null,
+        "memo": "步道範圍中心"
+      }
+    ],
+    "lat": 25.111815,
+    "lon": 121.875747,
+    "guide": "步道系統：地方級",
+    "url": null
+  },
+  {
+    "id": "osm-21017876",
+    "source": "osm",
+    "name": "下撤路線",
+    "difficulty": null,
+    "difficulty_label": "未分級",
+    "difficulty_estimated": false,
+    "family_friendly": false,
+    "length_km": null,
+    "alt_high": null,
+    "alt_low": null,
+    "ascent": null,
+    "pave": null,
+    "tour": null,
+    "best_season": null,
+    "region": "基隆市",
+    "position": "基隆市",
+    "system": "lwn",
+    "admin": null,
+    "admin_phone": null,
+    "permit": null,
+    "transport": {},
+    "entrances": [
+      {
+        "lat": 25.108213,
+        "lon": 121.869753,
+        "height": null,
+        "memo": "步道範圍中心"
+      }
+    ],
+    "lat": 25.108213,
+    "lon": 121.869753,
     "guide": "步道系統：地方級",
     "url": null
   }

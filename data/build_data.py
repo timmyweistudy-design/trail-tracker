@@ -346,21 +346,38 @@ def collect():
     return merge(trails)
 
 
+# 來源優先序：重複步道優先保留林業署（官方）> OSM 健行路線 > OSM 具名步道
+SOURCE_PRIORITY = {"forestry": 3, "osm": 2, "osm_path": 1}
+
+
 def merge(trails):
-    """跨來源去重：同名 + 入口座標相近（~150m）視為同一條，保留欄位較完整者。"""
+    """跨來源去重：同名且座標相近（~1km）視為同一條；保留來源優先者，同源再比完整度。"""
     kept = []
     for t in trails:
         dup = None
         for k in kept:
-            if t["name"] == k["name"] and t["lat"] and k["lat"] \
-                    and abs(t["lat"] - k["lat"]) < 0.0015 and abs(t["lon"] - k["lon"]) < 0.0015:
+            if t["name"] != k["name"]:
+                continue
+            near = (t["lat"] and k["lat"]
+                    and abs(t["lat"] - k["lat"]) < 0.01 and abs(t["lon"] - k["lon"]) < 0.01)
+            # 同名且涉及林業署 → 一律視為同一條（長步道入口/中心點可能相距數公里）
+            forestry_involved = "forestry" in (t["source"], k["source"])
+            if near or forestry_involved:
                 dup = k
                 break
         if dup is None:
             kept.append(t)
-        elif _completeness(t) > _completeness(dup):
+        elif _better(t, dup):
             kept[kept.index(dup)] = t
     return kept
+
+
+def _better(a, b):
+    """a 是否該取代 b：先比來源優先（林業署最優先），再比欄位完整度。"""
+    pa, pb = SOURCE_PRIORITY.get(a["source"], 0), SOURCE_PRIORITY.get(b["source"], 0)
+    if pa != pb:
+        return pa > pb
+    return _completeness(a) > _completeness(b)
 
 
 def _completeness(t):
