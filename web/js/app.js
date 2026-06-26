@@ -136,6 +136,7 @@ function render() {
     (a.lat ? haversine(myLoc, { lat: a.lat, lon: a.lon }) : 9e9) -
     (b.lat ? haversine(myLoc, { lat: b.lat, lon: b.lon }) : 9e9));
   $("#resultCount").textContent = `共 ${curList.length} 條步道`;
+  if (mapOn) { showBrowseMap(); return; }
   shown = 0;
   $("#trailList").innerHTML = "";
   if (!curList.length) { $("#trailList").innerHTML = `<div class="empty"><span class="big">🔍</span>找不到符合的步道</div>`; return; }
@@ -167,6 +168,39 @@ function renderMore() {
       toast(added ? "已加入收藏" : "已移除收藏");
     });
   });
+}
+
+// 地圖瀏覽模式
+let browseMap = null, browseLayer = null, mapOn = false;
+const DIFF_COLOR = { 0: "#3aa3a0", 1: "#46a24f", 2: "#6aa83e", 3: "#d8a127", 4: "#e07a2c", 5: "#d2542e", 6: "#b3322a" };
+$("#btnMapView").addEventListener("click", () => {
+  mapOn = !mapOn;
+  $("#browseMap").style.display = mapOn ? "block" : "none";
+  $("#trailList").style.display = mapOn ? "none" : "block";
+  $("#btnMapView").textContent = mapOn ? "📋 清單" : "🗺️ 地圖";
+  if (mapOn) showBrowseMap();
+});
+function showBrowseMap() {
+  if (!browseMap) {
+    browseMap = L.map("browseMap", { zoomControl: true }).setView([23.8, 121], 7);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+      { attribution: "© OpenStreetMap", maxZoom: 18 }).addTo(browseMap);
+    browseLayer = L.layerGroup().addTo(browseMap);
+  }
+  browseLayer.clearLayers();
+  const list = curList.slice(0, 600);   // 上限避免過慢
+  const bounds = [];
+  list.forEach(t => {
+    if (!t.lat) return;
+    const closed = t.condition && /暫停|封閉|關閉/.test(t.condition.status || "");
+    L.circleMarker([t.lat, t.lon], {
+      radius: 6, color: "#fff", weight: 1.5,
+      fillColor: closed ? "#b3322a" : (DIFF_COLOR[t.difficulty] || "#888"), fillOpacity: .92,
+    }).addTo(browseLayer)
+      .bindPopup(`<b>${t.name}</b><br>${t.difficulty_label}${t.length_km ? " · " + t.length_km + "km" : ""}${closed ? "<br>⚠️ " + t.condition.status : ""}<br><a href="#" onclick="openDetail('${t.id}');return false;">查看詳情</a>`);
+    bounds.push([t.lat, t.lon]);
+  });
+  setTimeout(() => { browseMap.invalidateSize(); if (bounds.length) browseMap.fitBounds(bounds, { padding: [30, 30] }); }, 80);
 }
 
 // 附近排序
@@ -252,6 +286,8 @@ function openDetail(id) {
     ${conditionBanner(t)}
     ${gradeExplain(t)}
     ${kvHtml}
+    <div class="section-title" style="margin-top:4px">🌤️ 天氣（步道所在地）</div>
+    <div id="weatherBox"><div class="food-loading">查詢天氣中…</div></div>
     ${metaHtml}
     ${t.guide ? `<div class="guide">${t.guide.replace(/\n/g, "<br>")}</div>` : ""}
     <div class="link-row">
@@ -269,6 +305,7 @@ function openDetail(id) {
   $("#sheetMask").classList.add("show");
   $("#detailSheet").classList.add("show");
   loadFood(t);
+  loadWeather(t);
 
   setTimeout(() => {
     if (!detailMap) detailMap = L.map("detailMap", { zoomControl: false });
@@ -304,6 +341,34 @@ function openDetail(id) {
     toast(added ? "已加入收藏" : "已移除收藏");
   });
 }
+async function loadWeather(t) {
+  const box = $("#weatherBox");
+  if (!box) return;
+  if (!t.lat) { box.innerHTML = `<div class="food-empty">無座標，無法查天氣</div>`; return; }
+  try {
+    const d = await Weather.get(t.lat, t.lon);
+    const c = d.current, dd = d.daily;
+    const [emo, txt] = Weather.desc(c.weather_code);
+    const days = ["日", "一", "二", "三", "四", "五", "六"];
+    const fc = dd.time.map((t2, i) => {
+      const [e2] = Weather.desc(dd.weather_code[i]);
+      const wd = i === 0 ? "今天" : `週${days[new Date(t2).getDay()]}`;
+      return `<div class="wx-day"><div class="wx-d">${wd}</div><div class="wx-e">${e2}</div>
+        <div class="wx-t">${Math.round(dd.temperature_2m_min[i])}°/${Math.round(dd.temperature_2m_max[i])}°</div>
+        <div class="wx-p">💧${dd.precipitation_probability_max[i] ?? "—"}%</div></div>`;
+    }).join("");
+    box.innerHTML = `<div class="wx-now">
+        <span class="wx-now-e">${emo}</span>
+        <span class="wx-now-t">${Math.round(c.temperature_2m)}°C</span>
+        <span class="wx-now-d">${txt}　濕度 ${c.relative_humidity_2m}%　風 ${Math.round(c.wind_speed_10m)} km/h</span>
+      </div>
+      <div class="wx-fc">${fc}</div>
+      <div class="food-credit">天氣資料：Open-Meteo</div>`;
+  } catch {
+    box.innerHTML = `<div class="food-empty">天氣查詢失敗（需網路）</div>`;
+  }
+}
+
 async function loadFood(t) {
   const box = $("#foodBox");
   if (!box) return;

@@ -131,6 +131,18 @@ body {
 .food-dist { flex: 0 0 auto; font-size: 12px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 .food-credit { font-size: 10.5px; color: var(--ink-soft); text-align: right; margin-top: 6px; }
 
+/* 天氣 */
+.wx-now { display: flex; align-items: center; gap: 10px; background: var(--bg); border-radius: 12px; padding: 10px 13px; }
+.wx-now-e { font-size: 30px; }
+.wx-now-t { font-size: 26px; font-weight: 800; color: var(--brand-dark); }
+.wx-now-d { font-size: 12px; color: var(--ink-soft); }
+.wx-fc { display: flex; gap: 8px; margin-top: 8px; }
+.wx-day { flex: 1; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px 4px; text-align: center; }
+.wx-d { font-size: 11.5px; color: var(--ink-soft); }
+.wx-e { font-size: 22px; margin: 2px 0; }
+.wx-t { font-size: 12.5px; font-weight: 700; }
+.wx-p { font-size: 11px; color: #3a7bbf; margin-top: 2px; }
+
 /* ---------- Detail sheet ---------- */
 .sheet-mask { position: fixed; inset: 0; background: rgba(20,30,24,.45); z-index: 40; display: none; }
 .sheet-mask.show { display: block; }
@@ -143,6 +155,7 @@ body {
 .sheet.show { transform: translateY(0); }
 .sheet .grip { width: 40px; height: 4px; background: #d4dad2; border-radius: 4px; margin: 10px auto 4px; }
 #detailMap, #recMap { height: 200px; width: 100%; background: #dfe6df; }
+#browseMap { height: calc(100vh - 240px); min-height: 360px; width: 100%; border-radius: var(--r); background: #dfe6df; }
 .sheet-body { padding: 14px 18px; }
 .sheet-body h2 { margin: 4px 0 8px; font-size: 20px; }
 .kv { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0; }
