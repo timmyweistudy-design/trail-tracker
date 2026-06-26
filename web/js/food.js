@@ -1,77 +1,72 @@
-// 步道周邊美食：開啟步道詳情時即時向 OpenStreetMap Overpass 查詢附近餐飲，
-// 結果以 localStorage 快取（7 天），避免重複查詢。
+// 步道周邊美食：Google Places API (New) 查附近餐飲，含 Google 星級與評論數。
+// 結果以 localStorage 快取（7 天），可按「距離 / 星級」排序。
+//
+// 金鑰由 js/config.js 注入（window.PLACES_KEY）——該檔不進公開 repo，
+// 由 Render 建置時依環境變數 GOOGLE_PLACES_KEY 產生（見 render.yaml）。
+// ⚠️ 金鑰仍為前端可見，務必在 Google Cloud：
+//    1) 應用程式限制 → HTTP 參照網址，只允許本站網址
+//    2) API 限制 → 只允許 Places API
+//    3) 設預算/配額上限，避免被盜刷
 const Food = (() => {
-  const MIRRORS = [
-    "https://overpass-api.de/api/interpreter",
-    "https://overpass.kumi.systems/api/interpreter",
-  ];
-  const TTL = 7 * 864e5;            // 7 天
-  const RADIUS = 10000;             // 10 公里
-  const CUISINE_ZH = {
-    chinese: "中式", taiwanese: "台菜", japanese: "日式", noodle: "麵食",
-    ramen: "拉麵", coffee_shop: "咖啡", cafe: "咖啡", italian: "義式",
-    pizza: "披薩", korean: "韓式", thai: "泰式", western: "西式",
-    breakfast: "早餐", dumpling: "水餃", hot_pot: "火鍋", barbecue: "燒烤",
-    seafood: "海鮮", vegetarian: "蔬食", ice_cream: "冰品", dessert: "甜點",
-  };
-  const TYPE_ZH = {
-    restaurant: "餐廳", cafe: "咖啡", fast_food: "速食",
-    bakery: "烘焙", convenience: "超商",
-  };
+  const KEY = (typeof window !== "undefined" && window.PLACES_KEY) || "";
+  const ENDPOINT = "https://places.googleapis.com/v1/places:searchNearby";
+  const TTL = 7 * 864e5;
+  const RADIUS = 8000;             // 8 公里
+  const CKEY = "foodg_";           // Google 版快取（與舊 OSM 版區隔）
 
-  const CKEY = "food10_";          // 半徑改 10km，換 key 讓舊快取失效
   function cacheGet(id) {
-    try {
-      const c = JSON.parse(localStorage.getItem(CKEY + id));
-      if (c && Date.now() - c.ts < TTL) return c.items;
-    } catch { /* ignore */ }
+    try { const c = JSON.parse(localStorage.getItem(CKEY + id)); if (c && Date.now() - c.ts < TTL) return c.items; } catch { /* */ }
     return null;
   }
   function cacheSet(id, items) {
     try { localStorage.setItem(CKEY + id, JSON.stringify({ ts: Date.now(), items })); } catch { /* quota */ }
   }
 
-  function label(tags) {
-    const c = tags.cuisine ? tags.cuisine.split(";")[0] : null;
-    return CUISINE_ZH[c] || TYPE_ZH[tags.amenity] || TYPE_ZH[tags.shop] || "餐飲";
-  }
-
   async function query(lat, lon) {
-    const q = `[out:json][timeout:25];(` +
-      `node["amenity"~"restaurant|cafe|fast_food"](around:${RADIUS},${lat},${lon});` +
-      `node["shop"~"bakery"](around:${RADIUS},${lat},${lon});` +
-      `);out body 80;`;
-    for (const url of MIRRORS) {
-      try {
-        const res = await fetch(url, { method: "POST", body: "data=" + encodeURIComponent(q),
-          headers: { "Content-Type": "application/x-www-form-urlencoded" } });
-        if (!res.ok) continue;
-        const data = await res.json();
-        return (data.elements || []);
-      } catch { /* try next mirror */ }
-    }
-    throw new Error("overpass unreachable");
+    const res = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": KEY,
+        "X-Goog-FieldMask": "places.displayName,places.rating,places.userRatingCount,places.location,places.primaryTypeDisplayName,places.googleMapsUri",
+      },
+      body: JSON.stringify({
+        includedTypes: ["restaurant", "cafe", "bakery", "meal_takeaway"],
+        maxResultCount: 20, languageCode: "zh-TW", rankPreference: "DISTANCE",
+        locationRestriction: { circle: { center: { latitude: lat, longitude: lon }, radius: RADIUS } },
+      }),
+    });
+    if (!res.ok) throw new Error("places " + res.status);
+    return (await res.json()).places || [];
   }
 
-  // 回傳依距離排序、最多 8 筆具名餐飲
+  // 回傳店家陣列（含 Google 星級、評論數、距離）
   async function nearby(trail) {
     if (!trail.lat) return [];
+    if (!KEY) { const e = new Error("nokey"); e.nokey = true; throw e; }
     const cached = cacheGet(trail.id);
     if (cached) return cached;
-    const els = await query(trail.lat, trail.lon);
-    const items = els
-      .filter(e => e.tags && e.tags.name)
-      .map(e => ({
-        name: e.tags.name,
-        kind: label(e.tags),
-        dist: haversine({ lat: trail.lat, lon: trail.lon }, { lat: e.lat, lon: e.lon }),
-        lat: e.lat, lon: e.lon,
-      }))
-      .sort((a, b) => a.dist - b.dist)
-      .slice(0, 8);
+    const places = await query(trail.lat, trail.lon);
+    const items = places.map(p => ({
+      name: p.displayName?.text || "（無名）",
+      kind: p.primaryTypeDisplayName?.text || "餐飲",
+      rating: p.rating || null,
+      reviews: p.userRatingCount || 0,
+      uri: p.googleMapsUri || "",
+      lat: p.location?.latitude, lon: p.location?.longitude,
+      dist: (p.location) ? haversine({ lat: trail.lat, lon: trail.lon },
+        { lat: p.location.latitude, lon: p.location.longitude }) : 9e9,
+    }));
     cacheSet(trail.id, items);
     return items;
   }
 
-  return { nearby };
+  function sortItems(items, by) {
+    const a = items.slice();
+    if (by === "rating") a.sort((x, y) => (y.rating || 0) - (x.rating || 0) || y.reviews - x.reviews);
+    else a.sort((x, y) => x.dist - y.dist);
+    return a;
+  }
+
+  return { nearby, sortItems };
 })();

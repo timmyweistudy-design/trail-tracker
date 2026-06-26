@@ -415,25 +415,45 @@ async function loadWeather(t) {
   }
 }
 
+let _foodItems = [], _foodSort = "distance";
 async function loadFood(t) {
   const box = $("#foodBox");
   if (!box) return;
   if (!t.lat) { box.innerHTML = `<div class="food-empty">此步道無座標，無法查詢周邊美食</div>`; return; }
+  box.innerHTML = `<div class="food-loading">尋找附近美食中…</div>`;
   try {
-    const items = await Food.nearby(t);
-    if (!items.length) { box.innerHTML = `<div class="food-empty">附近 10 公里內暫無美食資料（山區步道常見）</div>`; return; }
-    box.innerHTML = `<div class="food-list">` + items.map(f => {
-      const gmap = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(f.name + " " + f.lat + "," + f.lon)}`;
-      return `<a class="food-item" href="${gmap}" target="_blank" rel="noopener">
+    _foodItems = await Food.nearby(t);
+    renderFood();
+  } catch (err) {
+    box.innerHTML = err && err.nokey
+      ? `<div class="food-empty">美食功能尚未設定（需在 Render 設定 GOOGLE_PLACES_KEY）</div>`
+      : `<div class="food-empty">美食查詢失敗，請稍後再試（需網路）</div>`;
+  }
+}
+function foodStars(f) {
+  if (!f.rating) return `<span class="food-rating none">尚無評分</span>`;
+  return `<span class="food-rating">★ ${f.rating.toFixed(1)}<small> (${f.reviews.toLocaleString()})</small></span>`;
+}
+function renderFood() {
+  const box = $("#foodBox");
+  if (!box) return;
+  if (!_foodItems.length) { box.innerHTML = `<div class="food-empty">附近 8 公里內查無餐飲（山區步道常見）</div>`; return; }
+  const items = Food.sortItems(_foodItems, _foodSort);
+  box.innerHTML = `
+    <div class="food-sort">排序
+      <button class="food-sort-btn${_foodSort === "distance" ? " on" : ""}" data-fsort="distance">📍 距離</button>
+      <button class="food-sort-btn${_foodSort === "rating" ? " on" : ""}" data-fsort="rating">★ 星級</button>
+    </div>
+    <div class="food-list">${items.map(f => `
+      <a class="food-item" href="${f.uri || "#"}" target="_blank" rel="noopener">
         <span class="food-kind">${f.kind}</span>
         <span class="food-name">${f.name}</span>
-        <span class="food-dist">${(f.dist / 1000).toFixed(1)} km</span>
-        <span class="food-go">★ 評論</span>
-      </a>`; }).join("") + `</div>
-      <div class="food-credit">店家：OpenStreetMap　·　點任一間看 Google 評論星級</div>`;
-  } catch {
-    box.innerHTML = `<div class="food-empty">美食查詢失敗，請稍後再試</div>`;
-  }
+        ${foodStars(f)}
+        <span class="food-dist">${(f.dist / 1000).toFixed(1)}km</span>
+      </a>`).join("")}</div>
+    <div class="food-credit">星級・評論來源：Google 地圖</div>`;
+  box.querySelectorAll(".food-sort-btn").forEach(b =>
+    b.addEventListener("click", () => { _foodSort = b.dataset.fsort; renderFood(); }));
 }
 
 // 預載此步道範圍的離線地圖圖磚
