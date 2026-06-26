@@ -110,3 +110,19 @@
 - `collect()` 跑遍所有來源（單一來源失敗會略過不中斷），`merge()` 依「同名 + 入口座標 <150m」跨來源去重，保留欄位較完整者
 
 **新增一個縣市**：照 `map_forestry` 寫一支 `fetch_xxx` / `map_xxx`，加進 `SOURCES` 即可；每筆 `id` 會自動帶來源前綴（如 `forestry-002`）。
+
+---
+
+## 六、OSM 全台步道爬蟲（已接入）
+- **來源**：OpenStreetMap Overpass API（`route=hiking` 具名健行路線）
+- **查詢**：`area["ISO3166-1"="TW"];relation["route"="hiking"]["name"](area.tw);out center tags;`
+- **成果**：全台 **795** 條具名步道（去重後約 784 進入資料集），含名稱、座標（out center）、部分距離/網路標籤
+- **限制**：多數無難度/長度（僅 ~21 條有 distance、~3 條有難度線索）→ 列「未分級」；地區用 22 縣市中心點就近指派（近似）
+- **強健性**：`fetch_osm()` 含 3 鏡像 + 退避重試 + 本地快取 `osm_cache.json`（Overpass 高負載時常暫時 406/限流）
+- **待強化**：以 `out geom` 分區批次計算實際長度（全台一次查詢會 406），再據長度估難度
+
+## 七、步道周邊美食（前端即時查詢）
+- **來源**：OpenStreetMap Overpass（`amenity=restaurant|cafe|fast_food`、`shop=bakery`）
+- **做法**：在前端開啟步道詳情時，依步道座標查附近 4 km 餐飲，依距離排序取前 8，`localStorage` 快取 7 天
+- **理由**：避免對 ~900 條步道做批次爬取（受限流且耗時）；改為使用者實際查看時才查，且資料更新鮮
+- **實測**：金瓜寮魚蕨步道周邊回傳公路飯店、永安茶棧、阿牛小吃部等；龍過脈周邊回傳阿香肉羹等（真實在地小吃）

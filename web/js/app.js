@@ -1,6 +1,7 @@
 // ===== Trail Tracker 前端主程式 =====
 const $ = s => document.querySelector(s);
 const TRAILS = window.TRAILS || [];
+const SRC_LABEL = { forestry: "林業署", osm: "OSM社群" };
 
 function fmtTime(ms) {
   const s = Math.floor(ms / 1000);
@@ -76,6 +77,7 @@ function trailCard(t) {
       <span class="badge diff d${d}">${t.difficulty_label}</span>
       ${t.family_friendly ? `<span class="badge family">👨‍👩‍👧 親子友善</span>` : ""}
       ${t.permit && t.permit !== "無" ? `<span class="badge ghost">需入山證</span>` : ""}
+      <span class="badge src">${SRC_LABEL[t.source] || t.source}</span>
     </div>
   </div>`;
 }
@@ -113,12 +115,15 @@ function openDetail(id) {
       <div style="font-size:13.5px;margin-top:4px">🛤 ${t.pave || "—"}　🍂 ${t.best_season || "四季"}　${t.transport?.car ? "🚗 可開車" : ""} ${t.transport?.m_bus || t.transport?.l_bus ? "🚌 有公車" : ""}</div>
     </div>
     ${t.guide ? `<div class="guide">${t.guide}</div>` : ""}
+    <div class="section-title" style="margin-top:18px">🍜 步道周邊美食</div>
+    <div id="foodBox"><div class="food-loading">尋找附近美食中…</div></div>
     <button class="btn primary" id="btnGoRecord">📍 在此步道開始記錄</button>
     ${t.url ? `<a class="btn ghost" href="${t.url}" target="_blank" rel="noopener" style="text-decoration:none;text-align:center">查看官方頁面 ↗</a>` : ""}
     <div style="font-size:11px;color:var(--ink-soft);text-align:center;margin-top:14px">資料來源：林業及自然保育署 開放資料</div>
   `;
   $("#sheetMask").classList.add("show");
   $("#detailSheet").classList.add("show");
+  loadFood(t);
 
   setTimeout(() => {
     if (!detailMap) detailMap = L.map("detailMap", { zoomControl: false });
@@ -142,6 +147,25 @@ function openDetail(id) {
     Recorder._trailName = t.name;
   });
 }
+async function loadFood(t) {
+  const box = $("#foodBox");
+  if (!box) return;
+  if (!t.lat) { box.innerHTML = `<div class="food-empty">此步道無座標，無法查詢周邊美食</div>`; return; }
+  try {
+    const items = await Food.nearby(t);
+    if (!items.length) { box.innerHTML = `<div class="food-empty">附近 4 公里內暫無美食資料（山區步道常見）</div>`; return; }
+    box.innerHTML = `<div class="food-list">` + items.map(f => `
+      <a class="food-item" href="https://www.openstreetmap.org/?mlat=${f.lat}&mlon=${f.lon}#map=17/${f.lat}/${f.lon}" target="_blank" rel="noopener">
+        <span class="food-kind">${f.kind}</span>
+        <span class="food-name">${f.name}</span>
+        <span class="food-dist">${(f.dist / 1000).toFixed(1)} km</span>
+      </a>`).join("") + `</div>
+      <div class="food-credit">美食資料來源：OpenStreetMap 貢獻者</div>`;
+  } catch {
+    box.innerHTML = `<div class="food-empty">美食查詢失敗，請稍後再試</div>`;
+  }
+}
+
 function closeDetail() {
   $("#sheetMask").classList.remove("show");
   $("#detailSheet").classList.remove("show");

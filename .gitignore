@@ -1,5 +1,6 @@
 # 資料管線快取
 data/raw_trail.json
+data/osm_cache.json
 data/*.cache
 
 # 系統 / 編輯器

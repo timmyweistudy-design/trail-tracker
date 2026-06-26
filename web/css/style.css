@@ -79,6 +79,22 @@ body {
 .d0 { background: #97a1a8; }
 .badge.family { background: var(--brand-soft); color: var(--brand-dark); }
 .badge.ghost { background: #eef1ee; color: var(--ink-soft); }
+.badge.src { background: #eef3f7; color: #5a6b7a; }
+
+/* 美食列表 */
+.food-loading, .food-empty { font-size: 13px; color: var(--ink-soft); padding: 8px 2px; }
+.food-loading::before { content: "🍽 "; }
+.food-list { display: flex; flex-direction: column; gap: 8px; }
+.food-item {
+  display: flex; align-items: center; gap: 10px; text-decoration: none;
+  background: var(--bg); border-radius: 12px; padding: 10px 12px; color: var(--ink);
+}
+.food-item:active { background: #e8eee9; }
+.food-kind { flex: 0 0 auto; font-size: 11px; font-weight: 700; color: var(--accent);
+  background: #fff3e9; border-radius: 6px; padding: 3px 7px; }
+.food-name { flex: 1; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.food-dist { flex: 0 0 auto; font-size: 12px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.food-credit { font-size: 10.5px; color: var(--ink-soft); text-align: right; margin-top: 6px; }
 
 /* ---------- Detail sheet ---------- */
 .sheet-mask { position: fixed; inset: 0; background: rgba(20,30,24,.45); z-index: 40; display: none; }

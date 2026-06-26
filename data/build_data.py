@@ -154,9 +154,95 @@ def map_forestry(r):
         entrances=entrances, guide=r.get("GUIDE_CONTENT"), url=r.get("URL"))
 
 
+# --- OSM Overpass：全台具名健行步道（route=hiking），大幅擴充覆蓋 ---
+OVERPASS = "https://overpass-api.de/api/interpreter"
+
+# 22 縣市概略中心點，用座標就近指派縣市（供地區篩選；非精確行政邊界）
+COUNTY_CENTROIDS = {
+    "臺北市": (25.07, 121.55), "新北市": (25.01, 121.55), "基隆市": (25.13, 121.74),
+    "桃園市": (24.95, 121.25), "新竹市": (24.81, 120.97), "新竹縣": (24.70, 121.12),
+    "苗栗縣": (24.49, 120.90), "臺中市": (24.18, 120.85), "彰化縣": (24.05, 120.50),
+    "南投縣": (23.85, 120.97), "雲林縣": (23.70, 120.40), "嘉義市": (23.48, 120.45),
+    "嘉義縣": (23.45, 120.55), "臺南市": (23.10, 120.30), "高雄市": (22.95, 120.55),
+    "屏東縣": (22.55, 120.62), "宜蘭縣": (24.70, 121.74), "花蓮縣": (23.85, 121.45),
+    "臺東縣": (22.85, 121.10), "澎湖縣": (23.57, 119.60), "金門縣": (24.43, 118.32),
+    "連江縣": (26.16, 119.95),
+}
+
+
+def nearest_county(lat, lon):
+    best, bestd = "其他", 1e9
+    for name, (clat, clon) in COUNTY_CENTROIDS.items():
+        d = (lat - clat) ** 2 + (lon - clon) ** 2
+        if d < bestd:
+            bestd, best = d, name
+    return best
+
+
+OVERPASS_MIRRORS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+]
+OSM_CACHE = HERE / "osm_cache.json"
+
+
+def fetch_osm():
+    """全台具名健行步道；含重試、多鏡像與本地快取（Overpass 常因負載暫時限流）。"""
+    import subprocess
+    import time
+    query = ('[out:json][timeout:90];area["ISO3166-1"="TW"][admin_level=2]->.tw;'
+             '(relation["route"="hiking"]["name"](area.tw););out center tags 1500;')
+    for attempt in range(3):
+        for url in OVERPASS_MIRRORS:
+            try:
+                out = subprocess.run(["curl", "-s", "--max-time", "120", url,
+                                      "--data-urlencode", "data=" + query],
+                                     capture_output=True, timeout=130)
+                data = json.loads(out.stdout.decode("utf-8"))
+                els = data.get("elements", [])
+                if els:
+                    OSM_CACHE.write_text(json.dumps(els, ensure_ascii=False), encoding="utf-8")
+                    return els
+            except Exception:  # noqa: BLE001  下一個鏡像 / 下一輪
+                continue
+        time.sleep(8 * (attempt + 1))  # 退避後重試
+    if OSM_CACHE.exists():
+        print("[osm] 線上取得失敗，改用本地快取 osm_cache.json")
+        return json.loads(OSM_CACHE.read_text(encoding="utf-8"))
+    raise RuntimeError("Overpass 三鏡像皆失敗且無快取")
+
+
+def _osm_distance_km(tags):
+    d = tags.get("distance")
+    if not d:
+        return None
+    m = "".join(c for c in str(d) if (c.isdigit() or c == "."))
+    return to_float(m)
+
+
+def map_osm(e):
+    t = e.get("tags", {})
+    c = e.get("center") or {}
+    lat, lon = c.get("lat"), c.get("lon")
+    if not (lat and 21 < lat < 26 and 119 < lon < 122.5):
+        return None
+    name = t.get("name:zh") or t.get("name")
+    ent = [{"lat": round(lat, 6), "lon": round(lon, 6), "height": None, "memo": "步道範圍中心"}]
+    return make_trail(
+        source="osm", sid=e.get("id"), name=name,
+        difficulty=None,  # OSM 多無難度標記，列未分級
+        length_km=_osm_distance_km(t),
+        position=nearest_county(lat, lon),
+        system=t.get("network"), admin=t.get("operator"),
+        entrances=ent, guide=t.get("description"),
+        url=t.get("url") or t.get("website"))
+
+
 SOURCES = [
     {"name": "林業署 步道基本資料", "fetch": fetch_forestry, "map": map_forestry},
-    # 範例：要加台北市親山步道時，補一支 fetch/map 後解除註解 ↓
+    {"name": "OSM 全台健行步道", "fetch": fetch_osm, "map": map_osm},
+    # 要加縣市開放資料時，補一支 fetch/map 後加進來 ↓
     # {"name": "臺北市 親山步道", "fetch": fetch_taipei, "map": map_taipei},
 ]
 
@@ -167,7 +253,7 @@ def collect():
     for s in SOURCES:
         try:
             raw = s["fetch"]()
-            mapped = [s["map"](r) for r in raw]
+            mapped = [m for m in (s["map"](r) for r in raw) if m]
             trails += mapped
             print(f"[source] {s['name']}: {len(mapped)} 條")
         except Exception as e:  # noqa: BLE001

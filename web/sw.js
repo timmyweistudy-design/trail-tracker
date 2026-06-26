@@ -3,7 +3,7 @@ const CACHE = "trail-tracker-v1";
 const ASSETS = [
   "./", "./index.html",
   "./css/style.css",
-  "./js/trails-data.js", "./js/storage.js", "./js/recorder.js", "./js/app.js",
+  "./js/trails-data.js", "./js/storage.js", "./js/food.js", "./js/recorder.js", "./js/app.js",
   "./manifest.webmanifest",
 ];
 
