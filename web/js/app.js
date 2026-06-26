@@ -422,13 +422,15 @@ async function loadFood(t) {
   try {
     const items = await Food.nearby(t);
     if (!items.length) { box.innerHTML = `<div class="food-empty">附近 10 公里內暫無美食資料（山區步道常見）</div>`; return; }
-    box.innerHTML = `<div class="food-list">` + items.map(f => `
-      <a class="food-item" href="https://www.openstreetmap.org/?mlat=${f.lat}&mlon=${f.lon}#map=17/${f.lat}/${f.lon}" target="_blank" rel="noopener">
+    box.innerHTML = `<div class="food-list">` + items.map(f => {
+      const gmap = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(f.name + " " + f.lat + "," + f.lon)}`;
+      return `<a class="food-item" href="${gmap}" target="_blank" rel="noopener">
         <span class="food-kind">${f.kind}</span>
         <span class="food-name">${f.name}</span>
         <span class="food-dist">${(f.dist / 1000).toFixed(1)} km</span>
-      </a>`).join("") + `</div>
-      <div class="food-credit">美食資料來源：OpenStreetMap 貢獻者</div>`;
+        <span class="food-go">★ 評論</span>
+      </a>`; }).join("") + `</div>
+      <div class="food-credit">店家：OpenStreetMap　·　點任一間看 Google 評論星級</div>`;
   } catch {
     box.innerHTML = `<div class="food-empty">美食查詢失敗，請稍後再試</div>`;
   }
