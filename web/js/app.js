@@ -36,6 +36,7 @@ function openGradeInfo() {
     <button class="btn ghost" id="btnGradeClose" style="margin-top:8px">了解了</button>`;
   $("#gradeMask").classList.add("show");
   $("#gradeSheet").classList.add("show");
+  $("#gradeSheet").scrollTop = 0;                 // 浮到最上層並回到頂部
   $("#btnGradeClose").addEventListener("click", closeGradeInfo);
 }
 function closeGradeInfo() {
@@ -484,6 +485,7 @@ function closeDetail() {
   $("#detailSheet").classList.remove("show");
 }
 $("#sheetMask").addEventListener("click", closeDetail);
+$("#closeDetailBtn").addEventListener("click", closeDetail);
 
 // ---------- 記錄頁 ----------
 let guideLine = null, selectedTrailGeo = null, routeRefLayer = null;
@@ -689,6 +691,7 @@ function renderHistory() {
 // ---------- 分級說明按鈕 ----------
 $("#btnGradeInfo").addEventListener("click", openGradeInfo);
 $("#gradeMask").addEventListener("click", closeGradeInfo);
+$("#closeGradeBtn").addEventListener("click", closeGradeInfo);
 
 // ---------- 啟動 ----------
 buildRegionChips();

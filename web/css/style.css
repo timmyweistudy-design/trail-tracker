@@ -190,6 +190,17 @@ body {
 }
 .sheet.show { transform: translateY(0); }
 .sheet .grip { width: 42px; height: 4px; background: #d8d0bd; border-radius: 4px; margin: 11px auto 2px; }
+.sheet-close {
+  position: absolute; top: 12px; right: 14px; z-index: 1200; width: 34px; height: 34px;
+  border-radius: 50%; border: none; cursor: pointer; font-size: 16px; line-height: 1;
+  background: rgba(32,39,31,.55); color: #fff; display: grid; place-items: center;
+  backdrop-filter: blur(4px); transition: .15s;
+}
+.sheet-close:active { background: rgba(32,39,31,.8); transform: scale(.92); }
+/* 分級說明面板浮在詳情之上 */
+.grade-mask { z-index: 60; }
+.grade-sheet { z-index: 70; }
+.grade-sheet .sheet-close { background: var(--surface-2); color: var(--ink); }
 #detailMap, #recMap { height: 210px; width: 100%; background: var(--surface-2); }
 #detailMap { border-bottom: 1px solid var(--line); }
 .sheet-body { padding: 16px 19px; }

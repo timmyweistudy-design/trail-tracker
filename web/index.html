@@ -96,19 +96,21 @@
     <div id="historyList"></div>
   </section>
 
-  <!-- 分級說明面板 -->
-  <div class="sheet-mask" id="gradeMask"></div>
-  <div class="sheet" id="gradeSheet">
-    <div class="grip"></div>
-    <div class="sheet-body" id="gradeBody"></div>
-  </div>
-
   <!-- 詳情面板 -->
   <div class="sheet-mask" id="sheetMask"></div>
   <div class="sheet" id="detailSheet">
     <div class="grip"></div>
+    <button class="sheet-close" id="closeDetailBtn" aria-label="關閉">✕</button>
     <div id="detailMap"></div>
     <div class="sheet-body" id="detailBody"></div>
+  </div>
+
+  <!-- 分級說明面板（最上層） -->
+  <div class="sheet-mask grade-mask" id="gradeMask"></div>
+  <div class="sheet grade-sheet" id="gradeSheet">
+    <div class="grip"></div>
+    <button class="sheet-close" id="closeGradeBtn" aria-label="關閉">✕</button>
+    <div class="sheet-body" id="gradeBody"></div>
   </div>
 
   <nav class="tabbar">
