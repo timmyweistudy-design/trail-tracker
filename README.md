@@ -14,6 +14,21 @@
 > 手機測試：手機與電腦連同一 Wi-Fi，瀏覽器開 `http://<電腦IP>:8765`，可「加入主畫面」當 App 用。
 > 電腦預覽路徑記錄：勾選頁面下方「模擬模式」即可（電腦無 GPS）。
 
+## ☁️ 部署（Render 靜態站）
+
+本專案是純前端 PWA，用 Render Static Site 部署，設定已寫在 `render.yaml`。
+
+1. 把專案推到 GitHub（已先在本地 `git init` 並 commit）：
+   ```bash
+   git remote add origin git@github.com:<帳號>/trail-tracker.git
+   git push -u origin main
+   ```
+2. Render → **New → Blueprint** → 選此 repo，會自動依 `render.yaml` 建立靜態站
+   （或 **New → Static Site**，手動設定 Publish directory = `web`，無 build command）。
+3. 完成後即取得 `https://trail-tracker.onrender.com` 之類網址，手機可直接開、加入主畫面。
+
+> ⚠️ 定位（GPS）需在 **HTTPS** 下才能用 — Render 自動配 HTTPS，沒問題；本地 `localhost` 也算安全來源。
+
 ### 目前實作
 - **探索**：搜尋 + 篩選（親子友善 / 難度 / 地區），步道卡片與詳情頁（地圖、海拔、路面、官方連結）
 - **記錄**：GPS 即時軌跡、距離、步數、卡路里、時間、配速；可暫停 / 結束

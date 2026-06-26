@@ -22,10 +22,20 @@
 | 列管登山步道 | <https://data.gov.tw/dataset/130417> | 列管登山步道清單（欄位待確認） |
 | 觀光資訊資料庫（景點/步道/自行車道） | <https://data.gov.tw/dataset/7777> | 觀光署，含空間 GIS 資料，CSV/JSON/KML/SHP |
 
-### 3. 地方政府開放平台
-- 台北市：列管步道系統約 **154 條、117 公里**，資料已依「步道長度、海拔變化、體能需求」規劃（對分級有高度參考價值）
+### 3. 地方政府開放平台（縣市郊山）
+- 台北市資料大平臺：<https://data.taipei/>（親山步道等；列管步道約 154 條）
+- 新北市資料開放平臺：<https://data.ntpc.gov.tw/>、步道 GPX：<https://newtaipei.travel/zh-tw/gpx-download>
+- 台中市資料開放平臺：<https://opendata.taichung.gov.tw/>
 - 內政部資料開放平臺：<https://data.moi.gov.tw/>
-- 台中市等各縣市政府另有自家步道資料
+
+### ⚠️ 縣市來源自動接入現況（2026-06-26 實測）
+從伺服器端自動抓取縣市平台目前受阻，原因各異：
+- **新北市**：有 WAF，程式化請求被擋（Request Rejected）。
+- **台北市**：dataset 搜尋頁為 JS 動態渲染；frontstage 搜尋 API 會忽略關鍵字。需先在入口手動找到該資料集的 **resource id (rid)**，再用
+  `https://data.taipei/api/v1/dataset/{rid}?scope=resourceAquire` 取資料。
+- 多數平台格式不一（CSV/JSON/KML/SHP/GPX）。
+
+**結論**：管線已改為多來源 adapter 架構（見第五節），縣市來源在取得「確切的資料集下載連結 / rid」後，各補一支 mapper 即可接上。
 
 ---
 
@@ -90,3 +100,13 @@
 ### 對分級設計的啟示
 - 直接可用 `TR_DIF_CLASS` 當基礎難度；**海拔落差** = `TR_ALT - TR_ALT_LOW`，搭配 `TR_LENGTH_NUM` 可做更細的自訂分數。
 - **親子友善**建議規則（草案）：`TR_DIF_CLASS ≤ 2` 且 `TR_LENGTH_NUM ≤ 3` 且路面含鋪面（木棧道/枕木/碎石）→ 標記親子友善，再用 `GUIDE_CONTENT` 關鍵字加權。
+
+---
+
+## 五、多來源管線架構
+`data/build_data.py` 的 `SOURCES` 為來源註冊表，每個來源 = `{name, fetch(), map(record)}`：
+- `fetch()`：取回該來源的原始陣列
+- `map(record)`：呼叫共用的 `make_trail(...)` 正規化器，輸出統一步道結構
+- `collect()` 跑遍所有來源（單一來源失敗會略過不中斷），`merge()` 依「同名 + 入口座標 <150m」跨來源去重，保留欄位較完整者
+
+**新增一個縣市**：照 `map_forestry` 寫一支 `fetch_xxx` / `map_xxx`，加進 `SOURCES` 即可；每筆 `id` 會自動帶來源前綴（如 `forestry-002`）。
