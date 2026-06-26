@@ -45,12 +45,19 @@ def sample_pts(geometry, n=SAMPLES):
     return out
 
 
+class RateLimited(Exception):
+    pass
+
+
 def fetch_elevations(points):
     lat = ",".join(f"{p[0]:.5f}" for p in points)
     lon = ",".join(f"{p[1]:.5f}" for p in points)
     url = f"https://api.open-meteo.com/v1/elevation?latitude={lat}&longitude={lon}"
     out = subprocess.run(["curl", "-s", "--max-time", "40", url], capture_output=True, timeout=45)
-    return json.loads(out.stdout.decode("utf-8")).get("elevation", [])
+    data = json.loads(out.stdout.decode("utf-8"))
+    if data.get("error") and "limit" in (data.get("reason") or "").lower():
+        raise RateLimited(data["reason"])
+    return data.get("elevation", [])
 
 
 def ascent_of(elev):
@@ -76,15 +83,20 @@ def main():
         nonlocal buf, pts, processed
         if not pts:
             return
+        elev = None
         for attempt in range(3):
             try:
                 elev = fetch_elevations(pts)
                 if len(elev) >= len(pts):
                     break
+            except RateLimited as e:
+                OUT.write_text(json.dumps(done, ensure_ascii=False), encoding="utf-8")
+                print(f"\n達 Open-Meteo 每小時上限（{e}）。已保存 {len(done)} 條，稍後再執行可續傳。")
+                raise SystemExit(0)
             except Exception:  # noqa: BLE001
                 pass
             time.sleep(5 * (attempt + 1))
-        else:
+        if not elev or len(elev) < len(pts):
             buf, pts = [], []
             return
         idx = 0
