@@ -4,6 +4,21 @@ const TRAILS = window.TRAILS || [];
 const SRC_LABEL = { forestry: "林業署", osm: "OSM社群", osm_path: "OSM社群" };
 const GRADES = window.GRADES || {};
 const geoOf = t => (window.TRAILS_GEO || {})[t.id] || null;   // 路線幾何（延遲載入檔）
+// 分類標籤（由名稱/資料推導）
+function tagsOf(t) {
+  const n = t.name || "", g = [];
+  if (/古道/.test(n)) g.push("古道");
+  if (/瀑布/.test(n)) g.push("瀑布");
+  if (/(海|濱|岬|灣|燈塔|岩岸|漁港)/.test(n)) g.push("海景");
+  if (/(森林|林道|神木|巨木|杉林)/.test(n)) g.push("森林");
+  if (/(湖|潭|埤|池)/.test(n)) g.push("湖泊");
+  if (/(溫泉|泉)/.test(n)) g.push("溫泉");
+  if (/環/.test(n)) g.push("環狀");
+  if (t.family_friendly) g.push("親子");
+  if (t.difficulty === 0) g.push("無障礙");
+  if (t.difficulty >= 4) g.push("挑戰級");
+  return g;
+}
 // 自架 Leaflet 的標記圖示路徑（離線可用）
 if (window.L && L.Icon && L.Icon.Default) L.Icon.Default.imagePath = "vendor/leaflet/images/";
 
@@ -112,6 +127,7 @@ function matches(t) {
   if (curFilter === "d2" && t.difficulty !== 2) return false;
   if (curFilter === "d3" && t.difficulty !== 3) return false;
   if (curFilter === "d45" && !(t.difficulty >= 4)) return false;
+  if (curFilter.startsWith("tag:") && !tagsOf(t).includes(curFilter.slice(4))) return false;
   if (curQuery) {
     const q = curQuery.toLowerCase();
     if (!(`${t.name} ${t.position} ${t.system || ""}`.toLowerCase().includes(q))) return false;
@@ -332,6 +348,7 @@ function openDetail(id) {
       <button class="fav-star detail${Store.isFav(t.id) ? " on" : ""}" id="favDetail">${Store.isFav(t.id) ? "★ 已收藏" : "☆ 收藏"}</button>
     </div>
     ${conditionBanner(t)}
+    ${tagsOf(t).length ? `<div class="tag-row">${tagsOf(t).map(g => `<span class="tag">${g}</span>`).join("")}</div>` : ""}
     ${gradeExplain(t)}
     ${kvHtml}
     <div class="section-title" style="margin-top:4px">🌤️ 天氣（步道所在地）</div>
@@ -348,6 +365,7 @@ function openDetail(id) {
     ${myLogHtml(t)}
     <button class="btn ghost" id="btnOffline" style="margin-top:10px">⬇️ 預載此步道離線地圖</button>
     <div id="offlineBox" class="offline-box" style="display:none"></div>
+    <div id="amenBox" class="amen-box"></div>
     <div class="section-title" style="margin-top:18px">🍜 步道周邊美食</div>
     <div id="foodBox"><div class="food-loading">尋找附近美食中…</div></div>
     <button class="btn primary" id="btnGoRecord">📍 在此步道開始記錄</button>
@@ -356,6 +374,7 @@ function openDetail(id) {
   $("#sheetMask").classList.add("show");
   $("#detailSheet").classList.add("show");
   loadPhoto(t);
+  loadAmenities(t);
   loadFood(t);
   loadWeather(t);
   loadElevation(t);
@@ -444,6 +463,17 @@ function openDetail(id) {
     else window.open(url, "_blank");
   });
 }
+async function loadAmenities(t) {
+  const box = $("#amenBox");
+  if (!box) return;
+  try {
+    const items = await Amenities.nearby(t);
+    if (!items || !items.length) { box.style.display = "none"; return; }
+    box.innerHTML = `<div class="amen-row">` + items.map(a =>
+      `<span class="amen"><b>${a.label}</b> ${(a.dist / 1000).toFixed(1)}km</span>`).join("") + `</div>`;
+  } catch { box.style.display = "none"; }
+}
+
 async function loadPhoto(t) {
   const box = $("#photoBox");
   if (!box) return;
