@@ -4,12 +4,8 @@ services:
   - type: web
     name: trail-tracker
     runtime: static
-    # 建置時依環境變數 GOOGLE_PLACES_KEY 產生 web/js/config.js（金鑰不進公開 repo）
-    buildCommand: "printf 'window.PLACES_KEY=%s;' \"\\\"${GOOGLE_PLACES_KEY:-}\\\"\" > web/js/config.js"
+    buildCommand: "echo no build needed"
     staticPublishPath: ./web
     pullRequestPreviewsEnabled: true
-    envVars:
-      - key: GOOGLE_PLACES_KEY
-        sync: false   # 在 Render 儀表板手動設定，不寫進 repo
     # 注意：不要對 /sw.js 設單檔 headers route，Render 會回 404（x-render-routing: no-server）。
     # service worker 自身已用 cache-busting（CACHE 版本字串），毋需額外 no-cache header。
