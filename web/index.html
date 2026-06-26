@@ -5,6 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
   <meta name="theme-color" content="#16301f">
   <title>步道誌 Trail Tracker</title>
+  <script>
+    // #25 輕量錯誤記錄：存最近 20 筆於 localStorage，方便回報問題（window.ttErrors() 可查看）
+    (function () {
+      function log(msg) {
+        try {
+          const a = JSON.parse(localStorage.getItem("tt_errors") || "[]");
+          a.unshift({ t: new Date().toISOString(), m: String(msg).slice(0, 300) });
+          localStorage.setItem("tt_errors", JSON.stringify(a.slice(0, 20)));
+        } catch (e) { /* */ }
+      }
+      window.addEventListener("error", e => log((e.message || "") + " @" + (e.filename || "").split("/").pop() + ":" + e.lineno));
+      window.addEventListener("unhandledrejection", e => log("Promise: " + (e.reason && e.reason.message || e.reason)));
+      window.ttErrors = () => JSON.parse(localStorage.getItem("tt_errors") || "[]");
+    })();
+  </script>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -118,6 +133,10 @@
       <button class="btn-clear-all" id="btnClearAll" style="display:none">清除全部</button>
     </div>
     <div id="historyList"></div>
+
+    <div style="text-align:center;margin-top:24px">
+      <button class="info-link" id="btnDiag">🐞 診斷／回報問題</button>
+    </div>
   </section>
 
   <!-- 詳情面板 -->

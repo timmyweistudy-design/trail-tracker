@@ -275,6 +275,16 @@ body {
 /* 海拔剖面 */
 .profile-svg { width: 100%; height: 96px; display: block; background: linear-gradient(180deg, var(--surface-2), #eef0e7); border-radius: var(--r-sm); border: 1px solid var(--line-soft); }
 .profile-stat { font-size: 12.5px; color: var(--ink-soft); margin-top: 7px; text-align: center; font-family: var(--num); }
+.profile-legend { font-size: 11px; color: var(--ink-soft); text-align: center; margin-top: 3px; }
+
+/* 首次導覽 */
+.onboard { position: fixed; inset: 0; z-index: 90; background: rgba(16,28,18,.6); backdrop-filter: blur(4px); display: grid; place-items: center; padding: 20px; animation: fadein .3s; }
+.onboard-card { background: var(--surface); border-radius: 22px; padding: 26px 22px; max-width: 380px; box-shadow: var(--sh-lg); animation: rise .4s; }
+.onboard-mark { font-size: 40px; text-align: center; }
+.onboard-card h2 { font-family: var(--serif); text-align: center; margin: 6px 0 16px; font-size: 22px; color: var(--brand-deep); }
+.onboard-card ul { list-style: none; padding: 0; margin: 0 0 14px; }
+.onboard-card li { font-size: 13.5px; line-height: 1.7; color: var(--ink); margin-bottom: 8px; }
+.onboard-card p { font-size: 12.5px; color: var(--ink-soft); line-height: 1.6; background: var(--brand-soft); padding: 10px 12px; border-radius: 12px; }
 
 /* 天氣 */
 .wx-now { display: flex; align-items: center; gap: 12px; background: linear-gradient(135deg, #eef3ec, var(--surface-2)); border-radius: var(--r-sm); padding: 12px 14px; border: 1px solid var(--line-soft); }

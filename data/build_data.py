@@ -564,9 +564,10 @@ def main():
     family = sum(1 for t in trails if t["family_friendly"])
     print(f"[merge] 合併後共 {len(trails)} 條 {by_source}；有座標 {with_geo}；親子友善 {family}")
 
-    # 幾何拆到獨立檔（延遲載入，保持主資料輕量）
+    # 幾何拆到獨立檔（延遲載入，保持主資料輕量）；並移除前端未用欄位
     geo = {t["id"]: t["geometry"] for t in trails if t.get("geometry")}
-    lean = [{k: v for k, v in t.items() if k != "geometry"} for t in trails]
+    _drop = {"geometry", "difficulty_estimated", "admin_phone"}
+    lean = [{k: v for k, v in t.items() if k not in _drop} for t in trails]
 
     OUT_JSON.write_text(json.dumps(trails, ensure_ascii=False, indent=2), encoding="utf-8")
     OUT_JS.write_text("// 自動產生，請勿手改 (來源: build_data.py)\n"

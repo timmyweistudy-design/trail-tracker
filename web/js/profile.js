@@ -63,8 +63,16 @@ const Profile = (() => {
     ]);
     const line = xy.map((p, i) => `${i ? "L" : "M"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
     const area = `${line} L${xy[xy.length - 1][0].toFixed(1)},${H - pad} L${xy[0][0].toFixed(1)},${H - pad} Z`;
+    // #21 依坡度上色：緩=綠、中=琥珀、陡=紅
+    const segColor = g => g < 0.10 ? "#4a8f55" : g < 0.22 ? "#c39327" : "#c0542f";
+    let segs = "";
+    for (let i = 1; i < xy.length; i++) {
+      const dh = (dist[i] - dist[i - 1]) || 1;
+      const grade = Math.abs(elev[i] - elev[i - 1]) / dh;
+      segs += `<line x1="${xy[i - 1][0].toFixed(1)}" y1="${xy[i - 1][1].toFixed(1)}" x2="${xy[i][0].toFixed(1)}" y2="${xy[i][1].toFixed(1)}" stroke="${segColor(grade)}" stroke-width="2.4" stroke-linecap="round"/>`;
+    }
     const svg = `<svg viewBox="0 0 ${W} ${H}" class="profile-svg" preserveAspectRatio="none">
-      <path d="${area}" fill="#cfe3d4"/><path d="${line}" fill="none" stroke="#2f7d4f" stroke-width="2"/></svg>`;
+      <path d="${area}" fill="#e3ecdf"/>${segs}</svg>`;
     const result = { svg, gain: Math.round(gain), min: Math.round(min), max: Math.round(max), distKm };
     cache[id] = result;
     return result;

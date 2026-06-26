@@ -106,7 +106,11 @@ $("#filterChips").querySelectorAll(".chip").forEach(c => c.addEventListener("cli
   $("#filterChips").querySelectorAll(".chip").forEach(x => x.classList.remove("active"));
   c.classList.add("active"); curFilter = c.dataset.filter; render();
 }));
-$("#searchInput").addEventListener("input", e => { curQuery = e.target.value.trim(); render(); });
+let _searchTm;
+$("#searchInput").addEventListener("input", e => {
+  curQuery = e.target.value.trim();
+  clearTimeout(_searchTm); _searchTm = setTimeout(render, 180);   // 防抖，打字更順
+});
 $("#sortSel").addEventListener("change", e => { curSort = e.target.value; render(); });
 $("#tglOpen").addEventListener("click", () => { filterOpen = !filterOpen; $("#tglOpen").classList.toggle("on", filterOpen); render(); });
 $("#tglGeo").addEventListener("click", () => { filterGeo = !filterGeo; $("#tglGeo").classList.toggle("on", filterGeo); render(); });
@@ -493,7 +497,7 @@ async function loadElevation(t) {
     if (!p) { box.style.display = "none"; return; }
     box.innerHTML = `${p.svg}
       <div class="profile-stat">最低 ${p.min}m　最高 ${p.max}m　累積爬升 ↑${p.gain}m　全長約 ${p.distKm.toFixed(1)}km</div>
-      <div class="food-credit">海拔資料：Open-Meteo（取樣估算）</div>`;
+      <div class="profile-legend"><span style="color:#4a8f55">●</span>緩　<span style="color:#c39327">●</span>中　<span style="color:#c0542f">●</span>陡</div>`;
   } catch {
     box.innerHTML = `<div class="food-empty">海拔剖面計算失敗（需網路）</div>`;
   }
@@ -835,6 +839,13 @@ async function refreshOfflineStatus() {
   const n = await Offline.cachedCount();
   el.textContent = n ? `已快取地圖圖磚：${n} 張（約 ${(n * 0.02).toFixed(1)} MB）` : "尚未下載任何離線地圖";
 }
+$("#btnDiag").addEventListener("click", () => {
+  const errs = (window.ttErrors ? window.ttErrors() : []);
+  const info = `步道誌診斷\n版本SW:${"v34"}\n螢幕:${innerWidth}x${innerHeight}\n步道資料:${TRAILS.length}條\n近期錯誤(${errs.length}):\n` +
+    (errs.slice(0, 8).map(e => `· ${e.t.slice(5, 16)} ${e.m}`).join("\n") || "（無）");
+  if (navigator.clipboard) navigator.clipboard.writeText(info).then(() => toast(errs.length ? `已複製診斷(${errs.length}筆錯誤)，可貼給開發者` : "已複製診斷，目前無錯誤"));
+  else alert(info);
+});
 $("#btnClearTiles").addEventListener("click", async () => {
   if (confirm("確定清除已下載的離線地圖？")) {
     await Offline.clear();
@@ -913,4 +924,24 @@ restoreActiveRecording();
 (function () {
   const id = new URLSearchParams(location.search).get("trail");
   if (id && TRAILS.some(t => t.id === id)) setTimeout(() => openDetail(id), 200);
+})();
+
+// #22 首次使用導覽
+(function onboarding() {
+  if (localStorage.getItem("tt_onboarded") || new URLSearchParams(location.search).get("trail")) return;
+  const ov = document.createElement("div");
+  ov.className = "onboard";
+  ov.innerHTML = `<div class="onboard-card">
+    <div class="onboard-mark">⛰</div>
+    <h2>歡迎使用步道誌</h2>
+    <ul>
+      <li>🧭 <b>探索</b>：搜尋全台 2200+ 步道，看分級、實際路線、海拔剖面、天氣與周邊美食</li>
+      <li>📍 <b>記錄</b>：邊走邊記里程、爬升、卡路里；中斷可復原，離線也能用</li>
+      <li>👤 <b>我的</b>：行程回顧、收藏、標記已完成的步道</li>
+    </ul>
+    <p>💡 出發前在步道詳情按「⬇️ 預載離線地圖」，山區沒訊號也看得到地圖。</p>
+    <button class="btn primary" id="onboardGo">開始探索</button>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.querySelector("#onboardGo").addEventListener("click", () => { localStorage.setItem("tt_onboarded", "1"); ov.remove(); });
 })();
