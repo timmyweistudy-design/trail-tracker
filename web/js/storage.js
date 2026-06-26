@@ -24,7 +24,20 @@ const Store = (() => {
   }
   function clearRecords() { localStorage.removeItem(RK); }
 
-  return { getProfile, saveProfile, weight, height, getRecords, addRecord, deleteRecord, clearRecords };
+  // 收藏
+  const FK = "tt_favs";
+  function getFavs() { try { return JSON.parse(localStorage.getItem(FK)) || []; } catch { return []; } }
+  function isFav(id) { return getFavs().includes(id); }
+  function toggleFav(id) {
+    const f = getFavs();
+    const i = f.indexOf(id);
+    if (i === -1) f.push(id); else f.splice(i, 1);
+    localStorage.setItem(FK, JSON.stringify(f));
+    return i === -1;   // true = 已加入
+  }
+
+  return { getProfile, saveProfile, weight, height, getRecords, addRecord, deleteRecord, clearRecords,
+           getFavs, isFav, toggleFav };
 })();
 
 // 公用：兩點 haversine 距離（公尺）

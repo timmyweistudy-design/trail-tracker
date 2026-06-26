@@ -95,6 +95,26 @@ body {
 .badge.family { background: var(--brand-soft); color: var(--brand-dark); }
 .badge.ghost { background: #eef1ee; color: var(--ink-soft); }
 .badge.src { background: #eef3f7; color: #5a6b7a; }
+.badge.closed { background: #fbe7e6; color: var(--danger); }
+
+/* 收藏星號 */
+.card { position: relative; }
+.fav-star { position: absolute; top: 10px; right: 10px; background: none; border: none;
+  font-size: 22px; line-height: 1; color: #d8b400; cursor: pointer; padding: 2px 4px; }
+.fav-star.detail { position: static; font-size: 13px; font-weight: 700; color: #b58a00;
+  border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; }
+.fav-star.on { color: #e8a200; }
+
+/* 路況橫幅 */
+.cond-banner { border-radius: 12px; padding: 11px 13px; margin: 12px 0; }
+.cond-banner.danger { background: #fbe7e6; border: 1px solid #f3c5c1; }
+.cond-banner.warn { background: #fff4e3; border: 1px solid #f4dcab; }
+.cond-h { font-size: 14.5px; font-weight: 800; color: var(--danger); }
+.cond-banner.warn .cond-h { color: #b9770f; }
+.cond-body { font-size: 13px; color: #43342f; margin-top: 5px; line-height: 1.55; }
+.cond-meta { font-size: 11px; color: var(--ink-soft); margin-top: 5px; }
+
+#loadMore { margin-top: 4px; }
 
 /* 美食列表 */
 .food-loading, .food-empty { font-size: 13px; color: var(--ink-soft); padding: 8px 2px; }
@@ -180,9 +200,13 @@ body {
 .hist-card .top .date { font-size: 12px; color: var(--ink-soft); }
 .hist-card .row { display: flex; gap: 16px; margin-top: 8px; font-size: 13px; color: var(--ink-soft); }
 .hist-card .row b { color: var(--brand-dark); }
-.hist-del { margin-top: 10px; background: none; border: 1px solid var(--line); color: var(--danger);
+.hist-actions { display: flex; gap: 8px; margin-top: 10px; }
+.hist-del, .hist-gpx { background: none; border: 1px solid var(--line);
   border-radius: 10px; padding: 7px 12px; font-size: 12.5px; cursor: pointer; }
+.hist-del { color: var(--danger); }
+.hist-gpx { color: var(--brand-dark); }
 .hist-del:active { background: #fdecea; }
+.hist-gpx:active { background: #e8eee9; }
 .hist-head { display: flex; justify-content: space-between; align-items: center; }
 .btn-clear-all { background: none; border: 1px solid var(--line); color: var(--danger);
   border-radius: 10px; padding: 6px 12px; font-size: 12.5px; cursor: pointer; font-weight: 600; }

@@ -81,6 +81,21 @@ def fetch_tile(bbox):
     return None
 
 
+def decimate(g, min_gap=25, cap=80):
+    """抽稀幾何：相鄰點間距 >= min_gap 公尺才保留，最多 cap 點，含頭尾。"""
+    if len(g) <= 2:
+        return [[round(p["lat"], 5), round(p["lon"], 5)] for p in g]
+    out = [g[0]]
+    for p in g[1:-1]:
+        if haversine((out[-1]["lat"], out[-1]["lon"]), (p["lat"], p["lon"])) >= min_gap:
+            out.append(p)
+    out.append(g[-1])
+    if len(out) > cap:
+        step = len(out) / cap
+        out = [out[int(i * step)] for i in range(cap)]
+    return [[round(p["lat"], 5), round(p["lon"], 5)] for p in out]
+
+
 def way_record(w):
     g = w["geometry"]
     t = w["tags"]
@@ -89,7 +104,7 @@ def way_record(w):
     mid = g[len(g) // 2]
     return {"name": t["name"], "lat": mid["lat"], "lon": mid["lon"], "len": length,
             "surface": t.get("surface"), "sac": t.get("sac_scale"),
-            "tv": t.get("trail_visibility")}
+            "tv": t.get("trail_visibility"), "geom": decimate(g)}
 
 
 def crawl():
@@ -135,7 +150,7 @@ def merge(raw):
 
     trails = []
     for name, ws in by_name.items():
-        clusters = []   # 每群: {pts:[(lat,lon,len)], surface, sac, tv}
+        clusters = []   # 每群: {pts:[(lat,lon,len)], lines:[...], surface, sac, tv}
         for w in ws:
             placed = None
             for c in clusters:
@@ -143,9 +158,11 @@ def merge(raw):
                     placed = c
                     break
             if placed is None:
-                placed = {"pts": [], "surface": None, "sac": None, "tv": None}
+                placed = {"pts": [], "lines": [], "surface": None, "sac": None, "tv": None}
                 clusters.append(placed)
             placed["pts"].append((w["lat"], w["lon"], w["len"]))
+            if w.get("geom"):
+                placed["lines"].append(w["geom"])
             placed["surface"] = placed["surface"] or w["surface"]
             placed["sac"] = placed["sac"] or w["sac"]
             placed["tv"] = placed["tv"] or w["tv"]
@@ -159,7 +176,7 @@ def merge(raw):
                 "name": name, "lat": round(lat, 6), "lon": round(lon, 6),
                 "length_km": round(tot / 1000, 2),
                 "surface": SURF_ZH.get(c["surface"], c["surface"]),
-                "sac": c["sac"],
+                "sac": c["sac"], "lines": c["lines"],
             })
     return trails
 

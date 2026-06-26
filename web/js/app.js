@@ -86,8 +86,12 @@ $("#filterChips").querySelectorAll(".chip").forEach(c => c.addEventListener("cli
 }));
 $("#searchInput").addEventListener("input", e => { curQuery = e.target.value.trim(); render(); });
 
+let myLoc = null;       // 使用者位置（附近排序用）
+let pageSize = 60, shown = 0, curList = [];
+
 function matches(t) {
   if (curRegion !== "all" && t.region !== curRegion) return false;
+  if (curFilter === "fav" && !Store.isFav(t.id)) return false;
   if (curFilter === "family" && !t.family_friendly) return false;
   if (curFilter === "d1" && t.difficulty !== 1) return false;
   if (curFilter === "d2" && t.difficulty !== 2) return false;
@@ -104,16 +108,21 @@ function trailCard(t) {
   const d = t.difficulty || 0;
   const len = t.length_km != null ? `${t.length_km} km` : "—";
   const asc = t.ascent != null ? `↑${Math.round(t.ascent)} m` : "";
+  const dist = (myLoc && t.lat) ? `<span>🧭 ${(haversine(myLoc, { lat: t.lat, lon: t.lon }) / 1000).toFixed(1)} km</span>` : "";
+  const closed = t.condition && /暫停|封閉|關閉/.test(t.condition.status || "");
   return `<div class="card" data-id="${t.id}">
+    <button class="fav-star${Store.isFav(t.id) ? " on" : ""}" data-fav="${t.id}">${Store.isFav(t.id) ? "★" : "☆"}</button>
     <h3>${t.name}</h3>
     <div class="meta">
       <span>📍 ${t.position || "—"}</span>
       <span><b>${len}</b></span>
       ${asc ? `<span>${asc}</span>` : ""}
       ${t.tour ? `<span>⏱ ${t.tour}</span>` : ""}
+      ${dist}
     </div>
     <div class="badges">
       <span class="badge diff d${d}">${t.difficulty_label}</span>
+      ${closed ? `<span class="badge closed">⚠️ ${t.condition.status}</span>` : ""}
       ${t.family_friendly ? `<span class="badge family">👨‍👩‍👧 親子友善</span>` : ""}
       ${t.permit && t.permit !== "無" ? `<span class="badge ghost">需入山證</span>` : ""}
       <span class="badge src">${SRC_LABEL[t.source] || t.source}</span>
@@ -122,13 +131,68 @@ function trailCard(t) {
 }
 
 function render() {
-  const list = TRAILS.filter(matches);
-  $("#resultCount").textContent = `共 ${list.length} 條步道`;
-  $("#trailList").innerHTML = list.length
-    ? list.map(trailCard).join("")
-    : `<div class="empty"><span class="big">🔍</span>找不到符合的步道</div>`;
-  $("#trailList").querySelectorAll(".card").forEach(c =>
-    c.addEventListener("click", () => openDetail(c.dataset.id)));
+  curList = TRAILS.filter(matches);
+  if (myLoc) curList.sort((a, b) =>
+    (a.lat ? haversine(myLoc, { lat: a.lat, lon: a.lon }) : 9e9) -
+    (b.lat ? haversine(myLoc, { lat: b.lat, lon: b.lon }) : 9e9));
+  $("#resultCount").textContent = `共 ${curList.length} 條步道`;
+  shown = 0;
+  $("#trailList").innerHTML = "";
+  if (!curList.length) { $("#trailList").innerHTML = `<div class="empty"><span class="big">🔍</span>找不到符合的步道</div>`; return; }
+  renderMore();
+}
+
+function renderMore() {
+  const slice = curList.slice(shown, shown + pageSize);
+  const html = slice.map(trailCard).join("");
+  $("#trailList").insertAdjacentHTML("beforeend", html);
+  shown += slice.length;
+  const old = $("#loadMore"); if (old) old.remove();
+  if (shown < curList.length) {
+    $("#trailList").insertAdjacentHTML("beforeend",
+      `<button class="btn ghost" id="loadMore">載入更多（剩 ${curList.length - shown} 條）</button>`);
+    $("#loadMore").addEventListener("click", renderMore);
+  }
+  // 綁定（只綁新加入的）
+  $("#trailList").querySelectorAll(".card:not([data-bound])").forEach(c => {
+    c.setAttribute("data-bound", "1");
+    c.addEventListener("click", e => {
+      if (e.target.closest(".fav-star")) return;
+      openDetail(c.dataset.id);
+    });
+    const star = c.querySelector(".fav-star");
+    if (star) star.addEventListener("click", () => {
+      const added = Store.toggleFav(star.dataset.fav);
+      star.classList.toggle("on", added); star.textContent = added ? "★" : "☆";
+      toast(added ? "已加入收藏" : "已移除收藏");
+    });
+  });
+}
+
+// 附近排序
+$("#btnNearMe").addEventListener("click", () => {
+  if (myLoc) { myLoc = null; $("#btnNearMe").textContent = "📍 附近排序"; render(); return; }
+  if (!navigator.geolocation) { toast("此裝置不支援定位"); return; }
+  $("#btnNearMe").textContent = "定位中…";
+  navigator.geolocation.getCurrentPosition(
+    pos => { myLoc = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+      $("#btnNearMe").textContent = "📍 附近(開)"; render(); toast("已依距離排序"); },
+    () => { $("#btnNearMe").textContent = "📍 附近排序"; toast("定位失敗，請允許定位權限"); },
+    { enableHighAccuracy: true, timeout: 10000 });
+});
+
+// 步道路況/封閉警示橫幅
+function fmtYmd(s) { return s && s.length === 8 ? `${s.slice(0, 4)}/${s.slice(4, 6)}/${s.slice(6)}` : s; }
+function conditionBanner(t) {
+  const c = t.condition;
+  if (!c || !c.status) return "";
+  const closed = /暫停|封閉|關閉/.test(c.status);
+  return `<div class="cond-banner ${closed ? "danger" : "warn"}">
+    <div class="cond-h">${closed ? "⛔" : "⚠️"} ${c.status}${c.section ? `（${c.section}）` : ""}</div>
+    ${c.title ? `<div class="cond-body">${c.title}</div>` : ""}
+    ${c.reopen ? `<div class="cond-meta">預計重新開放：${fmtYmd(c.reopen)}　${c.dep || ""}</div>` : ""}
+    <div class="cond-meta">資料來源：林業及自然保育署（請以官方公告為準）</div>
+  </div>`;
 }
 
 // 詳情頁的分級白話說明（含資料來源註記）
@@ -183,7 +247,9 @@ function openDetail(id) {
       <span class="badge diff d${d}">難度：${t.difficulty_label}</span>
       ${t.family_friendly ? `<span class="badge family">👨‍👩‍👧 親子友善</span>` : ""}
       <span class="badge ghost">${t.region || ""}</span>
+      <button class="fav-star detail${Store.isFav(t.id) ? " on" : ""}" id="favDetail">${Store.isFav(t.id) ? "★ 已收藏" : "☆ 收藏"}</button>
     </div>
+    ${conditionBanner(t)}
     ${gradeExplain(t)}
     ${kvHtml}
     ${metaHtml}
@@ -230,6 +296,13 @@ function openDetail(id) {
 
   const offBtn = $("#btnOffline");
   if (offBtn) offBtn.addEventListener("click", () => downloadOffline(t, offBtn));
+
+  const favD = $("#favDetail");
+  if (favD) favD.addEventListener("click", () => {
+    const added = Store.toggleFav(t.id);
+    favD.classList.toggle("on", added); favD.textContent = added ? "★ 已收藏" : "☆ 收藏";
+    toast(added ? "已加入收藏" : "已移除收藏");
+  });
 }
 async function loadFood(t) {
   const box = $("#foodBox");
@@ -280,6 +353,7 @@ function closeDetail() {
 $("#sheetMask").addEventListener("click", closeDetail);
 
 // ---------- 記錄頁 ----------
+let guideLine = null;
 function initRecMap() {
   if (!recMap) {
     recMap = L.map("recMap", { zoomControl: false }).setView([25.033, 121.564], 15);
@@ -289,6 +363,26 @@ function initRecMap() {
   }
   recMap.invalidateSize();
 }
+
+// 匯入 GPX 路線當參考線
+$("#btnImportGpx").addEventListener("click", () => $("#gpxFile").click());
+$("#gpxFile").addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const pts = GPX.parse(reader.result);
+    if (!pts.length) { toast("GPX 沒有可用的路徑點"); return; }
+    initRecMap();
+    if (guideLine) recMap.removeLayer(guideLine);
+    const latlngs = pts.map(p => [p.lat, p.lon]);
+    guideLine = L.polyline(latlngs, { color: "#e8893b", weight: 4, dashArray: "8 6", opacity: .9 }).addTo(recMap);
+    recMap.fitBounds(guideLine.getBounds(), { padding: [20, 20] });
+    toast(`已匯入路線（${pts.length} 點），橘色虛線即參考路徑`);
+  };
+  reader.readAsText(file);
+  e.target.value = "";
+});
 
 Recorder.onUpdate(s => {
   $("#stDist").textContent = s.distanceKm.toFixed(2);
@@ -411,7 +505,10 @@ function renderHistory() {
         <span>🔥 <b>${r.kcal}</b> 大卡</span>
         <span>⏱ <b>${fmtTime(r.elapsedMs)}</b></span>
       </div>
-      <button class="hist-del" data-id="${r.id}" aria-label="刪除這筆">🗑 刪除</button>
+      <div class="hist-actions">
+        <button class="hist-gpx" data-id="${r.id}">⬇️ GPX</button>
+        <button class="hist-del" data-id="${r.id}" aria-label="刪除這筆">🗑 刪除</button>
+      </div>
     </div>`).join("");
   wrap.querySelectorAll(".hist-del").forEach(b => b.addEventListener("click", () => {
     if (confirm("確定刪除這筆行程紀錄？")) {
@@ -419,6 +516,10 @@ function renderHistory() {
       renderHistory();
       toast("已刪除");
     }
+  }));
+  wrap.querySelectorAll(".hist-gpx").forEach(b => b.addEventListener("click", () => {
+    const rec = Store.getRecords().find(r => r.id === b.dataset.id);
+    if (rec) { GPX.exportRecord(rec); toast("已匯出 GPX"); }
   }));
 }
 

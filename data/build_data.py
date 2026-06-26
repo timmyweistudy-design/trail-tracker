@@ -400,8 +400,36 @@ def _fetch(url):
         return out.stdout.decode("utf-8-sig")
 
 
+def apply_conditions(trails):
+    """套用林務署即時步道路況（暫停開放/警示），以 TRAILID 對應林務署步道。"""
+    try:
+        raw = json.loads(_fetch("https://recreation.forest.gov.tw/mis/api/OpenStatus/Trail"))
+    except Exception as e:  # noqa: BLE001
+        print(f"[condition] 取得失敗（略過）- {e}")
+        return 0
+    by_id = {str(c.get("TRAILID")): c for c in raw}
+    n = 0
+    for t in trails:
+        if t["source"] != "forestry":
+            continue
+        tid = t["id"].split("-", 1)[-1]
+        c = by_id.get(tid)
+        if c:
+            t["condition"] = {
+                "status": c.get("TR_TYP"),        # 例：暫停開放
+                "title": c.get("TITLE"),
+                "section": c.get("TR_SUB"),        # 例：全線 / 0.2K
+                "reopen": c.get("opendate"),
+                "dep": c.get("DEP_NAME"),
+            }
+            n += 1
+    return n
+
+
 def main():
     trails = collect()
+    cond_n = apply_conditions(trails)
+    print(f"[condition] 套用路況/警示 {cond_n} 條")
     by_source = {}
     for t in trails:
         by_source[t["source"]] = by_source.get(t["source"], 0) + 1
