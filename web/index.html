@@ -11,6 +11,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;600;700;900&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap">
   <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="vendor/markercluster/markercluster.css">
+  <link rel="stylesheet" href="vendor/markercluster/markercluster-default.css">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -48,6 +50,18 @@
         <button class="info-link" id="btnNearMe">📍 附近</button>
         <button class="info-link" id="btnGradeInfo">ⓘ 分級</button>
       </span>
+    </div>
+    <div class="adv-row">
+      <select id="sortSel" class="adv-sel" aria-label="排序">
+        <option value="default">排序：預設</option>
+        <option value="length-asc">最短</option>
+        <option value="length-desc">最長</option>
+        <option value="diff-asc">最易</option>
+        <option value="diff-desc">最難</option>
+        <option value="name">名稱</option>
+      </select>
+      <button class="adv-tgl" id="tglOpen">排除封閉</button>
+      <button class="adv-tgl" id="tglGeo">有路線</button>
     </div>
     <div id="browseMap" style="display:none"></div>
     <div id="trailList"></div>
@@ -105,6 +119,15 @@
     <div class="sheet-body" id="detailBody"></div>
   </div>
 
+  <!-- 行程軌跡回顧 -->
+  <div class="sheet-mask" id="trackMask"></div>
+  <div class="sheet" id="trackSheet">
+    <div class="grip"></div>
+    <button class="sheet-close" id="closeTrackBtn" aria-label="關閉">✕</button>
+    <div id="trackMap"></div>
+    <div class="sheet-body" id="trackBody"></div>
+  </div>
+
   <!-- 分級說明面板（最上層） -->
   <div class="sheet-mask grade-mask" id="gradeMask"></div>
   <div class="sheet grade-sheet" id="gradeSheet">
@@ -123,11 +146,13 @@
 </div>
 
 <script src="vendor/leaflet/leaflet.js"></script>
+<script src="vendor/markercluster/markercluster.js"></script>
 <script src="js/trails-data.js"></script>
 <script src="js/trails-geo.js" defer></script>
 <script src="js/storage.js"></script>
 <script src="js/grades.js"></script>
 <script src="js/config.js"></script>
+<script src="js/photos.js"></script>
 <script src="js/food.js"></script>
 <script src="js/weather.js"></script>
 <script src="js/profile.js"></script>

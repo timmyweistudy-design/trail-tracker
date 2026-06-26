@@ -92,12 +92,19 @@ $("#filterChips").querySelectorAll(".chip").forEach(c => c.addEventListener("cli
   c.classList.add("active"); curFilter = c.dataset.filter; render();
 }));
 $("#searchInput").addEventListener("input", e => { curQuery = e.target.value.trim(); render(); });
+$("#sortSel").addEventListener("change", e => { curSort = e.target.value; render(); });
+$("#tglOpen").addEventListener("click", () => { filterOpen = !filterOpen; $("#tglOpen").classList.toggle("on", filterOpen); render(); });
+$("#tglGeo").addEventListener("click", () => { filterGeo = !filterGeo; $("#tglGeo").classList.toggle("on", filterGeo); render(); });
 
 let myLoc = null;       // 使用者位置（附近排序用）
 let pageSize = 60, shown = 0, curList = [];
 
+let curSort = "default", filterOpen = false, filterGeo = false;
+function isClosed(t) { return t.condition && /暫停|封閉|關閉/.test(t.condition.status || ""); }
 function matches(t) {
   if (curRegion !== "all" && t.region !== curRegion) return false;
+  if (filterOpen && isClosed(t)) return false;
+  if (filterGeo && !geoOf(t)) return false;
   if (curFilter === "fav" && !Store.isFav(t.id)) return false;
   if (curFilter === "family" && !t.family_friendly) return false;
   if (curFilter === "d1" && t.difficulty !== 1) return false;
@@ -142,6 +149,16 @@ function render() {
   if (myLoc) curList.sort((a, b) =>
     (a.lat ? haversine(myLoc, { lat: a.lat, lon: a.lon }) : 9e9) -
     (b.lat ? haversine(myLoc, { lat: b.lat, lon: b.lon }) : 9e9));
+  else if (curSort !== "default") {
+    const ln = t => t.length_km == null ? 9e9 : t.length_km;
+    const df = t => t.difficulty == null ? 99 : t.difficulty;
+    const cmp = {
+      "length-asc": (a, b) => ln(a) - ln(b), "length-desc": (a, b) => ln(b) - ln(a),
+      "diff-asc": (a, b) => df(a) - df(b), "diff-desc": (a, b) => df(b) - df(a),
+      "name": (a, b) => a.name.localeCompare(b.name, "zh-Hant"),
+    }[curSort];
+    if (cmp) curList.sort(cmp);
+  }
   $("#resultCount").textContent = `共 ${curList.length} 條步道`;
   if (mapOn) { showBrowseMap(); return; }
   shown = 0;
@@ -192,10 +209,14 @@ function showBrowseMap() {
     browseMap = L.map("browseMap", { zoomControl: true }).setView([23.8, 121], 7);
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",
       { attribution: "© OpenStreetMap", maxZoom: 18 }).addTo(browseMap);
-    browseLayer = L.layerGroup().addTo(browseMap);
+    // 圖釘叢集：縮放時聚合，全台上千點也順暢
+    browseLayer = (typeof L.markerClusterGroup === "function")
+      ? L.markerClusterGroup({ maxClusterRadius: 50, chunkedLoading: true })
+      : L.layerGroup();
+    browseMap.addLayer(browseLayer);
   }
   browseLayer.clearLayers();
-  const list = curList.slice(0, 600);   // 上限避免過慢
+  const list = curList.slice(0, 1500);   // 叢集後可放更多
   const bounds = [];
   list.forEach(t => {
     if (!t.lat) return;
@@ -288,6 +309,7 @@ function openDetail(id) {
     : "資料來源：OpenStreetMap 貢獻者（社群步道，詳細資料有限）";
 
   $("#detailBody").innerHTML = `
+    <div id="photoBox"></div>
     <h2>${t.name}</h2>
     <div class="badges">
       <span class="badge diff d${d}">難度：${t.difficulty_label}</span>
@@ -317,6 +339,7 @@ function openDetail(id) {
   `;
   $("#sheetMask").classList.add("show");
   $("#detailSheet").classList.add("show");
+  loadPhoto(t);
   loadFood(t);
   loadWeather(t);
   loadElevation(t);
@@ -374,6 +397,17 @@ function openDetail(id) {
     toast(added ? "已加入收藏" : "已移除收藏");
   });
 }
+async function loadPhoto(t) {
+  const box = $("#photoBox");
+  if (!box) return;
+  try {
+    const url = await Photos.forTrail(t);
+    if (url) box.innerHTML = `<img class="trail-photo" src="${url}" alt="${t.name}" loading="lazy"
+      onerror="this.parentNode.style.display='none'">
+      <div class="photo-credit">照片：Wikimedia Commons</div>`;
+  } catch { /* 無照片就不顯示 */ }
+}
+
 async function loadElevation(t) {
   const box = $("#profileBox");
   if (!box) return;
@@ -488,6 +522,48 @@ $("#sheetMask").addEventListener("click", closeDetail);
 $("#closeDetailBtn").addEventListener("click", closeDetail);
 
 // ---------- 記錄頁 ----------
+// 行程軌跡回顧 / 結束總結
+let trackMap = null, trackLayer = null;
+function openTrackReview(rec) {
+  if (!rec) return;
+  const km = rec.distanceKm || 0, t3 = rec.distance3DKm;
+  $("#trackBody").innerHTML = `
+    <h2>${rec.trailName || "自由路線"}</h2>
+    <div class="track-date">${new Date(rec.date).toLocaleString("zh-TW")}</div>
+    <div class="kv">
+      <div class="item"><div class="l">距離</div><div class="v">${km.toFixed(2)} km</div></div>
+      <div class="item"><div class="l">時間</div><div class="v">${fmtTime(rec.elapsedMs)}</div></div>
+      <div class="item"><div class="l">爬升／下降</div><div class="v">↑${rec.ascent || 0} ↓${rec.descent || 0}m</div></div>
+      <div class="item"><div class="l">卡路里</div><div class="v">${rec.kcal} 大卡</div></div>
+      <div class="item"><div class="l">步數</div><div class="v">${(rec.steps || 0).toLocaleString()}</div></div>
+      ${t3 && t3 > km + 0.05 ? `<div class="item"><div class="l">含坡度距離</div><div class="v">${t3.toFixed(2)} km</div></div>` : ""}
+    </div>
+    <button class="btn ghost" id="trackGpx">⬇️ 匯出 GPX</button>`;
+  $("#trackMask").classList.add("show");
+  $("#trackSheet").classList.add("show");
+  $("#trackSheet").scrollTop = 0;
+  setTimeout(() => {
+    if (!trackMap) {
+      trackMap = L.map("trackMap", { zoomControl: false });
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap", maxZoom: 18 }).addTo(trackMap);
+    }
+    if (trackLayer) trackMap.removeLayer(trackLayer);
+    trackLayer = L.layerGroup().addTo(trackMap);
+    const pts = (rec.track || []).map(p => [p.lat, p.lon]);
+    if (pts.length) {
+      const line = L.polyline(pts, { color: "#2f7d4f", weight: 5 }).addTo(trackLayer);
+      L.circleMarker(pts[0], { radius: 6, color: "#fff", weight: 2, fillColor: "#2f7d4f", fillOpacity: 1 }).addTo(trackLayer);
+      L.circleMarker(pts[pts.length - 1], { radius: 6, color: "#fff", weight: 2, fillColor: "#d2542e", fillOpacity: 1 }).addTo(trackLayer);
+      trackMap.fitBounds(line.getBounds(), { padding: [24, 24] });
+    } else { trackMap.setView([23.8, 121], 7); }
+    trackMap.invalidateSize();
+  }, 120);
+  $("#trackGpx").addEventListener("click", () => { GPX.exportRecord(rec); toast("已匯出 GPX"); });
+}
+function closeTrackReview() { $("#trackMask").classList.remove("show"); $("#trackSheet").classList.remove("show"); }
+$("#trackMask").addEventListener("click", closeTrackReview);
+$("#closeTrackBtn").addEventListener("click", closeTrackReview);
+
 let guideLine = null, selectedTrailGeo = null, routeRefLayer = null;
 function drawSelectedRoute() {
   if (!recMap) return;
@@ -612,8 +688,8 @@ $("#btnStop").addEventListener("click", () => {
   if (rec) {
     rec.trailName = Recorder._trailName || "自由路線";
     Store.addRecord(rec);
-    toast(`已儲存：${rec.distanceKm.toFixed(2)} km / ${rec.steps} 步 / ${rec.kcal} 大卡`);
     $("#recStatus").textContent = "準備就緒，按「開始」記錄路徑";
+    openTrackReview(rec);              // 結束後顯示總結頁
   } else {
     toast("路徑太短，未儲存");
   }
@@ -671,10 +747,15 @@ function renderHistory() {
       </div>
       ${r.ascent ? `<div class="row"><span>⛰️ 爬升 <b>↑${r.ascent}</b>m${r.descent ? ` 下降 <b>↓${r.descent}</b>m` : ""}</span></div>` : ""}
       <div class="hist-actions">
+        <button class="hist-view" data-id="${r.id}">🗺️ 回顧軌跡</button>
         <button class="hist-gpx" data-id="${r.id}">⬇️ GPX</button>
         <button class="hist-del" data-id="${r.id}" aria-label="刪除這筆">🗑 刪除</button>
       </div>
     </div>`).join("");
+  wrap.querySelectorAll(".hist-view").forEach(b => b.addEventListener("click", () => {
+    const rec = Store.getRecords().find(r => r.id === b.dataset.id);
+    if (rec) openTrackReview(rec);
+  }));
   wrap.querySelectorAll(".hist-del").forEach(b => b.addEventListener("click", () => {
     if (confirm("確定刪除這筆行程紀錄？")) {
       Store.deleteRecord(b.dataset.id);
