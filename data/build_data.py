@@ -20,6 +20,7 @@ from pathlib import Path
 
 HERE = Path(__file__).parent
 OUT_JS = HERE.parent / "web" / "js" / "trails-data.js"
+OUT_GEO = HERE.parent / "web" / "js" / "trails-geo.js"
 OUT_JSON = HERE / "trails.json"
 
 # ---------------------------------------------------------------------------
@@ -100,7 +101,7 @@ def make_trail(*, source, sid, name, difficulty=None, length_km=None,
                alt_high=None, alt_low=None, pave=None, tour=None, best_season=None,
                position=None, system=None, admin=None, admin_phone=None, permit=None,
                transport=None, entrances=None, guide=None, url=None,
-               family_override=None, difficulty_estimated=False):
+               family_override=None, difficulty_estimated=False, geometry=None):
     """所有來源共用的正規化器，輸出統一的步道結構。"""
     entrances = entrances or []
     ascent = (alt_high - alt_low) if (alt_high is not None and alt_low is not None) else None
@@ -127,6 +128,7 @@ def make_trail(*, source, sid, name, difficulty=None, length_km=None,
         "lat": entrances[0]["lat"] if entrances else None,
         "lon": entrances[0]["lon"] if entrances else None,
         "guide": guide or "", "url": url,
+        "geometry": geometry or None,   # 路線線段 [[ [lat,lon],... ], ...]
     }
 
 
@@ -321,7 +323,7 @@ def map_osm_path(p):
         length_km=length_km, pave=pave,
         position=nearest_county(lat, lon),
         entrances=[{"lat": round(lat, 6), "lon": round(lon, 6), "height": None, "memo": "步道範圍中心"}],
-        guide=guide)
+        guide=guide, geometry=p.get("lines"))
 
 
 SOURCES = [
@@ -437,12 +439,20 @@ def main():
     family = sum(1 for t in trails if t["family_friendly"])
     print(f"[merge] 合併後共 {len(trails)} 條 {by_source}；有座標 {with_geo}；親子友善 {family}")
 
+    # 幾何拆到獨立檔（延遲載入，保持主資料輕量）
+    geo = {t["id"]: t["geometry"] for t in trails if t.get("geometry")}
+    lean = [{k: v for k, v in t.items() if k != "geometry"} for t in trails]
+
     OUT_JSON.write_text(json.dumps(trails, ensure_ascii=False, indent=2), encoding="utf-8")
     OUT_JS.write_text("// 自動產生，請勿手改 (來源: build_data.py)\n"
-                      "window.TRAILS = " + json.dumps(trails, ensure_ascii=False) + ";\n",
+                      "window.TRAILS = " + json.dumps(lean, ensure_ascii=False) + ";\n",
                       encoding="utf-8")
+    OUT_GEO.write_text("// 自動產生：步道路線幾何（延遲載入）\n"
+                       "window.TRAILS_GEO = " + json.dumps(geo, ensure_ascii=False) + ";\n",
+                       encoding="utf-8")
     print(f"[write] {OUT_JSON}")
     print(f"[write] {OUT_JS}")
+    print(f"[write] {OUT_GEO}（{len(geo)} 條路線）")
 
     # 抽樣驗證座標
     sample = next((t for t in trails if t["lat"]), None)

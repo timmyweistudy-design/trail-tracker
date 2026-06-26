@@ -3,6 +3,7 @@ const $ = s => document.querySelector(s);
 const TRAILS = window.TRAILS || [];
 const SRC_LABEL = { forestry: "林業署", osm: "OSM社群", osm_path: "OSM社群" };
 const GRADES = window.GRADES || {};
+const geoOf = t => (window.TRAILS_GEO || {})[t.id] || null;   // 路線幾何（延遲載入檔）
 // 自架 Leaflet 的標記圖示路徑（離線可用）
 if (window.L && L.Icon && L.Icon.Default) L.Icon.Default.imagePath = "vendor/leaflet/images/";
 
@@ -53,7 +54,7 @@ function toast(msg) {
 }
 
 // ---------- 分頁切換 ----------
-let detailMap, recMap, recLine, recMarker;
+let detailMap, detailOverlay, recMap, recLine, recMarker;
 document.querySelectorAll(".tab").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
@@ -289,6 +290,7 @@ function openDetail(id) {
     <div class="section-title" style="margin-top:4px">🌤️ 天氣（步道所在地）</div>
     <div id="weatherBox"><div class="food-loading">查詢天氣中…</div></div>
     ${metaHtml}
+    ${geoOf(t) ? `<div class="section-title" style="margin-top:4px">⛰️ 海拔剖面</div><div id="profileBox"><div class="food-loading">計算海拔剖面中…</div></div>` : ""}
     ${t.guide ? `<div class="guide">${t.guide.replace(/\n/g, "<br>")}</div>` : ""}
     <div class="link-row">
       ${nav ? `<a class="link-btn" href="${nav}" target="_blank" rel="noopener">🧭 Google 地圖導航</a>` : ""}
@@ -306,16 +308,26 @@ function openDetail(id) {
   $("#detailSheet").classList.add("show");
   loadFood(t);
   loadWeather(t);
+  loadProfile(t);
 
   setTimeout(() => {
-    if (!detailMap) detailMap = L.map("detailMap", { zoomControl: false });
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-      { attribution: "© OpenStreetMap", maxZoom: 18 }).addTo(detailMap);
-    detailMap.eachLayer(l => { if (l instanceof L.Marker) detailMap.removeLayer(l); });
-    if (t.lat) {
+    if (!detailMap) {
+      detailMap = L.map("detailMap", { zoomControl: false });
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+        { attribution: "© OpenStreetMap", maxZoom: 18 }).addTo(detailMap);
+      detailOverlay = L.layerGroup().addTo(detailMap);
+    }
+    detailOverlay.clearLayers();
+    const geom = geoOf(t);
+    if (geom && geom.length) {
+      const lines = geom.map(seg => L.polyline(seg, { color: "#d2542e", weight: 4, opacity: .9 }));
+      lines.forEach(l => l.addTo(detailOverlay));
+      t.entrances.forEach(e => L.marker([e.lat, e.lon]).addTo(detailOverlay));
+      const grp = L.featureGroup(lines);
+      detailMap.fitBounds(grp.getBounds(), { padding: [20, 20] });
+    } else if (t.lat) {
       detailMap.setView([t.lat, t.lon], 14);
-      t.entrances.forEach(e => L.marker([e.lat, e.lon]).addTo(detailMap)
-        .bindPopup(e.memo || "步道入口"));
+      t.entrances.forEach(e => L.marker([e.lat, e.lon]).addTo(detailOverlay).bindPopup(e.memo || "步道入口"));
     } else {
       detailMap.setView([23.7, 121], 7);
     }
@@ -341,6 +353,20 @@ function openDetail(id) {
     toast(added ? "已加入收藏" : "已移除收藏");
   });
 }
+async function loadProfile(t) {
+  const box = $("#profileBox");
+  if (!box) return;
+  try {
+    const p = await Profile.build(t.id, geoOf(t));
+    if (!p) { box.style.display = "none"; return; }
+    box.innerHTML = `${p.svg}
+      <div class="profile-stat">最低 ${p.min}m　最高 ${p.max}m　累積爬升 ↑${p.gain}m　全長約 ${p.distKm.toFixed(1)}km</div>
+      <div class="food-credit">海拔資料：Open-Meteo（取樣估算）</div>`;
+  } catch {
+    box.innerHTML = `<div class="food-empty">海拔剖面計算失敗（需網路）</div>`;
+  }
+}
+
 async function loadWeather(t) {
   const box = $("#weatherBox");
   if (!box) return;

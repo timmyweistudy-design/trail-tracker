@@ -1,11 +1,11 @@
 // 離線快取：app shell + 地圖圖磚
-const CACHE = "trail-tracker-v15";
+const CACHE = "trail-tracker-v16";
 const TILE_CACHE = "tt-tiles";   // 地圖圖磚（不隨版本清除，保留離線地圖）
 const ASSETS = [
   "./", "./index.html",
   "./css/style.css",
-  "./js/trails-data.js", "./js/storage.js", "./js/grades.js",
-  "./js/food.js", "./js/weather.js", "./js/recorder.js", "./js/offline.js", "./js/gpx.js", "./js/app.js",
+  "./js/trails-data.js", "./js/trails-geo.js", "./js/storage.js", "./js/grades.js",
+  "./js/food.js", "./js/weather.js", "./js/profile.js", "./js/recorder.js", "./js/offline.js", "./js/gpx.js", "./js/app.js",
   "./manifest.webmanifest",
   "./vendor/leaflet/leaflet.js", "./vendor/leaflet/leaflet.css",
   "./vendor/leaflet/images/marker-icon.png",
