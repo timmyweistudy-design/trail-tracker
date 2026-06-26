@@ -23,6 +23,7 @@ const Recorder = (() => {
   let elapsedMs = 0, lastResume = 0;   // 總計時（碼表，含休息）
   let movingMs = 0;            // 實際移動時間（卡路里用）
   let lastFix = null;          // 上一個被接受的定位點
+  let lastPersist = 0;         // 上次存檔時間（節流）
   let simPos = null;
   let cb = () => {};
 
@@ -109,6 +110,7 @@ const Recorder = (() => {
       movingMs += now - lastFix.t;
       updateElevation(alt);                          // 去抖動後累積爬升/下降
       track.push(p);
+      if (now - lastPersist > 4000) { lastPersist = now; persist(); }   // 節流即時存檔
     }
     // d > MAX_JUMP：GPS 跳點，不累積，但更新錨點避免下次又算成大跳
     lastFix = p;
@@ -147,6 +149,7 @@ const Recorder = (() => {
     state = "running";
     if (sim) startSim(); else if (!startGPS()) { state = "idle"; return; }
     ticker = setInterval(() => cb(snapshot()), 1000);
+    persist();
     cb(snapshot());
   }
 
@@ -158,6 +161,7 @@ const Recorder = (() => {
     refAlt = null;           // 高度也重新設基準
     lastFixAlt = null; smLat = null; smLon = null;
     stopSources();
+    persist();
     cb(snapshot());
   }
 
@@ -181,9 +185,37 @@ const Recorder = (() => {
     } : null;
     state = "idle"; track = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; lastFixAlt = null;
     smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; simPos = null;
+    persist();
     cb(snapshot());
     return result;
   }
 
-  return { start, pause, resume, stop, snapshot, onUpdate, getState: () => state };
+  // --- 崩潰復原：即時把記錄狀態存進 localStorage ---
+  const ACTIVE = "tt_active_rec";
+  function persist() {
+    try {
+      if (state === "idle") { localStorage.removeItem(ACTIVE); return; }
+      localStorage.setItem(ACTIVE, JSON.stringify({
+        track, distance, dist3D, ascent, descent, movingMs,
+        elapsedMs: elapsed(), trailName: Recorder._trailName || null, savedAt: Date.now(),
+      }));
+    } catch { /* quota */ }
+  }
+  function hasActive() {
+    try { const d = JSON.parse(localStorage.getItem(ACTIVE)); return !!(d && d.track && d.track.length > 1); }
+    catch { return false; }
+  }
+  // 復原為「暫停」狀態，使用者可繼續或結束
+  function restore() {
+    let d; try { d = JSON.parse(localStorage.getItem(ACTIVE)); } catch { return null; }
+    if (!d || !d.track) return null;
+    track = d.track; distance = d.distance || 0; dist3D = d.dist3D || 0;
+    ascent = d.ascent || 0; descent = d.descent || 0; movingMs = d.movingMs || 0; elapsedMs = d.elapsedMs || 0;
+    refAlt = null; lastFixAlt = null; smLat = null; smLon = null; lastFix = null;
+    state = "paused"; Recorder._trailName = d.trailName || null;
+    cb(snapshot());
+    return snapshot();
+  }
+
+  return { start, pause, resume, stop, snapshot, onUpdate, getState: () => state, hasActive, restore };
 })();

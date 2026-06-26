@@ -593,6 +593,11 @@ function initRecMap() {
     recLine = L.polyline([], { color: "#2f7d4f", weight: 5 }).addTo(recMap);
   }
   recMap.invalidateSize();
+  // 復原中的軌跡重畫
+  if (recLine && Recorder.getState() !== "idle") {
+    const pts = (Recorder.snapshot().track || []).map(p => [p.lat, p.lon]);
+    if (pts.length) { recLine.setLatLngs(pts); setTimeout(() => recMap.fitBounds(L.polyline(pts).getBounds(), { padding: [20, 20] }), 60); }
+  }
 }
 
 // 匯入 GPX 路線當參考線
@@ -774,7 +779,22 @@ $("#btnGradeInfo").addEventListener("click", openGradeInfo);
 $("#gradeMask").addEventListener("click", closeGradeInfo);
 $("#closeGradeBtn").addEventListener("click", closeGradeInfo);
 
+// ---------- 崩潰復原：載入時若有未結束的記錄，復原為暫停狀態 ----------
+function restoreActiveRecording() {
+  if (!Recorder.hasActive || !Recorder.hasActive()) return;
+  const s = Recorder.restore();
+  if (!s) return;
+  recPreloaded = true;
+  $("#btnStart").textContent = "▶ 繼續";
+  $("#btnStart").style.display = "block";
+  $("#btnPause").style.display = "none";
+  $("#btnStop").style.display = "block";
+  $("#recStatus").innerHTML = `已復原上次未結束的記錄（${s.distanceKm.toFixed(2)} km），可「繼續」或「結束」`;
+  toast("已復原未結束的記錄");
+}
+
 // ---------- 啟動 ----------
 buildRegionChips();
 render();
 loadProfile();
+restoreActiveRecording();
