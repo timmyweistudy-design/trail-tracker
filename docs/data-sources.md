@@ -117,9 +117,11 @@
 - **來源**：OpenStreetMap Overpass API（`route=hiking` 具名健行路線）
 - **查詢**：`area["ISO3166-1"="TW"];relation["route"="hiking"]["name"](area.tw);out center tags;`
 - **成果**：全台 **795** 條具名步道（去重後約 784 進入資料集），含名稱、座標（out center）、部分距離/網路標籤
-- **限制**：多數無難度/長度（僅 ~21 條有 distance、~3 條有難度線索）→ 列「未分級」；地區用 22 縣市中心點就近指派（近似）
+- **限制**：原始多無難度/長度；地區用 22 縣市中心點就近指派（近似）
 - **強健性**：`fetch_osm()` 含 3 鏡像 + 退避重試 + 本地快取 `osm_cache.json`（Overpass 高負載時常暫時 406/限流）
-- **待強化**：以 `out geom` 分區批次計算實際長度（全台一次查詢會 406），再據長度估難度
+- **長度補強（已完成）**：`enrich_osm.py` 以 relation id 分批（40/批）抓 `out geom`，haversine 計算實際長度，寫入 `osm_lengths.json`（790 條，中位數 1.83 km、最長 89.8 km）。全台一次 `out geom` 會 406，分批可成功。
+- **分級**：`build_data.py` 讀長度快取，用 `grade_by_length()` 估難度並標示「(估)」。全資料集 896 條已分級。
+- **待強化**：加入海拔（DEM）讓估算更準；親子友善仍只用描述關鍵字保守判定（OSM 缺路面/地形）。
 
 ## 七、步道周邊美食（前端即時查詢）
 - **來源**：OpenStreetMap Overpass（`amenity=restaurant|cafe|fast_food`、`shop=bakery`）

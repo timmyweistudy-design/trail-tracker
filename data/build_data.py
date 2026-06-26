@@ -96,18 +96,22 @@ def make_trail(*, source, sid, name, difficulty=None, length_km=None,
                alt_high=None, alt_low=None, pave=None, tour=None, best_season=None,
                position=None, system=None, admin=None, admin_phone=None, permit=None,
                transport=None, entrances=None, guide=None, url=None,
-               family_override=None):
+               family_override=None, difficulty_estimated=False):
     """所有來源共用的正規化器，輸出統一的步道結構。"""
     entrances = entrances or []
     ascent = (alt_high - alt_low) if (alt_high is not None and alt_low is not None) else None
     family = family_override if family_override is not None else \
         is_family_friendly(difficulty, length_km, pave, guide)
+    label = DIFF_LABEL.get(difficulty, "未分級")
+    if difficulty and difficulty_estimated:
+        label += "(估)"
     return {
         "id": f"{source}-{sid}",
         "source": source,
         "name": name,
         "difficulty": difficulty,
-        "difficulty_label": DIFF_LABEL.get(difficulty, "未分級"),
+        "difficulty_label": label,
+        "difficulty_estimated": difficulty_estimated,
         "family_friendly": family,
         "length_km": length_km,
         "alt_high": alt_high, "alt_low": alt_low, "ascent": ascent,
@@ -221,6 +225,31 @@ def _osm_distance_km(tags):
     return to_float(m)
 
 
+# OSM 步道多無難度標記 → 依實際長度估算分級（僅以長度，較粗略，標示「(估)」）
+def grade_by_length(km):
+    if km is None:
+        return None
+    if km <= 1.5:
+        return 1
+    if km <= 3:
+        return 2
+    if km <= 6:
+        return 3
+    if km <= 12:
+        return 4
+    if km <= 25:
+        return 5
+    return 6
+
+
+# 由 enrich_osm.py 產生的長度快取 {relation_id: km}
+OSM_LENGTHS = {}
+_osm_len_file = HERE / "osm_lengths.json"
+if _osm_len_file.exists():
+    OSM_LENGTHS = {int(k): v for k, v in
+                   json.loads(_osm_len_file.read_text(encoding="utf-8")).items()}
+
+
 def map_osm(e):
     t = e.get("tags", {})
     c = e.get("center") or {}
@@ -229,10 +258,13 @@ def map_osm(e):
         return None
     name = t.get("name:zh") or t.get("name")
     ent = [{"lat": round(lat, 6), "lon": round(lon, 6), "height": None, "memo": "步道範圍中心"}]
+    length_km = OSM_LENGTHS.get(e.get("id")) or _osm_distance_km(t)
+    diff = grade_by_length(length_km)
+    # 親子友善不靠長度推斷（缺路面/地形資訊）；交由 is_family_friendly 以描述關鍵字保守判定
     return make_trail(
         source="osm", sid=e.get("id"), name=name,
-        difficulty=None,  # OSM 多無難度標記，列未分級
-        length_km=_osm_distance_km(t),
+        difficulty=diff, difficulty_estimated=diff is not None,
+        length_km=length_km,
         position=nearest_county(lat, lon),
         system=t.get("network"), admin=t.get("operator"),
         entrances=ent, guide=t.get("description"),
