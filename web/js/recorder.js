@@ -4,16 +4,21 @@ const Recorder = (() => {
   const MIN_MOVE = 5;          // 公尺：兩點位移低於此視為原地抖動，不累積
   const MAX_JUMP = 200;        // 公尺：高於此視為 GPS 跳點，捨棄
   const MAX_ACC = 50;          // 公尺：定位精度比這差就忽略該點
+  const ELEV_DEADBAND = 3;     // 公尺：高度變化低於此視為 GPS 雜訊，不計爬升/下降
+  // 卡路里係數（kcal /(公斤·公尺)）：上坡為位能/肌肉效率(~23%)，下坡離心約上坡的 30%
+  const KCAL_PER_KG_ASCENT = 0.0102;
+  const KCAL_PER_KG_DESCENT = 0.0102 * 0.30;
 
   let state = "idle";          // idle | running | paused
   let watchId = null, simTimer = null, ticker = null;
   let track = [];              // [{lat, lon, t}] 僅存通過過濾的軌跡點
   let distance = 0;            // 公尺（實際移動）
-  let ascent = 0;              // 累積爬升（公尺）
+  let ascent = 0;              // 累積爬升（公尺，已去抖動）
+  let descent = 0;             // 累積下降（公尺，已去抖動）
+  let refAlt = null;           // 高度去抖動基準
   let elapsedMs = 0, lastResume = 0;   // 總計時（碼表，含休息）
   let movingMs = 0;            // 實際移動時間（卡路里用）
   let lastFix = null;          // 上一個被接受的定位點
-  let lastAlt = null;
   let simPos = null;
   let cb = () => {};
 
@@ -24,21 +29,34 @@ const Recorder = (() => {
 
   function steps() { return Math.round(distance / strideMeters()); }
 
-  function metForSpeed(kmh, grade) {
-    let met = kmh < 3.2 ? 2.8 : kmh < 4.8 ? 3.5 : kmh < 6.4 ? 5.0 : kmh < 8 ? 7.0 : 8.3;
-    if (grade > 0.05) met += grade * 100 * 0.12;   // 上坡加成
-    return met;
+  // 平路步行 MET（依速度）
+  function metForSpeed(kmh) {
+    return kmh < 3.2 ? 2.8 : kmh < 4.8 ? 3.5 : kmh < 6.4 ? 5.0 : kmh < 8 ? 7.0 : 8.3;
   }
 
   function elapsed() { return elapsedMs + (state === "running" ? Date.now() - lastResume : 0); }
 
-  // 卡路里依「實際移動時間」計算 → 靜止時不增加
+  // 高度去抖動：累積爬升/下降只計顯著變化，過濾 GPS 高度雜訊
+  function updateElevation(alt) {
+    if (alt == null) return;
+    if (refAlt == null) { refAlt = alt; return; }
+    const dz = alt - refAlt;
+    if (Math.abs(dz) >= ELEV_DEADBAND) {
+      if (dz > 0) ascent += dz; else descent += -dz;
+      refAlt = alt;
+    }
+  }
+
+  // 卡路里 = 平路移動(依時間) + 上坡爬升 + 下坡下降，三者相加；靜止時不增加
   function calories() {
     const hrs = movingMs / 3600000;
     if (hrs <= 0) return 0;
     const kmh = (distance / 1000) / hrs;
-    const grade = distance > 0 ? ascent / distance : 0;
-    return Math.round(metForSpeed(kmh, grade) * Store.weight() * hrs);
+    const w = Store.weight();
+    const flat = metForSpeed(kmh) * w * hrs;
+    const climb = ascent * w * KCAL_PER_KG_ASCENT;
+    const down = descent * w * KCAL_PER_KG_DESCENT;
+    return Math.round(flat + climb + down);
   }
 
   function snapshot() {
@@ -49,7 +67,7 @@ const Recorder = (() => {
     const paceSec = (km > 0.01 && movingMs > 0) ? (movingMs / 1000) / km : 0;
     return {
       state, track, distanceKm: km, steps: steps(), kcal: calories(),
-      elapsedMs: ms, movingMs, ascent, speedKmh: kmh,
+      elapsedMs: ms, movingMs, ascent, descent, speedKmh: kmh,
       pace: paceSec ? `${Math.floor(paceSec / 60)}'${String(Math.round(paceSec % 60)).padStart(2, "0")}` : "--",
     };
   }
@@ -61,7 +79,7 @@ const Recorder = (() => {
     const p = { lat, lon, t: now };
 
     if (!lastFix) {                                  // 第一個點：設為錨點
-      lastFix = p; lastAlt = alt != null ? alt : lastAlt;
+      lastFix = p; if (refAlt == null && alt != null) refAlt = alt;
       track.push(p); cb(snapshot()); return;
     }
 
@@ -73,12 +91,11 @@ const Recorder = (() => {
     if (d <= MAX_JUMP) {                             // 視為真實移動
       distance += d;
       movingMs += now - lastFix.t;
-      if (alt != null && lastAlt != null && alt - lastAlt > 0) ascent += alt - lastAlt;
+      updateElevation(alt);                          // 去抖動後累積爬升/下降
       track.push(p);
     }
     // d > MAX_JUMP：GPS 跳點，不累積，但更新錨點避免下次又算成大跳
     lastFix = p;
-    if (alt != null) lastAlt = alt;
     cb(snapshot());
   }
 
@@ -109,7 +126,7 @@ const Recorder = (() => {
 
   function start(sim) {
     if (state === "running") return;
-    if (state === "idle") { track = []; distance = 0; ascent = 0; elapsedMs = 0; movingMs = 0; lastAlt = null; lastFix = null; }
+    if (state === "idle") { track = []; distance = 0; ascent = 0; descent = 0; refAlt = null; elapsedMs = 0; movingMs = 0; lastFix = null; }
     lastResume = Date.now();
     state = "running";
     if (sim) startSim(); else if (!startGPS()) { state = "idle"; return; }
@@ -122,6 +139,7 @@ const Recorder = (() => {
     elapsedMs += Date.now() - lastResume;
     state = "paused";
     lastFix = null;          // 恢復後重新設錨點，避免把暫停期間算成移動
+    refAlt = null;           // 高度也重新設基準
     stopSources();
     cb(snapshot());
   }
@@ -142,10 +160,10 @@ const Recorder = (() => {
       id: "r" + Date.now(),
       date: new Date().toISOString(),
       distanceKm: snap.distanceKm, steps: snap.steps, kcal: snap.kcal,
-      elapsedMs: snap.elapsedMs, ascent: Math.round(ascent), track: track.slice(),
+      elapsedMs: snap.elapsedMs, ascent: Math.round(ascent), descent: Math.round(descent), track: track.slice(),
     } : null;
-    state = "idle"; track = []; distance = 0; ascent = 0; elapsedMs = 0; movingMs = 0;
-    lastAlt = null; lastFix = null; simPos = null;
+    state = "idle"; track = []; distance = 0; ascent = 0; descent = 0; refAlt = null; elapsedMs = 0; movingMs = 0;
+    lastFix = null; simPos = null;
     cb(snapshot());
     return result;
   }

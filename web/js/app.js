@@ -1,7 +1,7 @@
 // ===== Trail Tracker 前端主程式 =====
 const $ = s => document.querySelector(s);
 const TRAILS = window.TRAILS || [];
-const SRC_LABEL = { forestry: "林業署", osm: "OSM社群" };
+const SRC_LABEL = { forestry: "林業署", osm: "OSM社群", osm_path: "OSM社群" };
 const GRADES = window.GRADES || {};
 
 // 分級說明面板
@@ -182,6 +182,11 @@ function openDetail(id) {
     ${kvHtml}
     ${metaHtml}
     ${t.guide ? `<div class="guide">${t.guide.replace(/\n/g, "<br>")}</div>` : ""}
+    ${t.wiki_extract ? `<div class="wiki-box">
+      <div class="wiki-h">📖 維基百科簡介</div>
+      <div class="guide">${t.wiki_extract}</div>
+      <a class="wiki-credit" href="${t.wiki_url || "#"}" target="_blank" rel="noopener">資料來源：維基百科（CC BY-SA）↗</a>
+    </div>` : ""}
     <div class="link-row">
       ${nav ? `<a class="link-btn" href="${nav}" target="_blank" rel="noopener">🧭 Google 地圖導航</a>` : ""}
       <a class="link-btn" href="${moreSearch}" target="_blank" rel="noopener">🔍 查更多步道資訊</a>
@@ -262,6 +267,7 @@ Recorder.onUpdate(s => {
   $("#stKcal").textContent = s.kcal;
   $("#stTime").textContent = fmtTime(s.elapsedMs);
   $("#stPace").textContent = s.pace;
+  if ($("#stElev")) $("#stElev").textContent = `↑${Math.round(s.ascent || 0)} ↓${Math.round(s.descent || 0)}`;
   if (s.error) $("#recStatus").innerHTML = `⚠️ ${s.error}（可改用模擬模式）`;
   else if (s.state === "running") $("#recStatus").innerHTML = `<span class="live">記錄中</span>`;
   else if (s.state === "paused") $("#recStatus").textContent = "已暫停";

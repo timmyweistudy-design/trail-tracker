@@ -289,11 +289,46 @@ def map_osm(e):
         url=t.get("url") or t.get("website"))
 
 
+# --- OSM 具名步道 way（crawl_paths.py 預先爬好的 osm_paths.json）---
+# OSM SAC 健行難度 → 本專案級別的下限
+SAC_LEVEL = {
+    "hiking": 1, "mountain_hiking": 3, "demanding_mountain_hiking": 4,
+    "alpine_hiking": 4, "demanding_alpine_hiking": 5, "difficult_alpine_hiking": 6,
+}
+_osm_paths_file = HERE / "osm_paths.json"
+
+
+def fetch_osm_paths():
+    if not _osm_paths_file.exists():
+        return []
+    return json.loads(_osm_paths_file.read_text(encoding="utf-8"))
+
+
+def map_osm_path(p):
+    lat, lon = p.get("lat"), p.get("lon")
+    if not (lat and 21 < lat < 26.5 and 118 < lon < 122.5):
+        return None
+    length_km = p.get("length_km")
+    diff = grade_by_length(length_km)
+    sac_floor = SAC_LEVEL.get(p.get("sac"))
+    if sac_floor:
+        diff = max(diff or 1, sac_floor)
+    pave = p.get("surface")
+    guide = "此為社群（OpenStreetMap）收錄之步道。" + (f"路面以{pave}為主。" if pave else "")
+    return make_trail(
+        source="osm_path", sid=f"{p['name']}-{round(lat,4)}", name=p["name"],
+        difficulty=diff, difficulty_estimated=True,
+        length_km=length_km, pave=pave,
+        position=nearest_county(lat, lon),
+        entrances=[{"lat": round(lat, 6), "lon": round(lon, 6), "height": None, "memo": "步道範圍中心"}],
+        guide=guide)
+
+
 SOURCES = [
     {"name": "林業署 步道基本資料", "fetch": fetch_forestry, "map": map_forestry},
     {"name": "OSM 全台健行步道", "fetch": fetch_osm, "map": map_osm},
+    {"name": "OSM 具名步道(path)", "fetch": fetch_osm_paths, "map": map_osm_path},
     # 要加縣市開放資料時，補一支 fetch/map 後加進來 ↓
-    # {"name": "臺北市 親山步道", "fetch": fetch_taipei, "map": map_taipei},
 ]
 
 
@@ -348,14 +383,33 @@ def _fetch(url):
         return out.stdout.decode("utf-8-sig")
 
 
+# 維基百科描述補充（enrich_wiki.py 產生），加在步道上做為「維基簡介」並標註來源
+_wiki_file = HERE / "wiki_cache.json"
+
+
+def apply_wiki(trails):
+    if not _wiki_file.exists():
+        return 0
+    wiki = json.loads(_wiki_file.read_text(encoding="utf-8"))
+    n = 0
+    for t in trails:
+        w = wiki.get(t["name"])
+        if w:
+            t["wiki_extract"] = w["extract"]
+            t["wiki_url"] = w.get("url")
+            n += 1
+    return n
+
+
 def main():
     trails = collect()
+    wiki_n = apply_wiki(trails)
     by_source = {}
     for t in trails:
         by_source[t["source"]] = by_source.get(t["source"], 0) + 1
     with_geo = sum(1 for t in trails if t["lat"])
     family = sum(1 for t in trails if t["family_friendly"])
-    print(f"[merge] 合併後共 {len(trails)} 條 {by_source}；有座標 {with_geo}；親子友善 {family}")
+    print(f"[merge] 合併後共 {len(trails)} 條 {by_source}；有座標 {with_geo}；親子友善 {family}；維基簡介 {wiki_n}")
 
     OUT_JSON.write_text(json.dumps(trails, ensure_ascii=False, indent=2), encoding="utf-8")
     OUT_JS.write_text("// 自動產生，請勿手改 (來源: build_data.py)\n"
