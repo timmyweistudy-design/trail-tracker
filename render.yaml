@@ -8,7 +8,5 @@ services:
     buildCommand: "echo no build needed"
     staticPublishPath: ./web
     pullRequestPreviewsEnabled: true
-    headers:
-      - path: /sw.js
-        name: Cache-Control
-        value: no-cache
+    # 注意：不要對 /sw.js 設單檔 headers route，Render 會回 404（x-render-routing: no-server）。
+    # service worker 自身已用 cache-busting（CACHE 版本字串），毋需額外 no-cache header。
