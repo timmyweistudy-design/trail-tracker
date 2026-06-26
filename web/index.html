@@ -7,7 +7,7 @@
   <title>步道誌 Trail Tracker</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -63,6 +63,13 @@
     <div class="field"><label>身高（公分）</label><input id="pfHeight" type="number" inputmode="numeric" min="100" max="220" placeholder="170"></div>
     <button class="btn primary" id="btnSaveProfile">儲存</button>
 
+    <div class="section-title">離線地圖</div>
+    <div class="offline-manage">
+      <div id="offlineStatus" class="offline-status">已快取地圖圖磚：計算中…</div>
+      <div class="offline-hint">在步道詳情頁按「⬇️ 預載離線地圖」可下載該步道範圍，山區無網路也能看地圖。</div>
+      <button class="btn-clear-all" id="btnClearTiles" style="margin-top:8px">清除離線地圖</button>
+    </div>
+
     <div class="hist-head">
       <span class="section-title" style="margin:0">行程紀錄</span>
       <button class="btn-clear-all" id="btnClearAll" style="display:none">清除全部</button>
@@ -94,11 +101,12 @@
   <div class="toast" id="toast"></div>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="vendor/leaflet/leaflet.js"></script>
 <script src="js/trails-data.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/grades.js"></script>
 <script src="js/food.js"></script>
+<script src="js/offline.js"></script>
 <script src="js/recorder.js"></script>
 <script src="js/app.js"></script>
 <script>

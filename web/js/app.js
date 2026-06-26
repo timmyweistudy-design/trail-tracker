@@ -3,6 +3,8 @@ const $ = s => document.querySelector(s);
 const TRAILS = window.TRAILS || [];
 const SRC_LABEL = { forestry: "林業署", osm: "OSM社群", osm_path: "OSM社群" };
 const GRADES = window.GRADES || {};
+// 自架 Leaflet 的標記圖示路徑（離線可用）
+if (window.L && L.Icon && L.Icon.Default) L.Icon.Default.imagePath = "vendor/leaflet/images/";
 
 // 分級說明面板
 function openGradeInfo() {
@@ -60,7 +62,7 @@ document.querySelectorAll(".tab").forEach(btn => {
     const view = btn.dataset.view;
     $("#view-" + view).classList.add("active");
     if (view === "record") setTimeout(initRecMap, 60);
-    if (view === "me") renderHistory();
+    if (view === "me") { renderHistory(); refreshOfflineStatus(); }
   });
 });
 
@@ -191,6 +193,8 @@ function openDetail(id) {
       <a class="link-btn" href="${moreSearch}" target="_blank" rel="noopener">🔍 查更多步道資訊</a>
       ${t.url ? `<a class="link-btn" href="${t.url}" target="_blank" rel="noopener">↗ 官方/原始頁面</a>` : ""}
     </div>
+    <button class="btn ghost" id="btnOffline" style="margin-top:10px">⬇️ 預載此步道離線地圖</button>
+    <div id="offlineBox" class="offline-box" style="display:none"></div>
     <div class="section-title" style="margin-top:18px">🍜 步道周邊美食</div>
     <div id="foodBox"><div class="food-loading">尋找附近美食中…</div></div>
     <button class="btn primary" id="btnGoRecord">📍 在此步道開始記錄</button>
@@ -202,7 +206,7 @@ function openDetail(id) {
 
   setTimeout(() => {
     if (!detailMap) detailMap = L.map("detailMap", { zoomControl: false });
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",
       { attribution: "© OpenStreetMap", maxZoom: 18 }).addTo(detailMap);
     detailMap.eachLayer(l => { if (l instanceof L.Marker) detailMap.removeLayer(l); });
     if (t.lat) {
@@ -223,6 +227,9 @@ function openDetail(id) {
   });
   const lnk = $("#lnkGradeAll");
   if (lnk) lnk.addEventListener("click", e => { e.preventDefault(); openGradeInfo(); });
+
+  const offBtn = $("#btnOffline");
+  if (offBtn) offBtn.addEventListener("click", () => downloadOffline(t, offBtn));
 }
 async function loadFood(t) {
   const box = $("#foodBox");
@@ -243,6 +250,29 @@ async function loadFood(t) {
   }
 }
 
+// 預載此步道範圍的離線地圖圖磚
+async function downloadOffline(t, btn) {
+  if (!t.lat) { toast("此步道無座標，無法下載地圖"); return; }
+  const box = $("#offlineBox");
+  const bbox = Offline.bboxFor(t);
+  const { zmin, zmax } = Offline.planZoom(bbox);
+  const tiles = Offline.tileList(bbox, zmin, zmax);
+  box.style.display = "block";
+  box.innerHTML = `準備下載約 ${tiles.length} 張圖磚（約 ${(tiles.length * 0.02).toFixed(1)} MB）…`;
+  btn.disabled = true; btn.textContent = "下載中…";
+  try {
+    const r = await Offline.download(tiles, (done, total) => {
+      box.innerHTML = `下載離線地圖中… ${done}/${total}
+        <div class="offline-bar"><i style="width:${Math.round(done / total * 100)}%"></i></div>`;
+    });
+    box.innerHTML = `✅ 已下載 ${r.ok}/${r.total} 張圖磚，此步道範圍可離線看地圖了。`;
+    btn.textContent = "✓ 已預載離線地圖";
+  } catch {
+    box.innerHTML = "下載失敗，請確認網路後再試。";
+    btn.disabled = false; btn.textContent = "⬇️ 預載此步道離線地圖";
+  }
+}
+
 function closeDetail() {
   $("#sheetMask").classList.remove("show");
   $("#detailSheet").classList.remove("show");
@@ -253,7 +283,7 @@ $("#sheetMask").addEventListener("click", closeDetail);
 function initRecMap() {
   if (!recMap) {
     recMap = L.map("recMap", { zoomControl: false }).setView([25.033, 121.564], 15);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",
       { attribution: "© OpenStreetMap", maxZoom: 19 }).addTo(recMap);
     recLine = L.polyline([], { color: "#2f7d4f", weight: 5 }).addTo(recMap);
   }
@@ -329,6 +359,20 @@ $("#btnClearAll").addEventListener("click", () => {
     Store.clearRecords();
     renderHistory();
     toast("已清除全部行程");
+  }
+});
+
+async function refreshOfflineStatus() {
+  const el = $("#offlineStatus");
+  if (!el) return;
+  const n = await Offline.cachedCount();
+  el.textContent = n ? `已快取地圖圖磚：${n} 張（約 ${(n * 0.02).toFixed(1)} MB）` : "尚未下載任何離線地圖";
+}
+$("#btnClearTiles").addEventListener("click", async () => {
+  if (confirm("確定清除已下載的離線地圖？")) {
+    await Offline.clear();
+    refreshOfflineStatus();
+    toast("已清除離線地圖");
   }
 });
 
