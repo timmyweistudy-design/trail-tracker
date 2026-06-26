@@ -1,5 +1,5 @@
 // 簡易離線快取（app shell）
-const CACHE = "trail-tracker-v7";
+const CACHE = "trail-tracker-v8";
 const ASSETS = [
   "./", "./index.html",
   "./css/style.css",
