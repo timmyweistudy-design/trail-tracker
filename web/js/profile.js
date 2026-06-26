@@ -38,8 +38,13 @@ const Profile = (() => {
   async function build(id, geometry) {
     if (cache[id]) return cache[id];
     if (!geometry || !geometry.length) return null;
-    const pts = sample(geometry, 30);
-    const elev = await elevations(pts);
+    let pts = sample(geometry, 30);
+    let elev = await elevations(pts);
+    // 過濾無效海拔（Open-Meteo 對部分點可能回 null），避免剖面圖出現 NaN
+    const keep = elev.map((e, i) => [e, i]).filter(([e]) => e != null && !isNaN(e));
+    if (keep.length < 2) return null;
+    pts = keep.map(([, i]) => pts[i]);
+    elev = keep.map(([e]) => e);
     // 累積距離
     const dist = [0];
     for (let i = 1; i < pts.length; i++)

@@ -179,7 +179,7 @@ $("#btnMapView").addEventListener("click", () => {
   $("#browseMap").style.display = mapOn ? "block" : "none";
   $("#trailList").style.display = mapOn ? "none" : "block";
   $("#btnMapView").textContent = mapOn ? "📋 清單" : "🗺️ 地圖";
-  if (mapOn) showBrowseMap();
+  if (mapOn) showBrowseMap(); else render();   // 切回清單時刷新（避免地圖模式中改篩選後清單過期）
 });
 function showBrowseMap() {
   if (!browseMap) {
@@ -194,11 +194,16 @@ function showBrowseMap() {
   list.forEach(t => {
     if (!t.lat) return;
     const closed = t.condition && /暫停|封閉|關閉/.test(t.condition.status || "");
-    L.circleMarker([t.lat, t.lon], {
+    const mk = L.circleMarker([t.lat, t.lon], {
       radius: 6, color: "#fff", weight: 1.5,
       fillColor: closed ? "#b3322a" : (DIFF_COLOR[t.difficulty] || "#888"), fillOpacity: .92,
-    }).addTo(browseLayer)
-      .bindPopup(`<b>${t.name}</b><br>${t.difficulty_label}${t.length_km ? " · " + t.length_km + "km" : ""}${closed ? "<br>⚠️ " + t.condition.status : ""}<br><a href="#" onclick="openDetail('${t.id}');return false;">查看詳情</a>`);
+    }).addTo(browseLayer);
+    const safeName = t.name.replace(/[<>&]/g, "");
+    mk.bindPopup(`<b>${safeName}</b><br>${t.difficulty_label}${t.length_km ? " · " + t.length_km + "km" : ""}${closed ? "<br>⚠️ " + t.condition.status : ""}<br><a href="#" class="popup-go">查看詳情</a>`);
+    mk.on("popupopen", e => {
+      const a = e.popup.getElement().querySelector(".popup-go");
+      if (a) a.addEventListener("click", ev => { ev.preventDefault(); openDetail(t.id); });
+    });
     bounds.push([t.lat, t.lon]);
   });
   setTimeout(() => { browseMap.invalidateSize(); if (bounds.length) browseMap.fitBounds(bounds, { padding: [30, 30] }); }, 80);
@@ -308,7 +313,7 @@ function openDetail(id) {
   $("#detailSheet").classList.add("show");
   loadFood(t);
   loadWeather(t);
-  loadProfile(t);
+  loadElevation(t);
 
   setTimeout(() => {
     if (!detailMap) {
@@ -353,7 +358,7 @@ function openDetail(id) {
     toast(added ? "已加入收藏" : "已移除收藏");
   });
 }
-async function loadProfile(t) {
+async function loadElevation(t) {
   const box = $("#profileBox");
   if (!box) return;
   try {
