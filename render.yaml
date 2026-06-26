@@ -1,0 +1,14 @@
+# Render 部署設定（靜態站）
+# 在 Render 點 New → Blueprint，連到此 repo 即會依本檔建立服務。
+services:
+  - type: web
+    name: trail-tracker
+    runtime: static
+    # 步道誌是純前端 PWA，無需建置步驟
+    buildCommand: "echo no build needed"
+    staticPublishPath: ./web
+    pullRequestPreviewsEnabled: true
+    headers:
+      - path: /sw.js
+        name: Cache-Control
+        value: no-cache
