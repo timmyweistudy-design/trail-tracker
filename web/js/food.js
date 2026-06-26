@@ -6,7 +6,7 @@ const Food = (() => {
     "https://overpass.kumi.systems/api/interpreter",
   ];
   const TTL = 7 * 864e5;            // 7 天
-  const RADIUS = 4000;              // 4 公里
+  const RADIUS = 5000;              // 5 公里
   const CUISINE_ZH = {
     chinese: "中式", taiwanese: "台菜", japanese: "日式", noodle: "麵食",
     ramen: "拉麵", coffee_shop: "咖啡", cafe: "咖啡", italian: "義式",
@@ -19,15 +19,16 @@ const Food = (() => {
     bakery: "烘焙", convenience: "超商",
   };
 
+  const CKEY = "food5_";           // 半徑改 5km，換 key 讓舊 4km 快取失效
   function cacheGet(id) {
     try {
-      const c = JSON.parse(localStorage.getItem("food_" + id));
+      const c = JSON.parse(localStorage.getItem(CKEY + id));
       if (c && Date.now() - c.ts < TTL) return c.items;
     } catch { /* ignore */ }
     return null;
   }
   function cacheSet(id, items) {
-    try { localStorage.setItem("food_" + id, JSON.stringify({ ts: Date.now(), items })); } catch { /* quota */ }
+    try { localStorage.setItem(CKEY + id, JSON.stringify({ ts: Date.now(), items })); } catch { /* quota */ }
   }
 
   function label(tags) {
