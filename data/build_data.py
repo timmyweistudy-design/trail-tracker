@@ -89,13 +89,12 @@ def is_family_friendly(diff, length_km, pave, guide):
 
 
 def region_of(position):
-    """從『宜蘭縣南澳鄉』取出縣市。"""
+    """取出縣市；以最先出現的『縣』或『市』為界（跨縣市的位置取第一個）。"""
     if not position:
         return "其他"
-    for sep in ("縣", "市"):
-        idx = position.find(sep)
-        if idx != -1:
-            return position[: idx + 1]
+    idxs = [position.find(s) for s in ("縣", "市") if s in position]
+    if idxs:
+        return position[: min(idxs) + 1]
     return "其他"
 
 

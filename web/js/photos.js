@@ -1,9 +1,13 @@
-// 步道照片：用 Wikimedia Commons 地理搜尋（免金鑰、有 CORS、CC 授權）依步道座標找附近照片。
-// 結果以 localStorage 快取 30 天。
+// 步道照片：用 Wikimedia Commons 以「步道名稱」搜尋檔案，並要求照片標題確實含該步道名（核心地名），
+// 才採用 → 避免抓到旁邊的草/蝴蝶等不相關照片。寧可不顯示也不放錯的。CC 授權、免金鑰。
 const Photos = (() => {
   const TTL = 30 * 864e5;
-  const CKEY = "photoc_";
-  const SKIP = /map|diagram|plan|svg|logo|icon|sign|路線圖|地圖/i;   // 排除地圖/示意圖
+  const CKEY = "photon_";
+  const BAD = /\.(svg|djvu|pdf|tif|tiff|gif)$|map|diagram|地圖|路線圖|示意圖|logo|icon/i;
+  // 去掉步道常見後綴，取核心地名（如「象山步道」→「象山」）
+  function core(name) {
+    return name.replace(/(國家步道|自然步道|親山步道|登山步道|登山路線|環狀步道|生態步道|步道|古道|步徑|越嶺道|越嶺|親山|登山|路線|步行|線)+$/g, "") || name;
+  }
 
   function cacheGet(id) {
     try { const c = JSON.parse(localStorage.getItem(CKEY + id)); if (c && Date.now() - c.ts < TTL) return c.url; } catch { /* */ }
@@ -12,22 +16,25 @@ const Photos = (() => {
   function cacheSet(id, url) { try { localStorage.setItem(CKEY + id, JSON.stringify({ ts: Date.now(), url })); } catch { /* */ } }
 
   async function forTrail(trail) {
-    if (!trail.lat) return null;
+    if (!trail.name) return null;
     const cached = cacheGet(trail.id);
     if (cached !== undefined) return cached;
     let url = null;
+    const key = core(trail.name);
     try {
-      const api = "https://commons.wikimedia.org/w/api.php?action=query&generator=geosearch" +
-        `&ggscoord=${trail.lat}%7C${trail.lon}&ggsradius=5000&ggslimit=12&ggsnamespace=6` +
+      const api = "https://commons.wikimedia.org/w/api.php?action=query&generator=search" +
+        `&gsrsearch=${encodeURIComponent(trail.name)}&gsrnamespace=6&gsrlimit=10` +
         "&prop=imageinfo&iiprop=url%7Cmime&iiurlwidth=900&format=json&origin=*";
       const res = await fetch(api);
       if (res.ok) {
         const pages = ((await res.json()).query || {}).pages || {};
-        const imgs = Object.values(pages)
-          .filter(p => p.imageinfo && p.imageinfo[0].mime && p.imageinfo[0].mime.startsWith("image/")
-            && !SKIP.test(p.title || ""))
-          .map(p => p.imageinfo[0].thumburl || p.imageinfo[0].url);
-        if (imgs.length) url = imgs[0];
+        const hit = Object.values(pages).find(p => {
+          const title = (p.title || "").replace(/^File:/, "");
+          const ii = p.imageinfo && p.imageinfo[0];
+          return ii && ii.mime && ii.mime.startsWith("image/") && !BAD.test(title)
+            && (title.includes(trail.name) || (key.length >= 2 && title.includes(key)));
+        });
+        if (hit) url = hit.imageinfo[0].thumburl || hit.imageinfo[0].url;
       }
     } catch { /* 無照片 */ }
     cacheSet(trail.id, url);
