@@ -17,7 +17,7 @@ HERE = Path(__file__).parent
 TRAILS = HERE / "trails.json"
 OUT = HERE / "osm_ascent.json"
 SAMPLES = 12
-BATCH_PTS = 96
+BATCH_PTS = 100      # OpenTopoData 每次最多 100 點
 
 
 def hav(a, b):
@@ -50,14 +50,17 @@ class RateLimited(Exception):
 
 
 def fetch_elevations(points):
-    lat = ",".join(f"{p[0]:.5f}" for p in points)
-    lon = ",".join(f"{p[1]:.5f}" for p in points)
-    url = f"https://api.open-meteo.com/v1/elevation?latitude={lat}&longitude={lon}"
+    # OpenTopoData：每秒 1 次、每次最多 100 點、每日 1000 次
+    locs = "|".join(f"{p[0]:.5f},{p[1]:.5f}" for p in points)
+    url = f"https://api.opentopodata.org/v1/srtm30m?locations={locs}"
     out = subprocess.run(["curl", "-s", "--max-time", "40", url], capture_output=True, timeout=45)
     data = json.loads(out.stdout.decode("utf-8"))
-    if data.get("error") and "limit" in (data.get("reason") or "").lower():
-        raise RateLimited(data["reason"])
-    return data.get("elevation", [])
+    if data.get("status") == "error":
+        msg = data.get("error") or ""
+        if "day" in msg.lower() or "limit" in msg.lower():
+            raise RateLimited(msg)
+        return []
+    return [r.get("elevation") for r in data.get("results", [])]
 
 
 def ascent_of(elev):
@@ -106,7 +109,7 @@ def main():
         processed += len(buf)
         buf, pts = [], []
         OUT.write_text(json.dumps(done, ensure_ascii=False), encoding="utf-8")
-        time.sleep(0.5)
+        time.sleep(1.2)   # OpenTopoData 每秒 1 次
 
     for t in todo:
         sp = sample_pts(t["geometry"])
