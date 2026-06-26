@@ -38,7 +38,9 @@ const Profile = (() => {
   async function build(id, geometry) {
     if (cache[id]) return cache[id];
     if (!geometry || !geometry.length) return null;
-    let pts = sample(geometry, 30);
+    // 用最長一段算剖面，避免多段不連續時段間跳躍灌入距離
+    const main = geometry.reduce((a, b) => (b.length > a.length ? b : a), geometry[0]);
+    let pts = sample([main], 30);
     let elev = await elevations(pts);
     // 過濾無效海拔（Open-Meteo 對部分點可能回 null），避免剖面圖出現 NaN
     const keep = elev.map((e, i) => [e, i]).filter(([e]) => e != null && !isNaN(e));

@@ -62,7 +62,12 @@ document.querySelectorAll(".tab").forEach(btn => {
     btn.classList.add("active");
     const view = btn.dataset.view;
     $("#view-" + view).classList.add("active");
-    if (view === "record") setTimeout(initRecMap, 60);
+    if (view === "record") {
+      // 從底部分頁進入＝自由記錄，清掉先前選定步道的路線疊圖
+      selectedTrailGeo = null;
+      if (routeRefLayer && recMap) { recMap.removeLayer(routeRefLayer); routeRefLayer = null; }
+      setTimeout(initRecMap, 60);
+    }
     if (view === "me") { renderHistory(); refreshOfflineStatus(); }
   });
 });
@@ -348,10 +353,11 @@ function openDetail(id) {
 
   $("#btnGoRecord").addEventListener("click", () => {
     closeDetail();
-    selectedTrailGeo = geoOf(t);            // #9 供記錄頁疊圖與偏離判斷
-    document.querySelector('.tab[data-view="record"]').click();
-    $("#recStatus").textContent = `已選擇「${t.name}」，按開始記錄`;
-    Recorder._trailName = t.name;
+    const g = geoOf(t), nm = t.name;
+    document.querySelector('.tab[data-view="record"]').click();   // 會先清空 selectedTrailGeo
+    selectedTrailGeo = g;                    // #9 再設定本步道路線（供疊圖與偏離判斷）
+    Recorder._trailName = nm;
+    $("#recStatus").textContent = `已選擇「${nm}」，按開始記錄`;
     setTimeout(() => { initRecMap(); drawSelectedRoute(); }, 80);
   });
   const lnk = $("#lnkGradeAll");
