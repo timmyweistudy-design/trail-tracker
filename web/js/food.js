@@ -6,7 +6,7 @@ const Food = (() => {
     "https://overpass.kumi.systems/api/interpreter",
   ];
   const TTL = 7 * 864e5;            // 7 天
-  const RADIUS = 5000;              // 5 公里
+  const RADIUS = 10000;             // 10 公里
   const CUISINE_ZH = {
     chinese: "中式", taiwanese: "台菜", japanese: "日式", noodle: "麵食",
     ramen: "拉麵", coffee_shop: "咖啡", cafe: "咖啡", italian: "義式",
@@ -19,7 +19,7 @@ const Food = (() => {
     bakery: "烘焙", convenience: "超商",
   };
 
-  const CKEY = "food5_";           // 半徑改 5km，換 key 讓舊 4km 快取失效
+  const CKEY = "food10_";          // 半徑改 10km，換 key 讓舊快取失效
   function cacheGet(id) {
     try {
       const c = JSON.parse(localStorage.getItem(CKEY + id));
@@ -40,7 +40,7 @@ const Food = (() => {
     const q = `[out:json][timeout:25];(` +
       `node["amenity"~"restaurant|cafe|fast_food"](around:${RADIUS},${lat},${lon});` +
       `node["shop"~"bakery"](around:${RADIUS},${lat},${lon});` +
-      `);out body 40;`;
+      `);out body 80;`;
     for (const url of MIRRORS) {
       try {
         const res = await fetch(url, { method: "POST", body: "data=" + encodeURIComponent(q),

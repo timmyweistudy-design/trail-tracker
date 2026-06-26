@@ -73,13 +73,16 @@ def to_float(v):
 
 
 def is_family_friendly(diff, length_km, pave, guide):
-    diff = diff or 9
-    pave = pave or ""
-    guide = guide or ""
-    if any(k in guide for k in FAMILY_KEYWORDS):
+    # 難度「進階(3)」以上一律不算親子友善（避免進階步道又標親子的矛盾）
+    if diff is None or diff > 2:
+        return False
+    if diff == 0:           # 無障礙級本就適合親子
         return True
-    paved = any(k in pave for k in PAVED_KEYWORDS)
-    return diff <= 2 and (length_km is not None and length_km <= 3) and paved
+    # 親子(1)、大眾(2)：需有佐證——描述關鍵字，或「鋪面 + 短程(≤3km)」
+    if any(k in (guide or "") for k in FAMILY_KEYWORDS):
+        return True
+    paved = any(k in (pave or "") for k in PAVED_KEYWORDS)
+    return length_km is not None and length_km <= 3 and paved
 
 
 def region_of(position):
