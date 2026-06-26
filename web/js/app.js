@@ -2,6 +2,39 @@
 const $ = s => document.querySelector(s);
 const TRAILS = window.TRAILS || [];
 const SRC_LABEL = { forestry: "林業署", osm: "OSM社群" };
+const GRADES = window.GRADES || {};
+
+// 分級說明面板
+function openGradeInfo() {
+  const rows = Object.entries(GRADES).map(([n, g]) => `
+    <div class="grade-row">
+      <span class="grade-chip" style="background:${g.color}">${g.emoji} ${n}級·${g.name}</span>
+      <div class="grade-text">
+        <div class="grade-plain">${g.plain}</div>
+        <div class="grade-meta">適合：${g.who}　·　${g.time}　·　${g.gear}</div>
+      </div>
+    </div>`).join("");
+  $("#gradeBody").innerHTML = `
+    <h2 style="margin-top:6px">步道分級怎麼看？</h2>
+    <p style="font-size:13.5px;color:var(--ink-soft);line-height:1.6;margin:0 0 14px">
+      分級數字越大代表越難走。等級依
+      <b>林業及自然保育署「自然步道使用困難度分級標準」</b>，
+      綜合海拔、坡度、危險地形、天候、路況、長度等 10 項因子評定。
+    </p>
+    <div class="grade-list">${rows}</div>
+    <p style="font-size:11.5px;color:var(--ink-soft);line-height:1.6;margin-top:14px">
+      標示「<b>估</b>」的步道為社群（OpenStreetMap）資料，依步道實際長度推估等級，僅供參考；
+      林業署步道則為官方正式分級。出發前請再查詢即時路況與天氣。
+    </p>
+    <button class="btn ghost" id="btnGradeClose" style="margin-top:8px">了解了</button>`;
+  $("#gradeMask").classList.add("show");
+  $("#gradeSheet").classList.add("show");
+  $("#btnGradeClose").addEventListener("click", closeGradeInfo);
+}
+function closeGradeInfo() {
+  $("#gradeMask").classList.remove("show");
+  $("#gradeSheet").classList.remove("show");
+}
 
 function fmtTime(ms) {
   const s = Math.floor(ms / 1000);
@@ -92,6 +125,20 @@ function render() {
     c.addEventListener("click", () => openDetail(c.dataset.id)));
 }
 
+// 詳情頁的分級白話說明（含資料來源註記）
+function gradeExplain(t) {
+  const g = GRADES[t.difficulty];
+  if (!g) return `<div class="grade-note">此步道尚無分級資料。</div>`;
+  const basis = t.source === "forestry"
+    ? "依林業署官方分級標準"
+    : "依步道長度估算（標示「估」，僅供參考）";
+  return `<div class="grade-note">
+    <b>${t.difficulty}級·${g.name}</b>：${g.plain}
+    <div class="grade-note-meta">適合：${g.who}　·　建議裝備：${g.gear}<br>${basis}　·
+      <a href="#" id="lnkGradeAll">看完整分級說明</a></div>
+  </div>`;
+}
+
 // ---------- 詳情面板 ----------
 function openDetail(id) {
   const t = TRAILS.find(x => x.id === id);
@@ -104,6 +151,7 @@ function openDetail(id) {
       ${t.family_friendly ? `<span class="badge family">👨‍👩‍👧 親子友善</span>` : ""}
       <span class="badge ghost">${t.region || ""}</span>
     </div>
+    ${gradeExplain(t)}
     <div class="kv">
       <div class="item"><div class="l">長度</div><div class="v">${t.length_km != null ? t.length_km + " km" : "—"}</div></div>
       <div class="item"><div class="l">海拔範圍</div><div class="v">${t.alt_low ?? "?"}–${t.alt_high ?? "?"} m</div></div>
@@ -146,6 +194,8 @@ function openDetail(id) {
     $("#recStatus").textContent = `已選擇「${t.name}」，按開始記錄`;
     Recorder._trailName = t.name;
   });
+  const lnk = $("#lnkGradeAll");
+  if (lnk) lnk.addEventListener("click", e => { e.preventDefault(); openGradeInfo(); });
 }
 async function loadFood(t) {
   const box = $("#foodBox");
@@ -262,6 +312,10 @@ function renderHistory() {
       </div>
     </div>`).join("");
 }
+
+// ---------- 分級說明按鈕 ----------
+$("#btnGradeInfo").addEventListener("click", openGradeInfo);
+$("#gradeMask").addEventListener("click", closeGradeInfo);
 
 // ---------- 啟動 ----------
 buildRegionChips();
