@@ -450,11 +450,19 @@ function renderMore() {
 // 地圖瀏覽模式
 let browseMap = null, browseLayer = null, mapOn = false;
 const DIFF_COLOR = { 0: "#3aa3a0", 1: "#46a24f", 2: "#6aa83e", 3: "#d8a127", 4: "#e07a2c", 5: "#d2542e", 6: "#b3322a" };
+// 難度配色的水滴釘（含等級數字）
+function pinIcon(color, label) {
+  return L.divIcon({
+    className: "trail-pin",
+    html: `<svg viewBox="0 0 24 32" width="24" height="32"><path d="M12 0C5.4 0 0 5.2 0 11.6 0 20 12 32 12 32s12-12 12-20.4C24 5.2 18.6 0 12 0Z" fill="${color}" stroke="#fff" stroke-width="2"/><circle cx="12" cy="11.5" r="6" fill="#fff" opacity=".92"/><text x="12" y="15" text-anchor="middle" font-size="9" font-weight="700" fill="${color}">${label}</text></svg>`,
+    iconSize: [24, 32], iconAnchor: [12, 32], popupAnchor: [0, -28],
+  });
+}
 function showBrowseMap() {
   if (!browseMap) {
     browseMap = L.map("browseMap", { zoomControl: true }).setView([23.8, 121], 7);
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-      { attribution: "© OpenStreetMap", maxZoom: 18 }).addTo(browseMap);
+    L.tileLayer("https://a.tile.opentopomap.org/{z}/{x}/{y}.png",
+      { attribution: "© OpenStreetMap、SRTM｜© OpenTopoMap (CC-BY-SA)", maxZoom: 17, maxNativeZoom: 17 }).addTo(browseMap);
     // 圖釘叢集：縮放時聚合，全台上千點也順暢
     browseLayer = (typeof L.markerClusterGroup === "function")
       ? L.markerClusterGroup({ maxClusterRadius: 50, chunkedLoading: true })
@@ -477,10 +485,8 @@ function showBrowseMap() {
   list.forEach(t => {
     if (!t.lat) return;
     const closed = t.condition && /暫停|封閉|關閉/.test(t.condition.status || "");
-    const mk = L.circleMarker([t.lat, t.lon], {
-      radius: 6, color: "#fff", weight: 1.5,
-      fillColor: closed ? "#b3322a" : (DIFF_COLOR[t.difficulty] || "#888"), fillOpacity: .92,
-    }).addTo(browseLayer);
+    const col = closed ? "#b3322a" : (DIFF_COLOR[t.difficulty] || "#888");
+    const mk = L.marker([t.lat, t.lon], { icon: pinIcon(col, closed ? "!" : (t.difficulty ?? "")) }).addTo(browseLayer);
     const safeName = t.name.replace(/[<>&]/g, "");
     mk.bindPopup(`<b>${safeName}</b><br>${t.difficulty_label}${t.length_km ? " · " + t.length_km + "km" : ""}${closed ? "<br>⚠️ " + t.condition.status : ""}<br><a href="#" class="popup-go">查看詳情</a>`);
     mk.on("popupopen", e => {
@@ -668,8 +674,8 @@ async function openDetail(id) {
   setTimeout(() => {
     if (!detailMap) {
       detailMap = L.map("detailMap", { zoomControl: false });
-      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-        { attribution: "© OpenStreetMap", maxZoom: 18 }).addTo(detailMap);
+      L.tileLayer("https://a.tile.opentopomap.org/{z}/{x}/{y}.png",
+        { attribution: "© OpenStreetMap、SRTM｜© OpenTopoMap (CC-BY-SA)", maxZoom: 17, maxNativeZoom: 17 }).addTo(detailMap);
       detailOverlay = L.layerGroup().addTo(detailMap);
       detailPoiLayer = L.layerGroup().addTo(detailMap);
     }
@@ -1103,7 +1109,7 @@ function openTrackReview(rec) {
   setTimeout(() => {
     if (!trackMap) {
       trackMap = L.map("trackMap", { zoomControl: false });
-      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap", maxZoom: 18 }).addTo(trackMap);
+      L.tileLayer("https://a.tile.opentopomap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap、SRTM｜© OpenTopoMap (CC-BY-SA)", maxZoom: 17, maxNativeZoom: 17 }).addTo(trackMap);
     }
     if (trackLayer) trackMap.removeLayer(trackLayer);
     trackLayer = L.layerGroup().addTo(trackMap);
@@ -1218,8 +1224,8 @@ function distToRoute(lat, lon) {
 function initRecMap() {
   if (!recMap) {
     recMap = L.map("recMap", { zoomControl: false }).setView([25.033, 121.564], 15);
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-      { attribution: "© OpenStreetMap", maxZoom: 19 }).addTo(recMap);
+    L.tileLayer("https://a.tile.opentopomap.org/{z}/{x}/{y}.png",
+      { attribution: "© OpenStreetMap、SRTM｜© OpenTopoMap (CC-BY-SA)", maxZoom: 17, maxNativeZoom: 17 }).addTo(recMap);
     recLine = L.polyline([], { color: "#2f7d4f", weight: 5 }).addTo(recMap);
   }
   recMap.invalidateSize();
