@@ -117,29 +117,41 @@ document.querySelectorAll(".tab").forEach(btn => {
 });
 
 // ---------- 探索：篩選與列表 ----------
-let curFilter = "all", curRegion = "all", curQuery = "";
+// 複選：同類用 OR、跨類用 AND；「全部」＝清空該類；再按一次取消
+let activeFilters = new Set();   // fav, done, family, d1..d45, tag:*
+let activeRegions = new Set();   // 地區（可複選）
+let curQuery = "";
 
-// 統一設定：難度/收藏/主題等「類別」篩選只有一個生效，跨主列與篩選面板同步高亮
-function setFilter(val) {
-  curFilter = val;
-  document.querySelectorAll("[data-filter]").forEach(c => c.classList.toggle("active", c.dataset.filter === val));
-  updateFilterDot(); render();
+function syncFilterUI() {
+  const none = activeFilters.size === 0;
+  document.querySelectorAll("[data-filter]").forEach(c =>
+    c.classList.toggle("active", c.dataset.filter === "all" ? none : activeFilters.has(c.dataset.filter)));
 }
-function setRegion(val) {
-  curRegion = val;
-  document.querySelectorAll("[data-region]").forEach(c => c.classList.toggle("active", c.dataset.region === val));
-  updateFilterDot(); render();
+function syncRegionUI() {
+  const none = activeRegions.size === 0;
+  document.querySelectorAll("[data-region]").forEach(c =>
+    c.classList.toggle("active", c.dataset.region === "all" ? none : activeRegions.has(c.dataset.region)));
+}
+function toggleFilter(val) {
+  if (val === "all") activeFilters.clear();
+  else if (activeFilters.has(val)) activeFilters.delete(val);
+  else activeFilters.add(val);
+  syncFilterUI(); updateFilterDot(); render();
+}
+function toggleRegion(val) {
+  if (val === "all") activeRegions.clear();
+  else if (activeRegions.has(val)) activeRegions.delete(val);
+  else activeRegions.add(val);
+  syncRegionUI(); updateFilterDot(); render();
 }
 function setSort(val) {
-  curSort = val;
-  document.querySelectorAll("[data-sort]").forEach(c => c.classList.toggle("active", c.dataset.sort === val));
+  curSort = (curSort === val) ? "default" : val;     // 再按一次取消（回預設）
+  document.querySelectorAll("[data-sort]").forEach(c => c.classList.toggle("active", c.dataset.sort === curSort));
   updateFilterDot(); render();
 }
 // 進階篩選啟用數量 → 篩選鈕上的小紅點
 function updateFilterDot() {
-  let n = 0;
-  if (!["all", "fav", "done", "family"].includes(curFilter)) n++;   // 難度/主題
-  if (curRegion !== "all") n++;
+  let n = activeFilters.size + activeRegions.size;
   if (curSort !== "default") n++;
   if (filterOpen) n++;
   if (filterGeo) n++;
@@ -155,12 +167,12 @@ function buildFsRegion() {
     regions.map(r => `<button class="chip" data-region="${r}">${r}</button>`).join("");
 }
 
-// 主列 + 篩選面板的難度/主題 chips（共用 data-filter）
+// 主列 + 篩選面板的難度/主題 chips（共用 data-filter，複選切換）
 document.querySelectorAll("[data-filter]").forEach(c =>
-  c.addEventListener("click", () => setFilter(c.dataset.filter)));
+  c.addEventListener("click", () => toggleFilter(c.dataset.filter)));
 // 篩選面板事件委派（地區/排序）
 $("#filterSheet").addEventListener("click", e => {
-  const r = e.target.closest("[data-region]"); if (r) return setRegion(r.dataset.region);
+  const r = e.target.closest("[data-region]"); if (r) return toggleRegion(r.dataset.region);
   const s = e.target.closest("[data-sort]"); if (s) return setSort(s.dataset.sort);
 });
 $("#fsOpen").addEventListener("click", () => { filterOpen = !filterOpen; $("#fsOpen").classList.toggle("active", filterOpen); updateFilterDot(); render(); });
@@ -173,7 +185,10 @@ $("#fsGrade").addEventListener("click", openGradeInfo);
 $("#fsReset").addEventListener("click", () => {
   filterOpen = false; filterGeo = false;
   $("#fsOpen").classList.remove("active"); $("#fsGeo").classList.remove("active");
-  setRegion("all"); setSort("default"); setFilter("all");
+  activeFilters.clear(); activeRegions.clear(); curSort = "default";
+  syncFilterUI(); syncRegionUI();
+  document.querySelectorAll("[data-sort]").forEach(c => c.classList.toggle("active", c.dataset.sort === "default"));
+  updateFilterDot(); render();
 });
 $("#btnFilter").addEventListener("click", () => { updateFilterDot(); $("#filterMask").classList.add("show"); $("#filterSheet").classList.add("show"); });
 function closeFilter() { $("#filterMask").classList.remove("show"); $("#filterSheet").classList.remove("show"); }
@@ -202,18 +217,22 @@ let pageSize = 60, shown = 0, curList = [];
 
 let curSort = "default", filterOpen = false, filterGeo = false;
 function isClosed(t) { return t.condition && /暫停|封閉|關閉/.test(t.condition.status || ""); }
+function matchDiff(f, t) { return f === "d45" ? t.difficulty >= 4 : t.difficulty === +f.slice(1); }
 function matches(t) {
-  if (curRegion !== "all" && t.region !== curRegion) return false;
+  // 地區（複選 OR）
+  if (activeRegions.size && !activeRegions.has(t.region)) return false;
   if (filterOpen && isClosed(t)) return false;
   if (filterGeo && !geoOf(t)) return false;
-  if (curFilter === "fav" && !Store.isFav(t.id)) return false;
-  if (curFilter === "done" && !Store.trailLog(t.id).done) return false;
-  if (curFilter === "family" && !t.family_friendly) return false;
-  if (curFilter === "d1" && t.difficulty !== 1) return false;
-  if (curFilter === "d2" && t.difficulty !== 2) return false;
-  if (curFilter === "d3" && t.difficulty !== 3) return false;
-  if (curFilter === "d45" && !(t.difficulty >= 4)) return false;
-  if (curFilter.startsWith("tag:") && !tagsOf(t).includes(curFilter.slice(4))) return false;
+  // 旗標（各自 AND）
+  if (activeFilters.has("fav") && !Store.isFav(t.id)) return false;
+  if (activeFilters.has("done") && !Store.trailLog(t.id).done) return false;
+  if (activeFilters.has("family") && !t.family_friendly) return false;
+  // 難度（複選 OR）
+  const diffs = [...activeFilters].filter(f => /^d\d/.test(f));
+  if (diffs.length && !diffs.some(f => matchDiff(f, t))) return false;
+  // 主題標籤（複選 OR）
+  const tags = [...activeFilters].filter(f => f.startsWith("tag:")).map(f => f.slice(4));
+  if (tags.length) { const tt = tagsOf(t); if (!tags.some(g => tt.includes(g))) return false; }
   if (curQuery) {
     const q = curQuery.toLowerCase().replace(/\s+/g, "");
     const hay = `${t.name} ${t.position || ""} ${t.region || ""} ${t.system || ""} ${tagsOf(t).join("")}`
