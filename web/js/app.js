@@ -2115,7 +2115,7 @@ $("#closeGradeBtn").addEventListener("click", closeGradeInfo);
 
 // ---------- 外觀主題 ----------
 function applyTheme(mode) {
-  const dark = mode === "dark" || (mode === "auto" && matchMedia("(prefers-color-scheme: dark)").matches);
+  const dark = mode === "dark";
   document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", dark ? "#13160f" : "#16301f");
@@ -2129,15 +2129,16 @@ function applySeason() {
 }
 function initTheme() {
   applySeason();
-  const mode = localStorage.getItem("tt_theme") || "auto";
+  let mode = localStorage.getItem("tt_theme");
+  if (mode !== "light" && mode !== "dark") {   // 舊「自動」或未設定 → 依目前系統解析成固定值並記住
+    mode = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    localStorage.setItem("tt_theme", mode);
+  }
   applyTheme(mode);
   document.querySelectorAll(".theme-opt").forEach(b => b.addEventListener("click", () => {
     localStorage.setItem("tt_theme", b.dataset.themeOpt);
     applyTheme(b.dataset.themeOpt);
   }));
-  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
-    if ((localStorage.getItem("tt_theme") || "auto") === "auto") applyTheme("auto");
-  });
 }
 
 // ---------- 崩潰復原：載入時若有未結束的記錄，復原為暫停狀態 ----------
