@@ -87,6 +87,13 @@
         </button>
       </div>
     </div>
+    <div class="near-row" id="nearRow" style="display:none">
+      <span class="near-label">📍 附近</span>
+      <button class="chip" data-radius="5">5 km</button>
+      <button class="chip" data-radius="10">10 km</button>
+      <button class="chip" data-radius="20">20 km</button>
+      <button class="chip active" data-radius="0">不限</button>
+    </div>
     <div id="browseMap" style="display:none"></div>
     <div id="trailList"></div>
   </section>
@@ -159,7 +166,10 @@
 
     <div class="hist-head">
       <span class="section-title" style="margin:0">行程紀錄</span>
-      <button class="btn-clear-all" id="btnClearAll" style="display:none">清除全部</button>
+      <span style="display:flex;gap:8px">
+        <button class="btn-clear-all" id="btnExportGpxAll" style="display:none;color:var(--brand-deep)">⬇️ 全部GPX</button>
+        <button class="btn-clear-all" id="btnClearAll" style="display:none">清除全部</button>
+      </span>
     </div>
     <div id="historyList"></div>
 
@@ -229,12 +239,14 @@
           <button class="chip" data-sort="length-desc">最長</button>
           <button class="chip" data-sort="diff-asc">最易</button>
           <button class="chip" data-sort="diff-desc">最難</button>
+          <button class="chip" data-sort="rating-desc">我的評分</button>
           <button class="chip" data-sort="name">名稱</button>
         </div>
       </div>
       <div class="fs-group">
         <div class="fs-label">其他</div>
         <div class="fs-chips">
+          <button class="chip" data-filter="rated4">我評 4★+</button>
           <button class="chip" id="fsOpen">排除封閉</button>
           <button class="chip" id="fsGeo">只看有路線</button>
           <button class="chip" id="fsGrade">ⓘ 分級說明</button>

@@ -299,7 +299,7 @@ document.querySelectorAll(".seg-btn[data-mode]").forEach(b => b.addEventListener
 let myLoc = null;       // 使用者位置（附近排序用）
 let pageSize = 60, shown = 0, curList = [];
 
-let curSort = "default", filterOpen = false, filterGeo = false;
+let curSort = "default", filterOpen = false, filterGeo = false, nearRadius = 0;
 function isClosed(t) { return t.condition && /暫停|封閉|關閉/.test(t.condition.status || ""); }
 function matchDiff(f, t) { return f === "d45" ? t.difficulty >= 4 : t.difficulty === +f.slice(1); }
 function matches(t) {
@@ -311,6 +311,8 @@ function matches(t) {
   if (activeFilters.has("fav") && !Store.isFav(t.id)) return false;
   if (activeFilters.has("done") && !Store.trailLog(t.id).done) return false;
   if (activeFilters.has("family") && !t.family_friendly) return false;
+  if (activeFilters.has("rated4") && (Store.trailLog(t.id).rating || 0) < 4) return false;
+  if (nearRadius && myLoc) { if (!t.lat || haversine(myLoc, { lat: t.lat, lon: t.lon }) > nearRadius * 1000) return false; }
   // 難度（複選 OR）
   const diffs = [...activeFilters].filter(f => /^d\d/.test(f));
   if (diffs.length && !diffs.some(f => matchDiff(f, t))) return false;
@@ -371,6 +373,7 @@ function render() {
     const cmp = {
       "length-asc": (a, b) => ln(a) - ln(b), "length-desc": (a, b) => ln(b) - ln(a),
       "diff-asc": (a, b) => df(a) - df(b), "diff-desc": (a, b) => df(b) - df(a),
+      "rating-desc": (a, b) => (Store.trailLog(b.id).rating || 0) - (Store.trailLog(a.id).rating || 0),
       "name": (a, b) => a.name.localeCompare(b.name, "zh-Hant"),
     }[curSort];
     if (cmp) curList.sort(cmp);
@@ -473,15 +476,20 @@ function showBrowseMap() {
 // 附近排序
 $("#btnNearMe").addEventListener("click", () => {
   const btn = $("#btnNearMe");
-  if (myLoc) { myLoc = null; btn.classList.remove("active"); render(); toast("已關閉附近排序"); return; }
+  if (myLoc) { myLoc = null; nearRadius = 0; btn.classList.remove("active"); $("#nearRow").style.display = "none"; render(); toast("已關閉附近排序"); return; }
   if (!navigator.geolocation) { toast("此裝置不支援定位"); return; }
   toast("定位中…");
   navigator.geolocation.getCurrentPosition(
     pos => { myLoc = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-      btn.classList.add("active"); render(); toast("已依距離排序"); },
+      btn.classList.add("active"); $("#nearRow").style.display = "flex"; render(); toast("已依距離排序"); },
     () => { toast("定位失敗，請允許定位權限"); },
     { enableHighAccuracy: true, timeout: 10000 });
 });
+$("#nearRow").querySelectorAll("[data-radius]").forEach(b => b.addEventListener("click", () => {
+  nearRadius = +b.dataset.radius;
+  $("#nearRow").querySelectorAll("[data-radius]").forEach(x => x.classList.toggle("active", x === b));
+  render();
+}));
 
 // 步道路況/封閉警示橫幅
 function fmtYmd(s) { return s && s.length === 8 ? `${s.slice(0, 4)}/${s.slice(4, 6)}/${s.slice(6)}` : s; }
@@ -1363,6 +1371,9 @@ $("#btnSaveProfile").addEventListener("click", () => {
   Store.saveProfile({ weight: Number($("#pfWeight").value) || 60, height: Number($("#pfHeight").value) || 170 });
   toast("已儲存個人資料");
 });
+$("#btnExportGpxAll").addEventListener("click", () => {
+  GPX.exportAll(Store.getRecords()) ? toast("已匯出全部行程 GPX") : toast("尚無行程可匯出");
+});
 $("#btnClearAll").addEventListener("click", () => {
   if (confirm("確定清除「全部」行程紀錄？此動作無法復原。")) {
     Store.clearRecords();
@@ -1462,6 +1473,8 @@ function renderHistory() {
   const wrap = $("#historyList");
   const clearBtn = $("#btnClearAll");
   if (clearBtn) clearBtn.style.display = recs.length ? "block" : "none";
+  const gpxAll = $("#btnExportGpxAll");
+  if (gpxAll) gpxAll.style.display = recs.length ? "block" : "none";
   if (!recs.length) { wrap.innerHTML = `<div class="empty"><span class="big">🚶</span>還沒有行程紀錄<br>到「記錄」分頁開始你的第一條路線</div>`; return; }
   wrap.innerHTML = recs.map(r => `
     <div class="hist-card" data-id="${r.id}">
