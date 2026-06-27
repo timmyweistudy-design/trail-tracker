@@ -1370,6 +1370,7 @@ $("#btnStop").addEventListener("click", () => {
   if (rec) {
     rec.trailName = Recorder._trailName || "自由路線";
     Store.addRecord(rec);
+    checkPetEvolve();
     $("#recStatus").textContent = "準備就緒，按「開始」記錄路徑";
     openTrackReview(rec);              // 結束後顯示總結頁
   } else {
@@ -1445,6 +1446,52 @@ $("#btnClearTiles").addEventListener("click", async () => {
   }
 });
 
+// 山林夥伴：靠累積里程進化的虛擬寵物
+const PET_STAGES = [
+  { km: 0, e: "🥚", n: "神秘之卵", d: "靜靜等待破殼的那一刻……多走幾步喚醒牠。" },
+  { km: 3, e: "🐛", n: "草叢幼蟲", d: "剛孵化的小生命，在步道邊探出了頭。" },
+  { km: 12, e: "🦋", n: "翩翩彩蝶", d: "蛻變成蝶，隨你翻山越嶺。" },
+  { km: 30, e: "🦊", n: "靈巧山狐", d: "穿梭林間的夥伴，腳程越來越好。" },
+  { km: 70, e: "🐅", n: "山林猛虎", d: "氣勢威猛，群山都是牠的領地。" },
+  { km: 130, e: "🐲", n: "初醒幼龍", d: "傳說的力量正在覺醒……" },
+  { km: 220, e: "🐉", n: "騰雲神龍", d: "已達最終型態！與你一同騰雲駕霧。" },
+];
+const PET_TAPS = ["要再去走走嗎？", "今天也一起爬山吧！", "我準備好出發了！", "下一座山在等我們～", "腳力越來越好囉！", "謝謝你帶我看風景 🌲"];
+function totalKm() { return Store.getRecords().reduce((s, r) => s + (r.distanceKm || 0), 0); }
+function petStageIndex(km) { let i = 0; for (let k = 0; k < PET_STAGES.length; k++) if (km >= PET_STAGES[k].km) i = k; return i; }
+function renderPet() {
+  const box = $("#petCard");
+  if (!box) return;
+  const km = totalKm(), i = petStageIndex(km), st = PET_STAGES[i], next = PET_STAGES[i + 1];
+  let prog = "", sub;
+  if (next) {
+    const pct = Math.max(0, Math.min(100, Math.round((km - st.km) / (next.km - st.km) * 100)));
+    sub = `再 <b>${(next.km - km).toFixed(1)}</b> km 進化成 ${next.e} ${next.n}`;
+    prog = `<div class="pet-bar"><i style="width:${pct}%"></i></div>`;
+  } else sub = "已是最終型態 ✨ 繼續同行！";
+  box.innerHTML = `<div class="pet-card${i >= 6 ? " final" : ""}">
+    <div class="pet-emoji" id="petEmoji" role="img" aria-label="${st.n}">${st.e}</div>
+    <div class="pet-info">
+      <div class="pet-name">${st.n}<span class="pet-lv">Lv.${i + 1}</span></div>
+      <div class="pet-desc">${st.d}</div>
+      <div class="pet-sub">已陪你走 <b>${km.toFixed(1)}</b> km　·　${sub}</div>
+      ${prog}
+    </div>
+  </div>`;
+  const em = $("#petEmoji");
+  if (em) em.addEventListener("click", () => {
+    em.classList.remove("tap"); void em.offsetWidth; em.classList.add("tap");
+    if (navigator.vibrate) navigator.vibrate(20);
+    toast(PET_TAPS[Math.floor(Math.random() * PET_TAPS.length)]);
+  });
+}
+// 走完後檢查是否進化（跨次也記住）
+function checkPetEvolve() {
+  const i = petStageIndex(totalKm());
+  const prev = +(localStorage.getItem("tt_pet_stage") || 0);
+  if (i !== prev) localStorage.setItem("tt_pet_stage", i);
+  if (i > prev) { const st = PET_STAGES[i]; setTimeout(() => toast(`🎉 夥伴進化成 ${st.e} ${st.n}！`), 900); }
+}
 function renderStats() {
   const box = $("#meStats");
   if (!box) return;
@@ -1484,6 +1531,7 @@ function countUp(el) {
   })(t0);
 }
 function renderHistory() {
+  renderPet();
   renderStats();
   const recs = Store.getRecords();
   const wrap = $("#historyList");
@@ -1570,6 +1618,7 @@ function restoreActiveRecording() {
 buildFsRegion();
 buildCollections();
 initTheme();
+if (localStorage.getItem("tt_pet_stage") === null) localStorage.setItem("tt_pet_stage", petStageIndex(totalKm()));   // 既有里程不誤觸進化提示
 render();
 loadProfile();
 restoreActiveRecording();
