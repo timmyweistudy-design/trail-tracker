@@ -296,6 +296,38 @@ $("#fsReset").addEventListener("click", () => {
   updateFilterDot(); render();
 });
 $("#btnFilter").addEventListener("click", () => { updateFilterDot(); $("#filterMask").classList.add("show"); $("#filterSheet").classList.add("show"); $("#closeFilterBtn").focus({ preventScroll: true }); });
+
+// 篩選預設組（口袋路線）
+function getPresets() { try { return JSON.parse(localStorage.getItem("tt_presets")) || []; } catch { return []; } }
+function savePresets(a) { localStorage.setItem("tt_presets", JSON.stringify(a)); }
+function currentFilterState() { return { filters: [...activeFilters], regions: [...activeRegions], sort: curSort, open: filterOpen, geo: filterGeo, maxLen, maxAsc }; }
+function applyPreset(p) {
+  activeFilters = new Set(p.filters || []); activeRegions = new Set(p.regions || []);
+  curSort = p.sort || "default"; filterOpen = !!p.open; filterGeo = !!p.geo; maxLen = p.maxLen || 0; maxAsc = p.maxAsc || 0;
+  syncFilterUI(); syncRegionUI();
+  document.querySelectorAll("[data-sort]").forEach(c => c.classList.toggle("active", c.dataset.sort === curSort));
+  $("#fsOpen").classList.toggle("active", filterOpen); $("#fsGeo").classList.toggle("active", filterGeo);
+  $("#lenRange").value = maxLen || 30; $("#ascRange").value = maxAsc || 2000;
+  $("#lenVal").textContent = maxLen ? `≤ ${maxLen} km` : "不限"; $("#ascVal").textContent = maxAsc ? `≤ ${maxAsc} m` : "不限";
+  if (filterGeo) ensureGeo().then(() => { updateFilterDot(); render(); }); else { updateFilterDot(); render(); }
+}
+function buildPresets() {
+  const ps = getPresets(), grp = $("#fsPresetGroup"), box = $("#fsPresets");
+  if (!grp) return;
+  grp.style.display = ps.length ? "" : "none";
+  box.innerHTML = ps.map((p, i) => `<button class="chip preset" data-i="${i}">${p.name}<span class="px" data-del="${i}">✕</span></button>`).join("");
+  box.querySelectorAll(".chip.preset").forEach(b => b.addEventListener("click", e => {
+    if (e.target.dataset.del != null) { const a = getPresets(); a.splice(+e.target.dataset.del, 1); savePresets(a); buildPresets(); return; }
+    applyPreset(ps[+b.dataset.i]);
+  }));
+}
+$("#fsSavePreset").addEventListener("click", () => {
+  if (!activeFilters.size && !activeRegions.size && curSort === "default" && !filterOpen && !filterGeo && !maxLen && !maxAsc) { toast("先設定一些篩選再儲存"); return; }
+  const name = prompt("為這組篩選命名：", "常用篩選");
+  if (name == null) return;
+  const a = getPresets(); a.push({ name: name.trim().slice(0, 10) || "常用", ...currentFilterState() }); savePresets(a);
+  buildPresets(); toast("已存成口袋路線");
+});
 function closeFilter() { $("#filterMask").classList.remove("show"); $("#filterSheet").classList.remove("show"); }
 $("#filterMask").addEventListener("click", closeFilter);
 $("#closeFilterBtn").addEventListener("click", closeFilter);
@@ -2054,6 +2086,7 @@ function restoreActiveRecording() {
 setTimeout(() => { const s = document.getElementById("splash"); if (s) s.remove(); }, 1700);
 buildFsRegion();
 buildCollections();
+buildPresets();
 initTheme();
 if (localStorage.getItem("tt_pet_stage") === null) localStorage.setItem("tt_pet_stage", petStageIndex(totalKm()));   // 既有里程不誤觸進化提示
 render();

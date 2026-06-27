@@ -225,6 +225,10 @@
     <button class="sheet-close" id="closeFilterBtn" aria-label="關閉">✕</button>
     <div class="sheet-body">
       <h2 style="margin-top:6px">篩選與排序</h2>
+      <div class="fs-group" id="fsPresetGroup" style="display:none">
+        <div class="fs-label">我的口袋路線</div>
+        <div class="fs-chips" id="fsPresets"></div>
+      </div>
       <div class="fs-group">
         <div class="fs-label">難度</div>
         <div class="fs-chips">
@@ -284,6 +288,7 @@
           <button class="chip" id="fsGrade">ⓘ 分級說明</button>
         </div>
       </div>
+      <button class="btn ghost" id="fsSavePreset" style="margin-top:6px">💾 存為常用篩選</button>
       <div class="fs-sheet-foot">
         <button class="btn ghost" id="fsReset" style="margin-top:0">重設</button>
         <button class="btn primary" id="fsApply" style="margin-top:0">查看 <span id="fsCount"></span> 條</button>
