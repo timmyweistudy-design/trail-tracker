@@ -23,6 +23,11 @@ const Store = (() => {
     localStorage.setItem(RK, JSON.stringify(getRecords().filter(r => r.id !== id)));
   }
   function clearRecords() { localStorage.removeItem(RK); }
+  function clearSimRecords() {
+    const kept = getRecords().filter(r => !r.sim);
+    localStorage.setItem(RK, JSON.stringify(kept));
+    return kept.length;
+  }
 
   // 收藏
   const FK = "tt_favs";
@@ -50,12 +55,15 @@ const Store = (() => {
 
   // 備份 / 還原（避免換手機或清快取資料遺失）
   function exportAll() {
+    const pet = {};
+    for (const k of ["tt_pet_name", "tt_pet_hatch", "tt_pet_stage", "tt_pet_base"]) { const v = localStorage.getItem(k); if (v != null) pet[k] = v; }
     return { v: 1, exportedAt: new Date().toISOString(),
-      profile: getProfile(), records: getRecords(), favs: getFavs(), log: getLog() };
+      profile: getProfile(), records: getRecords(), favs: getFavs(), log: getLog(), pet };
   }
   function importAll(data, mode) {
     if (!data || typeof data !== "object") throw new Error("格式錯誤");
     if (data.profile) saveProfile(data.profile);
+    if (data.pet) for (const k in data.pet) try { localStorage.setItem(k, data.pet[k]); } catch { /* */ }
     if (mode === "merge") {
       const ids = new Set(getRecords().map(r => r.id));
       const merged = getRecords().concat((data.records || []).filter(r => !ids.has(r.id)))
@@ -71,7 +79,7 @@ const Store = (() => {
   }
 
   return { getProfile, saveProfile, weight, height, getRecords, addRecord, deleteRecord, clearRecords,
-           getFavs, isFav, toggleFav, trailLog, setTrailLog, doneCount, exportAll, importAll };
+           getFavs, isFav, toggleFav, trailLog, setTrailLog, doneCount, exportAll, importAll, clearSimRecords };
 })();
 
 // 公用：兩點 haversine 距離（公尺）

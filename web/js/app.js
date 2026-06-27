@@ -1388,6 +1388,18 @@ $("#btnSaveProfile").addEventListener("click", () => {
   Store.saveProfile({ weight: Number($("#pfWeight").value) || 60, height: Number($("#pfHeight").value) || 170 });
   toast("已儲存個人資料");
 });
+$("#btnClearSim").addEventListener("click", () => {
+  if (!confirm("清除所有『模擬』行程紀錄？\n（真實記錄不受影響）")) return;
+  Store.clearSimRecords(); renderHistory(); render(); toast("已清除模擬紀錄");
+});
+$("#btnResetPet").addEventListener("click", () => {
+  if (!confirm("重置山林夥伴？\n會從一顆新的蛋重新養成（之前里程不再計入，真實紀錄保留）。")) return;
+  localStorage.setItem("tt_pet_base", String(realTotalKm()));
+  localStorage.setItem("tt_pet_hatch", new Date().toISOString());
+  localStorage.setItem("tt_pet_stage", "0");
+  localStorage.removeItem("tt_pet_name");
+  renderPet(); toast("已重置夥伴 🥚");
+});
 $("#btnExportGpxAll").addEventListener("click", () => {
   GPX.exportAll(Store.getRecords()) ? toast("已匯出全部行程 GPX") : toast("尚無行程可匯出");
 });
@@ -1457,26 +1469,63 @@ const PET_STAGES = [
   { km: 220, e: "🐉", n: "騰雲神龍", d: "已達最終型態！與你一同騰雲駕霧。" },
 ];
 const PET_TAPS = ["要再去走走嗎？", "今天也一起爬山吧！", "我準備好出發了！", "下一座山在等我們～", "腳力越來越好囉！", "謝謝你帶我看風景 🌲"];
+// 棲息地背景（隨進化升級）
+const PET_BG = [
+  "linear-gradient(140deg,#403626,#2a2418)", "linear-gradient(140deg,#33502d,#1d3019)",
+  "linear-gradient(140deg,#356b4a,#1f4730)", "linear-gradient(140deg,#2a5a3a,#16301f)",
+  "linear-gradient(140deg,#5a4a2a,#2c2a1a)", "linear-gradient(140deg,#3a3a6b,#1f2547)",
+  "linear-gradient(140deg,#2b5a3a,#234a6b 55%,#16301f)",
+];
 function realRecords() { return Store.getRecords().filter(r => !r.sim); }   // 排除模擬
-function totalKm() { return realRecords().reduce((s, r) => s + (r.distanceKm || 0), 0); }
+function realTotalKm() { return realRecords().reduce((s, r) => s + (r.distanceKm || 0), 0); }
+function petBase() { return +(localStorage.getItem("tt_pet_base") || 0); }
+function totalKm() { return Math.max(0, realTotalKm() - petBase()); }   // 這隻夥伴的成長里程
 function petStageIndex(km) { let i = 0; for (let k = 0; k < PET_STAGES.length; k++) if (km >= PET_STAGES[k].km) i = k; return i; }
+function petName() { return localStorage.getItem("tt_pet_name") || ""; }
+function petHatch() { let h = localStorage.getItem("tt_pet_hatch"); if (!h) { h = new Date().toISOString(); localStorage.setItem("tt_pet_hatch", h); } return h; }
+function daysSince(iso) { return Math.max(0, Math.floor((Date.now() - new Date(iso)) / 864e5)); }
+function weekIndex(d) { const dt = new Date(d); dt.setHours(0, 0, 0, 0); dt.setDate(dt.getDate() - ((dt.getDay() + 6) % 7)); return Math.round(dt / 6048e5); }
+function weeksStreak() {
+  const recs = realRecords(); if (!recs.length) return 0;
+  const weeks = new Set(recs.map(r => weekIndex(r.date)));
+  const now = weekIndex(Date.now());
+  let w = weeks.has(now) ? now : now - 1, s = 0;
+  while (weeks.has(w)) { s++; w--; }
+  return s;
+}
+function petMood() {
+  const last = realRecords()[0];   // 最新一筆（紀錄為新到舊）
+  if (!last) return { e: "🌙", t: "等你帶牠出門走走" };
+  const d = daysSince(last.date);
+  if (d <= 1) return { e: "😊", t: "剛運動完，活力滿滿！" };
+  if (d <= 4) return { e: "🙂", t: "狀態不錯，隨時能出發" };
+  if (d <= 9) return { e: "🥺", t: "有點想念山林了…" };
+  return { e: "😴", t: "好久沒出門，懶洋洋的" };
+}
 function renderPet() {
   const box = $("#petCard");
   if (!box) return;
   const km = totalKm(), i = petStageIndex(km), st = PET_STAGES[i], next = PET_STAGES[i + 1];
+  const nm = petName(), mood = petMood(), days = daysSince(petHatch()), streak = weeksStreak();
   let prog = "", sub;
   if (next) {
-    const pct = Math.max(0, Math.min(100, Math.round((km - st.km) / (next.km - st.km) * 100)));
+    const pct = Math.max(2, Math.min(100, Math.round((km - st.km) / (next.km - st.km) * 100)));
     sub = `再 <b>${(next.km - km).toFixed(1)}</b> km 進化成 ${next.e} ${next.n}`;
     prog = `<div class="pet-bar"><i style="width:${pct}%"></i></div>`;
   } else sub = "已是最終型態 ✨ 繼續同行！";
-  box.innerHTML = `<div class="pet-card${i >= 6 ? " final" : ""}">
+  box.innerHTML = `<div class="pet-card${i >= 6 ? " final" : ""}" style="background:${PET_BG[i]}">
     <div class="pet-emoji" id="petEmoji" role="img" aria-label="${st.n}">${st.e}</div>
     <div class="pet-info">
-      <div class="pet-name">${st.n}<span class="pet-lv">Lv.${i + 1}</span></div>
-      <div class="pet-desc">${st.d}</div>
-      <div class="pet-sub">已陪你走 <b>${km.toFixed(1)}</b> km　·　${sub}</div>
+      <div class="pet-name">${nm || st.n}<span class="pet-lv">Lv.${i + 1}</span>
+        <button class="pet-edit" id="petRename" title="命名" aria-label="命名">✎</button></div>
+      <div class="pet-mood">${mood.e} ${mood.t}</div>
+      <div class="pet-sub">${nm ? st.n + "・" : ""}已走 <b>${km.toFixed(1)}</b> km・同行 <b>${days}</b> 天${streak >= 2 ? `・🔥連續${streak}週` : ""}</div>
+      <div class="pet-sub" style="opacity:.9">${sub}</div>
       ${prog}
+      <div class="pet-btns">
+        <button class="pet-btn" id="petDex">📖 夥伴手冊</button>
+        <button class="pet-btn" id="petRec">🧭 帶我去走</button>
+      </div>
     </div>
   </div>`;
   const em = $("#petEmoji");
@@ -1485,13 +1534,92 @@ function renderPet() {
     if (navigator.vibrate) navigator.vibrate(20);
     toast(PET_TAPS[Math.floor(Math.random() * PET_TAPS.length)]);
   });
+  $("#petRename").addEventListener("click", () => {
+    const v = prompt("幫你的山林夥伴取個名字：", nm || st.n);
+    if (v != null) { localStorage.setItem("tt_pet_name", v.trim().slice(0, 12)); renderPet(); }
+  });
+  $("#petDex").addEventListener("click", openPetDex);
+  $("#petRec").addEventListener("click", petRecommend);
+}
+// 夥伴推薦一條主題
+function petRecommend() {
+  const picks = [["tag:瀑布", "瀑布"], ["tag:古道", "古道"], ["tag:海景", "海景"], ["tag:森林", "森林"], ["family", "親子友善"], ["tag:湖泊", "湖泊"]];
+  const [f, label] = picks[Math.floor(Math.random() * picks.length)];
+  document.querySelector('.tab[data-view="explore"]').click();
+  activeFilters = new Set([f]); activeRegions.clear(); curQuery = ""; $("#searchInput").value = "";
+  syncFilterUI(); syncRegionUI(); updateFilterDot(); render();
+  toast(`夥伴想去走「${label}」！`);
+}
+// 成就徽章
+function petBadges() {
+  const recs = realRecords();
+  const km = recs.reduce((s, r) => s + (r.distanceKm || 0), 0);
+  const asc = recs.reduce((s, r) => s + (r.ascent || 0), 0);
+  const maxOne = recs.reduce((m, r) => Math.max(m, r.distanceKm || 0), 0);
+  const hrs = recs.map(r => new Date(r.date).getHours());
+  return [
+    { e: "👣", n: "初心者", got: recs.length >= 1, d: "完成第一次記錄" },
+    { e: "🔟", n: "常客", got: recs.length >= 10, d: "累積 10 次出行" },
+    { e: "💯", n: "百K俱樂部", got: km >= 100, d: "總里程達 100 km" },
+    { e: "⛰️", n: "爬升大師", got: asc >= 2000, d: "總爬升達 2000 m" },
+    { e: "🏃", n: "健行馬拉松", got: maxOne >= 10, d: "單次步行 ≥ 10 km" },
+    { e: "🌅", n: "早起鳥", got: hrs.some(h => h < 7), d: "清晨 7 點前出發" },
+    { e: "🌙", n: "夜行者", got: hrs.some(h => h >= 19), d: "晚間 7 點後出發" },
+    { e: "🔥", n: "堅持者", got: weeksStreak() >= 4, d: "連續 4 週都有走" },
+  ];
+}
+// 夥伴手冊：進化圖鑑 + 成就徽章
+function openPetDex() {
+  const reached = petStageIndex(totalKm());
+  const stages = PET_STAGES.map((s, i) => `
+    <div class="dex-stage${i <= reached ? "" : " locked"}">
+      <div class="dex-e">${i <= reached ? s.e : "❔"}</div>
+      <div class="dex-t">${i <= reached ? s.n : "？？？"}</div>
+      <div class="dex-k">${s.km} km</div>
+    </div>`).join("");
+  const badges = petBadges().map(b => `
+    <div class="dex-badge${b.got ? "" : " locked"}">
+      <span class="db-e">${b.e}</span><span class="db-n">${b.n}</span><span class="db-d">${b.d}</span>
+    </div>`).join("");
+  const ov = document.createElement("div");
+  ov.className = "pet-modal";
+  ov.innerHTML = `<div class="pet-modal-card">
+    <button class="sheet-close" id="petDexClose" aria-label="關閉">✕</button>
+    <h2>夥伴手冊</h2>
+    <div class="dex-sec">進化圖鑑</div>
+    <div class="dex-stages">${stages}</div>
+    <div class="dex-sec">成就徽章</div>
+    <div class="dex-badges">${badges}</div>
+  </div>`;
+  document.body.appendChild(ov);
+  const close = () => ov.remove();
+  ov.addEventListener("click", e => { if (e.target === ov) close(); });
+  ov.querySelector("#petDexClose").addEventListener("click", close);
+}
+// 全螢幕進化慶祝
+function celebrateEvolve(st, lv) {
+  const ov = document.createElement("div");
+  ov.className = "evolve-ov";
+  ov.innerHTML = `<div class="evolve-card">
+    <div class="evolve-spark"></div>
+    <div class="evolve-emoji">${st.e}</div>
+    <div class="evolve-h">進化！</div>
+    <div class="evolve-n">${petName() || st.n}　Lv.${lv}</div>
+    <div class="evolve-d">${st.d}</div>
+    <button class="btn primary" id="evolveOk">太棒了</button>
+  </div>`;
+  document.body.appendChild(ov);
+  if (navigator.vibrate) navigator.vibrate([60, 40, 120]);
+  const close = () => ov.remove();
+  ov.querySelector("#evolveOk").addEventListener("click", close);
+  ov.addEventListener("click", e => { if (e.target === ov) close(); });
 }
 // 走完後檢查是否進化（跨次也記住）
 function checkPetEvolve() {
   const i = petStageIndex(totalKm());
   const prev = +(localStorage.getItem("tt_pet_stage") || 0);
   if (i !== prev) localStorage.setItem("tt_pet_stage", i);
-  if (i > prev) { const st = PET_STAGES[i]; setTimeout(() => toast(`🎉 夥伴進化成 ${st.e} ${st.n}！`), 900); }
+  if (i > prev) setTimeout(() => celebrateEvolve(PET_STAGES[i], i + 1), 800);
 }
 function renderStats() {
   const box = $("#meStats");
