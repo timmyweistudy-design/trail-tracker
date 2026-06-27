@@ -252,7 +252,7 @@ function trailCard(t) {
   let slope = "";
   if (t.ascent != null && t.length_km) {
     const w = Math.max(6, Math.min(100, Math.round(t.ascent / t.length_km / 4)));
-    slope = `<div class="slope-bar"><i style="width:${w}%"></i></div>`;
+    slope = `<div class="slope-row"><span class="slope-label">陡度</span><div class="slope-bar"><i style="width:${w}%"></i></div></div>`;
   }
   return `<div class="card" data-id="${t.id}">
     <button class="fav-star${Store.isFav(t.id) ? " on" : ""}" data-fav="${t.id}" aria-label="收藏 ${t.name}">${Store.isFav(t.id) ? "★" : "☆"}</button>
