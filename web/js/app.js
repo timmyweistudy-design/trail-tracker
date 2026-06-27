@@ -604,7 +604,7 @@ $("#closeDetailBtn").addEventListener("click", closeDetail);
 
 // ---------- 記錄頁 ----------
 // 行程軌跡回顧 / 結束總結
-let trackMap = null, trackLayer = null, trackAnim = null, trackReplayLayer = null, trackPts = null;
+let trackMap = null, trackLayer = null, trackAnim = null, trackReplayLayer = null, trackPts = null, trackStats = null;
 const _hav = (a, b) => haversine({ lat: a[0], lon: a[1] }, { lat: b[0], lon: b[1] });
 // 結算頁滑行重播：marker 沿軌跡滑行、路線同步畫出（約8秒）
 function playTrackReplay(pts) {
@@ -619,6 +619,12 @@ function playTrackReplay(pts) {
   const dot = L.circleMarker(pts[0], { radius: 7, color: "#fff", weight: 3, fillColor: "#e8893b", fillOpacity: 1 }).addTo(trackReplayLayer);
   const fullBounds = L.polyline(pts).getBounds();
   trackMap.setView(pts[0], 16);                  // 鏡頭拉近到起點，跟著走
+  // 即時數字跑動的小牌子（疊在地圖左上）
+  let live = document.getElementById("replayLive");
+  if (!live) { live = document.createElement("div"); live.id = "replayLive"; live.className = "replay-live"; }
+  trackMap.getContainer().appendChild(live);
+  live.style.display = "";
+  const totMs = (trackStats && trackStats.ms) || 0;
   const DURATION = 8000, interval = 25, frames = Math.round(DURATION / interval);
   let f = 0, idx = 0;
   trackAnim = setInterval(() => {
@@ -632,10 +638,13 @@ function playTrackReplay(pts) {
     grow.setLatLngs(pts.slice(0, idx + 1).concat([cur]));
     dot.setLatLng(cur);
     trackMap.panTo(cur, { animate: false });      // 鏡頭跟著腳步滑行＝重走這條路
+    const frac = f / frames;
+    live.innerHTML = `<b>${(d / 1000).toFixed(2)}</b> km　·　${fmtTime(totMs * frac)}`;
     if (f >= frames || d >= total) {
       clearInterval(trackAnim); trackAnim = null;
       grow.setLatLngs(pts);
       L.circleMarker(pts[pts.length - 1], { radius: 6, color: "#fff", weight: 2, fillColor: "#d2542e", fillOpacity: 1 }).addTo(trackReplayLayer);
+      live.innerHTML = `<b>${(trackStats ? trackStats.km : d / 1000).toFixed(2)}</b> km　·　${fmtTime(totMs)}　🏁`;
       trackMap.flyToBounds(fullBounds, { padding: [24, 24], duration: 0.8 });   // 走完拉遠看全程
     }
   }, interval);
@@ -671,6 +680,7 @@ function openTrackReview(rec) {
     trackLayer = L.layerGroup().addTo(trackMap);
     const pts = (rec.track || []).map(p => [p.lat, p.lon]);
     trackPts = pts;
+    trackStats = { km, ms: rec.elapsedMs };
     trackMap.invalidateSize();
     if (pts.length > 1) {
       trackMap.fitBounds(L.polyline(pts).getBounds(), { padding: [24, 24] });
@@ -690,7 +700,7 @@ function openTrackReview(rec) {
     else toast(text);
   });
 }
-function closeTrackReview() { if (trackAnim) { clearInterval(trackAnim); trackAnim = null; } $("#trackMask").classList.remove("show"); $("#trackSheet").classList.remove("show"); }
+function closeTrackReview() { if (trackAnim) { clearInterval(trackAnim); trackAnim = null; } const lv = document.getElementById("replayLive"); if (lv) lv.style.display = "none"; $("#trackMask").classList.remove("show"); $("#trackSheet").classList.remove("show"); }
 $("#trackMask").addEventListener("click", closeTrackReview);
 $("#closeTrackBtn").addEventListener("click", closeTrackReview);
 
