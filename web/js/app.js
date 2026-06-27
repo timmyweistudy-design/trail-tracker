@@ -782,15 +782,35 @@ async function preloadAround(lat, lon) {
 }
 
 function sim() { return $("#simToggle").checked; }
+// 從有路線幾何的步道挑一條（優先親子友善、長度適中）當模擬路線
+function pickSimTrail() {
+  const hasGeo = t => { const g = geoOf(t); return g && g.some(s => s.length > 5) ? g : null; };
+  const cands = TRAILS.filter(hasGeo);
+  if (!cands.length) return null;
+  const nice = cands.filter(t => t.family_friendly && t.length_km >= 1 && t.length_km <= 8);
+  const pool = nice.length ? nice : cands;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
 $("#btnStart").addEventListener("click", () => {
   initRecMap();
-  // 模擬模式若已選定步道，讓虛擬人沿該步道真實路線行走（有動畫感）
+  // 模擬模式：沿步道真實路線行走（有動畫感）。沒選步道就自動挑一條真實步道。
   if (sim() && Recorder.getState() !== "paused") {
+    if (!(selectedTrailGeo && selectedTrailGeo.length)) {
+      const t = pickSimTrail();
+      if (t) {
+        selectedTrailGeo = geoOf(t);
+        Recorder._trailName = t.name;
+        $("#recStatus").textContent = `模擬「${t.name}」路線`;
+        drawSelectedRoute();
+        toast(`模擬：沿「${t.name}」前進`);
+      }
+    } else {
+      toast("模擬：沿此步道路線前進");
+    }
     const route = selectedTrailGeo && selectedTrailGeo.length
       ? selectedTrailGeo.reduce((a, b) => (b.length > a.length ? b : a))   // 取最長一段
       : null;
     Recorder.setSimRoute(route);
-    if (route) toast("模擬：沿此步道路線前進");
   }
   if (Recorder.getState() === "paused") Recorder.resume(sim());
   else Recorder.start(sim());
