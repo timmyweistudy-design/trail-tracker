@@ -29,9 +29,15 @@ const Profile = (() => {
   async function elevations(points) {
     const lat = points.map(p => p[0].toFixed(5)).join(",");
     const lon = points.map(p => p[1].toFixed(5)).join(",");
-    const res = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`);
-    if (!res.ok) throw new Error("elev");
-    return (await res.json()).elevation;
+    // 主來源 Open-Meteo；失敗(限流/錯誤)改用 OpenTopoData SRTM 備援
+    try {
+      const res = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`);
+      if (res.ok) { const e = (await res.json()).elevation; if (e && e.length) return e; }
+    } catch { /* 換備援 */ }
+    const locs = points.map(p => `${p[0].toFixed(5)},${p[1].toFixed(5)}`).join("|");
+    const res2 = await fetch(`https://api.opentopodata.org/v1/srtm30m?locations=${locs}`);
+    if (!res2.ok) throw new Error("elev");
+    return (await res2.json()).results.map(r => r.elevation);
   }
 
   // 回傳 {svg, gain, min, max, distKm}

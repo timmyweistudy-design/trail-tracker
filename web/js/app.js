@@ -396,16 +396,24 @@ let pageSize = 60, shown = 0, curList = [];
 let curSort = "default", filterOpen = false, filterGeo = false, nearRadius = 0, maxLen = 0, maxAsc = 0;   // 0 = 不限
 function isClosed(t) { return t.condition && /暫停|封閉|關閉/.test(t.condition.status || ""); }
 function matchDiff(f, t) { return f === "d45" ? t.difficulty >= 4 : t.difficulty === +f.slice(1); }
+// render 期間快取收藏/步記，避免每張卡重複解析 localStorage
+let _favSet = new Set(), _logCache = {};
+function refreshCardCache() {
+  try { _favSet = new Set(JSON.parse(localStorage.getItem("tt_favs") || "[]")); } catch { _favSet = new Set(); }
+  try { _logCache = JSON.parse(localStorage.getItem("tt_log") || "{}"); } catch { _logCache = {}; }
+}
+const isFavC = id => _favSet.has(id);
+const logC = id => _logCache[id] || {};
 function matches(t) {
   // 地區（複選 OR）
   if (activeRegions.size && !activeRegions.has(t.region)) return false;
   if (filterOpen && isClosed(t)) return false;
   if (filterGeo && !geoOf(t)) return false;
   // 旗標（各自 AND）
-  if (activeFilters.has("fav") && !Store.isFav(t.id)) return false;
-  if (activeFilters.has("done") && !Store.trailLog(t.id).done) return false;
+  if (activeFilters.has("fav") && !isFavC(t.id)) return false;
+  if (activeFilters.has("done") && !logC(t.id).done) return false;
   if (activeFilters.has("family") && !t.family_friendly) return false;
-  if (activeFilters.has("rated4") && (Store.trailLog(t.id).rating || 0) < 4) return false;
+  if (activeFilters.has("rated4") && (logC(t.id).rating || 0) < 4) return false;
   if (maxLen && (t.length_km == null || t.length_km > maxLen)) return false;
   if (maxAsc && (t.ascent == null || t.ascent > maxAsc)) return false;
   if (nearRadius && myLoc) { if (!t.lat || haversine(myLoc, { lat: t.lat, lon: t.lon }) > nearRadius * 1000) return false; }
@@ -436,8 +444,9 @@ function trailCard(t) {
     const w = Math.max(6, Math.min(100, Math.round(t.ascent / t.length_km / 4)));
     slope = `<div class="slope-row"><span class="slope-label">陡度</span><div class="slope-bar"><i style="width:${w}%"></i></div></div>`;
   }
+  const fav = isFavC(t.id), done = logC(t.id).done;
   return `<div class="card" data-id="${t.id}">
-    <button class="fav-star${Store.isFav(t.id) ? " on" : ""}" data-fav="${t.id}" aria-label="收藏 ${t.name}">${Store.isFav(t.id) ? "★" : "☆"}</button>
+    <button class="fav-star${fav ? " on" : ""}" data-fav="${t.id}" aria-label="收藏 ${t.name}">${fav ? "★" : "☆"}</button>
     <h3>${t.name}</h3>
     <div class="meta">
       <span>${ic("pin")}${t.position || "—"}</span>
@@ -448,7 +457,7 @@ function trailCard(t) {
     </div>
     <div class="badges">
       <span class="badge diff d${d}"><span class="lvl">${d}</span>${t.difficulty_label}</span>
-      ${Store.trailLog(t.id).done ? `<span class="badge done">✓ 已完成</span>` : ""}
+      ${done ? `<span class="badge done">✓ 已完成</span>` : ""}
       ${closed ? `<span class="badge closed">⚠️ ${t.condition.status}</span>` : ""}
       ${t.family_friendly ? `<span class="badge family">親子友善</span>` : ""}
       ${t.permit && t.permit !== "無" ? `<span class="badge ghost">需入山證</span>` : ""}
@@ -459,10 +468,20 @@ function trailCard(t) {
 }
 
 function render() {
+  refreshCardCache();
   curList = TRAILS.filter(matches);
   if (myLoc) curList.sort((a, b) =>
     (a.lat ? haversine(myLoc, { lat: a.lat, lon: a.lon }) : 9e9) -
     (b.lat ? haversine(myLoc, { lat: b.lat, lon: b.lon }) : 9e9));
+  else if (curQuery && curSort === "default") {
+    // 搜尋相關度：名稱開頭命中 > 名稱包含 > 林務署官方優先 > 短的優先
+    const q = curQuery.toLowerCase().replace(/\s+/g, "");
+    const score = t => {
+      const n = (t.name || "").toLowerCase().replace(/\s+/g, "");
+      return (n.startsWith(q) ? 0 : n.includes(q) ? 1 : 2) * 10 + (t.source === "forestry" ? 0 : 3);
+    };
+    curList.sort((a, b) => score(a) - score(b) || (a.length_km ?? 9e9) - (b.length_km ?? 9e9));
+  }
   else if (curSort !== "default") {
     const ln = t => t.length_km == null ? 9e9 : t.length_km;
     const df = t => t.difficulty == null ? 99 : t.difficulty;
@@ -970,7 +989,9 @@ async function loadWeather(t) {
     for (let i = 0; i < dd.time.length; i++) {
       const pp = dd.precipitation_probability_max[i] ?? 50;
       const avg = (dd.temperature_2m_max[i] + dd.temperature_2m_min[i]) / 2;
-      const score = pp + Math.abs(avg - 22) * 1.6;
+      // 舒適帶 16–26°C 不罰；過冷過熱加倍罰；降雨為主、≥70% 額外重罰
+      const tempPen = avg < 16 ? (16 - avg) * 2 : avg > 26 ? (avg - 26) * 2 : 0;
+      const score = pp * 1.3 + tempPen + (pp >= 70 ? 25 : 0);
       if (score < bestScore) { bestScore = score; best = i; }
     }
     // 溫度曲線(最高溫)
