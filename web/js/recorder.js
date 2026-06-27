@@ -166,16 +166,23 @@ const Recorder = (() => {
   }
 
   function startSim() {
-    if (simRoute) {                                   // 沿選定步道路線行走（有動畫感）
+    if (simRoute) {                                   // 沿選定步道路線快速跑完（約10秒）
       simDist = 0;
       const total = _routeLen(simRoute);
+      const DURATION = 10000;                         // 不論長短都約10秒跑完
+      let frames = Math.round(total / 60);            // 每幀約60公尺
+      frames = Math.max(12, Math.min(180, frames));   // 12~180幀，步距維持在跳點上限內
+      const interval = Math.max(60, Math.round(DURATION / frames));
+      const step = total / frames;
+      let i = 0;
       simTimer = setInterval(() => {
-        simDist = Math.min(total, simDist + 10 + Math.random() * 8);   // ~10-18m/步
+        i++;
+        simDist = Math.min(total, i * step);
         const p = _pointAt(simRoute, simDist);
         const alt = 50 + 250 * (0.5 - 0.5 * Math.cos(Math.PI * simDist / (total || 1)));  // 鐘形假海拔
         push(p[0], p[1], alt);
-        if (simDist >= total) { clearInterval(simTimer); simTimer = null; }   // 走到終點停
-      }, 650);
+        if (i >= frames || simDist >= total) { clearInterval(simTimer); simTimer = null; }   // 走到終點停
+      }, interval);
       return;
     }
     // 無選定步道：台北市區附近隨機漫步
