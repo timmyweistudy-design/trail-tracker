@@ -1857,11 +1857,14 @@ if (new URLSearchParams(location.search).get("debug") === "1") setTimeout(toggle
 
 // #22 首次使用導覽
 (function onboarding() {
-  if (localStorage.getItem("tt_onboarded") || new URLSearchParams(location.search).get("trail")) return;
+  const KEY = "tt_onboarded_v2";   // 改版 → 現有用戶也會再看一次新版導覽
+  if (localStorage.getItem(KEY) || new URLSearchParams(location.search).get("trail")) return;
   const slides = [
-    { e: "🧭", h: "探索全台步道", p: "搜尋 2100+ 條步道，看官方分級、真實路線、海拔剖面、天氣、周邊人文景點與美食。" },
-    { e: "📍", h: "記錄你的每一步", p: "邊走邊記里程、步數、卡路里、爬升與即時海拔曲線；自動暫停、中斷可復原，離線也能用。" },
-    { e: "🗺️", h: "離線・收藏・備份", p: "出發前可預載離線地圖，山區沒訊號也看得到；收藏步道、記錄可一鍵備份，換手機不怕遺失。" },
+    { e: "⛰️", h: "歡迎來到步道誌", p: "全台 2100+ 條步道一手掌握。搜尋、分級、記錄、養成，一起走進山林。" },
+    { e: "🧭", h: "探索與分級", p: "搜尋步道看官方難度分級、真實路線與海拔剖面；還有天氣、周邊人文景點與美食。用『精選主題輯』快速找古道、瀑布、親子路線。" },
+    { e: "📍", h: "記錄每一步", p: "邊走邊記里程、步數、卡路里、爬升與即時海拔曲線；自動暫停、中斷可復原，離線也能用。" },
+    { e: "🐉", h: "養成山林夥伴", p: "走路就能養寵物！從一顆蛋開始，靠里程進化：🥚→🦊→🐅→🐉。撿果實、每天餵食、提升親密度，走越多牠陪你長越快。" },
+    { e: "🗺️", h: "離線・收藏・備份", p: "出發前可預載離線地圖，山區沒訊號也看得到；收藏步道、行程可一鍵備份，換手機不怕遺失。" },
   ];
   let i = 0;
   const ov = document.createElement("div");
@@ -1877,11 +1880,11 @@ if (new URLSearchParams(location.search).get("debug") === "1") setTimeout(toggle
       ${last ? "" : `<button class="info-link" id="onboardSkip" style="display:block;margin:8px auto 0">略過</button>`}
     </div>`;
     ov.querySelector("#onboardNext").addEventListener("click", () => {
-      if (last) { localStorage.setItem("tt_onboarded", "1"); ov.remove(); }
+      if (last) { localStorage.setItem(KEY, "1"); ov.remove(); }
       else { i++; render(); }
     });
     const sk = ov.querySelector("#onboardSkip");
-    if (sk) sk.addEventListener("click", () => { localStorage.setItem("tt_onboarded", "1"); ov.remove(); });
+    if (sk) sk.addEventListener("click", () => { localStorage.setItem(KEY, "1"); ov.remove(); });
   };
   document.body.appendChild(ov);
   render();
