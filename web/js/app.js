@@ -1013,6 +1013,25 @@ function closeDetail() {
 }
 $("#sheetMask").addEventListener("click", closeDetail);
 $("#closeDetailBtn").addEventListener("click", closeDetail);
+// 下拉關閉手勢（拖曳握把往下滑關閉面板）
+function makeSheetDraggable(sheet, closeFn) {
+  const grip = sheet.querySelector(".grip"); if (!grip) return;
+  let startY = null, dy = 0;
+  grip.addEventListener("touchstart", e => { startY = e.touches[0].clientY; dy = 0; sheet.style.transition = "none"; }, { passive: true });
+  grip.addEventListener("touchmove", e => { if (startY == null) return; dy = Math.max(0, e.touches[0].clientY - startY); sheet.style.transform = `translateY(${dy}px)`; }, { passive: true });
+  grip.addEventListener("touchend", () => {
+    if (startY == null) return;
+    sheet.style.transition = ""; sheet.style.transform = "";
+    if (dy > 110) closeFn();
+    startY = null;
+  });
+}
+["detailSheet:closeDetail", "trackSheet:closeTrackReview", "filterSheet:closeFilter", "gradeSheet:closeGradeInfo"].forEach(pair => {
+  const [id, fn] = pair.split(":");
+  const el = document.getElementById(id);
+  if (el) makeSheetDraggable(el, () => window[fn] && window[fn]());
+});
+
 // Esc 關閉最上層的面板（無障礙）
 document.addEventListener("keydown", e => {
   if (e.key !== "Escape") return;

@@ -579,6 +579,22 @@ html[data-theme="dark"] .map-legend { background: rgba(27,32,23,.94); }
 .net-banner { top: calc(10px + var(--safe-b)); background: var(--ink); color: #f4f1e8; }
 
 /* ===================================================================
+   桌機 / 平板：加寬版面、清單雙欄、面板改置中浮動視窗
+   =================================================================== */
+@media (min-width: 900px) {
+  #app { max-width: 1000px; }
+  #trailList { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; align-items: start; }
+  #trailList .card { margin-bottom: 0; }
+  #trailList .empty, #listSentinel { grid-column: 1 / -1; }
+  .sheet { left: 50%; right: auto; bottom: auto; top: 50%; width: min(640px, 92%); max-width: 640px;
+    border-radius: 22px; max-height: 88vh; opacity: 0;
+    transform: translate(-50%, -46%) scale(.97);
+    transition: transform .3s cubic-bezier(.2,.8,.2,1), opacity .3s; }
+  .sheet.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  .sheet .grip { display: none; }
+}
+
+/* ===================================================================
    深色模式（夜間墨綠）— 多數規則用 CSS 變數，這裡整批改寫變數即可
    =================================================================== */
 html[data-theme="dark"] {
