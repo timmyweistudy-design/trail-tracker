@@ -56,7 +56,8 @@ const Store = (() => {
   // 備份 / 還原（避免換手機或清快取資料遺失）
   function exportAll() {
     const pet = {};
-    for (const k of ["tt_pet_name", "tt_pet_hatch", "tt_pet_stage", "tt_pet_base"]) { const v = localStorage.getItem(k); if (v != null) pet[k] = v; }
+    for (const k of ["tt_pet_name", "tt_pet_hatch", "tt_pet_stage", "tt_pet_base",
+      "tt_pet_berry_spent", "tt_pet_aff", "tt_pet_aff_t", "tt_pet_fed", "tt_pet_feedkm"]) { const v = localStorage.getItem(k); if (v != null) pet[k] = v; }
     return { v: 1, exportedAt: new Date().toISOString(),
       profile: getProfile(), records: getRecords(), favs: getFavs(), log: getLog(), pet };
   }

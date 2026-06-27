@@ -438,7 +438,13 @@ body {
 .pet-edit { background: rgba(255,255,255,.16); border: none; color: #f3efe4; width: 22px; height: 22px; border-radius: 50%; font-size: 11px; cursor: pointer; margin-left: 8px; flex: 0 0 auto; }
 .pet-edit:active { transform: scale(.9); }
 .pet-mood { font-size: 12px; opacity: .85; margin-top: 4px; }
-.pet-btns { display: flex; gap: 8px; margin-top: 11px; }
+.pet-hearts { font-size: 11px; letter-spacing: 1px; white-space: nowrap; }
+.pet-care { display: flex; align-items: center; gap: 10px; margin-top: 11px; }
+.pet-berry { font-size: 13px; font-weight: 600; background: rgba(255,255,255,.14); padding: 6px 11px; border-radius: 999px; font-variant-numeric: tabular-nums; flex: 0 0 auto; }
+.pet-btn.feed { flex: 1; background: rgba(232,200,122,.92); color: #3a2a12; border-color: transparent; font-weight: 700; }
+.pet-btn.feed:active { background: #e8c87a; }
+.pet-btn.feed:disabled { background: rgba(255,255,255,.1); color: rgba(255,255,255,.55); cursor: default; }
+.pet-btns { display: flex; gap: 8px; margin-top: 8px; }
 .pet-btn { flex: 1; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.18); color: #f3efe4; border-radius: 999px; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; transition: .15s; }
 .pet-btn:active { background: rgba(255,255,255,.26); transform: scale(.97); }
 

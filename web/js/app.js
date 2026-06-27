@@ -1378,6 +1378,7 @@ $("#btnStop").addEventListener("click", () => {
   if (rec) {
     rec.trailName = Recorder._trailName || "自由路線";
     Store.addRecord(rec);
+    if (!rec.sim) bumpAffinity(8);   // 真實出門加深羈絆
     checkPetEvolve();
     $("#recStatus").textContent = "準備就緒，按「開始」記錄路徑";
     openTrackReview(rec);              // 結束後顯示總結頁
@@ -1475,7 +1476,41 @@ const PET_BG = [
 function realRecords() { return Store.getRecords().filter(r => !r.sim); }   // 排除模擬
 function realTotalKm() { return realRecords().reduce((s, r) => s + (r.distanceKm || 0), 0); }
 function petBase() { return +(localStorage.getItem("tt_pet_base") || 0); }
-function totalKm() { return Math.max(0, realTotalKm() - petBase()); }   // 這隻夥伴的成長里程
+function feedBonusKm() { return +(localStorage.getItem("tt_pet_feedkm") || 0); }
+function totalKm() { return Math.max(0, realTotalKm() - petBase()) + feedBonusKm(); }   // 成長里程＝走路 + 照顧獎勵
+// 🍓 果實：每走 1 km 得 1 顆，餵食消耗
+function berriesEarned() { return Math.floor(realTotalKm()); }
+function berriesBalance() { return Math.max(0, berriesEarned() - (+(localStorage.getItem("tt_pet_berry_spent") || 0))); }
+// ❤️ 親密度 0–100（久未互動緩降，永不影響等級）
+function affinity() {
+  const raw = +(localStorage.getItem("tt_pet_aff") || 0);
+  const t = localStorage.getItem("tt_pet_aff_t");
+  const idle = t ? Math.max(0, daysSince(t) - 1) : 0;
+  return Math.max(0, Math.min(100, Math.round(raw - idle * 2)));
+}
+function petHearts() { return Math.max(0, Math.min(5, Math.floor(affinity() / 20))); }
+function bumpAffinity(amt) {
+  const cur = affinity();
+  localStorage.setItem("tt_pet_aff", String(Math.max(0, Math.min(100, cur + amt))));
+  localStorage.setItem("tt_pet_aff_t", new Date().toISOString());
+}
+function todayStr() { return new Date().toISOString().slice(0, 10); }
+function canFeedToday() { return berriesBalance() >= 3 && localStorage.getItem("tt_pet_fed") !== todayStr(); }
+function feedPet() {
+  if (localStorage.getItem("tt_pet_fed") === todayStr()) { toast("今天已經餵過了，明天再來 🍃"); return; }
+  if (berriesBalance() < 3) { toast("果實不足，多走幾步才有果實 🍓"); return; }
+  const heartsBefore = petHearts();
+  localStorage.setItem("tt_pet_berry_spent", String((+(localStorage.getItem("tt_pet_berry_spent") || 0)) + 3));
+  bumpAffinity(15);
+  localStorage.setItem("tt_pet_fed", todayStr());
+  const gain = heartsBefore >= 5 ? 0.5 : 0.3;                  // 親密度滿時照顧獎勵更多
+  localStorage.setItem("tt_pet_feedkm", String(+(feedBonusKm() + gain).toFixed(2)));
+  if (navigator.vibrate) navigator.vibrate([20, 30, 20]);
+  const em = $("#petEmoji"); if (em) { em.classList.remove("tap"); void em.offsetWidth; em.classList.add("tap"); }
+  toast(`餵食成功！🍓 親密度上升、照顧 +${gain}km`);
+  checkPetEvolve();
+  renderPet();
+}
 function petStageIndex(km) { let i = 0; for (let k = 0; k < PET_STAGES.length; k++) if (km >= PET_STAGES[k].km) i = k; return i; }
 function petName() { return localStorage.getItem("tt_pet_name") || ""; }
 function petHatch() { let h = localStorage.getItem("tt_pet_hatch"); if (!h) { h = new Date().toISOString(); localStorage.setItem("tt_pet_hatch", h); } return h; }
@@ -1503,6 +1538,7 @@ function renderPet() {
   if (!box) return;
   const km = totalKm(), i = petStageIndex(km), st = PET_STAGES[i], next = PET_STAGES[i + 1];
   const nm = petName(), mood = petMood(), days = daysSince(petHatch()), streak = weeksStreak();
+  const berries = berriesBalance(), h = petHearts(), bonus = feedBonusKm(), canFeed = canFeedToday(), fedToday = localStorage.getItem("tt_pet_fed") === todayStr();
   let prog = "", sub;
   if (next) {
     const pct = Math.max(2, Math.min(100, Math.round((km - st.km) / (next.km - st.km) * 100)));
@@ -1514,10 +1550,14 @@ function renderPet() {
     <div class="pet-info">
       <div class="pet-name">${nm || st.n}<span class="pet-lv">Lv.${i + 1}</span>
         <button class="pet-edit" id="petRename" title="命名" aria-label="命名">✎</button></div>
-      <div class="pet-mood">${mood.e} ${mood.t}</div>
-      <div class="pet-sub">${nm ? st.n + "・" : ""}已走 <b>${km.toFixed(1)}</b> km・同行 <b>${days}</b> 天${streak >= 2 ? `・🔥連續${streak}週` : ""}</div>
+      <div class="pet-mood">${mood.e} ${mood.t}　<span class="pet-hearts">${"❤️".repeat(h)}${"🤍".repeat(5 - h)}</span></div>
+      <div class="pet-sub">${nm ? st.n + "・" : ""}已走 <b>${km.toFixed(1)}</b> km${bonus > 0 ? `（含照顧 +${bonus.toFixed(1)}）` : ""}・同行 <b>${days}</b> 天${streak >= 2 ? `・🔥連續${streak}週` : ""}</div>
       <div class="pet-sub" style="opacity:.9">${sub}</div>
       ${prog}
+      <div class="pet-care">
+        <span class="pet-berry">🍓 ${berries}</span>
+        <button class="pet-btn feed" id="petFeed"${canFeed ? "" : " disabled"}>${fedToday ? "今天餵過了" : "🍖 餵食 (3🍓)"}</button>
+      </div>
       <div class="pet-btns">
         <button class="pet-btn" id="petDex">📖 夥伴手冊</button>
         <button class="pet-btn" id="petRec">🧭 帶我去走</button>
@@ -1536,6 +1576,7 @@ function renderPet() {
   });
   $("#petDex").addEventListener("click", openPetDex);
   $("#petRec").addEventListener("click", petRecommend);
+  $("#petFeed").addEventListener("click", feedPet);
 }
 // 夥伴推薦一條主題
 function petRecommend() {
