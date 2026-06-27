@@ -944,6 +944,7 @@ function openTrackReview(rec) {
     </div>
     <div class="link-row">
       <button class="link-btn" id="trackReplay">▶ 重播路徑</button>
+      <button class="link-btn" id="trackCard">🖼 分享圖卡</button>
       <button class="link-btn" id="trackGpx">⬇️ 匯出 GPX</button>
       <button class="link-btn" id="trackShare">↗ 分享行程</button>
     </div>`;
@@ -971,6 +972,7 @@ function openTrackReview(rec) {
     } else { trackMap.setView([23.8, 121], 7); }
   }, 120);
   $("#trackReplay").addEventListener("click", () => { if (trackPts && trackPts.length > 1) playTrackReplay(trackPts); });
+  $("#trackCard").addEventListener("click", () => shareHikeCard(rec));
   $("#trackGpx").addEventListener("click", () => { GPX.exportRecord(rec); toast("已匯出 GPX"); });
   $("#trackShare").addEventListener("click", () => {
     const text = `我走了 ${rec.trailName || "自由路線"}：${km.toFixed(2)} km、爬升 ↑${rec.ascent || 0}m、${rec.kcal} 大卡、${fmtTime(rec.elapsedMs)} ⛰️ — 步道誌`;
@@ -980,6 +982,66 @@ function openTrackReview(rec) {
   });
 }
 function closeTrackReview() { if (trackAnim) { clearInterval(trackAnim); trackAnim = null; } const lv = document.getElementById("replayLive"); if (lv) lv.style.display = "none"; const bb = document.getElementById("replayBar"); if (bb) bb.remove(); $("#trackMask").classList.remove("show"); $("#trackSheet").classList.remove("show"); }
+
+// 成果分享圖卡：把這趟健行畫成一張可分享/下載的圖
+async function shareHikeCard(rec) {
+  try {
+    const S = 1080, c = document.createElement("canvas");
+    c.width = S; c.height = S;
+    const x = c.getContext("2d");
+    // 背景：深林漸層
+    const g = x.createLinearGradient(0, 0, S, S);
+    g.addColorStop(0, "#1f4730"); g.addColorStop(.55, "#16301f"); g.addColorStop(1, "#102217");
+    x.fillStyle = g; x.fillRect(0, 0, S, S);
+    // 品牌
+    x.fillStyle = "rgba(220,232,210,.7)"; x.font = "600 30px serif";
+    x.fillText("步道誌 · TRAIL TRACKER", 70, 96);
+    // 步道名
+    x.fillStyle = "#fbf8ee"; x.font = "700 64px 'Noto Serif TC', serif";
+    const name = (rec.trailName || "自由路線").slice(0, 12);
+    x.fillText(name, 70, 188);
+    x.fillStyle = "rgba(231,237,222,.6)"; x.font = "400 28px serif";
+    x.fillText(new Date(rec.date).toLocaleDateString("zh-TW"), 70, 234);
+    // 路線縮圖
+    const pts = (rec.track || []).map(p => [p.lat, p.lon]);
+    if (pts.length > 1) {
+      const las = pts.map(p => p[0]), los = pts.map(p => p[1]);
+      const minLa = Math.min(...las), maxLa = Math.max(...las), minLo = Math.min(...los), maxLo = Math.max(...los);
+      const bx = 70, by = 300, bw = S - 140, bh = 440, pad = 40;
+      const spanLa = (maxLa - minLa) || 1e-6, spanLo = (maxLo - minLo) || 1e-6;
+      const sc = Math.min((bw - 2 * pad) / spanLo, (bh - 2 * pad) / spanLa);
+      const ox = bx + (bw - spanLo * sc) / 2, oy = by + (bh - spanLa * sc) / 2;
+      x.strokeStyle = "rgba(232,137,59,.95)"; x.lineWidth = 7; x.lineJoin = "round"; x.lineCap = "round";
+      x.beginPath();
+      pts.forEach((p, i) => {
+        const px = ox + (p[1] - minLo) * sc, py = oy + (maxLa - p[0]) * sc;
+        i ? x.lineTo(px, py) : x.moveTo(px, py);
+      });
+      x.stroke();
+    }
+    // 大數字：距離
+    x.fillStyle = "#fbf8ee"; x.font = "600 132px 'Fraunces', serif";
+    x.fillText((rec.distanceKm || 0).toFixed(2), 70, 900);
+    x.fillStyle = "rgba(231,237,222,.7)"; x.font = "500 40px serif"; x.fillText("公里", 72, 952);
+    // 統計列
+    const stats = [["時間", fmtTime(rec.elapsedMs)], ["爬升", "↑" + (rec.ascent || 0) + "m"], ["大卡", String(rec.kcal || 0)], ["步數", (rec.steps || 0).toLocaleString()]];
+    const cw = (S - 140) / stats.length;
+    stats.forEach(([l, v], i) => {
+      const cx = 70 + cw * i;
+      x.fillStyle = "#9fe0b0"; x.font = "600 46px 'Fraunces', serif"; x.fillText(v, cx, 1024);
+      x.fillStyle = "rgba(231,237,222,.55)"; x.font = "400 26px serif"; x.fillText(l, cx, 1060);
+    });
+    const blob = await new Promise(r => c.toBlob(r, "image/png"));
+    const file = new File([blob], "步道誌.png", { type: "image/png" });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: "我的健行紀錄" });
+    } else {
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "步道誌健行卡.png"; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+      toast("圖卡已下載");
+    }
+  } catch (e) { toast("圖卡產生失敗"); }
+}
 $("#trackMask").addEventListener("click", closeTrackReview);
 $("#closeTrackBtn").addEventListener("click", closeTrackReview);
 
