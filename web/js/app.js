@@ -995,7 +995,8 @@ function openTrackReview(rec) {
     <div class="kv">
       <div class="item"><div class="l">距離</div><div class="v">${km.toFixed(2)} km</div></div>
       <div class="item"><div class="l">時間</div><div class="v">${fmtTime(rec.elapsedMs)}</div></div>
-      <div class="item"><div class="l">爬升／下降</div><div class="v">↑${rec.ascent || 0} ↓${rec.descent || 0}m</div></div>
+      <div class="item"><div class="l">總爬升</div><div class="v">↑${rec.ascent || 0} m</div></div>
+      <div class="item"><div class="l">總下降</div><div class="v">↓${rec.descent || 0} m</div></div>
       <div class="item"><div class="l">卡路里</div><div class="v">${rec.kcal} 大卡</div></div>
       <div class="item"><div class="l">步數</div><div class="v">${(rec.steps || 0).toLocaleString()}</div></div>
       ${t3 && t3 > km + 0.05 ? `<div class="item"><div class="l">含坡度距離</div><div class="v">${t3.toFixed(2)} km</div></div>` : ""}
@@ -1186,7 +1187,8 @@ Recorder.onUpdate(s => {
   $("#stKcal").textContent = s.kcal;
   $("#stTime").textContent = fmtTime(s.elapsedMs);
   $("#stPace").textContent = s.pace;
-  if ($("#stElev")) $("#stElev").textContent = `↑${Math.round(s.ascent || 0)} ↓${Math.round(s.descent || 0)}`;
+  if ($("#stAscent")) $("#stAscent").textContent = `↑${Math.round(s.ascent || 0)}`;
+  if ($("#stDescent")) $("#stDescent").textContent = `↓${Math.round(s.descent || 0)}`;
   drawRecSpark(s.altSeries);
   // #11 每公里震動提示
   if (s.state === "running" && !s.autoPaused) {
