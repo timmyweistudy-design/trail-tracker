@@ -141,6 +141,32 @@ function toast(msg) {
   const t = $("#toast"); t.textContent = msg; t.classList.add("show");
   clearTimeout(t._tm); t._tm = setTimeout(() => t.classList.remove("show"), 2200);
 }
+// 內嵌輸入框（取代原生 prompt），回傳 Promise<string|null>
+function askInput(opts) {
+  return new Promise(resolve => {
+    const ov = document.createElement("div");
+    ov.className = "input-modal";
+    const esc = v => String(v == null ? "" : v).replace(/</g, "&lt;").replace(/"/g, "&quot;");
+    const field = opts.multiline
+      ? `<textarea id="imField" rows="4" placeholder="${esc(opts.placeholder)}">${esc(opts.value)}</textarea>`
+      : `<input id="imField" type="${opts.type || "text"}" inputmode="${opts.type === "number" ? "decimal" : "text"}" placeholder="${esc(opts.placeholder)}" value="${esc(opts.value)}"${opts.max ? ` maxlength="${opts.max}"` : ""}>`;
+    ov.innerHTML = `<div class="input-card">
+      <div class="im-title">${opts.title}</div>${field}
+      <div class="im-btns"><button class="btn ghost" id="imCancel">取消</button><button class="btn primary" id="imOk">確定</button></div>
+    </div>`;
+    document.body.appendChild(ov);
+    const f = ov.querySelector("#imField");
+    setTimeout(() => { f.focus(); if (f.select) f.select(); }, 30);
+    const done = v => { ov.remove(); resolve(v); };
+    ov.querySelector("#imOk").onclick = () => done(f.value);
+    ov.querySelector("#imCancel").onclick = () => done(null);
+    ov.addEventListener("click", e => { if (e.target === ov) done(null); });
+    f.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !opts.multiline) { e.preventDefault(); done(f.value); }
+      else if (e.key === "Escape") done(null);
+    });
+  });
+}
 // 里程碑彩帶
 function confetti() {
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -343,10 +369,11 @@ function buildPresets() {
 }
 $("#fsSavePreset").addEventListener("click", () => {
   if (!activeFilters.size && !activeRegions.size && curSort === "default" && !filterOpen && !filterGeo && !maxLen && !maxAsc) { toast("先設定一些篩選再儲存"); return; }
-  const name = prompt("為這組篩選命名：", "常用篩選");
-  if (name == null) return;
-  const a = getPresets(); a.push({ name: name.trim().slice(0, 10) || "常用", ...currentFilterState() }); savePresets(a);
-  buildPresets(); toast("已存成口袋路線");
+  askInput({ title: "為這組篩選命名", value: "常用篩選", max: 10 }).then(name => {
+    if (name == null) return;
+    const a = getPresets(); a.push({ name: name.trim().slice(0, 10) || "常用", ...currentFilterState() }); savePresets(a);
+    buildPresets(); toast("已存成口袋路線");
+  });
 });
 function closeFilter() { $("#filterMask").classList.remove("show"); $("#filterSheet").classList.remove("show"); }
 $("#filterMask").addEventListener("click", closeFilter);
@@ -1800,8 +1827,9 @@ function renderPet() {
     toast(PET_TAPS[Math.floor(Math.random() * PET_TAPS.length)]);
   });
   $("#petRename").addEventListener("click", () => {
-    const v = prompt("幫你的山林夥伴取個名字：", nm || st.n);
-    if (v != null) { localStorage.setItem("tt_pet_name", v.trim().slice(0, 12)); renderPet(); }
+    askInput({ title: "幫你的山林夥伴取個名字", value: nm || st.n, max: 12 }).then(v => {
+      if (v != null) { localStorage.setItem("tt_pet_name", v.trim().slice(0, 12)); renderPet(); }
+    });
   });
   $("#petDex").addEventListener("click", openPetDex);
   $("#petRec").addEventListener("click", petRecommend);
@@ -1983,8 +2011,9 @@ function renderDailyRing() {
     </div>
   </div>`;
   $("#editGoal").addEventListener("click", () => {
-    const v = prompt("設定每日里程目標（公里）：", goal);
-    if (v != null) { localStorage.setItem("tt_daily_goal", String(Math.max(0.5, Math.min(50, parseFloat(v) || 3)))); renderDailyRing(); }
+    askInput({ title: "設定每日里程目標（公里）", value: String(goal), type: "number" }).then(v => {
+      if (v != null) { localStorage.setItem("tt_daily_goal", String(Math.max(0.5, Math.min(50, parseFloat(v) || 3)))); renderDailyRing(); }
+    });
   });
 }
 function renderStats() {
@@ -2059,8 +2088,9 @@ function renderHistory() {
     </div>`).join("");
   wrap.querySelectorAll(".hist-note-btn").forEach(b => b.addEventListener("click", () => {
     const rec = Store.getRecords().find(r => r.id === b.dataset.id);
-    const v = prompt("這趟健行的筆記：", (rec && rec.note) || "");
-    if (v != null) { Store.setRecordNote(b.dataset.id, v.trim()); renderHistory(); }
+    askInput({ title: "這趟健行的筆記", value: (rec && rec.note) || "", placeholder: "寫下心得、路況、同行的人…", multiline: true }).then(v => {
+      if (v != null) { Store.setRecordNote(b.dataset.id, v.trim()); renderHistory(); }
+    });
   }));
   wrap.querySelectorAll(".hist-view").forEach(b => b.addEventListener("click", () => {
     const rec = Store.getRecords().find(r => r.id === b.dataset.id);

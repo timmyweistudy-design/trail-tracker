@@ -613,6 +613,15 @@ html[data-theme="dark"] .map-legend { background: rgba(27,32,23,.94); }
 .cmp-table th { background: var(--surface-2); color: var(--ink-soft); font-weight: 600; white-space: nowrap; text-align: left; }
 .cmp-table td b { color: var(--ink); }
 
+/* 內嵌輸入框 */
+.input-modal { position: fixed; inset: 0; z-index: 100; background: rgba(16,28,18,.55); backdrop-filter: blur(3px); display: grid; place-items: center; padding: 22px; animation: fadein .2s; }
+.input-card { background: var(--surface); border-radius: 20px; padding: 20px; width: 100%; max-width: 380px; box-shadow: var(--sh-lg); animation: rise .3s; }
+.im-title { font-family: var(--serif); font-weight: 700; font-size: 16px; color: var(--brand-deep); margin-bottom: 12px; }
+.input-card input, .input-card textarea { width: 100%; border: 1px solid var(--line); border-radius: var(--r-sm); padding: 12px; font-size: 15px; font-family: var(--sans); background: var(--surface); color: var(--ink); resize: vertical; }
+.input-card input:focus, .input-card textarea:focus { outline: none; border-color: var(--brand-mid); box-shadow: 0 0 0 3px var(--brand-soft); }
+.im-btns { display: flex; gap: 10px; margin-top: 14px; }
+.im-btns .btn { margin-top: 0; flex: 1; }
+
 /* 照片燈箱 */
 .lightbox { position: fixed; inset: 0; z-index: 92; background: rgba(8,12,8,.95); display: flex; animation: fadein .2s; }
 .lb-track { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; width: 100%; scrollbar-width: none; }

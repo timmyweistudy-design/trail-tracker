@@ -13,7 +13,24 @@ const Photos = (() => {
     try { const c = JSON.parse(localStorage.getItem(CKEY + id)); if (c && Date.now() - c.ts < TTL) return c.url; } catch { /* */ }
     return undefined;
   }
-  function cacheSet(id, url) { try { localStorage.setItem(CKEY + id, JSON.stringify({ ts: Date.now(), url })); } catch { /* */ } }
+  // 容量管理：寫入失敗(配額滿)時，淘汰最舊的 1/3 照片快取再重試
+  function evictPhotos() {
+    const ks = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && (k.startsWith("photon_") || k.startsWith("photonm_"))) {
+        let ts = 0; try { ts = (JSON.parse(localStorage.getItem(k)) || {}).ts || 0; } catch { /* */ }
+        ks.push([k, ts]);
+      }
+    }
+    ks.sort((a, b) => a[1] - b[1]);
+    ks.slice(0, Math.max(1, Math.ceil(ks.length / 3))).forEach(([k]) => localStorage.removeItem(k));
+  }
+  function safeSet(key, val) {
+    try { localStorage.setItem(key, val); }
+    catch { try { evictPhotos(); localStorage.setItem(key, val); } catch { /* 仍滿就放棄 */ } }
+  }
+  function cacheSet(id, url) { safeSet(CKEY + id, JSON.stringify({ ts: Date.now(), url })); }
 
   async function forTrail(trail) {
     if (!trail.name) return null;
@@ -65,7 +82,7 @@ const Photos = (() => {
         }
       }
     } catch { /* */ }
-    try { localStorage.setItem(mk, JSON.stringify({ ts: Date.now(), urls })); } catch { /* */ }
+    safeSet(mk, JSON.stringify({ ts: Date.now(), urls }));
     return urls;
   }
 
