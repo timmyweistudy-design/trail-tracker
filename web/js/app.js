@@ -1457,7 +1457,8 @@ const PET_STAGES = [
   { km: 220, e: "🐉", n: "騰雲神龍", d: "已達最終型態！與你一同騰雲駕霧。" },
 ];
 const PET_TAPS = ["要再去走走嗎？", "今天也一起爬山吧！", "我準備好出發了！", "下一座山在等我們～", "腳力越來越好囉！", "謝謝你帶我看風景 🌲"];
-function totalKm() { return Store.getRecords().reduce((s, r) => s + (r.distanceKm || 0), 0); }
+function realRecords() { return Store.getRecords().filter(r => !r.sim); }   // 排除模擬
+function totalKm() { return realRecords().reduce((s, r) => s + (r.distanceKm || 0), 0); }
 function petStageIndex(km) { let i = 0; for (let k = 0; k < PET_STAGES.length; k++) if (km >= PET_STAGES[k].km) i = k; return i; }
 function renderPet() {
   const box = $("#petCard");
@@ -1495,7 +1496,7 @@ function checkPetEvolve() {
 function renderStats() {
   const box = $("#meStats");
   if (!box) return;
-  const recs = Store.getRecords();
+  const recs = realRecords();   // 成就統計不計入模擬
   const favs = TRAILS.filter(t => Store.isFav(t.id)).length;
   const doneTrails = new Set(TRAILS.filter(t => Store.trailLog(t.id).done).map(t => t.id)).size;
   const km = recs.reduce((s, r) => s + (r.distanceKm || 0), 0);
@@ -1543,7 +1544,7 @@ function renderHistory() {
   wrap.innerHTML = recs.map(r => `
     <div class="hist-card" data-id="${r.id}">
       <div class="top">
-        <b>${r.trailName || "自由路線"}</b>
+        <b>${r.trailName || "自由路線"}${r.sim ? ` <span class="sim-tag">模擬</span>` : ""}</b>
         <span class="date">${new Date(r.date).toLocaleString("zh-TW", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
       </div>
       <div class="row">

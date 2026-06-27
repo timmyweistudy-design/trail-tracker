@@ -446,6 +446,7 @@ body {
 .hist-card { background: var(--surface); border-radius: var(--r); padding: 14px 16px; margin-bottom: 11px; box-shadow: var(--sh-sm); border: 1px solid var(--line-soft); }
 .hist-card .top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .hist-card .top b { font-family: var(--serif); font-size: 16px; font-weight: 700; }
+.sim-tag { font-family: var(--sans); font-size: 10.5px; font-weight: 600; color: var(--ink-soft); background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; vertical-align: middle; }
 .hist-card .top .date { font-size: 12px; color: var(--ink-soft); font-family: var(--num); flex: 0 0 auto; }
 .hist-card .row { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 9px; font-size: 13px; color: var(--ink-soft); }
 .hist-card .row b { color: var(--brand-deep); font-family: var(--num); }

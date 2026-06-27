@@ -14,6 +14,7 @@ const Recorder = (() => {
   const SMOOTH = 0.6;          // EMA 平滑係數（越大越貼近原始）
   let track = [];              // [{lat, lon, t}] 僅存通過過濾的軌跡點
   let altSeries = [];          // [{x:距離m, e:海拔m}] 即時海拔曲線用
+  let simMode = false;         // 本次記錄是否為模擬（模擬不計入寵物/成就）
   let distance = 0;            // 公尺（水平實際移動）
   let dist3D = 0;              // 公尺（含坡度 3D 距離）
   let ascent = 0;              // 累積爬升（公尺，已去抖動）
@@ -201,7 +202,7 @@ const Recorder = (() => {
 
   function start(sim) {
     if (state === "running") return;
-    if (state === "idle") { track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; lastFixAlt = null; smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; }
+    if (state === "idle") { track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; lastFixAlt = null; smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; simMode = !!sim; }
     lastResume = Date.now();
     state = "running";
     autoPaused = false; lastMoveAt = Date.now();   // 開始/繼續都重設靜止計時
@@ -242,6 +243,7 @@ const Recorder = (() => {
       date: new Date().toISOString(),
       distanceKm: snap.distanceKm, distance3DKm: snap.distance3DKm, steps: snap.steps, kcal: snap.kcal,
       elapsedMs: snap.elapsedMs, ascent: Math.round(ascent), descent: Math.round(descent), track: track.slice(),
+      sim: simMode || undefined,
     } : null;
     state = "idle"; track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; lastFixAlt = null;
     smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; simPos = null;
