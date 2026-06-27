@@ -48,8 +48,30 @@ const Store = (() => {
   }
   function doneCount() { return Object.values(getLog()).filter(v => v.done).length; }
 
+  // 備份 / 還原（避免換手機或清快取資料遺失）
+  function exportAll() {
+    return { v: 1, exportedAt: new Date().toISOString(),
+      profile: getProfile(), records: getRecords(), favs: getFavs(), log: getLog() };
+  }
+  function importAll(data, mode) {
+    if (!data || typeof data !== "object") throw new Error("格式錯誤");
+    if (data.profile) saveProfile(data.profile);
+    if (mode === "merge") {
+      const ids = new Set(getRecords().map(r => r.id));
+      const merged = getRecords().concat((data.records || []).filter(r => !ids.has(r.id)))
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+      localStorage.setItem(RK, JSON.stringify(merged.slice(0, 100)));
+      localStorage.setItem(FK, JSON.stringify([...new Set(getFavs().concat(data.favs || []))]));
+      localStorage.setItem(LK, JSON.stringify(Object.assign({}, getLog(), data.log || {})));
+    } else {
+      if (data.records) localStorage.setItem(RK, JSON.stringify(data.records.slice(0, 100)));
+      if (data.favs) localStorage.setItem(FK, JSON.stringify(data.favs));
+      if (data.log) localStorage.setItem(LK, JSON.stringify(data.log));
+    }
+  }
+
   return { getProfile, saveProfile, weight, height, getRecords, addRecord, deleteRecord, clearRecords,
-           getFavs, isFav, toggleFav, trailLog, setTrailLog, doneCount };
+           getFavs, isFav, toggleFav, trailLog, setTrailLog, doneCount, exportAll, importAll };
 })();
 
 // 公用：兩點 haversine 距離（公尺）

@@ -396,6 +396,9 @@ body {
 .empty { text-align: center; color: var(--ink-soft); padding: 48px 20px; font-size: 14px; line-height: 1.7; }
 .empty .big { font-size: 44px; display: block; margin-bottom: 12px; opacity: .8; }
 
+.backup-row { display: flex; gap: 10px; }
+.backup-row .btn { flex: 1; }
+
 /* 我的足跡統計 */
 .mstat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; }
 .mstat { background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 12px 6px; text-align: center; box-shadow: var(--sh-sm); }
@@ -452,6 +455,14 @@ html[data-theme="dark"] .map-legend { background: rgba(27,32,23,.94); }
   box-shadow: var(--sh-lg); font-weight: 500;
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* 更新 / 離線 橫幅 */
+.update-banner, .net-banner { position: fixed; left: 50%; transform: translateX(-50%); max-width: 92%;
+  z-index: 65; border: none; border-radius: 999px; font-size: 13.5px; font-weight: 600; padding: 11px 20px;
+  box-shadow: var(--sh-lg); white-space: nowrap; }
+.update-banner { bottom: calc(100px + var(--safe-b)); background: var(--brand); color: #f4f1e8; cursor: pointer; }
+.update-banner:active { transform: translateX(-50%) scale(.97); }
+.net-banner { top: calc(10px + var(--safe-b)); background: var(--ink); color: #f4f1e8; }
 
 /* ===================================================================
    深色模式（夜間墨綠）— 多數規則用 CSS 變數，這裡整批改寫變數即可

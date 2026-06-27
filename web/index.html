@@ -140,6 +140,12 @@
 
     <div class="section-title">我的足跡</div>
     <div id="meStats"></div>
+    <div class="backup-row">
+      <button class="btn ghost" id="btnExport" style="margin-top:10px">⬇️ 備份紀錄</button>
+      <button class="btn ghost" id="btnImport" style="margin-top:10px">⬆️ 還原備份</button>
+      <input type="file" id="importFile" accept="application/json,.json" style="display:none">
+    </div>
+    <div class="offline-hint" style="margin-top:6px">行程與收藏只存在本機，建議定期備份；換手機或清快取後可還原。</div>
 
     <div class="section-title">離線地圖</div>
     <div class="offline-manage">
@@ -261,6 +267,8 @@
   </nav>
 
   <div class="toast" id="toast"></div>
+  <button class="update-banner" id="updateBanner" style="display:none">🔄 有新版本，點此更新</button>
+  <div class="net-banner" id="netBanner" style="display:none">📴 離線模式（地圖與已快取內容仍可用）</div>
 </div>
 
 <script src="vendor/leaflet/leaflet.js"></script>
@@ -281,9 +289,38 @@
 <script src="js/recorder.js"></script>
 <script src="js/app.js"></script>
 <script>
+  // Service Worker：偵測新版本 → 顯示更新橫幅；點擊後讓新版接手並重載
   if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+    let _swReg = null, _refreshing = false;
+    window.addEventListener("load", async () => {
+      try {
+        _swReg = await navigator.serviceWorker.register("sw.js");
+        const showIfWaiting = w => w && w.addEventListener("statechange", () => {
+          if (w.state === "installed" && navigator.serviceWorker.controller) {
+            const b = document.getElementById("updateBanner"); if (b) b.style.display = "block";
+          }
+        });
+        if (_swReg.waiting && navigator.serviceWorker.controller) {
+          const b = document.getElementById("updateBanner"); if (b) b.style.display = "block";
+        }
+        _swReg.addEventListener("updatefound", () => showIfWaiting(_swReg.installing));
+      } catch (e) { /* */ }
+    });
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (_refreshing) return; _refreshing = true; location.reload();
+    });
+    document.getElementById("updateBanner").addEventListener("click", () => {
+      const b = document.getElementById("updateBanner"); b.style.display = "none";
+      if (_swReg && _swReg.waiting) _swReg.waiting.postMessage("skipWaiting");
+      else location.reload();
+    });
   }
+  // 離線狀態橫幅
+  (function () {
+    const nb = document.getElementById("netBanner");
+    const upd = () => { nb.style.display = navigator.onLine ? "none" : "block"; };
+    window.addEventListener("online", upd); window.addEventListener("offline", upd); upd();
+  })();
 </script>
 </body>
 </html>
