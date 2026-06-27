@@ -1474,7 +1474,8 @@ const PET_BG = [
   "linear-gradient(140deg,#2b5a3a,#234a6b 55%,#16301f)",
 ];
 function realRecords() { return Store.getRecords().filter(r => !r.sim); }   // 排除模擬
-function realTotalKm() { return realRecords().reduce((s, r) => s + (r.distanceKm || 0), 0); }
+function debugKm() { return +(localStorage.getItem("tt_debug_km") || 0); }   // 測試用里程偏移
+function realTotalKm() { return realRecords().reduce((s, r) => s + (r.distanceKm || 0), 0) + debugKm(); }
 function petBase() { return +(localStorage.getItem("tt_pet_base") || 0); }
 function feedBonusKm() { return +(localStorage.getItem("tt_pet_feedkm") || 0); }
 function totalKm() { return Math.max(0, realTotalKm() - petBase()) + feedBonusKm(); }   // 成長里程＝走路 + 照顧獎勵
@@ -1794,6 +1795,64 @@ if (typeof Conditions !== "undefined") Conditions.refresh(TRAILS).then(n => { if
 (function () {
   const id = new URLSearchParams(location.search).get("trail");
   if (id && TRAILS.some(t => t.id === id)) setTimeout(() => openDetail(id), 200);
+})();
+
+// ---------- 後台測試（debug） ----------
+window.ttDebug = (() => {
+  const ls = localStorage;
+  const refresh = () => { try { renderPet(); renderStats(); renderHistory(); render(); } catch (e) { /* */ } };
+  const api = {
+    addKm(n = 5) { ls.setItem("tt_debug_km", String(+(debugKm() + (+n)).toFixed(2))); checkPetEvolve(); refresh(); return api.state(); },
+    setLevel(i) {
+      i = Math.max(0, Math.min(PET_STAGES.length - 1, +i));
+      const recs = realRecords().reduce((s, r) => s + (r.distanceKm || 0), 0);
+      ls.setItem("tt_debug_km", String(+(PET_STAGES[i].km - feedBonusKm() + petBase() - recs).toFixed(2)));
+      ls.setItem("tt_pet_stage", String(i)); refresh(); return api.state();
+    },
+    maxLevel() { return api.setLevel(PET_STAGES.length - 1); },
+    evolve() { const i = petStageIndex(totalKm()); if (i < PET_STAGES.length - 1) api.addKm(PET_STAGES[i + 1].km - totalKm() + 0.1); return api.state(); },
+    addBerries(n = 30) { ls.setItem("tt_pet_berry_spent", String((+(ls.getItem("tt_pet_berry_spent") || 0)) - (+n))); refresh(); return api.state(); },
+    setAffinity(n = 100) { ls.setItem("tt_pet_aff", String(Math.max(0, Math.min(100, +n)))); ls.setItem("tt_pet_aff_t", new Date().toISOString()); refresh(); return api.state(); },
+    resetFeed() { ls.removeItem("tt_pet_fed"); refresh(); return "可再餵食"; },
+    addDays(n = 10) { const h = new Date(petHatch()); h.setDate(h.getDate() - (+n)); ls.setItem("tt_pet_hatch", h.toISOString()); refresh(); return api.state(); },
+    clearDebug() { ls.removeItem("tt_debug_km"); refresh(); return api.state(); },
+    resetPet() {
+      ls.setItem("tt_pet_base", String(realTotalKm())); ls.setItem("tt_pet_hatch", new Date().toISOString());
+      ls.setItem("tt_pet_stage", "0"); ls.setItem("tt_pet_berry_spent", String(berriesEarned()));
+      ["tt_pet_name", "tt_pet_feedkm", "tt_pet_aff", "tt_pet_aff_t", "tt_pet_fed"].forEach(k => ls.removeItem(k));
+      refresh(); return "已重置寵物 🥚";
+    },
+    state() { return { 成長km: +totalKm().toFixed(2), 等級: petStageIndex(totalKm()) + 1, 果實: berriesBalance(), 愛心: petHearts(), 親密度: affinity(), debug里程: debugKm() }; },
+    panel() { toggleDebugPanel(); },
+    help() { console.log("ttDebug 指令：\n addKm(n) setLevel(0-6) maxLevel() evolve()\n addBerries(n) setAffinity(0-100) resetFeed() addDays(n)\n clearDebug() resetPet() state() panel()"); return api.state(); },
+  };
+  return api;
+})();
+function toggleDebugPanel() {
+  let p = document.getElementById("debugPanel");
+  if (p) { p.remove(); return; }
+  p = document.createElement("div");
+  p.id = "debugPanel"; p.className = "debug-panel";
+  const btns = [
+    ["+5km", () => ttDebug.addKm(5)], ["+20km", () => ttDebug.addKm(20)],
+    ["進化➡", () => ttDebug.evolve()], ["神龍🐉", () => ttDebug.maxLevel()],
+    ["+50🍓", () => ttDebug.addBerries(50)], ["❤️滿", () => ttDebug.setAffinity(100)],
+    ["可再餵", () => ttDebug.resetFeed()], ["+30天", () => ttDebug.addDays(30)],
+    ["清debug", () => ttDebug.clearDebug()], ["重置🥚", () => ttDebug.resetPet()],
+  ];
+  p.innerHTML = `<div class="dbg-h">🛠 測試面板 <span id="dbgState"></span><button id="dbgClose">✕</button></div><div class="dbg-grid"></div>`;
+  const grid = p.querySelector(".dbg-grid");
+  btns.forEach(([t, fn]) => { const b = document.createElement("button"); b.textContent = t; b.onclick = () => { fn(); document.getElementById("dbgState").textContent = `Lv${ttDebug.state().等級}·${ttDebug.state().成長km}km`; }; grid.appendChild(b); });
+  p.querySelector("#dbgClose").onclick = () => p.remove();
+  document.body.appendChild(p);
+  document.getElementById("dbgState").textContent = `Lv${ttDebug.state().等級}·${ttDebug.state().成長km}km`;
+}
+// 開啟方式：網址 ?debug=1，或連點 header 標題 5 下
+if (new URLSearchParams(location.search).get("debug") === "1") setTimeout(toggleDebugPanel, 400);
+(function () {
+  const brand = document.querySelector(".brand"); if (!brand) return;
+  let n = 0, tm;
+  brand.addEventListener("click", () => { n++; clearTimeout(tm); tm = setTimeout(() => n = 0, 1200); if (n >= 5) { n = 0; toggleDebugPanel(); } });
 })();
 
 // #22 首次使用導覽

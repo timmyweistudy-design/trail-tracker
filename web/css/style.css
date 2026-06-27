@@ -544,6 +544,16 @@ html[data-theme="dark"] .map-legend { background: rgba(27,32,23,.94); }
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+/* 後台測試面板 */
+.debug-panel { position: fixed; left: 50%; bottom: calc(96px + var(--safe-b)); transform: translateX(-50%); z-index: 85;
+  width: min(420px, 94%); background: #14180f; color: #e9e4d4; border: 1px solid #2f3726; border-radius: 14px; padding: 10px 12px; box-shadow: var(--sh-lg); }
+.dbg-h { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; margin-bottom: 9px; }
+.dbg-h span { font-family: var(--num); font-size: 11px; color: #9fe0b0; font-weight: 600; }
+.dbg-h button { margin-left: auto; background: none; border: none; color: #b0aa97; font-size: 15px; cursor: pointer; }
+.dbg-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; }
+.dbg-grid button { background: #232a1d; border: 1px solid #2f3726; color: #e9e4d4; border-radius: 9px; padding: 9px 4px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.dbg-grid button:active { background: #2f3726; transform: scale(.95); }
+
 /* 更新 / 離線 橫幅 */
 .update-banner, .net-banner { position: fixed; left: 50%; transform: translateX(-50%); max-width: 92%;
   z-index: 65; border: none; border-radius: 999px; font-size: 13.5px; font-weight: 600; padding: 11px 20px;
