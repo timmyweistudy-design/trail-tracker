@@ -604,7 +604,38 @@ $("#closeDetailBtn").addEventListener("click", closeDetail);
 
 // ---------- 記錄頁 ----------
 // 行程軌跡回顧 / 結束總結
-let trackMap = null, trackLayer = null;
+let trackMap = null, trackLayer = null, trackAnim = null, trackReplayLayer = null, trackPts = null;
+const _hav = (a, b) => haversine({ lat: a[0], lon: a[1] }, { lat: b[0], lon: b[1] });
+// 結算頁滑行重播：marker 沿軌跡滑行、路線同步畫出（約8秒）
+function playTrackReplay(pts) {
+  if (trackAnim) { clearInterval(trackAnim); trackAnim = null; }
+  if (!trackMap || !pts || pts.length < 2) return;
+  if (trackReplayLayer) trackMap.removeLayer(trackReplayLayer);
+  trackReplayLayer = L.layerGroup().addTo(trackMap);
+  const cum = [0];
+  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + _hav(pts[i - 1], pts[i]));
+  const total = cum[cum.length - 1] || 1;
+  const grow = L.polyline([pts[0]], { color: "#2f7d4f", weight: 5 }).addTo(trackReplayLayer);
+  const dot = L.circleMarker(pts[0], { radius: 7, color: "#fff", weight: 3, fillColor: "#e8893b", fillOpacity: 1 }).addTo(trackReplayLayer);
+  const DURATION = 8000, interval = 25, frames = Math.round(DURATION / interval);
+  let f = 0, idx = 0;
+  trackAnim = setInterval(() => {
+    f++;
+    const d = Math.min(total, total * f / frames);
+    while (idx < pts.length - 2 && cum[idx + 1] <= d) idx++;     // 推進到含距離 d 的線段
+    const segLen = cum[idx + 1] - cum[idx];
+    const r = segLen > 0 ? (d - cum[idx]) / segLen : 0;
+    const cur = [pts[idx][0] + (pts[idx + 1][0] - pts[idx][0]) * r,
+                 pts[idx][1] + (pts[idx + 1][1] - pts[idx][1]) * r];
+    grow.setLatLngs(pts.slice(0, idx + 1).concat([cur]));
+    dot.setLatLng(cur);
+    if (f >= frames || d >= total) {
+      clearInterval(trackAnim); trackAnim = null;
+      grow.setLatLngs(pts);
+      L.circleMarker(pts[pts.length - 1], { radius: 6, color: "#fff", weight: 2, fillColor: "#d2542e", fillOpacity: 1 }).addTo(trackReplayLayer);
+    }
+  }, interval);
+}
 function openTrackReview(rec) {
   if (!rec) return;
   const km = rec.distanceKm || 0, t3 = rec.distance3DKm;
@@ -620,6 +651,7 @@ function openTrackReview(rec) {
       ${t3 && t3 > km + 0.05 ? `<div class="item"><div class="l">含坡度距離</div><div class="v">${t3.toFixed(2)} km</div></div>` : ""}
     </div>
     <div class="link-row">
+      <button class="link-btn" id="trackReplay">▶ 重播路徑</button>
       <button class="link-btn" id="trackGpx">⬇️ 匯出 GPX</button>
       <button class="link-btn" id="trackShare">↗ 分享行程</button>
     </div>`;
@@ -634,14 +666,18 @@ function openTrackReview(rec) {
     if (trackLayer) trackMap.removeLayer(trackLayer);
     trackLayer = L.layerGroup().addTo(trackMap);
     const pts = (rec.track || []).map(p => [p.lat, p.lon]);
-    if (pts.length) {
-      const line = L.polyline(pts, { color: "#2f7d4f", weight: 5 }).addTo(trackLayer);
-      L.circleMarker(pts[0], { radius: 6, color: "#fff", weight: 2, fillColor: "#2f7d4f", fillOpacity: 1 }).addTo(trackLayer);
-      L.circleMarker(pts[pts.length - 1], { radius: 6, color: "#fff", weight: 2, fillColor: "#d2542e", fillOpacity: 1 }).addTo(trackLayer);
-      trackMap.fitBounds(line.getBounds(), { padding: [24, 24] });
-    } else { trackMap.setView([23.8, 121], 7); }
+    trackPts = pts;
     trackMap.invalidateSize();
+    if (pts.length > 1) {
+      trackMap.fitBounds(L.polyline(pts).getBounds(), { padding: [24, 24] });
+      L.circleMarker(pts[0], { radius: 6, color: "#fff", weight: 2, fillColor: "#2f7d4f", fillOpacity: 1 }).addTo(trackLayer);   // 起點
+      playTrackReplay(pts);                       // 滑行重播
+    } else if (pts.length === 1) {
+      trackMap.setView(pts[0], 15);
+      L.circleMarker(pts[0], { radius: 6, color: "#fff", weight: 2, fillColor: "#2f7d4f", fillOpacity: 1 }).addTo(trackLayer);
+    } else { trackMap.setView([23.8, 121], 7); }
   }, 120);
+  $("#trackReplay").addEventListener("click", () => { if (trackPts && trackPts.length > 1) playTrackReplay(trackPts); });
   $("#trackGpx").addEventListener("click", () => { GPX.exportRecord(rec); toast("已匯出 GPX"); });
   $("#trackShare").addEventListener("click", () => {
     const text = `我走了 ${rec.trailName || "自由路線"}：${km.toFixed(2)} km、爬升 ↑${rec.ascent || 0}m、${rec.kcal} 大卡、${fmtTime(rec.elapsedMs)} ⛰️ — 步道誌`;
@@ -650,7 +686,7 @@ function openTrackReview(rec) {
     else toast(text);
   });
 }
-function closeTrackReview() { $("#trackMask").classList.remove("show"); $("#trackSheet").classList.remove("show"); }
+function closeTrackReview() { if (trackAnim) { clearInterval(trackAnim); trackAnim = null; } $("#trackMask").classList.remove("show"); $("#trackSheet").classList.remove("show"); }
 $("#trackMask").addEventListener("click", closeTrackReview);
 $("#closeTrackBtn").addEventListener("click", closeTrackReview);
 
