@@ -2128,9 +2128,24 @@ window.ttDebug = (() => {
       ["tt_pet_name", "tt_pet_feedkm", "tt_pet_aff", "tt_pet_aff_t", "tt_pet_fed"].forEach(k => ls.removeItem(k));
       refresh(); return "已重置寵物 🥚";
     },
-    state() { return { 成長km: +totalKm().toFixed(2), 等級: petStageIndex(totalKm()) + 1, 果實: berriesBalance(), 愛心: petHearts(), 親密度: affinity(), debug里程: debugKm() }; },
+    // 加一筆「真實」測試行程（推進成就統計/每日環/足跡圖/徽章/親密度，今天日期）
+    addHike(km = 3) {
+      km = +km;
+      const n = Math.max(3, Math.round(km * 30));
+      let lat = 25.02 + Math.random() * .04, lon = 121.5 + Math.random() * .06;
+      const dd = (km * 1000) / n / 111000, track = [];
+      for (let i = 0; i < n; i++) { lat += dd * 0.7; lon += dd * 0.5; track.push({ lat, lon, t: Date.now() - (n - i) * 1000 }); }
+      Store.addRecord({
+        id: "dbg" + Date.now(), date: new Date().toISOString(), dbg: true, note: "測試行程",
+        distanceKm: km, distance3DKm: km, steps: Math.round(km * 1350), kcal: Math.round(km * 60),
+        elapsedMs: Math.round(km * 12 * 60000), ascent: Math.round(km * 45), descent: Math.round(km * 35), track,
+      });
+      bumpAffinity(8); checkPetEvolve(); refresh(); return api.state();
+    },
+    clearHikes() { const kept = Store.getRecords().filter(r => !r.dbg); localStorage.setItem("tt_records", JSON.stringify(kept)); refresh(); return "已清除測試行程"; },
+    state() { return { 成長km: +totalKm().toFixed(2), 等級: petStageIndex(totalKm()) + 1, 果實: berriesBalance(), 愛心: petHearts(), 親密度: affinity(), 今日km: +todayKm().toFixed(1), 出行次數: realRecords().length, debug里程: debugKm() }; },
     panel() { toggleDebugPanel(); },
-    help() { console.log("ttDebug 指令：\n addKm(n) setLevel(0-6) maxLevel() evolve()\n addBerries(n) setAffinity(0-100) resetFeed() addDays(n)\n clearDebug() resetPet() state() panel()"); return api.state(); },
+    help() { console.log("ttDebug 指令：\n addKm(n) setLevel(0-6) maxLevel() evolve()\n addBerries(n) setAffinity(0-100) resetFeed() addDays(n)\n addHike(km) clearHikes()  ← 推進成就/每日環/足跡圖\n clearDebug() resetPet() state() panel()"); return api.state(); },
   };
   return api;
 })();
@@ -2144,7 +2159,9 @@ function toggleDebugPanel() {
     ["進化➡", () => ttDebug.evolve()], ["神龍🐉", () => ttDebug.maxLevel()],
     ["+50🍓", () => ttDebug.addBerries(50)], ["❤️滿", () => ttDebug.setAffinity(100)],
     ["可再餵", () => ttDebug.resetFeed()], ["+30天", () => ttDebug.addDays(30)],
-    ["清debug", () => ttDebug.clearDebug()], ["重置🥚", () => ttDebug.resetPet()],
+    ["＋行程3km", () => ttDebug.addHike(3)], ["＋行程10km", () => ttDebug.addHike(10)],
+    ["清測試行程", () => ttDebug.clearHikes()], ["清debug", () => ttDebug.clearDebug()],
+    ["重置🥚", () => ttDebug.resetPet()],
   ];
   p.innerHTML = `<div class="dbg-h">🛠 測試面板 <span id="dbgState"></span><button id="dbgClose">✕</button></div><div class="dbg-grid"></div>`;
   const grid = p.querySelector(".dbg-grid");
