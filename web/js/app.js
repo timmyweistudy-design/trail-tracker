@@ -18,6 +18,21 @@ function ensureGeo() {
   });
   return _geoPromise;
 }
+// 詳情欄位（guide/entrances/交通…）拆出懶載，首屏更輕
+let _detailPromise = null;
+function ensureDetail() {
+  if (window.TRAILS_DETAIL) return Promise.resolve();
+  if (_detailPromise) return _detailPromise;
+  _detailPromise = new Promise(resolve => {
+    const s = document.createElement("script");
+    s.src = "js/trails-detail.js";
+    s.onload = () => resolve();
+    s.onerror = () => resolve();
+    document.head.appendChild(s);
+  });
+  return _detailPromise;
+}
+function mergeDetail(t) { const d = (window.TRAILS_DETAIL || {})[t.id]; if (d) Object.assign(t, d); return t; }
 // 骨架卡（載入占位）
 function skelCards(n) {
   return `<div class="skel-list">${Array.from({ length: n }, () =>
@@ -689,7 +704,8 @@ async function openDetail(id) {
   $("#detailSheet").classList.add("show");
   $("#detailSheet").scrollTop = 0;
   $("#closeDetailBtn").focus({ preventScroll: true });
-  await ensureGeo();
+  await Promise.all([ensureGeo(), ensureDetail()]);
+  mergeDetail(t);                       // 併入 guide/entrances/交通等詳情欄位
   const d = t.difficulty || 0;
   // 只列出有資料的欄位（OSM 步道欄位較少，避免顯示空白「—」）
   const kv = [];
@@ -824,7 +840,7 @@ async function openDetail(id) {
       detailMap.fitBounds(grp.getBounds(), { padding: [20, 20] });
     } else if (t.lat) {
       detailMap.setView([t.lat, t.lon], 14);
-      t.entrances.forEach(e => L.marker([e.lat, e.lon]).addTo(detailOverlay).bindPopup(e.memo || "步道入口"));
+      (t.entrances || []).forEach(e => L.marker([e.lat, e.lon]).addTo(detailOverlay).bindPopup(e.memo || "步道入口"));
     } else {
       detailMap.setView([23.7, 121], 7);
     }
