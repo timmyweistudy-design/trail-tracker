@@ -56,6 +56,7 @@ const EMPTY_ART = `<svg class="empty-art" viewBox="0 0 120 84">
   <path d="M4 74 H116" stroke="var(--brand-mid)" stroke-width="2" stroke-linecap="round"/>
 </svg>`;
 
+const TAG_ICON = { 古道: "🛤", 瀑布: "💧", 海景: "🌊", 森林: "🌲", 湖泊: "🏞", 溫泉: "♨️", 環狀: "🔄", 親子: "🧸", 無障礙: "♿", 挑戰級: "⚡" };
 // 分類標籤（由名稱/資料推導）
 function tagsOf(t) {
   const n = t.name || "", g = [];
@@ -119,6 +120,16 @@ function fmtTime(ms) {
 function toast(msg) {
   const t = $("#toast"); t.textContent = msg; t.classList.add("show");
   clearTimeout(t._tm); t._tm = setTimeout(() => t.classList.remove("show"), 2200);
+}
+// 里程碑彩帶
+function confetti() {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const c = document.createElement("div"); c.className = "confetti";
+  const cols = ["#e8c87a", "#9fe0b0", "#c2683d", "#3f7a55", "#fbf8ee"];
+  let h = "";
+  for (let i = 0; i < 64; i++) h += `<i style="left:${Math.random() * 100}%;background:${cols[i % cols.length]};animation-duration:${(1 + Math.random()).toFixed(2)}s;animation-delay:${(Math.random() * .35).toFixed(2)}s"></i>`;
+  c.innerHTML = h; document.body.appendChild(c);
+  setTimeout(() => c.remove(), 2400);
 }
 
 // ---------- 分頁切換 ----------
@@ -602,7 +613,7 @@ async function openDetail(id) {
       <button data-sec="secFood">美食</button>
     </div>
     ${conditionBanner(t)}
-    ${tagsOf(t).length ? `<div class="tag-row">${tagsOf(t).map(g => `<span class="tag">${g}</span>`).join("")}</div>` : ""}
+    ${tagsOf(t).length ? `<div class="tag-row">${tagsOf(t).map(g => `<span class="tag">${TAG_ICON[g] ? TAG_ICON[g] + " " : ""}${g}</span>`).join("")}</div>` : ""}
     ${gradeExplain(t)}
     ${kvHtml}
     <div class="section-title" id="secWx">${ic("sun")}天氣（步道所在地）</div>
@@ -717,6 +728,7 @@ async function openDetail(id) {
     logDone.classList.toggle("done", done);
     logDone.textContent = done ? "✓ 已完成這條步道" : "標記為已完成";
     toast(done ? "已標記完成 🎉" : "已取消完成");
+    if (done) confetti();
   });
   $("#rateStars") && $("#rateStars").querySelectorAll(".rate-star").forEach(st =>
     st.addEventListener("click", () => {
@@ -764,9 +776,10 @@ async function loadPhoto(t) {
       + (urls.length > 1 ? `<div class="hero-dots">${urls.map((_, i) => `<span class="${i ? "" : "on"}"></span>`).join("")}</div>` : "");
     hero.insertBefore(car, hero.firstChild);
     hero.insertAdjacentHTML("afterbegin", `<div class="hero-credit">Wikimedia Commons${urls.length > 1 ? " · 左右滑看更多" : ""}</div>`);
-    car.querySelectorAll("img").forEach(im => {
+    car.querySelectorAll("img").forEach((im, idx) => {
       if (im.complete && im.naturalWidth) im.classList.add("loaded");
       else { im.addEventListener("load", () => im.classList.add("loaded")); im.addEventListener("error", () => im.classList.add("loaded")); }
+      im.addEventListener("click", () => openLightbox(urls, idx));   // 點圖放大
     });
     if (urls.length > 1) {
       const dots = car.querySelector(".hero-dots");
@@ -776,6 +789,22 @@ async function loadPhoto(t) {
       }, { passive: true });
     }
   } catch { /* 無照片就維持漸層底 */ }
+}
+
+// 照片燈箱：全螢幕放大、可左右滑
+function openLightbox(urls, start) {
+  const ov = document.createElement("div");
+  ov.className = "lightbox";
+  ov.innerHTML = `<button class="lb-close" aria-label="關閉">✕</button>
+    <div class="lb-track">${urls.map(u => `<div class="lb-slide"><img src="${u}" alt=""></div>`).join("")}</div>`;
+  document.body.appendChild(ov);
+  const track = ov.querySelector(".lb-track");
+  track.scrollLeft = (start || 0) * track.clientWidth;
+  const close = () => ov.remove();
+  ov.querySelector(".lb-close").addEventListener("click", close);
+  ov.addEventListener("click", e => { if (e.target === ov || e.target.classList.contains("lb-slide")) close(); });
+  const esc = e => { if (e.key === "Escape") { close(); document.removeEventListener("keydown", esc); } };
+  document.addEventListener("keydown", esc);
 }
 
 async function loadElevation(t) {
@@ -1382,6 +1411,7 @@ $("#btnStop").addEventListener("click", () => {
     checkPetEvolve();
     $("#recStatus").textContent = "準備就緒，按「開始」記錄路徑";
     openTrackReview(rec);              // 結束後顯示總結頁
+    if (!rec.sim) confetti();
   } else {
     toast("路徑太短，未儲存");
   }
