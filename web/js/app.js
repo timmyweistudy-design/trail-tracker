@@ -617,6 +617,8 @@ function playTrackReplay(pts) {
   const total = cum[cum.length - 1] || 1;
   const grow = L.polyline([pts[0]], { color: "#2f7d4f", weight: 5 }).addTo(trackReplayLayer);
   const dot = L.circleMarker(pts[0], { radius: 7, color: "#fff", weight: 3, fillColor: "#e8893b", fillOpacity: 1 }).addTo(trackReplayLayer);
+  const fullBounds = L.polyline(pts).getBounds();
+  trackMap.setView(pts[0], 16);                  // 鏡頭拉近到起點，跟著走
   const DURATION = 8000, interval = 25, frames = Math.round(DURATION / interval);
   let f = 0, idx = 0;
   trackAnim = setInterval(() => {
@@ -629,10 +631,12 @@ function playTrackReplay(pts) {
                  pts[idx][1] + (pts[idx + 1][1] - pts[idx][1]) * r];
     grow.setLatLngs(pts.slice(0, idx + 1).concat([cur]));
     dot.setLatLng(cur);
+    trackMap.panTo(cur, { animate: false });      // 鏡頭跟著腳步滑行＝重走這條路
     if (f >= frames || d >= total) {
       clearInterval(trackAnim); trackAnim = null;
       grow.setLatLngs(pts);
       L.circleMarker(pts[pts.length - 1], { radius: 6, color: "#fff", weight: 2, fillColor: "#d2542e", fillOpacity: 1 }).addTo(trackReplayLayer);
+      trackMap.flyToBounds(fullBounds, { padding: [24, 24], duration: 0.8 });   // 走完拉遠看全程
     }
   }, interval);
 }
