@@ -558,6 +558,12 @@ html[data-theme="dark"] .map-legend { background: rgba(27,32,23,.94); }
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+/* 足跡熱力圖 */
+.foot-modal { position: fixed; inset: 0; z-index: 92; background: var(--bg); animation: fadein .2s; }
+#footMap { position: absolute; inset: 0; }
+.foot-modal .lb-close { position: absolute; top: calc(12px + var(--safe-b)); right: 14px; z-index: 1000; width: 38px; height: 38px; border-radius: 50%; border: none; background: var(--brand-deep); color: #fff; font-size: 16px; cursor: pointer; box-shadow: var(--sh); }
+.foot-cap { position: absolute; left: 50%; bottom: calc(20px + var(--safe-b)); transform: translateX(-50%); z-index: 1000; background: var(--brand-deep); color: #f3efe4; font-size: 12.5px; font-weight: 600; padding: 8px 16px; border-radius: 999px; box-shadow: var(--sh); white-space: nowrap; }
+
 /* 照片燈箱 */
 .lightbox { position: fixed; inset: 0; z-index: 92; background: rgba(8,12,8,.95); display: flex; animation: fadein .2s; }
 .lb-track { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; width: 100%; scrollbar-width: none; }

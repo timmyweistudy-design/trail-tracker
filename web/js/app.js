@@ -1516,6 +1516,7 @@ $("#importFile").addEventListener("change", e => {
   };
   rd.readAsText(file);
 });
+$("#btnFootMap").addEventListener("click", openFootprintMap);
 $("#btnFavOffline").addEventListener("click", downloadFavOffline);
 $("#btnClearTiles").addEventListener("click", async () => {
   if (confirm("確定清除已下載的離線地圖？")) {
@@ -1728,6 +1729,29 @@ function checkPetEvolve() {
   const prev = +(localStorage.getItem("tt_pet_stage") || 0);
   if (i !== prev) localStorage.setItem("tt_pet_stage", i);
   if (i > prev) setTimeout(() => celebrateEvolve(PET_STAGES[i], i + 1), 800);
+}
+// 我的足跡熱力圖：所有真實軌跡疊在一張地圖上
+function openFootprintMap() {
+  const recs = realRecords().filter(r => r.track && r.track.length > 1);
+  if (!recs.length) { toast("還沒有可顯示的軌跡，先去走一條吧"); return; }
+  const ov = document.createElement("div");
+  ov.className = "foot-modal";
+  ov.innerHTML = `<button class="lb-close" id="footClose" aria-label="關閉">✕</button><div id="footMap"></div><div class="foot-cap">我的足跡 · ${recs.length} 段軌跡</div>`;
+  document.body.appendChild(ov);
+  const close = () => ov.remove();
+  $("#footClose").addEventListener("click", close);
+  setTimeout(() => {
+    const m = L.map("footMap", { zoomControl: true });
+    L.tileLayer("https://a.tile.opentopomap.org/{z}/{x}/{y}.png", { attribution: "© OpenTopoMap (CC-BY-SA)", maxZoom: 17, maxNativeZoom: 17 }).addTo(m);
+    const all = [];
+    recs.forEach(r => {
+      const pts = r.track.map(p => [p.lat, p.lon]);
+      L.polyline(pts, { color: "#e8893b", weight: 5, opacity: .35 }).addTo(m);   // 疊加＝熱力
+      all.push(...pts);
+    });
+    if (all.length) m.fitBounds(all, { padding: [30, 30] });
+    m.invalidateSize();
+  }, 90);
 }
 // 每日目標環
 function todayKm() { const d = todayStr(); return realRecords().filter(r => (r.date || "").slice(0, 10) === d).reduce((s, r) => s + (r.distanceKm || 0), 0); }
