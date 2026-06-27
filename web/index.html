@@ -6,6 +6,16 @@
   <meta name="theme-color" content="#16301f">
   <title>步道誌 Trail Tracker</title>
   <script>
+    // 主題：在繪製前套用，避免閃白
+    (function () {
+      try {
+        var t = localStorage.getItem("tt_theme") || "auto";
+        var dark = t === "dark" || (t === "auto" && matchMedia("(prefers-color-scheme: dark)").matches);
+        if (dark) document.documentElement.setAttribute("data-theme", "dark");
+      } catch (e) { /* */ }
+    })();
+  </script>
+  <script>
     // #25 輕量錯誤記錄：存最近 20 筆於 localStorage，方便回報問題（window.ttErrors() 可查看）
     (function () {
       function log(msg) {
@@ -47,42 +57,33 @@
 
   <!-- 探索 -->
   <section id="view-explore" class="view active">
-    <div class="search"><input id="searchInput" type="search" placeholder="搜尋步道名稱、地區…" autocomplete="off"></div>
+    <div class="search">
+      <svg class="ic ic-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="searchInput" type="search" placeholder="搜尋步道、地區、主題…" autocomplete="off">
+    </div>
     <div class="chips" id="filterChips">
       <button class="chip active" data-filter="all">全部</button>
-      <button class="chip" data-filter="fav">⭐ 收藏</button>
+      <button class="chip" data-filter="fav">★ 收藏</button>
       <button class="chip" data-filter="done">✓ 已完成</button>
-      <button class="chip" data-filter="family">👨‍👩‍👧 親子友善</button>
-      <button class="chip" data-filter="d1">輕鬆</button>
-      <button class="chip" data-filter="d2">一般</button>
-      <button class="chip" data-filter="d3">進階</button>
-      <button class="chip" data-filter="d45">挑戰以上</button>
-      <button class="chip" data-filter="tag:古道">古道</button>
-      <button class="chip" data-filter="tag:瀑布">瀑布</button>
-      <button class="chip" data-filter="tag:海景">海景</button>
-      <button class="chip" data-filter="tag:森林">森林</button>
-      <button class="chip" data-filter="tag:湖泊">湖泊</button>
+      <button class="chip" data-filter="family">親子友善</button>
     </div>
-    <div class="chips" id="regionChips"></div>
-    <div class="count-row">
+    <div class="toolbar">
       <span class="count" id="resultCount"></span>
-      <span>
-        <button class="info-link" id="btnMapView">🗺️ 地圖</button>
-        <button class="info-link" id="btnNearMe">📍 附近</button>
-        <button class="info-link" id="btnGradeInfo">ⓘ 分級</button>
-      </span>
-    </div>
-    <div class="adv-row">
-      <select id="sortSel" class="adv-sel" aria-label="排序">
-        <option value="default">排序：預設</option>
-        <option value="length-asc">最短</option>
-        <option value="length-desc">最長</option>
-        <option value="diff-asc">最易</option>
-        <option value="diff-desc">最難</option>
-        <option value="name">名稱</option>
-      </select>
-      <button class="adv-tgl" id="tglOpen">排除封閉</button>
-      <button class="adv-tgl" id="tglGeo">有路線</button>
+      <span class="grow"></span>
+      <button class="icon-btn" id="btnNearMe" aria-label="附近步道" title="附近步道">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+      </button>
+      <button class="btn-filter" id="btnFilter" aria-label="篩選與排序">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M3 5h18M6 12h12M10 19h4"/></svg>篩選<span class="dot" id="filterDot" style="display:none"></span>
+      </button>
+      <div class="seg" role="tablist">
+        <button class="seg-btn on" data-mode="list" aria-label="列表檢視">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>列表
+        </button>
+        <button class="seg-btn" data-mode="map" aria-label="地圖檢視">
+          <svg class="ic" viewBox="0 0 24 24"><path d="m9 4-6 2v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/></svg>地圖
+        </button>
+      </div>
     </div>
     <div id="browseMap" style="display:none"></div>
     <div id="trailList"></div>
@@ -121,6 +122,19 @@
     <div class="field"><label>身高（公分）</label><input id="pfHeight" type="number" inputmode="numeric" min="100" max="220" placeholder="170"></div>
     <button class="btn primary" id="btnSaveProfile">儲存</button>
 
+    <div class="section-title">外觀主題</div>
+    <div class="theme-row" id="themeRow">
+      <button class="theme-opt" data-theme-opt="light">
+        <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19"/></svg>淺色
+      </button>
+      <button class="theme-opt" data-theme-opt="dark">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M21 13A8.5 8.5 0 0 1 11 3a7 7 0 1 0 10 10Z"/></svg>深色
+      </button>
+      <button class="theme-opt" data-theme-opt="auto">
+        <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v18" /><path d="M12 3a9 9 0 0 1 0 18Z" fill="currentColor" stroke="none"/></svg>自動
+      </button>
+    </div>
+
     <div class="section-title">離線地圖</div>
     <div class="offline-manage">
       <div id="offlineStatus" class="offline-status">已快取地圖圖磚：計算中…</div>
@@ -144,6 +158,7 @@
   <div class="sheet" id="detailSheet">
     <div class="grip"></div>
     <button class="sheet-close" id="closeDetailBtn" aria-label="關閉">✕</button>
+    <div id="detailHero"></div>
     <div id="detailMap"></div>
     <div class="sheet-body" id="detailBody"></div>
   </div>
@@ -157,6 +172,66 @@
     <div class="sheet-body" id="trackBody"></div>
   </div>
 
+  <!-- 篩選與排序面板 -->
+  <div class="sheet-mask" id="filterMask"></div>
+  <div class="sheet filter-sheet" id="filterSheet">
+    <div class="grip"></div>
+    <button class="sheet-close" id="closeFilterBtn" aria-label="關閉">✕</button>
+    <div class="sheet-body">
+      <h2 style="margin-top:6px">篩選與排序</h2>
+      <div class="fs-group">
+        <div class="fs-label">難度</div>
+        <div class="fs-chips">
+          <button class="chip active" data-filter="all">全部</button>
+          <button class="chip" data-filter="d1">輕鬆</button>
+          <button class="chip" data-filter="d2">一般</button>
+          <button class="chip" data-filter="d3">進階</button>
+          <button class="chip" data-filter="d45">挑戰以上</button>
+          <button class="chip" data-filter="family">親子友善</button>
+        </div>
+      </div>
+      <div class="fs-group">
+        <div class="fs-label">主題</div>
+        <div class="fs-chips">
+          <button class="chip" data-filter="tag:古道">古道</button>
+          <button class="chip" data-filter="tag:瀑布">瀑布</button>
+          <button class="chip" data-filter="tag:海景">海景</button>
+          <button class="chip" data-filter="tag:森林">森林</button>
+          <button class="chip" data-filter="tag:湖泊">湖泊</button>
+          <button class="chip" data-filter="tag:溫泉">溫泉</button>
+          <button class="chip" data-filter="tag:環狀">環狀</button>
+        </div>
+      </div>
+      <div class="fs-group">
+        <div class="fs-label">地區</div>
+        <div class="fs-chips" id="fsRegion"></div>
+      </div>
+      <div class="fs-group">
+        <div class="fs-label">排序</div>
+        <div class="fs-chips" id="fsSort">
+          <button class="chip active" data-sort="default">預設</button>
+          <button class="chip" data-sort="length-asc">最短</button>
+          <button class="chip" data-sort="length-desc">最長</button>
+          <button class="chip" data-sort="diff-asc">最易</button>
+          <button class="chip" data-sort="diff-desc">最難</button>
+          <button class="chip" data-sort="name">名稱</button>
+        </div>
+      </div>
+      <div class="fs-group">
+        <div class="fs-label">其他</div>
+        <div class="fs-chips">
+          <button class="chip" id="fsOpen">排除封閉</button>
+          <button class="chip" id="fsGeo">只看有路線</button>
+          <button class="chip" id="fsGrade">ⓘ 分級說明</button>
+        </div>
+      </div>
+      <div class="fs-sheet-foot">
+        <button class="btn ghost" id="fsReset" style="margin-top:0">重設</button>
+        <button class="btn primary" id="fsApply" style="margin-top:0">查看 <span id="fsCount"></span> 條</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 分級說明面板（最上層） -->
   <div class="sheet-mask grade-mask" id="gradeMask"></div>
   <div class="sheet grade-sheet" id="gradeSheet">
@@ -166,9 +241,15 @@
   </div>
 
   <nav class="tabbar">
-    <button class="tab active" data-view="explore"><span class="ico">🧭</span>探索</button>
-    <button class="tab" data-view="record"><span class="ico">📍</span>記錄</button>
-    <button class="tab" data-view="me"><span class="ico">👤</span>我的</button>
+    <button class="tab active" data-view="explore">
+      <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2.2 5-5 2.2 2.2-5 5-2.2Z"/></svg>探索
+    </button>
+    <button class="tab" data-view="record">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>記錄
+    </button>
+    <button class="tab" data-view="me">
+      <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>我的
+    </button>
   </nav>
 
   <div class="toast" id="toast"></div>
@@ -177,7 +258,6 @@
 <script src="vendor/leaflet/leaflet.js"></script>
 <script src="vendor/markercluster/markercluster.js"></script>
 <script src="js/trails-data.js"></script>
-<script src="js/trails-geo.js" defer></script>
 <script src="js/storage.js"></script>
 <script src="js/grades.js"></script>
 <script src="js/config.js"></script>
