@@ -10,6 +10,7 @@ const Store = (() => {
   // 預設體重 60kg、身高 170cm
   function weight() { return Number(getProfile().weight) || 60; }
   function height() { return Number(getProfile().height) || 170; }
+  function packWeight() { return Math.max(0, Number(getProfile().pack) || 0); }
 
   function getRecords() {
     try { return JSON.parse(localStorage.getItem(RK)) || []; } catch { return []; }
@@ -23,6 +24,10 @@ const Store = (() => {
     localStorage.setItem(RK, JSON.stringify(getRecords().filter(r => r.id !== id)));
   }
   function clearRecords() { localStorage.removeItem(RK); }
+  function setRecordNote(id, note) {
+    const all = getRecords(); const r = all.find(x => x.id === id);
+    if (r) { if (note) r.note = note; else delete r.note; localStorage.setItem(RK, JSON.stringify(all)); }
+  }
   function clearSimRecords() {
     const kept = getRecords().filter(r => !r.sim);
     localStorage.setItem(RK, JSON.stringify(kept));
@@ -80,7 +85,7 @@ const Store = (() => {
   }
 
   return { getProfile, saveProfile, weight, height, getRecords, addRecord, deleteRecord, clearRecords,
-           getFavs, isFav, toggleFav, trailLog, setTrailLog, doneCount, exportAll, importAll, clearSimRecords };
+           getFavs, isFav, toggleFav, trailLog, setTrailLog, doneCount, exportAll, importAll, clearSimRecords, packWeight, setRecordNote };
 })();
 
 // 公用：兩點 haversine 距離（公尺）

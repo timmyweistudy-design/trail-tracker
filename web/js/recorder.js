@@ -69,7 +69,7 @@ const Recorder = (() => {
     const hrs = movingMs / 3600000;
     if (hrs <= 0) return 0;
     const kmh = (distance / 1000) / hrs;
-    const w = Store.weight();
+    const w = Store.weight() + (Store.packWeight ? Store.packWeight() : 0);   // 體重 + 背包負重
     const flat = metForSpeed(kmh) * w * hrs;
     const climb = ascent * w * KCAL_PER_KG_ASCENT;
     const down = descent * w * KCAL_PER_KG_DESCENT;

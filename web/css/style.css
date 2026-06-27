@@ -537,7 +537,10 @@ body {
 .hist-card .row b { color: var(--brand-deep); font-family: var(--num); }
 .hist-card .row small { color: var(--ink-faint); }
 .hist-actions { display: flex; gap: 8px; margin-top: 11px; }
-.hist-del, .hist-gpx, .hist-view { background: none; border: 1px solid var(--line); border-radius: var(--r-xs); padding: 7px 13px; font-size: 12.5px; cursor: pointer; font-weight: 600; transition: .15s; }
+.hist-note { font-size: 13px; color: var(--ink); background: var(--surface-2); border-radius: var(--r-xs); padding: 8px 11px; margin-top: 9px; line-height: 1.5; }
+.hist-del, .hist-gpx, .hist-view, .hist-note-btn { background: none; border: 1px solid var(--line); border-radius: var(--r-xs); padding: 7px 13px; font-size: 12.5px; cursor: pointer; font-weight: 600; transition: .15s; }
+.hist-note-btn { color: var(--brand-deep); }
+.hist-note-btn:active { background: var(--brand-soft); }
 .hist-del { color: var(--danger); } .hist-gpx, .hist-view { color: var(--brand-deep); }
 .hist-view:active { background: var(--brand-soft); }
 .hist-del:active { background: #faeae7; } .hist-gpx:active { background: var(--brand-soft); }

@@ -222,14 +222,26 @@ const COLLECTIONS = [
   { t: "輕鬆入門", s: "第一次健行", f: ["d1"], bg: "linear-gradient(135deg,#5aa06a,#3c7a4f)" },
   { t: "挑戰級", s: "進階者專屬", f: ["d45"], bg: "linear-gradient(135deg,#c2683d,#9a4f2c)" },
 ];
+// 依收藏/已完成步道的常見主題，推一個個人化分類
+function favoriteTag() {
+  const seen = TRAILS.filter(t => Store.isFav(t.id) || Store.trailLog(t.id).done);
+  if (seen.length < 2) return null;
+  const counts = {};
+  seen.forEach(t => tagsOf(t).forEach(g => counts[g] = (counts[g] || 0) + 1));
+  const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+  return top && top[1] >= 2 ? top[0] : null;
+}
+let _collList = [];
 function buildCollections() {
   const box = $("#collections");
   if (!box) return;
-  box.innerHTML = COLLECTIONS.map((c, i) =>
+  const ft = favoriteTag();
+  _collList = ft ? [{ t: "為你推薦", s: `你常走「${ft}」`, f: ["tag:" + ft], bg: "linear-gradient(135deg,#c79a3d,#9a6f2c)" }, ...COLLECTIONS] : COLLECTIONS.slice();
+  box.innerHTML = _collList.map((c, i) =>
     `<button class="coll-card" data-coll="${i}" style="background:${c.bg}">
        <span class="coll-t">${c.t}</span><span class="coll-s">${c.s}</span></button>`).join("");
   box.querySelectorAll(".coll-card").forEach(b => b.addEventListener("click", () => {
-    const c = COLLECTIONS[+b.dataset.coll];
+    const c = _collList[+b.dataset.coll];
     activeFilters = new Set(c.f); activeRegions.clear(); curQuery = ""; $("#searchInput").value = "";
     syncFilterUI(); syncRegionUI(); updateFilterDot(); render();
     $("#trailList").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1532,9 +1544,10 @@ function loadProfile() {
   const p = Store.getProfile();
   if (p.weight) $("#pfWeight").value = p.weight;
   if (p.height) $("#pfHeight").value = p.height;
+  if (p.pack) $("#pfPack").value = p.pack;
 }
 $("#btnSaveProfile").addEventListener("click", () => {
-  Store.saveProfile({ weight: Number($("#pfWeight").value) || 60, height: Number($("#pfHeight").value) || 170 });
+  Store.saveProfile({ weight: Number($("#pfWeight").value) || 60, height: Number($("#pfHeight").value) || 170, pack: Math.max(0, Number($("#pfPack").value) || 0) });
   toast("已儲存個人資料");
 });
 $("#btnExportGpxAll").addEventListener("click", () => {
@@ -1962,12 +1975,19 @@ function renderHistory() {
         <span>⏱ <b>${fmtTime(r.elapsedMs)}</b></span>
       </div>
       ${r.ascent ? `<div class="row"><span>⛰️ 爬升 <b>↑${r.ascent}</b>m${r.descent ? ` 下降 <b>↓${r.descent}</b>m` : ""}</span></div>` : ""}
+      ${r.note ? `<div class="hist-note">📝 ${r.note.replace(/[<>&]/g, "")}</div>` : ""}
       <div class="hist-actions">
         <button class="hist-view" data-id="${r.id}">🗺️ 回顧軌跡</button>
+        <button class="hist-note-btn" data-id="${r.id}">📝 筆記</button>
         <button class="hist-gpx" data-id="${r.id}">⬇️ GPX</button>
         <button class="hist-del" data-id="${r.id}" aria-label="刪除這筆">🗑 刪除</button>
       </div>
     </div>`).join("");
+  wrap.querySelectorAll(".hist-note-btn").forEach(b => b.addEventListener("click", () => {
+    const rec = Store.getRecords().find(r => r.id === b.dataset.id);
+    const v = prompt("這趟健行的筆記：", (rec && rec.note) || "");
+    if (v != null) { Store.setRecordNote(b.dataset.id, v.trim()); renderHistory(); }
+  }));
   wrap.querySelectorAll(".hist-view").forEach(b => b.addEventListener("click", () => {
     const rec = Store.getRecords().find(r => r.id === b.dataset.id);
     if (rec) openTrackReview(rec);
