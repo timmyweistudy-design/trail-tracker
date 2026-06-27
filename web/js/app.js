@@ -784,6 +784,14 @@ async function preloadAround(lat, lon) {
 function sim() { return $("#simToggle").checked; }
 $("#btnStart").addEventListener("click", () => {
   initRecMap();
+  // 模擬模式若已選定步道，讓虛擬人沿該步道真實路線行走（有動畫感）
+  if (sim() && Recorder.getState() !== "paused") {
+    const route = selectedTrailGeo && selectedTrailGeo.length
+      ? selectedTrailGeo.reduce((a, b) => (b.length > a.length ? b : a))   // 取最長一段
+      : null;
+    Recorder.setSimRoute(route);
+    if (route) toast("模擬：沿此步道路線前進");
+  }
   if (Recorder.getState() === "paused") Recorder.resume(sim());
   else Recorder.start(sim());
   $("#btnStart").style.display = "none";

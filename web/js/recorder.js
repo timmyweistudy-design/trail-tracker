@@ -143,13 +143,47 @@ const Recorder = (() => {
   }
   function setLowPower(on) { lowPower = !!on; }
 
-  // --- 模擬：從台北市區附近隨機漫步 ---
+  // --- 模擬 ---
+  let simRoute = null, simDist = 0;
+  function setSimRoute(pts) { simRoute = (pts && pts.length > 1) ? pts : null; }
+
+  function _routeLen(r) {
+    let s = 0;
+    for (let i = 1; i < r.length; i++) s += haversine({ lat: r[i - 1][0], lon: r[i - 1][1] }, { lat: r[i][0], lon: r[i][1] });
+    return s;
+  }
+  function _pointAt(r, d) {   // 沿路線距離 d(公尺) 取插值點
+    let acc = 0;
+    for (let i = 1; i < r.length; i++) {
+      const seg = haversine({ lat: r[i - 1][0], lon: r[i - 1][1] }, { lat: r[i][0], lon: r[i][1] });
+      if (acc + seg >= d) {
+        const f = seg ? (d - acc) / seg : 0;
+        return [r[i - 1][0] + (r[i][0] - r[i - 1][0]) * f, r[i - 1][1] + (r[i][1] - r[i - 1][1]) * f];
+      }
+      acc += seg;
+    }
+    return r[r.length - 1];
+  }
+
   function startSim() {
+    if (simRoute) {                                   // 沿選定步道路線行走（有動畫感）
+      simDist = 0;
+      const total = _routeLen(simRoute);
+      simTimer = setInterval(() => {
+        simDist = Math.min(total, simDist + 10 + Math.random() * 8);   // ~10-18m/步
+        const p = _pointAt(simRoute, simDist);
+        const alt = 50 + 250 * (0.5 - 0.5 * Math.cos(Math.PI * simDist / (total || 1)));  // 鐘形假海拔
+        push(p[0], p[1], alt);
+        if (simDist >= total) { clearInterval(simTimer); simTimer = null; }   // 走到終點停
+      }, 650);
+      return;
+    }
+    // 無選定步道：台北市區附近隨機漫步
     if (!simPos) simPos = { lat: 25.033 + Math.random() * .01, lon: 121.564 + Math.random() * .01 };
     let alt = 50, heading = Math.random() * Math.PI * 2;
     simTimer = setInterval(() => {
       heading += (Math.random() - 0.5) * 0.6;
-      const step = 0.00010 + Math.random() * 0.00006;   // ~12-18m/tick
+      const step = 0.00010 + Math.random() * 0.00006;
       simPos.lat += Math.cos(heading) * step;
       simPos.lon += Math.sin(heading) * step;
       alt += (Math.random() - 0.4) * 4;
@@ -235,5 +269,5 @@ const Recorder = (() => {
     return snapshot();
   }
 
-  return { start, pause, resume, stop, snapshot, onUpdate, getState: () => state, hasActive, restore, setLowPower };
+  return { start, pause, resume, stop, snapshot, onUpdate, getState: () => state, hasActive, restore, setLowPower, setSimRoute };
 })();
