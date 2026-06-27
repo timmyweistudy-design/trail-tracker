@@ -46,6 +46,11 @@ const ICON = {
   mountain: '<path d="m3 19 6-11 4 7 2-3 6 7H3Z"/>',
   food: '<path d="M5 3v8a2 2 0 0 0 2 2v8M5 3v5M9 3v5M19 3c-1.5 0-3 1.5-3 4v5h3V3Z"/>',
   landmark: '<path d="M3 21h18M5 21V10M19 21V10M9 21v-7h6v7M12 3 4 8h16l-8-5Z"/>',
+  steps: '<path d="M7 13c-1.4 0-2.3-1.5-2.3-4S5.6 4 7 4s1.9 1.9 1.9 4.4S8.4 13 7 13Z"/><path d="M5 13.5V16a2 2 0 0 1-4 0"/><path d="M17 20c-1.2 0-2-1.4-2-3.6S15.8 11 17 11s1.7 1.9 1.7 4.1S18.2 20 17 20Z"/><path d="M19 20.5V22"/>',
+  flame: '<path d="M12 3c1 3.2 4 4.3 4 8.2a4 4 0 0 1-8 0c0-1.6.6-2.6 1.4-3.4.2 1.6.9 2.4 1.8 2.4-.2-2.4-1.2-4 .8-7.2Z"/>',
+  fire: '<path d="M12 3c1 3.2 4 4.3 4 8.2a4 4 0 0 1-8 0c0-1.6.6-2.6 1.4-3.4.2 1.6.9 2.4 1.8 2.4-.2-2.4-1.2-4 .8-7.2Z"/>',
+  star: '<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 17l-5.2 2.7 1-5.8L3.5 9.7l5.9-.9L12 3.5Z"/>',
+  route: '<circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="5" r="2.2"/><path d="M8 19h6a4 4 0 0 0 0-8H10a4 4 0 0 1 0-8h6"/>',
 };
 function ic(name, cls) { return `<svg class="ic${cls ? " " + cls : ""}" viewBox="0 0 24 24">${ICON[name] || ""}</svg>`; }
 // 空狀態手繪山林插圖
@@ -1047,8 +1052,8 @@ function renderFood() {
   const items = Food.sortItems(_foodItems, _foodSort);
   box.innerHTML = `
     <div class="food-sort">排序
-      <button class="food-sort-btn${_foodSort === "distance" ? " on" : ""}" data-fsort="distance">📍 距離</button>
-      <button class="food-sort-btn${_foodSort === "rating" ? " on" : ""}" data-fsort="rating">★ 星級</button>
+      <button class="food-sort-btn${_foodSort === "distance" ? " on" : ""}" data-fsort="distance">${ic("pin")}距離</button>
+      <button class="food-sort-btn${_foodSort === "rating" ? " on" : ""}" data-fsort="rating">${ic("star")}星級</button>
     </div>
     <div class="food-list">${items.map(f => `
       <a class="food-item" href="${f.uri || "#"}" target="_blank" rel="noopener">
@@ -1085,8 +1090,8 @@ function renderAttractions() {
   const items = Attractions.sortItems(_poiItems, _poiSort);
   box.innerHTML = `
     <div class="food-sort">排序
-      <button class="food-sort-btn${_poiSort === "distance" ? " on" : ""}" data-psort="distance">📍 距離</button>
-      <button class="food-sort-btn${_poiSort === "rating" ? " on" : ""}" data-psort="rating">★ 評價</button>
+      <button class="food-sort-btn${_poiSort === "distance" ? " on" : ""}" data-psort="distance">${ic("pin")}距離</button>
+      <button class="food-sort-btn${_poiSort === "rating" ? " on" : ""}" data-psort="rating">${ic("star")}評價</button>
     </div>
     <div class="poi-list">${items.map(p => `
       <a class="poi-item" href="${p.uri || "#"}" target="_blank" rel="noopener">
@@ -2022,12 +2027,12 @@ function renderHistory() {
         <span class="date">${new Date(r.date).toLocaleString("zh-TW", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
       </div>
       <div class="row">
-        <span>📏 <b>${r.distanceKm.toFixed(2)}</b> km${r.distance3DKm && r.distance3DKm > r.distanceKm + 0.05 ? ` <small>(含坡度 ${r.distance3DKm.toFixed(2)})</small>` : ""}</span>
-        <span>👣 <b>${r.steps.toLocaleString()}</b> 步</span>
-        <span>🔥 <b>${r.kcal}</b> 大卡</span>
-        <span>⏱ <b>${fmtTime(r.elapsedMs)}</b></span>
+        <span>${ic("ruler")}<b>${r.distanceKm.toFixed(2)}</b> km${r.distance3DKm && r.distance3DKm > r.distanceKm + 0.05 ? ` <small>(含坡度 ${r.distance3DKm.toFixed(2)})</small>` : ""}</span>
+        <span>${ic("steps")}<b>${r.steps.toLocaleString()}</b> 步</span>
+        <span>${ic("fire")}<b>${r.kcal}</b> 大卡</span>
+        <span>${ic("clock")}<b>${fmtTime(r.elapsedMs)}</b></span>
       </div>
-      ${r.ascent ? `<div class="row"><span>⛰️ 爬升 <b>↑${r.ascent}</b>m${r.descent ? ` 下降 <b>↓${r.descent}</b>m` : ""}</span></div>` : ""}
+      ${r.ascent ? `<div class="row"><span>${ic("mountain")}爬升 <b>↑${r.ascent}</b>m${r.descent ? ` 下降 <b>↓${r.descent}</b>m` : ""}</span></div>` : ""}
       ${r.note ? `<div class="hist-note">📝 ${r.note.replace(/[<>&]/g, "")}</div>` : ""}
       <div class="hist-actions">
         <button class="hist-view" data-id="${r.id}">🗺️ 回顧軌跡</button>
