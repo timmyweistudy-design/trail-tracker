@@ -423,7 +423,11 @@ SOURCES = [
 
 import re as _re
 # 名稱含這些字＝完全廢棄/拆除/停用的步道，剔除
-ABANDONED = _re.compile(r"廢林道|廢棄|已廢|荒廢|拆除|停用|消失的|不復存在")
+ABANDONED = _re.compile(
+    r"廢林道|廢棄|已廢|荒廢|拆除|停用|消失的|不復存在"
+    # 危險/坍塌/直下/攀岩（描述詞，不含單字「崩」以保留地名如「崩山坑」「崩埤山」）
+    r"|坍塌|坍方|崩塌|崩壞|崩坍|崩毀|崩解|斷崖|落石|危險|直下|無法穿越|須改道|請備繩|繩索|攀岩|探勘"
+)
 
 
 def is_abandoned(name):
@@ -443,7 +447,13 @@ def collect():
             print(f"[source] {s['name']}: 失敗（略過）- {e}")
     before = len(trails)
     trails = [t for t in trails if not is_abandoned(t["name"])]
-    print(f"[clean] 剔除廢棄/拆除步道 {before - len(trails)} 條")
+    print(f"[clean] 剔除廢棄/危險步道 {before - len(trails)} 條")
+    # 0m／無長度又無幾何的非步道（橋、平台、點位）一併剔除
+    before = len(trails)
+    trails = [t for t in trails
+              if t.get("length_km") not in (0, 0.0)
+              and not (t.get("length_km") is None and not t.get("geometry"))]
+    print(f"[clean] 剔除 0m/無資料條目 {before - len(trails)} 條")
     borrow_geometry(trails)   # 去重前讓 forestry 借同名 osm 的幾何
     return merge(trails)
 
