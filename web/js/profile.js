@@ -73,7 +73,8 @@ const Profile = (() => {
     }
     const svg = `<svg viewBox="0 0 ${W} ${H}" class="profile-svg" preserveAspectRatio="none">
       <path d="${area}" fill="#e3ecdf"/>${segs}</svg>`;
-    const result = { svg, gain: Math.round(gain), min: Math.round(min), max: Math.round(max), distKm };
+    const samples = xy.map((p, i) => ({ x: +p[0].toFixed(1), d: dist[i] / 1000, e: Math.round(elev[i]) }));
+    const result = { svg, gain: Math.round(gain), min: Math.round(min), max: Math.round(max), distKm, samples, W };
     cache[id] = result;
     return result;
   }

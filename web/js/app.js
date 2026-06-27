@@ -179,6 +179,38 @@ function updateFilterDot() {
   const fc = $("#fsCount"); if (fc) fc.textContent = curList ? curList.length : "";
 }
 
+// 精選主題輯：點一下套用一組篩選，快速探索
+const COLLECTIONS = [
+  { t: "親子友善", s: "輕鬆好走帶小孩", f: ["family"], bg: "linear-gradient(135deg,#3f7a55,#2c5d3f)" },
+  { t: "古道巡禮", s: "走進歷史與人文", f: ["tag:古道"], bg: "linear-gradient(135deg,#a06a3d,#7c4f2c)" },
+  { t: "瀑布秘境", s: "清涼水景路線", f: ["tag:瀑布"], bg: "linear-gradient(135deg,#2f7e8c,#1f5a66)" },
+  { t: "海岸線", s: "看海聽濤", f: ["tag:海景"], bg: "linear-gradient(135deg,#3b6ea5,#274d77)" },
+  { t: "森林浴", s: "芬多精滿載", f: ["tag:森林"], bg: "linear-gradient(135deg,#4a8f55,#2f6b3a)" },
+  { t: "湖泊倒影", s: "靜謐水畔", f: ["tag:湖泊"], bg: "linear-gradient(135deg,#3c7a8c,#285a69)" },
+  { t: "輕鬆入門", s: "第一次健行", f: ["d1"], bg: "linear-gradient(135deg,#5aa06a,#3c7a4f)" },
+  { t: "挑戰級", s: "進階者專屬", f: ["d45"], bg: "linear-gradient(135deg,#c2683d,#9a4f2c)" },
+];
+function buildCollections() {
+  const box = $("#collections");
+  if (!box) return;
+  box.innerHTML = COLLECTIONS.map((c, i) =>
+    `<button class="coll-card" data-coll="${i}" style="background:${c.bg}">
+       <span class="coll-t">${c.t}</span><span class="coll-s">${c.s}</span></button>`).join("");
+  box.querySelectorAll(".coll-card").forEach(b => b.addEventListener("click", () => {
+    const c = COLLECTIONS[+b.dataset.coll];
+    activeFilters = new Set(c.f); activeRegions.clear(); curQuery = ""; $("#searchInput").value = "";
+    syncFilterUI(); syncRegionUI(); updateFilterDot(); render();
+    $("#trailList").scrollIntoView({ behavior: "smooth", block: "start" });
+  }));
+}
+// 預設瀏覽（無任何篩選/搜尋）才顯示精選輯，避免雜亂
+function updateCollections() {
+  const box = $("#collections");
+  if (!box) return;
+  const none = activeFilters.size === 0 && activeRegions.size === 0 && !curQuery && !mapOn;
+  box.style.display = none ? "flex" : "none";
+}
+
 function buildFsRegion() {
   const regions = [...new Set(TRAILS.map(t => t.region).filter(Boolean))].sort();
   $("#fsRegion").innerHTML = `<button class="chip active" data-region="all">全部</button>` +
@@ -311,6 +343,7 @@ function render() {
   }
   $("#resultCount").textContent = `共 ${curList.length} 條步道`;
   updateFilterDot();
+  updateCollections();
   if (mapOn) { showBrowseMap(); return; }
   shown = 0;
   if (_io) _io.disconnect();
@@ -663,9 +696,25 @@ async function loadElevation(t) {
   try {
     const p = await Profile.build(t.id, geoOf(t));
     if (!p) { box.style.display = "none"; return; }
-    box.innerHTML = `${p.svg}
+    box.innerHTML = `<div class="profile-wrap" id="profWrap">${p.svg}
+        <div class="prof-cursor" id="profCursor"></div><div class="prof-tip" id="profTip"></div></div>
       <div class="profile-stat">最低 ${p.min}m　最高 ${p.max}m　累積爬升 ↑${p.gain}m　全長約 ${p.distKm.toFixed(1)}km</div>
-      <div class="profile-legend"><span style="color:#4a8f55">●</span>緩　<span style="color:#c39327">●</span>中　<span style="color:#c0542f">●</span>陡</div>`;
+      <div class="profile-legend"><span style="color:#4a8f55">●</span>緩　<span style="color:#c39327">●</span>中　<span style="color:#c0542f">●</span>陡　<span style="color:var(--ink-faint)">·滑過看各點海拔</span></div>`;
+    // 滑過/觸控顯示該點距離與海拔
+    const wrap = $("#profWrap"), cur = $("#profCursor"), tip = $("#profTip");
+    const move = clientX => {
+      const r = wrap.getBoundingClientRect();
+      const svgX = Math.max(0, Math.min(1, (clientX - r.left) / r.width)) * p.W;
+      let best = p.samples[0];
+      for (const s of p.samples) if (Math.abs(s.x - svgX) < Math.abs(best.x - svgX)) best = s;
+      const pct = best.x / p.W * 100;
+      cur.style.left = pct + "%"; cur.style.display = "block";
+      tip.style.left = pct + "%"; tip.style.display = "block";
+      tip.textContent = `${best.d.toFixed(2)}km · ${best.e}m`;
+    };
+    wrap.addEventListener("pointermove", e => move(e.clientX));
+    wrap.addEventListener("pointerdown", e => move(e.clientX));
+    wrap.addEventListener("pointerleave", () => { cur.style.display = "none"; tip.style.display = "none"; });
   } catch {
     box.innerHTML = `<div class="food-empty">海拔剖面計算失敗（需網路）</div>`;
   }
@@ -1271,6 +1320,7 @@ function restoreActiveRecording() {
 
 // ---------- 啟動 ----------
 buildFsRegion();
+buildCollections();
 initTheme();
 render();
 loadProfile();
