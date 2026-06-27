@@ -4,7 +4,7 @@ const Offline = (() => {
   const TILE_CACHE = "tt-tiles";
   // 與 app.js 的 tileLayer 用同一組 URL（單一網域，確保下載與顯示的快取鍵一致）
   // OpenTopoMap 戶外地形圖（固定 a 子網域，讓下載與顯示快取鍵一致）
-  const tileUrl = (z, x, y) => `https://a.tile.opentopomap.org/${z}/${x}/${y}.png`;
+  const tileUrl = (z, x, y) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/${z}/${y}/${x}`;
 
   const lon2x = (lon, z) => Math.floor((lon + 180) / 360 * 2 ** z);
   const lat2y = (lat, z) => {

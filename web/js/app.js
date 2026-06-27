@@ -466,6 +466,14 @@ function renderMore() {
 // 地圖瀏覽模式
 let browseMap = null, browseLayer = null, mapOn = false;
 const DIFF_COLOR = { 0: "#3aa3a0", 1: "#46a24f", 2: "#6aa83e", 3: "#d8a127", 4: "#e07a2c", 5: "#d2542e", 6: "#b3322a" };
+// 底圖：Esri 地形(含立體陰影) / 衛星影像 — 比 OpenTopoMap 精緻
+const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services";
+function baseTopo() { return L.tileLayer(`${ESRI}/World_Topo_Map/MapServer/tile/{z}/{y}/{x}`, { attribution: "© Esri 地形", maxZoom: 18, maxNativeZoom: 18 }); }
+function baseSat() { return L.tileLayer(`${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}`, { attribution: "© Esri、Maxar 衛星影像", maxZoom: 18, maxNativeZoom: 18 }); }
+function addBaseWithToggle(map) {   // 加地形(預設)+衛星切換
+  const topo = baseTopo().addTo(map), sat = baseSat();
+  L.control.layers({ "🗻 地形": topo, "🛰 衛星": sat }, null, { position: "topright", collapsed: true }).addTo(map);
+}
 // 難度配色的水滴釘（含等級數字）
 function pinIcon(color, label) {
   return L.divIcon({
@@ -477,8 +485,7 @@ function pinIcon(color, label) {
 function showBrowseMap() {
   if (!browseMap) {
     browseMap = L.map("browseMap", { zoomControl: true }).setView([23.8, 121], 7);
-    L.tileLayer("https://a.tile.opentopomap.org/{z}/{x}/{y}.png",
-      { attribution: "© OpenStreetMap、SRTM｜© OpenTopoMap (CC-BY-SA)", maxZoom: 17, maxNativeZoom: 17 }).addTo(browseMap);
+    addBaseWithToggle(browseMap);
     // 圖釘叢集：縮放時聚合，全台上千點也順暢
     browseLayer = (typeof L.markerClusterGroup === "function")
       ? L.markerClusterGroup({ maxClusterRadius: 50, chunkedLoading: true })
@@ -697,8 +704,7 @@ async function openDetail(id) {
   setTimeout(() => {
     if (!detailMap) {
       detailMap = L.map("detailMap", { zoomControl: false });
-      L.tileLayer("https://a.tile.opentopomap.org/{z}/{x}/{y}.png",
-        { attribution: "© OpenStreetMap、SRTM｜© OpenTopoMap (CC-BY-SA)", maxZoom: 17, maxNativeZoom: 17 }).addTo(detailMap);
+      addBaseWithToggle(detailMap);
       detailOverlay = L.layerGroup().addTo(detailMap);
       detailPoiLayer = L.layerGroup().addTo(detailMap);
     }
@@ -1160,7 +1166,7 @@ function openTrackReview(rec) {
   setTimeout(() => {
     if (!trackMap) {
       trackMap = L.map("trackMap", { zoomControl: false });
-      L.tileLayer("https://a.tile.opentopomap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap、SRTM｜© OpenTopoMap (CC-BY-SA)", maxZoom: 17, maxNativeZoom: 17 }).addTo(trackMap);
+      baseTopo().addTo(trackMap);
     }
     if (trackLayer) trackMap.removeLayer(trackLayer);
     trackLayer = L.layerGroup().addTo(trackMap);
@@ -1275,8 +1281,7 @@ function distToRoute(lat, lon) {
 function initRecMap() {
   if (!recMap) {
     recMap = L.map("recMap", { zoomControl: false }).setView([25.033, 121.564], 15);
-    L.tileLayer("https://a.tile.opentopomap.org/{z}/{x}/{y}.png",
-      { attribution: "© OpenStreetMap、SRTM｜© OpenTopoMap (CC-BY-SA)", maxZoom: 17, maxNativeZoom: 17 }).addTo(recMap);
+    baseTopo().addTo(recMap);
     recLine = L.polyline([], { color: "#2f7d4f", weight: 5 }).addTo(recMap);
   }
   recMap.invalidateSize();
@@ -1813,7 +1818,7 @@ function openFootprintMap() {
   $("#footClose").addEventListener("click", close);
   setTimeout(() => {
     const m = L.map("footMap", { zoomControl: true });
-    L.tileLayer("https://a.tile.opentopomap.org/{z}/{x}/{y}.png", { attribution: "© OpenTopoMap (CC-BY-SA)", maxZoom: 17, maxNativeZoom: 17 }).addTo(m);
+    baseTopo().addTo(m);
     const all = [];
     recs.forEach(r => {
       const pts = r.track.map(p => [p.lat, p.lon]);
