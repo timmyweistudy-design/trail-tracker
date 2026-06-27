@@ -18,6 +18,23 @@ function ensureGeo() {
   });
   return _geoPromise;
 }
+// 骨架卡（載入占位）
+function skelCards(n) {
+  return `<div class="skel-list">${Array.from({ length: n }, () =>
+    `<div class="skel-card"><div class="skel skel-line w60"></div><div class="skel skel-line w90"></div></div>`).join("")}</div>`;
+}
+// 元素滑進詳情面板可視範圍時觸發一次（延遲耗額度的 Places 查詢）
+let _detailObs = [];
+function clearDetailObs() { _detailObs.forEach(o => o.disconnect()); _detailObs = []; }
+function whenVisible(el, cb) {
+  if (!el) return;
+  const root = document.getElementById("detailSheet");
+  const io = new IntersectionObserver(es => {
+    if (es.some(e => e.isIntersecting)) { io.disconnect(); cb(); }
+  }, { root, rootMargin: "120px" });
+  io.observe(el); _detailObs.push(io);
+}
+
 // 行內 SVG 線性圖示集（取代 emoji，視覺更一致）
 const ICON = {
   pin: '<path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/>',
@@ -323,6 +340,7 @@ function bindCards() {
     if (star) star.addEventListener("click", () => {
       const added = Store.toggleFav(star.dataset.fav);
       star.classList.toggle("on", added); star.textContent = added ? "★" : "☆";
+      if (added) { star.classList.remove("pop"); void star.offsetWidth; star.classList.add("pop"); }
       toast(added ? "已加入收藏" : "已移除收藏");
     });
   });
@@ -353,6 +371,16 @@ function showBrowseMap() {
       ? L.markerClusterGroup({ maxClusterRadius: 50, chunkedLoading: true })
       : L.layerGroup();
     browseMap.addLayer(browseLayer);
+    // 難度色彩圖例
+    const lg = L.control({ position: "bottomright" });
+    lg.onAdd = () => {
+      const d = L.DomUtil.create("div", "map-legend");
+      const rows = [[1, "輕鬆"], [2, "一般"], [3, "進階"], [4, "挑戰"], [5, "困難"]]
+        .map(([n, l]) => `<span><i style="background:${DIFF_COLOR[n]}"></i>${l}</span>`).join("");
+      d.innerHTML = `<b>難度</b>${rows}<span><i style="background:#b3322a"></i>封閉</span>`;
+      return d;
+    };
+    lg.addTo(browseMap);
   }
   browseLayer.clearLayers();
   const list = curList.slice(0, 1500);   // 叢集後可放更多
@@ -432,6 +460,7 @@ function myLogHtml(t) {
 async function openDetail(id) {
   const t = TRAILS.find(x => x.id === id);
   if (!t) return;
+  clearDetailObs();
   // 先開面板給回饋，再（首次）載入幾何
   $("#detailHero").innerHTML = "";
   $("#detailBody").innerHTML = `<div style="padding:54px 20px;text-align:center;color:var(--ink-soft)"><span class="spin"></span>載入中…</div>`;
@@ -500,18 +529,19 @@ async function openDetail(id) {
     <div id="offlineBox" class="offline-box" style="display:none"></div>
     <div id="amenBox" class="amen-box"></div>
     <div class="section-title">${ic("landmark")}附近人文景點</div>
-    <div id="poiBox"><div class="food-loading"><span class="spin"></span>尋找附近古蹟與景點中…</div></div>
+    <div id="poiBox">${skelCards(3)}</div>
     <div class="section-title">${ic("food")}步道周邊美食</div>
-    <div id="foodBox"><div class="food-loading"><span class="spin"></span>尋找附近美食中…</div></div>
+    <div id="foodBox">${skelCards(3)}</div>
     <button class="btn primary" id="btnGoRecord">${ic("pin")}在此步道開始記錄</button>
     <div style="font-size:11px;color:var(--ink-soft);text-align:center;margin-top:14px">${credit}</div>
   `;
   loadPhoto(t);
-  loadAmenities(t);
-  loadFood(t);
-  loadAttractions(t);
   loadWeather(t);
   loadElevation(t);
+  // Places 查詢（設施/美食/景點）較耗額度 → 滑到該區塊才查，省 Google 每日配額
+  whenVisible($("#amenBox"), () => loadAmenities(t));
+  whenVisible($("#poiBox"), () => loadAttractions(t));
+  whenVisible($("#foodBox"), () => loadFood(t));
 
   setTimeout(() => {
     if (!detailMap) {
@@ -774,11 +804,20 @@ async function downloadOffline(t, btn) {
 }
 
 function closeDetail() {
+  clearDetailObs();
   $("#sheetMask").classList.remove("show");
   $("#detailSheet").classList.remove("show");
 }
 $("#sheetMask").addEventListener("click", closeDetail);
 $("#closeDetailBtn").addEventListener("click", closeDetail);
+// Esc 關閉最上層的面板（無障礙）
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape") return;
+  if ($("#gradeSheet").classList.contains("show")) return closeGradeInfo();
+  if ($("#filterSheet").classList.contains("show")) return closeFilter();
+  if ($("#trackSheet").classList.contains("show")) return closeTrackReview();
+  if ($("#detailSheet").classList.contains("show")) return closeDetail();
+});
 
 // ---------- 記錄頁 ----------
 // 行程軌跡回顧 / 結束總結
@@ -796,6 +835,13 @@ function playTrackReplay(pts) {
   const grow = L.polyline([pts[0]], { color: "#2f7d4f", weight: 5 }).addTo(trackReplayLayer);
   const dot = L.circleMarker(pts[0], { radius: 7, color: "#fff", weight: 3, fillColor: "#e8893b", fillOpacity: 1 }).addTo(trackReplayLayer);
   const fullBounds = L.polyline(pts).getBounds();
+  // 系統設定「減少動態」→ 直接顯示完整路線，不播放動畫
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    grow.setLatLngs(pts);
+    L.circleMarker(pts[pts.length - 1], { radius: 6, color: "#fff", weight: 2, fillColor: "#d2542e", fillOpacity: 1 }).addTo(trackReplayLayer);
+    trackMap.fitBounds(fullBounds, { padding: [24, 24] });
+    return;
+  }
   trackMap.setView(pts[0], 16);                  // 鏡頭拉近到起點，跟著走
   // 即時數字跑動的小牌子（疊在地圖左上）
   let live = document.getElementById("replayLive");
@@ -1117,7 +1163,33 @@ $("#btnClearTiles").addEventListener("click", async () => {
   }
 });
 
+function renderStats() {
+  const box = $("#meStats");
+  if (!box) return;
+  const recs = Store.getRecords();
+  const favs = TRAILS.filter(t => Store.isFav(t.id)).length;
+  const doneTrails = new Set(TRAILS.filter(t => Store.trailLog(t.id).done).map(t => t.id)).size;
+  const km = recs.reduce((s, r) => s + (r.distanceKm || 0), 0);
+  const asc = recs.reduce((s, r) => s + (r.ascent || 0), 0);
+  const kcal = recs.reduce((s, r) => s + (r.kcal || 0), 0);
+  const ms = recs.reduce((s, r) => s + (r.elapsedMs || 0), 0);
+  const now = new Date(), moKm = recs.filter(r => { const d = new Date(r.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); })
+    .reduce((s, r) => s + (r.distanceKm || 0), 0);
+  const hrs = ms / 3.6e6;
+  const cell = (v, l) => `<div class="mstat"><div class="mv">${v}</div><div class="ml">${l}</div></div>`;
+  box.innerHTML = `<div class="mstat-grid">
+    ${cell(recs.length, "出行次數")}
+    ${cell(km.toFixed(1), "總里程 km")}
+    ${cell("↑" + Math.round(asc), "總爬升 m")}
+    ${cell(hrs >= 1 ? hrs.toFixed(1) : (ms / 6e4).toFixed(0), hrs >= 1 ? "總時數 hr" : "總時數 分")}
+    ${cell(kcal.toLocaleString(), "總卡路里")}
+    ${cell(moKm.toFixed(1), "本月 km")}
+    ${cell("✓" + doneTrails, "完成步道")}
+    ${cell("★" + favs, "收藏步道")}
+  </div>`;
+}
 function renderHistory() {
+  renderStats();
   const recs = Store.getRecords();
   const wrap = $("#historyList");
   const clearBtn = $("#btnClearAll");
