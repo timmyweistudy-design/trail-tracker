@@ -115,7 +115,7 @@ function toast(msg) {
 }
 
 // ---------- 分頁切換 ----------
-let detailMap, detailOverlay, detailPoiLayer, recMap, recLine, recMarker;
+let detailMap, detailOverlay, detailPoiLayer, recMap, recLine, recMarker, _detailScroll = null;
 // 把美食/景點標在詳情地圖（不改視角，可縮放查看周邊）
 function plotPoi(items, color) {
   if (!detailMap || !detailPoiLayer || !items) return;
@@ -259,8 +259,32 @@ $("#fsApply").addEventListener("click", closeFilter);
 let _searchTm;
 $("#searchInput").addEventListener("input", e => {
   curQuery = e.target.value.trim();
+  buildSuggest(curQuery);
   clearTimeout(_searchTm); _searchTm = setTimeout(render, 180);   // 防抖，打字更順
 });
+$("#searchInput").addEventListener("focus", e => buildSuggest(e.target.value.trim()));
+$("#searchInput").addEventListener("blur", () => setTimeout(() => { $("#searchSuggest").style.display = "none"; }, 150));
+// 搜尋建議下拉：即時列出符合的步道名，點一下直接進詳情
+function buildSuggest(q) {
+  const box = $("#searchSuggest");
+  q = q.toLowerCase().replace(/\s+/g, "");
+  if (!q) { box.style.display = "none"; return; }
+  const hits = [];
+  for (const t of TRAILS) {
+    const n = (t.name || "").toLowerCase().replace(/\s+/g, "");
+    if (n.includes(q)) hits.push(t);
+    if (hits.length >= 30) break;
+  }
+  hits.sort((a, b) => (a.name.toLowerCase().startsWith(q) ? 0 : 1) - (b.name.toLowerCase().startsWith(q) ? 0 : 1));
+  const top = hits.slice(0, 6);
+  if (!top.length) { box.style.display = "none"; return; }
+  box.innerHTML = top.map(t =>
+    `<button class="sug" data-id="${t.id}">${ic("pin")}<span class="sug-n">${t.name}</span><span class="sug-r">${t.region || ""}</span></button>`).join("");
+  box.style.display = "block";
+  box.querySelectorAll(".sug").forEach(b => b.addEventListener("mousedown", e => {
+    e.preventDefault(); box.style.display = "none"; openDetail(b.dataset.id);
+  }));
+}
 
 // 檢視模式：列表 / 地圖（分段控制）
 document.querySelectorAll(".seg-btn[data-mode]").forEach(b => b.addEventListener("click", () => {
@@ -587,12 +611,24 @@ async function openDetail(id) {
     <div style="font-size:11px;color:var(--ink-soft);text-align:center;margin-top:14px">${credit}</div>
   `;
   // 詳情子頁籤：點一下捲到該區塊
-  $("#detailNav").querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+  const navBtns = $("#detailNav").querySelectorAll("button");
+  navBtns.forEach(b => b.addEventListener("click", () => {
     const sheet = $("#detailSheet"), sec = b.dataset.sec;
     if (sec === "top") { sheet.scrollTo({ top: 0, behavior: "smooth" }); return; }
     const el = document.getElementById(sec);
     if (el) sheet.scrollTo({ top: el.offsetTop - 52, behavior: "smooth" });
   }));
+  // scroll-spy：捲動時高亮目前區塊
+  const sheetEl = $("#detailSheet");
+  const secIds = ["top", "secWx", "secElev", "secPoi", "secFood"];
+  if (_detailScroll) sheetEl.removeEventListener("scroll", _detailScroll);
+  _detailScroll = () => {
+    const y = sheetEl.scrollTop + 70; let cur = "top";
+    for (const id of secIds) { const el = id !== "top" && document.getElementById(id); if (el && el.offsetTop <= y) cur = id; }
+    navBtns.forEach(b => b.classList.toggle("on", b.dataset.sec === cur));
+  };
+  sheetEl.addEventListener("scroll", _detailScroll, { passive: true });
+  _detailScroll();
   loadPhoto(t);
   loadWeather(t);
   loadElevation(t);
@@ -1395,17 +1431,30 @@ function renderStats() {
   const now = new Date(), moKm = recs.filter(r => { const d = new Date(r.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); })
     .reduce((s, r) => s + (r.distanceKm || 0), 0);
   const hrs = ms / 3.6e6;
-  const cell = (v, l) => `<div class="mstat"><div class="mv">${v}</div><div class="ml">${l}</div></div>`;
+  const cell = (to, pre, dec, l) => `<div class="mstat"><div class="mv" data-to="${to}" data-pre="${pre}" data-dec="${dec}">${pre}0</div><div class="ml">${l}</div></div>`;
   box.innerHTML = `<div class="mstat-grid">
-    ${cell(recs.length, "出行次數")}
-    ${cell(km.toFixed(1), "總里程 km")}
-    ${cell("↑" + Math.round(asc), "總爬升 m")}
-    ${cell(hrs >= 1 ? hrs.toFixed(1) : (ms / 6e4).toFixed(0), hrs >= 1 ? "總時數 hr" : "總時數 分")}
-    ${cell(kcal.toLocaleString(), "總卡路里")}
-    ${cell(moKm.toFixed(1), "本月 km")}
-    ${cell("✓" + doneTrails, "完成步道")}
-    ${cell("★" + favs, "收藏步道")}
+    ${cell(recs.length, "", 0, "出行次數")}
+    ${cell(km, "", 1, "總里程 km")}
+    ${cell(asc, "↑", 0, "總爬升 m")}
+    ${cell(hrs >= 1 ? hrs : ms / 6e4, "", hrs >= 1 ? 1 : 0, hrs >= 1 ? "總時數 hr" : "總時數 分")}
+    ${cell(kcal, "", 0, "總卡路里")}
+    ${cell(moKm, "", 1, "本月 km")}
+    ${cell(doneTrails, "✓", 0, "完成步道")}
+    ${cell(favs, "★", 0, "收藏步道")}
   </div>`;
+  box.querySelectorAll(".mv").forEach(countUp);
+}
+// 數字成長動畫（尊重減少動態）
+function countUp(el) {
+  const to = parseFloat(el.dataset.to) || 0, pre = el.dataset.pre || "", dec = +el.dataset.dec || 0;
+  const fmt = v => pre + (dec ? v.toFixed(dec) : Math.round(v).toLocaleString());
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) { el.textContent = fmt(to); return; }
+  const dur = 750, t0 = performance.now();
+  (function step(t) {
+    const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+    el.textContent = fmt(to * e);
+    if (p < 1) requestAnimationFrame(step);
+  })(t0);
 }
 function renderHistory() {
   renderStats();
