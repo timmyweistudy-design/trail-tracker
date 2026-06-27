@@ -28,6 +28,7 @@ const ICON = {
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.4 1.4M17.6 17.6 19 19M19 5l-1.4 1.4M6.4 17.6 5 19"/>',
   mountain: '<path d="m3 19 6-11 4 7 2-3 6 7H3Z"/>',
   food: '<path d="M5 3v8a2 2 0 0 0 2 2v8M5 3v5M9 3v5M19 3c-1.5 0-3 1.5-3 4v5h3V3Z"/>',
+  landmark: '<path d="M3 21h18M5 21V10M19 21V10M9 21v-7h6v7M12 3 4 8h16l-8-5Z"/>',
 };
 function ic(name, cls) { return `<svg class="ic${cls ? " " + cls : ""}" viewBox="0 0 24 24">${ICON[name] || ""}</svg>`; }
 
@@ -498,6 +499,8 @@ async function openDetail(id) {
     <button class="btn ghost" id="btnOffline" style="margin-top:10px">⬇️ 預載此步道離線地圖</button>
     <div id="offlineBox" class="offline-box" style="display:none"></div>
     <div id="amenBox" class="amen-box"></div>
+    <div class="section-title">${ic("landmark")}附近人文景點</div>
+    <div id="poiBox"><div class="food-loading"><span class="spin"></span>尋找附近古蹟與景點中…</div></div>
     <div class="section-title">${ic("food")}步道周邊美食</div>
     <div id="foodBox"><div class="food-loading"><span class="spin"></span>尋找附近美食中…</div></div>
     <button class="btn primary" id="btnGoRecord">${ic("pin")}在此步道開始記錄</button>
@@ -506,6 +509,7 @@ async function openDetail(id) {
   loadPhoto(t);
   loadAmenities(t);
   loadFood(t);
+  loadAttractions(t);
   loadWeather(t);
   loadElevation(t);
 
@@ -704,6 +708,46 @@ function renderFood() {
     <div class="food-credit">星級・評論來源：Google 地圖</div>`;
   box.querySelectorAll(".food-sort-btn").forEach(b =>
     b.addEventListener("click", () => { _foodSort = b.dataset.fsort; renderFood(); }));
+}
+
+// 附近人文景點（歷史、廟宇、博物館、文化、觀光）
+let _poiItems = [], _poiSort = "distance";
+async function loadAttractions(t) {
+  const box = $("#poiBox");
+  if (!box) return;
+  if (!t.lat) { box.innerHTML = `<div class="food-empty">此步道無座標，無法查詢周邊景點</div>`; return; }
+  try {
+    _poiItems = await Attractions.nearby(t);
+    renderAttractions();
+  } catch (err) {
+    box.innerHTML = err && err.nokey
+      ? `<div class="food-empty">景點功能尚未設定（需在 Render 設定 GOOGLE_PLACES_KEY）</div>`
+      : `<div class="food-empty">景點查詢失敗，請稍後再試（需網路）</div>`;
+  }
+}
+function renderAttractions() {
+  const box = $("#poiBox");
+  if (!box) return;
+  if (!_poiItems.length) { box.innerHTML = `<div class="food-empty">附近 12 公里內查無人文景點</div>`; return; }
+  const items = Attractions.sortItems(_poiItems, _poiSort);
+  box.innerHTML = `
+    <div class="food-sort">排序
+      <button class="food-sort-btn${_poiSort === "distance" ? " on" : ""}" data-psort="distance">📍 距離</button>
+      <button class="food-sort-btn${_poiSort === "rating" ? " on" : ""}" data-psort="rating">★ 評價</button>
+    </div>
+    <div class="poi-list">${items.map(p => `
+      <a class="poi-item" href="${p.uri || "#"}" target="_blank" rel="noopener">
+        <div class="poi-top">
+          <span class="poi-kind">${p.kind}</span>
+          <span class="poi-name">${p.name}</span>
+          ${p.rating ? `<span class="poi-rating">★ ${p.rating.toFixed(1)}</span>` : ""}
+        </div>
+        ${p.summary ? `<div class="poi-sum">${p.summary}</div>` : ""}
+        <div class="poi-dist">${(p.dist / 1000).toFixed(1)} km</div>
+      </a>`).join("")}</div>
+    <div class="food-credit">景點資料・介紹來源：Google 地圖</div>`;
+  box.querySelectorAll(".food-sort-btn").forEach(b =>
+    b.addEventListener("click", () => { _poiSort = b.dataset.psort; renderAttractions(); }));
 }
 
 // 預載此步道範圍的離線地圖圖磚
