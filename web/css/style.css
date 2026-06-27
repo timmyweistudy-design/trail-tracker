@@ -487,6 +487,18 @@ body {
 .backup-row { display: flex; gap: 10px; }
 .backup-row .btn { flex: 1; }
 
+/* 每日目標環 */
+.ring-card { display: flex; align-items: center; gap: 16px; background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r); padding: 14px 18px; box-shadow: var(--sh-sm); margin-bottom: 12px; }
+.ring { width: 80px; height: 80px; flex: 0 0 auto; }
+.ring-bg { fill: none; stroke: var(--surface-2); stroke-width: 8; }
+.ring-fg { fill: none; stroke: var(--brand); stroke-width: 8; stroke-linecap: round; transform: rotate(-90deg); transform-origin: center; transition: stroke-dashoffset .7s cubic-bezier(.2,.8,.2,1); }
+.ring-km { font-family: var(--num); font-size: 20px; font-weight: 700; fill: var(--brand-deep); text-anchor: middle; }
+.ring-unit { font-size: 10px; fill: var(--ink-soft); text-anchor: middle; }
+.ring-info { flex: 1; }
+.ring-t { font-family: var(--serif); font-weight: 700; font-size: 15px; color: var(--ink); }
+.ring-s { font-size: 12.5px; color: var(--ink-soft); margin-top: 4px; }
+.ring-info .info-link { padding-left: 0; }
+
 /* 我的足跡統計 */
 .mstat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; }
 .mstat { background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 12px 6px; text-align: center; box-shadow: var(--sh-sm); }
@@ -690,6 +702,10 @@ html[data-theme="dark"] img.trail-photo { background: var(--surface-2); }
 .fs-group > .fs-label { font-family: var(--serif); font-size: 13px; font-weight: 700; color: var(--brand-deep); letter-spacing: .8px; margin-bottom: 9px; }
 .fs-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .fs-sheet-foot { display: flex; gap: 10px; margin-top: 8px; }
+.fs-range { margin: 10px 2px; }
+.fs-range label { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--ink-soft); margin-bottom: 7px; }
+.fs-range label b { color: var(--brand-deep); font-family: var(--num); }
+.fs-range input[type=range] { width: 100%; accent-color: var(--brand); }
 
 /* ---------- SVG 圖示 ---------- */
 .ic { display: inline-block; vertical-align: middle; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }

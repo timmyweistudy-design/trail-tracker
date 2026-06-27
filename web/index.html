@@ -150,6 +150,7 @@
     </div>
 
     <div class="section-title">我的足跡</div>
+    <div id="dailyRing"></div>
     <div id="meStats"></div>
     <div class="backup-row">
       <button class="btn ghost" id="btnExport" style="margin-top:10px">⬇️ 備份紀錄</button>
@@ -233,6 +234,17 @@
       <div class="fs-group">
         <div class="fs-label">地區</div>
         <div class="fs-chips" id="fsRegion"></div>
+      </div>
+      <div class="fs-group">
+        <div class="fs-label">範圍</div>
+        <div class="fs-range">
+          <label>長度上限 <b id="lenVal">不限</b></label>
+          <input type="range" id="lenRange" min="0" max="30" step="1" value="30">
+        </div>
+        <div class="fs-range">
+          <label>爬升上限 <b id="ascVal">不限</b></label>
+          <input type="range" id="ascRange" min="0" max="2000" step="100" value="2000">
+        </div>
       </div>
       <div class="fs-group">
         <div class="fs-label">排序</div>

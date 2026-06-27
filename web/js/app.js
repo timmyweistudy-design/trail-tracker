@@ -202,6 +202,8 @@ function updateFilterDot() {
   if (curSort !== "default") n++;
   if (filterOpen) n++;
   if (filterGeo) n++;
+  if (maxLen) n++;
+  if (maxAsc) n++;
   const dot = $("#filterDot"), btn = $("#btnFilter");
   if (dot) { dot.style.display = n ? "grid" : "none"; dot.textContent = n; }
   if (btn) btn.classList.toggle("active", n > 0);
@@ -260,10 +262,21 @@ $("#fsGeo").addEventListener("click", () => {
   if (filterGeo) ensureGeo().then(() => { updateFilterDot(); render(); });
   else { updateFilterDot(); render(); }
 });
+$("#lenRange").addEventListener("input", e => {
+  const v = +e.target.value; maxLen = v >= 30 ? 0 : v;
+  $("#lenVal").textContent = maxLen ? `≤ ${maxLen} km` : "不限";
+  updateFilterDot(); render();
+});
+$("#ascRange").addEventListener("input", e => {
+  const v = +e.target.value; maxAsc = v >= 2000 ? 0 : v;
+  $("#ascVal").textContent = maxAsc ? `≤ ${maxAsc} m` : "不限";
+  updateFilterDot(); render();
+});
 $("#fsGrade").addEventListener("click", openGradeInfo);
 $("#fsReset").addEventListener("click", () => {
-  filterOpen = false; filterGeo = false;
+  filterOpen = false; filterGeo = false; maxLen = 0; maxAsc = 0;
   $("#fsOpen").classList.remove("active"); $("#fsGeo").classList.remove("active");
+  $("#lenRange").value = 30; $("#ascRange").value = 2000; $("#lenVal").textContent = "不限"; $("#ascVal").textContent = "不限";
   activeFilters.clear(); activeRegions.clear(); curSort = "default";
   syncFilterUI(); syncRegionUI();
   document.querySelectorAll("[data-sort]").forEach(c => c.classList.toggle("active", c.dataset.sort === "default"));
@@ -318,7 +331,7 @@ document.querySelectorAll(".seg-btn[data-mode]").forEach(b => b.addEventListener
 let myLoc = null;       // 使用者位置（附近排序用）
 let pageSize = 60, shown = 0, curList = [];
 
-let curSort = "default", filterOpen = false, filterGeo = false, nearRadius = 0;
+let curSort = "default", filterOpen = false, filterGeo = false, nearRadius = 0, maxLen = 0, maxAsc = 0;   // 0 = 不限
 function isClosed(t) { return t.condition && /暫停|封閉|關閉/.test(t.condition.status || ""); }
 function matchDiff(f, t) { return f === "d45" ? t.difficulty >= 4 : t.difficulty === +f.slice(1); }
 function matches(t) {
@@ -331,6 +344,8 @@ function matches(t) {
   if (activeFilters.has("done") && !Store.trailLog(t.id).done) return false;
   if (activeFilters.has("family") && !t.family_friendly) return false;
   if (activeFilters.has("rated4") && (Store.trailLog(t.id).rating || 0) < 4) return false;
+  if (maxLen && (t.length_km == null || t.length_km > maxLen)) return false;
+  if (maxAsc && (t.ascent == null || t.ascent > maxAsc)) return false;
   if (nearRadius && myLoc) { if (!t.lat || haversine(myLoc, { lat: t.lat, lon: t.lon }) > nearRadius * 1000) return false; }
   // 難度（複選 OR）
   const diffs = [...activeFilters].filter(f => /^d\d/.test(f));
@@ -1714,6 +1729,31 @@ function checkPetEvolve() {
   if (i !== prev) localStorage.setItem("tt_pet_stage", i);
   if (i > prev) setTimeout(() => celebrateEvolve(PET_STAGES[i], i + 1), 800);
 }
+// 每日目標環
+function todayKm() { const d = todayStr(); return realRecords().filter(r => (r.date || "").slice(0, 10) === d).reduce((s, r) => s + (r.distanceKm || 0), 0); }
+function dailyGoal() { return +(localStorage.getItem("tt_daily_goal") || 3); }
+function renderDailyRing() {
+  const box = $("#dailyRing"); if (!box) return;
+  const km = todayKm(), goal = dailyGoal(), pct = goal ? Math.min(100, km / goal * 100) : 0;
+  const R = 34, C = 2 * Math.PI * R, off = C * (1 - pct / 100);
+  box.innerHTML = `<div class="ring-card">
+    <svg class="ring" viewBox="0 0 80 80">
+      <circle cx="40" cy="40" r="${R}" class="ring-bg"/>
+      <circle cx="40" cy="40" r="${R}" class="ring-fg" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"/>
+      <text x="40" y="38" class="ring-km">${km.toFixed(1)}</text>
+      <text x="40" y="53" class="ring-unit">km</text>
+    </svg>
+    <div class="ring-info">
+      <div class="ring-t">今日目標 ${goal} km</div>
+      <div class="ring-s">${km >= goal ? "🎉 已達成今日目標！" : `還差 ${(goal - km).toFixed(1)} km`}</div>
+      <button class="info-link" id="editGoal">調整目標</button>
+    </div>
+  </div>`;
+  $("#editGoal").addEventListener("click", () => {
+    const v = prompt("設定每日里程目標（公里）：", goal);
+    if (v != null) { localStorage.setItem("tt_daily_goal", String(Math.max(0.5, Math.min(50, parseFloat(v) || 3)))); renderDailyRing(); }
+  });
+}
 function renderStats() {
   const box = $("#meStats");
   if (!box) return;
@@ -1754,6 +1794,7 @@ function countUp(el) {
 }
 function renderHistory() {
   renderPet();
+  renderDailyRing();
   renderStats();
   const recs = Store.getRecords();
   const wrap = $("#historyList");
