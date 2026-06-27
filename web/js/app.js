@@ -763,7 +763,10 @@ async function loadPhoto(t) {
       + (urls.length > 1 ? `<div class="hero-dots">${urls.map((_, i) => `<span class="${i ? "" : "on"}"></span>`).join("")}</div>` : "");
     hero.insertBefore(car, hero.firstChild);
     hero.insertAdjacentHTML("afterbegin", `<div class="hero-credit">Wikimedia Commons${urls.length > 1 ? " · 左右滑看更多" : ""}</div>`);
-    car.querySelectorAll("img").forEach(im => im.addEventListener("load", () => im.classList.add("loaded")));
+    car.querySelectorAll("img").forEach(im => {
+      if (im.complete && im.naturalWidth) im.classList.add("loaded");
+      else { im.addEventListener("load", () => im.classList.add("loaded")); im.addEventListener("error", () => im.classList.add("loaded")); }
+    });
     if (urls.length > 1) {
       const dots = car.querySelector(".hero-dots");
       car.addEventListener("scroll", () => {

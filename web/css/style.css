@@ -607,11 +607,12 @@ html[data-theme="dark"] img.trail-photo { background: var(--surface-2); }
 .hero-dots { position: absolute; left: 0; right: 0; bottom: 64px; z-index: 2; display: flex; gap: 6px; justify-content: center; pointer-events: none; }
 .hero-dots span { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.5); transition: .2s; }
 .hero-dots span.on { background: #fff; width: 18px; border-radius: 3px; }
-.detail-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(12,22,14,.82) 0%, rgba(12,22,14,.25) 42%, rgba(12,22,14,.05) 100%); }
+.detail-hero::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to top, rgba(12,22,14,.82) 0%, rgba(12,22,14,.25) 42%, rgba(12,22,14,.05) 100%); }
 .detail-hero.noimg { background: linear-gradient(150deg, #25492f, #16301f); }
 .detail-hero.noimg::before { content: ""; position: absolute; inset: 0; opacity: .5;
   background-image: repeating-radial-gradient(ellipse 130% 90% at 70% 20%, transparent 0 20px, rgba(220,232,210,.07) 20px 21.5px); }
-.hero-cap { position: absolute; left: 19px; right: 19px; bottom: 14px; z-index: 1; color: #fbf8ee; }
+.hero-cap { position: absolute; left: 19px; right: 19px; bottom: 14px; z-index: 1; color: #fbf8ee; pointer-events: none; }
+.hero-cap button, .hero-cap a { pointer-events: auto; }
 .hero-cap h2 { font-family: var(--serif); font-weight: 700; font-size: 25px; margin: 0 0 7px; letter-spacing: .5px; line-height: 1.2; text-shadow: 0 2px 12px rgba(0,0,0,.5); }
 .hero-cap .badges { margin: 0; padding: 0; }
 .hero-credit { position: absolute; right: 9px; top: 9px; z-index: 1; font-size: 10px; color: #fff; background: rgba(0,0,0,.4); padding: 2px 7px; border-radius: 6px; }
