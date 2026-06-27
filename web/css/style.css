@@ -393,6 +393,9 @@ body {
 .rec-status .live { color: var(--brand); font-weight: 700; }
 .rec-status .live::before { content: "●"; margin-right: 5px; animation: blink 1.3s infinite; }
 .rec-status .offroute { color: var(--danger); font-weight: 700; }
+.pet-marker { background: none; border: none; }
+.pet-marker .pm-e { display: block; font-size: 27px; line-height: 1; text-align: center; filter: drop-shadow(0 2px 4px rgba(0,0,0,.45)); animation: petBob 2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .pet-marker .pm-e { animation: none; } }
 .rec-spark { width: 100%; height: 56px; display: block; background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: var(--r-sm); }
 .rec-spark-cap { font-size: 11px; color: var(--ink-soft); text-align: center; margin-top: 4px; font-family: var(--num); }
 #recElevSpark { margin-bottom: 12px; }

@@ -122,7 +122,8 @@ function toast(msg) {
 }
 
 // ---------- 分頁切換 ----------
-let detailMap, detailOverlay, detailPoiLayer, recMap, recLine, recMarker, _detailScroll = null;
+let detailMap, detailOverlay, detailPoiLayer, recMap, recLine, recMarker, petMarker, _detailScroll = null;
+function petEmojiNow() { return PET_STAGES[petStageIndex(totalKm())].e; }
 // 把美食/景點標在詳情地圖（不改視角，可縮放查看周邊）
 function plotPoi(items, color) {
   if (!detailMap || !detailPoiLayer || !items) return;
@@ -1279,6 +1280,12 @@ Recorder.onUpdate(s => {
     const last = pts[pts.length - 1];
     if (!recMarker) recMarker = L.circleMarker(last, { radius: 7, color: "#fff", weight: 3, fillColor: "#e8893b", fillOpacity: 1 }).addTo(recMap);
     recMarker.setLatLng(last);
+    // 山林夥伴同行：寵物跟在當前位置上方
+    if (!petMarker) petMarker = L.marker(last, {
+      icon: L.divIcon({ className: "pet-marker", html: `<span class="pm-e">${petEmojiNow()}</span>`, iconSize: [34, 34], iconAnchor: [17, 30] }),
+      interactive: false, zIndexOffset: 1000,
+    }).addTo(recMap);
+    petMarker.setLatLng(last);
     // 模擬高幀率：用 animate:false 讓地圖即時跟隨，路線從腳下滑過＝滑行感；真實 GPS 維持平滑動畫
     if (s.state === "running") recMap.panTo(last, sim() ? { animate: false } : undefined);
   }
@@ -1366,6 +1373,7 @@ $("#btnStop").addEventListener("click", () => {
   $("#btnPause").style.display = "none";
   $("#btnStop").style.display = "none";
   if (recMarker) { recMap.removeLayer(recMarker); recMarker = null; }
+  if (petMarker) { recMap.removeLayer(petMarker); petMarker = null; }
   recLine.setLatLngs([]);
   if (rec) {
     rec.trailName = Recorder._trailName || "自由路線";
@@ -1387,18 +1395,6 @@ function loadProfile() {
 $("#btnSaveProfile").addEventListener("click", () => {
   Store.saveProfile({ weight: Number($("#pfWeight").value) || 60, height: Number($("#pfHeight").value) || 170 });
   toast("已儲存個人資料");
-});
-$("#btnClearSim").addEventListener("click", () => {
-  if (!confirm("清除所有『模擬』行程紀錄？\n（真實記錄不受影響）")) return;
-  Store.clearSimRecords(); renderHistory(); render(); toast("已清除模擬紀錄");
-});
-$("#btnResetPet").addEventListener("click", () => {
-  if (!confirm("重置山林夥伴？\n會從一顆新的蛋重新養成（之前里程不再計入，真實紀錄保留）。")) return;
-  localStorage.setItem("tt_pet_base", String(realTotalKm()));
-  localStorage.setItem("tt_pet_hatch", new Date().toISOString());
-  localStorage.setItem("tt_pet_stage", "0");
-  localStorage.removeItem("tt_pet_name");
-  renderPet(); toast("已重置夥伴 🥚");
 });
 $("#btnExportGpxAll").addEventListener("click", () => {
   GPX.exportAll(Store.getRecords()) ? toast("已匯出全部行程 GPX") : toast("尚無行程可匯出");
