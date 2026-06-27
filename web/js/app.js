@@ -296,6 +296,23 @@ $("#searchInput").addEventListener("input", e => {
   clearTimeout(_searchTm); _searchTm = setTimeout(render, 180);   // 防抖，打字更順
 });
 $("#searchInput").addEventListener("focus", e => buildSuggest(e.target.value.trim()));
+// 語音搜尋
+(function () {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const mic = $("#searchMic"); if (!mic) return;
+  if (!SR) { mic.style.display = "none"; return; }
+  mic.addEventListener("click", () => {
+    const r = new SR(); r.lang = "zh-TW"; r.interimResults = false; r.maxAlternatives = 1;
+    mic.classList.add("listening"); toast("請說出步道名稱…");
+    r.onresult = e => {
+      const txt = (e.results[0][0].transcript || "").replace(/[。，、？！\s]/g, "");
+      $("#searchInput").value = txt; curQuery = txt; buildSuggest(txt); render();
+    };
+    r.onend = () => mic.classList.remove("listening");
+    r.onerror = () => { mic.classList.remove("listening"); toast("語音辨識失敗，請再試一次"); };
+    try { r.start(); } catch (e) { mic.classList.remove("listening"); }
+  });
+})();
 $("#searchInput").addEventListener("blur", () => setTimeout(() => { $("#searchSuggest").style.display = "none"; }, 150));
 // 搜尋建議下拉：即時列出符合的步道名，點一下直接進詳情
 function buildSuggest(q) {
@@ -903,10 +920,24 @@ async function loadWeather(t) {
     const c = d.current, dd = d.daily;
     const [emo, txt] = Weather.desc(c.weather_code);
     const days = ["日", "一", "二", "三", "四", "五", "六"];
+    const wd = i => i === 0 ? "今天" : `週${days[new Date(dd.time[i]).getDay()]}`;
+    // 最適出發日：降雨機率低 + 體感舒適(均溫近 22°C)
+    let best = 0, bestScore = Infinity;
+    for (let i = 0; i < dd.time.length; i++) {
+      const pp = dd.precipitation_probability_max[i] ?? 50;
+      const avg = (dd.temperature_2m_max[i] + dd.temperature_2m_min[i]) / 2;
+      const score = pp + Math.abs(avg - 22) * 1.6;
+      if (score < bestScore) { bestScore = score; best = i; }
+    }
+    // 溫度曲線(最高溫)
+    const tmax = dd.temperature_2m_max, lo = Math.min(...tmax), hi = Math.max(...tmax), span = (hi - lo) || 1;
+    const W = 280, H = 44, pad = 6, n = tmax.length;
+    const xy = tmax.map((v, i) => [pad + (W - 2 * pad) * i / (n - 1), pad + (H - 2 * pad) * (1 - (v - lo) / span)]);
+    const line = xy.map((p, i) => `${i ? "L" : "M"}${p[0].toFixed(0)},${p[1].toFixed(0)}`).join(" ");
+    const dots = xy.map((p, i) => `<circle cx="${p[0].toFixed(0)}" cy="${p[1].toFixed(0)}" r="${i === best ? 4 : 2.5}" fill="${i === best ? "#e8893b" : "var(--brand-mid)"}"/>`).join("");
     const fc = dd.time.map((t2, i) => {
       const [e2] = Weather.desc(dd.weather_code[i]);
-      const wd = i === 0 ? "今天" : `週${days[new Date(t2).getDay()]}`;
-      return `<div class="wx-day"><div class="wx-d">${wd}</div><div class="wx-e">${e2}</div>
+      return `<div class="wx-day${i === best ? " best" : ""}"><div class="wx-d">${wd(i)}</div><div class="wx-e">${e2}</div>
         <div class="wx-t">${Math.round(dd.temperature_2m_min[i])}°/${Math.round(dd.temperature_2m_max[i])}°</div>
         <div class="wx-p">💧${dd.precipitation_probability_max[i] ?? "—"}%</div></div>`;
     }).join("");
@@ -915,8 +946,10 @@ async function loadWeather(t) {
         <span class="wx-now-t">${Math.round(c.temperature_2m)}°C</span>
         <span class="wx-now-d">${txt}　濕度 ${c.relative_humidity_2m}%　風 ${Math.round(c.wind_speed_10m)} km/h</span>
       </div>
+      <div class="wx-best">🌤 最適合出發：<b>${wd(best)}</b>（降雨 ${dd.precipitation_probability_max[best] ?? "—"}%、${Math.round(dd.temperature_2m_min[best])}–${Math.round(dd.temperature_2m_max[best])}°）</div>
+      <svg class="wx-curve" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><path d="${line}" fill="none" stroke="var(--brand-mid)" stroke-width="2"/>${dots}</svg>
       <div class="wx-fc">${fc}</div>
-      <div class="food-credit">天氣資料：Open-Meteo</div>`;
+      <div class="food-credit">天氣資料：Open-Meteo · 7 日預報</div>`;
   } catch {
     box.innerHTML = `<div class="food-empty">天氣查詢失敗（需網路）</div>`;
   }
@@ -1964,7 +1997,14 @@ function applyTheme(mode) {
   if (meta) meta.setAttribute("content", dark ? "#13160f" : "#16301f");
   document.querySelectorAll(".theme-opt").forEach(b => b.classList.toggle("on", b.dataset.themeOpt === mode));
 }
+// 季節主題點綴色（春櫻/夏綠/秋楓/冬雪）
+function applySeason() {
+  const m = new Date().getMonth() + 1;
+  const col = m >= 3 && m <= 5 ? "#d2799a" : m >= 6 && m <= 8 ? "#3f8f6a" : m >= 9 && m <= 11 ? "#c2683d" : "#5a86b0";
+  document.documentElement.style.setProperty("--accent", col);
+}
 function initTheme() {
+  applySeason();
   const mode = localStorage.getItem("tt_theme") || "auto";
   applyTheme(mode);
   document.querySelectorAll(".theme-opt").forEach(b => b.addEventListener("click", () => {
@@ -1991,6 +2031,7 @@ function restoreActiveRecording() {
 }
 
 // ---------- 啟動 ----------
+setTimeout(() => { const s = document.getElementById("splash"); if (s) s.remove(); }, 1700);
 buildFsRegion();
 buildCollections();
 initTheme();

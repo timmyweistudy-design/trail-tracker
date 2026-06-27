@@ -39,8 +39,21 @@
   <link rel="stylesheet" href="vendor/markercluster/markercluster.css">
   <link rel="stylesheet" href="vendor/markercluster/markercluster-default.css">
   <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* 啟動畫面（內聯，立即顯示不閃白） */
+    #splash { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center;
+      background: linear-gradient(155deg, #1f4730, #16301f 60%, #112619); color: #fbf8ee;
+      animation: splashOut .55s ease 1s forwards; }
+    #splash .sp-mark { font-size: 64px; animation: spPop .7s cubic-bezier(.2,.9,.3,1.3); }
+    #splash .sp-name { font-family: "Noto Serif TC", serif; font-weight: 900; font-size: 30px; letter-spacing: 6px; margin-top: 10px; }
+    #splash .sp-sub { font-size: 11px; letter-spacing: 5px; opacity: .6; margin-top: 8px; }
+    @keyframes spPop { 0% { transform: scale(.4); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+    @keyframes splashOut { to { opacity: 0; visibility: hidden; } }
+    @media (prefers-reduced-motion: reduce) { #splash { animation-delay: .3s; } #splash .sp-mark { animation: none; } }
+  </style>
 </head>
 <body>
+<div id="splash"><div class="sp-mark">⛰</div><div class="sp-name">步道誌</div><div class="sp-sub">TRAIL TRACKER</div></div>
 <div id="app">
   <header class="app-header">
     <div class="app-header-inner">
@@ -60,6 +73,7 @@
     <div class="search">
       <svg class="ic ic-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       <input id="searchInput" type="search" placeholder="搜尋步道、地區、主題…" autocomplete="off">
+      <button class="search-mic" id="searchMic" aria-label="語音搜尋" title="語音搜尋">🎤</button>
       <div class="search-suggest" id="searchSuggest" style="display:none"></div>
     </div>
     <div class="chips" id="filterChips">
