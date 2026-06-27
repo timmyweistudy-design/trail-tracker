@@ -115,7 +115,17 @@ function toast(msg) {
 }
 
 // ---------- 分頁切換 ----------
-let detailMap, detailOverlay, recMap, recLine, recMarker;
+let detailMap, detailOverlay, detailPoiLayer, recMap, recLine, recMarker;
+// 把美食/景點標在詳情地圖（不改視角，可縮放查看周邊）
+function plotPoi(items, color) {
+  if (!detailMap || !detailPoiLayer || !items) return;
+  items.forEach(p => {
+    if (p.lat == null) return;
+    L.circleMarker([p.lat, p.lon], { radius: 5, color: "#fff", weight: 1.5, fillColor: color, fillOpacity: .95 })
+      .addTo(detailPoiLayer)
+      .bindPopup(`<b>${(p.name || "").replace(/[<>&]/g, "")}</b><br>${p.kind}${p.rating ? " · ★" + p.rating.toFixed(1) : ""}`);
+  });
+}
 document.querySelectorAll(".tab").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
@@ -541,15 +551,23 @@ async function openDetail(id) {
         </div>
       </div>
     </div>`;
+  const hasGeo = !!geoOf(t);
   $("#detailBody").innerHTML = `
+    <div class="detail-nav" id="detailNav">
+      <button data-sec="top">概覽</button>
+      <button data-sec="secWx">天氣</button>
+      ${hasGeo ? `<button data-sec="secElev">海拔</button>` : ""}
+      <button data-sec="secPoi">景點</button>
+      <button data-sec="secFood">美食</button>
+    </div>
     ${conditionBanner(t)}
     ${tagsOf(t).length ? `<div class="tag-row">${tagsOf(t).map(g => `<span class="tag">${g}</span>`).join("")}</div>` : ""}
     ${gradeExplain(t)}
     ${kvHtml}
-    <div class="section-title">${ic("sun")}天氣（步道所在地）</div>
+    <div class="section-title" id="secWx">${ic("sun")}天氣（步道所在地）</div>
     <div id="weatherBox"><div class="food-loading"><span class="spin"></span>查詢天氣中…</div></div>
     ${metaHtml}
-    ${geoOf(t) ? `<div class="section-title">${ic("mountain")}海拔剖面</div><div id="profileBox"><div class="food-loading"><span class="spin"></span>計算海拔剖面中…</div></div>` : ""}
+    ${hasGeo ? `<div class="section-title" id="secElev">${ic("mountain")}海拔剖面</div><div id="profileBox"><div class="food-loading"><span class="spin"></span>計算海拔剖面中…</div></div>` : ""}
     ${t.guide ? `<div class="guide">${t.guide.replace(/\n/g, "<br>")}</div>` : ""}
     <div class="link-row">
       ${nav ? `<a class="link-btn" href="${nav}" target="_blank" rel="noopener">🧭 Google 地圖導航</a>` : ""}
@@ -561,13 +579,20 @@ async function openDetail(id) {
     <button class="btn ghost" id="btnOffline" style="margin-top:10px">⬇️ 預載此步道離線地圖</button>
     <div id="offlineBox" class="offline-box" style="display:none"></div>
     <div id="amenBox" class="amen-box"></div>
-    <div class="section-title">${ic("landmark")}附近人文景點</div>
+    <div class="section-title" id="secPoi">${ic("landmark")}附近人文景點</div>
     <div id="poiBox">${skelCards(3)}</div>
-    <div class="section-title">${ic("food")}步道周邊美食</div>
+    <div class="section-title" id="secFood">${ic("food")}步道周邊美食</div>
     <div id="foodBox">${skelCards(3)}</div>
     <button class="btn primary" id="btnGoRecord">${ic("pin")}在此步道開始記錄</button>
     <div style="font-size:11px;color:var(--ink-soft);text-align:center;margin-top:14px">${credit}</div>
   `;
+  // 詳情子頁籤：點一下捲到該區塊
+  $("#detailNav").querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+    const sheet = $("#detailSheet"), sec = b.dataset.sec;
+    if (sec === "top") { sheet.scrollTo({ top: 0, behavior: "smooth" }); return; }
+    const el = document.getElementById(sec);
+    if (el) sheet.scrollTo({ top: el.offsetTop - 52, behavior: "smooth" });
+  }));
   loadPhoto(t);
   loadWeather(t);
   loadElevation(t);
@@ -582,8 +607,10 @@ async function openDetail(id) {
       L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",
         { attribution: "© OpenStreetMap", maxZoom: 18 }).addTo(detailMap);
       detailOverlay = L.layerGroup().addTo(detailMap);
+      detailPoiLayer = L.layerGroup().addTo(detailMap);
     }
     detailOverlay.clearLayers();
+    detailPoiLayer.clearLayers();
     const geom = geoOf(t);
     if (geom && geom.length) {
       const lines = geom.map(seg => L.polyline(seg, { color: "#d2542e", weight: 4, opacity: .9 }));
@@ -756,6 +783,7 @@ async function loadFood(t) {
   box.innerHTML = `<div class="food-loading">尋找附近美食中…</div>`;
   try {
     _foodItems = await Food.nearby(t);
+    plotPoi(_foodItems, "#c2683d");
     renderFood();
   } catch (err) {
     box.innerHTML = err && err.nokey
@@ -784,7 +812,7 @@ function renderFood() {
         ${foodStars(f)}
         <span class="food-dist">${(f.dist / 1000).toFixed(1)}km</span>
       </a>`).join("")}</div>
-    <div class="food-credit">星級・評論來源：Google 地圖</div>`;
+    <div class="food-credit">🟠 已標於上方地圖　·　星級來源：Google 地圖</div>`;
   box.querySelectorAll(".food-sort-btn").forEach(b =>
     b.addEventListener("click", () => { _foodSort = b.dataset.fsort; renderFood(); }));
 }
@@ -797,6 +825,7 @@ async function loadAttractions(t) {
   if (!t.lat) { box.innerHTML = `<div class="food-empty">此步道無座標，無法查詢周邊景點</div>`; return; }
   try {
     _poiItems = await Attractions.nearby(t);
+    plotPoi(_poiItems, "#3b6ea5");
     renderAttractions();
   } catch (err) {
     box.innerHTML = err && err.nokey
@@ -824,12 +853,41 @@ function renderAttractions() {
         ${p.summary ? `<div class="poi-sum">${p.summary}</div>` : ""}
         <div class="poi-dist">${(p.dist / 1000).toFixed(1)} km</div>
       </a>`).join("")}</div>
-    <div class="food-credit">景點資料・介紹來源：Google 地圖</div>`;
+    <div class="food-credit">🔵 已標於上方地圖　·　來源：Google 地圖</div>`;
   box.querySelectorAll(".food-sort-btn").forEach(b =>
     b.addEventListener("click", () => { _poiSort = b.dataset.psort; renderAttractions(); }));
 }
 
 // 預載此步道範圍的離線地圖圖磚
+// 一鍵預載所有收藏步道的離線地圖
+async function downloadFavOffline() {
+  const favs = TRAILS.filter(t => Store.isFav(t.id) && t.lat);
+  const btn = $("#btnFavOffline"), box = $("#favOfflineBox");
+  if (!favs.length) { toast("尚無含座標的收藏步道"); return; }
+  const seen = new Set(); let tiles = [];
+  for (const t of favs) {
+    const bbox = Offline.bboxFor(t);
+    const { zmin, zmax } = Offline.planZoom(bbox);
+    for (const k of Offline.tileList(bbox, zmin, zmax)) {
+      const key = JSON.stringify(k);
+      if (!seen.has(key)) { seen.add(key); tiles.push(k); }
+    }
+  }
+  box.style.display = "block";
+  box.innerHTML = `準備下載 ${favs.length} 條收藏、約 ${tiles.length} 張圖磚（約 ${(tiles.length * 0.02).toFixed(1)} MB）…`;
+  btn.disabled = true; btn.textContent = "下載中…";
+  try {
+    const r = await Offline.download(tiles, (done, total) => {
+      box.innerHTML = `下載中… ${done}/${total}<div class="offline-bar"><i style="width:${Math.round(done / total * 100)}%"></i></div>`;
+    });
+    box.innerHTML = `✅ 已下載 ${r.ok}/${r.total} 張圖磚，${favs.length} 條收藏步道可離線看地圖了。`;
+    btn.textContent = "✓ 已預載收藏";
+    refreshOfflineStatus();
+  } catch {
+    box.innerHTML = "下載失敗，請確認網路後再試。";
+    btn.disabled = false; btn.textContent = "⬇️ 預載所有收藏步道的離線地圖";
+  }
+}
 async function downloadOffline(t, btn) {
   if (!t.lat) { toast("此步道無座標，無法下載地圖"); return; }
   const box = $("#offlineBox");
@@ -1266,6 +1324,7 @@ $("#btnDiag").addEventListener("click", () => {
   if (navigator.clipboard) navigator.clipboard.writeText(info).then(() => toast(errs.length ? `已複製診斷(${errs.length}筆錯誤)，可貼給開發者` : "已複製診斷，目前無錯誤"));
   else alert(info);
 });
+$("#btnFavOffline").addEventListener("click", downloadFavOffline);
 $("#btnClearTiles").addEventListener("click", async () => {
   if (confirm("確定清除已下載的離線地圖？")) {
     await Offline.clear();

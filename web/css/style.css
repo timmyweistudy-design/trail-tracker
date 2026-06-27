@@ -245,6 +245,14 @@ body {
 .track-date { font-size: 12.5px; color: var(--ink-soft); font-family: var(--num); margin: -4px 0 6px; }
 #detailMap { border-bottom: 1px solid var(--line); }
 .sheet-body { padding: 16px 19px; }
+/* 詳情頁子頁籤（黏頂） */
+.detail-nav { position: sticky; top: 0; z-index: 6; display: flex; gap: 6px; overflow-x: auto;
+  margin: -16px -19px 12px; padding: 10px 19px; background: var(--surface);
+  border-bottom: 1px solid var(--line-soft); scrollbar-width: none; }
+.detail-nav::-webkit-scrollbar { display: none; }
+.detail-nav button { flex: 0 0 auto; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft);
+  border-radius: 999px; padding: 6px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: .15s; }
+.detail-nav button:active { background: var(--brand-soft); transform: scale(.96); }
 .sheet-body h2 { font-family: var(--serif); font-weight: 700; margin: 2px 0 10px; font-size: 23px; letter-spacing: .5px; line-height: 1.25; }
 #photoBox:not(:empty) { margin: -2px 0 14px; position: relative; }
 .trail-photo { width: 100%; height: 200px; object-fit: cover; border-radius: var(--r-sm); display: block; background: var(--surface-2); box-shadow: var(--sh-sm); }
