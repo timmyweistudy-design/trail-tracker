@@ -401,6 +401,12 @@ body {
 .rec-spark-cap { font-size: 11px; color: var(--ink-soft); text-align: center; margin-top: 4px; font-family: var(--num); }
 #recElevSpark { margin-bottom: 12px; }
 @keyframes blink { 50% { opacity: .25; } }
+#recIdle { margin-top: 16px; display: none; }
+.ridle-row { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 11px 14px; font-size: 13px; color: var(--ink-soft); margin-bottom: 8px; box-shadow: var(--sh-sm); }
+.ridle-row b { color: var(--brand-deep); font-family: var(--num); }
+.ridle-e { font-size: 22px; }
+.ridle-sug { width: 100%; text-align: left; background: var(--brand-soft); border: 1px solid var(--line-soft); color: var(--brand-deep); border-radius: var(--r-sm); padding: 11px 14px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.ridle-sug:active { transform: scale(.98); }
 .sim-toggle { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12.5px; color: var(--ink-soft); margin-top: 13px; }
 .rec-opts { display: flex; gap: 18px; justify-content: center; margin-top: 13px; }
 .rec-opts .sim-toggle { margin-top: 0; }
@@ -410,6 +416,9 @@ body {
 /* 詳情頁各區塊加細分隔線，層次更清楚 */
 .sheet-body .section-title { border-top: 1px solid var(--line-soft); padding-top: 17px; margin-top: 18px; }
 .sheet-body .section-title:first-child { border-top: none; padding-top: 0; }
+.section-title.collapsible { cursor: pointer; display: flex; align-items: center; }
+.section-title.collapsible::after { content: "▾"; margin-left: auto; font-size: 11px; color: var(--ink-faint); transition: transform .2s; }
+.section-title.collapsible.collapsed::after { transform: rotate(-90deg); }
 .empty { text-align: center; color: var(--ink-soft); padding: 48px 20px; font-size: 14px; line-height: 1.7; }
 .empty .big { font-size: 44px; display: block; margin-bottom: 12px; opacity: .8; }
 .empty-art { width: 116px; height: auto; display: block; margin: 0 auto 16px; }
@@ -563,6 +572,20 @@ html[data-theme="dark"] .map-legend { background: rgba(27,32,23,.94); }
 #footMap { position: absolute; inset: 0; }
 .foot-modal .lb-close { position: absolute; top: calc(12px + var(--safe-b)); right: 14px; z-index: 1000; width: 38px; height: 38px; border-radius: 50%; border: none; background: var(--brand-deep); color: #fff; font-size: 16px; cursor: pointer; box-shadow: var(--sh); }
 .foot-cap { position: absolute; left: 50%; bottom: calc(20px + var(--safe-b)); transform: translateX(-50%); z-index: 1000; background: var(--brand-deep); color: #f3efe4; font-size: 12.5px; font-weight: 600; padding: 8px 16px; border-radius: 999px; box-shadow: var(--sh); white-space: nowrap; }
+
+/* 步道比較 */
+.compare-bar { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(78px + var(--safe-b)); z-index: 55;
+  display: flex; align-items: center; gap: 10px; background: var(--brand-deep); color: #f3efe4; border-radius: 999px;
+  padding: 9px 10px 9px 18px; box-shadow: var(--sh-lg); font-size: 13px; max-width: 92%; }
+.compare-bar b { font-family: var(--num); }
+.compare-bar button { border: none; border-radius: 999px; padding: 7px 14px; font-size: 12.5px; font-weight: 700; cursor: pointer; background: rgba(255,255,255,.16); color: #f3efe4; }
+.compare-bar button.go { background: var(--accent); }
+.compare-bar button.go:disabled { background: rgba(255,255,255,.12); color: rgba(255,255,255,.5); }
+.cmp-wrap { overflow-x: auto; }
+.cmp-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.cmp-table th, .cmp-table td { border: 1px solid var(--line-soft); padding: 9px 10px; text-align: center; vertical-align: middle; }
+.cmp-table th { background: var(--surface-2); color: var(--ink-soft); font-weight: 600; white-space: nowrap; text-align: left; }
+.cmp-table td b { color: var(--ink); }
 
 /* 照片燈箱 */
 .lightbox { position: fixed; inset: 0; z-index: 92; background: rgba(8,12,8,.95); display: flex; animation: fadein .2s; }

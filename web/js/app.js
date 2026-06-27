@@ -158,6 +158,7 @@ document.querySelectorAll(".tab").forEach(btn => {
       if (routeRefLayer && recMap) { recMap.removeLayer(routeRefLayer); routeRefLayer = null; }
       ensureGeo();                       // 預載幾何，供模擬挑步道/疊圖用
       setTimeout(initRecMap, 60);
+      renderRecIdle();
     }
     if (view === "me") { renderHistory(); refreshOfflineStatus(); }
   });
@@ -637,24 +638,25 @@ async function openDetail(id) {
     ${tagsOf(t).length ? `<div class="tag-row">${tagsOf(t).map(g => `<span class="tag">${TAG_ICON[g] ? TAG_ICON[g] + " " : ""}${g}</span>`).join("")}</div>` : ""}
     ${gradeExplain(t)}
     ${kvHtml}
-    <div class="section-title" id="secWx">${ic("sun")}天氣（步道所在地）</div>
+    <div class="section-title collapsible" id="secWx">${ic("sun")}天氣（步道所在地）</div>
     <div id="weatherBox"><div class="food-loading"><span class="spin"></span>查詢天氣中…</div></div>
     ${metaHtml}
-    ${hasGeo ? `<div class="section-title" id="secElev">${ic("mountain")}海拔剖面</div><div id="profileBox"><div class="food-loading"><span class="spin"></span>計算海拔剖面中…</div></div>` : ""}
+    ${hasGeo ? `<div class="section-title collapsible" id="secElev">${ic("mountain")}海拔剖面</div><div id="profileBox"><div class="food-loading"><span class="spin"></span>計算海拔剖面中…</div></div>` : ""}
     ${t.guide ? `<div class="guide">${t.guide.replace(/\n/g, "<br>")}</div>` : ""}
     <div class="link-row">
       ${nav ? `<a class="link-btn" href="${nav}" target="_blank" rel="noopener">🧭 Google 地圖導航</a>` : ""}
       <a class="link-btn" href="${moreSearch}" target="_blank" rel="noopener">🔍 查更多步道資訊</a>
       <button class="link-btn" id="btnShareTrail">↗ 分享步道</button>
+      <button class="link-btn" id="btnCompare">⇄ ${compareSet.has(t.id) ? "移出比較" : "加入比較"}</button>
       ${t.url ? `<a class="link-btn" href="${t.url}" target="_blank" rel="noopener">↗ 官方/原始頁面</a>` : ""}
     </div>
     ${myLogHtml(t)}
     <button class="btn ghost" id="btnOffline" style="margin-top:10px">⬇️ 預載此步道離線地圖</button>
     <div id="offlineBox" class="offline-box" style="display:none"></div>
     <div id="amenBox" class="amen-box"></div>
-    <div class="section-title" id="secPoi">${ic("landmark")}附近人文景點</div>
+    <div class="section-title collapsible" id="secPoi">${ic("landmark")}附近人文景點</div>
     <div id="poiBox">${skelCards(3)}</div>
-    <div class="section-title" id="secFood">${ic("food")}步道周邊美食</div>
+    <div class="section-title collapsible" id="secFood">${ic("food")}步道周邊美食</div>
     <div id="foodBox">${skelCards(3)}</div>
     <button class="btn primary" id="btnGoRecord">${ic("pin")}在此步道開始記錄</button>
     <div style="font-size:11px;color:var(--ink-soft);text-align:center;margin-top:14px">${credit}</div>
@@ -678,6 +680,12 @@ async function openDetail(id) {
   };
   sheetEl.addEventListener("scroll", _detailScroll, { passive: true });
   _detailScroll();
+  // 區塊可收合
+  $("#detailBody").querySelectorAll(".section-title.collapsible").forEach(hd => hd.addEventListener("click", () => {
+    const collapsed = hd.classList.toggle("collapsed");
+    const box = hd.nextElementSibling;
+    if (box) box.style.display = collapsed ? "none" : "";
+  }));
   loadPhoto(t);
   loadWeather(t);
   loadElevation(t);
@@ -771,6 +779,15 @@ async function openDetail(id) {
     if (navigator.share) navigator.share({ title: t.name, text, url }).catch(() => {});
     else if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => toast("步道連結已複製"));
     else window.open(url, "_blank");
+  });
+  const cmp = $("#btnCompare");
+  if (cmp) cmp.addEventListener("click", () => {
+    if (compareSet.has(t.id)) compareSet.delete(t.id);
+    else { if (compareSet.size >= 3) { toast("最多比較 3 條"); return; } compareSet.add(t.id); }
+    const inSet = compareSet.has(t.id);
+    cmp.textContent = inSet ? "⇄ 移出比較" : "⇄ 加入比較";
+    toast(inSet ? "已加入比較" : "已移出比較");
+    updateCompareBar();
   });
 }
 async function loadAmenities(t) {
@@ -1403,6 +1420,7 @@ function pickSimTrail() {
 }
 $("#btnStart").addEventListener("click", () => {
   initRecMap();
+  const ri = $("#recIdle"); if (ri) ri.style.display = "none";
   // 模擬模式：沿步道真實路線行走（有動畫感）。沒選步道就自動挑一條真實步道。
   if (sim() && Recorder.getState() !== "paused") {
     if (!(selectedTrailGeo && selectedTrailGeo.length)) {
@@ -1452,6 +1470,7 @@ $("#btnStop").addEventListener("click", () => {
     $("#recStatus").textContent = "準備就緒，按「開始」記錄路徑";
     openTrackReview(rec);              // 結束後顯示總結頁
     if (!rec.sim) confetti();
+    renderRecIdle();
   } else {
     toast("路徑太短，未儲存");
   }
@@ -1650,6 +1669,43 @@ function renderPet() {
   $("#petRec").addEventListener("click", petRecommend);
   $("#petFeed").addEventListener("click", feedPet);
 }
+
+// ---------- 步道比較 ----------
+let compareSet = new Set();
+function updateCompareBar() {
+  let bar = document.getElementById("compareBar");
+  if (!compareSet.size) { if (bar) bar.remove(); return; }
+  if (!bar) { bar = document.createElement("div"); bar.id = "compareBar"; bar.className = "compare-bar"; document.body.appendChild(bar); }
+  bar.innerHTML = `<span>已選 <b>${compareSet.size}</b> 條比較</span>
+    <button id="cmpClear">清除</button><button id="cmpGo" class="go"${compareSet.size < 2 ? " disabled" : ""}>比較</button>`;
+  bar.querySelector("#cmpClear").onclick = () => { compareSet.clear(); updateCompareBar(); };
+  bar.querySelector("#cmpGo").onclick = () => { if (compareSet.size >= 2) openCompareSheet(); };
+}
+function openCompareSheet() {
+  const ts = [...compareSet].map(id => TRAILS.find(t => t.id === id)).filter(Boolean);
+  if (ts.length < 2) return;
+  const row = (label, fn) => `<tr><th>${label}</th>${ts.map(t => `<td>${fn(t)}</td>`).join("")}</tr>`;
+  const ov = document.createElement("div");
+  ov.className = "pet-modal";
+  ov.innerHTML = `<div class="pet-modal-card">
+    <button class="sheet-close" id="cmpClose" aria-label="關閉">✕</button>
+    <h2>步道比較</h2>
+    <div class="cmp-wrap"><table class="cmp-table">
+      ${row("步道", t => `<b>${t.name}</b>`)}
+      ${row("難度", t => `<span class="badge diff d${t.difficulty || 0}" style="font-size:10px">${t.difficulty_label}</span>`)}
+      ${row("長度", t => t.length_km != null ? t.length_km + " km" : "—")}
+      ${row("爬升", t => t.ascent != null ? "↑" + Math.round(t.ascent) + " m" : "—")}
+      ${row("預估時間", t => t.tour || "—")}
+      ${row("親子友善", t => t.family_friendly ? "✓" : "—")}
+      ${row("地區", t => t.region || "—")}
+      ${row("主題", t => tagsOf(t).slice(0, 3).join("、") || "—")}
+    </table></div>
+  </div>`;
+  document.body.appendChild(ov);
+  const close = () => ov.remove();
+  ov.querySelector("#cmpClose").onclick = close;
+  ov.addEventListener("click", e => { if (e.target === ov) close(); });
+}
 // 夥伴推薦一條主題
 function petRecommend() {
   const picks = [["tag:瀑布", "瀑布"], ["tag:古道", "古道"], ["tag:海景", "海景"], ["tag:森林", "森林"], ["family", "親子友善"], ["tag:湖泊", "湖泊"]];
@@ -1729,6 +1785,21 @@ function checkPetEvolve() {
   const prev = +(localStorage.getItem("tt_pet_stage") || 0);
   if (i !== prev) localStorage.setItem("tt_pet_stage", i);
   if (i > prev) setTimeout(() => celebrateEvolve(PET_STAGES[i], i + 1), 800);
+}
+// 記錄頁待機面板（未開始記錄時顯示夥伴/上次/推薦）
+function renderRecIdle() {
+  const box = $("#recIdle"); if (!box) return;
+  if (Recorder.getState && Recorder.getState() !== "idle") { box.style.display = "none"; return; }
+  const i = petStageIndex(totalKm()), st = PET_STAGES[i];
+  const last = realRecords()[0];
+  const cand = TRAILS.filter(t => t.family_friendly && t.length_km >= 1 && t.length_km <= 6);
+  const sug = cand.length ? cand[Math.floor(Math.random() * cand.length)] : null;
+  box.style.display = "block";
+  box.innerHTML = `
+    <div class="ridle-row"><span class="ridle-e">${st.e}</span>夥伴 Lv.${i + 1}・準備好和你出發了</div>
+    ${last ? `<div class="ridle-row">📍 上次：${last.trailName || "自由路線"}・<b>${(last.distanceKm || 0).toFixed(2)}</b> km</div>` : ""}
+    ${sug ? `<button class="ridle-sug" data-id="${sug.id}">💡 推薦：${sug.name}（${sug.length_km} km）</button>` : ""}`;
+  const s = box.querySelector(".ridle-sug"); if (s) s.addEventListener("click", () => openDetail(s.dataset.id));
 }
 // 我的足跡熱力圖：所有真實軌跡疊在一張地圖上
 function openFootprintMap() {
