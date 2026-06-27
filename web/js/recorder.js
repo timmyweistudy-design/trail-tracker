@@ -88,11 +88,11 @@ const Recorder = (() => {
   }
 
   // 接受一個定位點，套用抖動/跳點/精度過濾，只在真的移動時累積
-  function push(lat, lon, alt, acc) {
-    if (acc != null && acc > MAX_ACC) return;        // 訊號太差，忽略
+  function push(lat, lon, alt, acc, clean) {
+    if (!clean && acc != null && acc > MAX_ACC) return;   // 訊號太差，忽略（模擬點乾淨不過濾）
     const now = Date.now();
-    // #7 EMA 平滑座標，降低 GPS 雜訊鋸齒
-    if (smLat == null) { smLat = lat; smLon = lon; }
+    // #7 EMA 平滑座標，降低 GPS 雜訊鋸齒；模擬點本身就在路線上，不平滑、不過濾才不會切彎偏離
+    if (clean || smLat == null) { smLat = lat; smLon = lon; }
     else { smLat = SMOOTH * lat + (1 - SMOOTH) * smLat; smLon = SMOOTH * lon + (1 - SMOOTH) * smLon; }
     const p = { lat: smLat, lon: smLon, t: now };
 
@@ -103,11 +103,11 @@ const Recorder = (() => {
     }
 
     const d = haversine(lastFix, p);
-    if (d < MIN_MOVE) {                              // 原地抖動：不累積，只推進時間基準
+    if (!clean && d < MIN_MOVE) {                    // 原地抖動：不累積，只推進時間基準
       lastFix.t = now;
       cb(snapshot()); return;
     }
-    if (d <= MAX_JUMP) {                             // 視為真實移動
+    if (clean || d <= MAX_JUMP) {                    // 視為真實移動
       if (autoPaused) { lastResume = Date.now(); autoPaused = false; }   // 移動→自動恢復計時
       lastMoveAt = Date.now();
       distance += d;
@@ -166,13 +166,12 @@ const Recorder = (() => {
   }
 
   function startSim() {
-    if (simRoute) {                                   // 沿選定步道路線快速跑完（約10秒）
+    if (simRoute) {                                   // 沿選定步道路線滑行跑完（約10秒）
       simDist = 0;
       const total = _routeLen(simRoute);
       const DURATION = 10000;                         // 不論長短都約10秒跑完
-      let frames = Math.round(total / 60);            // 每幀約60公尺
-      frames = Math.max(12, Math.min(180, frames));   // 12~180幀，步距維持在跳點上限內
-      const interval = Math.max(60, Math.round(DURATION / frames));
+      const interval = 25;                            // ~40fps，密集小步＝滑行感
+      const frames = Math.round(DURATION / interval); // ~400幀
       const step = total / frames;
       let i = 0;
       simTimer = setInterval(() => {
@@ -180,7 +179,7 @@ const Recorder = (() => {
         simDist = Math.min(total, i * step);
         const p = _pointAt(simRoute, simDist);
         const alt = 50 + 250 * (0.5 - 0.5 * Math.cos(Math.PI * simDist / (total || 1)));  // 鐘形假海拔
-        push(p[0], p[1], alt);
+        push(p[0], p[1], alt, null, true);            // clean：不平滑、不過濾，精準貼線
         if (i >= frames || simDist >= total) { clearInterval(simTimer); simTimer = null; }   // 走到終點停
       }, interval);
       return;

@@ -746,7 +746,8 @@ Recorder.onUpdate(s => {
     const last = pts[pts.length - 1];
     if (!recMarker) recMarker = L.circleMarker(last, { radius: 7, color: "#fff", weight: 3, fillColor: "#e8893b", fillOpacity: 1 }).addTo(recMap);
     recMarker.setLatLng(last);
-    if (s.state === "running") recMap.panTo(last);
+    // 模擬高幀率：用 animate:false 讓地圖即時跟隨，路線從腳下滑過＝滑行感；真實 GPS 維持平滑動畫
+    if (s.state === "running") recMap.panTo(last, sim() ? { animate: false } : undefined);
   }
 });
 
