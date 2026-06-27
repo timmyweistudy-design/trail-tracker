@@ -470,9 +470,22 @@ const DIFF_COLOR = { 0: "#3aa3a0", 1: "#46a24f", 2: "#6aa83e", 3: "#d8a127", 4: 
 const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services";
 function baseTopo() { return L.tileLayer(`${ESRI}/World_Topo_Map/MapServer/tile/{z}/{y}/{x}`, { attribution: "© Esri 地形", maxZoom: 18, maxNativeZoom: 18 }); }
 function baseSat() { return L.tileLayer(`${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}`, { attribution: "© Esri、Maxar 衛星影像", maxZoom: 18, maxNativeZoom: 18 }); }
-function addBaseWithToggle(map) {   // 加地形(預設)+衛星切換
+function addBaseWithToggle(map) {   // 加地形(預設)+衛星，明顯的分段切換鈕
   const topo = baseTopo().addTo(map), sat = baseSat();
-  L.control.layers({ "🗻 地形": topo, "🛰 衛星": sat }, null, { position: "topright", collapsed: true }).addTo(map);
+  const ctrl = L.control({ position: "topright" });
+  ctrl.onAdd = () => {
+    const d = L.DomUtil.create("div", "basemap-toggle");
+    d.innerHTML = `<button class="bm on" data-l="topo">🗻 地形</button><button class="bm" data-l="sat">🛰 衛星</button>`;
+    L.DomEvent.disableClickPropagation(d);
+    d.addEventListener("click", e => {
+      const b = e.target.closest(".bm"); if (!b) return;
+      if (b.dataset.l === "sat") { map.removeLayer(topo); sat.addTo(map); }
+      else { map.removeLayer(sat); topo.addTo(map); }
+      d.querySelectorAll(".bm").forEach(x => x.classList.toggle("on", x === b));
+    });
+    return d;
+  };
+  ctrl.addTo(map);
 }
 // 難度配色的水滴釘（含等級數字）
 function pinIcon(color, label) {
