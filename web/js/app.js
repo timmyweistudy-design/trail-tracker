@@ -2049,6 +2049,17 @@ function applyTheme(mode) {
   if (meta) meta.setAttribute("content", dark ? "#13160f" : "#16301f");
   document.querySelectorAll(".theme-opt").forEach(b => b.classList.toggle("on", b.dataset.themeOpt === mode));
 }
+// 顯示密度（舒適/緊湊）
+function applyDensity(mode) {
+  document.documentElement.setAttribute("data-density", mode);
+  document.querySelectorAll("[data-density]").forEach(b => b.classList.toggle("on", b.dataset.density === mode));
+}
+function initDensity() {
+  applyDensity(localStorage.getItem("tt_density") || "comfy");
+  document.querySelectorAll("#densityRow [data-density]").forEach(b => b.addEventListener("click", () => {
+    localStorage.setItem("tt_density", b.dataset.density); applyDensity(b.dataset.density);
+  }));
+}
 // 季節主題點綴色（春櫻/夏綠/秋楓/冬雪）
 function applySeason() {
   const m = new Date().getMonth() + 1;
@@ -2084,10 +2095,14 @@ function restoreActiveRecording() {
 
 // ---------- 啟動 ----------
 setTimeout(() => { const s = document.getElementById("splash"); if (s) s.remove(); }, 1700);
+// 量測 header 高度供搜尋列吸頂用
+function setHeaderH() { const h = document.querySelector(".app-header"); if (h) document.documentElement.style.setProperty("--hdr-h", h.offsetHeight + "px"); }
+setHeaderH(); window.addEventListener("load", setHeaderH); window.addEventListener("resize", setHeaderH);
 buildFsRegion();
 buildCollections();
 buildPresets();
 initTheme();
+initDensity();
 if (localStorage.getItem("tt_pet_stage") === null) localStorage.setItem("tt_pet_stage", petStageIndex(totalKm()));   // 既有里程不誤觸進化提示
 render();
 loadProfile();
