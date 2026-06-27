@@ -1152,6 +1152,28 @@ function renderAttractions() {
 }
 
 // 預載此步道範圍的離線地圖圖磚
+// 一鍵下載全台離線地圖（概覽，縮放 7–13；自動壓低 zmax 以控制張數）
+async function downloadAllTaiwan() {
+  const bbox = { n: 25.35, s: 21.85, e: 122.05, w: 119.95 };
+  let zmax = 13;
+  while (zmax > 9 && Offline.tileList(bbox, 7, zmax).length > 6000) zmax--;
+  const tiles = Offline.tileList(bbox, 7, zmax);
+  const btn = $("#btnAllOffline"), box = $("#allOfflineBox");
+  if (!confirm(`下載全台離線地圖（縮放 7–${zmax}）約 ${tiles.length} 張圖磚、約 ${(tiles.length * 0.02).toFixed(0)} MB？\n\n可離線看全島概覽；個別步道細節請另在步道詳情按「⬇️ 預載離線地圖」。\n下載需幾分鐘，請保持開啟。`)) return;
+  box.style.display = "block";
+  btn.disabled = true; btn.textContent = "下載中…";
+  try {
+    const r = await Offline.download(tiles, (done, total) => {
+      box.innerHTML = `下載全台地圖中… ${done}/${total}<div class="offline-bar"><i style="width:${Math.round(done / total * 100)}%"></i></div>`;
+    });
+    box.innerHTML = `✅ 已下載 ${r.ok}/${r.total} 張圖磚，全台概覽地圖可離線看了。`;
+    btn.textContent = "✓ 已下載全台離線地圖";
+    refreshOfflineStatus();
+  } catch {
+    box.innerHTML = "下載失敗，請確認網路後再試。";
+    btn.disabled = false; btn.textContent = "🌏 一鍵下載全台離線地圖（概覽）";
+  }
+}
 // 一鍵預載所有收藏步道的離線地圖
 async function downloadFavOffline() {
   const favs = TRAILS.filter(t => Store.isFav(t.id) && t.lat);
@@ -1701,6 +1723,7 @@ $("#importFile").addEventListener("change", e => {
   rd.readAsText(file);
 });
 $("#btnFootMap").addEventListener("click", openFootprintMap);
+$("#btnAllOffline").addEventListener("click", downloadAllTaiwan);
 $("#btnFavOffline").addEventListener("click", downloadFavOffline);
 $("#btnClearTiles").addEventListener("click", async () => {
   if (confirm("確定清除已下載的離線地圖？")) {
