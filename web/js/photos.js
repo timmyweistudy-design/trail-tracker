@@ -41,5 +41,33 @@ const Photos = (() => {
     return url;
   }
 
-  return { forTrail };
+  // 多張照片（給 Hero 輪播）；同一搜尋取多個符合的命中
+  async function forTrailMulti(trail, n = 5) {
+    if (!trail.name) return [];
+    const mk = "photonm_" + trail.id;
+    try { const c = JSON.parse(localStorage.getItem(mk)); if (c && Date.now() - c.ts < TTL) return c.urls; } catch { /* */ }
+    const key = core(trail.name); const urls = [];
+    try {
+      const api = "https://commons.wikimedia.org/w/api.php?action=query&generator=search" +
+        `&gsrsearch=${encodeURIComponent(trail.name)}&gsrnamespace=6&gsrlimit=20` +
+        "&prop=imageinfo&iiprop=url%7Cmime&iiurlwidth=900&format=json&origin=*";
+      const res = await fetch(api);
+      if (res.ok) {
+        const pages = ((await res.json()).query || {}).pages || {};
+        for (const p of Object.values(pages)) {
+          const title = (p.title || "").replace(/^File:/, "");
+          const ii = p.imageinfo && p.imageinfo[0];
+          if (ii && ii.mime && ii.mime.startsWith("image/") && !BAD.test(title)
+            && (title.includes(trail.name) || (key.length >= 2 && title.includes(key)))) {
+            urls.push(ii.thumburl || ii.url);
+            if (urls.length >= n) break;
+          }
+        }
+      }
+    } catch { /* */ }
+    try { localStorage.setItem(mk, JSON.stringify({ ts: Date.now(), urls })); } catch { /* */ }
+    return urls;
+  }
+
+  return { forTrail, forTrailMulti };
 })();

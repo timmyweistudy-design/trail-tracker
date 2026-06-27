@@ -48,6 +48,13 @@ const ICON = {
   landmark: '<path d="M3 21h18M5 21V10M19 21V10M9 21v-7h6v7M12 3 4 8h16l-8-5Z"/>',
 };
 function ic(name, cls) { return `<svg class="ic${cls ? " " + cls : ""}" viewBox="0 0 24 24">${ICON[name] || ""}</svg>`; }
+// 空狀態手繪山林插圖
+const EMPTY_ART = `<svg class="empty-art" viewBox="0 0 120 84">
+  <circle cx="94" cy="20" r="9" fill="none" stroke="var(--accent)" stroke-width="2"/>
+  <path d="M4 74 L38 26 L58 52 L76 28 L116 74 Z" fill="var(--brand-soft)" stroke="var(--brand)" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M38 26 L30 40 L46 40 Z M76 28 L68 42 L86 42 Z" fill="#fff" opacity=".6"/>
+  <path d="M4 74 H116" stroke="var(--brand-mid)" stroke-width="2" stroke-linecap="round"/>
+</svg>`;
 
 // 分類標籤（由名稱/資料推導）
 function tagsOf(t) {
@@ -250,7 +257,7 @@ $("#fsReset").addEventListener("click", () => {
   document.querySelectorAll("[data-sort]").forEach(c => c.classList.toggle("active", c.dataset.sort === "default"));
   updateFilterDot(); render();
 });
-$("#btnFilter").addEventListener("click", () => { updateFilterDot(); $("#filterMask").classList.add("show"); $("#filterSheet").classList.add("show"); });
+$("#btnFilter").addEventListener("click", () => { updateFilterDot(); $("#filterMask").classList.add("show"); $("#filterSheet").classList.add("show"); $("#closeFilterBtn").focus({ preventScroll: true }); });
 function closeFilter() { $("#filterMask").classList.remove("show"); $("#filterSheet").classList.remove("show"); }
 $("#filterMask").addEventListener("click", closeFilter);
 $("#closeFilterBtn").addEventListener("click", closeFilter);
@@ -386,7 +393,7 @@ function render() {
   if (_io) _io.disconnect();
   $("#trailList").innerHTML = "";
   if (!curList.length) {
-    $("#trailList").innerHTML = `<div class="empty"><span class="big">🥾</span>找不到符合的步道<br>
+    $("#trailList").innerHTML = `<div class="empty">${EMPTY_ART}找不到符合的步道<br>
       <span style="font-size:12.5px">試試清除篩選或換個關鍵字</span><br>
       <button class="chip" style="margin-top:14px" onclick="document.getElementById('fsReset').click()">清除所有篩選</button></div>`;
     return;
@@ -542,6 +549,7 @@ async function openDetail(id) {
   $("#sheetMask").classList.add("show");
   $("#detailSheet").classList.add("show");
   $("#detailSheet").scrollTop = 0;
+  $("#closeDetailBtn").focus({ preventScroll: true });
   await ensureGeo();
   const d = t.difficulty || 0;
   // 只列出有資料的欄位（OSM 步道欄位較少，避免顯示空白「—」）
@@ -746,18 +754,23 @@ async function loadPhoto(t) {
   const hero = $("#heroWrap");
   if (!hero) return;
   try {
-    const url = await Photos.forTrail(t);
-    if (!url) return;                                   // 無照片：保留漸層等高線底
-    const img = new Image();
-    img.className = "";
-    img.alt = t.name;
-    img.onload = () => {
-      hero.classList.remove("noimg");
-      hero.insertAdjacentHTML("afterbegin", `<div class="hero-credit">Wikimedia Commons</div>`);
-      hero.insertBefore(img, hero.firstChild);
-      requestAnimationFrame(() => img.classList.add("loaded"));
-    };
-    img.src = url;
+    const urls = await Photos.forTrailMulti(t, 5);
+    if (!urls || !urls.length) return;                  // 無照片：保留漸層等高線底
+    hero.classList.remove("noimg");
+    const car = document.createElement("div");
+    car.className = "hero-carousel";
+    car.innerHTML = urls.map(u => `<img alt="${t.name}" src="${u}" loading="lazy">`).join("")
+      + (urls.length > 1 ? `<div class="hero-dots">${urls.map((_, i) => `<span class="${i ? "" : "on"}"></span>`).join("")}</div>` : "");
+    hero.insertBefore(car, hero.firstChild);
+    hero.insertAdjacentHTML("afterbegin", `<div class="hero-credit">Wikimedia Commons${urls.length > 1 ? " · 左右滑看更多" : ""}</div>`);
+    car.querySelectorAll("img").forEach(im => im.addEventListener("load", () => im.classList.add("loaded")));
+    if (urls.length > 1) {
+      const dots = car.querySelector(".hero-dots");
+      car.addEventListener("scroll", () => {
+        const i = Math.round(car.scrollLeft / car.clientWidth);
+        dots.querySelectorAll("span").forEach((s, k) => s.classList.toggle("on", k === i));
+      }, { passive: true });
+    }
   } catch { /* 無照片就維持漸層底 */ }
 }
 
@@ -1475,7 +1488,7 @@ function renderHistory() {
   if (clearBtn) clearBtn.style.display = recs.length ? "block" : "none";
   const gpxAll = $("#btnExportGpxAll");
   if (gpxAll) gpxAll.style.display = recs.length ? "block" : "none";
-  if (!recs.length) { wrap.innerHTML = `<div class="empty"><span class="big">🚶</span>還沒有行程紀錄<br>到「記錄」分頁開始你的第一條路線</div>`; return; }
+  if (!recs.length) { wrap.innerHTML = `<div class="empty">${EMPTY_ART}還沒有行程紀錄<br>到「記錄」分頁開始你的第一條路線</div>`; return; }
   wrap.innerHTML = recs.map(r => `
     <div class="hist-card" data-id="${r.id}">
       <div class="top">
@@ -1568,19 +1581,31 @@ if (typeof Conditions !== "undefined") Conditions.refresh(TRAILS).then(n => { if
 // #22 首次使用導覽
 (function onboarding() {
   if (localStorage.getItem("tt_onboarded") || new URLSearchParams(location.search).get("trail")) return;
+  const slides = [
+    { e: "🧭", h: "探索全台步道", p: "搜尋 2100+ 條步道，看官方分級、真實路線、海拔剖面、天氣、周邊人文景點與美食。" },
+    { e: "📍", h: "記錄你的每一步", p: "邊走邊記里程、步數、卡路里、爬升與即時海拔曲線；自動暫停、中斷可復原，離線也能用。" },
+    { e: "🗺️", h: "離線・收藏・備份", p: "出發前可預載離線地圖，山區沒訊號也看得到；收藏步道、記錄可一鍵備份，換手機不怕遺失。" },
+  ];
+  let i = 0;
   const ov = document.createElement("div");
   ov.className = "onboard";
-  ov.innerHTML = `<div class="onboard-card">
-    <div class="onboard-mark">⛰</div>
-    <h2>歡迎使用步道誌</h2>
-    <ul>
-      <li>🧭 <b>探索</b>：搜尋全台 2200+ 步道，看分級、實際路線、海拔剖面、天氣與周邊美食</li>
-      <li>📍 <b>記錄</b>：邊走邊記里程、爬升、卡路里；中斷可復原，離線也能用</li>
-      <li>👤 <b>我的</b>：行程回顧、收藏、標記已完成的步道</li>
-    </ul>
-    <p>💡 出發前在步道詳情按「⬇️ 預載離線地圖」，山區沒訊號也看得到地圖。</p>
-    <button class="btn primary" id="onboardGo">開始探索</button>
-  </div>`;
+  const render = () => {
+    const s = slides[i], last = i === slides.length - 1;
+    ov.innerHTML = `<div class="onboard-card">
+      <div class="onboard-mark">${s.e}</div>
+      <h2>${s.h}</h2>
+      <p style="background:none;color:var(--ink-soft);text-align:center">${s.p}</p>
+      <div class="onboard-dots">${slides.map((_, k) => `<span class="${k === i ? "on" : ""}"></span>`).join("")}</div>
+      <button class="btn primary" id="onboardNext">${last ? "開始探索" : "下一步"}</button>
+      ${last ? "" : `<button class="info-link" id="onboardSkip" style="display:block;margin:8px auto 0">略過</button>`}
+    </div>`;
+    ov.querySelector("#onboardNext").addEventListener("click", () => {
+      if (last) { localStorage.setItem("tt_onboarded", "1"); ov.remove(); }
+      else { i++; render(); }
+    });
+    const sk = ov.querySelector("#onboardSkip");
+    if (sk) sk.addEventListener("click", () => { localStorage.setItem("tt_onboarded", "1"); ov.remove(); });
+  };
   document.body.appendChild(ov);
-  ov.querySelector("#onboardGo").addEventListener("click", () => { localStorage.setItem("tt_onboarded", "1"); ov.remove(); });
+  render();
 })();
