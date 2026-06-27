@@ -1159,6 +1159,27 @@ $("#gpxFile").addEventListener("change", e => {
   e.target.value = "";
 });
 
+// 記錄頁即時海拔曲線
+function drawRecSpark(series) {
+  const box = $("#recElevSpark");
+  if (!box) return;
+  if (!series || series.length < 3) { box.style.display = "none"; return; }
+  const W = 320, H = 56, pad = 4;
+  const es = series.map(p => p.e), xs = series.map(p => p.x);
+  const minE = Math.min(...es), maxE = Math.max(...es), span = (maxE - minE) || 1;
+  const x0 = xs[0], totX = (xs[xs.length - 1] - x0) || 1;
+  const xy = series.map(p => [
+    pad + (W - 2 * pad) * (p.x - x0) / totX,
+    pad + (H - 2 * pad) * (1 - (p.e - minE) / span),
+  ]);
+  const line = xy.map((p, i) => `${i ? "L" : "M"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
+  const area = `${line} L${xy[xy.length - 1][0].toFixed(1)},${H - pad} L${xy[0][0].toFixed(1)},${H - pad} Z`;
+  box.style.display = "block";
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" class="rec-spark" preserveAspectRatio="none">
+      <path d="${area}" fill="rgba(63,122,85,.18)"/>
+      <path d="${line}" fill="none" stroke="var(--brand-mid)" stroke-width="2" stroke-linejoin="round"/>
+    </svg><div class="rec-spark-cap">即時海拔 ${Math.round(es[es.length - 1])}m　·　${Math.round(minE)}–${Math.round(maxE)}m</div>`;
+}
 Recorder.onUpdate(s => {
   $("#stDist").textContent = s.distanceKm.toFixed(2);
   $("#stSteps").textContent = s.steps.toLocaleString();
@@ -1166,6 +1187,7 @@ Recorder.onUpdate(s => {
   $("#stTime").textContent = fmtTime(s.elapsedMs);
   $("#stPace").textContent = s.pace;
   if ($("#stElev")) $("#stElev").textContent = `↑${Math.round(s.ascent || 0)} ↓${Math.round(s.descent || 0)}`;
+  drawRecSpark(s.altSeries);
   // #11 每公里震動提示
   if (s.state === "running" && !s.autoPaused) {
     const kmDone = Math.floor(s.distanceKm);

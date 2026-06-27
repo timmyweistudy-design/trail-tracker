@@ -13,6 +13,7 @@ const Recorder = (() => {
   let watchId = null, simTimer = null, ticker = null;
   const SMOOTH = 0.6;          // EMA 平滑係數（越大越貼近原始）
   let track = [];              // [{lat, lon, t}] 僅存通過過濾的軌跡點
+  let altSeries = [];          // [{x:距離m, e:海拔m}] 即時海拔曲線用
   let distance = 0;            // 公尺（水平實際移動）
   let dist3D = 0;              // 公尺（含坡度 3D 距離）
   let ascent = 0;              // 累積爬升（公尺，已去抖動）
@@ -81,7 +82,7 @@ const Recorder = (() => {
     // 配速用移動時間（實際走路快慢，不含休息）
     const paceSec = (km > 0.01 && movingMs > 0) ? (movingMs / 1000) / km : 0;
     return {
-      state, autoPaused, track, distanceKm: km, distance3DKm: dist3D / 1000, steps: steps(), kcal: calories(),
+      state, autoPaused, track, altSeries, distanceKm: km, distance3DKm: dist3D / 1000, steps: steps(), kcal: calories(),
       elapsedMs: ms, movingMs, ascent, descent, speedKmh: kmh,
       pace: paceSec ? `${Math.floor(paceSec / 60)}'${String(Math.round(paceSec % 60)).padStart(2, "0")}` : "--",
     };
@@ -122,6 +123,7 @@ const Recorder = (() => {
       movingMs += now - lastFix.t;
       updateElevation(alt);                          // 去抖動後累積爬升/下降
       track.push(p);
+      if (alt != null) altSeries.push({ x: distance, e: alt });   // 即時海拔曲線
       if (now - lastPersist > 4000) { lastPersist = now; persist(); }   // 節流即時存檔
     }
     // d > MAX_JUMP：GPS 跳點，不累積，但更新錨點避免下次又算成大跳
@@ -199,7 +201,7 @@ const Recorder = (() => {
 
   function start(sim) {
     if (state === "running") return;
-    if (state === "idle") { track = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; lastFixAlt = null; smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; }
+    if (state === "idle") { track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; lastFixAlt = null; smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; }
     lastResume = Date.now();
     state = "running";
     autoPaused = false; lastMoveAt = Date.now();   // 開始/繼續都重設靜止計時
@@ -241,7 +243,7 @@ const Recorder = (() => {
       distanceKm: snap.distanceKm, distance3DKm: snap.distance3DKm, steps: snap.steps, kcal: snap.kcal,
       elapsedMs: snap.elapsedMs, ascent: Math.round(ascent), descent: Math.round(descent), track: track.slice(),
     } : null;
-    state = "idle"; track = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; lastFixAlt = null;
+    state = "idle"; track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; lastFixAlt = null;
     smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; simPos = null;
     persist();
     cb(snapshot());
