@@ -68,7 +68,7 @@ const Auth = (() => {
       <div class="social-auth">
         <h3>輸入驗證碼</h3>
         <p class="auth-sub">驗證碼已寄到 ${esc(email)}。<b>直接在這個 App 輸入</b>就能登入這裡，不必切到瀏覽器。</p>
-        <input id="authCode" class="auth-input" inputmode="numeric" autocomplete="one-time-code" placeholder="6 位數驗證碼" maxlength="6">
+        <input id="authCode" class="auth-input" inputmode="numeric" autocomplete="one-time-code" placeholder="輸入驗證碼" maxlength="10">
         <button class="btn primary" id="authVerify">登入</button>
         <button class="btn ghost" id="authResend">重新寄送</button>
         <button class="btn ghost" id="authBack">換 Email</button>
@@ -77,7 +77,7 @@ const Auth = (() => {
     document.getElementById("authVerify").addEventListener("click", async () => {
       const token = (document.getElementById("authCode").value || "").trim();
       const msg = document.getElementById("authMsg");
-      if (!/^\d{6}$/.test(token)) { msg.textContent = "請輸入 6 位數驗證碼"; return; }
+      if (!/^\d{4,10}$/.test(token)) { msg.textContent = "請輸入驗證碼（數字）"; return; }
       msg.textContent = "驗證中…";
       const { error } = await verifyEmailCode(email, token);
       if (error) { msg.textContent = "驗證失敗：" + error; return; }
