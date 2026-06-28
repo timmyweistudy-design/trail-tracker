@@ -430,6 +430,7 @@ body {
 .act-modes { display: flex; gap: 7px; overflow-x: auto; padding: 0 2px 4px; margin: 10px 0 4px; scrollbar-width: none; }
 .act-modes::-webkit-scrollbar { display: none; }
 .act-modes .chip { flex: 0 0 auto; }
+.act-hint { font-size: 11.5px; color: var(--ink-faint); text-align: center; margin: 2px 0 6px; }
 .rec-opts { display: flex; gap: 18px; justify-content: center; margin-top: 13px; }
 .rec-opts .sim-toggle { margin-top: 0; }
 

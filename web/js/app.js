@@ -1712,11 +1712,11 @@ $("#btnStop").addEventListener("click", () => {
   if (rec) {
     rec.trailName = Recorder._trailName || "自由路線";
     Store.addRecord(rec);
-    if (!rec.sim) bumpAffinity(8);   // 真實出門加深羈絆
+    if (isFootRec(rec)) bumpAffinity(8);   // 只有走路/跑步加深羈絆
     checkPetEvolve();
     $("#recStatus").textContent = "準備就緒，按「開始」記錄路徑";
     openTrackReview(rec);              // 結束後顯示總結頁
-    if (!rec.sim) confetti();
+    if (isFootRec(rec)) confetti();
     renderRecIdle();
   } else {
     toast("路徑太短，未儲存");
@@ -1812,7 +1812,9 @@ const PET_BG = [
   "linear-gradient(140deg,#5a4a2a,#2c2a1a)", "linear-gradient(140deg,#3a3a6b,#1f2547)",
   "linear-gradient(140deg,#2b5a3a,#234a6b 55%,#16301f)",
 ];
-function realRecords() { return Store.getRecords().filter(r => !r.sim); }   // 排除模擬
+// 只有走路/跑步計入里程；模擬、騎車/開車/大眾運輸都不算
+const isFootRec = r => !r.sim && (!r.mode || r.mode === "run");
+function realRecords() { return Store.getRecords().filter(isFootRec); }
 function debugKm() { return +(localStorage.getItem("tt_debug_km") || 0); }   // 測試用里程偏移
 function realTotalKm() { return realRecords().reduce((s, r) => s + (r.distanceKm || 0), 0) + debugKm(); }
 function petBase() { return +(localStorage.getItem("tt_pet_base") || 0); }
