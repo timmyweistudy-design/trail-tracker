@@ -7,5 +7,5 @@ window.CONDITIONS_PROXY = "https://trail-tracker.timmyweistudy.workers.dev";
 // Supabase（社群功能）。anon key 放前端是安全的：資料由 RLS 在資料庫層把關。
 // ⚠️ 填入你的 Supabase 專案 URL 與 anon/public key（兩者皆空＝社群分頁顯示「尚未啟用」）。
 //    service_role key 絕不可放這裡。
-window.SUPABASE_URL = "";
-window.SUPABASE_ANON_KEY = "";
+window.SUPABASE_URL = "https://bkbkamvbczqdejrlpiqo.supabase.co";
+window.SUPABASE_ANON_KEY = "sb_publishable_3VM6B_9iEw1vt3BTZpTo3w_-r3wkimi";
