@@ -1919,7 +1919,7 @@ const PET_BG = [
   "linear-gradient(140deg,#2b5a3a,#234a6b 55%,#16301f)",
 ];
 // 排除模擬；過快(交通工具)的移動段在記錄端就已不計入里程
-const isFootRec = r => !r.sim;
+const isFootRec = r => !r.sim && !r.vehicle;   // 模擬、車速自動斷掉的整趟都不計里程
 function realRecords() { return Store.getRecords().filter(isFootRec); }
 function debugKm() { return +(localStorage.getItem("tt_debug_km") || 0); }   // 測試用里程偏移
 function realTotalKm() { return realRecords().reduce((s, r) => s + (r.distanceKm || 0), 0) + debugKm(); }
@@ -2260,7 +2260,7 @@ function renderHistory() {
   wrap.innerHTML = recs.map(r => `
     <div class="hist-card" data-id="${r.id}">
       <div class="top">
-        <b>${r.trailName || "自由路線"}${r.sim ? ` <span class="sim-tag">模擬</span>` : ""}</b>
+        <b>${r.trailName || "自由路線"}${r.sim ? ` <span class="sim-tag">模擬</span>` : ""}${r.vehicle ? ` <span class="sim-tag">車速·不計里程</span>` : ""}</b>
         <span class="date">${new Date(r.date).toLocaleString("zh-TW", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
       </div>
       <div class="row">

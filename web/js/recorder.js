@@ -304,6 +304,7 @@ const Recorder = (() => {
       distanceKm: snap.distanceKm, distance3DKm: snap.distance3DKm, steps: snap.steps, kcal: snap.kcal,
       elapsedMs: snap.elapsedMs, ascent: Math.round(ascent), descent: Math.round(descent), track: track.slice(),
       sim: simMode || undefined,
+      vehicle: autoStopping || undefined,   // 因車速(>20km/h)自動斷掉→整趟不計里程
     } : null;
     state = "idle"; track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; lastFixAlt = null;
     smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; lastAcceptT = 0; curSpeed = 0; simPos = null; overSpeedHits = 0; autoStopping = false;
