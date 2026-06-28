@@ -1701,8 +1701,12 @@ $("#lowPowerToggle").addEventListener("change", e => {
   chk.addEventListener("change", e => {
     localStorage.setItem("tt_wakelock", e.target.checked ? "1" : "0");
     Recorder.setWake(e.target.checked);
+    toast(e.target.checked ? "已開螢幕保持喚醒（記錄中螢幕不熄滅）" : "已關螢幕保持喚醒");
   });
 })();
+$("#simToggle").addEventListener("change", e => {
+  toast(e.target.checked ? "已開模擬模式（無 GPS，沿步道路線預覽）" : "已關模擬模式");
+});
 $("#btnShareLoc").addEventListener("click", () => {
   if (!navigator.geolocation) { toast("此裝置不支援定位"); return; }
   toast("定位中…");
