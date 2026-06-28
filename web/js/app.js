@@ -639,7 +639,10 @@ function addFullscreen(map) {
       const fs = el.classList.toggle("map-fs");
       d.innerHTML = fs ? "✕" : "⛶";
       document.body.classList.toggle("map-fs-open", fs);
-      setTimeout(() => map.invalidateSize(), 80);
+      // 等新版面套用後再重算尺寸，避免下方留一段空白
+      const fix = () => map.invalidateSize({ animate: false });
+      requestAnimationFrame(() => { requestAnimationFrame(fix); });
+      setTimeout(fix, 150); setTimeout(fix, 400);
     });
     return d;
   };
@@ -1512,7 +1515,7 @@ function distToRoute(lat, lon) {
 function initRecMap() {
   if (!recMap) {
     recMap = L.map("recMap", { zoomControl: false }).setView([25.033, 121.564], 15);
-    baseTopo().addTo(recMap);
+    baseTopo().addTo(recMap); addCompass(recMap); addFullscreen(recMap);
     recLine = L.polyline([], { color: "#2f7d4f", weight: 5 }).addTo(recMap);
   }
   recMap.invalidateSize();
