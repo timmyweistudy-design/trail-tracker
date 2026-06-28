@@ -582,6 +582,11 @@ html[data-theme="dark"] .map-legend { background: rgba(27,32,23,.94); }
   min-height: 0 !important; max-height: none !important; margin: 0 !important; z-index: 95 !important; border-radius: 0 !important; }
 body.map-fs-open .tabbar { display: none; }
 body.map-fs-open { overflow: hidden; }
+/* 全螢幕時地圖控制內縮、避開瀏海/狀態列/底部 Home 線，才不會被遮到不見 */
+.map-fs .leaflet-top { top: calc(6px + env(safe-area-inset-top, 0px)); }
+.map-fs .leaflet-bottom { bottom: calc(6px + env(safe-area-inset-bottom, 0px)); }
+.map-fs .leaflet-left { left: calc(6px + env(safe-area-inset-left, 0px)); }
+.map-fs .leaflet-right { right: calc(6px + env(safe-area-inset-right, 0px)); }
 /* 地形/衛星 切換鈕 */
 .basemap-toggle { display: flex; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 3px; box-shadow: var(--sh-sm); overflow: hidden; }
 .basemap-toggle .bm { border: none; background: none; cursor: pointer; border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 700; color: var(--ink-soft); white-space: nowrap; transition: .15s; }
