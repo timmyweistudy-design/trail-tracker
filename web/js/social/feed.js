@@ -19,7 +19,7 @@ const Feed = (() => {
           : `<img loading="lazy" src="${esc(Media.publicUrl(m.thumb_path || m.path))}" alt="">`).join("")}</div>` : "";
     const stats = `${(post.distance_km != null ? post.distance_km.toFixed(2) + "km" : "")}${post.ascent != null ? "　↑" + post.ascent + "m" : ""}`;
     return `<article class="feed-card" data-id="${post.id}">
-      <div class="fc-top">${av}<div><div class="fc-name">${esc(a.display_name || a.handle || "山友")}</div>
+      <div class="fc-top fc-author" data-uid="${post.author_id}">${av}<div><div class="fc-name">${esc(a.display_name || a.handle || "山友")}</div>
         <div class="fc-sub">${fmtAgo(post.created_at)}${post.visibility === "friends" ? " · 好友" : ""}</div></div></div>
       <div class="fc-trail">⛰️ ${esc(post.trail_name || "自由路線")}　<span class="fc-stats">${stats}</span></div>
       ${post.caption ? `<div class="fc-cap">${esc(post.caption)}</div>` : ""}
@@ -65,6 +65,7 @@ const Feed = (() => {
     }));
     const openDetail = id => { if (typeof PostView !== "undefined") PostView.open(id); };
     document.querySelectorAll(".feed-card .fc-comment").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); openDetail(b.dataset.id); }));
+    document.querySelectorAll(".feed-card .fc-author").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); if (typeof Discover !== "undefined") Discover.openProfile(b.dataset.uid); }));
     document.querySelectorAll(".feed-card").forEach(c => c.addEventListener("click", () => openDetail(c.dataset.id)));
   }
 

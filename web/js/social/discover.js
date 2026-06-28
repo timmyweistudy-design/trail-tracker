@@ -47,12 +47,14 @@ const Discover = (() => {
       <div class="pv-body">
         <div class="pf-top">${prof.avatar_url ? `<img class="pf-av" src="${esc(prof.avatar_url)}">` : `<div class="pf-av pf-av-ph">${esc((prof.display_name || prof.handle).slice(0, 1))}</div>`}
           <div class="pf-id"><div class="pf-name">${esc(prof.display_name || prof.handle)}</div><div class="pf-handle">@${esc(prof.handle)}</div></div></div>
+        <div class="pf-counts" id="dpCounts"></div>
         ${prof.bio ? `<div class="pf-bio">${esc(prof.bio)}</div>` : ""}
         ${isMe ? "" : `<button class="btn ${following ? "ghost" : "primary"}" id="dpFollow">${following ? "已追蹤" : "追蹤"}</button>`}
         <div id="dpPosts" class="feed-loading"><span class="spin"></span></div>
       </div></div>`;
     document.body.appendChild(wrap);
     wrap.querySelector("#dpX").addEventListener("click", () => wrap.remove());
+    Posts.followCounts(userId).then(c2 => { const el = wrap.querySelector("#dpCounts"); if (el) el.innerHTML = `<b>${c2.followers}</b> 粉絲　<b>${c2.following}</b> 追蹤中`; });
     const fb = wrap.querySelector("#dpFollow");
     if (fb) fb.addEventListener("click", async () => {
       const on = fb.textContent === "追蹤";

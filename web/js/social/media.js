@@ -89,6 +89,16 @@ const Media = (() => {
     return { path, thumb_path, dur: dur || null };
   }
 
-  return { targetSize, compressImage, videoPoster, upload, publicUrl, validateSize, validateVideo, uploadVideo };
+  // 上傳頭像（壓到 ≤400px），回傳公開網址
+  async function uploadAvatar(uid, file) {
+    const { main } = await compressImage(file, 400, 100, 0.85);
+    const c = Supa.client();
+    const path = `${uid}/avatar/${Date.now()}.jpg`;
+    const { error } = await c.storage.from("media").upload(path, main, { contentType: "image/jpeg", upsert: true });
+    if (error) throw error;
+    return c.storage.from("media").getPublicUrl(path).data.publicUrl;
+  }
+
+  return { targetSize, compressImage, videoPoster, upload, publicUrl, validateSize, validateVideo, uploadVideo, uploadAvatar };
 })();
 if (typeof module !== "undefined") module.exports = Media;

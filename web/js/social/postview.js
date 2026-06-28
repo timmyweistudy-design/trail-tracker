@@ -41,7 +41,7 @@ const PostView = (() => {
     const a = post.author || {};
     const media = (post.post_media || []).slice().sort((x, y) => x.ord - y.ord);
     wrap.querySelector("#pvBody").innerHTML = `
-      <div class="fc-name">${esc(a.display_name || a.handle || "山友")} <span class="fc-sub">@${esc(a.handle || "")}</span></div>
+      <div class="fc-name fc-author" data-uid="${post.author_id}" style="cursor:pointer">${esc(a.display_name || a.handle || "山友")} <span class="fc-sub">@${esc(a.handle || "")}</span></div>
       <div class="fc-trail">⛰️ ${esc(post.trail_name || "自由路線")}　<span class="fc-stats">${post.distance_km != null ? post.distance_km.toFixed(2) + "km" : ""}${post.ascent != null ? "　↑" + post.ascent + "m" : ""}</span></div>
       ${post.caption ? `<div class="fc-cap">${esc(post.caption)}</div>` : ""}
       ${media.map(m => m.kind === "video"
@@ -49,6 +49,7 @@ const PostView = (() => {
         : `<img class="pv-img pv-photo" loading="lazy" src="${esc(Media.publicUrl(m.path))}" alt="">`).join("")}
       <div class="pv-comments" id="pvComments"><div class="feed-loading"><span class="spin"></span></div></div>`;
     wrap.querySelectorAll(".pv-photo").forEach(img => img.addEventListener("click", () => { if (typeof Lightbox !== "undefined") Lightbox.open(img.src); }));
+    const au = wrap.querySelector(".fc-author"); if (au) au.addEventListener("click", () => { if (typeof Discover !== "undefined") Discover.openProfile(au.dataset.uid); });
   }
 
   async function loadComments(wrap, postId) {

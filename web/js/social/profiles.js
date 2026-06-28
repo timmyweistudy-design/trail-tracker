@@ -12,6 +12,7 @@ const Profiles = (() => {
           <div class="pf-id"><div class="pf-name">${esc(prof.display_name || prof.handle)}</div>
             <div class="pf-handle">@${esc(prof.handle)}</div></div>
         </div>
+        <div class="pf-counts" id="pfCounts"></div>
         ${prof.bio ? `<div class="pf-bio">${esc(prof.bio)}</div>` : ""}
         <div class="pf-actions">
           <button class="btn ghost" id="pfEdit">編輯檔案</button>
@@ -21,6 +22,7 @@ const Profiles = (() => {
       </div>`);
     document.getElementById("pfSignout").addEventListener("click", async () => { await Auth.signOut(); SocialUI.route(); });
     document.getElementById("pfEdit").addEventListener("click", () => renderEdit(render, prof));
+    Posts.followCounts(prof.id).then(c => { const el = document.getElementById("pfCounts"); if (el) el.innerHTML = `<b>${c.followers}</b> 粉絲　<b>${c.following}</b> 追蹤中`; });
     Posts.userPosts(prof.id).then(async posts => {
       const box = document.getElementById("pfPosts"); if (!box) return;
       box.className = "feed-list";
@@ -32,9 +34,15 @@ const Profiles = (() => {
   }
 
   function renderEdit(render, prof) {
+    let avatarFile = null;
+    const avHtml = prof.avatar_url
+      ? `<img class="pf-av" id="edAvImg" src="${esc(prof.avatar_url)}" alt="">`
+      : `<div class="pf-av pf-av-ph" id="edAvImg">${esc((prof.display_name || prof.handle || "?").slice(0, 1))}</div>`;
     render(`
       <div class="social-auth">
         <h3>編輯檔案</h3>
+        <div class="pf-av-edit">${avHtml}
+          <label class="comp-add">更換頭像<input type="file" id="edAvFile" accept="image/*" hidden></label></div>
         <label class="ob-l">顯示名稱</label>
         <input id="edName" class="auth-input" value="${esc(prof.display_name || "")}">
         <label class="ob-l">簡介</label>
@@ -43,6 +51,13 @@ const Profiles = (() => {
         <button class="btn ghost" id="edCancel">取消</button>
         <div class="auth-msg" id="edMsg"></div>
       </div>`);
+    document.getElementById("edAvFile").addEventListener("change", e => {
+      const f = e.target.files[0]; if (!f) return;
+      avatarFile = f;
+      const old = document.getElementById("edAvImg");
+      const img = document.createElement("img"); img.className = "pf-av"; img.id = "edAvImg"; img.src = URL.createObjectURL(f);
+      old.replaceWith(img);
+    });
     document.getElementById("edCancel").addEventListener("click", () => renderMe(render, prof));
     document.getElementById("edSave").addEventListener("click", async () => {
       const c = Supa.client(); const msg = document.getElementById("edMsg");
@@ -50,9 +65,14 @@ const Profiles = (() => {
       const bio = (document.getElementById("edBio").value || "").trim();
       if (bio.length > 300) { msg.textContent = "簡介請少於 300 字"; return; }
       msg.textContent = "儲存中…";
-      const { error } = await c.from("profiles").update({ display_name, bio }).eq("id", prof.id);
+      const patch = { display_name, bio };
+      if (avatarFile) {
+        try { patch.avatar_url = await Media.uploadAvatar(prof.id, avatarFile); }
+        catch (e) { msg.textContent = "頭像上傳失敗：" + (e && e.message || e); return; }
+      }
+      const { error } = await c.from("profiles").update(patch).eq("id", prof.id);
       if (error) { msg.textContent = "儲存失敗：" + error.message; return; }
-      renderMe(render, Object.assign({}, prof, { display_name, bio }));
+      renderMe(render, Object.assign({}, prof, patch));
     });
   }
 
