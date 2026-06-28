@@ -13,7 +13,7 @@ const Posts = (() => {
 
   // 從健行記錄 rec + 選好的檔案建立貼文。回傳 { id } 或 { error }。
   async function createFromRecord(rec, opts) {
-    const { caption, visibility, files } = opts || {};
+    const { caption, visibility, files, video } = opts || {};
     const c = Supa.client(); if (!c) return { error: "no-client" };
     const { data: u } = await c.auth.getUser(); if (!u || !u.user) return { error: "not-signed-in" };
     const uid = u.user.id, postId = uuid();
@@ -40,6 +40,12 @@ const Posts = (() => {
         const thumb_path = await Media.upload(uid, postId, thumb, base + "_thumb.jpg");
         media.push({ post_id: postId, kind: "photo", path, thumb_path, w, h, ord: i });
       } catch (e) { console.warn("media upload failed", e && e.message); }
+    }
+    if (video && video.file) {
+      try {
+        const v = await Media.uploadVideo(uid, postId, video.file, video.dur);
+        media.push({ post_id: postId, kind: "video", path: v.path, thumb_path: v.thumb_path, dur: v.dur, ord: media.length });
+      } catch (e) { console.warn("video upload failed", e && e.message); }
     }
     if (media.length) { const { error: me } = await c.from("post_media").insert(media); if (me) console.warn(me.message); }
     return { id: postId };

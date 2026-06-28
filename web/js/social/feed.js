@@ -14,7 +14,9 @@ const Feed = (() => {
       : `<div class="fc-av fc-av-ph">${esc((a.display_name || a.handle || "?").slice(0, 1))}</div>`;
     const media = (post.post_media || []).slice().sort((x, y) => x.ord - y.ord);
     const imgs = media.length
-      ? `<div class="fc-media">${media.map(m => `<img loading="lazy" src="${esc(Media.publicUrl(m.thumb_path || m.path))}" alt="">`).join("")}</div>` : "";
+      ? `<div class="fc-media">${media.map(m => m.kind === "video"
+          ? `<div class="fc-vid"><img loading="lazy" src="${esc(Media.publicUrl(m.thumb_path || ""))}" alt=""><span class="fc-play">▶</span></div>`
+          : `<img loading="lazy" src="${esc(Media.publicUrl(m.thumb_path || m.path))}" alt="">`).join("")}</div>` : "";
     const stats = `${(post.distance_km != null ? post.distance_km.toFixed(2) + "km" : "")}${post.ascent != null ? "　↑" + post.ascent + "m" : ""}`;
     return `<article class="feed-card" data-id="${post.id}">
       <div class="fc-top">${av}<div><div class="fc-name">${esc(a.display_name || a.handle || "山友")}</div>
@@ -29,16 +31,27 @@ const Feed = (() => {
     </article>`;
   }
 
+  let _mode = "friends", _posts = [], _into = null;
+
   async function render(renderInto, mode) {
+    _into = renderInto; _mode = mode; _posts = [];
     renderInto(`<div class="feed-loading"><span class="spin"></span>載入中…</div>`);
-    const posts = await Posts.feed(mode);
-    if (!posts.length) {
-      renderInto(`<div class="social-empty">${mode === "explore" ? "目前還沒有公開貼文。" : "追蹤山友後，這裡會出現他們的步道旅行。"}</div>`);
+    await loadMore(true);
+  }
+
+  async function loadMore(first) {
+    const before = (!first && _posts.length) ? _posts[_posts.length - 1].created_at : null;
+    const batch = await Posts.feed(_mode, before);
+    _posts = _posts.concat(batch);
+    if (!_posts.length) {
+      _into(`<div class="social-empty">${_mode === "explore" ? "目前還沒有公開貼文。" : "追蹤山友後，這裡會出現他們的步道旅行（你自己的也會在這）。"}</div>`);
       return;
     }
-    const liked = await Posts.likedSet(posts.map(p => p.id));
-    renderInto(`<div class="feed-list">${posts.map(p => card(p, liked.has(p.id))).join("")}</div>`);
+    const liked = await Posts.likedSet(_posts.map(p => p.id));
+    const more = batch.length >= 20 ? `<button class="btn ghost" id="feedMore">載入更多</button>` : "";
+    _into(`<div class="feed-list">${_posts.map(p => card(p, liked.has(p.id))).join("")}</div>${more}`);
     bind();
+    const mb = document.getElementById("feedMore"); if (mb) mb.addEventListener("click", () => loadMore(false));
   }
 
   function bind() {

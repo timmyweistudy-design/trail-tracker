@@ -1,17 +1,37 @@
-// 貼文詳情覆蓋層：完整貼文 + 留言串（可留言）+ 按讚。
+// 貼文詳情覆蓋層：完整貼文（照片/影片）+ 留言串（Realtime 即時）+ 按讚 + 作者刪文。
 const PostView = (() => {
   function esc(s) { return (s || "").replace(/[<>&"]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c])); }
 
   async function open(postId) {
     const post = await Posts.one(postId);
     if (!post) { if (typeof toast === "function") toast("貼文不存在或無權限"); return; }
+    const c = Supa.client();
+    const { data: u } = await c.auth.getUser();
+    const isMine = u && u.user && post.author_id === u.user.id;
+
     const wrap = document.createElement("div");
     wrap.className = "pv-mask";
-    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" id="pvX">✕</button><b>貼文</b><span></span></div>
+    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" id="pvX">✕</button><b>貼文</b>${isMine ? '<button class="comp-x" id="pvDel" title="刪除">🗑</button>' : "<span></span>"}</div>
       <div class="pv-body" id="pvBody"></div>
       <div class="pv-add"><input id="pvInput" class="auth-input" placeholder="留言…" maxlength="1000"><button class="btn primary" id="pvSend">送出</button></div></div>`;
     document.body.appendChild(wrap);
-    wrap.querySelector("#pvX").addEventListener("click", () => wrap.remove());
+
+    // Realtime：有人留言就即時刷新
+    const channel = c.channel("post-" + postId)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "comments", filter: `post_id=eq.${postId}` }, () => loadComments(wrap, postId))
+      .subscribe();
+    const close = () => { try { c.removeChannel(channel); } catch (e) { } wrap.remove(); };
+    wrap.querySelector("#pvX").addEventListener("click", close);
+
+    if (isMine) wrap.querySelector("#pvDel").addEventListener("click", async () => {
+      if (!confirm("確定刪除這篇貼文？")) return;
+      const r = await Posts.remove(postId);
+      if (r.error) { if (typeof toast === "function") toast("刪除失敗：" + r.error); return; }
+      close();
+      if (typeof toast === "function") toast("已刪除");
+      if (typeof SocialUI !== "undefined") SocialUI.route();
+    });
+
     renderBody(wrap, post);
     wrap.querySelector("#pvSend").addEventListener("click", () => send(wrap, postId));
     loadComments(wrap, postId);
@@ -24,8 +44,11 @@ const PostView = (() => {
       <div class="fc-name">${esc(a.display_name || a.handle || "山友")} <span class="fc-sub">@${esc(a.handle || "")}</span></div>
       <div class="fc-trail">⛰️ ${esc(post.trail_name || "自由路線")}　<span class="fc-stats">${post.distance_km != null ? post.distance_km.toFixed(2) + "km" : ""}${post.ascent != null ? "　↑" + post.ascent + "m" : ""}</span></div>
       ${post.caption ? `<div class="fc-cap">${esc(post.caption)}</div>` : ""}
-      ${media.map(m => `<img class="pv-img" loading="lazy" src="${esc(Media.publicUrl(m.path))}" alt="">`).join("")}
+      ${media.map(m => m.kind === "video"
+        ? `<video class="pv-img" controls preload="metadata" poster="${esc(Media.publicUrl(m.thumb_path || ""))}" src="${esc(Media.publicUrl(m.path))}"></video>`
+        : `<img class="pv-img pv-photo" loading="lazy" src="${esc(Media.publicUrl(m.path))}" alt="">`).join("")}
       <div class="pv-comments" id="pvComments"><div class="feed-loading"><span class="spin"></span></div></div>`;
+    wrap.querySelectorAll(".pv-photo").forEach(img => img.addEventListener("click", () => { if (typeof Lightbox !== "undefined") Lightbox.open(img.src); }));
   }
 
   async function loadComments(wrap, postId) {

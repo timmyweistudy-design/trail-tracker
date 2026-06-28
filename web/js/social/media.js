@@ -59,6 +59,36 @@ const Media = (() => {
     const c = Supa.client(); if (!c) return "";
     return c.storage.from("media").getPublicUrl(path).data.publicUrl;
   }
-  return { targetSize, compressImage, videoPoster, upload, publicUrl };
+
+  // 純函式：位元組是否在 MB 上限內（可測）
+  function validateSize(bytes, maxMB) { return bytes <= maxMB * 1024 * 1024; }
+
+  // 影片驗證：大小 + 長度。回傳 { ok, msg?, dur? }
+  function validateVideo(file, maxSec = 60, maxMB = 50) {
+    return new Promise(res => {
+      if (!validateSize(file.size, maxMB)) return res({ ok: false, msg: `影片需小於 ${maxMB}MB` });
+      const v = document.createElement("video");
+      v.preload = "metadata";
+      v.onloadedmetadata = () => { const d = v.duration; URL.revokeObjectURL(v.src); res(d > maxSec ? { ok: false, msg: `影片需短於 ${maxSec} 秒` } : { ok: true, dur: d }); };
+      v.onerror = () => { URL.revokeObjectURL(v.src); res({ ok: false, msg: "無法讀取影片" }); };
+      v.src = URL.createObjectURL(file);
+    });
+  }
+
+  // 影片上傳：原檔 + 封面。回傳 { path, thumb_path, dur }
+  async function uploadVideo(userId, postId, file, dur) {
+    const c = Supa.client();
+    const base = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now());
+    const ext = (file.name.split(".").pop() || "mp4").toLowerCase();
+    const path = `${userId}/${postId}/${base}.${ext}`;
+    const { error } = await c.storage.from("media").upload(path, file, { contentType: file.type || "video/mp4", upsert: true });
+    if (error) throw error;
+    let thumb_path = null;
+    const poster = await videoPoster(file);
+    if (poster) thumb_path = await upload(userId, postId, poster, base + "_poster.jpg");
+    return { path, thumb_path, dur: dur || null };
+  }
+
+  return { targetSize, compressImage, videoPoster, upload, publicUrl, validateSize, validateVideo, uploadVideo };
 })();
 if (typeof module !== "undefined") module.exports = Media;
