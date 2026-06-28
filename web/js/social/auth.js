@@ -19,35 +19,76 @@ const Auth = (() => {
     await c.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + location.pathname } });
   }
 
+  // 寄送 Email 驗證碼（OTP）。全程留在 App，避免魔法連結在別的瀏覽器開、裝在主畫面的 App 登不進去。
   async function signInEmail(email) {
     const c = Supa.client(); if (!c) return { error: "no-client" };
-    const { error } = await c.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } });
+    const { error } = await c.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
+    return { error: error ? error.message : null };
+  }
+
+  // 用 6 位數驗證碼登入（在同一個 App context 完成 session）
+  async function verifyEmailCode(email, token) {
+    const c = Supa.client(); if (!c) return { error: "no-client" };
+    const { error } = await c.auth.verifyOtp({ email, token, type: "email" });
     return { error: error ? error.message : null };
   }
 
   async function signOut() { const c = Supa.client(); if (c) await c.auth.signOut(); }
 
+  function esc(s) { return (s || "").replace(/[<>&"]/g, ch => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[ch])); }
+
   function renderLogin(render) {
+    const google = window.SOCIAL_GOOGLE
+      ? `<button class="btn primary" id="authGoogle">使用 Google 繼續</button><div class="auth-or">或</div>` : "";
     render(`
       <div class="social-auth">
         <div class="auth-logo">⛰️</div>
         <h3>加入山友社群</h3>
         <p class="auth-sub">分享你的步道旅行，看看好友走過哪裡。</p>
-        <button class="btn primary" id="authGoogle">使用 Google 繼續</button>
-        <div class="auth-or">或</div>
-        <input type="email" id="authEmail" class="auth-input" placeholder="輸入 Email 收登入連結" inputmode="email">
-        <button class="btn ghost" id="authEmailBtn">寄送登入連結</button>
+        ${google}
+        <input type="email" id="authEmail" class="auth-input" placeholder="輸入 Email" inputmode="email" autocapitalize="off">
+        <button class="btn ghost" id="authEmailBtn">寄送驗證碼</button>
         <div class="auth-msg" id="authMsg"></div>
       </div>`);
-    document.getElementById("authGoogle").addEventListener("click", signInGoogle);
+    if (window.SOCIAL_GOOGLE) document.getElementById("authGoogle").addEventListener("click", signInGoogle);
     document.getElementById("authEmailBtn").addEventListener("click", async () => {
       const email = (document.getElementById("authEmail").value || "").trim();
       const msg = document.getElementById("authMsg");
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg.textContent = "請輸入有效的 Email"; return; }
       msg.textContent = "寄送中…";
       const { error } = await signInEmail(email);
-      msg.textContent = error ? ("寄送失敗：" + error) : "已寄出！請到信箱點連結登入。";
+      if (error) { msg.textContent = "寄送失敗：" + error; return; }
+      renderCode(render, email);
     });
+  }
+
+  // 第二步：輸入收到的 6 位數驗證碼
+  function renderCode(render, email) {
+    render(`
+      <div class="social-auth">
+        <h3>輸入驗證碼</h3>
+        <p class="auth-sub">驗證碼已寄到 ${esc(email)}。<b>直接在這個 App 輸入</b>就能登入這裡，不必切到瀏覽器。</p>
+        <input id="authCode" class="auth-input" inputmode="numeric" autocomplete="one-time-code" placeholder="6 位數驗證碼" maxlength="6">
+        <button class="btn primary" id="authVerify">登入</button>
+        <button class="btn ghost" id="authResend">重新寄送</button>
+        <button class="btn ghost" id="authBack">換 Email</button>
+        <div class="auth-msg" id="authMsg"></div>
+      </div>`);
+    document.getElementById("authVerify").addEventListener("click", async () => {
+      const token = (document.getElementById("authCode").value || "").trim();
+      const msg = document.getElementById("authMsg");
+      if (!/^\d{6}$/.test(token)) { msg.textContent = "請輸入 6 位數驗證碼"; return; }
+      msg.textContent = "驗證中…";
+      const { error } = await verifyEmailCode(email, token);
+      if (error) { msg.textContent = "驗證失敗：" + error; return; }
+      msg.textContent = "登入成功！";   // onAuthStateChange 會觸發 route() 進入註冊/個人頁
+    });
+    document.getElementById("authResend").addEventListener("click", async () => {
+      const msg = document.getElementById("authMsg"); msg.textContent = "重新寄送中…";
+      const { error } = await signInEmail(email);
+      msg.textContent = error ? ("失敗：" + error) : "已重新寄出。";
+    });
+    document.getElementById("authBack").addEventListener("click", () => renderLogin(render));
   }
 
   async function myProfile() { return await _fetchMyProfile(); }
@@ -125,5 +166,5 @@ const Auth = (() => {
     });
   }
 
-  return { init, session, signInGoogle, signInEmail, signOut, renderLogin, myProfile, _fetchMyProfile, handleTaken, createProfile, renderOnboarding };
+  return { init, session, signInGoogle, signInEmail, verifyEmailCode, signOut, renderLogin, myProfile, _fetchMyProfile, handleTaken, createProfile, renderOnboarding };
 })();
