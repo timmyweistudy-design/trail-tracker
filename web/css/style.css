@@ -946,3 +946,11 @@ html[data-theme="dark"] img.trail-photo { background: var(--surface-2); }
 .pf-counts b { color: var(--ink); }
 .pf-av-edit { display: flex; align-items: center; gap: 14px; margin: 6px 0 4px; }
 .fc-author { cursor: pointer; }
+
+/* 通知 */
+.nbadge { display: none; min-width: 16px; height: 16px; line-height: 16px; padding: 0 4px; margin-left: 4px; font-size: 10px; font-weight: 700; color: #fff; background: var(--danger); border-radius: 999px; vertical-align: middle; }
+.notif-list { display: flex; flex-direction: column; }
+.notif { display: flex; align-items: center; gap: 11px; padding: 12px 8px; border-bottom: 1px solid var(--line-soft); cursor: pointer; }
+.notif.unread { background: var(--surface-2); }
+.notif-ic { font-size: 18px; }
+.notif-body { font-size: 14px; line-height: 1.4; }

@@ -14,7 +14,7 @@ const sandbox = {
 };
 sandbox.global = sandbox; sandbox.self = sandbox.window;
 const ctx = vm.createContext(sandbox);
-for (const f of ["js/social/supa.js", "js/social/handle.js", "js/social/media.js", "js/social/posts.js", "js/social/composer.js", "js/social/feed.js", "js/social/postview.js", "js/social/discover.js", "js/social/lightbox.js", "js/social/auth.js", "js/social/profiles.js", "js/social/social-ui.js"]) {
+for (const f of ["js/social/supa.js", "js/social/handle.js", "js/social/media.js", "js/social/posts.js", "js/social/composer.js", "js/social/feed.js", "js/social/postview.js", "js/social/discover.js", "js/social/notifications.js", "js/social/lightbox.js", "js/social/auth.js", "js/social/profiles.js", "js/social/social-ui.js"]) {
   try { vm.runInContext(fs.readFileSync(path.join(W, f), "utf8"), ctx, { filename: f }); console.log("loaded", f); }
   catch (e) { console.error("THREW in", f, e.message); process.exitCode = 1; }
 }
