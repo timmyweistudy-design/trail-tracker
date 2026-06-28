@@ -1,4 +1,4 @@
-// ===== Trail Tracker 前端主程式 =====
+// ===== Gather the Trail 前端主程式 =====
 const $ = s => document.querySelector(s);
 const TRAILS = window.TRAILS || [];
 const SRC_LABEL = { forestry: "林業署", osm: "OSM社群", osm_path: "OSM社群" };
@@ -983,7 +983,7 @@ async function openDetail(id) {
   const shareT = $("#btnShareTrail");
   if (shareT) shareT.addEventListener("click", () => {
     const url = `${location.origin}${location.pathname}?trail=${encodeURIComponent(t.id)}`;
-    const text = `${t.name}（${t.difficulty_label}${t.length_km ? " · " + t.length_km + "km" : ""}）— 步道誌`;
+    const text = `${t.name}（${t.difficulty_label}${t.length_km ? " · " + t.length_km + "km" : ""}）— 循徑拾光`;
     if (navigator.share) navigator.share({ title: t.name, text, url }).catch(() => {});
     else if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => toast("步道連結已複製"));
     else window.open(url, "_blank");
@@ -1429,7 +1429,7 @@ function openTrackReview(rec) {
   $("#trackCard").addEventListener("click", () => shareHikeCard(rec));
   $("#trackGpx").addEventListener("click", () => { GPX.exportRecord(rec); toast("已匯出 GPX"); });
   $("#trackShare").addEventListener("click", () => {
-    const text = `我走了 ${rec.trailName || "自由路線"}：${km.toFixed(2)} km、爬升 ↑${rec.ascent || 0}m、${rec.kcal} 大卡、${fmtTime(rec.elapsedMs)} ⛰️ — 步道誌`;
+    const text = `我走了 ${rec.trailName || "自由路線"}：${km.toFixed(2)} km、爬升 ↑${rec.ascent || 0}m、${rec.kcal} 大卡、${fmtTime(rec.elapsedMs)} ⛰️ — 循徑拾光`;
     if (navigator.share) navigator.share({ title: "我的健行紀錄", text }).catch(() => {});
     else if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast("已複製,可貼給朋友"));
     else toast(text);
@@ -1449,7 +1449,7 @@ async function shareHikeCard(rec) {
     x.fillStyle = g; x.fillRect(0, 0, S, S);
     // 品牌
     x.fillStyle = "rgba(220,232,210,.7)"; x.font = "600 30px serif";
-    x.fillText("步道誌 · TRAIL TRACKER", 70, 96);
+    x.fillText("循徑拾光 · GATHER THE TRAIL", 70, 96);
     // 步道名
     x.fillStyle = "#fbf8ee"; x.font = "700 64px 'Noto Serif TC', serif";
     const name = (rec.trailName || "自由路線").slice(0, 12);
@@ -1486,11 +1486,11 @@ async function shareHikeCard(rec) {
       x.fillStyle = "rgba(231,237,222,.55)"; x.font = "400 26px serif"; x.fillText(l, cx, 1060);
     });
     const blob = await new Promise(r => c.toBlob(r, "image/png"));
-    const file = new File([blob], "步道誌.png", { type: "image/png" });
+    const file = new File([blob], "循徑拾光.png", { type: "image/png" });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({ files: [file], title: "我的健行紀錄" });
     } else {
-      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "步道誌健行卡.png"; a.click();
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "循徑拾光健行卡.png"; a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 5000);
       toast("圖卡已下載");
     }
@@ -1753,7 +1753,7 @@ async function refreshOfflineStatus() {
 }
 $("#btnDiag").addEventListener("click", () => {
   const errs = (window.ttErrors ? window.ttErrors() : []);
-  const info = `步道誌診斷\n版本SW:${"v34"}\n螢幕:${innerWidth}x${innerHeight}\n步道資料:${TRAILS.length}條\n近期錯誤(${errs.length}):\n` +
+  const info = `循徑拾光診斷\n版本SW:${"v34"}\n螢幕:${innerWidth}x${innerHeight}\n步道資料:${TRAILS.length}條\n近期錯誤(${errs.length}):\n` +
     (errs.slice(0, 8).map(e => `· ${e.t.slice(5, 16)} ${e.m}`).join("\n") || "（無）");
   if (navigator.clipboard) navigator.clipboard.writeText(info).then(() => toast(errs.length ? `已複製診斷(${errs.length}筆錯誤)，可貼給開發者` : "已複製診斷，目前無錯誤"));
   else alert(info);
@@ -1763,7 +1763,7 @@ $("#btnExport").addEventListener("click", () => {
   const blob = new Blob([JSON.stringify(Store.exportAll(), null, 2)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `步道誌備份_${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = `循徑拾光備份_${new Date().toISOString().slice(0, 10)}.json`;
   a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
   toast("已匯出備份檔");
 });
@@ -2342,7 +2342,7 @@ if (new URLSearchParams(location.search).get("debug") === "1") setTimeout(toggle
   const KEY = "tt_onboarded_v2";   // 改版 → 現有用戶也會再看一次新版導覽
   if (localStorage.getItem(KEY) || new URLSearchParams(location.search).get("trail")) return;
   const slides = [
-    { e: "⛰️", h: "歡迎來到步道誌", p: "全台 2100+ 條步道一手掌握。搜尋、分級、記錄、養成，一起走進山林。" },
+    { e: "⛰️", h: "歡迎來到循徑拾光", p: "全台 2100+ 條步道一手掌握。搜尋、分級、記錄、養成，一起走進山林。" },
     { e: "🧭", h: "探索與分級", p: "搜尋步道看官方難度分級、真實路線與海拔剖面；還有天氣、周邊人文景點與美食。用『精選主題輯』快速找古道、瀑布、親子路線。" },
     { e: "📍", h: "記錄每一步", p: "邊走邊記里程、步數、卡路里、爬升與即時海拔曲線；自動暫停、中斷可復原，離線也能用。" },
     { e: "🐉", h: "養成山林夥伴", p: "走路就能養寵物！從一顆蛋開始，靠里程進化：🥚→🦊→🐅→🐉。撿果實、每天餵食、提升親密度，走越多牠陪你長越快。" },

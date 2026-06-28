@@ -5,7 +5,7 @@ const GPX = (() => {
       `   <trkpt lat="${p.lat}" lon="${p.lon}">${p.t ? `<time>${new Date(p.t).toISOString()}</time>` : ""}</trkpt>`).join("\n");
     const name = (rec.trailName || "自由路線").replace(/[<>&]/g, "");
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.1" creator="步道誌 Trail Tracker" xmlns="http://www.topografix.com/GPX/1/1">
+<gpx version="1.1" creator="循徑拾光 Gather the Trail" xmlns="http://www.topografix.com/GPX/1/1">
  <metadata><name>${name}</name><time>${rec.date || new Date().toISOString()}</time></metadata>
  <trk><name>${name}</name><trkseg>
 ${pts}
@@ -29,14 +29,14 @@ ${pts}
       return ` <trk><name>${name}（${(rec.date || "").slice(0, 10)}）</name><trkseg>\n${pts}\n </trkseg></trk>`;
     }).join("\n");
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.1" creator="步道誌 Trail Tracker" xmlns="http://www.topografix.com/GPX/1/1">
- <metadata><name>步道誌 全部行程</name><time>${new Date().toISOString()}</time></metadata>
+<gpx version="1.1" creator="循徑拾光 Gather the Trail" xmlns="http://www.topografix.com/GPX/1/1">
+ <metadata><name>循徑拾光 全部行程</name><time>${new Date().toISOString()}</time></metadata>
 ${trks}
 </gpx>`;
     const blob = new Blob([xml], { type: "application/gpx+xml" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `步道誌_全部行程_${new Date().toISOString().slice(0, 10)}.gpx`;
+    a.download = `循徑拾光_全部行程_${new Date().toISOString().slice(0, 10)}.gpx`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     return true;

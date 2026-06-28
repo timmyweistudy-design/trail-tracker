@@ -1,6 +1,6 @@
 {
-  "name": "步道誌 Trail Tracker",
-  "short_name": "步道誌",
+  "name": "循徑拾光 Gather the Trail",
+  "short_name": "循徑拾光",
   "description": "搜尋登山與親子步道、分級，並記錄路徑、里程、步數與卡路里",
   "start_url": "./index.html",
   "display": "standalone",
