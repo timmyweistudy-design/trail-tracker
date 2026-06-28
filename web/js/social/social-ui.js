@@ -11,13 +11,20 @@ const SocialUI = (() => {
     route();
   }
 
+  function withTimeout(p, ms) { return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error("連線逾時")), ms))]); }
+
   async function route() {
-    if (typeof Auth === "undefined") { render(`<div class="social-empty">載入中…</div>`); return; }
-    const sess = await Auth.session();
-    if (!sess) { Auth.renderLogin(render); return; }
-    myProf = await Auth.myProfile();
-    if (!myProf) { Auth.renderOnboarding(render); return; }
-    shell();
+    if (typeof Auth === "undefined") { render(`<div class="social-empty">社群模組載入失敗，請下拉重新整理。</div>`); return; }
+    try {
+      const sess = await withTimeout(Auth.session(), 10000);
+      if (!sess) { Auth.renderLogin(render); return; }
+      myProf = await withTimeout(Auth.myProfile(), 10000);
+      if (!myProf) { Auth.renderOnboarding(render); return; }
+      shell();
+    } catch (e) {
+      render(`<div class="social-empty">載入失敗：${(e && e.message) || e}<br><br><button class="btn ghost" id="socialRetry">重試</button></div>`);
+      const r = document.getElementById("socialRetry"); if (r) r.addEventListener("click", route);
+    }
   }
 
   function shell() {

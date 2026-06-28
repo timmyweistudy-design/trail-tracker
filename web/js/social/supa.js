@@ -6,7 +6,11 @@ const Supa = (() => {
     if (client) return client;
     if (!ready()) return null;
     client = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+      auth: {
+        persistSession: true, autoRefreshToken: true, detectSessionInUrl: true,
+        // 繞過 navigator.locks：iOS 主畫面 PWA / webview 裡它常卡死，導致 getSession() 不回來
+        lock: (_name, _timeout, fn) => fn(),
+      },
     });
     return client;
   }
