@@ -954,3 +954,6 @@ html[data-theme="dark"] img.trail-photo { background: var(--surface-2); }
 .notif.unread { background: var(--surface-2); }
 .notif-ic { font-size: 18px; }
 .notif-body { font-size: 14px; line-height: 1.4; }
+
+.pv-actions { margin: 8px 0; }
+.pv-actions .fc-like { font-size: 16px; }

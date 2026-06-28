@@ -1,4 +1,4 @@
-// 貼文詳情覆蓋層：完整貼文（照片/影片）+ 留言串（Realtime 即時）+ 按讚 + 作者刪文。
+// 貼文詳情覆蓋層：完整貼文（照片/影片）+ 按讚 + 留言串（Realtime 即時）+ 作者刪文。
 const PostView = (() => {
   function esc(s) { return (s || "").replace(/[<>&"]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c])); }
 
@@ -8,6 +8,8 @@ const PostView = (() => {
     const c = Supa.client();
     const { data: u } = await c.auth.getUser();
     const isMine = u && u.user && post.author_id === u.user.id;
+    const likeCount = (post.likes && post.likes[0] && post.likes[0].count) || 0;
+    const likedByMe = (await Posts.likedSet([postId])).has(postId);
 
     const wrap = document.createElement("div");
     wrap.className = "pv-mask";
@@ -16,9 +18,10 @@ const PostView = (() => {
       <div class="pv-add"><input id="pvInput" class="auth-input" placeholder="留言…" maxlength="1000"><button class="btn primary" id="pvSend">送出</button></div></div>`;
     document.body.appendChild(wrap);
 
-    // Realtime：有人留言就即時刷新
+    // Realtime：留言或按讚有變動就即時刷新
     const channel = c.channel("post-" + postId)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "comments", filter: `post_id=eq.${postId}` }, () => loadComments(wrap, postId))
+      .on("postgres_changes", { event: "*", schema: "public", table: "likes", filter: `post_id=eq.${postId}` }, () => refreshLikes(wrap, postId))
       .subscribe();
     const close = () => { try { c.removeChannel(channel); } catch (e) { } wrap.remove(); };
     wrap.querySelector("#pvX").addEventListener("click", close);
@@ -32,12 +35,13 @@ const PostView = (() => {
       if (typeof SocialUI !== "undefined") SocialUI.route();
     });
 
-    renderBody(wrap, post);
+    renderBody(wrap, post, likedByMe, likeCount);
+    bindLike(wrap, postId);
     wrap.querySelector("#pvSend").addEventListener("click", () => send(wrap, postId));
     loadComments(wrap, postId);
   }
 
-  function renderBody(wrap, post) {
+  function renderBody(wrap, post, likedByMe, likeCount) {
     const a = post.author || {};
     const media = (post.post_media || []).slice().sort((x, y) => x.ord - y.ord);
     wrap.querySelector("#pvBody").innerHTML = `
@@ -47,9 +51,31 @@ const PostView = (() => {
       ${media.map(m => m.kind === "video"
         ? `<video class="pv-img" controls preload="metadata" poster="${esc(Media.publicUrl(m.thumb_path || ""))}" src="${esc(Media.publicUrl(m.path))}"></video>`
         : `<img class="pv-img pv-photo" loading="lazy" src="${esc(Media.publicUrl(m.path))}" alt="">`).join("")}
+      <div class="pv-actions"><button class="fc-like ${likedByMe ? "on" : ""}" id="pvLike">${likedByMe ? "❤️" : "🤍"} <span>${likeCount}</span></button></div>
       <div class="pv-comments" id="pvComments"><div class="feed-loading"><span class="spin"></span></div></div>`;
     wrap.querySelectorAll(".pv-photo").forEach(img => img.addEventListener("click", () => { if (typeof Lightbox !== "undefined") Lightbox.open(img.src); }));
     const au = wrap.querySelector(".fc-author"); if (au) au.addEventListener("click", () => { if (typeof Discover !== "undefined") Discover.openProfile(au.dataset.uid); });
+  }
+
+  function bindLike(wrap, postId) {
+    const b = wrap.querySelector("#pvLike"); if (!b) return;
+    b.addEventListener("click", async () => {
+      const on = !b.classList.contains("on");
+      b.classList.toggle("on", on);
+      const span = b.querySelector("span"); span.textContent = Math.max(0, +span.textContent + (on ? 1 : -1));
+      b.firstChild.textContent = on ? "❤️ " : "🤍 ";
+      await Posts.toggleLike(postId, on);
+    });
+  }
+
+  // Realtime 按讚變動 → 重抓權威數字
+  async function refreshLikes(wrap, postId) {
+    const b = wrap.querySelector("#pvLike"); if (!b) return;
+    const count = await Posts.likeCount(postId);
+    const liked = (await Posts.likedSet([postId])).has(postId);
+    b.classList.toggle("on", liked);
+    b.querySelector("span").textContent = count;
+    b.firstChild.textContent = liked ? "❤️ " : "🤍 ";
   }
 
   async function loadComments(wrap, postId) {

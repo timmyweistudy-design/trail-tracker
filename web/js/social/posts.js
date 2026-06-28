@@ -117,6 +117,12 @@ const Posts = (() => {
     return { error: error && error.message };
   }
 
+  async function likeCount(postId) {
+    const c = Supa.client(); if (!c) return 0;
+    const { count } = await c.from("likes").select("*", { count: "exact", head: true }).eq("post_id", postId);
+    return count || 0;
+  }
+
   // 追蹤數（我追蹤幾人）與粉絲數（幾人追蹤我）
   async function followCounts(uid) {
     const c = Supa.client(); if (!c) return { followers: 0, following: 0 };
@@ -125,5 +131,5 @@ const Posts = (() => {
     return { followers: fr.count || 0, following: fg.count || 0 };
   }
 
-  return { createFromRecord, feed, userPosts, one, likedSet, toggleLike, followingIds, remove, followCounts };
+  return { createFromRecord, feed, userPosts, one, likedSet, toggleLike, likeCount, followingIds, remove, followCounts };
 })();
