@@ -15,6 +15,7 @@ const Recorder = (() => {
   let track = [];              // [{lat, lon, t}] 僅存通過過濾的軌跡點
   let altSeries = [];          // [{x:距離m, e:海拔m}] 即時海拔曲線用
   let simMode = false;         // 本次記錄是否為模擬（模擬不計入寵物/成就）
+  let actMode = "walk";        // 活動類型：walk/run/bike/car/transit（都累積里程）
   let distance = 0;            // 公尺（水平實際移動）
   let dist3D = 0;              // 公尺（含坡度 3D 距離）
   let ascent = 0;              // 累積爬升（公尺，已去抖動）
@@ -36,10 +37,17 @@ const Recorder = (() => {
   // 步距(公尺) ≈ 身高 * 0.415；卡路里採 MET 法
   function strideMeters() { return (Store.height() * 0.415) / 100; }
 
-  function steps() { return Math.round(distance / strideMeters()); }
+  function setMode(m) { actMode = m || "walk"; }
+  const isFoot = () => actMode === "walk" || actMode === "run";
+  // 交通工具速度快、GPS 點間距大 → 放寬跳點上限，里程才不會被當雜訊丟掉
+  function jumpLimit() { return isFoot() ? MAX_JUMP : 3000; }
+  function steps() { return isFoot() ? Math.round(distance / strideMeters()) : 0; }
 
-  // 平路步行 MET（依速度）
+  // 平路 MET（依活動類型與速度）
   function metForSpeed(kmh) {
+    if (actMode === "run") return kmh < 8 ? 8.3 : kmh < 11 ? 10 : kmh < 13 ? 11.5 : 13;
+    if (actMode === "bike") return kmh < 16 ? 4 : kmh < 20 ? 6.8 : kmh < 25 ? 8 : 10;
+    if (actMode === "car" || actMode === "transit") return 1.3;   // 久坐，幾乎不耗能
     return kmh < 3.2 ? 2.8 : kmh < 4.8 ? 3.5 : kmh < 6.4 ? 5.0 : kmh < 8 ? 7.0 : 8.3;
   }
 
@@ -71,8 +79,9 @@ const Recorder = (() => {
     const kmh = (distance / 1000) / hrs;
     const w = Store.weight() + (Store.packWeight ? Store.packWeight() : 0);   // 體重 + 背包負重
     const flat = metForSpeed(kmh) * w * hrs;
-    const climb = ascent * w * KCAL_PER_KG_ASCENT;
-    const down = descent * w * KCAL_PER_KG_DESCENT;
+    const noClimb = actMode === "car" || actMode === "transit";   // 搭車不計爬升耗能
+    const climb = noClimb ? 0 : ascent * w * KCAL_PER_KG_ASCENT;
+    const down = noClimb ? 0 : descent * w * KCAL_PER_KG_DESCENT;
     return Math.round(flat + climb + down);
   }
 
@@ -109,7 +118,7 @@ const Recorder = (() => {
       lastFix.t = now;
       cb(snapshot()); return;
     }
-    if (clean || d <= MAX_JUMP) {                    // 視為真實移動
+    if (clean || d <= jumpLimit()) {                 // 視為真實移動（交通工具放寬上限）
       if (autoPaused) { lastResume = Date.now(); autoPaused = false; }   // 移動→自動恢復計時
       lastMoveAt = Date.now();
       distance += d;
@@ -243,7 +252,7 @@ const Recorder = (() => {
       date: new Date().toISOString(),
       distanceKm: snap.distanceKm, distance3DKm: snap.distance3DKm, steps: snap.steps, kcal: snap.kcal,
       elapsedMs: snap.elapsedMs, ascent: Math.round(ascent), descent: Math.round(descent), track: track.slice(),
-      sim: simMode || undefined,
+      sim: simMode || undefined, mode: actMode !== "walk" ? actMode : undefined,
     } : null;
     state = "idle"; track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; lastFixAlt = null;
     smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; simPos = null;
@@ -279,5 +288,5 @@ const Recorder = (() => {
     return snapshot();
   }
 
-  return { start, pause, resume, stop, snapshot, onUpdate, getState: () => state, hasActive, restore, setLowPower, setSimRoute };
+  return { start, pause, resume, stop, snapshot, onUpdate, getState: () => state, hasActive, restore, setLowPower, setSimRoute, setMode };
 })();

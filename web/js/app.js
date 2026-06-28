@@ -636,12 +636,20 @@ function addFullscreen(map) {
     L.DomEvent.disableClickPropagation(d);
     d.addEventListener("click", () => {
       const el = map.getContainer();
-      const fs = el.classList.toggle("map-fs");
-      d.innerHTML = fs ? "✕" : "⛶";
-      document.body.classList.toggle("map-fs-open", fs);
-      // 等新版面套用後再重算尺寸，避免下方留一段空白
+      const fs = !el.classList.contains("map-fs");
+      if (fs) {   // 放大：把地圖搬到 body，脫離捲動/transform 容器 → fixed 才會正確貼齊整個畫面
+        el._fsHolder = document.createComment("mfs");
+        el.parentNode.insertBefore(el._fsHolder, el);
+        document.body.appendChild(el);
+        el.classList.add("map-fs"); document.body.classList.add("map-fs-open");
+        d.innerHTML = "✕";
+      } else {    // 關閉：搬回原位
+        el.classList.remove("map-fs"); document.body.classList.remove("map-fs-open");
+        if (el._fsHolder) { el._fsHolder.parentNode.insertBefore(el, el._fsHolder); el._fsHolder.remove(); el._fsHolder = null; }
+        d.innerHTML = "⛶";
+      }
       const fix = () => map.invalidateSize({ animate: false });
-      requestAnimationFrame(() => { requestAnimationFrame(fix); });
+      requestAnimationFrame(() => requestAnimationFrame(fix));
       setTimeout(fix, 150); setTimeout(fix, 400);
     });
     return d;
@@ -1572,7 +1580,7 @@ Recorder.onUpdate(s => {
   $("#stSteps").textContent = s.steps.toLocaleString();
   $("#stKcal").textContent = s.kcal;
   $("#stTime").textContent = fmtTime(s.elapsedMs);
-  $("#stPace").textContent = s.pace;
+  $("#stPace").textContent = s.speedKmh ? s.speedKmh.toFixed(1) : "--";
   if ($("#stAscent")) $("#stAscent").textContent = `↑${Math.round(s.ascent || 0)}`;
   if ($("#stDescent")) $("#stDescent").textContent = `↓${Math.round(s.descent || 0)}`;
   drawRecSpark(s.altSeries);
@@ -2144,7 +2152,7 @@ function renderHistory() {
   wrap.innerHTML = recs.map(r => `
     <div class="hist-card" data-id="${r.id}">
       <div class="top">
-        <b>${r.trailName || "自由路線"}${r.sim ? ` <span class="sim-tag">模擬</span>` : ""}</b>
+        <b>${r.trailName || "自由路線"}${r.mode ? ` <span class="sim-tag">${MODE_LABEL[r.mode] || r.mode}</span>` : ""}${r.sim ? ` <span class="sim-tag">模擬</span>` : ""}</b>
         <span class="date">${new Date(r.date).toLocaleString("zh-TW", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
       </div>
       <div class="row">
@@ -2240,6 +2248,20 @@ buildFsRegion();
 buildCollections();
 buildPresets();
 initTheme();
+// 活動類型（步行/跑步/騎車/開車/大眾運輸，皆累積里程）
+const MODE_LABEL = { run: "🏃 跑步", bike: "🚴 騎車", car: "🚗 開車", transit: "🚌 大眾運輸" };
+(function () {
+  let m = localStorage.getItem("tt_act_mode") || "walk";
+  if (Recorder.setMode) Recorder.setMode(m);
+  document.querySelectorAll("#actModes [data-mode]").forEach(b => {
+    b.classList.toggle("active", b.dataset.mode === m);
+    b.addEventListener("click", () => {
+      m = b.dataset.mode; localStorage.setItem("tt_act_mode", m);
+      if (Recorder.setMode) Recorder.setMode(m);
+      document.querySelectorAll("#actModes [data-mode]").forEach(x => x.classList.toggle("active", x === b));
+    });
+  });
+})();
 if (localStorage.getItem("tt_pet_stage") === null) localStorage.setItem("tt_pet_stage", petStageIndex(totalKm()));   // 既有里程不誤觸進化提示
 render();
 loadProfile();
