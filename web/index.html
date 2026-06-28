@@ -205,6 +205,11 @@
     </div>
   </section>
 
+  <section id="view-social" class="view">
+    <div class="social-head"><h2 class="view-title">社群</h2></div>
+    <div id="socialBody"><div class="social-loading"><span class="spin"></span>載入中…</div></div>
+  </section>
+
   <!-- 詳情面板 -->
   <div class="sheet-mask" id="sheetMask"></div>
   <div class="sheet" id="detailSheet">
@@ -320,6 +325,9 @@
     <button class="tab" data-view="me">
       <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>我的
     </button>
+    <button class="tab" data-view="social">
+      <svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><circle cx="17" cy="9" r="2.6"/><path d="M3.5 20c0-3.3 2.6-5.2 5.5-5.2s5.5 1.9 5.5 5.2"/><path d="M15.5 14.4c2.6.2 5 1.9 5 5.6"/></svg>社群
+    </button>
   </nav>
 
   <div class="toast" id="toast"></div>
@@ -343,6 +351,12 @@
 <script src="js/offline.js"></script>
 <script src="js/gpx.js"></script>
 <script src="js/recorder.js"></script>
+<script src="vendor/supabase/supabase.js"></script>
+<script src="js/social/supa.js"></script>
+<script src="js/social/handle.js"></script>
+<script src="js/social/auth.js"></script>
+<script src="js/social/profiles.js"></script>
+<script src="js/social/social-ui.js"></script>
 <script src="js/app.js"></script>
 <script>
   // Service Worker：偵測新版本 → 顯示更新橫幅；點擊後讓新版接手並重載

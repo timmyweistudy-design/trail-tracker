@@ -268,6 +268,7 @@ document.querySelectorAll(".tab").forEach(btn => {
       renderRecIdle();
     }
     if (view === "me") { renderHistory(); refreshOfflineStatus(); }
+    if (view === "social" && typeof SocialUI !== "undefined") SocialUI.onShow();
   });
 });
 
