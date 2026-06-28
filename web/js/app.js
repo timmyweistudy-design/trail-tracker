@@ -1691,6 +1691,18 @@ $("#lowPowerToggle").addEventListener("change", e => {
   Recorder.setLowPower(e.target.checked);
   toast(e.target.checked ? "已開省電模式（下次定位生效）" : "已關省電模式");
 });
+// 螢幕保持喚醒：勾選後記錄中螢幕不熄滅（持久化記住選擇；裝置不支援則隱藏此選項）
+(() => {
+  const chk = $("#wakeLockToggle"), opt = $("#wakeLockOpt");
+  if (!chk) return;
+  if (!("wakeLock" in navigator)) { if (opt) opt.style.display = "none"; return; }
+  chk.checked = localStorage.getItem("tt_wakelock") === "1";
+  Recorder.setWake(chk.checked);
+  chk.addEventListener("change", e => {
+    localStorage.setItem("tt_wakelock", e.target.checked ? "1" : "0");
+    Recorder.setWake(e.target.checked);
+  });
+})();
 $("#btnShareLoc").addEventListener("click", () => {
   if (!navigator.geolocation) { toast("此裝置不支援定位"); return; }
   toast("定位中…");

@@ -168,6 +168,26 @@ const Recorder = (() => {
   }
   function setLowPower(on) { lowPower = !!on; }
 
+  // --- 螢幕喚醒鎖：記錄中讓螢幕不自動熄滅，避免 App 被系統凍結而停止記錄（使用者可勾選開關）---
+  let wakeWanted = false, wakeSentinel = null;
+  async function acquireWake() {
+    if (!wakeWanted || wakeSentinel || state !== "running" || typeof navigator === "undefined" || !("wakeLock" in navigator)) return;
+    try {
+      wakeSentinel = await navigator.wakeLock.request("screen");
+      wakeSentinel.addEventListener("release", () => { wakeSentinel = null; });
+    } catch { wakeSentinel = null; }
+  }
+  function releaseWake() {
+    if (wakeSentinel) { try { wakeSentinel.release(); } catch { } wakeSentinel = null; }
+  }
+  function setWake(on) { wakeWanted = !!on; if (wakeWanted) acquireWake(); else releaseWake(); }
+  // 喚醒鎖在切到背景時會被系統自動釋放，回到前景且仍在記錄時重新取得
+  if (typeof document !== "undefined" && document.addEventListener) {
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && state === "running" && wakeWanted) acquireWake();
+    });
+  }
+
   // --- 模擬 ---
   let simRoute = null, simDist = 0;
   function setSimRoute(pts) { simRoute = (pts && pts.length > 1) ? pts : null; }
@@ -230,6 +250,7 @@ const Recorder = (() => {
     state = "running";
     autoPaused = false; lastMoveAt = Date.now();   // 開始/繼續都重設靜止計時
     if (sim) startSim(); else if (!startGPS()) { state = "idle"; return; }
+    acquireWake();   // 記錄中保持螢幕喚醒（若已勾選）
     ticker = setInterval(() => { checkAutoPause(); cb(snapshot()); }, 1000);
     persist();
     cb(snapshot());
@@ -240,6 +261,7 @@ const Recorder = (() => {
     elapsedMs += autoPaused ? 0 : Date.now() - lastResume;   // 已自動暫停則不重複結算
     autoPaused = false;
     state = "paused"; curSpeed = 0;
+    releaseWake();           // 暫停時放開喚醒鎖
     lastFix = null;          // 恢復後重新設錨點，避免把暫停期間算成移動
     refAlt = null;           // 高度也重新設基準
     lastFixAlt = null; smLat = null; smLon = null;
@@ -259,6 +281,7 @@ const Recorder = (() => {
   function stop() {
     if (state === "running" && !autoPaused) elapsedMs += Date.now() - lastResume;
     autoPaused = false;
+    releaseWake();           // 結束記錄放開喚醒鎖
     stopSources();
     const snap = snapshot();
     const result = track.length > 1 ? {
@@ -303,5 +326,5 @@ const Recorder = (() => {
     return snapshot();
   }
 
-  return { start, pause, resume, stop, snapshot, onUpdate, getState: () => state, hasActive, restore, setLowPower, setSimRoute };
+  return { start, pause, resume, stop, snapshot, onUpdate, getState: () => state, hasActive, restore, setLowPower, setWake, setSimRoute };
 })();
