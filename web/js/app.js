@@ -38,13 +38,40 @@ function mergeDetail(t) { const d = (window.TRAILS_DETAIL || {})[t.id]; if (d) O
 function chainSegments(geo) {
   const segs = (geo || []).filter(s => s && s.length >= 2).map(s => s.slice());
   if (segs.length <= 1) return segs[0] || [];
-  const TOL2 = 1.6e-7;                 // 端點距離 < ~0.0004°(約44m) 視為同一岔口
+
+  // 公尺距離（小範圍用平面近似即可）
+  const M = 111320;
+  const distM = (a, b) => { const dx = (a[1] - b[1]) * M * Math.cos(a[0] * Math.PI / 180), dy = (a[0] - b[0]) * M; return Math.hypot(dx, dy); };
+  const TOLM = 45;   // 端點落在他段某頂點 45m 內 → 視為交會（含中段分岔）
+
+  // ── 1. 交會點切段(noding)：支線常從另一段「中間」分出，需在該頂點切開並對齊座標 ──
+  const cuts = segs.map(s => new Set([0, s.length - 1]));
+  for (let i = 0; i < segs.length; i++) {
+    for (const ei of [0, segs[i].length - 1]) {
+      const p = segs[i][ei];
+      for (let j = 0; j < segs.length; j++) {
+        if (j === i) continue;
+        let bd = Infinity, bk = -1;
+        for (let k = 0; k < segs[j].length; k++) { const d = distM(segs[j][k], p); if (d < bd) { bd = d; bk = k; } }
+        if (bd <= TOLM) { cuts[j].add(bk); segs[i][ei] = segs[j][bk].slice(); }   // 吸附到交會頂點
+      }
+    }
+  }
+  // ── 2. 依切點把每段拆成多條子邊 ──
+  const subs = [];
+  segs.forEach((s, i) => {
+    const idx = [...cuts[i]].sort((a, b) => a - b);
+    for (let c = 0; c < idx.length - 1; c++) { const a = idx[c], b = idx[c + 1]; if (b > a) subs.push(s.slice(a, b + 1)); }
+  });
+
+  // ── 3. 用子邊端點建節點圖（交會點此時座標已一致）──
+  const TOL2 = 1e-8;                    // 端點距離 < ~10m 視為同一節點
   const nodes = [];
   const nodeOf = pt => {
     for (let i = 0; i < nodes.length; i++) { const dx = pt[0] - nodes[i][0], dy = pt[1] - nodes[i][1]; if (dx * dx + dy * dy < TOL2) return i; }
     nodes.push([pt[0], pt[1]]); return nodes.length - 1;
   };
-  const edges = segs.map(s => ({ a: nodeOf(s[0]), b: nodeOf(s[s.length - 1]), pts: s, used: false }));
+  const edges = subs.map(s => ({ a: nodeOf(s[0]), b: nodeOf(s[s.length - 1]), pts: s, used: false }));
   const adj = nodes.map(() => []);
   edges.forEach(e => { adj[e.a].push({ e, fwd: true }); adj[e.b].push({ e, fwd: false }); });
 
