@@ -191,6 +191,7 @@ const Recorder = (() => {
   }
 
   function startSim() {
+    simMode = true;   // 只要這次記錄用過模擬來源就標記 sim，絕不讓模擬距離混入真實里程（即使中途由暫停切換而來）
     if (simRoute) {                                   // 沿選定步道路線滑行跑完（約10秒）
       simDist = 0;
       const total = _routeLen(simRoute);
@@ -269,6 +270,7 @@ const Recorder = (() => {
     } : null;
     state = "idle"; track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; lastFixAlt = null;
     smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; lastAcceptT = 0; curSpeed = 0; simPos = null;
+    simRoute = null; simDist = 0;   // 清除殘留路線，避免下次記錄誤跑舊模擬路線
     persist();
     cb(snapshot());
     return result;
