@@ -572,6 +572,13 @@ html[data-theme="dark"] .map-legend { background: rgba(27,32,23,.94); }
 .map-compass.on { opacity: 1; }
 .map-compass svg { width: 40px; height: 40px; display: block; }
 .compass-rose { transition: transform .15s ease-out; }
+/* 地圖全螢幕 */
+.map-fs-btn { width: 32px; height: 32px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+  display: grid; place-items: center; cursor: pointer; font-size: 15px; line-height: 1; color: var(--ink); box-shadow: var(--sh-sm); }
+.map-fs-btn:active { background: var(--brand-soft); }
+.map-fs { position: fixed !important; inset: 0 !important; width: auto !important; height: auto !important;
+  max-height: none !important; z-index: 95 !important; border-radius: 0 !important; }
+body.map-fs-open .tabbar { display: none; }
 /* 地形/衛星 切換鈕 */
 .basemap-toggle { display: flex; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 3px; box-shadow: var(--sh-sm); overflow: hidden; }
 .basemap-toggle .bm { border: none; background: none; cursor: pointer; border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 700; color: var(--ink-soft); white-space: nowrap; transition: .15s; }
