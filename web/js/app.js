@@ -1812,8 +1812,8 @@ const PET_BG = [
   "linear-gradient(140deg,#5a4a2a,#2c2a1a)", "linear-gradient(140deg,#3a3a6b,#1f2547)",
   "linear-gradient(140deg,#2b5a3a,#234a6b 55%,#16301f)",
 ];
-// 只有走路/跑步計入里程；模擬、騎車/開車/大眾運輸都不算
-const isFootRec = r => !r.sim && (!r.mode || r.mode === "run");
+// 排除模擬；過快(交通工具)的移動段在記錄端就已不計入里程
+const isFootRec = r => !r.sim;
 function realRecords() { return Store.getRecords().filter(isFootRec); }
 function debugKm() { return +(localStorage.getItem("tt_debug_km") || 0); }   // 測試用里程偏移
 function realTotalKm() { return realRecords().reduce((s, r) => s + (r.distanceKm || 0), 0) + debugKm(); }
@@ -2154,7 +2154,7 @@ function renderHistory() {
   wrap.innerHTML = recs.map(r => `
     <div class="hist-card" data-id="${r.id}">
       <div class="top">
-        <b>${r.trailName || "自由路線"}${r.mode ? ` <span class="sim-tag">${MODE_LABEL[r.mode] || r.mode}</span>` : ""}${r.sim ? ` <span class="sim-tag">模擬</span>` : ""}</b>
+        <b>${r.trailName || "自由路線"}${r.sim ? ` <span class="sim-tag">模擬</span>` : ""}</b>
         <span class="date">${new Date(r.date).toLocaleString("zh-TW", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
       </div>
       <div class="row">
@@ -2250,20 +2250,6 @@ buildFsRegion();
 buildCollections();
 buildPresets();
 initTheme();
-// 活動類型（步行/跑步/騎車/開車/大眾運輸，皆累積里程）
-const MODE_LABEL = { run: "🏃 跑步", bike: "🚴 騎車", car: "🚗 開車", transit: "🚌 大眾運輸" };
-(function () {
-  let m = localStorage.getItem("tt_act_mode") || "walk";
-  if (Recorder.setMode) Recorder.setMode(m);
-  document.querySelectorAll("#actModes [data-mode]").forEach(b => {
-    b.classList.toggle("active", b.dataset.mode === m);
-    b.addEventListener("click", () => {
-      m = b.dataset.mode; localStorage.setItem("tt_act_mode", m);
-      if (Recorder.setMode) Recorder.setMode(m);
-      document.querySelectorAll("#actModes [data-mode]").forEach(x => x.classList.toggle("active", x === b));
-    });
-  });
-})();
 if (localStorage.getItem("tt_pet_stage") === null) localStorage.setItem("tt_pet_stage", petStageIndex(totalKm()));   // 既有里程不誤觸進化提示
 render();
 loadProfile();

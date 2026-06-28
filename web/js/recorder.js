@@ -15,7 +15,7 @@ const Recorder = (() => {
   let track = [];              // [{lat, lon, t}] 僅存通過過濾的軌跡點
   let altSeries = [];          // [{x:距離m, e:海拔m}] 即時海拔曲線用
   let simMode = false;         // 本次記錄是否為模擬（模擬不計入寵物/成就）
-  let actMode = "walk";        // 活動類型：walk/run/bike/car/transit（都累積里程）
+  let lastAcceptT = 0;         // 上一個被採計點的時間（算分段速度用）
   let distance = 0;            // 公尺（水平實際移動）
   let dist3D = 0;              // 公尺（含坡度 3D 距離）
   let ascent = 0;              // 累積爬升（公尺，已去抖動）
@@ -37,19 +37,14 @@ const Recorder = (() => {
   // 步距(公尺) ≈ 身高 * 0.415；卡路里採 MET 法
   function strideMeters() { return (Store.height() * 0.415) / 100; }
 
-  function setMode(m) { actMode = m || "walk"; }
-  const isFoot = () => actMode === "walk" || actMode === "run";
-  // 交通工具速度快、GPS 點間距大 → 放寬跳點上限，里程才不會被當雜訊丟掉
-  function jumpLimit() { return isFoot() ? MAX_JUMP : 3000; }
-  function steps() { return isFoot() ? Math.round(distance / strideMeters()) : 0; }
+  function steps() { return Math.round(distance / strideMeters()); }
 
-  // 平路 MET（依活動類型與速度）
+  // 平路 MET（依速度；步行/跑步皆涵蓋）
   function metForSpeed(kmh) {
-    if (actMode === "run") return kmh < 8 ? 8.3 : kmh < 11 ? 10 : kmh < 13 ? 11.5 : 13;
-    if (actMode === "bike") return kmh < 16 ? 4 : kmh < 20 ? 6.8 : kmh < 25 ? 8 : 10;
-    if (actMode === "car" || actMode === "transit") return 1.3;   // 久坐，幾乎不耗能
-    return kmh < 3.2 ? 2.8 : kmh < 4.8 ? 3.5 : kmh < 6.4 ? 5.0 : kmh < 8 ? 7.0 : 8.3;
+    return kmh < 3.2 ? 2.8 : kmh < 4.8 ? 3.5 : kmh < 6.4 ? 5.0 : kmh < 8 ? 7.0 : kmh < 11 ? 9.8 : 11.5;
   }
+  // 合理步行/跑步上限：超過(像騎車/開車)的移動段不計入，避免灌水
+  const MAX_FOOT_MS = 5.6;   // 公尺/秒 ≈ 20 km/h
 
   function elapsed() { return elapsedMs + ((state === "running" && !autoPaused) ? Date.now() - lastResume : 0); }
 
@@ -79,9 +74,8 @@ const Recorder = (() => {
     const kmh = (distance / 1000) / hrs;
     const w = Store.weight() + (Store.packWeight ? Store.packWeight() : 0);   // 體重 + 背包負重
     const flat = metForSpeed(kmh) * w * hrs;
-    const noClimb = actMode === "car" || actMode === "transit";   // 搭車不計爬升耗能
-    const climb = noClimb ? 0 : ascent * w * KCAL_PER_KG_ASCENT;
-    const down = noClimb ? 0 : descent * w * KCAL_PER_KG_DESCENT;
+    const climb = ascent * w * KCAL_PER_KG_ASCENT;
+    const down = descent * w * KCAL_PER_KG_DESCENT;
     return Math.round(flat + climb + down);
   }
 
@@ -99,7 +93,7 @@ const Recorder = (() => {
   }
 
   // 接受一個定位點，套用抖動/跳點/精度過濾，只在真的移動時累積
-  function push(lat, lon, alt, acc, clean) {
+  function push(lat, lon, alt, acc, clean, gpsSpeed) {
     if (!clean && acc != null && acc > MAX_ACC) return;   // 訊號太差，忽略（模擬點乾淨不過濾）
     const now = Date.now();
     // #7 EMA 平滑座標，降低 GPS 雜訊鋸齒；模擬點本身就在路線上，不平滑、不過濾才不會切彎偏離
@@ -108,7 +102,7 @@ const Recorder = (() => {
     const p = { lat: smLat, lon: smLon, t: now };
 
     if (!lastFix) {                                  // 第一個點：設為錨點
-      lastFix = p; if (refAlt == null && alt != null) refAlt = alt;
+      lastFix = p; lastAcceptT = now; if (refAlt == null && alt != null) refAlt = alt;
       if (alt != null) lastFixAlt = alt;
       track.push(p); cb(snapshot()); return;
     }
@@ -118,7 +112,14 @@ const Recorder = (() => {
       lastFix.t = now;
       cb(snapshot()); return;
     }
-    if (clean || d <= jumpLimit()) {                 // 視為真實移動（交通工具放寬上限）
+    // 自動偵測速度：超過合理步行/跑步上限(像騎車/開車) → 不計入里程，只移動錨點
+    if (!clean) {
+      const dt = (now - (lastAcceptT || lastFix.t)) / 1000;
+      const segSpeed = (gpsSpeed != null && gpsSpeed >= 0) ? gpsSpeed : (dt > 0 ? d / dt : 0);
+      if (segSpeed > MAX_FOOT_MS) { lastFix = p; lastAcceptT = now; cb(snapshot()); return; }
+    }
+    if (clean || d <= MAX_JUMP) {                    // 視為真實移動
+      lastAcceptT = now;
       if (autoPaused) { lastResume = Date.now(); autoPaused = false; }   // 移動→自動恢復計時
       lastMoveAt = Date.now();
       distance += d;
@@ -145,7 +146,7 @@ const Recorder = (() => {
   function startGPS() {
     if (!navigator.geolocation) { alert("此裝置不支援定位，請改用模擬模式"); return false; }
     watchId = navigator.geolocation.watchPosition(
-      pos => push(pos.coords.latitude, pos.coords.longitude, pos.coords.altitude, pos.coords.accuracy),
+      pos => push(pos.coords.latitude, pos.coords.longitude, pos.coords.altitude, pos.coords.accuracy, false, pos.coords.speed),
       err => cb({ ...snapshot(), error: err.message }),
       // 省電模式：關高精度、容許較舊定位，降低 GPS 耗電
       lowPower ? { enableHighAccuracy: false, maximumAge: 8000, timeout: 20000 }
@@ -211,7 +212,7 @@ const Recorder = (() => {
 
   function start(sim) {
     if (state === "running") return;
-    if (state === "idle") { track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; lastFixAlt = null; smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; simMode = !!sim; }
+    if (state === "idle") { track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; lastFixAlt = null; smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; lastAcceptT = 0; simMode = !!sim; }
     lastResume = Date.now();
     state = "running";
     autoPaused = false; lastMoveAt = Date.now();   // 開始/繼續都重設靜止計時
@@ -252,10 +253,10 @@ const Recorder = (() => {
       date: new Date().toISOString(),
       distanceKm: snap.distanceKm, distance3DKm: snap.distance3DKm, steps: snap.steps, kcal: snap.kcal,
       elapsedMs: snap.elapsedMs, ascent: Math.round(ascent), descent: Math.round(descent), track: track.slice(),
-      sim: simMode || undefined, mode: actMode !== "walk" ? actMode : undefined,
+      sim: simMode || undefined,
     } : null;
     state = "idle"; track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; lastFixAlt = null;
-    smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; simPos = null;
+    smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; lastAcceptT = 0; simPos = null;
     persist();
     cb(snapshot());
     return result;
@@ -288,5 +289,5 @@ const Recorder = (() => {
     return snapshot();
   }
 
-  return { start, pause, resume, stop, snapshot, onUpdate, getState: () => state, hasActive, restore, setLowPower, setSimRoute, setMode };
+  return { start, pause, resume, stop, snapshot, onUpdate, getState: () => state, hasActive, restore, setLowPower, setSimRoute };
 })();
