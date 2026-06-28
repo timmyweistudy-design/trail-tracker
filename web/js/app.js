@@ -803,15 +803,34 @@ $("#nearRow").querySelectorAll("[data-radius]").forEach(b => b.addEventListener(
 
 // 步道路況/封閉警示橫幅
 function fmtYmd(s) { return s && s.length === 8 ? `${s.slice(0, 4)}/${s.slice(4, 6)}/${s.slice(6)}` : s; }
+function condStamp() {
+  const u = (typeof Conditions !== "undefined" && Conditions.lastUpdated()) || 0;
+  if (!u) return "";
+  return `　·　即時更新於 ${new Date(u).toLocaleString("zh-TW", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}`;
+}
 function conditionBanner(t) {
   const c = t.condition;
-  if (!c || !c.status) return "";
-  const closed = /暫停|封閉|關閉/.test(c.status);
-  return `<div class="cond-banner ${closed ? "danger" : "warn"}">
-    <div class="cond-h">${closed ? "⛔" : "⚠️"} ${c.status}${c.section ? `（${c.section}）` : ""}</div>
-    ${c.title ? `<div class="cond-body">${c.title}</div>` : ""}
-    ${c.reopen ? `<div class="cond-meta">預計重新開放：${fmtYmd(c.reopen)}　${c.dep || ""}</div>` : ""}
-    <div class="cond-meta">資料來源：林業及自然保育署（請以官方公告為準）</div>
+  // 有官方公告（落石／坍方／崩塌／封閉等）→ 紅/黃警示橫幅
+  if (c && c.status) {
+    const closed = /暫停|封閉|關閉/.test(c.status);
+    return `<div class="cond-banner ${closed ? "danger" : "warn"}">
+      <div class="cond-h">${closed ? "⛔" : "⚠️"} ${c.status}${c.section ? `（${c.section}）` : ""}</div>
+      ${c.title ? `<div class="cond-body">${c.title}</div>` : ""}
+      ${c.reopen ? `<div class="cond-meta">預計重新開放：${fmtYmd(c.reopen)}　${c.dep || ""}</div>` : ""}
+      <div class="cond-meta">資料來源：林業及自然保育署（請以官方公告為準）${condStamp()}</div>
+    </div>`;
+  }
+  // 林業署步道、無公告 → 綠色「通行正常」（給每條步道明確即時狀態）
+  if (t.source === "forestry") {
+    return `<div class="cond-banner ok">
+      <div class="cond-h">✅ 目前無封閉公告，通行正常</div>
+      <div class="cond-meta">資料來源：林業及自然保育署即時路況${condStamp()}　·　出發前仍請留意現場天候與狀況</div>
+    </div>`;
+  }
+  // OSM 步道：無官方即時路況來源 → 中性提示，誠實告知
+  return `<div class="cond-banner note">
+    <div class="cond-h">ℹ️ 無官方即時路況資料</div>
+    <div class="cond-meta">此步道非林業署轄管，目前無即時封閉公告來源。出發前請查詢當地主管單位公告或近期山友回報。</div>
   </div>`;
 }
 
@@ -842,9 +861,12 @@ function myLogHtml(t) {
 }
 
 // ---------- 詳情面板 ----------
+let _detailTrail = null;
+function currentDetailTrail() { return $("#detailSheet").classList.contains("show") ? _detailTrail : null; }
 async function openDetail(id) {
   const t = TRAILS.find(x => x.id === id);
   if (!t) return;
+  _detailTrail = t;
   clearDetailObs();
   // 先開面板給回饋，再（首次）載入幾何
   $("#detailHero").innerHTML = "";
@@ -904,7 +926,7 @@ async function openDetail(id) {
       <button data-sec="secPoi">景點</button>
       <button data-sec="secFood">美食</button>
     </div>
-    ${conditionBanner(t)}
+    <div id="condLive">${conditionBanner(t)}</div>
     ${tagsOf(t).length ? `<div class="tag-row">${tagsOf(t).map(g => `<span class="tag">${TAG_ICON[g] ? TAG_ICON[g] + " " : ""}${g}</span>`).join("")}</div>` : ""}
     ${gradeExplain(t)}
     ${kvHtml}
@@ -2326,7 +2348,20 @@ render();
 loadProfile();
 restoreActiveRecording();
 // 即時路況（若有設定代理）→ 抓最新並重繪
-if (typeof Conditions !== "undefined") Conditions.refresh(TRAILS).then(n => { if (n > 0) render(); });
+// 即時路況：啟動先抓一次；之後每次回到前景且距上次更新超過 10 分鐘再抓一次，保持新鮮
+function refreshConditions() {
+  if (typeof Conditions === "undefined") return;
+  Conditions.refresh(TRAILS).then(r => {
+    if (!r || !r.ok) return;
+    render();                                 // 重繪列表（解除/新增封閉標記）
+    const t = currentDetailTrail && currentDetailTrail();
+    if (t) { const el = document.getElementById("condLive"); if (el) el.innerHTML = conditionBanner(t); }   // 詳情頁開著就更新橫幅
+  });
+}
+refreshConditions();
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && Date.now() - (Conditions.lastUpdated() || 0) > 600000) refreshConditions();
+});
 // 深連結 ?trail=id → 直接開啟該步道
 (function () {
   const id = new URLSearchParams(location.search).get("trail");
