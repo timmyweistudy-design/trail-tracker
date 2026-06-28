@@ -1580,7 +1580,7 @@ Recorder.onUpdate(s => {
   $("#stSteps").textContent = s.steps.toLocaleString();
   $("#stKcal").textContent = s.kcal;
   $("#stTime").textContent = fmtTime(s.elapsedMs);
-  $("#stPace").textContent = s.speedKmh ? s.speedKmh.toFixed(1) : "--";
+  $("#stPace").textContent = (s.state === "running" && s.instKmh != null) ? s.instKmh.toFixed(1) : "--";
   if ($("#stAscent")) $("#stAscent").textContent = `↑${Math.round(s.ascent || 0)}`;
   if ($("#stDescent")) $("#stDescent").textContent = `↓${Math.round(s.descent || 0)}`;
   drawRecSpark(s.altSeries);

@@ -16,6 +16,7 @@ const Recorder = (() => {
   let altSeries = [];          // [{x:距離m, e:海拔m}] 即時海拔曲線用
   let simMode = false;         // 本次記錄是否為模擬（模擬不計入寵物/成就）
   let lastAcceptT = 0;         // 上一個被採計點的時間（算分段速度用）
+  let curSpeed = 0;            // 瞬時速度（公尺/秒，平滑後）供顯示
   let distance = 0;            // 公尺（水平實際移動）
   let dist3D = 0;              // 公尺（含坡度 3D 距離）
   let ascent = 0;              // 累積爬升（公尺，已去抖動）
@@ -87,7 +88,7 @@ const Recorder = (() => {
     const paceSec = (km > 0.01 && movingMs > 0) ? (movingMs / 1000) / km : 0;
     return {
       state, autoPaused, track, altSeries, distanceKm: km, distance3DKm: dist3D / 1000, steps: steps(), kcal: calories(),
-      elapsedMs: ms, movingMs, ascent, descent, speedKmh: kmh,
+      elapsedMs: ms, movingMs, ascent, descent, speedKmh: kmh, instKmh: (state === "running" && !autoPaused) ? curSpeed * 3.6 : 0,
       pace: paceSec ? `${Math.floor(paceSec / 60)}'${String(Math.round(paceSec % 60)).padStart(2, "0")}` : "--",
     };
   }
@@ -100,6 +101,8 @@ const Recorder = (() => {
     if (clean || smLat == null) { smLat = lat; smLon = lon; }
     else { smLat = SMOOTH * lat + (1 - SMOOTH) * smLat; smLon = SMOOTH * lon + (1 - SMOOTH) * smLon; }
     const p = { lat: smLat, lon: smLon, t: now };
+    // 瞬時速度：優先用 GPS 回報的當下速度，平滑後供顯示
+    if (!clean && gpsSpeed != null && gpsSpeed >= 0) curSpeed = 0.5 * gpsSpeed + 0.5 * curSpeed;
 
     if (!lastFix) {                                  // 第一個點：設為錨點
       lastFix = p; lastAcceptT = now; if (refAlt == null && alt != null) refAlt = alt;
@@ -110,12 +113,14 @@ const Recorder = (() => {
     const d = haversine(lastFix, p);
     if (!clean && d < MIN_MOVE) {                    // 原地抖動：不累積，只推進時間基準
       lastFix.t = now;
+      if (gpsSpeed == null) curSpeed *= 0.6;         // 無 GPS 速度時，靜止逐漸歸零
       cb(snapshot()); return;
     }
     // 自動偵測速度：超過合理步行/跑步上限(像騎車/開車) → 不計入里程，只移動錨點
     if (!clean) {
       const dt = (now - (lastAcceptT || lastFix.t)) / 1000;
       const segSpeed = (gpsSpeed != null && gpsSpeed >= 0) ? gpsSpeed : (dt > 0 ? d / dt : 0);
+      if (gpsSpeed == null) curSpeed = 0.5 * segSpeed + 0.5 * curSpeed;   // 無 GPS 速度→用估算
       if (segSpeed > MAX_FOOT_MS) { lastFix = p; lastAcceptT = now; cb(snapshot()); return; }
     }
     if (clean || d <= MAX_JUMP) {                    // 視為真實移動
@@ -212,7 +217,7 @@ const Recorder = (() => {
 
   function start(sim) {
     if (state === "running") return;
-    if (state === "idle") { track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; lastFixAlt = null; smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; lastAcceptT = 0; simMode = !!sim; }
+    if (state === "idle") { track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; lastFixAlt = null; smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; lastAcceptT = 0; curSpeed = 0; simMode = !!sim; }
     lastResume = Date.now();
     state = "running";
     autoPaused = false; lastMoveAt = Date.now();   // 開始/繼續都重設靜止計時
@@ -226,7 +231,7 @@ const Recorder = (() => {
     if (state !== "running") return;
     elapsedMs += autoPaused ? 0 : Date.now() - lastResume;   // 已自動暫停則不重複結算
     autoPaused = false;
-    state = "paused";
+    state = "paused"; curSpeed = 0;
     lastFix = null;          // 恢復後重新設錨點，避免把暫停期間算成移動
     refAlt = null;           // 高度也重新設基準
     lastFixAlt = null; smLat = null; smLon = null;
@@ -256,7 +261,7 @@ const Recorder = (() => {
       sim: simMode || undefined,
     } : null;
     state = "idle"; track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; lastFixAlt = null;
-    smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; lastAcceptT = 0; simPos = null;
+    smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; lastAcceptT = 0; curSpeed = 0; simPos = null;
     persist();
     cb(snapshot());
     return result;
