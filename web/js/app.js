@@ -33,6 +33,31 @@ function ensureDetail() {
   return _detailPromise;
 }
 function mergeDetail(t) { const d = (window.TRAILS_DETAIL || {})[t.id]; if (d) Object.assign(t, d); return t; }
+// 把多段路線(可能有叉路/分段)用最近端點貪婪串接成一條連續路徑，讓模擬整條走完
+function chainSegments(geo) {
+  const segs = (geo || []).filter(s => s && s.length >= 2).map(s => s.slice());
+  if (segs.length <= 1) return segs[0] || [];
+  segs.sort((a, b) => b.length - a.length);
+  const used = new Array(segs.length).fill(false);
+  used[0] = true;
+  let path = segs[0].slice();
+  const d2 = (a, b) => (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2;
+  for (let n = 1; n < segs.length; n++) {
+    const end = path[path.length - 1];
+    let best = -1, rev = false, bd = Infinity;
+    for (let i = 0; i < segs.length; i++) {
+      if (used[i]) continue;
+      const s = segs[i];
+      const dh = d2(end, s[0]), dt = d2(end, s[s.length - 1]);
+      if (dh < bd) { bd = dh; best = i; rev = false; }
+      if (dt < bd) { bd = dt; best = i; rev = true; }
+    }
+    if (best < 0) break;
+    used[best] = true;
+    path = path.concat(rev ? segs[best].slice().reverse() : segs[best]);
+  }
+  return path;
+}
 // 骨架卡（載入占位）
 function skelCards(n) {
   return `<div class="skel-list">${Array.from({ length: n }, () =>
@@ -1682,9 +1707,7 @@ $("#btnStart").addEventListener("click", () => {
     } else {
       toast("模擬：沿此步道路線前進");
     }
-    const route = selectedTrailGeo && selectedTrailGeo.length
-      ? selectedTrailGeo.reduce((a, b) => (b.length > a.length ? b : a))   // 取最長一段
-      : null;
+    const route = selectedTrailGeo && selectedTrailGeo.length ? chainSegments(selectedTrailGeo) : null;   // 串接全部路段，整條走完
     Recorder.setSimRoute(route);
   }
   if (Recorder.getState() === "paused") Recorder.resume(sim());
