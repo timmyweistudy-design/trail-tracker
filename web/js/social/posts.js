@@ -65,7 +65,10 @@ const Posts = (() => {
     if (mode === "explore") {
       q = q.eq("visibility", "public");
     } else {
+      // 動態＝我追蹤的人 + 我自己（首頁也看得到自己發的貼文）
       const ids = await followingIds();
+      const { data: u } = await c.auth.getUser();
+      if (u && u.user) ids.push(u.user.id);
       if (!ids.length) return [];
       q = q.in("author_id", ids);
     }
