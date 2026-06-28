@@ -9,9 +9,7 @@
     // 主題：在繪製前套用，避免閃白
     (function () {
       try {
-        var t = localStorage.getItem("tt_theme") || "auto";
-        var dark = t === "dark" || (t === "auto" && matchMedia("(prefers-color-scheme: dark)").matches);
-        if (dark) document.documentElement.setAttribute("data-theme", "dark");
+        if (localStorage.getItem("tt_theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");
       } catch (e) { /* */ }
     })();
   </script>
@@ -35,7 +33,7 @@
   <meta name="application-name" content="循徑拾光">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;600;700;900&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap">

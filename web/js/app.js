@@ -2215,11 +2215,7 @@ function applySeason() {
 }
 function initTheme() {
   applySeason();
-  let mode = localStorage.getItem("tt_theme");
-  if (mode !== "light" && mode !== "dark") {   // 舊「自動」或未設定 → 依目前系統解析成固定值並記住
-    mode = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    localStorage.setItem("tt_theme", mode);
-  }
+  const mode = localStorage.getItem("tt_theme") === "dark" ? "dark" : "light";   // 預設淺色，只有明確選深色才深色
   applyTheme(mode);
   document.querySelectorAll(".theme-opt").forEach(b => b.addEventListener("click", () => {
     localStorage.setItem("tt_theme", b.dataset.themeOpt);
