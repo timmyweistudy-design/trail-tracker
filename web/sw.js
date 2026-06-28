@@ -1,5 +1,5 @@
 // 離線快取：app shell + 地圖圖磚
-const CACHE = "trail-tracker-v118";
+const CACHE = "trail-tracker-v119";
 const TILE_CACHE = "tt-tiles";   // 地圖圖磚（不隨版本清除，保留離線地圖）
 const ASSETS = [
   "./", "./index.html",
@@ -41,7 +41,10 @@ self.addEventListener("fetch", e => {
     );
     return;
   }
-  // 其餘（app shell）：cache 優先
+  // 非 GET（POST/DELETE…）或跨網域（Supabase API、Places…）→ 不攔截、直接走網路，
+  // 避免把動態資料快取成舊的（發文/刪除/路況即時反映）。
+  if (e.request.method !== "GET" || !url.startsWith(self.location.origin)) return;
+  // 自家同源檔案（app shell）：cache 優先
   e.respondWith(
     caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
       const copy = res.clone();

@@ -66,6 +66,7 @@ const Composer = (() => {
     if (r.error) { msg.textContent = "發布失敗：" + r.error; wrap.querySelector("#compPost").disabled = false; return; }
     msg.textContent = "已發布！";
     if (typeof toast === "function") toast("已分享到社群");
+    if (typeof SocialUI !== "undefined") SocialUI.route();   // 刷新動態牆，立即看到新貼文
     setTimeout(close, 600);
   }
 
