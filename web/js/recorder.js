@@ -17,6 +17,13 @@ const Recorder = (() => {
   let simMode = false;         // 本次記錄是否為模擬（模擬不計入寵物/成就）
   let lastAcceptT = 0;         // 上一個被採計點的時間（算分段速度用）
   let curSpeed = 0;            // 瞬時速度（公尺/秒，平滑後）供顯示
+  // 混入新速度值：突然暴衝(GPS 雜訊)只給很小權重，避免數字亂飆
+  function blendSpeed(r) {
+    if (r == null || r < 0 || !isFinite(r)) return;
+    if (r > 14) r = 14;                                   // 步行/跑步情境，>50km/h 一律當雜訊上限
+    const w = (r > curSpeed * 1.8 + 1.5) ? 0.1 : 0.35;    // 跳太多→低權重；正常→平滑
+    curSpeed = w * r + (1 - w) * curSpeed;
+  }
   let distance = 0;            // 公尺（水平實際移動）
   let dist3D = 0;              // 公尺（含坡度 3D 距離）
   let ascent = 0;              // 累積爬升（公尺，已去抖動）
@@ -101,8 +108,8 @@ const Recorder = (() => {
     if (clean || smLat == null) { smLat = lat; smLon = lon; }
     else { smLat = SMOOTH * lat + (1 - SMOOTH) * smLat; smLon = SMOOTH * lon + (1 - SMOOTH) * smLon; }
     const p = { lat: smLat, lon: smLon, t: now };
-    // 瞬時速度：優先用 GPS 回報的當下速度，平滑後供顯示
-    if (!clean && gpsSpeed != null && gpsSpeed >= 0) curSpeed = 0.5 * gpsSpeed + 0.5 * curSpeed;
+    // 瞬時速度：優先用 GPS 回報的當下速度，尖峰拒斥+平滑後供顯示
+    if (!clean && gpsSpeed != null && gpsSpeed >= 0) blendSpeed(gpsSpeed);
 
     if (!lastFix) {                                  // 第一個點：設為錨點
       lastFix = p; lastAcceptT = now; if (refAlt == null && alt != null) refAlt = alt;
@@ -119,8 +126,8 @@ const Recorder = (() => {
     // 自動偵測速度：超過合理步行/跑步上限(像騎車/開車) → 不計入里程，只移動錨點
     if (!clean) {
       const dt = (now - (lastAcceptT || lastFix.t)) / 1000;
-      const segSpeed = (gpsSpeed != null && gpsSpeed >= 0) ? gpsSpeed : (dt > 0 ? d / dt : 0);
-      if (gpsSpeed == null) curSpeed = 0.5 * segSpeed + 0.5 * curSpeed;   // 無 GPS 速度→用估算
+      const segSpeed = (gpsSpeed != null && gpsSpeed >= 0) ? gpsSpeed : (dt >= 0.5 ? d / dt : curSpeed);
+      if (gpsSpeed == null) blendSpeed(segSpeed);        // 無 GPS 速度→用估算(夠長的時間窗才採信)
       if (segSpeed > MAX_FOOT_MS) { lastFix = p; lastAcceptT = now; cb(snapshot()); return; }
     }
     if (clean || d <= MAX_JUMP) {                    // 視為真實移動
