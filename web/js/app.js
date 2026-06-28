@@ -1485,6 +1485,7 @@ function openTrackReview(rec) {
       <button class="link-btn" id="trackCard">🖼 分享圖卡</button>
       <button class="link-btn" id="trackGpx">⬇️ 匯出 GPX</button>
       <button class="link-btn" id="trackShare">↗ 分享行程</button>
+      ${rec.sim ? "" : `<button class="link-btn" id="trackSocial">📣 分享到社群</button>`}
     </div>`;
   $("#trackMask").classList.add("show");
   $("#trackSheet").classList.add("show");
@@ -1518,6 +1519,8 @@ function openTrackReview(rec) {
     else if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast("已複製,可貼給朋友"));
     else toast(text);
   });
+  const socialBtn = $("#trackSocial");
+  if (socialBtn) socialBtn.addEventListener("click", () => { if (typeof Composer !== "undefined") Composer.open(rec); });
 }
 function closeTrackReview() { if (trackAnim) { clearInterval(trackAnim); trackAnim = null; } const lv = document.getElementById("replayLive"); if (lv) lv.style.display = "none"; const bb = document.getElementById("replayBar"); if (bb) bb.remove(); $("#trackMask").classList.remove("show"); $("#trackSheet").classList.remove("show"); }
 

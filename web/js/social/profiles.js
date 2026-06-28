@@ -17,10 +17,18 @@ const Profiles = (() => {
           <button class="btn ghost" id="pfEdit">編輯檔案</button>
           <button class="btn ghost" id="pfSignout">登出</button>
         </div>
-        <div class="pf-posts-empty">尚未有貼文（Phase 2 開放分享步道旅行）。</div>
+        <div id="pfPosts" class="feed-loading"><span class="spin"></span></div>
       </div>`);
     document.getElementById("pfSignout").addEventListener("click", async () => { await Auth.signOut(); SocialUI.route(); });
     document.getElementById("pfEdit").addEventListener("click", () => renderEdit(render, prof));
+    Posts.userPosts(prof.id).then(async posts => {
+      const box = document.getElementById("pfPosts"); if (!box) return;
+      box.className = "feed-list";
+      if (!posts.length) { box.className = "pf-posts-empty"; box.textContent = "尚未有貼文。完成一趟健行後，在總結頁按「分享到社群」。"; return; }
+      const liked = await Posts.likedSet(posts.map(p => p.id));
+      box.innerHTML = posts.map(p => Feed.card(p, liked.has(p.id))).join("");
+      box.querySelectorAll(".feed-card").forEach(c => c.addEventListener("click", () => { if (typeof PostView !== "undefined") PostView.open(c.dataset.id); }));
+    });
   }
 
   function renderEdit(render, prof) {
