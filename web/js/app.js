@@ -650,7 +650,7 @@ function addFullscreen(map) {
 }
 function addBaseWithToggle(map) {   // 加地形(預設)+衛星，明顯的分段切換鈕
   const topo = baseTopo().addTo(map), sat = baseSat();
-  const ctrl = L.control({ position: "topright" });
+  const ctrl = L.control({ position: "bottomleft" });
   ctrl.onAdd = () => {
     const d = L.DomUtil.create("div", "basemap-toggle");
     d.innerHTML = `<button class="bm on" data-l="topo">🗻 地形</button><button class="bm" data-l="sat">🛰 衛星</button>`;

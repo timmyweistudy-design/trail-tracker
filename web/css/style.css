@@ -567,6 +567,12 @@ html[data-theme="dark"] .map-legend { background: rgba(27,32,23,.94); }
 .map-legend span { display: flex; align-items: center; gap: 6px; }
 .map-legend i { width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid #fff; box-shadow: 0 0 0 .5px rgba(0,0,0,.15); flex: 0 0 auto; }
 .trail-pin { filter: drop-shadow(0 2px 3px rgba(0,0,0,.35)); background: none; border: none; }
+/* 指北針/全螢幕鈕：固定貼在畫面右上角，捲動時留在原位 */
+.map-compass, .map-fs-btn { position: fixed !important; right: 14px; z-index: 45; }
+.map-fs-btn { top: calc(var(--hdr-h, 88px) + 12px); }
+.map-compass { top: calc(var(--hdr-h, 88px) + 56px); }
+body.map-fs-open .map-fs-btn { top: calc(12px + var(--safe-b)); z-index: 96; }
+body.map-fs-open .map-compass { top: calc(58px + var(--safe-b)); z-index: 96; }
 /* 地圖指北針 */
 .map-compass { width: 40px; height: 40px; cursor: pointer; filter: drop-shadow(0 2px 5px rgba(0,0,0,.25)); opacity: .85; }
 .map-compass.on { opacity: 1; }
