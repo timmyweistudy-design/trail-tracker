@@ -39,8 +39,12 @@ const Recorder = (() => {
   let lastPersist = 0;         // 上次存檔時間（節流）
   let simPos = null;
   let cb = () => {};
+  let autoStopCb = () => {};
+  let overSpeedHits = 0;       // 連續偵測到超速(>20km/h)的次數
+  let autoStopping = false;    // 已觸發自動結束，避免重複
 
   function onUpdate(fn) { cb = fn; }
+  function onAutoStop(fn) { autoStopCb = fn; }   // 偵測到車輛速度自動結束時通知前端
 
   // 步距(公尺) ≈ 身高 * 0.415；卡路里採 MET 法
   function strideMeters() { return (Store.height() * 0.415) / 100; }
@@ -128,7 +132,17 @@ const Recorder = (() => {
       const dt = (now - (lastAcceptT || lastFix.t)) / 1000;
       const segSpeed = (gpsSpeed != null && gpsSpeed >= 0) ? gpsSpeed : (dt >= 0.5 ? d / dt : curSpeed);
       if (gpsSpeed == null) blendSpeed(segSpeed);        // 無 GPS 速度→用估算(夠長的時間窗才採信)
-      if (segSpeed > MAX_FOOT_MS) { lastFix = p; lastAcceptT = now; cb(snapshot()); return; }
+      if (segSpeed > MAX_FOOT_MS) {                      // 超過步行/跑步上限(像騎車/開車)
+        overSpeedHits++;
+        if (overSpeedHits >= 2 && !autoStopping) {       // 連續 2 次→確認是車輛速度→直接斷掉(自動結束)
+          autoStopping = true; stopSources();
+          cb({ ...snapshot(), vehicleStop: true });
+          autoStopCb();
+          return;
+        }
+        lastFix = p; lastAcceptT = now; cb(snapshot()); return;   // 第一次：先略過該段、繼續觀察
+      }
+      overSpeedHits = 0;                                  // 回到正常速度→歸零
     }
     if (clean || d <= MAX_JUMP) {                    // 視為真實移動
       lastAcceptT = now;
@@ -245,7 +259,7 @@ const Recorder = (() => {
 
   function start(sim) {
     if (state === "running") return;
-    if (state === "idle") { track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; lastFixAlt = null; smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; lastAcceptT = 0; curSpeed = 0; simMode = !!sim; }
+    if (state === "idle") { track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; lastFixAlt = null; smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; lastAcceptT = 0; curSpeed = 0; simMode = !!sim; overSpeedHits = 0; autoStopping = false; }
     lastResume = Date.now();
     state = "running";
     autoPaused = false; lastMoveAt = Date.now();   // 開始/繼續都重設靜止計時
@@ -292,7 +306,7 @@ const Recorder = (() => {
       sim: simMode || undefined,
     } : null;
     state = "idle"; track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; lastFixAlt = null;
-    smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; lastAcceptT = 0; curSpeed = 0; simPos = null;
+    smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; lastAcceptT = 0; curSpeed = 0; simPos = null; overSpeedHits = 0; autoStopping = false;
     simRoute = null; simDist = 0;   // 清除殘留路線，避免下次記錄誤跑舊模擬路線
     persist();
     cb(snapshot());
@@ -326,5 +340,5 @@ const Recorder = (() => {
     return snapshot();
   }
 
-  return { start, pause, resume, stop, snapshot, onUpdate, getState: () => state, hasActive, restore, setLowPower, setWake, setSimRoute };
+  return { start, pause, resume, stop, snapshot, onUpdate, onAutoStop, getState: () => state, hasActive, restore, setLowPower, setWake, setSimRoute };
 })();

@@ -1800,7 +1800,7 @@ $("#btnPause").addEventListener("click", () => {
   $("#btnStart").style.display = "block";
   $("#btnPause").style.display = "none";
 });
-$("#btnStop").addEventListener("click", () => {
+function finishRecording(autoVehicle) {
   const rec = Recorder.stop();
   recPreloaded = false; lastKmMilestone = 0;   // 下次記錄重新預載/里程碑
   $("#btnStart").textContent = "▶ 開始";
@@ -1810,19 +1810,24 @@ $("#btnStop").addEventListener("click", () => {
   if (recMarker) { recMap.removeLayer(recMarker); recMarker = null; }
   if (petMarker) { recMap.removeLayer(petMarker); petMarker = null; }
   recLine.setLatLngs([]);
+  if (autoVehicle) toast("偵測到車輛速度（>20km/h），已自動結束記錄");
   if (rec) {
     rec.trailName = Recorder._trailName || "自由路線";
     Store.addRecord(rec);
     if (isFootRec(rec)) bumpAffinity(8);   // 只有走路/跑步加深羈絆
     checkPetEvolve();
-    $("#recStatus").textContent = "準備就緒，按「開始」記錄路徑";
+    $("#recStatus").textContent = autoVehicle ? "偵測到車輛速度，已自動結束" : "準備就緒，按「開始」記錄路徑";
     openTrackReview(rec);              // 結束後顯示總結頁
     if (isFootRec(rec)) confetti();
     renderRecIdle();
   } else {
-    toast("路徑太短，未儲存");
+    toast(autoVehicle ? "偵測到車輛速度，已停止（路徑太短，未儲存）" : "路徑太短，未儲存");
+    $("#recStatus").textContent = "準備就緒，按「開始」記錄路徑";
   }
-});
+}
+$("#btnStop").addEventListener("click", () => finishRecording(false));
+// 偵測到車輛速度(>20km/h)→記錄器自動斷掉→跑與按「結束」相同的收尾流程
+Recorder.onAutoStop(() => finishRecording(true));
 
 // ---------- 我的 ----------
 function loadProfile() {
