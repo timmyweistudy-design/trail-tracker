@@ -49,7 +49,8 @@ const Discover = (() => {
           <div class="pf-id"><div class="pf-name">${esc(prof.display_name || prof.handle)}</div><div class="pf-handle">@${esc(prof.handle)}</div></div></div>
         <div class="pf-counts" id="dpCounts"></div>
         ${prof.bio ? `<div class="pf-bio">${esc(prof.bio)}</div>` : ""}
-        ${isMe ? "" : `<button class="btn ${following ? "ghost" : "primary"}" id="dpFollow">${following ? "已追蹤" : "追蹤"}</button>`}
+        ${isMe ? "" : `<button class="btn ${following ? "ghost" : "primary"}" id="dpFollow">${following ? "已追蹤" : "追蹤"}</button>
+        <div class="pf-safety">${isMe ? "" : `<button class="link-btn" id="dpReport">檢舉</button><button class="link-btn" id="dpBlock">封鎖</button>`}</div>`}
         <div id="dpPosts" class="feed-loading"><span class="spin"></span></div>
       </div></div>`;
     document.body.appendChild(wrap);
@@ -61,6 +62,22 @@ const Discover = (() => {
       fb.textContent = on ? "已追蹤" : "追蹤"; fb.className = "btn " + (on ? "ghost" : "primary");
       await follow(userId, on);
     });
+    const rb = wrap.querySelector("#dpReport");
+    if (rb) rb.addEventListener("click", async () => {
+      const reason = prompt("檢舉原因（選填）："); if (reason === null) return;
+      await Safety.reportUser(userId, reason);
+      if (typeof toast === "function") toast("已檢舉，感謝回報");
+    });
+    const bb = wrap.querySelector("#dpBlock");
+    if (bb) {
+      Safety.isBlocked(userId).then(b => { bb.textContent = b ? "解除封鎖" : "封鎖"; });
+      bb.addEventListener("click", async () => {
+        const blocked = bb.textContent === "解除封鎖";
+        if (!blocked && !confirm("封鎖後你們將看不到彼此的貼文，並解除互相追蹤。確定？")) return;
+        if (blocked) { await Safety.unblock(userId); bb.textContent = "封鎖"; if (typeof toast === "function") toast("已解除封鎖"); }
+        else { await Safety.block(userId); if (typeof toast === "function") toast("已封鎖"); wrap.remove(); if (typeof SocialUI !== "undefined") SocialUI.route(); }
+      });
+    }
     const posts = await Posts.userPosts(userId);
     const liked = await Posts.likedSet(posts.map(p => p.id));
     const box = wrap.querySelector("#dpPosts");

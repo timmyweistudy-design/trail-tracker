@@ -35,13 +35,13 @@ const PostView = (() => {
       if (typeof SocialUI !== "undefined") SocialUI.route();
     });
 
-    renderBody(wrap, post, likedByMe, likeCount);
+    renderBody(wrap, post, likedByMe, likeCount, isMine);
     bindLike(wrap, postId);
     wrap.querySelector("#pvSend").addEventListener("click", () => send(wrap, postId));
     loadComments(wrap, postId);
   }
 
-  function renderBody(wrap, post, likedByMe, likeCount) {
+  function renderBody(wrap, post, likedByMe, likeCount, isMine) {
     const a = post.author || {};
     const media = (post.post_media || []).slice().sort((x, y) => x.ord - y.ord);
     wrap.querySelector("#pvBody").innerHTML = `
@@ -51,10 +51,15 @@ const PostView = (() => {
       ${media.map(m => m.kind === "video"
         ? `<video class="pv-img" controls preload="metadata" poster="${esc(Media.publicUrl(m.thumb_path || ""))}" src="${esc(Media.publicUrl(m.path))}"></video>`
         : `<img class="pv-img pv-photo" loading="lazy" src="${esc(Media.publicUrl(m.path))}" alt="">`).join("")}
-      <div class="pv-actions"><button class="fc-like ${likedByMe ? "on" : ""}" id="pvLike">${likedByMe ? "❤️" : "🤍"} <span>${likeCount}</span></button></div>
+      <div class="pv-actions"><button class="fc-like ${likedByMe ? "on" : ""}" id="pvLike">${likedByMe ? "❤️" : "🤍"} <span>${likeCount}</span></button>${isMine ? "" : `<button class="link-btn" id="pvReport">檢舉</button>`}</div>
       <div class="pv-comments" id="pvComments"><div class="feed-loading"><span class="spin"></span></div></div>`;
     wrap.querySelectorAll(".pv-photo").forEach(img => img.addEventListener("click", () => { if (typeof Lightbox !== "undefined") Lightbox.open(img.src); }));
     const au = wrap.querySelector(".fc-author"); if (au) au.addEventListener("click", () => { if (typeof Discover !== "undefined") Discover.openProfile(au.dataset.uid); });
+    const rep = wrap.querySelector("#pvReport"); if (rep) rep.addEventListener("click", async () => {
+      const reason = prompt("檢舉這篇貼文的原因（選填）："); if (reason === null) return;
+      await Safety.reportPost(post.id, reason);
+      if (typeof toast === "function") toast("已檢舉，感謝回報");
+    });
   }
 
   function bindLike(wrap, postId) {

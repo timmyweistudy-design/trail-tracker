@@ -957,3 +957,7 @@ html[data-theme="dark"] img.trail-photo { background: var(--surface-2); }
 
 .pv-actions { margin: 8px 0; }
 .pv-actions .fc-like { font-size: 16px; }
+
+.pf-safety { display: flex; gap: 14px; margin: 8px 0; }
+.pf-safety .link-btn { color: var(--ink-soft); font-size: 13px; }
+.pv-actions .link-btn { margin-left: 14px; color: var(--ink-soft); font-size: 13px; }

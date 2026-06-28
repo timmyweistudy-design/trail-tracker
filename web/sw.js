@@ -1,5 +1,5 @@
 // 離線快取：app shell + 地圖圖磚
-const CACHE = "trail-tracker-v122";
+const CACHE = "trail-tracker-v123";
 const TILE_CACHE = "tt-tiles";   // 地圖圖磚（不隨版本清除，保留離線地圖）
 const ASSETS = [
   "./", "./index.html",
@@ -7,7 +7,7 @@ const ASSETS = [
   "./js/trails-data.js", "./js/trails-detail.js", "./js/trails-geo.js", "./js/storage.js", "./js/grades.js", "./js/config.js", "./js/conditions.js",
   "./js/photos.js", "./js/amenities.js", "./js/food.js", "./js/attractions.js", "./js/weather.js", "./js/profile.js", "./js/recorder.js", "./js/offline.js", "./js/gpx.js", "./js/app.js",
   "./vendor/supabase/supabase.js",
-  "./js/social/supa.js", "./js/social/handle.js", "./js/social/media.js", "./js/social/posts.js", "./js/social/composer.js", "./js/social/feed.js", "./js/social/postview.js", "./js/social/discover.js", "./js/social/notifications.js", "./js/social/lightbox.js", "./js/social/auth.js", "./js/social/profiles.js", "./js/social/social-ui.js",
+  "./js/social/supa.js", "./js/social/handle.js", "./js/social/media.js", "./js/social/posts.js", "./js/social/composer.js", "./js/social/safety.js", "./js/social/feed.js", "./js/social/postview.js", "./js/social/discover.js", "./js/social/notifications.js", "./js/social/lightbox.js", "./js/social/auth.js", "./js/social/profiles.js", "./js/social/social-ui.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-180.png",
   "./vendor/leaflet/leaflet.js", "./vendor/leaflet/leaflet.css",
