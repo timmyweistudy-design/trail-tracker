@@ -33,30 +33,39 @@ function ensureDetail() {
   return _detailPromise;
 }
 function mergeDetail(t) { const d = (window.TRAILS_DETAIL || {})[t.id]; if (d) Object.assign(t, d); return t; }
-// 把多段路線(可能有叉路/分段)用最近端點貪婪串接成一條連續路徑，讓模擬整條走完
+// 真實登山客走法：把路段建成路徑圖，沿實際路徑走；遇叉路/死路「原路折返」回岔口再走下一條，
+// 不會憑空斜穿。只有資料本身斷成不相連的區塊時，才不得已直線接過去。
 function chainSegments(geo) {
   const segs = (geo || []).filter(s => s && s.length >= 2).map(s => s.slice());
   if (segs.length <= 1) return segs[0] || [];
-  segs.sort((a, b) => b.length - a.length);
-  const used = new Array(segs.length).fill(false);
-  used[0] = true;
-  let path = segs[0].slice();
-  const d2 = (a, b) => (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2;
-  for (let n = 1; n < segs.length; n++) {
-    const end = path[path.length - 1];
-    let best = -1, rev = false, bd = Infinity;
-    for (let i = 0; i < segs.length; i++) {
-      if (used[i]) continue;
-      const s = segs[i];
-      const dh = d2(end, s[0]), dt = d2(end, s[s.length - 1]);
-      if (dh < bd) { bd = dh; best = i; rev = false; }
-      if (dt < bd) { bd = dt; best = i; rev = true; }
+  const TOL2 = 1.6e-7;                 // 端點距離 < ~0.0004°(約44m) 視為同一岔口
+  const nodes = [];
+  const nodeOf = pt => {
+    for (let i = 0; i < nodes.length; i++) { const dx = pt[0] - nodes[i][0], dy = pt[1] - nodes[i][1]; if (dx * dx + dy * dy < TOL2) return i; }
+    nodes.push([pt[0], pt[1]]); return nodes.length - 1;
+  };
+  const edges = segs.map(s => ({ a: nodeOf(s[0]), b: nodeOf(s[s.length - 1]), pts: s, used: false }));
+  const adj = nodes.map(() => []);
+  edges.forEach(e => { adj[e.a].push({ e, fwd: true }); adj[e.b].push({ e, fwd: false }); });
+
+  const route = [];
+  const pushPts = (pts, fwd) => {
+    const arr = fwd ? pts : pts.slice().reverse();
+    for (let k = route.length ? 1 : 0; k < arr.length; k++) route.push(arr[k]);   // 略過與上一點重複的岔口點
+  };
+  const dfs = node => {
+    for (const link of adj[node]) {
+      if (link.e.used) continue;
+      link.e.used = true;
+      pushPts(link.e.pts, link.fwd);                 // 沿這條岔路走出去
+      dfs(link.fwd ? link.e.b : link.e.a);           // 繼續從對端往下走
+      pushPts(link.e.pts, !link.fwd);                // 走到底→原路折返回此岔口
     }
-    if (best < 0) break;
-    used[best] = true;
-    path = path.concat(rev ? segs[best].slice().reverse() : segs[best]);
-  }
-  return path;
+  };
+  // 先從只有一條路的端點(步道起終點)出發，較自然；逐個連通區塊處理
+  const order = nodes.map((_, i) => i).sort((a, b) => adj[a].length - adj[b].length);
+  for (const sn of order) if (adj[sn].some(l => !l.e.used)) dfs(sn);
+  return route.length ? route : segs[0];
 }
 // 骨架卡（載入占位）
 function skelCards(n) {
