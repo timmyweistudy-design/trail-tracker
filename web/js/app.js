@@ -1922,13 +1922,6 @@ $("#btnSaveProfile").addEventListener("click", () => {
 $("#btnExportGpxAll").addEventListener("click", () => {
   GPX.exportAll(Store.getRecords()) ? toast("已下載全部行程路線檔") : toast("尚無行程可下載");
 });
-$("#btnClearAll").addEventListener("click", () => {
-  if (confirm("確定清除「全部」行程紀錄？此動作無法復原。")) {
-    Store.clearRecords();
-    renderHistory();
-    toast("已清除全部行程");
-  }
-});
 
 async function refreshOfflineStatus() {
   const el = $("#offlineStatus");
@@ -2121,8 +2114,7 @@ function renderPet() {
   box.innerHTML = `<div class="pet-card${i >= 6 ? " final" : ""}" style="background:${PET_BG[i]}">
     <div class="pet-emoji" id="petEmoji" role="img" aria-label="${st.n}">${st.e}</div>
     <div class="pet-info">
-      <div class="pet-name">${nm || st.n}<span class="pet-lv">Lv.${i + 1}</span>
-        <button class="pet-edit" id="petRename" title="命名" aria-label="命名">✎</button></div>
+      <div class="pet-name">${nm || st.n}<span class="pet-lv">Lv.${i + 1}</span></div>
       <div class="pet-mood">${mood.e} ${mood.t}　<span class="pet-hearts">${"❤️".repeat(h)}${"🤍".repeat(5 - h)}</span></div>
       <div class="pet-energy"><span class="pe-l">活力 ${en}</span><div class="pe-bar"><i style="width:${en}%"></i></div></div>
       <div class="pet-sub">${nm ? st.n + "・" : ""}已走 <b>${km.toFixed(1)}</b> km${bonus > 0 ? `（含照顧 +${bonus.toFixed(1)}）` : ""}・同行 <b>${days}</b> 天${streak >= 2 ? `・🔥連續${streak}週` : ""}</div>
@@ -2143,11 +2135,6 @@ function renderPet() {
     em.classList.remove("tap"); void em.offsetWidth; em.classList.add("tap");
     if (navigator.vibrate) navigator.vibrate(20);
     toast(PET_TAPS[Math.floor(Math.random() * PET_TAPS.length)]);
-  });
-  $("#petRename").addEventListener("click", () => {
-    askInput({ title: "幫你的山林夥伴取個名字", value: nm || st.n, max: 12 }).then(v => {
-      if (v != null) { localStorage.setItem("tt_pet_name", v.trim().slice(0, 12)); renderPet(); }
-    });
   });
   $("#petDex").addEventListener("click", openPetDex);
   $("#petRec").addEventListener("click", petRecommend);
@@ -2406,8 +2393,6 @@ function renderHistory() {
   renderStats();
   const recs = Store.getRecords();
   const wrap = $("#historyList");
-  const clearBtn = $("#btnClearAll");
-  if (clearBtn) clearBtn.style.display = recs.length ? "block" : "none";
   const gpxAll = $("#btnExportGpxAll");
   if (gpxAll) gpxAll.style.display = recs.length ? "block" : "none";
   if (!recs.length) { wrap.innerHTML = `<div class="empty">${EMPTY_ART}還沒有行程紀錄<br>到「記錄」分頁開始你的第一條路線</div>`; return; }
@@ -2427,19 +2412,11 @@ function renderHistory() {
       <div class="hist-actions">
         <button class="hist-view" data-id="${r.id}">🗺️ 回顧軌跡</button>
         <button class="hist-gpx" data-id="${r.id}">⬇️ 路線檔</button>
-        <button class="hist-del" data-id="${r.id}" aria-label="刪除這筆">🗑 刪除</button>
       </div>
     </div>`).join("");
   wrap.querySelectorAll(".hist-view").forEach(b => b.addEventListener("click", () => {
     const rec = Store.getRecords().find(r => r.id === b.dataset.id);
     if (rec) openTrackReview(rec);
-  }));
-  wrap.querySelectorAll(".hist-del").forEach(b => b.addEventListener("click", () => {
-    if (confirm("確定刪除這筆行程紀錄？")) {
-      Store.deleteRecord(b.dataset.id);
-      renderHistory();
-      toast("已刪除");
-    }
   }));
   wrap.querySelectorAll(".hist-gpx").forEach(b => b.addEventListener("click", () => {
     const rec = Store.getRecords().find(r => r.id === b.dataset.id);
@@ -2572,9 +2549,20 @@ window.ttDebug = (() => {
   };
   return api;
 })();
-function toggleDebugPanel() {
+// DEBUG 測試面板只開放給開發者本人（以登入 Email 驗證）
+const TT_OWNER_EMAIL = "phome0425@gmail.com";
+async function ttIsOwner() {
+  try {
+    const c = (typeof Supa !== "undefined" && Supa.client) ? Supa.client() : null;
+    if (!c) return false;
+    const { data } = await c.auth.getUser();
+    return !!(data && data.user && (data.user.email || "").toLowerCase() === TT_OWNER_EMAIL);
+  } catch (e) { return false; }
+}
+async function toggleDebugPanel() {
   let p = document.getElementById("debugPanel");
   if (p) { p.remove(); return; }
+  if (!(await ttIsOwner())) { if (typeof toast === "function") toast("測試面板僅限開發者使用"); return; }
   p = document.createElement("div");
   p.id = "debugPanel"; p.className = "debug-panel";
   const btns = [
