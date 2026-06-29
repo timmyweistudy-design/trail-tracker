@@ -30,7 +30,7 @@ const Feed = (() => {
     const imgs = media.length
       ? `<div class="fc-media fc-media-${Math.min(media.length, 4)}">${media.map(m => m.kind === "video"
           ? `<div class="fc-vid"><img loading="lazy" src="${esc(Media.publicUrl(m.thumb_path || ""))}" alt=""><span class="fc-play">▶</span></div>`
-          : `<img loading="lazy" src="${esc(Media.publicUrl(m.thumb_path || m.path))}" alt="">`).join("")}</div>` : "";
+          : `<div class="fc-shot"><img loading="lazy" src="${esc(Media.publicUrl(m.thumb_path || m.path))}" alt="">${m.km != null ? `<span class="fc-shot-km">${(+m.km).toFixed(1)}km</span>` : ""}</div>`).join("")}</div>` : "";
     const stats = `${(post.distance_km != null ? post.distance_km.toFixed(2) + "km" : "")}${post.ascent != null ? "　↑" + post.ascent + "m" : ""}`;
     const trailName = post.trail_id
       ? `<span class="fc-traillink" data-trail="${esc(post.trail_id)}">⛰️ ${esc(post.trail_name || "自由路線")}</span>`

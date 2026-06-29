@@ -1073,3 +1073,11 @@ html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
 .lv-chip.lvt-5 { background: linear-gradient(135deg, #9a64db, #7740bf); }
 .lv-chip.lvt-6 { background: linear-gradient(135deg, #d44fa2, #a8327a); box-shadow: 0 1px 6px rgba(168,50,122,.4); }
 .lv-chip.lvt-7 { background: linear-gradient(135deg, #ffe07a, #f0a91e); color: #5a3a00; text-shadow: none; font-weight: 800; box-shadow: 0 0 0 1px rgba(255,205,70,.7), 0 1px 8px rgba(240,169,30,.6); }
+
+/* 隨手拍照片在社群標時間/里程 */
+.fc-shot { position: relative; }
+.fc-shot-km { position: absolute; left: 4px; bottom: 4px; background: rgba(20,24,18,.72); color: #fff; font-family: var(--num); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 6px; }
+.comp-thumb-km { position: absolute; left: 3px; bottom: 3px; background: rgba(20,24,18,.72); color: #fff; font-family: var(--num); font-size: 10px; padding: 1px 5px; border-radius: 5px; }
+.pv-shot { margin: 8px 0; }
+.pv-shot .pv-img { margin: 0; }
+.pv-shot figcaption { font-family: var(--num); font-size: 12px; color: var(--ink-soft); text-align: center; margin-top: 4px; }

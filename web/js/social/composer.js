@@ -36,7 +36,7 @@ const Composer = (() => {
     const close = () => { _urls.forEach(u => URL.revokeObjectURL(u)); _urls = []; wrap.remove(); };
     wrap.querySelector("#compX").addEventListener("click", close);
     wrap.querySelector("#compFiles").addEventListener("change", e => {
-      for (const f of e.target.files) if (files.length < 9) files.push(f);
+      for (const f of e.target.files) if (files.length < 9) files.push({ file: f });   // 額外加的照片無時間/里程
       renderPhotos(wrap);
     });
     wrap.querySelector("#compVideo").addEventListener("change", async e => {
@@ -55,7 +55,7 @@ const Composer = (() => {
   function renderPhotos(wrap) {
     _urls.forEach(u => URL.revokeObjectURL(u)); _urls = [];   // 回收上一輪的物件 URL
     const box = wrap.querySelector("#compPhotos");
-    box.innerHTML = files.map((f, i) => { const u = URL.createObjectURL(f); _urls.push(u); return `<div class="comp-thumb"><img src="${u}" alt=""><button data-i="${i}" class="comp-del">✕</button></div>`; }).join("");
+    box.innerHTML = files.map((it, i) => { const u = URL.createObjectURL(it.file || it); _urls.push(u); return `<div class="comp-thumb"><img src="${u}" alt=""><button data-i="${i}" class="comp-del">✕</button>${(it.km != null) ? `<span class="comp-thumb-km">${(+it.km).toFixed(1)}km</span>` : ""}</div>`; }).join("");
     box.querySelectorAll(".comp-del").forEach(b => b.addEventListener("click", () => { files.splice(+b.dataset.i, 1); renderPhotos(wrap); }));
   }
 

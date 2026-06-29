@@ -1555,7 +1555,7 @@ function openTrackReview(rec) {
   });
   const socialBtn = $("#trackSocial");
   if (socialBtn) socialBtn.addEventListener("click", () => {
-    const preset = (rec.id === hikePhotosRecId) ? hikePhotos.map(p => p.file) : [];
+    const preset = (rec.id === hikePhotosRecId) ? hikePhotos.slice() : [];   // 帶 {file,t,km} 供標時間/里程
     if (typeof Composer !== "undefined") Composer.open(rec, preset);
   });
   // 點隨手拍照片 → 存到相簿（系統分享單的「儲存影像」）/ 下載

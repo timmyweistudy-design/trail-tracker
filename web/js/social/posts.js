@@ -42,12 +42,15 @@ const Posts = (() => {
     const media = [];
     const list = (files || []).slice(0, 9);
     for (let i = 0; i < list.length; i++) {
+      const item = list[i], file = (item && item.file) || item;   // 相容：{file,t,km} 或純 File
       try {
-        const { main, thumb, w, h } = await Media.compressImage(list[i]);
+        const { main, thumb, w, h } = await Media.compressImage(file);
         const base = uuid();
         const path = await Media.upload(uid, postId, main, base + ".jpg");
         const thumb_path = await Media.upload(uid, postId, thumb, base + "_thumb.jpg");
-        media.push({ post_id: postId, kind: "photo", path, thumb_path, w, h, ord: i });
+        media.push({ post_id: postId, kind: "photo", path, thumb_path, w, h, ord: i,
+          taken_at: (item && item.t) ? new Date(item.t).toISOString() : null,
+          km: (item && item.km != null) ? item.km : null });
       } catch (e) { console.warn("media upload failed", e && e.message); }
     }
     if (video && video.file) {
@@ -63,7 +66,7 @@ const Posts = (() => {
   const SELECT = `
     id, author_id, trail_id, trail_name, distance_km, duration_ms, ascent, hiked_on, caption, visibility, created_at, track_thumb,
     author:profiles!posts_author_profile_fk(handle, display_name, avatar_url, pet_level),
-    post_media(kind, path, thumb_path, ord),
+    post_media(kind, path, thumb_path, ord, taken_at, km),
     likes(count), comments(count)`;
 
   async function followingIds() {
