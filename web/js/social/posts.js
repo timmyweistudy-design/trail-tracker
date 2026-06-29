@@ -10,6 +10,14 @@ const Posts = (() => {
     if (!track || !track.length) return null;
     return { type: "LineString", coordinates: track.map(p => [p.lon, p.lat]) };
   }
+  // 降取樣成 ≤40 點的輕量縮圖（動態牆卡片畫路線形狀用，不必傳整條軌跡）
+  function thumbOf(track) {
+    if (!track || track.length < 2) return null;
+    const step = Math.max(1, Math.ceil(track.length / 40)), pts = [];
+    for (let i = 0; i < track.length; i += step) pts.push([+track[i].lon.toFixed(5), +track[i].lat.toFixed(5)]);
+    const last = track[track.length - 1]; pts.push([+last.lon.toFixed(5), +last.lat.toFixed(5)]);
+    return pts;
+  }
 
   // 從健行記錄 rec + 選好的檔案建立貼文。回傳 { id } 或 { error }。
   async function createFromRecord(rec, opts) {
@@ -27,6 +35,7 @@ const Posts = (() => {
       caption: caption || null,
       visibility: visibility === "public" ? "public" : "friends",
       track: toGeo(rec.track),
+      track_thumb: thumbOf(rec.track),
     });
     if (pe) return { error: pe.message };
 
@@ -52,8 +61,8 @@ const Posts = (() => {
   }
 
   const SELECT = `
-    id, author_id, trail_name, distance_km, duration_ms, ascent, hiked_on, caption, visibility, created_at,
-    author:profiles!posts_author_profile_fk(handle, display_name, avatar_url),
+    id, author_id, trail_id, trail_name, distance_km, duration_ms, ascent, hiked_on, caption, visibility, created_at, track_thumb,
+    author:profiles!posts_author_profile_fk(handle, display_name, avatar_url, pet_level),
     post_media(kind, path, thumb_path, ord),
     likes(count), comments(count)`;
 

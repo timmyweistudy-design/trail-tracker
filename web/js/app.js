@@ -261,7 +261,7 @@ document.querySelectorAll(".tab").forEach(btn => {
     $("#view-" + view).classList.add("active");
     if (view === "record") {
       // 從底部分頁進入＝自由記錄，清掉先前選定步道的路線疊圖
-      selectedTrailGeo = null;
+      selectedTrailGeo = null; selectedTrailId = null;
       if (routeRefLayer && recMap) { recMap.removeLayer(routeRefLayer); routeRefLayer = null; }
       ensureGeo();                       // 預載幾何，供模擬挑步道/疊圖用
       setTimeout(initRecMap, 60);
@@ -1024,6 +1024,7 @@ async function openDetail(id) {
     const g = geoOf(t), nm = t.name;
     document.querySelector('.tab[data-view="record"]').click();   // 會先清空 selectedTrailGeo
     selectedTrailGeo = g;                    // #9 再設定本步道路線（供疊圖與偏離判斷）
+    selectedTrailId = t.id;                  // 記住步道 id，發文時連回該步道
     Recorder._trailName = nm;
     $("#recStatus").textContent = `已選擇「${nm}」，按開始記錄`;
     setTimeout(() => { initRecMap(); drawSelectedRoute(); }, 80);
@@ -1586,7 +1587,7 @@ async function shareHikeCard(rec) {
 $("#trackMask").addEventListener("click", closeTrackReview);
 $("#closeTrackBtn").addEventListener("click", closeTrackReview);
 
-let guideLine = null, selectedTrailGeo = null, routeRefLayer = null;
+let guideLine = null, selectedTrailGeo = null, routeRefLayer = null, selectedTrailId = null;
 function drawSelectedRoute() {
   if (!recMap) return;
   if (routeRefLayer) { recMap.removeLayer(routeRefLayer); routeRefLayer = null; }
@@ -1777,6 +1778,7 @@ $("#btnStart").addEventListener("click", () => {
       const t = pickSimTrail();
       if (t) {
         selectedTrailGeo = geoOf(t);
+        selectedTrailId = t.id;
         Recorder._trailName = t.name;
         $("#recStatus").textContent = `模擬「${t.name}」路線`;
         drawSelectedRoute();
@@ -1813,6 +1815,7 @@ function finishRecording(autoVehicle) {
   if (autoVehicle) toast("偵測到車輛速度（>20km/h），已自動結束記錄");
   if (rec) {
     rec.trailName = Recorder._trailName || "自由路線";
+    if (selectedTrailId) rec.trailId = selectedTrailId;   // 連回步道，供社群貼文點擊開啟
     Store.addRecord(rec);
     if (isFootRec(rec)) bumpAffinity(8);   // 只有走路/跑步加深羈絆
     checkPetEvolve();
@@ -1961,6 +1964,11 @@ function feedPet() {
 }
 function petStageIndex(km) { let i = 0; for (let k = 0; k < PET_STAGES.length; k++) if (km >= PET_STAGES[k].km) i = k; return i; }
 function petName() { return localStorage.getItem("tt_pet_name") || ""; }
+// 供社群同步：寵物名字/等級/成長里程，讓好友看到你的進度
+function petStats() {
+  const km = totalKm(), i = petStageIndex(km), st = PET_STAGES[i];
+  return { name: petName() || st.n, level: i + 1, stage: st.n, emoji: st.e, km: +km.toFixed(1) };
+}
 function petHatch() { let h = localStorage.getItem("tt_pet_hatch"); if (!h) { h = new Date().toISOString(); localStorage.setItem("tt_pet_hatch", h); } return h; }
 function daysSince(iso) { return Math.max(0, Math.floor((Date.now() - new Date(iso)) / 864e5)); }
 function weekIndex(d) { const dt = new Date(d); dt.setHours(0, 0, 0, 0); dt.setDate(dt.getDate() - ((dt.getDay() + 6) % 7)); return Math.round(dt / 6048e5); }

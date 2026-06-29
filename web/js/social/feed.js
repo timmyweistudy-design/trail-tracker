@@ -7,6 +7,19 @@ const Feed = (() => {
     if (d < 86400) return Math.floor(d / 3600) + " 小時前"; return Math.floor(d / 86400) + " 天前";
   }
   function count(arr) { return (arr && arr[0] && arr[0].count) || 0; }
+  // 用降取樣的軌跡縮圖畫出路線形狀（純 SVG，不載地圖、很輕）
+  function routeSvg(thumb) {
+    if (!thumb || thumb.length < 2) return "";
+    let minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
+    for (const p of thumb) { minX = Math.min(minX, p[0]); maxX = Math.max(maxX, p[0]); minY = Math.min(minY, p[1]); maxY = Math.max(maxY, p[1]); }
+    const w = 100, h = 44, pad = 4, sx = (maxX - minX) || 1e-6, sy = (maxY - minY) || 1e-6;
+    const pts = thumb.map(p => {
+      const px = pad + (p[0] - minX) / sx * (w - 2 * pad);
+      const py = pad + (1 - (p[1] - minY) / sy) * (h - 2 * pad);
+      return px.toFixed(1) + "," + py.toFixed(1);
+    }).join(" ");
+    return `<svg class="fc-route" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="#c2683d" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+  }
 
   function card(post, liked) {
     const a = post.author || {};
@@ -18,10 +31,14 @@ const Feed = (() => {
           ? `<div class="fc-vid"><img loading="lazy" src="${esc(Media.publicUrl(m.thumb_path || ""))}" alt=""><span class="fc-play">▶</span></div>`
           : `<img loading="lazy" src="${esc(Media.publicUrl(m.thumb_path || m.path))}" alt="">`).join("")}</div>` : "";
     const stats = `${(post.distance_km != null ? post.distance_km.toFixed(2) + "km" : "")}${post.ascent != null ? "　↑" + post.ascent + "m" : ""}`;
+    const trailName = post.trail_id
+      ? `<span class="fc-traillink" data-trail="${esc(post.trail_id)}">⛰️ ${esc(post.trail_name || "自由路線")}</span>`
+      : `⛰️ ${esc(post.trail_name || "自由路線")}`;
     return `<article class="feed-card" data-id="${post.id}">
-      <div class="fc-top fc-author" data-uid="${post.author_id}">${av}<div><div class="fc-name">${esc(a.display_name || a.handle || "山友")}</div>
+      <div class="fc-top fc-author" data-uid="${post.author_id}">${av}<div><div class="fc-name">${esc(a.display_name || a.handle || "山友")}${a.pet_level ? ` <span class="lv-chip">Lv.${a.pet_level}</span>` : ""}</div>
         <div class="fc-sub">${fmtAgo(post.created_at)}${post.visibility === "friends" ? " · 好友" : ""}</div></div></div>
-      <div class="fc-trail">⛰️ ${esc(post.trail_name || "自由路線")}　<span class="fc-stats">${stats}</span></div>
+      <div class="fc-trail">${trailName}　<span class="fc-stats">${stats}</span></div>
+      ${routeSvg(post.track_thumb)}
       ${post.caption ? `<div class="fc-cap">${esc(post.caption)}</div>` : ""}
       ${imgs}
       <div class="fc-actions">
@@ -66,6 +83,7 @@ const Feed = (() => {
     const openDetail = id => { if (typeof PostView !== "undefined") PostView.open(id); };
     document.querySelectorAll(".feed-card .fc-comment").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); openDetail(b.dataset.id); }));
     document.querySelectorAll(".feed-card .fc-author").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); if (typeof Discover !== "undefined") Discover.openProfile(b.dataset.uid); }));
+    document.querySelectorAll(".feed-card .fc-traillink").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); if (typeof window.openDetail === "function") window.openDetail(b.dataset.trail); }));
     document.querySelectorAll(".feed-card").forEach(c => c.addEventListener("click", () => openDetail(c.dataset.id)));
   }
 

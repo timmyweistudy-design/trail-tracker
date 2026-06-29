@@ -2,17 +2,31 @@
 const Profiles = (() => {
   function esc(s) { return (s || "").replace(/[<>&"]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c])); }
 
+  // 把本機寵物名字/等級/里程同步到雲端 profile，讓好友看得到進度
+  async function syncMyStats(uid) {
+    if (typeof petStats !== "function") return;
+    const s = petStats(); const c = Supa.client(); if (!c) return;
+    try { await c.from("profiles").update({ pet_name: s.name, pet_level: s.level, total_km: s.km }).eq("id", uid); } catch (e) { /* */ }
+  }
+  function petLine(ps) {
+    if (!ps) return "";
+    return `<div class="pf-pet">${ps.emoji} ${esc(ps.name)} · Lv.${ps.level}　·　已走 ${ps.km} km</div>`;
+  }
+
   function renderMe(render, prof) {
     const av = prof.avatar_url
       ? `<img class="pf-av" src="${esc(prof.avatar_url)}" alt="">`
       : `<div class="pf-av pf-av-ph">${esc((prof.display_name || prof.handle || "?").slice(0, 1))}</div>`;
+    const ps = (typeof petStats === "function") ? petStats() : null;
+    syncMyStats(prof.id);   // 順手同步到雲端
     render(`
       <div class="pf">
         <div class="pf-top">${av}
           <div class="pf-id"><div class="pf-name">${esc(prof.display_name || prof.handle)}</div>
             <div class="pf-handle">@${esc(prof.handle)}</div></div>
         </div>
-        <div class="pf-counts" id="pfCounts"></div>
+        ${petLine(ps)}
+        <div class="pf-counts"><span id="pfPostCount"></span><span id="pfFollowCounts"></span></div>
         ${prof.bio ? `<div class="pf-bio">${esc(prof.bio)}</div>` : ""}
         <div class="pf-actions">
           <button class="btn ghost" id="pfEdit">編輯檔案</button>
@@ -22,8 +36,9 @@ const Profiles = (() => {
       </div>`);
     document.getElementById("pfSignout").addEventListener("click", async () => { await Auth.signOut(); SocialUI.route(); });
     document.getElementById("pfEdit").addEventListener("click", () => renderEdit(render, prof));
-    Posts.followCounts(prof.id).then(c => { const el = document.getElementById("pfCounts"); if (el) el.innerHTML = `<b>${c.followers}</b> 粉絲　<b>${c.following}</b> 追蹤中`; });
+    Posts.followCounts(prof.id).then(c => { const el = document.getElementById("pfFollowCounts"); if (el) el.innerHTML = `<b>${c.followers}</b> 粉絲　<b>${c.following}</b> 追蹤中`; });
     Posts.userPosts(prof.id).then(async posts => {
+      const pc = document.getElementById("pfPostCount"); if (pc) pc.innerHTML = `<b>${posts.length}</b> 篇　`;
       const box = document.getElementById("pfPosts"); if (!box) return;
       box.className = "feed-list";
       if (!posts.length) { box.className = "pf-posts-empty"; box.textContent = "尚未有貼文。完成一趟健行後，在總結頁按「分享到社群」。"; return; }
@@ -76,5 +91,5 @@ const Profiles = (() => {
     });
   }
 
-  return { renderMe, renderEdit };
+  return { renderMe, renderEdit, syncMyStats };
 })();

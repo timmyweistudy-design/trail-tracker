@@ -1,6 +1,12 @@
 // 搜尋使用者（handle/名字）、追蹤/取消、檢視他人個人頁（含其貼文）。
 const Discover = (() => {
   function esc(s) { return (s || "").replace(/[<>&"]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c])); }
+  function petLineFor(prof) {
+    if (!prof.pet_name && !prof.pet_level) return "";
+    const lvl = prof.pet_level || 1;
+    const emoji = (typeof PET_STAGES !== "undefined" && PET_STAGES[lvl - 1]) ? PET_STAGES[lvl - 1].e : "🐾";
+    return `<div class="pf-pet">${emoji} ${esc(prof.pet_name || "")} · Lv.${lvl}${prof.total_km != null ? `　·　已走 ${prof.total_km} km` : ""}</div>`;
+  }
 
   function render(renderInto) {
     renderInto(`<div class="disc">
@@ -47,6 +53,7 @@ const Discover = (() => {
       <div class="pv-body">
         <div class="pf-top">${prof.avatar_url ? `<img class="pf-av" src="${esc(prof.avatar_url)}">` : `<div class="pf-av pf-av-ph">${esc((prof.display_name || prof.handle).slice(0, 1))}</div>`}
           <div class="pf-id"><div class="pf-name">${esc(prof.display_name || prof.handle)}</div><div class="pf-handle">@${esc(prof.handle)}</div></div></div>
+        ${petLineFor(prof)}
         <div class="pf-counts" id="dpCounts"></div>
         ${prof.bio ? `<div class="pf-bio">${esc(prof.bio)}</div>` : ""}
         ${isMe ? "" : `<button class="btn ${following ? "ghost" : "primary"}" id="dpFollow">${following ? "已追蹤" : "追蹤"}</button>

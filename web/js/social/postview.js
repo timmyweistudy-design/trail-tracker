@@ -1,4 +1,4 @@
-// 貼文詳情覆蓋層：完整貼文（照片/影片）+ 按讚 + 留言串（Realtime 即時）+ 作者刪文。
+// 貼文詳情：路線地圖 + 照片/影片 + 按讚 + 留言(Realtime) + 步道連結 + 作者編輯/刪文/刪留言。
 const PostView = (() => {
   function esc(s) { return (s || "").replace(/[<>&"]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c])); }
 
@@ -7,18 +7,19 @@ const PostView = (() => {
     if (!post) { if (typeof toast === "function") toast("貼文不存在或無權限"); return; }
     const c = Supa.client();
     const { data: u } = await c.auth.getUser();
-    const isMine = u && u.user && post.author_id === u.user.id;
+    const myId = u && u.user ? u.user.id : "";
+    const isMine = myId && post.author_id === myId;
     const likeCount = (post.likes && post.likes[0] && post.likes[0].count) || 0;
     const likedByMe = (await Posts.likedSet([postId])).has(postId);
 
     const wrap = document.createElement("div");
     wrap.className = "pv-mask";
-    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" id="pvX">✕</button><b>貼文</b>${isMine ? '<button class="comp-x" id="pvDel" title="刪除">🗑</button>' : "<span></span>"}</div>
+    wrap.dataset.me = myId; wrap.dataset.author = post.author_id;
+    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" id="pvX">✕</button><b>貼文</b>${isMine ? '<span><button class="comp-x" id="pvEdit" title="編輯">✏️</button><button class="comp-x" id="pvDel" title="刪除">🗑</button></span>' : "<span></span>"}</div>
       <div class="pv-body" id="pvBody"></div>
       <div class="pv-add"><input id="pvInput" class="auth-input" placeholder="留言…" maxlength="1000"><button class="btn primary" id="pvSend">送出</button></div></div>`;
     document.body.appendChild(wrap);
 
-    // Realtime：留言或按讚有變動就即時刷新
     const channel = c.channel("post-" + postId)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "comments", filter: `post_id=eq.${postId}` }, () => loadComments(wrap, postId))
       .on("postgres_changes", { event: "*", schema: "public", table: "likes", filter: `post_id=eq.${postId}` }, () => refreshLikes(wrap, postId))
@@ -26,14 +27,24 @@ const PostView = (() => {
     const close = () => { try { c.removeChannel(channel); } catch (e) { } wrap.remove(); };
     wrap.querySelector("#pvX").addEventListener("click", close);
 
-    if (isMine) wrap.querySelector("#pvDel").addEventListener("click", async () => {
-      if (!confirm("確定刪除這篇貼文？")) return;
-      const r = await Posts.remove(postId);
-      if (r.error) { if (typeof toast === "function") toast("刪除失敗：" + r.error); return; }
-      close();
-      if (typeof toast === "function") toast("已刪除");
-      if (typeof SocialUI !== "undefined") SocialUI.route();
-    });
+    if (isMine) {
+      wrap.querySelector("#pvDel").addEventListener("click", async () => {
+        if (!confirm("確定刪除這篇貼文？")) return;
+        const r = await Posts.remove(postId);
+        if (r.error) { if (typeof toast === "function") toast("刪除失敗：" + r.error); return; }
+        close(); if (typeof toast === "function") toast("已刪除");
+        if (typeof SocialUI !== "undefined") SocialUI.route();
+      });
+      wrap.querySelector("#pvEdit").addEventListener("click", async () => {
+        const v = prompt("編輯內文：", post.caption || ""); if (v === null) return;
+        const { error } = await c.from("posts").update({ caption: v.trim() || null }).eq("id", postId);
+        if (error) { if (typeof toast === "function") toast("更新失敗：" + error.message); return; }
+        post.caption = v.trim();
+        const lb = wrap.querySelector("#pvLike");
+        renderBody(wrap, post, lb.classList.contains("on"), +lb.querySelector("span").textContent, isMine);
+        bindLike(wrap, postId); loadComments(wrap, postId);
+      });
+    }
 
     renderBody(wrap, post, likedByMe, likeCount, isMine);
     bindLike(wrap, postId);
@@ -44,9 +55,12 @@ const PostView = (() => {
   function renderBody(wrap, post, likedByMe, likeCount, isMine) {
     const a = post.author || {};
     const media = (post.post_media || []).slice().sort((x, y) => x.ord - y.ord);
+    const trailName = post.trail_id
+      ? `<span class="fc-traillink" data-trail="${esc(post.trail_id)}">⛰️ ${esc(post.trail_name || "自由路線")}</span>`
+      : `⛰️ ${esc(post.trail_name || "自由路線")}`;
     wrap.querySelector("#pvBody").innerHTML = `
-      <div class="fc-name fc-author" data-uid="${post.author_id}" style="cursor:pointer">${esc(a.display_name || a.handle || "山友")} <span class="fc-sub">@${esc(a.handle || "")}</span></div>
-      <div class="fc-trail">⛰️ ${esc(post.trail_name || "自由路線")}　<span class="fc-stats">${post.distance_km != null ? post.distance_km.toFixed(2) + "km" : ""}${post.ascent != null ? "　↑" + post.ascent + "m" : ""}</span></div>
+      <div class="fc-name fc-author" data-uid="${post.author_id}" style="cursor:pointer">${esc(a.display_name || a.handle || "山友")}${a.pet_level ? ` <span class="lv-chip">Lv.${a.pet_level}</span>` : ""} <span class="fc-sub">@${esc(a.handle || "")}</span></div>
+      <div class="fc-trail">${trailName}　<span class="fc-stats">${post.distance_km != null ? post.distance_km.toFixed(2) + "km" : ""}${post.ascent != null ? "　↑" + post.ascent + "m" : ""}</span></div>
       ${(post.track && post.track.coordinates && post.track.coordinates.length > 1) ? `<div class="pv-map"></div>` : ""}
       ${post.caption ? `<div class="fc-cap">${esc(post.caption)}</div>` : ""}
       ${media.map(m => m.kind === "video"
@@ -56,10 +70,16 @@ const PostView = (() => {
       <div class="pv-comments" id="pvComments"><div class="feed-loading"><span class="spin"></span></div></div>`;
     wrap.querySelectorAll(".pv-photo").forEach(img => img.addEventListener("click", () => { if (typeof Lightbox !== "undefined") Lightbox.open(img.src); }));
     const au = wrap.querySelector(".fc-author"); if (au) au.addEventListener("click", () => { if (typeof Discover !== "undefined") Discover.openProfile(au.dataset.uid); });
-    // 路線地圖（用儲存的軌跡 GeoJSON 畫出走過的路）
+    const tl = wrap.querySelector(".fc-traillink"); if (tl) tl.addEventListener("click", () => { if (typeof window.openDetail === "function") window.openDetail(tl.dataset.trail); });
+    const rep = wrap.querySelector("#pvReport"); if (rep) rep.addEventListener("click", async () => {
+      const reason = prompt("檢舉這篇貼文的原因（選填）："); if (reason === null) return;
+      await Safety.reportPost(post.id, reason);
+      if (typeof toast === "function") toast("已檢舉，感謝回報");
+    });
+    // 路線地圖
     const mapEl = wrap.querySelector(".pv-map");
     if (mapEl && post.track && post.track.coordinates && typeof L !== "undefined") {
-      const coords = post.track.coordinates.map(c => [c[1], c[0]]);   // GeoJSON [lon,lat] → Leaflet [lat,lon]
+      const coords = post.track.coordinates.map(p => [p[1], p[0]]);
       setTimeout(() => {
         try {
           const map = L.map(mapEl, { zoomControl: false, attributionControl: false, scrollWheelZoom: false });
@@ -69,11 +89,6 @@ const PostView = (() => {
         } catch (e) { /* */ }
       }, 60);
     }
-    const rep = wrap.querySelector("#pvReport"); if (rep) rep.addEventListener("click", async () => {
-      const reason = prompt("檢舉這篇貼文的原因（選填）："); if (reason === null) return;
-      await Safety.reportPost(post.id, reason);
-      if (typeof toast === "function") toast("已檢舉，感謝回報");
-    });
   }
 
   function bindLike(wrap, postId) {
@@ -87,7 +102,6 @@ const PostView = (() => {
     });
   }
 
-  // Realtime 按讚變動 → 重抓權威數字
   async function refreshLikes(wrap, postId) {
     const b = wrap.querySelector("#pvLike"); if (!b) return;
     const count = await Posts.likeCount(postId);
@@ -100,12 +114,20 @@ const PostView = (() => {
   async function loadComments(wrap, postId) {
     const c = Supa.client();
     const { data } = await c.from("comments")
-      .select("id, body, created_at, author:profiles!comments_author_profile_fk(handle, display_name)")
+      .select("id, body, author_id, created_at, author:profiles!comments_author_profile_fk(handle, display_name)")
       .eq("post_id", postId).order("created_at", { ascending: true }).limit(200);
     const box = wrap.querySelector("#pvComments"); if (!box) return;
+    const me = wrap.dataset.me, postAuthor = wrap.dataset.author;
     box.innerHTML = (data && data.length)
-      ? data.map(cm => `<div class="pv-cm"><b>${esc((cm.author && (cm.author.display_name || cm.author.handle)) || "山友")}</b> ${esc(cm.body)}</div>`).join("")
+      ? data.map(cm => {
+        const canDel = cm.author_id === me || postAuthor === me;
+        return `<div class="pv-cm"><b>${esc((cm.author && (cm.author.display_name || cm.author.handle)) || "山友")}</b> ${esc(cm.body)}${canDel ? `<button class="cm-del" data-id="${cm.id}" aria-label="刪除">✕</button>` : ""}</div>`;
+      }).join("")
       : `<div class="social-empty">還沒有留言，當第一個。</div>`;
+    box.querySelectorAll(".cm-del").forEach(b => b.addEventListener("click", async () => {
+      await c.from("comments").delete().eq("id", b.dataset.id);
+      loadComments(wrap, postId);
+    }));
   }
 
   async function send(wrap, postId) {

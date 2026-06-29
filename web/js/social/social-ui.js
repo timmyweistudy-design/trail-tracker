@@ -20,6 +20,7 @@ const SocialUI = (() => {
       if (!sess) { Auth.renderLogin(render); return; }
       myProf = await withTimeout(Auth.myProfile(), 10000);
       if (!myProf) { Auth.renderOnboarding(render); return; }
+      if (typeof Profiles !== "undefined") Profiles.syncMyStats(myProf.id);   // 上線即同步寵物進度供好友看
       shell();
     } catch (e) {
       render(`<div class="social-empty">載入失敗：${(e && e.message) || e}<br><br><button class="btn ghost" id="socialRetry">重試</button></div>`);
