@@ -92,9 +92,6 @@
     <div class="toolbar">
       <span class="count" id="resultCount"></span>
       <span class="grow"></span>
-      <button class="icon-btn" id="btnNearMe" aria-label="附近步道" title="附近步道">
-        <svg class="ic" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>
-      </button>
       <button class="btn-filter" id="btnFilter" aria-label="篩選與排序">
         <svg class="ic" viewBox="0 0 24 24"><path d="M3 5h18M6 12h12M10 19h4"/></svg>篩選<span class="dot" id="filterDot" style="display:none"></span>
       </button>
@@ -288,6 +285,7 @@
         <div class="fs-label">排序</div>
         <div class="fs-chips" id="fsSort">
           <button class="chip active" data-sort="default">預設</button>
+          <button class="chip" data-sort="distance">📍 離我最近</button>
           <button class="chip" data-sort="length-asc">最短</button>
           <button class="chip" data-sort="length-desc">最長</button>
           <button class="chip" data-sort="diff-asc">最易</button>

@@ -310,9 +310,31 @@ function toggleRegion(val) {
   syncRegionUI(); updateFilterDot(); render();
 }
 function setSort(val) {
+  if (val === "distance") return setDistanceSort();   // 依距離需先定位，特別處理
+  if (myLoc) { myLoc = null; nearRadius = 0; $("#nearRow").style.display = "none"; }   // 切換到其他排序→關閉附近
   curSort = (curSort === val) ? "default" : val;     // 再按一次取消（回預設）
   document.querySelectorAll("[data-sort]").forEach(c => c.classList.toggle("active", c.dataset.sort === curSort));
   updateFilterDot(); render();
+}
+// 依距離排序：取得定位後依與使用者的距離排序，並顯示半徑篩選列
+function setDistanceSort() {
+  if (curSort === "distance") {   // 再按一次→關閉
+    curSort = "default"; myLoc = null; nearRadius = 0; $("#nearRow").style.display = "none";
+    document.querySelectorAll("[data-sort]").forEach(c => c.classList.toggle("active", c.dataset.sort === "default"));
+    updateFilterDot(); render(); toast("已關閉依距離排序"); return;
+  }
+  if (!navigator.geolocation) { toast("此裝置不支援定位"); return; }
+  toast("定位中…");
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      myLoc = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+      curSort = "distance";
+      document.querySelectorAll("[data-sort]").forEach(c => c.classList.toggle("active", c.dataset.sort === "distance"));
+      $("#nearRow").style.display = "flex";
+      updateFilterDot(); render(); toast("已依距離排序");
+    },
+    () => toast("定位失敗，請允許定位權限"),
+    { enableHighAccuracy: true, timeout: 10000 });
 }
 // 進階篩選啟用數量 → 篩選鈕上的小紅點
 function updateFilterDot() {
@@ -408,6 +430,7 @@ $("#fsReset").addEventListener("click", () => {
   $("#fsOpen").classList.remove("active"); $("#fsGeo").classList.remove("active");
   $("#lenRange").value = 30; $("#ascRange").value = 2000; $("#lenVal").textContent = "不限"; $("#ascVal").textContent = "不限";
   activeFilters.clear(); activeRegions.clear(); curSort = "default";
+  myLoc = null; nearRadius = 0; $("#nearRow").style.display = "none";   // 一併關閉依距離排序
   syncFilterUI(); syncRegionUI();
   document.querySelectorAll("[data-sort]").forEach(c => c.classList.toggle("active", c.dataset.sort === "default"));
   updateFilterDot(); render();
@@ -421,6 +444,7 @@ function currentFilterState() { return { filters: [...activeFilters], regions: [
 function applyPreset(p) {
   activeFilters = new Set(p.filters || []); activeRegions = new Set(p.regions || []);
   curSort = p.sort || "default"; filterOpen = !!p.open; filterGeo = !!p.geo; maxLen = p.maxLen || 0; maxAsc = p.maxAsc || 0;
+  if (curSort === "distance" && !myLoc) curSort = "default";   // 口袋路線不保存定位，無位置時回預設
   syncFilterUI(); syncRegionUI();
   document.querySelectorAll("[data-sort]").forEach(c => c.classList.toggle("active", c.dataset.sort === curSort));
   $("#fsOpen").classList.toggle("active", filterOpen); $("#fsGeo").classList.toggle("active", filterGeo);
@@ -818,18 +842,7 @@ function showBrowseMap() {
   setTimeout(() => { browseMap.invalidateSize(); if (bounds.length) browseMap.fitBounds(bounds, { padding: [30, 30] }); }, 80);
 }
 
-// 附近排序
-$("#btnNearMe").addEventListener("click", () => {
-  const btn = $("#btnNearMe");
-  if (myLoc) { myLoc = null; nearRadius = 0; btn.classList.remove("active"); $("#nearRow").style.display = "none"; render(); toast("已關閉附近排序"); return; }
-  if (!navigator.geolocation) { toast("此裝置不支援定位"); return; }
-  toast("定位中…");
-  navigator.geolocation.getCurrentPosition(
-    pos => { myLoc = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-      btn.classList.add("active"); $("#nearRow").style.display = "flex"; render(); toast("已依距離排序"); },
-    () => { toast("定位失敗，請允許定位權限"); },
-    { enableHighAccuracy: true, timeout: 10000 });
-});
+// 附近半徑篩選（依距離排序開啟後出現）
 $("#nearRow").querySelectorAll("[data-radius]").forEach(b => b.addEventListener("click", () => {
   nearRadius = +b.dataset.radius;
   $("#nearRow").querySelectorAll("[data-radius]").forEach(x => x.classList.toggle("active", x === b));
