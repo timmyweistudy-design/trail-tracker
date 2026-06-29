@@ -1006,3 +1006,6 @@ html[data-theme="dark"] img.trail-photo { background: var(--surface-2); }
 .fc-route .s { fill: var(--brand-mid); }
 .fc-route .e { fill: var(--accent); }
 .pv-head-r { display: inline-flex; align-items: center; gap: 2px; }
+
+/* 深色模式 toast：--brand-deep 在暗色是亮色，會與亮字撞色，改用深底亮字 */
+html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
