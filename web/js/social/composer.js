@@ -3,17 +3,17 @@ const Composer = (() => {
   let files = [];
   let video = null;
 
-  function open(rec, presetFiles) {
+  function open(rec, presetFiles, presetCaption) {
     if (typeof Supa === "undefined" || !Supa.ready()) { alert("社群尚未啟用"); return; }
     Auth.session().then(async (s) => {
       if (!s) { alert("請先到「社群」分頁登入"); return; }
       const prof = await Auth.myProfile();
       if (!prof) { alert("請先到「社群」分頁完成註冊"); return; }
-      mount(rec, presetFiles);
+      mount(rec, presetFiles, presetCaption);
     });
   }
 
-  function mount(rec, presetFiles) {
+  function mount(rec, presetFiles, presetCaption) {
     files = (presetFiles && presetFiles.length) ? presetFiles.slice(0, 9) : []; video = null;
     const wrap = document.createElement("div");
     wrap.className = "composer-mask";
@@ -33,6 +33,7 @@ const Composer = (() => {
         <div class="comp-msg" id="compMsg"></div>
       </div>`;
     document.body.appendChild(wrap);
+    if (presetCaption) { const cc = wrap.querySelector("#compCaption"); if (cc) cc.value = presetCaption; }
     const close = () => { _urls.forEach(u => URL.revokeObjectURL(u)); _urls = []; wrap.remove(); };
     wrap.querySelector("#compX").addEventListener("click", close);
     wrap.querySelector("#compFiles").addEventListener("change", e => {

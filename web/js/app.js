@@ -269,7 +269,13 @@ document.querySelectorAll(".tab").forEach(btn => {
       setTimeout(initRecMap, 60);
       renderRecIdle();
     }
-    if (view === "pet") { renderPet(); renderQuests(); }
+    if (view === "pet") {
+      renderPet(); renderQuests();
+      if (typeof Pets !== "undefined") {
+        Pets.claimGifts().then(n => { if (n > 0) { toast(`收到好友送的 ${n} 🍓！`); renderPet(); } });
+        Pets.renderFriends();
+      }
+    }
     if (view === "me") { renderHistory(); refreshOfflineStatus(); }
     if (view === "social" && typeof SocialUI !== "undefined") SocialUI.onShow();
   });
@@ -878,6 +884,7 @@ function myLogHtml(t) {
     <button class="btn ghost logdone${lg.done ? " done" : ""}" id="logDone">${lg.done ? "✓ 已完成這條步道" : "標記為已完成"}</button>
     <div class="rate-row">我的評分 <span class="rate-stars" id="rateStars">${stars}</span></div>
     <textarea id="logNote" class="log-note" placeholder="寫點筆記（自動儲存）…">${(lg.note || "").replace(/</g, "&lt;")}</textarea>
+    <button class="btn ghost" id="logShare" style="margin-top:10px">📣 分享這條步道到社群</button>
   </div>`;
 }
 
@@ -1082,6 +1089,12 @@ async function openDetail(id) {
   const note = $("#logNote");
   if (note) note.addEventListener("input", () => {
     clearTimeout(note._tm); note._tm = setTimeout(() => Store.setTrailLog(t.id, { note: note.value }), 600);
+  });
+  const logShare = $("#logShare");
+  if (logShare) logShare.addEventListener("click", () => {
+    if (typeof Composer === "undefined") { toast("社群尚未啟用"); return; }
+    const rec = { id: "trail-" + t.id + "-" + Date.now(), trailName: t.name, trailId: t.id, date: new Date().toISOString() };
+    Composer.open(rec, [], (note && note.value.trim()) || "");   // 帶入筆記當內文
   });
 
   // 分享步道（含深連結 ?trail=id）
@@ -2042,14 +2055,16 @@ function bumpAffinity(amt) {
   localStorage.setItem("tt_pet_aff_t", new Date().toISOString());
 }
 function todayStr() { return new Date().toISOString().slice(0, 10); }
-function canFeedToday() { return berriesBalance() >= 3 && localStorage.getItem("tt_pet_fed") !== todayStr(); }
+const FEED_COOLDOWN = 8 * 3600e3;   // 餵食冷卻 8 小時
+function feedCooldownMs() { return Math.max(0, FEED_COOLDOWN - (Date.now() - (+(localStorage.getItem("tt_pet_fed_t") || 0)))); }
+function canFeedToday() { return berriesBalance() >= 3 && feedCooldownMs() === 0; }
 function feedPet() {
-  if (localStorage.getItem("tt_pet_fed") === todayStr()) { toast("今天已經餵過了，明天再來 🍃"); return; }
+  if (feedCooldownMs() > 0) { toast(`還在休息，約 ${Math.ceil(feedCooldownMs() / 3600e3)} 小時後可再餵 🍃`); return; }
   if (berriesBalance() < 3) { toast("果實不足，多走幾步才有果實 🍓"); return; }
   const heartsBefore = petHearts();
   localStorage.setItem("tt_pet_berry_spent", String((+(localStorage.getItem("tt_pet_berry_spent") || 0)) + 3));
   bumpAffinity(15);
-  localStorage.setItem("tt_pet_fed", todayStr());
+  localStorage.setItem("tt_pet_fed_t", String(Date.now()));
   const gain = heartsBefore >= 5 ? 0.5 : 0.3;                  // 親密度滿時照顧獎勵更多
   localStorage.setItem("tt_pet_feedkm", String(+(feedBonusKm() + gain).toFixed(2)));
   if (navigator.vibrate) navigator.vibrate([20, 30, 20]);
@@ -2109,7 +2124,7 @@ function renderQuests() {
   const quests = [
     { icon: "🥾", label: "今日出門健行", cur: trips, goal: 1, dec: 0 },
     { icon: "📏", label: "今日里程 1.5 km", cur: km, goal: 1.5, dec: 1 },
-    { icon: "⛰️", label: "今日爬升 80 m", cur: asc, goal: 80, dec: 0 },
+    { icon: "⛰️", label: "今日爬升 50 m", cur: asc, goal: 50, dec: 0 },
   ];
   const allDone = quests.every(q => q.cur >= q.goal);
   const claimed = localStorage.getItem("tt_quest_claim") === todayStr();
@@ -2127,7 +2142,7 @@ function renderPet() {
   if (!box) return;
   const km = totalKm(), i = petStageIndex(km), st = PET_STAGES[i], next = PET_STAGES[i + 1];
   const nm = petName(), mood = petMood(), days = daysSince(petHatch()), streak = weeksStreak(), en = energy();
-  const berries = berriesBalance(), h = petHearts(), bonus = feedBonusKm(), canFeed = canFeedToday(), fedToday = localStorage.getItem("tt_pet_fed") === todayStr();
+  const berries = berriesBalance(), h = petHearts(), bonus = feedBonusKm(), canFeed = canFeedToday(), cd = feedCooldownMs();
   let prog = "", sub;
   if (next) {
     const pct = Math.max(2, Math.min(100, Math.round((km - st.km) / (next.km - st.km) * 100)));
@@ -2146,7 +2161,7 @@ function renderPet() {
       ${prog}
       <div class="pet-care">
         <span class="pet-berry">🍓 ${berries}</span>
-        <button class="pet-btn feed" id="petFeed"${canFeed ? "" : " disabled"}>${fedToday ? "今天餵過了" : "🍖 餵食 (3🍓)"}</button>
+        <button class="pet-btn feed" id="petFeed"${canFeed ? "" : " disabled"}>${cd > 0 ? `🍃 ${Math.ceil(cd / 3600e3)} 小時後可餵` : "🍖 餵食 (3🍓)"}</button>
       </div>
       <div class="pet-btns">
         <button class="pet-btn" id="petDex">📖 夥伴手冊</button>

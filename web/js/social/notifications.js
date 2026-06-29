@@ -30,9 +30,10 @@ const Notifs = (() => {
     if (n.type === "like") return name + " 讚了你的貼文";
     if (n.type === "comment") return name + " 在你的貼文留言";
     if (n.type === "team") return name + " 邀請你加入小隊";
+    if (n.type === "gift") return name + " 送了果實給你的夥伴";
     return name;
   }
-  function icon(t) { return t === "follow" ? "➕" : t === "like" ? "❤️" : t === "team" ? "👥" : "💬"; }
+  function icon(t) { return t === "follow" ? "➕" : t === "like" ? "❤️" : t === "team" ? "👥" : t === "gift" ? "🍓" : "💬"; }
 
   async function render(into) {
     into(`<div class="feed-loading"><span class="spin"></span></div>`);
@@ -46,6 +47,7 @@ const Notifs = (() => {
     document.querySelectorAll(".notif").forEach(el => el.addEventListener("click", () => {
       if (el.dataset.type === "follow") { if (typeof Discover !== "undefined" && el.dataset.uid) Discover.openProfile(el.dataset.uid); }
       else if (el.dataset.type === "team") { if (typeof Team !== "undefined") Team.openSheet(); }
+      else if (el.dataset.type === "gift") { const b = document.querySelector('.tab[data-view="pet"]'); if (b) b.click(); }
       else if (el.dataset.post && typeof PostView !== "undefined") PostView.open(el.dataset.post);
     }));
     await markAllRead();

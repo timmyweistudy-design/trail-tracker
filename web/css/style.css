@@ -1102,3 +1102,13 @@ html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
 .q-chk { font-family: var(--num); font-size: 13px; font-weight: 700; color: var(--ink-soft); min-width: 24px; text-align: center; flex: 0 0 auto; }
 .quest.done .q-chk { color: var(--brand); font-size: 16px; }
 #qClaim { width: 100%; }
+
+/* 好友的夥伴 */
+#petFriends { margin-top: 18px; }
+.friend-pets { display: flex; flex-direction: column; gap: 8px; }
+.fp { display: flex; align-items: center; gap: 11px; background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 9px 12px; }
+.fp-pet { font-size: 26px; flex: 0 0 auto; }
+.fp-info { flex: 1; min-width: 0; }
+.fp-info b { font-size: 14px; }
+.fp-by { font-size: 11px; color: var(--ink-faint); margin-top: 2px; }
+.fp-gift { flex: 0 0 auto; padding: 6px 12px; }
