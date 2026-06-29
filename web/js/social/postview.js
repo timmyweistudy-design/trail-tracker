@@ -67,7 +67,7 @@ const PostView = (() => {
     wrap.querySelector("#pvBody").innerHTML = `
       <div class="fc-name fc-author" data-uid="${post.author_id}" style="cursor:pointer">${esc(a.display_name || a.handle || "山友")}${a.pet_level ? ` <span class="lv-chip lvt-${Math.min(a.pet_level,7)}">Lv.${a.pet_level}</span>` : ""} <span class="fc-sub">@${esc(a.handle || "")}</span></div>
       <div class="fc-trail">${trailName}　<span class="fc-stats">${post.distance_km != null ? post.distance_km.toFixed(2) + "km" : ""}${post.ascent != null ? "　↑" + post.ascent + "m" : ""}</span>${post.rating ? ` <span class="fc-rate">${"★".repeat(post.rating)}</span>` : ""}</div>
-      ${(post.track && post.track.coordinates && post.track.coordinates.length > 1) ? `<div class="pv-map"></div>` : ""}
+      ${(post.track && post.track.coordinates && post.track.coordinates.length > 1) ? `<div class="pv-map"></div><button class="btn ghost pv-follow" id="pvFollow">🧭 跟著這條路線走</button>` : ""}
       ${post.caption ? `<div class="fc-cap">${esc(post.caption)}</div>` : ""}
       ${media.map(m => {
         if (m.kind === "video") return `<video class="pv-img" controls preload="metadata" poster="${esc(Media.publicUrl(m.thumb_path || ""))}" src="${esc(Media.publicUrl(m.path))}"></video>`;
@@ -81,6 +81,12 @@ const PostView = (() => {
     wrap.querySelectorAll(".pv-photo").forEach(img => img.addEventListener("click", () => { if (typeof Lightbox !== "undefined") Lightbox.open(img.src); }));
     const au = wrap.querySelector(".fc-author"); if (au) au.addEventListener("click", () => { if (typeof Discover !== "undefined") Discover.openProfile(au.dataset.uid); });
     const tl = wrap.querySelector(".fc-traillink"); if (tl) tl.addEventListener("click", () => { if (typeof window.openDetail === "function") window.openDetail(tl.dataset.trail); });
+    const fl = wrap.querySelector("#pvFollow"); if (fl) fl.addEventListener("click", () => {
+      const coords = (post.track && post.track.coordinates) ? post.track.coordinates.map(p => [p[1], p[0]]) : [];
+      const x = wrap.querySelector("#pvX"); if (x) x.click(); else wrap.remove();   // 走正常關閉流程（清掉地圖/頻道）
+      const tab = document.querySelector('.tab[data-view="record"]'); if (tab) tab.click();
+      setTimeout(() => { if (typeof window.followRoute === "function") window.followRoute(coords); }, 250);
+    });
     const rep = wrap.querySelector("#pvReport"); if (rep) rep.addEventListener("click", async () => {
       const reason = prompt("檢舉這篇貼文的原因（選填）："); if (reason === null) return;
       await Safety.reportPost(post.id, reason);

@@ -1154,3 +1154,13 @@ html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
 
 /* 行程記錄分頁顯示按鈕 */
 .hist-more { width: 100%; margin: 4px 0 8px; }
+
+/* 社群強化 batch 1：趨勢/新動態分隔/推薦追蹤/跟著走 */
+.feed-trending-h { font-family: var(--serif); font-weight: 700; font-size: 15px; margin: 6px 2px 10px; color: var(--accent); }
+.feed-divider { text-align: center; font-size: 12px; color: var(--ink-faint); margin: 14px 0 8px; position: relative; }
+.feed-divider::before, .feed-divider::after { content: ""; position: absolute; top: 50%; width: 26%; height: 1px; background: var(--line-soft); }
+.feed-divider::before { left: 4%; } .feed-divider::after { right: 4%; }
+.disc-sec { font-family: var(--serif); font-weight: 700; font-size: 14px; margin: 4px 2px 8px; color: var(--ink-soft); }
+.disc-row { display: flex; align-items: center; gap: 10px; }
+.disc-follow { margin-left: auto; flex: 0 0 auto; padding: 5px 14px; font-size: 13px; }
+.pv-follow { width: 100%; margin: 4px 0 10px; }

@@ -988,6 +988,7 @@ async function openDetail(id) {
     <div id="poiBox">${skelCards(3)}</div>
     <div class="section-title collapsible" id="secFood">${ic("food")}步道周邊美食</div>
     <div id="foodBox">${skelCards(3)}</div>
+    <div id="trailFeedBox"></div>
     <button class="btn primary" id="btnGoRecord">${ic("pin")}在此步道開始記錄</button>
     <div style="font-size:11px;color:var(--ink-soft);text-align:center;margin-top:14px">${credit}</div>
   `;
@@ -1019,6 +1020,7 @@ async function openDetail(id) {
   loadPhoto(t);
   loadWeather(t);
   loadElevation(t);
+  loadTrailFeed(t);
   // Places 查詢（設施/美食/景點）較耗額度 → 滑到該區塊才查，省 Google 每日配額
   whenVisible($("#amenBox"), () => loadAmenities(t));
   whenVisible($("#poiBox"), () => loadAttractions(t));
@@ -1492,6 +1494,22 @@ async function saveImageFile(file) {
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
+// 步道詳情頁：顯示走過這條步道的山友公開貼文
+async function loadTrailFeed(t) {
+  const box = $("#trailFeedBox"); if (!box) return;
+  if (typeof Supa === "undefined" || !Supa.ready() || typeof Posts === "undefined" || typeof Feed === "undefined") { box.innerHTML = ""; return; }
+  try {
+    const posts = await Posts.byTrail(t.id, 12);
+    if (!$("#trailFeedBox") || _detailTrail !== t) return;   // 已切換步道
+    if (!posts.length) { box.innerHTML = ""; return; }
+    const liked = await Posts.likedSet(posts.map(p => p.id));
+    box.innerHTML = `<div class="section-title">📣 山友走過這條（${posts.length}）</div><div class="feed-list">${posts.map(p => Feed.card(p, liked.has(p.id))).join("")}</div>`;
+    box.querySelectorAll(".feed-card").forEach(card => card.addEventListener("click", e => {
+      if (e.target.closest(".fc-author") || e.target.closest(".fc-traillink") || e.target.closest(".fc-like")) return;
+      if (typeof PostView !== "undefined") PostView.open(card.dataset.id);
+    }));
+  } catch (e) { box.innerHTML = ""; }
+}
 function openTrackReview(rec) {
   if (!rec) return;
   _shotUrls.forEach(u => URL.revokeObjectURL(u)); _shotUrls = [];   // 回收上一份結算的照片 URL
@@ -1667,16 +1685,23 @@ $("#gpxFile").addEventListener("change", e => {
   reader.onload = () => {
     const pts = GPX.parse(reader.result);
     if (!pts.length) { toast("這個檔案沒有可用的路徑"); return; }
-    initRecMap();
-    if (guideLine) recMap.removeLayer(guideLine);
-    const latlngs = pts.map(p => [p.lat, p.lon]);
-    guideLine = L.polyline(latlngs, { color: "#e8893b", weight: 4, dashArray: "8 6", opacity: .9 }).addTo(recMap);
-    recMap.fitBounds(guideLine.getBounds(), { padding: [20, 20] });
-    toast(`已匯入路線（${pts.length} 點），橘色虛線即參考路徑`);
+    followRoute(pts.map(p => [p.lat, p.lon]));
   };
   reader.readAsText(file);
   e.target.value = "";
 });
+
+// 在記錄頁畫出橘色虛線參考路徑（GPX 匯入 / 跟著貼文路線走 共用）
+function followRoute(latlngs) {
+  if (!latlngs || latlngs.length < 2) { toast("這條路線沒有可用的軌跡"); return; }
+  initRecMap();
+  if (guideLine) recMap.removeLayer(guideLine);
+  guideLine = L.polyline(latlngs, { color: "#e8893b", weight: 4, dashArray: "8 6", opacity: .9 }).addTo(recMap);
+  recMap.fitBounds(guideLine.getBounds(), { padding: [20, 20] });
+  setTimeout(() => recMap.invalidateSize(), 120);
+  toast(`已載入路線（${latlngs.length} 點），橘色虛線即參考路徑`);
+}
+window.followRoute = followRoute;
 
 // 記錄頁即時海拔曲線
 function drawRecSpark(series) {

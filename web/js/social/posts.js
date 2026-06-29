@@ -104,6 +104,50 @@ const Posts = (() => {
     return data || [];
   }
 
+  // 某步道的公開貼文（步道詳情頁「山友的旅行」用）
+  async function byTrail(trailId, limit) {
+    const c = Supa.client(); if (!c || !trailId) return [];
+    const { data, error } = await c.from("posts").select(SELECT).eq("trail_id", String(trailId))
+      .eq("visibility", "public").order("created_at", { ascending: false }).limit(limit || 12);
+    if (error) { console.warn("byTrail", error.message); return []; }
+    return data || [];
+  }
+
+  // 熱門探索：抓近期公開貼文，依「互動數＋時間衰減」排序（趨勢牆）
+  async function trending() {
+    const c = Supa.client(); if (!c) return [];
+    const { data, error } = await c.from("posts").select(SELECT).eq("visibility", "public")
+      .order("created_at", { ascending: false }).limit(60);
+    if (error) { console.warn("trending", error.message); return []; }
+    const score = p => {
+      const eng = count(p.likes) + 2 * count(p.comments);
+      const hrs = (Date.now() - new Date(p.created_at).getTime()) / 3600000;
+      return (eng + 1) / Math.pow(hrs + 2, 0.6);   // 新且互動高 → 分數高
+    };
+    return (data || []).slice().sort((a, b) => score(b) - score(a)).slice(0, 30);
+  }
+  function count(arr) { return (arr && arr[0] && arr[0].count) || 0; }
+
+  // 推薦追蹤：近期活躍且我還沒追蹤的山友
+  async function suggestions() {
+    const c = Supa.client(); if (!c) return [];
+    const { data: u } = await c.auth.getUser(); if (!u || !u.user) return [];
+    const me = u.user.id;
+    const { data: recent } = await c.from("posts").select("author_id, created_at")
+      .eq("visibility", "public").order("created_at", { ascending: false }).limit(120);
+    const followed = new Set(await followingIds());
+    const blocked = (typeof Safety !== "undefined") ? await Safety.blockedIds() : new Set();
+    const seen = new Set(), ids = [];
+    for (const r of (recent || [])) {
+      const a = r.author_id;
+      if (a === me || followed.has(a) || blocked.has(a) || seen.has(a)) continue;
+      seen.add(a); ids.push(a); if (ids.length >= 12) break;
+    }
+    if (!ids.length) return [];
+    const { data: profs } = await c.from("profiles").select("id, handle, display_name, avatar_url, pet_level").in("id", ids);
+    return profs || [];
+  }
+
   async function one(postId) {
     const c = Supa.client(); if (!c) return null;
     const { data } = await c.from("posts").select(SELECT + ", track").eq("id", postId).maybeSingle();
@@ -144,5 +188,5 @@ const Posts = (() => {
     return { followers: fr.count || 0, following: fg.count || 0 };
   }
 
-  return { createFromRecord, feed, userPosts, one, likedSet, toggleLike, likeCount, followingIds, remove, followCounts };
+  return { createFromRecord, feed, userPosts, byTrail, trending, suggestions, one, likedSet, toggleLike, likeCount, followingIds, remove, followCounts };
 })();

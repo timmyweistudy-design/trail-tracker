@@ -13,7 +13,28 @@ const Discover = (() => {
       <input id="discQ" class="auth-input" placeholder="搜尋 handle 或名字" autocapitalize="off">
       <div id="discResults"></div></div>`);
     const q = document.getElementById("discQ"); let t = null;
-    q.addEventListener("input", () => { clearTimeout(t); t = setTimeout(() => search(q.value.trim()), 300); });
+    q.addEventListener("input", () => { clearTimeout(t); t = setTimeout(() => { const v = q.value.trim(); v.length < 2 ? showSuggestions() : search(v); }, 300); });
+    showSuggestions();   // 一進來先給「推薦追蹤」，不必空白
+  }
+
+  // 推薦追蹤：近期活躍、我還沒追蹤的山友
+  async function showSuggestions() {
+    const box = document.getElementById("discResults"); if (!box) return;
+    box.innerHTML = `<div class="feed-loading"><span class="spin"></span></div>`;
+    const people = (typeof Posts !== "undefined" && Posts.suggestions) ? await Posts.suggestions() : [];
+    if (!document.getElementById("discResults")) return;
+    if (!people.length) { box.innerHTML = `<div class="social-empty">輸入 handle 或名字搜尋山友。</div>`; return; }
+    box.innerHTML = `<div class="disc-sec">✨ 推薦追蹤</div>` + people.map(p => `<div class="disc-row" data-id="${p.id}">
+      ${p.avatar_url ? `<img class="fc-av" src="${esc(p.avatar_url)}">` : `<div class="fc-av fc-av-ph">${esc((p.display_name || p.handle).slice(0, 1))}</div>`}
+      <div class="disc-id"><b>${esc(p.display_name || p.handle)}${p.pet_level ? ` <span class="lv-chip lvt-${Math.min(p.pet_level,7)}">Lv.${p.pet_level}</span>` : ""}</b><span>@${esc(p.handle)}</span></div>
+      <button class="btn primary disc-follow" data-id="${p.id}">追蹤</button></div>`).join("");
+    box.querySelectorAll(".disc-row").forEach(r => r.addEventListener("click", e => { if (e.target.closest(".disc-follow")) return; openProfile(r.dataset.id); }));
+    box.querySelectorAll(".disc-follow").forEach(b => b.addEventListener("click", async e => {
+      e.stopPropagation();
+      const on = b.textContent === "追蹤";
+      b.textContent = on ? "已追蹤" : "追蹤"; b.className = "btn disc-follow " + (on ? "ghost" : "primary");
+      await follow(b.dataset.id, on);
+    }));
   }
 
   async function search(term) {

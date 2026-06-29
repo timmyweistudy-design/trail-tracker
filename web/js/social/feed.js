@@ -51,11 +51,41 @@ const Feed = (() => {
 
   let _mode = "friends", _posts = [], _into = null, _gen = 0;
 
+  // 上次看到的最新貼文時間（用來插「新動態」分隔線）
+  function seenKey(mode) { return "tt_feed_seen_" + mode; }
+  function lastSeen(mode) { return localStorage.getItem(seenKey(mode)) || ""; }
+  function markSeen(mode, iso) { if (iso) try { localStorage.setItem(seenKey(mode), iso); } catch (e) { } }
+
+  // 離線快取：存下最近一次的動態，下次秒開（再背景更新）
+  function cacheKey(mode) { return "tt_feedcache_" + mode; }
+  function readCache(mode) { try { return JSON.parse(localStorage.getItem(cacheKey(mode))) || []; } catch { return []; } }
+  function writeCache(mode, posts) { try { localStorage.setItem(cacheKey(mode), JSON.stringify(posts.slice(0, 20))); } catch (e) { } }
+
   async function render(renderInto, mode) {
     const g = ++_gen;   // 世代：切分頁/刷新後，舊查詢結果作廢
     _into = renderInto; _mode = mode; _posts = [];
-    renderInto(`<div class="feed-loading"><span class="spin"></span>載入中…</div>`);
-    await loadMore(true, g);
+    const cached = readCache(mode);
+    if (cached.length) {   // 先用快取秒開，背景再更新
+      renderInto(`<div class="feed-list">${cached.map(p => card(p, false)).join("")}</div>`);
+      bind();
+    } else renderInto(`<div class="feed-loading"><span class="spin"></span>載入中…</div>`);
+    if (mode === "explore") await loadTrending(g);
+    else await loadMore(true, g);
+  }
+
+  async function loadTrending(g) {
+    if (g == null) g = _gen;
+    const batch = await Posts.trending();
+    if (g !== _gen) return;
+    _posts = batch;
+    const refresh = `<button class="feed-refresh" id="feedRefresh">↻ 重新整理</button>`;
+    if (!_posts.length) {
+      _into(`${refresh}<div class="social-empty">目前還沒有公開貼文。</div>`);
+      wireRefresh(); return;
+    }
+    const liked = await Posts.likedSet(_posts.map(p => p.id));
+    _into(`${refresh}<div class="feed-trending-h">🔥 熱門趨勢</div><div class="feed-list">${_posts.map(p => card(p, liked.has(p.id))).join("")}</div>`);
+    bind(); wireRefresh(); writeCache(_mode, _posts);
   }
 
   async function loadMore(first, g) {
@@ -66,16 +96,44 @@ const Feed = (() => {
     _posts = _posts.concat(batch);
     const refresh = `<button class="feed-refresh" id="feedRefresh">↻ 重新整理</button>`;
     if (!_posts.length) {
-      _into(`${refresh}<div class="social-empty">${_mode === "explore" ? "目前還沒有公開貼文。" : "追蹤山友後，這裡會出現他們的步道旅行（你自己的也會在這）。"}</div>`);
-      const r0 = document.getElementById("feedRefresh"); if (r0) r0.addEventListener("click", () => render(_into, _mode));
+      _into(`${refresh}<div class="social-empty">追蹤山友後，這裡會出現他們的步道旅行（你自己的也會在這）。</div>`);
+      wireRefresh();
       return;
     }
     const liked = await Posts.likedSet(_posts.map(p => p.id));
     const more = batch.length >= 20 ? `<button class="btn ghost" id="feedMore">載入更多</button>` : "";
-    _into(`${refresh}<div class="feed-list">${_posts.map(p => card(p, liked.has(p.id))).join("")}</div>${more}`);
-    bind();
-    const rb = document.getElementById("feedRefresh"); if (rb) rb.addEventListener("click", () => render(_into, _mode));
+    // 新動態分隔線：比上次看到還新的貼文歸為「新」
+    const seen = first ? lastSeen(_mode) : "__skip__";
+    let newCount = 0;
+    if (first && seen) newCount = _posts.filter(p => p.created_at > seen).length;
+    const items = _posts.map((p, i) => {
+      const div = (first && newCount && i === newCount) ? `<div class="feed-divider">— 以上為新動態 —</div>` : "";
+      return div + card(p, liked.has(p.id));
+    }).join("");
+    _into(`${refresh}<div class="feed-list">${items}</div>${more}`);
+    bind(); wireRefresh();
+    if (first) writeCache(_mode, _posts);
+    if (first && _posts.length) markSeen(_mode, _posts[0].created_at);   // 記住這次最新
     const mb = document.getElementById("feedMore"); if (mb) mb.addEventListener("click", () => loadMore(false));
+  }
+
+  function wireRefresh() {
+    const rb = document.getElementById("feedRefresh"); if (rb) rb.addEventListener("click", () => render(_into, _mode));
+    attachPTR();
+  }
+
+  // 下拉刷新：列表捲到頂時往下拉超過門檻 → 重新整理
+  function attachPTR() {
+    const sc = document.getElementById("view-social"); if (!sc || sc._ptr) return; sc._ptr = true;
+    let startY = 0, pulling = false;
+    sc.addEventListener("touchstart", e => { pulling = sc.scrollTop <= 0; startY = e.touches[0].clientY; }, { passive: true });
+    sc.addEventListener("touchmove", e => {
+      if (!pulling) return;
+      const dy = e.touches[0].clientY - startY;
+      // 僅在動態牆畫面（有重新整理鈕）時觸發，避免在搜尋/通知分頁誤刷
+      if (dy > 90 && _into && document.getElementById("feedRefresh")) { pulling = false; if (typeof toast === "function") toast("重新整理中…"); render(_into, _mode); }
+    }, { passive: true });
+    sc.addEventListener("touchend", () => { pulling = false; }, { passive: true });
   }
 
   function bind() {
