@@ -2543,9 +2543,33 @@ window.ttDebug = (() => {
       bumpAffinity(8); checkPetEvolve(); refresh(); return api.state();
     },
     clearHikes() { const kept = Store.getRecords().filter(r => !r.dbg); localStorage.setItem("tt_records", JSON.stringify(kept)); refresh(); return "已清除測試行程"; },
+    // 一鍵解鎖全部成就：灌入足以滿足所有徽章條件的測試資料
+    unlockAch() {
+      const recs = [];
+      for (let i = 0; i < 100; i++) {                       // 100 筆 → 出行次數成就
+        const d = new Date(); d.setDate(d.getDate() - i);   // 連續 100 天 → 連續天數/週數成就
+        if (i === 1) d.setHours(6, 0, 0, 0);                // 清晨 → 早起鳥
+        else if (i === 2) d.setHours(20, 0, 0, 0);          // 夜間 → 夜行者
+        else d.setHours(12, 0, 0, 0);
+        const km = i === 0 ? 22 : 5;                        // 一筆 22km → 半馬/馬拉松；總里程 ≈ 517km
+        recs.push({
+          id: "dbg-ach-" + i, date: d.toISOString(), dbg: true, note: "成就測試",
+          distanceKm: km, distance3DKm: km, steps: Math.round(km * 1350), kcal: Math.round(km * 60),
+          elapsedMs: Math.round(km * 12 * 60000), ascent: 95, descent: 80,   // 總爬升 9500m → 聖母峰
+          track: [{ lat: 24, lon: 121, t: d.getTime() }],
+        });
+      }
+      const kept = Store.getRecords().filter(r => !String(r.id).startsWith("dbg-ach-"));
+      localStorage.setItem("tt_records", JSON.stringify(recs.concat(kept)));
+      const ids = (typeof TRAILS !== "undefined" ? TRAILS : []).map(t => t.id).filter(Boolean);
+      localStorage.setItem("tt_favs", JSON.stringify(ids.slice(0, 12)));      // 收藏 12 條 → 收藏迷
+      ids.slice(0, 25).forEach(id => Store.setTrailLog(id, { done: true }));  // 完成 25 條 → 踏遍五徑/收藏家
+      checkPetEvolve(); refresh(); try { renderBadges(); } catch (e) { /* */ }
+      return "已解鎖全部成就 🏅";
+    },
     state() { return { 成長km: +totalKm().toFixed(2), 等級: petStageIndex(totalKm()) + 1, 果實: berriesBalance(), 愛心: petHearts(), 親密度: affinity(), 今日km: +todayKm().toFixed(1), 出行次數: realRecords().length, debug里程: debugKm() }; },
     panel() { toggleDebugPanel(); },
-    help() { console.log("ttDebug 指令：\n addKm(n) setLevel(0-6) maxLevel() evolve()\n addBerries(n) setAffinity(0-100) resetFeed() addDays(n)\n addHike(km) clearHikes()  ← 推進成就/每日環/足跡圖\n clearDebug() resetPet() state() panel()"); return api.state(); },
+    help() { console.log("ttDebug 指令：\n addKm(n) setLevel(0-6) maxLevel() evolve()\n addBerries(n) setAffinity(0-100) resetFeed() addDays(n)\n addHike(km) clearHikes()  ← 推進成就/每日環/足跡圖\n unlockAch()  ← 一鍵解鎖全部成就\n clearDebug() resetPet() state() panel()"); return api.state(); },
   };
   return api;
 })();
@@ -2572,6 +2596,7 @@ async function toggleDebugPanel() {
     ["可再餵", () => ttDebug.resetFeed()], ["+30天", () => ttDebug.addDays(30)],
     ["＋行程3km", () => ttDebug.addHike(3)], ["＋行程10km", () => ttDebug.addHike(10)],
     ["清測試行程", () => ttDebug.clearHikes()], ["清debug", () => ttDebug.clearDebug()],
+    ["🏅解全成就", () => ttDebug.unlockAch()],
     ["重置🥚", () => ttDebug.resetPet()],
   ];
   p.innerHTML = `<div class="dbg-h">🛠 測試面板 <span id="dbgState"></span><button id="dbgClose">✕</button></div><div class="dbg-grid"></div>`;
