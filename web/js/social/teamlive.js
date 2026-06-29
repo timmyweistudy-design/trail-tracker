@@ -7,7 +7,7 @@ const TeamLive = (() => {
   function icon(meta) {
     const av = meta.avatar ? `<img src="${meta.avatar}" alt="">` : `<span class="tm-ph">${(meta.name || "?").slice(0, 1)}</span>`;
     const pet = meta.pet ? `<span class="tm-pet">${meta.pet}</span>` : "";
-    return L.divIcon({ className: "team-marker", html: `<div class="tm-av">${av}${pet}</div>`, iconSize: [42, 42], iconAnchor: [21, 21] });
+    return L.divIcon({ className: "team-marker", html: `<div class="tm-av">${av}${pet}</div>`, iconSize: [32, 32], iconAnchor: [16, 16] });
   }
 
   function render() {

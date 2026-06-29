@@ -1705,7 +1705,7 @@ Recorder.onUpdate(s => {
       // 自己的原點＝頭像 + 寵物徽章（與隊友一致）；移除浮動寵物避免重複
       if (!recMarker || !recMarker._av) {
         if (recMarker) recMap.removeLayer(recMarker);
-        recMarker = L.marker(last, { icon: L.divIcon({ className: "team-marker me-marker", html: `<div class="tm-av"><img src="${meAv}" alt=""><span class="tm-pet">${petEmojiNow()}</span></div>`, iconSize: [42, 42], iconAnchor: [21, 21] }), zIndexOffset: 1100 }).addTo(recMap);
+        recMarker = L.marker(last, { icon: L.divIcon({ className: "team-marker me-marker", html: `<div class="tm-av"><img src="${meAv}" alt=""><span class="tm-pet">${petEmojiNow()}</span></div>`, iconSize: [32, 32], iconAnchor: [16, 16] }), zIndexOffset: 1100 }).addTo(recMap);
         recMarker._av = true;
       }
       recMarker.setLatLng(last);
