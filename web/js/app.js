@@ -884,13 +884,7 @@ function gradeExplain(t) {
   </div>`;
 }
 
-// 我的步記區塊
-function myLogHtml(t) {
-  return `<div class="mylog">
-    <div class="section-title" style="margin-top:16px">📒 我的步記</div>
-    <button class="btn ghost" id="logShare">📣 分享到社群（可評星級）</button>
-  </div>`;
-}
+function myLogHtml() { return ""; }   // 我的步記已移除（完成→圖卡勾勾、分享→記錄總結頁）
 
 // ---------- 詳情面板 ----------
 let _detailTrail = null;
@@ -1071,14 +1065,6 @@ async function openDetail(id) {
     const added = Store.toggleFav(t.id);
     favD.classList.toggle("on", added); favD.textContent = added ? "★ 已收藏" : "☆ 收藏";
     toast(added ? "已加入收藏" : "已移除收藏");
-  });
-
-  // 我的步記
-  const logShare = $("#logShare");
-  if (logShare) logShare.addEventListener("click", () => {
-    if (typeof Composer === "undefined") { toast("社群尚未啟用"); return; }
-    const rec = { id: "trail-" + t.id + "-" + Date.now(), trailName: t.name, trailId: t.id, date: new Date().toISOString() };
-    Composer.open(rec, []);   // 在發文視窗寫心得、評星級
   });
 
   // 分享步道（含深連結 ?trail=id）
