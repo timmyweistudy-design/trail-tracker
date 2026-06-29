@@ -1467,6 +1467,17 @@ function playTrackReplay(pts) {
     }
   }, interval);
 }
+// 存照片到相簿：優先系統分享單（iOS/Android 可「儲存影像」），否則下載
+async function saveImageFile(file) {
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); return; }
+  } catch (e) { if (e && e.name === "AbortError") return; }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(file);
+  a.download = file.name || ("循徑拾光_" + Date.now() + ".jpg");
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
 function openTrackReview(rec) {
   if (!rec) return;
   const km = rec.distanceKm || 0, t3 = rec.distance3DKm;
@@ -1482,8 +1493,8 @@ function openTrackReview(rec) {
       <div class="item"><div class="l">步數</div><div class="v">${(rec.steps || 0).toLocaleString()}</div></div>
       ${t3 && t3 > km + 0.05 ? `<div class="item"><div class="l">含坡度距離</div><div class="v">${t3.toFixed(2)} km</div></div>` : ""}
     </div>
-    ${(rec.id === hikePhotosRecId && hikePhotos.length) ? `<div class="section-title">📷 隨手拍（${hikePhotos.length}）</div>
-      <div class="hike-shots">${hikePhotos.map(p => `<figure class="shot"><img src="${URL.createObjectURL(p.file)}" alt=""><figcaption>${new Date(p.t).toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" })} · ${p.km.toFixed(2)}km</figcaption></figure>`).join("")}</div>` : ""}
+    ${(rec.id === hikePhotosRecId && hikePhotos.length) ? `<div class="section-title">📷 隨手拍（${hikePhotos.length}）<span class="shot-hint">點照片存到相簿</span></div>
+      <div class="hike-shots">${hikePhotos.map((p, i) => `<figure class="shot" data-i="${i}"><img src="${URL.createObjectURL(p.file)}" alt=""><figcaption>${new Date(p.t).toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" })} · ${p.km.toFixed(2)}km</figcaption></figure>`).join("")}</div>` : ""}
     <div class="link-row">
       <button class="link-btn" id="trackReplay">▶ 重播路徑</button>
       <button class="link-btn" id="trackCard">🖼 分享圖卡</button>
@@ -1528,6 +1539,10 @@ function openTrackReview(rec) {
     const preset = (rec.id === hikePhotosRecId) ? hikePhotos.map(p => p.file) : [];
     if (typeof Composer !== "undefined") Composer.open(rec, preset);
   });
+  // 點隨手拍照片 → 存到相簿（系統分享單的「儲存影像」）/ 下載
+  $("#trackBody").querySelectorAll(".hike-shots .shot").forEach(fig => fig.addEventListener("click", () => {
+    const p = hikePhotos[+fig.dataset.i]; if (p) saveImageFile(p.file);
+  }));
 }
 function closeTrackReview() { if (trackAnim) { clearInterval(trackAnim); trackAnim = null; } const lv = document.getElementById("replayLive"); if (lv) lv.style.display = "none"; const bb = document.getElementById("replayBar"); if (bb) bb.remove(); $("#trackMask").classList.remove("show"); $("#trackSheet").classList.remove("show"); }
 
