@@ -19,9 +19,10 @@ const SocialUI = (() => {
     if (typeof Auth === "undefined") { render(`<div class="social-empty">社群模組載入失敗，請下拉重新整理。</div>`); return; }
     try {
       const sess = await withTimeout(Auth.session(), 10000);
-      if (!sess) { Auth.renderLogin(render); return; }
+      if (!sess) { window.__meAvatar = null; Auth.renderLogin(render); return; }
       myProf = await withTimeout(Auth.myProfile(), 10000);
       if (!myProf) { Auth.renderOnboarding(render); return; }
+      window.__meAvatar = myProf.avatar_url || null;   // 供記錄地圖的「我」標記
       if (typeof Profiles !== "undefined") Profiles.syncMyStats(myProf.id);   // 上線即同步寵物進度供好友看
       shell();
     } catch (e) {

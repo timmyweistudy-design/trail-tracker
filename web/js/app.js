@@ -264,6 +264,7 @@ document.querySelectorAll(".tab").forEach(btn => {
       selectedTrailGeo = null; selectedTrailId = null;
       if (routeRefLayer && recMap) { recMap.removeLayer(routeRefLayer); routeRefLayer = null; }
       ensureGeo();                       // 預載幾何，供模擬挑步道/疊圖用
+      ensureMeAvatar();                  // 預取頭像供「我」的地圖標記
       setTimeout(initRecMap, 60);
       renderRecIdle();
     }
@@ -1699,14 +1700,29 @@ Recorder.onUpdate(s => {
     const pts = s.track.map(p => [p.lat, p.lon]);
     recLine.setLatLngs(pts);
     const last = pts[pts.length - 1];
-    if (!recMarker) recMarker = L.circleMarker(last, { radius: 7, color: "#fff", weight: 3, fillColor: "#e8893b", fillOpacity: 1 }).addTo(recMap);
-    recMarker.setLatLng(last);
-    // 山林夥伴同行：寵物跟在當前位置上方
-    if (!petMarker) petMarker = L.marker(last, {
-      icon: L.divIcon({ className: "pet-marker", html: `<span class="pm-e">${petEmojiNow()}</span>`, iconSize: [34, 34], iconAnchor: [17, 30] }),
-      interactive: false, zIndexOffset: 1000,
-    }).addTo(recMap);
-    petMarker.setLatLng(last);
+    const meAv = window.__meAvatar;   // 登入且有頭像才用頭像標記
+    if (meAv) {
+      // 自己的原點＝頭像 + 寵物徽章（與隊友一致）；移除浮動寵物避免重複
+      if (!recMarker || !recMarker._av) {
+        if (recMarker) recMap.removeLayer(recMarker);
+        recMarker = L.marker(last, { icon: L.divIcon({ className: "team-marker me-marker", html: `<div class="tm-av"><img src="${meAv}" alt=""><span class="tm-pet">${petEmojiNow()}</span></div>`, iconSize: [42, 42], iconAnchor: [21, 21] }), zIndexOffset: 1100 }).addTo(recMap);
+        recMarker._av = true;
+      }
+      recMarker.setLatLng(last);
+      if (petMarker) { recMap.removeLayer(petMarker); petMarker = null; }
+    } else {
+      if (!recMarker || recMarker._av) {
+        if (recMarker) recMap.removeLayer(recMarker);
+        recMarker = L.circleMarker(last, { radius: 7, color: "#fff", weight: 3, fillColor: "#e8893b", fillOpacity: 1 }).addTo(recMap);
+      }
+      recMarker.setLatLng(last);
+      // 山林夥伴同行：寵物跟在當前位置上方
+      if (!petMarker) petMarker = L.marker(last, {
+        icon: L.divIcon({ className: "pet-marker", html: `<span class="pm-e">${petEmojiNow()}</span>`, iconSize: [34, 34], iconAnchor: [17, 30] }),
+        interactive: false, zIndexOffset: 1000,
+      }).addTo(recMap);
+      petMarker.setLatLng(last);
+    }
     // 模擬高幀率：用 animate:false 讓地圖即時跟隨，路線從腳下滑過＝滑行感；真實 GPS 維持平滑動畫
     if (s.state === "running") recMap.panTo(last, sim() ? { animate: false } : undefined);
   }
@@ -1734,6 +1750,13 @@ $("#lowPowerToggle").addEventListener("change", e => {
 $("#simToggle").addEventListener("change", e => {
   toast(e.target.checked ? "已開模擬模式（無 GPS，沿步道路線預覽）" : "已關模擬模式");
 });
+// 取自己的社群頭像供記錄地圖的「我」標記用（未登入則維持 null＝橘點）
+let _meAvFetched = false;
+async function ensureMeAvatar() {
+  if (_meAvFetched || typeof Supa === "undefined" || !Supa.ready() || typeof Auth === "undefined") return;
+  _meAvFetched = true;
+  try { const s = await Auth.session(); if (!s) return; const p = await Auth.myProfile(); window.__meAvatar = (p && p.avatar_url) || null; } catch (e) { }
+}
 $("#btnTeam").addEventListener("click", () => { initRecMap(); if (typeof Team !== "undefined") Team.openSheet(); });
 $("#btnShareLoc").addEventListener("click", () => {
   if (!navigator.geolocation) { toast("此裝置不支援定位"); return; }

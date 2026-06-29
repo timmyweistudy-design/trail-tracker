@@ -1035,3 +1035,6 @@ html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
 .team-marker .tm-av { position: relative; width: 42px; height: 42px; }
 .team-marker .tm-av img, .team-marker .tm-av .tm-ph { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2.5px solid #fff; box-shadow: 0 2px 7px rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; background: var(--brand); color: #fff; font-weight: 700; font-size: 16px; box-sizing: border-box; }
 .team-marker .tm-pet { position: absolute; top: -7px; right: -5px; font-size: 18px; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
+
+/* 記錄地圖「我」的頭像標記：赤陶外環區隔隊友(白環) */
+.team-marker.me-marker .tm-av img, .team-marker.me-marker .tm-av .tm-ph { border-color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,.45); }
