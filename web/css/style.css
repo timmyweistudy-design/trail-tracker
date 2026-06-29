@@ -1151,3 +1151,6 @@ html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
 .ach-e { font-size: 30px; line-height: 1; }
 .ach-n { font-family: var(--serif); font-weight: 700; font-size: 13px; margin: 6px 0 3px; }
 .ach-d { font-size: 10.5px; color: var(--ink-faint); line-height: 1.4; }
+
+/* 行程記錄分頁顯示按鈕 */
+.hist-more { width: 100%; margin: 4px 0 8px; }

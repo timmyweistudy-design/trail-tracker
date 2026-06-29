@@ -2395,7 +2395,9 @@ function countUp(el) {
     if (p < 1) requestAnimationFrame(step);
   })(t0);
 }
-function renderHistory() {
+const HIST_PAGE = 8;       // 一次顯示幾筆，避免行程太多把頁面拉很長
+let histShown = HIST_PAGE;
+function renderHistory(keepShown) {
   renderPet();
   renderDailyRing();
   renderStats();
@@ -2404,7 +2406,9 @@ function renderHistory() {
   const gpxAll = $("#btnExportGpxAll");
   if (gpxAll) gpxAll.style.display = recs.length ? "block" : "none";
   if (!recs.length) { wrap.innerHTML = `<div class="empty">${EMPTY_ART}還沒有行程紀錄<br>到「記錄」分頁開始你的第一條路線</div>`; return; }
-  wrap.innerHTML = recs.map(r => `
+  if (!keepShown) histShown = HIST_PAGE;          // 重新進入頁面→收合回前 8 筆
+  const shownRecs = recs.slice(0, histShown);
+  wrap.innerHTML = shownRecs.map(r => `
     <div class="hist-card" data-id="${r.id}">
       <div class="top">
         <b>${r.trailName || "自由路線"}${r.sim ? ` <span class="sim-tag">模擬</span>` : ""}${r.vehicle ? ` <span class="sim-tag">車速·不計里程</span>` : ""}</b>
@@ -2421,7 +2425,10 @@ function renderHistory() {
         <button class="hist-view" data-id="${r.id}">🗺️ 回顧軌跡</button>
         <button class="hist-gpx" data-id="${r.id}">⬇️ 路線檔</button>
       </div>
-    </div>`).join("");
+    </div>`).join("")
+    + (recs.length > histShown
+      ? `<button class="btn ghost hist-more" id="histMore">顯示更多（剩 ${recs.length - histShown} 筆）</button>`
+      : (recs.length > HIST_PAGE ? `<button class="btn ghost hist-more" id="histLess">收合</button>` : ""));
   wrap.querySelectorAll(".hist-view").forEach(b => b.addEventListener("click", () => {
     const rec = Store.getRecords().find(r => r.id === b.dataset.id);
     if (rec) openTrackReview(rec);
@@ -2430,6 +2437,8 @@ function renderHistory() {
     const rec = Store.getRecords().find(r => r.id === b.dataset.id);
     if (rec) { GPX.exportRecord(rec); toast("已下載路線檔"); }
   }));
+  const more = $("#histMore"); if (more) more.addEventListener("click", () => { histShown += HIST_PAGE; renderHistory(true); });
+  const less = $("#histLess"); if (less) less.addEventListener("click", () => { histShown = HIST_PAGE; renderHistory(true); $("#historyList").scrollIntoView({ behavior: "smooth", block: "start" }); });
 }
 
 // ---------- 分級說明按鈕 ----------
