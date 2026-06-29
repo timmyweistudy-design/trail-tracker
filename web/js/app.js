@@ -1887,7 +1887,8 @@ async function finishRecording(autoVehicle) {
     rec.trailName = Recorder._trailName || "自由路線";
     if (selectedTrailId) rec.trailId = selectedTrailId;   // 連回步道，供社群貼文點擊開啟
     // 地形海拔校正(DEM)：自動內建，用準確的水平軌跡查真實地面高度重算爬升/下降（GPS 高度太雜）
-    if (!rec.sim && !rec.vehicle && rec.track && rec.track.length > 1 && navigator.onLine && typeof Elevation !== "undefined") {
+    // 模擬也校正：沿真實步道座標查地形，原路折返自然會有對應的下降（不再只計爬升）
+    if (!rec.vehicle && rec.track && rec.track.length > 1 && navigator.onLine && typeof Elevation !== "undefined") {
       $("#recStatus").textContent = "海拔校正中…";
       const corr = await Promise.race([Elevation.correct(rec.track), new Promise(r => setTimeout(() => r(null), 6000))]);
       if (corr) { rec.ascent = corr.ascent; rec.descent = corr.descent; rec.altHigh = corr.altHigh; rec.altLow = corr.altLow; rec.altCorrected = true; }

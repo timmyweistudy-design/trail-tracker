@@ -219,6 +219,14 @@ const Recorder = (() => {
     for (let i = 1; i < r.length; i++) s += haversine({ lat: r[i - 1][0], lon: r[i - 1][1] }, { lat: r[i][0], lon: r[i][1] });
     return s;
   }
+  // 模擬用的平滑假地形：同一座標必得同高度，原路折返會自然下降（即時爬升/下降才正確）。
+  // 結束時仍會用真實 DEM 校正覆蓋，這裡只負責記錄過程中的即時數字方向正確。
+  function _terrainAlt(lat, lon) {
+    return 600
+      + 200 * Math.sin(lat * 210 + lon * 90)
+      + 110 * Math.sin(lon * 350 - lat * 60)
+      + 45 * Math.sin((lat + lon) * 700);
+  }
   function _pointAt(r, d) {   // 沿路線距離 d(公尺) 取插值點
     let acc = 0;
     for (let i = 1; i < r.length; i++) {
@@ -246,7 +254,7 @@ const Recorder = (() => {
         i++;
         simDist = Math.min(total, i * step);
         const p = _pointAt(simRoute, simDist);
-        const alt = 50 + 250 * (0.5 - 0.5 * Math.cos(Math.PI * simDist / (total || 1)));  // 鐘形假海拔
+        const alt = _terrainAlt(p[0], p[1]);          // 依座標的假地形：往上算爬升、往下算下降
         push(p[0], p[1], alt, null, true);            // clean：不平滑、不過濾，精準貼線
         if (i >= frames || simDist >= total) { clearInterval(simTimer); simTimer = null; }   // 走到終點停
       }, interval);
@@ -254,14 +262,13 @@ const Recorder = (() => {
     }
     // 無選定步道：台北市區附近隨機漫步
     if (!simPos) simPos = { lat: 25.033 + Math.random() * .01, lon: 121.564 + Math.random() * .01 };
-    let alt = 50, heading = Math.random() * Math.PI * 2;
+    let heading = Math.random() * Math.PI * 2;
     simTimer = setInterval(() => {
       heading += (Math.random() - 0.5) * 0.6;
       const step = 0.00010 + Math.random() * 0.00006;
       simPos.lat += Math.cos(heading) * step;
       simPos.lon += Math.sin(heading) * step;
-      alt += (Math.random() - 0.4) * 4;
-      push(simPos.lat, simPos.lon, alt);
+      push(simPos.lat, simPos.lon, _terrainAlt(simPos.lat, simPos.lon));   // 依座標的假地形，上下對稱
     }, 1000);
   }
 
