@@ -34,10 +34,14 @@ const Feed = (() => {
     const av = a.avatar_url ? `<img class="fc-av" src="${esc(a.avatar_url)}" alt="">`
       : `<div class="fc-av fc-av-ph">${esc((a.display_name || a.handle || "?").slice(0, 1))}</div>`;
     const media = (post.post_media || []).slice().sort((x, y) => x.ord - y.ord);
+    const shown = media.slice(0, 4), extra = media.length - 4;
     const imgs = media.length
-      ? `<div class="fc-media fc-media-${Math.min(media.length, 4)}">${media.map(m => m.kind === "video"
-          ? `<div class="fc-vid"><img loading="lazy" src="${esc(Media.publicUrl(m.thumb_path || ""))}" alt=""><span class="fc-play">▶</span></div>`
-          : `<div class="fc-shot"><img loading="lazy" src="${esc(Media.publicUrl(m.thumb_path || m.path))}" alt="">${m.km != null ? `<span class="fc-shot-km">${(+m.km).toFixed(1)}km</span>` : ""}</div>`).join("")}</div>` : "";
+      ? `<div class="fc-media fc-media-${Math.min(media.length, 4)}">${shown.map((m, idx) => {
+          const more = (idx === 3 && extra > 0) ? `<span class="fc-more">+${extra}</span>` : "";
+          return m.kind === "video"
+            ? `<div class="fc-vid" data-vsrc="${esc(Media.publicUrl(m.path))}"><img loading="lazy" src="${esc(Media.publicUrl(m.thumb_path || ""))}" alt=""><span class="fc-play">▶</span>${more}</div>`
+            : `<div class="fc-shot"><img loading="lazy" src="${esc(Media.publicUrl(m.thumb_path || m.path))}" alt="">${m.km != null ? `<span class="fc-shot-km">${(+m.km).toFixed(1)}km</span>` : ""}${more}</div>`;
+        }).join("")}</div>` : "";
     const stats = `${(post.distance_km != null ? post.distance_km.toFixed(2) + "km" : "")}${post.ascent != null ? "　↑" + post.ascent + "m" : ""}`;
     const trailName = post.trail_id
       ? `<span class="fc-traillink" data-trail="${esc(post.trail_id)}">⛰️ ${esc(post.trail_name || "自由路線")}</span>`
@@ -54,6 +58,13 @@ const Feed = (() => {
         <button class="fc-comment" data-id="${post.id}">💬 ${count(post.comments)}</button>
       </div>
     </article>`;
+  }
+
+  // 載入骨架（取代轉圈圈，減少版面跳動）
+  function skeletonCards(n) {
+    let s = "";
+    for (let k = 0; k < n; k++) s += `<div class="skel-card"><div class="skel skel-av"></div><div class="skel skel-line w60"></div><div class="skel skel-line w90"></div><div class="skel skel-media"></div></div>`;
+    return `<div class="skel-list">${s}</div>`;
   }
 
   let _mode = "friends", _posts = [], _into = null, _gen = 0;
@@ -78,7 +89,7 @@ const Feed = (() => {
     if (cached.length) {   // 先用快取秒開，背景再更新
       renderInto(`<div class="feed-list">${cached.map(p => card(p, false)).join("")}</div>`);
       bind();
-    } else renderInto(`<div class="feed-loading"><span class="spin"></span>載入中…</div>`);
+    } else renderInto(skeletonCards(3));
     if (mode === "explore") await loadTrending(g);
     else await loadMore(true, g);
   }
@@ -90,7 +101,7 @@ const Feed = (() => {
     _posts = batch;
     const refresh = `<button class="feed-refresh" id="feedRefresh">↻ 重新整理</button>`;
     if (!_posts.length) {
-      _into(`${refresh}<div class="social-empty">目前還沒有公開貼文。</div>`);
+      _into(`${refresh}<div class="social-empty"><span class="ee">🏔️</span>目前還沒有公開貼文。</div>`);
       wireRefresh(); return;
     }
     const liked = await Posts.likedSet(_posts.map(p => p.id));
@@ -106,7 +117,7 @@ const Feed = (() => {
     _posts = _posts.concat(batch);
     const refresh = `<button class="feed-refresh" id="feedRefresh">↻ 重新整理</button>`;
     if (!_posts.length) {
-      _into(`${refresh}<div class="social-empty">追蹤山友後，這裡會出現他們的步道旅行（你自己的也會在這）。</div>`);
+      _into(`${refresh}<div class="social-empty"><span class="ee">🏞️</span>追蹤山友後，這裡會出現他們的步道旅行（你自己的也會在這）。</div>`);
       wireRefresh();
       return;
     }
@@ -153,12 +164,18 @@ const Feed = (() => {
       b.classList.toggle("on", on);
       const span = b.querySelector("span"); const n = +span.textContent + (on ? 1 : -1); span.textContent = Math.max(0, n);
       b.firstChild.textContent = on ? "❤️ " : "🤍 ";
+      if (on && window.ttFloat) window.ttFloat(b, "❤️");
       await Posts.toggleLike(b.dataset.id, on);
     }));
     const openDetail = id => { if (typeof PostView !== "undefined") PostView.open(id); };
     document.querySelectorAll(".feed-card .fc-comment").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); openDetail(b.dataset.id); }));
     document.querySelectorAll(".feed-card .fc-author").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); if (typeof Discover !== "undefined") Discover.openProfile(b.dataset.uid); }));
     document.querySelectorAll(".feed-card .fc-traillink").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); if (typeof window.openDetail === "function") window.openDetail(b.dataset.trail); }));
+    document.querySelectorAll(".feed-card .fc-vid").forEach(v => v.addEventListener("click", e => {
+      e.stopPropagation();
+      const src = v.dataset.vsrc; if (!src) return;
+      v.innerHTML = `<video controls autoplay playsinline preload="metadata" src="${esc(src)}"></video>`;
+    }));
     document.querySelectorAll(".feed-card .ht").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); openTag(b.dataset.tag); }));
     document.querySelectorAll(".feed-card .mention").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); if (typeof Discover !== "undefined") Discover.openByHandle(b.dataset.handle); }));
     document.querySelectorAll(".feed-card").forEach(c => c.addEventListener("click", () => openDetail(c.dataset.id)));

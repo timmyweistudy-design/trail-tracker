@@ -2719,6 +2719,17 @@ if (new URLSearchParams(location.search).get("debug") === "1") setTimeout(toggle
   render();
 })();
 
+// 浮起的小表情（按讚/表情回應時從按鈕飄起）
+window.ttFloat = function (el, emoji) {
+  try {
+    const r = el.getBoundingClientRect();
+    const s = document.createElement("span");
+    s.className = "tt-float"; s.textContent = emoji;
+    s.style.left = (r.left + r.width / 2) + "px"; s.style.top = (r.top + r.height / 2) + "px";
+    document.body.appendChild(s); setTimeout(() => s.remove(), 800);
+  } catch (e) { /* */ }
+};
+
 // 全域點擊回饋：任何「可點元素」按下時都加按壓動畫 + 輕震動（不必逐一列名單）
 (function () {
   const SEL = "a[href], button, [role='button'], [role='tab'], [role='link'], label, summary, .chip, .tab, .sub-tab, .seg-btn, .btn, .link-btn, .icon-btn, .feed-card, .disc-row, .notif, [data-id], [data-view], [data-sub], [data-sec], [data-tag], [data-handle], [onclick]";

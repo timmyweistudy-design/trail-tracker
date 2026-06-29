@@ -87,7 +87,9 @@ const PostView = (() => {
       <div class="pv-react" id="pvReact"></div>
       <div class="pv-comments" id="pvComments"><div class="feed-loading"><span class="spin"></span></div></div>`;
     loadReactions(wrap, post.id);
-    wrap.querySelectorAll(".pv-photo").forEach(img => img.addEventListener("click", () => { if (typeof Lightbox !== "undefined") Lightbox.open(img.src); }));
+    const photoEls = [...wrap.querySelectorAll(".pv-photo")];
+    const photoSrcs = photoEls.map(el => el.src);
+    photoEls.forEach((el, idx) => el.addEventListener("click", () => { if (typeof Lightbox !== "undefined") Lightbox.openGallery(photoSrcs, idx); }));
     wrap.querySelectorAll(".fc-cap .ht").forEach(b => b.addEventListener("click", () => { const x = wrap.querySelector("#pvX"); if (x) x.click(); if (typeof Feed !== "undefined") Feed.openTag(b.dataset.tag); }));
     wrap.querySelectorAll(".fc-cap .mention").forEach(b => b.addEventListener("click", () => { if (typeof Discover !== "undefined") Discover.openByHandle(b.dataset.handle); }));
     const au = wrap.querySelector(".fc-author"); if (au) au.addEventListener("click", () => { if (typeof Discover !== "undefined") Discover.openProfile(au.dataset.uid); });
@@ -130,6 +132,7 @@ const PostView = (() => {
       b.classList.toggle("on", on);
       const span = b.querySelector("span"); span.textContent = Math.max(0, +span.textContent + (on ? 1 : -1));
       b.firstChild.textContent = on ? "❤️ " : "🤍 ";
+      if (on && window.ttFloat) window.ttFloat(b, "❤️");
       await Posts.toggleLike(postId, on);
     });
   }
@@ -155,7 +158,7 @@ const PostView = (() => {
     box.querySelectorAll(".pv-react-b").forEach(b => b.addEventListener("click", async () => {
       const e = b.dataset.e;
       if (mine === e) { await Posts.clearReaction(postId); }
-      else { const r = await Posts.setReaction(postId, e); if (r && r.error) { if (typeof toast === "function") toast("回應失敗，請先更新資料庫"); return; } }
+      else { const r = await Posts.setReaction(postId, e); if (r && r.error) { if (typeof toast === "function") toast("回應失敗，請先更新資料庫"); return; } if (window.ttFloat) window.ttFloat(b, e); }
       loadReactions(wrap, postId);
     }));
   }

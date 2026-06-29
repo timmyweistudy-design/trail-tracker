@@ -50,7 +50,7 @@ const Notifs = (() => {
     into(`<div class="feed-loading"><span class="spin"></span></div>`);
     const bar = await pushBar();
     const items = await list();
-    if (!items.length) { into(`${bar}<div class="social-empty">還沒有通知。</div>`); wirePush(into, () => render(into)); await markAllRead(); return; }
+    if (!items.length) { into(`${bar}<div class="social-empty"><span class="ee">🔔</span>還沒有通知。</div>`); wirePush(into, () => render(into)); await markAllRead(); return; }
     into(`${bar}<div class="notif-list">${items.map(n =>
       `<div class="notif ${n.read ? "" : "unread"}" data-type="${n.type}" data-post="${n.post_id || ""}" data-uid="${n.actor_id || ""}">
         <span class="notif-ic">${icon(n.type)}</span>

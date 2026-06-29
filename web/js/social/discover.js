@@ -82,7 +82,8 @@ const Discover = (() => {
         ${prof.bio ? `<div class="pf-bio">${esc(prof.bio)}</div>` : ""}
         ${isMe ? "" : `<button class="btn ${following ? "ghost" : "primary"}" id="dpFollow">${following ? "已追蹤" : "追蹤"}</button>
         <div class="pf-safety">${isMe ? "" : `<button class="link-btn" id="dpReport">檢舉</button><button class="link-btn" id="dpBlock">封鎖</button>`}</div>`}
-        <div id="dpPosts" class="feed-loading"><span class="spin"></span></div>
+        <div class="pf-tabs"><button class="pf-tab on" data-pt="posts">貼文</button><button class="pf-tab" data-pt="photos">相片</button><button class="pf-tab" data-pt="map">足跡</button></div>
+        <div id="dpTabBody"><div class="feed-loading"><span class="spin"></span></div></div>
       </div></div>`;
     document.body.appendChild(wrap);
     wrap.querySelector("#dpX").addEventListener("click", () => wrap.remove());
@@ -115,10 +116,44 @@ const Discover = (() => {
     }
     const posts = await Posts.userPosts(userId);
     const liked = await Posts.likedSet(posts.map(p => p.id));
-    const box = wrap.querySelector("#dpPosts");
-    box.className = "feed-list";
-    box.innerHTML = posts.length ? posts.map(p => Feed.card(p, liked.has(p.id))).join("") : `<div class="social-empty">尚無貼文。</div>`;
-    box.querySelectorAll(".feed-card").forEach(card => card.addEventListener("click", () => { if (typeof PostView !== "undefined") PostView.open(card.dataset.id); }));
+    const photos = [];
+    posts.forEach(p => (p.post_media || []).filter(m => m.kind === "photo").forEach(m => photos.push(m)));
+    const body = wrap.querySelector("#dpTabBody"); if (!body) return;
+    let tabMap = null;
+
+    function showTab(t) {
+      wrap.querySelectorAll(".pf-tab").forEach(b => b.classList.toggle("on", b.dataset.pt === t));
+      if (tabMap) { try { tabMap.remove(); } catch (e) { } tabMap = null; }
+      if (t === "posts") {
+        body.className = "feed-list";
+        body.innerHTML = posts.length ? posts.map(p => Feed.card(p, liked.has(p.id))).join("") : `<div class="social-empty"><span class="ee">📝</span>尚無貼文。</div>`;
+        body.querySelectorAll(".feed-card").forEach(card => card.addEventListener("click", e => {
+          if (e.target.closest(".fc-author") || e.target.closest(".fc-traillink") || e.target.closest(".fc-like") || e.target.closest(".fc-vid")) return;
+          if (typeof PostView !== "undefined") PostView.open(card.dataset.id);
+        }));
+      } else if (t === "photos") {
+        body.className = "";
+        if (!photos.length) { body.innerHTML = `<div class="social-empty"><span class="ee">📷</span>還沒有相片。</div>`; return; }
+        const urls = photos.map(m => Media.publicUrl(m.path));
+        body.innerHTML = `<div class="pf-photos">${photos.map((m, idx) => `<div class="pf-ph" data-idx="${idx}"><img loading="lazy" src="${esc(Media.publicUrl(m.thumb_path || m.path))}" alt=""></div>`).join("")}</div>`;
+        body.querySelectorAll(".pf-ph").forEach(el => el.addEventListener("click", () => { if (typeof Lightbox !== "undefined") Lightbox.openGallery(urls, +el.dataset.idx); }));
+      } else {
+        body.className = "";
+        const withTrack = posts.filter(p => p.track_thumb && p.track_thumb.length > 1);
+        if (!withTrack.length || typeof L === "undefined") { body.innerHTML = `<div class="social-empty"><span class="ee">🗺️</span>還沒有可顯示的路線。</div>`; return; }
+        body.innerHTML = `<div class="pf-map" id="pfMap"></div>`;
+        setTimeout(() => {
+          try {
+            tabMap = L.map("pfMap", { zoomControl: false, attributionControl: false });
+            (typeof baseTopo === "function" ? baseTopo() : L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png")).addTo(tabMap);
+            const lines = withTrack.map(p => L.polyline(p.track_thumb.map(c => [c[1], c[0]]), { color: "#c2683d", weight: 3, opacity: .85 }).addTo(tabMap));
+            tabMap.fitBounds(L.featureGroup(lines).getBounds(), { padding: [22, 22] });
+          } catch (e) { body.innerHTML = `<div class="social-empty">地圖載入失敗。</div>`; }
+        }, 60);
+      }
+    }
+    wrap.querySelectorAll(".pf-tab").forEach(b => b.addEventListener("click", () => showTab(b.dataset.pt)));
+    showTab("posts");
   }
 
   // 由 handle 開啟個人頁（@提及點擊用）
