@@ -1026,3 +1026,12 @@ html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
 .team-marker .tm-dot { width: 30px; height: 30px; border-radius: 50%; background: var(--brand); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; border: 2.5px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.35); }
 .leaflet-tooltip.team-tip { background: var(--brand-deep); color: #f2efe4; border: none; border-radius: 6px; font-size: 11px; padding: 2px 7px; box-shadow: var(--sh-sm); }
 .leaflet-tooltip.team-tip::before { display: none; }
+
+/* 小隊：目前藥丸、邀請鈕、隊友頭像+寵物標記 */
+.team-row-info { flex: 1 1 auto; min-width: 0; }
+.team-row-info b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.team-now { flex: 0 0 auto; font-size: 12px; font-weight: 700; color: #fff; background: var(--accent); border-radius: 999px; padding: 5px 13px; }
+.team-invite { margin-left: auto; flex: 0 0 auto; padding: 5px 14px; }
+.team-marker .tm-av { position: relative; width: 42px; height: 42px; }
+.team-marker .tm-av img, .team-marker .tm-av .tm-ph { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2.5px solid #fff; box-shadow: 0 2px 7px rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; background: var(--brand); color: #fff; font-weight: 700; font-size: 16px; box-sizing: border-box; }
+.team-marker .tm-pet { position: absolute; top: -7px; right: -5px; font-size: 18px; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); }

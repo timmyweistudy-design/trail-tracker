@@ -42,16 +42,34 @@ const Team = (() => {
     if (typeof Supa === "undefined" || !Supa.ready()) { alert("社群尚未啟用"); return; }
     const sess = await Auth.session(); if (!sess) { alert("請先到「社群」分頁登入"); return; }
     const prof = await Auth.myProfile(); if (!prof) { alert("請先到「社群」分頁完成註冊"); return; }
-    const myName = prof.display_name || prof.handle || "我";
+    const info = { name: prof.display_name || prof.handle || "我", avatar: prof.avatar_url || null, pet: (typeof petStats === "function" ? petStats().emoji : null) };
     const wrap = document.createElement("div"); wrap.className = "pv-mask";
     wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" id="tmX">✕</button><b>小隊</b><span></span></div>
       <div class="pv-body" id="tmBody"><div class="feed-loading"><span class="spin"></span></div></div></div>`;
     document.body.appendChild(wrap);
     wrap.querySelector("#tmX").addEventListener("click", () => wrap.remove());
-    renderSheet(wrap, myName);
+    renderSheet(wrap, info);
   }
 
-  async function renderSheet(wrap, myName) {
+  // 互相追蹤的好友
+  async function friends() {
+    const c = Supa.client(); const { data: u } = await c.auth.getUser(); if (!u || !u.user) return [];
+    const me = u.user.id;
+    const { data: fo } = await c.from("follows").select("following_id").eq("follower_id", me);
+    const { data: fr } = await c.from("follows").select("follower_id").eq("following_id", me);
+    const following = new Set((fo || []).map(r => r.following_id));
+    const mutual = (fr || []).map(r => r.follower_id).filter(id => following.has(id));
+    if (!mutual.length) return [];
+    const { data } = await c.from("profiles").select("id,handle,display_name,avatar_url").in("id", mutual).limit(100);
+    return data || [];
+  }
+  async function invite(teamId, userId) {
+    const c = Supa.client(); const { data, error } = await c.rpc("invite_to_team", { p_team: teamId, p_user: userId });
+    return { ok: !error && data, error: error && error.message };
+  }
+
+  async function renderSheet(wrap, info) {
+    const myName = info.name;
     const body = wrap.querySelector("#tmBody"); if (!body) return;
     body.innerHTML = `<div class="feed-loading"><span class="spin"></span></div>`;
     const teams = await myTeams();
@@ -62,8 +80,8 @@ const Team = (() => {
       for (const t of teams) {
         const on = t.id === aId;
         html += `<div class="team-row ${on ? "on" : ""}">
-          <div><b>${esc(t.name)}</b><div class="team-code">加入碼 ${esc(t.join_code)}</div></div>
-          <button class="btn ${on ? "primary" : "ghost"} team-pick" data-id="${esc(t.id)}" data-name="${esc(t.name)}">${on ? "目前" : "設為目前"}</button>
+          <div class="team-row-info"><b>${esc(t.name)}</b><div class="team-code">加入碼 ${esc(t.join_code)}</div></div>
+          ${on ? `<span class="team-now">目前</span>` : `<button class="btn ghost team-pick" data-id="${esc(t.id)}" data-name="${esc(t.name)}">設為目前</button>`}
         </div>`;
       }
     } else {
@@ -73,6 +91,7 @@ const Team = (() => {
       const liveOn = (typeof TeamLive !== "undefined" && TeamLive.isOn());
       html += `<label class="sim-toggle team-live"><input type="checkbox" id="tmLive" ${liveOn ? "checked" : ""}> 👥 與小隊同行（記錄地圖上看到彼此定位）</label>
         <div id="tmMembers"></div>
+        <div class="ob-l">邀請好友</div><div id="tmInvite"><div class="feed-loading"><span class="spin"></span></div></div>
         <button class="btn ghost" id="tmLeave" style="margin-top:8px">退出目前小隊</button>`;
     }
     html += `<hr class="tm-hr">
@@ -83,9 +102,9 @@ const Team = (() => {
       <div class="auth-msg" id="tmMsg"></div>`;
     body.innerHTML = html;
 
-    body.querySelectorAll(".team-pick").forEach(b => b.addEventListener("click", () => { setActive(b.dataset.id, b.dataset.name); renderSheet(wrap, myName); }));
+    body.querySelectorAll(".team-pick").forEach(b => b.addEventListener("click", () => { setActive(b.dataset.id, b.dataset.name); renderSheet(wrap, info); }));
     const leaveBtn = body.querySelector("#tmLeave");
-    if (leaveBtn) leaveBtn.addEventListener("click", async () => { if (!confirm("退出目前小隊？")) return; if (typeof TeamLive !== "undefined") TeamLive.stop(); await leave(aId); renderSheet(wrap, myName); });
+    if (leaveBtn) leaveBtn.addEventListener("click", async () => { if (!confirm("退出目前小隊？")) return; if (typeof TeamLive !== "undefined") TeamLive.stop(); await leave(aId); renderSheet(wrap, info); });
 
     const live = body.querySelector("#tmLive");
     if (live) {
@@ -93,12 +112,27 @@ const Team = (() => {
         const el = body.querySelector("#tmMembers"); if (!el) return;
         el.innerHTML = `<div class="team-members">${ms.map(m => { const u = m.user || {}; return `<span class="team-chip">${u.avatar_url ? `<img src="${esc(u.avatar_url)}">` : `<i>${esc((u.display_name || u.handle || "?").slice(0, 1))}</i>`}${esc(u.display_name || u.handle || "隊友")}</span>`; }).join("")}</div>`;
       });
+      // 邀請好友（互相追蹤、且尚未在隊上的）
+      (async () => {
+        const [fr, ms] = await Promise.all([friends(), members(aId)]);
+        const inTeam = new Set(ms.map(m => m.user_id));
+        const box = body.querySelector("#tmInvite"); if (!box) return;
+        const list = fr.filter(f => !inTeam.has(f.id));
+        if (!list.length) { box.innerHTML = `<div class="social-empty" style="padding:10px">沒有可邀請的好友（互相追蹤才算好友）。</div>`; return; }
+        box.innerHTML = list.map(f => `<div class="disc-row"><div class="disc-id"><b>${esc(f.display_name || f.handle)}</b><span>@${esc(f.handle)}</span></div><button class="btn ghost team-invite" data-id="${esc(f.id)}" data-name="${esc(f.display_name || f.handle)}">邀請</button></div>`).join("");
+        box.querySelectorAll(".team-invite").forEach(b => b.addEventListener("click", async () => {
+          b.disabled = true; b.textContent = "邀請中…";
+          const r = await invite(aId, b.dataset.id);
+          if (r.ok) { b.textContent = "已邀請"; if (typeof toast === "function") toast("已邀請 " + b.dataset.name); }
+          else { b.disabled = false; b.textContent = "邀請"; if (typeof toast === "function") toast("邀請失敗：" + (r.error || "")); }
+        }));
+      })();
       live.addEventListener("change", e => {
         if (typeof TeamLive === "undefined") return;
         if (e.target.checked) {
           const m = (typeof recMap !== "undefined") ? recMap : null;
           if (!m) { if (typeof toast === "function") toast("請先到記錄頁開啟地圖"); e.target.checked = false; return; }
-          TeamLive.start(aId, m, myName);
+          TeamLive.start(aId, m, info);
           if (typeof toast === "function") toast("已開啟小隊同行，回記錄頁地圖看隊友");
         } else TeamLive.stop();
       });
@@ -110,7 +144,7 @@ const Team = (() => {
       msg.textContent = "建立中…";
       const r = await create(name);
       if (r.error) { msg.textContent = "建立失敗：" + r.error; return; }
-      setActive(r.id, name); renderSheet(wrap, myName);
+      setActive(r.id, name); renderSheet(wrap, info);
       if (typeof toast === "function") toast("小隊已建立，加入碼 " + r.code);
     });
     body.querySelector("#tmJoin").addEventListener("click", async () => {
@@ -119,7 +153,7 @@ const Team = (() => {
       msg.textContent = "加入中…";
       const r = await joinByCode(code);
       if (r.error) { msg.textContent = r.error; return; }
-      setActive(r.id); renderSheet(wrap, myName);
+      setActive(r.id); renderSheet(wrap, info);
       if (typeof toast === "function") toast("已加入小隊");
     });
   }
