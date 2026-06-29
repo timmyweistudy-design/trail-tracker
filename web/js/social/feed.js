@@ -7,6 +7,13 @@ const Feed = (() => {
     if (d < 86400) return Math.floor(d / 3600) + " 小時前"; return Math.floor(d / 86400) + " 天前";
   }
   function count(arr) { return (arr && arr[0] && arr[0].count) || 0; }
+  // 內文：先轉義，再把 #標籤 / @提及 變成可點的連結
+  function richText(s) {
+    return esc(s || "")
+      .replace(/#([^\s#@.,!?；，。、]{1,30})/g, '<span class="ht" data-tag="$1">#$1</span>')
+      .replace(/@([a-z0-9_]{3,20})/gi, '<span class="mention" data-handle="$1">@$1</span>')
+      .replace(/\n/g, "<br>");
+  }
   // 用降取樣的軌跡縮圖畫出路線形狀（純 SVG，不載地圖、很輕）
   function routeSvg(thumb) {
     if (!thumb || thumb.length < 2) return "";
@@ -40,7 +47,7 @@ const Feed = (() => {
         <div class="fc-sub">${fmtAgo(post.created_at)}${post.visibility === "friends" ? " · 好友" : ""}</div></div></div>
       <div class="fc-trail">${trailName}　<span class="fc-stats">${stats}</span>${post.rating ? ` <span class="fc-rate">${"★".repeat(post.rating)}</span>` : ""}</div>
       ${routeSvg(post.track_thumb)}
-      ${post.caption ? `<div class="fc-cap">${esc(post.caption)}</div>` : ""}
+      ${post.caption ? `<div class="fc-cap">${richText(post.caption)}</div>` : ""}
       ${imgs}
       <div class="fc-actions">
         <button class="fc-like ${liked ? "on" : ""}" data-id="${post.id}">${liked ? "❤️" : "🤍"} <span>${count(post.likes)}</span></button>
@@ -50,6 +57,9 @@ const Feed = (() => {
   }
 
   let _mode = "friends", _posts = [], _into = null, _gen = 0;
+  // 我檢舉過的貼文 → 立即在我的畫面隱藏（伺服器端達門檻會真正隱藏）
+  function reportedSet() { try { return new Set(JSON.parse(localStorage.getItem("tt_reported") || "[]")); } catch { return new Set(); } }
+  function dropReported(arr) { const r = reportedSet(); return r.size ? arr.filter(p => !r.has(p.id)) : arr; }
 
   // 上次看到的最新貼文時間（用來插「新動態」分隔線）
   function seenKey(mode) { return "tt_feed_seen_" + mode; }
@@ -75,7 +85,7 @@ const Feed = (() => {
 
   async function loadTrending(g) {
     if (g == null) g = _gen;
-    const batch = await Posts.trending();
+    const batch = dropReported(await Posts.trending());
     if (g !== _gen) return;
     _posts = batch;
     const refresh = `<button class="feed-refresh" id="feedRefresh">↻ 重新整理</button>`;
@@ -91,7 +101,7 @@ const Feed = (() => {
   async function loadMore(first, g) {
     if (g == null) g = _gen;
     const before = (!first && _posts.length) ? _posts[_posts.length - 1].created_at : null;
-    const batch = await Posts.feed(_mode, before);
+    const batch = dropReported(await Posts.feed(_mode, before));
     if (g !== _gen) return;   // 已切到別的分頁/刷新 → 丟棄
     _posts = _posts.concat(batch);
     const refresh = `<button class="feed-refresh" id="feedRefresh">↻ 重新整理</button>`;
@@ -149,8 +159,29 @@ const Feed = (() => {
     document.querySelectorAll(".feed-card .fc-comment").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); openDetail(b.dataset.id); }));
     document.querySelectorAll(".feed-card .fc-author").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); if (typeof Discover !== "undefined") Discover.openProfile(b.dataset.uid); }));
     document.querySelectorAll(".feed-card .fc-traillink").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); if (typeof window.openDetail === "function") window.openDetail(b.dataset.trail); }));
+    document.querySelectorAll(".feed-card .ht").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); openTag(b.dataset.tag); }));
+    document.querySelectorAll(".feed-card .mention").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); if (typeof Discover !== "undefined") Discover.openByHandle(b.dataset.handle); }));
     document.querySelectorAll(".feed-card").forEach(c => c.addEventListener("click", () => openDetail(c.dataset.id)));
   }
 
-  return { render, card, _fmtAgo: fmtAgo };
+  // #標籤 動態：列出含此標籤的公開貼文
+  async function openTag(tag) {
+    const wrap = document.createElement("div"); wrap.className = "pv-mask";
+    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" id="tagX" aria-label="關閉">✕</button><b>#${esc(tag)}</b><span></span></div>
+      <div class="pv-body" id="tagBody"><div class="feed-loading"><span class="spin"></span></div></div></div>`;
+    document.body.appendChild(wrap);
+    wrap.querySelector("#tagX").addEventListener("click", () => wrap.remove());
+    const posts = await Posts.byTag(tag);
+    const body = wrap.querySelector("#tagBody"); if (!body) return;
+    if (!posts.length) { body.innerHTML = `<div class="social-empty">還沒有 #${esc(tag)} 的公開貼文。</div>`; return; }
+    const liked = await Posts.likedSet(posts.map(p => p.id));
+    body.className = "pv-body feed-list";
+    body.innerHTML = posts.map(p => card(p, liked.has(p.id))).join("");
+    body.querySelectorAll(".feed-card").forEach(cd => cd.addEventListener("click", e => {
+      if (e.target.closest(".fc-author") || e.target.closest(".fc-traillink") || e.target.closest(".ht") || e.target.closest(".mention") || e.target.closest(".fc-like")) return;
+      if (typeof PostView !== "undefined") PostView.open(cd.dataset.id);
+    }));
+  }
+
+  return { render, card, richText, openTag, _fmtAgo: fmtAgo };
 })();

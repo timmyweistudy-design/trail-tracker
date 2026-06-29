@@ -121,6 +121,14 @@ const Discover = (() => {
     box.querySelectorAll(".feed-card").forEach(card => card.addEventListener("click", () => { if (typeof PostView !== "undefined") PostView.open(card.dataset.id); }));
   }
 
+  // 由 handle 開啟個人頁（@提及點擊用）
+  async function openByHandle(handle) {
+    const c = Supa.client(); if (!c || !handle) return;
+    const { data } = await c.from("profiles").select("id").eq("handle", handle.toLowerCase()).maybeSingle();
+    if (data && data.id) openProfile(data.id);
+    else if (typeof toast === "function") toast("找不到 @" + handle);
+  }
+
   async function profilesByIds(ids) {
     if (!ids.length) return [];
     const c = Supa.client();
@@ -154,5 +162,5 @@ const Discover = (() => {
     body.querySelectorAll(".disc-row").forEach(r => r.addEventListener("click", () => { wrap.remove(); openProfile(r.dataset.id); }));
   }
 
-  return { render, openProfile, follow, isFollowing, openUserList };
+  return { render, openProfile, openByHandle, follow, isFollowing, openUserList };
 })();

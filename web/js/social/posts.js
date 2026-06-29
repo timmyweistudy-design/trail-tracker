@@ -61,6 +61,7 @@ const Posts = (() => {
       } catch (e) { console.warn("video upload failed", e && e.message); }
     }
     if (media.length) { const { error: me } = await c.from("post_media").insert(media); if (me) console.warn(me.message); }
+    notifyMentions(caption, postId);   // @提及通知（migration 未跑則靜默）
     return { id: postId };
   }
 
@@ -174,6 +175,86 @@ const Posts = (() => {
     return { error: error && error.message };
   }
 
+  // ===== #主題標籤 =====
+  function parseTags(text) {
+    const out = []; const re = /#([^\s#@.,!?；，。、]{1,30})/g; let m;
+    while ((m = re.exec(text || "")) && out.length < 10) if (!out.includes(m[1])) out.push(m[1]);
+    return out;
+  }
+  // 以標籤找公開貼文（用 caption 比對，免依賴新欄位）
+  async function byTag(tag) {
+    const c = Supa.client(); if (!c || !tag) return [];
+    const safe = tag.replace(/[%,()*\\]/g, "");
+    const { data, error } = await c.from("posts").select(SELECT).eq("visibility", "public")
+      .ilike("caption", `%#${safe}%`).order("created_at", { ascending: false }).limit(30);
+    if (error) { console.warn("byTag", error.message); return []; }
+    return data || [];
+  }
+
+  // ===== @提及通知（需 phase11；失敗則靜默） =====
+  async function notifyMentions(text, postId) {
+    try {
+      const c = Supa.client(); if (!c) return;
+      const handles = []; const re = /@([a-z0-9_]{3,20})/gi; let m;
+      while ((m = re.exec(text || "")) && handles.length < 10) handles.push(m[1].toLowerCase());
+      if (!handles.length) return;
+      const { data: profs } = await c.from("profiles").select("id, handle").in("handle", handles);
+      for (const p of (profs || [])) await c.rpc("notify_mention", { p_user: p.id, p_post: postId || null });
+    } catch (e) { /* 尚未跑 migration → 略過 */ }
+  }
+
+  // ===== 表情回應（需 phase11；失敗回空） =====
+  async function reactions(postId) {
+    try { const c = Supa.client(); const { data } = await c.from("reactions").select("user_id, emoji").eq("post_id", postId); return data || []; }
+    catch (e) { return []; }
+  }
+  async function setReaction(postId, emoji) {
+    const c = Supa.client(); const { data: u } = await c.auth.getUser(); if (!u || !u.user) return { error: "not-signed-in" };
+    const { error } = await c.from("reactions").upsert({ post_id: postId, user_id: u.user.id, emoji }, { onConflict: "post_id,user_id" });
+    return { error: error && error.message };
+  }
+  async function clearReaction(postId) {
+    const c = Supa.client(); const { data: u } = await c.auth.getUser(); if (!u || !u.user) return;
+    await c.from("reactions").delete().eq("post_id", postId).eq("user_id", u.user.id);
+  }
+
+  // ===== 留言按讚（需 phase11；失敗回空） =====
+  async function commentLikes(commentIds) {
+    try {
+      const c = Supa.client(); const { data: u } = await c.auth.getUser();
+      if (!commentIds.length) return { counts: {}, mine: new Set() };
+      const { data } = await c.from("comment_likes").select("comment_id, user_id").in("comment_id", commentIds);
+      const counts = {}, mine = new Set();
+      for (const r of (data || [])) { counts[r.comment_id] = (counts[r.comment_id] || 0) + 1; if (u && u.user && r.user_id === u.user.id) mine.add(r.comment_id); }
+      return { counts, mine };
+    } catch (e) { return { counts: {}, mine: new Set() }; }
+  }
+  async function toggleCommentLike(commentId, on) {
+    const c = Supa.client(); const { data: u } = await c.auth.getUser(); if (!u || !u.user) return;
+    if (on) await c.from("comment_likes").insert({ comment_id: commentId, user_id: u.user.id });
+    else await c.from("comment_likes").delete().eq("comment_id", commentId).eq("user_id", u.user.id);
+  }
+
+  // ===== 轉發（需 phase11 的 repost_of 欄位） =====
+  async function createRepost(original, quote) {
+    const c = Supa.client(); const { data: u } = await c.auth.getUser(); if (!u || !u.user) return { error: "not-signed-in" };
+    const id = uuid();
+    const handle = original.author && original.author.handle;
+    const head = handle ? `🔁 轉發 @${handle}` : "🔁 轉發";
+    const caption = quote ? head + "\n" + quote : head;
+    const { error } = await c.from("posts").insert({
+      id, author_id: u.user.id, repost_of: original.id,
+      trail_id: original.trail_id || null, trail_name: original.trail_name || "自由路線",
+      distance_km: original.distance_km, ascent: original.ascent,
+      hiked_on: (original.hiked_on || new Date().toISOString().slice(0, 10)),
+      caption, track_thumb: original.track_thumb || null,
+      visibility: "public", rating: original.rating || null,
+    });
+    if (error) return { error: error.message };
+    notifyMentions(caption, id);
+    return { id };
+  }
+
   async function likeCount(postId) {
     const c = Supa.client(); if (!c) return 0;
     const { count } = await c.from("likes").select("*", { count: "exact", head: true }).eq("post_id", postId);
@@ -188,5 +269,6 @@ const Posts = (() => {
     return { followers: fr.count || 0, following: fg.count || 0 };
   }
 
-  return { createFromRecord, feed, userPosts, byTrail, trending, suggestions, one, likedSet, toggleLike, likeCount, followingIds, remove, followCounts };
+  return { createFromRecord, feed, userPosts, byTrail, byTag, trending, suggestions, one, likedSet, toggleLike, likeCount, followingIds, remove, followCounts,
+    parseTags, notifyMentions, reactions, setReaction, clearReaction, commentLikes, toggleCommentLike, createRepost };
 })();

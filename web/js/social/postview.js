@@ -15,7 +15,7 @@ const PostView = (() => {
     const wrap = document.createElement("div");
     wrap.className = "pv-mask";
     wrap.dataset.me = myId; wrap.dataset.author = post.author_id;
-    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" aria-label="關閉" id="pvX">✕</button><b>貼文</b><span class="pv-head-r"><button class="comp-x" id="pvShare" title="分享" aria-label="分享">📤</button>${isMine ? '<button class="comp-x" id="pvEdit" title="編輯" aria-label="編輯">✏️</button><button class="comp-x" id="pvDel" title="刪除" aria-label="刪除">🗑</button>' : ""}</span></div>
+    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" aria-label="關閉" id="pvX">✕</button><b>貼文</b><span class="pv-head-r"><button class="comp-x" id="pvRepost" title="轉發" aria-label="轉發">🔁</button><button class="comp-x" id="pvShare" title="分享" aria-label="分享">📤</button>${isMine ? '<button class="comp-x" id="pvEdit" title="編輯" aria-label="編輯">✏️</button><button class="comp-x" id="pvDel" title="刪除" aria-label="刪除">🗑</button>' : ""}</span></div>
       <div class="pv-body" id="pvBody"></div>
       <div class="pv-add"><input id="pvInput" class="auth-input" placeholder="留言…" maxlength="1000"><button class="btn primary" id="pvSend">送出</button></div></div>`;
     document.body.appendChild(wrap);
@@ -26,6 +26,13 @@ const PostView = (() => {
       .subscribe();
     const close = () => { try { c.removeChannel(channel); } catch (e) { } if (wrap._map) { try { wrap._map.remove(); } catch (e) { } wrap._map = null; } wrap.remove(); };
     wrap.querySelector("#pvX").addEventListener("click", close);
+    wrap.querySelector("#pvRepost").addEventListener("click", async () => {
+      const quote = prompt("轉發這篇貼文（可加上你的想法，選填）：", ""); if (quote === null) return;
+      const r = await Posts.createRepost(post, quote.trim());
+      if (r.error) { if (typeof toast === "function") toast("轉發失敗：" + r.error); return; }
+      if (typeof toast === "function") toast("已轉發到你的動態");
+      close(); if (typeof SocialUI !== "undefined") SocialUI.route();
+    });
     wrap.querySelector("#pvShare").addEventListener("click", () => {
       const url = location.origin + location.pathname + "?post=" + postId;
       if (navigator.share) navigator.share({ title: "循徑拾光 · 步道旅行", url }).catch(() => { });
@@ -68,7 +75,7 @@ const PostView = (() => {
       <div class="fc-name fc-author" data-uid="${post.author_id}" style="cursor:pointer">${esc(a.display_name || a.handle || "山友")}${a.pet_level ? ` <span class="lv-chip lvt-${Math.min(a.pet_level,7)}">Lv.${a.pet_level}</span>` : ""} <span class="fc-sub">@${esc(a.handle || "")}</span></div>
       <div class="fc-trail">${trailName}　<span class="fc-stats">${post.distance_km != null ? post.distance_km.toFixed(2) + "km" : ""}${post.ascent != null ? "　↑" + post.ascent + "m" : ""}</span>${post.rating ? ` <span class="fc-rate">${"★".repeat(post.rating)}</span>` : ""}</div>
       ${(post.track && post.track.coordinates && post.track.coordinates.length > 1) ? `<div class="pv-map"></div><button class="btn ghost pv-follow" id="pvFollow">🧭 跟著這條路線走</button>` : ""}
-      ${post.caption ? `<div class="fc-cap">${esc(post.caption)}</div>` : ""}
+      ${post.caption ? `<div class="fc-cap">${(typeof Feed !== "undefined" && Feed.richText) ? Feed.richText(post.caption) : esc(post.caption)}</div>` : ""}
       ${media.map(m => {
         if (m.kind === "video") return `<video class="pv-img" controls preload="metadata" poster="${esc(Media.publicUrl(m.thumb_path || ""))}" src="${esc(Media.publicUrl(m.path))}"></video>`;
         const img = `<img class="pv-img pv-photo" loading="lazy" src="${esc(Media.publicUrl(m.path))}" alt="">`;
@@ -77,8 +84,12 @@ const PostView = (() => {
         return meta ? `<figure class="pv-shot">${img}${meta}</figure>` : img;
       }).join("")}
       <div class="pv-actions"><button class="fc-like ${likedByMe ? "on" : ""}" id="pvLike">${likedByMe ? "❤️" : "🤍"} <span>${likeCount}</span></button>${isMine ? "" : `<button class="link-btn" id="pvReport">檢舉</button>`}</div>
+      <div class="pv-react" id="pvReact"></div>
       <div class="pv-comments" id="pvComments"><div class="feed-loading"><span class="spin"></span></div></div>`;
+    loadReactions(wrap, post.id);
     wrap.querySelectorAll(".pv-photo").forEach(img => img.addEventListener("click", () => { if (typeof Lightbox !== "undefined") Lightbox.open(img.src); }));
+    wrap.querySelectorAll(".fc-cap .ht").forEach(b => b.addEventListener("click", () => { const x = wrap.querySelector("#pvX"); if (x) x.click(); if (typeof Feed !== "undefined") Feed.openTag(b.dataset.tag); }));
+    wrap.querySelectorAll(".fc-cap .mention").forEach(b => b.addEventListener("click", () => { if (typeof Discover !== "undefined") Discover.openByHandle(b.dataset.handle); }));
     const au = wrap.querySelector(".fc-author"); if (au) au.addEventListener("click", () => { if (typeof Discover !== "undefined") Discover.openProfile(au.dataset.uid); });
     const tl = wrap.querySelector(".fc-traillink"); if (tl) tl.addEventListener("click", () => { if (typeof window.openDetail === "function") window.openDetail(tl.dataset.trail); });
     const fl = wrap.querySelector("#pvFollow"); if (fl) fl.addEventListener("click", () => {
@@ -90,7 +101,10 @@ const PostView = (() => {
     const rep = wrap.querySelector("#pvReport"); if (rep) rep.addEventListener("click", async () => {
       const reason = prompt("檢舉這篇貼文的原因（選填）："); if (reason === null) return;
       await Safety.reportPost(post.id, reason);
-      if (typeof toast === "function") toast("已檢舉，感謝回報");
+      try { const k = "tt_reported"; const s = new Set(JSON.parse(localStorage.getItem(k) || "[]")); s.add(post.id); localStorage.setItem(k, JSON.stringify([...s])); } catch (e) { }
+      if (typeof toast === "function") toast("已檢舉並隱藏，感謝回報");
+      const x = wrap.querySelector("#pvX"); if (x) x.click();
+      if (typeof SocialUI !== "undefined") SocialUI.route();
     });
     // 路線地圖
     const mapEl = wrap.querySelector(".pv-map");
@@ -129,34 +143,98 @@ const PostView = (() => {
     b.firstChild.textContent = liked ? "❤️ " : "🤍 ";
   }
 
+  // 表情回應列（需 phase11；無資料則只顯示可點的表情）
+  const REACT_EMOJI = ["❤️", "👍", "🔥", "😮", "💪", "😂"];
+  async function loadReactions(wrap, postId) {
+    const box = wrap.querySelector("#pvReact"); if (!box) return;
+    const rows = await Posts.reactions(postId);
+    const myId = wrap.dataset.me;
+    const counts = {}; let mine = null;
+    for (const r of rows) { counts[r.emoji] = (counts[r.emoji] || 0) + 1; if (r.user_id === myId) mine = r.emoji; }
+    box.innerHTML = REACT_EMOJI.map(e => `<button class="pv-react-b ${mine === e ? "on" : ""}" data-e="${e}">${e}${counts[e] ? ` <span>${counts[e]}</span>` : ""}</button>`).join("");
+    box.querySelectorAll(".pv-react-b").forEach(b => b.addEventListener("click", async () => {
+      const e = b.dataset.e;
+      if (mine === e) { await Posts.clearReaction(postId); }
+      else { const r = await Posts.setReaction(postId, e); if (r && r.error) { if (typeof toast === "function") toast("回應失敗，請先更新資料庫"); return; } }
+      loadReactions(wrap, postId);
+    }));
+  }
+
+  function cmName(cm) { return esc((cm.author && (cm.author.display_name || cm.author.handle)) || "山友"); }
+  function cmBody(b) { return (typeof Feed !== "undefined" && Feed.richText) ? Feed.richText(b) : esc(b); }
+
   async function loadComments(wrap, postId) {
     const c = Supa.client();
-    const { data } = await c.from("comments")
-      .select("id, body, author_id, created_at, author:profiles!comments_author_profile_fk(handle, display_name)")
-      .eq("post_id", postId).order("created_at", { ascending: true }).limit(200);
-    const box = wrap.querySelector("#pvComments"); if (!box) return;
     const me = wrap.dataset.me, postAuthor = wrap.dataset.author;
-    box.innerHTML = (data && data.length)
-      ? data.map(cm => {
-        const canDel = cm.author_id === me || postAuthor === me;
-        return `<div class="pv-cm"><b>${esc((cm.author && (cm.author.display_name || cm.author.handle)) || "山友")}</b> ${esc(cm.body)}${canDel ? `<button class="cm-del" data-id="${cm.id}" aria-label="刪除">✕</button>` : ""}</div>`;
-      }).join("")
-      : `<div class="social-empty">還沒有留言，當第一個。</div>`;
+    let data, threaded = true;
+    let res = await c.from("comments")
+      .select("id, body, author_id, parent_id, created_at, author:profiles!comments_author_profile_fk(handle, display_name)")
+      .eq("post_id", postId).order("created_at", { ascending: true }).limit(300);
+    if (res.error) {   // phase11 未跑（無 parent_id）→ 退回基本留言
+      threaded = false;
+      res = await c.from("comments")
+        .select("id, body, author_id, created_at, author:profiles!comments_author_profile_fk(handle, display_name)")
+        .eq("post_id", postId).order("created_at", { ascending: true }).limit(300);
+    }
+    data = res.data || [];
+    const box = wrap.querySelector("#pvComments"); if (!box) return;
+    if (!data.length) { box.innerHTML = `<div class="social-empty">還沒有留言，當第一個。</div>`; return; }
+
+    const cl = await Posts.commentLikes(data.map(cm => cm.id));
+    const tops = threaded ? data.filter(cm => !cm.parent_id) : data;
+    const childrenOf = id => threaded ? data.filter(cm => cm.parent_id === id) : [];
+    const row = (cm, isReply) => {
+      const canDel = cm.author_id === me || postAuthor === me;
+      const n = cl.counts[cm.id] || 0, liked = cl.mine.has(cm.id);
+      return `<div class="pv-cm ${isReply ? "pv-cm-reply" : ""}" data-id="${cm.id}">
+        <div class="pv-cm-main"><b>${cmName(cm)}</b> ${cmBody(cm.body)}</div>
+        <div class="pv-cm-act">
+          <button class="cm-like ${liked ? "on" : ""}" data-id="${cm.id}">${liked ? "❤️" : "🤍"}<span>${n || ""}</span></button>
+          ${!isReply ? `<button class="cm-reply" data-id="${cm.id}" data-name="${cmName(cm)}">回覆</button>` : ""}
+          ${canDel ? `<button class="cm-del" data-id="${cm.id}" aria-label="刪除">✕</button>` : ""}
+        </div></div>`;
+    };
+    box.innerHTML = tops.map(cm => row(cm, false) + childrenOf(cm.id).map(r => row(r, true)).join("")).join("");
+
     box.querySelectorAll(".cm-del").forEach(b => b.addEventListener("click", async () => {
-      await c.from("comments").delete().eq("id", b.dataset.id);
-      loadComments(wrap, postId);
+      await c.from("comments").delete().eq("id", b.dataset.id); loadComments(wrap, postId);
     }));
+    box.querySelectorAll(".cm-like").forEach(b => b.addEventListener("click", async () => {
+      const on = !b.classList.contains("on");
+      b.classList.toggle("on", on); b.firstChild.textContent = on ? "❤️" : "🤍";
+      const span = b.querySelector("span"); span.textContent = Math.max(0, (+span.textContent || 0) + (on ? 1 : -1)) || "";
+      await Posts.toggleCommentLike(b.dataset.id, on);
+    }));
+    box.querySelectorAll(".cm-reply").forEach(b => b.addEventListener("click", () => setReplyTarget(wrap, b.dataset.id, b.dataset.name)));
+    box.querySelectorAll(".pv-cm .mention").forEach(b => b.addEventListener("click", () => { if (typeof Discover !== "undefined") Discover.openByHandle(b.dataset.handle); }));
+    box.querySelectorAll(".pv-cm .ht").forEach(b => b.addEventListener("click", () => { const x = wrap.querySelector("#pvX"); if (x) x.click(); if (typeof Feed !== "undefined") Feed.openTag(b.dataset.tag); }));
+  }
+
+  function setReplyTarget(wrap, parentId, name) {
+    wrap.dataset.reply = parentId || "";
+    const add = wrap.querySelector(".pv-add"); if (!add) return;
+    let hint = wrap.querySelector("#pvReplyHint");
+    if (parentId) {
+      if (!hint) { hint = document.createElement("div"); hint.id = "pvReplyHint"; hint.className = "pv-reply-hint"; add.parentNode.insertBefore(hint, add); }
+      hint.innerHTML = `回覆 <b>${esc(name || "")}</b> <button id="pvReplyX">✕</button>`;
+      hint.querySelector("#pvReplyX").addEventListener("click", () => setReplyTarget(wrap, "", ""));
+      const input = wrap.querySelector("#pvInput"); if (input) input.focus();
+    } else if (hint) hint.remove();
   }
 
   async function send(wrap, postId) {
     const input = wrap.querySelector("#pvInput"); const body = input.value.trim();
     if (!body) return;
     const c = Supa.client(); const { data: u } = await c.auth.getUser(); if (!u || !u.user) { alert("請先登入"); return; }
+    const parent = wrap.dataset.reply || null;
     input.disabled = true;
-    const { error } = await c.from("comments").insert({ post_id: postId, author_id: u.user.id, body });
+    const rec = { post_id: postId, author_id: u.user.id, body };
+    if (parent) rec.parent_id = parent;
+    let { error } = await c.from("comments").insert(rec);
+    if (error && parent) { delete rec.parent_id; ({ error } = await c.from("comments").insert(rec)); }   // 無 parent_id 欄位→當一般留言
     input.disabled = false;
     if (error) { if (typeof toast === "function") toast("留言失敗：" + error.message); return; }
-    input.value = ""; loadComments(wrap, postId);
+    input.value = ""; setReplyTarget(wrap, "", ""); Posts.notifyMentions(body, postId); loadComments(wrap, postId);
   }
 
   return { open };

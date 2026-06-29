@@ -1164,3 +1164,20 @@ html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
 .disc-row { display: flex; align-items: center; gap: 10px; }
 .disc-follow { margin-left: auto; flex: 0 0 auto; padding: 5px 14px; font-size: 13px; }
 .pv-follow { width: 100%; margin: 4px 0 10px; }
+
+/* 社群強化 batch 2：標籤/提及/表情回應/留言互動 */
+.ht, .mention { color: var(--accent); font-weight: 600; cursor: pointer; }
+.ht:active, .mention:active { opacity: .6; }
+.pv-react { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 12px; }
+.pv-react-b { border: 1px solid var(--line-soft); background: var(--surface); border-radius: 999px; padding: 4px 10px; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; }
+.pv-react-b span { font-family: var(--num); font-size: 12px; font-weight: 700; color: var(--ink-soft); }
+.pv-react-b.on { border-color: var(--accent); background: var(--accent-soft); }
+.pv-cm { padding: 8px 0; border-bottom: 1px solid var(--line-soft); }
+.pv-cm-reply { margin-left: 22px; border-left: 2px solid var(--line-soft); padding-left: 10px; }
+.pv-cm-main { line-height: 1.5; }
+.pv-cm-act { display: flex; gap: 14px; align-items: center; margin-top: 4px; }
+.pv-cm-act button { background: none; border: none; color: var(--ink-faint); font-size: 12px; cursor: pointer; padding: 0; display: inline-flex; align-items: center; gap: 3px; }
+.pv-cm-act .cm-like.on { color: #d9466b; }
+.pv-cm-act .cm-reply { font-weight: 600; }
+.pv-reply-hint { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-soft); padding: 6px 12px; background: var(--accent-soft); }
+.pv-reply-hint button { background: none; border: none; cursor: pointer; color: var(--ink-soft); font-size: 14px; margin-left: auto; }
