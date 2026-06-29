@@ -22,7 +22,8 @@ const SocialUI = (() => {
       if (!sess) { window.__meAvatar = null; Auth.renderLogin(render); return; }
       myProf = await withTimeout(Auth.myProfile(), 10000);
       if (!myProf) { Auth.renderOnboarding(render); return; }
-      window.__meAvatar = myProf.avatar_url || null;   // 供記錄地圖的「我」標記
+      const m = (sess.user && sess.user.user_metadata) || {};
+      window.__meAvatar = myProf.avatar_url || m.avatar_url || m.picture || null;   // 供記錄地圖的「我」標記（沒頭像退用 Google 照片）
       if (typeof Profiles !== "undefined") Profiles.syncMyStats(myProf.id);   // 上線即同步寵物進度供好友看
       shell();
     } catch (e) {

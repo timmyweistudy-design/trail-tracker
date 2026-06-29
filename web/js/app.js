@@ -1753,9 +1753,15 @@ $("#simToggle").addEventListener("change", e => {
 // 取自己的社群頭像供記錄地圖的「我」標記用（未登入則維持 null＝橘點）
 let _meAvFetched = false;
 async function ensureMeAvatar() {
-  if (_meAvFetched || typeof Supa === "undefined" || !Supa.ready() || typeof Auth === "undefined") return;
+  if (_meAvFetched || typeof Supa === "undefined" || !Supa.ready()) return;
   _meAvFetched = true;
-  try { const s = await Auth.session(); if (!s) return; const p = await Auth.myProfile(); window.__meAvatar = (p && p.avatar_url) || null; } catch (e) { }
+  try {
+    const c = Supa.client(); const { data: u } = await c.auth.getUser();
+    if (!u || !u.user) { _meAvFetched = false; return; }   // 未登入：保留可重試
+    const meta = u.user.user_metadata || {};
+    const { data: p } = await c.from("profiles").select("avatar_url").eq("id", u.user.id).maybeSingle();
+    window.__meAvatar = (p && p.avatar_url) || meta.avatar_url || meta.picture || null;   // 沒設頭像→退而用 Google 大頭照
+  } catch (e) { _meAvFetched = false; }
 }
 $("#btnTeam").addEventListener("click", () => { initRecMap(); if (typeof Team !== "undefined") Team.openSheet(); });
 $("#btnShareLoc").addEventListener("click", () => {
@@ -1795,6 +1801,7 @@ function pickSimTrail() {
 }
 $("#btnStart").addEventListener("click", () => {
   initRecMap();
+  ensureMeAvatar();
   const ri = $("#recIdle"); if (ri) ri.style.display = "none";
   // 模擬模式：沿步道真實路線行走（有動畫感）。沒選步道就自動挑一條真實步道。
   if (sim() && Recorder.getState() !== "paused") {
