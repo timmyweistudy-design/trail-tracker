@@ -2719,15 +2719,26 @@ if (new URLSearchParams(location.search).get("debug") === "1") setTimeout(toggle
   render();
 })();
 
-// 全域輕觸覺回饋：在可點元素按下時給一個極短震動（僅支援的裝置，iOS 會自動略過）
+// 全域點擊回饋：任何「可點元素」按下時都加按壓動畫 + 輕震動（不必逐一列名單）
 (function () {
-  if (!("vibrate" in navigator)) return;
-  const SEL = "button, .btn, .chip, .tab, .seg-btn, .link-btn, .icon-btn, [role='button'], .fc-like, .fc-comment, .sub-tab, .comp-x, .pv-react-b, .cm-like, .cm-reply, .disc-follow, .disc-row, .feed-card, .notif, .fav-star, .done-check, .theme-opt";
-  let last = 0;
+  const SEL = "a[href], button, [role='button'], [role='tab'], [role='link'], label, summary, .chip, .tab, .sub-tab, .seg-btn, .btn, .link-btn, .icon-btn, .feed-card, .disc-row, .notif, [data-id], [data-view], [data-sub], [data-sec], [data-tag], [data-handle], [onclick]";
+  // 判定可點：符合語意選擇器，或電腦樣式 cursor 是 pointer
+  function pressable(el) {
+    for (let n = el; n && n !== document.body; n = n.parentElement) {
+      try { if (n.matches && n.matches(SEL)) return n; } catch (_) { }
+      try { if (getComputedStyle(n).cursor === "pointer") return n; } catch (_) { }
+    }
+    return null;
+  }
+  const canVibrate = "vibrate" in navigator;
+  let cur = null, last = 0;
+  const release = () => { if (cur) { cur.classList.remove("tt-press"); cur = null; } };
   document.addEventListener("pointerdown", e => {
-    if (e.pointerType === "mouse") return;            // 只在觸控時震動
-    if (!e.target.closest(SEL)) return;
-    const now = Date.now(); if (now - last < 40) return; last = now;   // 防連點過度震動
-    try { navigator.vibrate(8); } catch (_) { }
+    const t = pressable(e.target); if (!t) return;
+    release(); cur = t; t.classList.add("tt-press");
+    if (canVibrate && e.pointerType !== "mouse") { const now = Date.now(); if (now - last > 40) { last = now; try { navigator.vibrate(8); } catch (_) { } } }
   }, { passive: true });
+  // 放開 / 取消 / 移出 / 捲動 → 還原
+  ["pointerup", "pointercancel", "pointerleave", "dragstart", "scroll"].forEach(ev =>
+    document.addEventListener(ev, release, { passive: true, capture: true }));
 })();

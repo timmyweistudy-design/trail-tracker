@@ -1203,3 +1203,12 @@ button:active, .icon-btn:active, .seg-btn:active, .sub-tab:active, .comp-x:activ
 .feed-refresh:active, .map-fs-btn:active, .theme-opt:active,
 .fc-like:active, .fc-comment:active { transform: scale(.92); opacity: .88; }
 .feed-card:active, .disc-row:active, .notif:active, .food-item:active, .poi-item:active { transform: scale(.988); }
+
+/* 真·全域：所有語意可點元素都消除點擊延遲 */
+a, button, label, summary, select,
+input[type="button"], input[type="submit"], input[type="checkbox"], input[type="radio"], input[type="range"],
+[role="button"], [role="tab"], [role="link"], [onclick], [data-view], [data-sub], [data-sec], [data-id], [data-tag], [data-handle] {
+  touch-action: manipulation;
+}
+/* JS 對「任何 cursor:pointer 元素」按下時加的通用按壓回饋（個別已有的 :active 仍優先） */
+.tt-press { transform: scale(.95); opacity: .9; transition: transform .08s ease, opacity .08s ease; }
