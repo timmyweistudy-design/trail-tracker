@@ -1063,3 +1063,13 @@ html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
 .team-marker .tm-dir { position: absolute; inset: 0; pointer-events: none; transition: transform .25s ease; }
 .team-marker .tm-cone { position: absolute; left: 50%; top: -8px; margin-left: -7px; width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-bottom: 10px solid var(--brand); filter: drop-shadow(0 1px 1px rgba(0,0,0,.35)); }
 .team-marker.me-marker .tm-cone { border-bottom-color: var(--accent); }
+
+/* 等級徽章：等級越高越高級（樸素 → 漸層 → 金色傳說） */
+.lv-chip { color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,.18); }
+.lv-chip.lvt-1 { background: #93a08f; }
+.lv-chip.lvt-2 { background: #5a9c5f; }
+.lv-chip.lvt-3 { background: #2f9aa4; }
+.lv-chip.lvt-4 { background: linear-gradient(135deg, #4f8ae6, #2f63c8); }
+.lv-chip.lvt-5 { background: linear-gradient(135deg, #9a64db, #7740bf); }
+.lv-chip.lvt-6 { background: linear-gradient(135deg, #d44fa2, #a8327a); box-shadow: 0 1px 6px rgba(168,50,122,.4); }
+.lv-chip.lvt-7 { background: linear-gradient(135deg, #ffe07a, #f0a91e); color: #5a3a00; text-shadow: none; font-weight: 800; box-shadow: 0 0 0 1px rgba(255,205,70,.7), 0 1px 8px rgba(240,169,30,.6); }

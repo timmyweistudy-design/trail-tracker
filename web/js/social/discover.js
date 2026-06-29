@@ -117,7 +117,7 @@ const Discover = (() => {
     return profilesByIds((data || []).map(r => r.following_id));
   }
   function userRow(p) {
-    return `<div class="disc-row" data-id="${p.id}">${p.avatar_url ? `<img class="fc-av" src="${esc(p.avatar_url)}">` : `<div class="fc-av fc-av-ph">${esc((p.display_name || p.handle).slice(0, 1))}</div>`}<div class="disc-id"><b>${esc(p.display_name || p.handle)}${p.pet_level ? ` <span class="lv-chip">Lv.${p.pet_level}</span>` : ""}</b><span>@${esc(p.handle)}</span></div></div>`;
+    return `<div class="disc-row" data-id="${p.id}">${p.avatar_url ? `<img class="fc-av" src="${esc(p.avatar_url)}">` : `<div class="fc-av fc-av-ph">${esc((p.display_name || p.handle).slice(0, 1))}</div>`}<div class="disc-id"><b>${esc(p.display_name || p.handle)}${p.pet_level ? ` <span class="lv-chip lvt-${Math.min(p.pet_level,7)}">Lv.${p.pet_level}</span>` : ""}</b><span>@${esc(p.handle)}</span></div></div>`;
   }
   // 粉絲 / 追蹤中 名單覆蓋層
   async function openUserList(uid, mode) {
