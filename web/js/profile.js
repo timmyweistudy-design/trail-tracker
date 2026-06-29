@@ -2,22 +2,36 @@
 const Profile = (() => {
   const cache = {};
 
-  // 把多段線串成單一點序列
-  function flatten(geometry) {
-    const pts = [];
-    for (const seg of geometry) for (const p of seg) pts.push(p);
-    return pts;
+  // 把多段路線用最近端點貪婪串接成單一連續點序列（涵蓋整條步道，非只取最長一段；不折返）
+  function chainAll(geometry) {
+    const segs = (geometry || []).filter(s => s && s.length >= 2).map(s => s.slice());
+    if (!segs.length) return [];
+    if (segs.length === 1) return segs[0];
+    let si = 0; for (let i = 1; i < segs.length; i++) if (segs[i].length > segs[si].length) si = i;
+    const used = new Array(segs.length).fill(false); used[si] = true;
+    let path = segs[si].slice();
+    const d2 = (a, b) => (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2;
+    for (let n = 1; n < segs.length; n++) {
+      const end = path[path.length - 1];
+      let best = -1, rev = false, bd = Infinity;
+      for (let i = 0; i < segs.length; i++) {
+        if (used[i]) continue; const s = segs[i];
+        const dh = d2(end, s[0]), dt = d2(end, s[s.length - 1]);
+        if (dh < bd) { bd = dh; best = i; rev = false; } if (dt < bd) { bd = dt; best = i; rev = true; }
+      }
+      if (best < 0) break; used[best] = true;
+      path = path.concat(rev ? segs[best].slice().reverse() : segs[best]);
+    }
+    return path;
   }
 
-  // 沿線等距取樣 n 點（依累積距離）
-  function sample(geometry, n = 30) {
-    const pts = flatten(geometry);
+  // 沿點序列等距取樣 n 點（依累積距離）
+  function sampleAlong(pts, n) {
     if (pts.length <= n) return pts;
     const d = [0];
     for (let i = 1; i < pts.length; i++)
       d.push(d[i - 1] + haversine({ lat: pts[i - 1][0], lon: pts[i - 1][1] }, { lat: pts[i][0], lon: pts[i][1] }));
-    const total = d[d.length - 1];
-    const out = [];
+    const total = d[d.length - 1], out = [];
     for (let k = 0; k < n; k++) {
       const target = total * k / (n - 1);
       let i = 1; while (i < d.length - 1 && d[i] < target) i++;
@@ -44,9 +58,10 @@ const Profile = (() => {
   async function build(id, geometry) {
     if (cache[id]) return cache[id];
     if (!geometry || !geometry.length) return null;
-    // 用最長一段算剖面，避免多段不連續時段間跳躍灌入距離
-    const main = geometry.reduce((a, b) => (b.length > a.length ? b : a), geometry[0]);
-    let pts = sample([main], 30);
+    // 串接全部路段成一條，再沿線等距取樣 90 點（涵蓋整條、解析度更高）
+    const route = chainAll(geometry);
+    if (route.length < 2) return null;
+    let pts = sampleAlong(route, 90);
     let elev = await elevations(pts);
     // 過濾無效海拔（Open-Meteo 對部分點可能回 null），避免剖面圖出現 NaN
     const keep = elev.map((e, i) => [e, i]).filter(([e]) => e != null && !isNaN(e));
@@ -58,8 +73,9 @@ const Profile = (() => {
     for (let i = 1; i < pts.length; i++)
       dist.push(dist[i - 1] + haversine({ lat: pts[i - 1][0], lon: pts[i - 1][1] }, { lat: pts[i][0], lon: pts[i][1] }));
     const distKm = dist[dist.length - 1] / 1000;
-    let gain = 0;
-    for (let i = 1; i < elev.length; i++) if (elev[i] > elev[i - 1]) gain += elev[i] - elev[i - 1];
+    // 累積爬升：用 3m 門檻去除 DEM 量化雜訊（與記錄端校正一致）
+    let gain = 0, ref = elev[0];
+    for (let i = 1; i < elev.length; i++) { const dz = elev[i] - ref; if (Math.abs(dz) >= 3) { if (dz > 0) gain += dz; ref = elev[i]; } }
     const min = Math.min(...elev), max = Math.max(...elev);
     const W = 300, H = 90, pad = 4;
     const span = (max - min) || 1;
