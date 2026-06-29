@@ -1042,3 +1042,10 @@ html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
 .team-marker.me-marker .tm-av img, .team-marker.me-marker .tm-av .tm-ph { border-color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,.45); }
 
 @media (prefers-reduced-motion: reduce) { .team-marker .tm-pet { animation: none; } }
+
+/* 隨手拍：結算頁照片條 */
+.hike-shots { display: flex; gap: 9px; overflow-x: auto; padding: 4px 2px 8px; -webkit-overflow-scrolling: touch; }
+.hike-shots .shot { flex: 0 0 auto; margin: 0; width: 116px; }
+.hike-shots .shot img { width: 116px; height: 116px; object-fit: cover; border-radius: var(--r-sm); box-shadow: var(--sh-sm); display: block; }
+.hike-shots .shot figcaption { font-family: var(--num); font-size: 11px; color: var(--ink-soft); text-align: center; margin-top: 4px; }
+#btnSnap #snapCount { font-family: var(--num); font-weight: 700; color: var(--accent); }

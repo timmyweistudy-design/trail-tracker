@@ -1482,6 +1482,8 @@ function openTrackReview(rec) {
       <div class="item"><div class="l">步數</div><div class="v">${(rec.steps || 0).toLocaleString()}</div></div>
       ${t3 && t3 > km + 0.05 ? `<div class="item"><div class="l">含坡度距離</div><div class="v">${t3.toFixed(2)} km</div></div>` : ""}
     </div>
+    ${(rec.id === hikePhotosRecId && hikePhotos.length) ? `<div class="section-title">📷 隨手拍（${hikePhotos.length}）</div>
+      <div class="hike-shots">${hikePhotos.map(p => `<figure class="shot"><img src="${URL.createObjectURL(p.file)}" alt=""><figcaption>${new Date(p.t).toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" })} · ${p.km.toFixed(2)}km</figcaption></figure>`).join("")}</div>` : ""}
     <div class="link-row">
       <button class="link-btn" id="trackReplay">▶ 重播路徑</button>
       <button class="link-btn" id="trackCard">🖼 分享圖卡</button>
@@ -1522,7 +1524,10 @@ function openTrackReview(rec) {
     else toast(text);
   });
   const socialBtn = $("#trackSocial");
-  if (socialBtn) socialBtn.addEventListener("click", () => { if (typeof Composer !== "undefined") Composer.open(rec); });
+  if (socialBtn) socialBtn.addEventListener("click", () => {
+    const preset = (rec.id === hikePhotosRecId) ? hikePhotos.map(p => p.file) : [];
+    if (typeof Composer !== "undefined") Composer.open(rec, preset);
+  });
 }
 function closeTrackReview() { if (trackAnim) { clearInterval(trackAnim); trackAnim = null; } const lv = document.getElementById("replayLive"); if (lv) lv.style.display = "none"; const bb = document.getElementById("replayBar"); if (bb) bb.remove(); $("#trackMask").classList.remove("show"); $("#trackSheet").classList.remove("show"); }
 
@@ -1664,7 +1669,10 @@ function drawRecSpark(series) {
       <path d="${line}" fill="none" stroke="var(--brand-mid)" stroke-width="2" stroke-linejoin="round"/>
     </svg><div class="rec-spark-cap">即時海拔 ${Math.round(es[es.length - 1])}m　·　${Math.round(minE)}–${Math.round(maxE)}m</div>`;
 }
+// 隨拍隨傳：記錄中拍照，存當下時間與里程；結算頁顯示、可選擇分享
+let hikePhotos = [], hikePhotosRecId = null, recSnap = null;
 Recorder.onUpdate(s => {
+  recSnap = s;
   $("#stDist").textContent = s.distanceKm.toFixed(2);
   $("#stSteps").textContent = s.steps.toLocaleString();
   $("#stKcal").textContent = s.kcal;
@@ -1763,6 +1771,15 @@ async function ensureMeAvatar() {
     window.__meAvatar = (p && p.avatar_url) || meta.avatar_url || meta.picture || null;   // 沒設頭像→退而用 Google 大頭照
   } catch (e) { _meAvFetched = false; }
 }
+$("#btnSnap").addEventListener("click", () => $("#snapInput").click());
+$("#snapInput").addEventListener("change", e => {
+  const f = e.target.files[0]; e.target.value = "";
+  if (!f) return;
+  const km = recSnap ? (recSnap.distanceKm || 0) : 0;
+  hikePhotos.push({ file: f, t: Date.now(), km });
+  $("#snapCount").textContent = ` (${hikePhotos.length})`;
+  toast(`已拍照 · ${km.toFixed(2)}km`);
+});
 $("#btnTeam").addEventListener("click", () => { initRecMap(); if (typeof Team !== "undefined") Team.openSheet(); });
 $("#btnShareLoc").addEventListener("click", () => {
   if (!navigator.geolocation) { toast("此裝置不支援定位"); return; }
@@ -1822,10 +1839,11 @@ $("#btnStart").addEventListener("click", () => {
     Recorder.setSimRoute(route);
   }
   if (Recorder.getState() === "paused") Recorder.resume(sim());
-  else Recorder.start(sim());
+  else { hikePhotos = []; $("#snapCount").textContent = ""; Recorder.start(sim()); }   // 新的一趟：清空隨手拍
   $("#btnStart").style.display = "none";
   $("#btnPause").style.display = "block";
   $("#btnStop").style.display = "block";
+  if (!sim()) $("#btnSnap").style.display = "block";   // 模擬不拍照
 });
 $("#btnPause").addEventListener("click", () => {
   Recorder.pause();
@@ -1840,6 +1858,8 @@ async function finishRecording(autoVehicle) {
   $("#btnStart").style.display = "block";
   $("#btnPause").style.display = "none";
   $("#btnStop").style.display = "none";
+  $("#btnSnap").style.display = "none";
+  if (rec) hikePhotosRecId = rec.id;   // 隨手拍歸屬這趟，結算頁才顯示
   if (recMarker) { recMap.removeLayer(recMarker); recMarker = null; }
   if (petMarker) { recMap.removeLayer(petMarker); petMarker = null; }
   recLine.setLatLngs([]);

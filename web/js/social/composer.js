@@ -3,18 +3,18 @@ const Composer = (() => {
   let files = [];
   let video = null;
 
-  function open(rec) {
+  function open(rec, presetFiles) {
     if (typeof Supa === "undefined" || !Supa.ready()) { alert("社群尚未啟用"); return; }
     Auth.session().then(async (s) => {
       if (!s) { alert("請先到「社群」分頁登入"); return; }
       const prof = await Auth.myProfile();
       if (!prof) { alert("請先到「社群」分頁完成註冊"); return; }
-      mount(rec);
+      mount(rec, presetFiles);
     });
   }
 
-  function mount(rec) {
-    files = []; video = null;
+  function mount(rec, presetFiles) {
+    files = (presetFiles && presetFiles.length) ? presetFiles.slice(0, 9) : []; video = null;
     const wrap = document.createElement("div");
     wrap.className = "composer-mask";
     wrap.innerHTML = `
@@ -48,6 +48,7 @@ const Composer = (() => {
       wrap.querySelector("#compVideoName").textContent = "🎬 " + f.name;
     });
     wrap.querySelector("#compPost").addEventListener("click", () => submit(wrap, rec, close));
+    if (files.length) renderPhotos(wrap);   // 顯示隨手拍預載的照片（可刪可加）
   }
 
   function renderPhotos(wrap) {
