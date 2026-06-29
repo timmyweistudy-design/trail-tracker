@@ -2290,16 +2290,10 @@ function checkPetEvolve() {
 function renderRecIdle() {
   const box = $("#recIdle"); if (!box) return;
   if (Recorder.getState && Recorder.getState() !== "idle") { box.style.display = "none"; return; }
-  const i = petStageIndex(totalKm()), st = PET_STAGES[i];
   const last = realRecords()[0];
-  const cand = TRAILS.filter(t => t.family_friendly && t.length_km >= 1 && t.length_km <= 6);
-  const sug = cand.length ? cand[Math.floor(Math.random() * cand.length)] : null;
+  if (!last) { box.style.display = "none"; return; }
   box.style.display = "block";
-  box.innerHTML = `
-    <div class="ridle-row"><span class="ridle-e">${st.e}</span>夥伴 Lv.${i + 1}・準備好和你出發了</div>
-    ${last ? `<div class="ridle-row">📍 上次：${last.trailName || "自由路線"}・<b>${(last.distanceKm || 0).toFixed(2)}</b> km</div>` : ""}
-    ${sug ? `<button class="ridle-sug" data-id="${sug.id}">💡 推薦：${sug.name}（${sug.length_km} km）</button>` : ""}`;
-  const s = box.querySelector(".ridle-sug"); if (s) s.addEventListener("click", () => openDetail(s.dataset.id));
+  box.innerHTML = `<div class="ridle-row">📍 上次：${last.trailName || "自由路線"}・<b>${(last.distanceKm || 0).toFixed(2)}</b> km</div>`;
 }
 // 我的足跡熱力圖：所有真實軌跡疊在一張地圖上
 function openFootprintMap() {
