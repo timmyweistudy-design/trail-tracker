@@ -2718,3 +2718,16 @@ if (new URLSearchParams(location.search).get("debug") === "1") setTimeout(toggle
   document.body.appendChild(ov);
   render();
 })();
+
+// 全域輕觸覺回饋：在可點元素按下時給一個極短震動（僅支援的裝置，iOS 會自動略過）
+(function () {
+  if (!("vibrate" in navigator)) return;
+  const SEL = "button, .btn, .chip, .tab, .seg-btn, .link-btn, .icon-btn, [role='button'], .fc-like, .fc-comment, .sub-tab, .comp-x, .pv-react-b, .cm-like, .cm-reply, .disc-follow, .disc-row, .feed-card, .notif, .fav-star, .done-check, .theme-opt";
+  let last = 0;
+  document.addEventListener("pointerdown", e => {
+    if (e.pointerType === "mouse") return;            // 只在觸控時震動
+    if (!e.target.closest(SEL)) return;
+    const now = Date.now(); if (now - last < 40) return; last = now;   // 防連點過度震動
+    try { navigator.vibrate(8); } catch (_) { }
+  }, { passive: true });
+})();

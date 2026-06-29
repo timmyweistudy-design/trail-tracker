@@ -1184,3 +1184,22 @@ html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
 
 /* 推播開關按鈕 */
 .notif-push { width: 100%; margin-bottom: 12px; }
+
+/* ===== 全域點擊回饋：消除行動裝置點擊延遲 + 統一按壓手感 ===== */
+button, a, .btn, .chip, .tab, .seg-btn, .link-btn, .icon-btn, [role="button"],
+.fc-like, .fc-comment, .sub-tab, .comp-x, .pv-react-b, .cm-like, .cm-reply, .disc-follow,
+.feed-card, .disc-row, .notif, .hist-view, .hist-gpx, .feed-refresh, .map-fs-btn,
+.theme-opt, .ach, .pet-btn, .quest, .fav-star, .done-check, .food-item, .poi-item,
+.coll-card, .info-link, .detail-nav button, .cnt-link, .fc-traillink, .ht, .mention {
+  touch-action: manipulation;
+}
+/* 快速按壓動畫（個別已定義的 :active 仍會優先套用，不衝突） */
+button, .link-btn, .icon-btn, .seg-btn, .sub-tab, .comp-x, .pv-react-b,
+.cm-like, .cm-reply, .disc-follow, .feed-refresh, .map-fs-btn, .theme-opt, .fc-like, .fc-comment {
+  transition: transform .09s ease, opacity .1s ease, background-color .12s ease;
+}
+button:active, .icon-btn:active, .seg-btn:active, .sub-tab:active, .comp-x:active,
+.pv-react-b:active, .cm-like:active, .cm-reply:active, .disc-follow:active,
+.feed-refresh:active, .map-fs-btn:active, .theme-opt:active,
+.fc-like:active, .fc-comment:active { transform: scale(.92); opacity: .88; }
+.feed-card:active, .disc-row:active, .notif:active, .food-item:active, .poi-item:active { transform: scale(.988); }
