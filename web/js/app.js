@@ -2568,9 +2568,26 @@ window.ttDebug = (() => {
       checkPetEvolve(); refresh(); try { renderBadges(); } catch (e) { /* */ }
       return "已解鎖全部成就 🏅";
     },
+    // 重置成就：清掉解鎖用的測試行程、收藏、完成步道紀錄（保留你真實的行程）
+    resetAch() {
+      const kept = Store.getRecords().filter(r => !String(r.id).startsWith("dbg-ach-"));
+      localStorage.setItem("tt_records", JSON.stringify(kept));
+      localStorage.removeItem("tt_favs");
+      localStorage.removeItem("tt_log");
+      checkPetEvolve(); refresh(); try { renderBadges(); } catch (e) { /* */ }
+      return "已重置成就（收藏/完成/測試行程已清空）";
+    },
+    // 重置所有行程記錄：清空全部行程（真實＋測試），並把寵物成長基準重設，避免里程變負
+    clearAllRecords() {
+      Store.clearRecords();
+      localStorage.setItem("tt_pet_base", "0");
+      localStorage.removeItem("tt_pet_feedkm");
+      checkPetEvolve(); refresh(); try { renderBadges(); } catch (e) { /* */ }
+      return "已清空所有行程記錄";
+    },
     state() { return { 成長km: +totalKm().toFixed(2), 等級: petStageIndex(totalKm()) + 1, 果實: berriesBalance(), 愛心: petHearts(), 親密度: affinity(), 今日km: +todayKm().toFixed(1), 出行次數: realRecords().length, debug里程: debugKm() }; },
     panel() { toggleDebugPanel(); },
-    help() { console.log("ttDebug 指令：\n addKm(n) setLevel(0-6) maxLevel() evolve()\n addBerries(n) setAffinity(0-100) resetFeed() addDays(n)\n addHike(km) clearHikes()  ← 推進成就/每日環/足跡圖\n unlockAch()  ← 一鍵解鎖全部成就\n clearDebug() resetPet() state() panel()"); return api.state(); },
+    help() { console.log("ttDebug 指令：\n addKm(n) setLevel(0-6) maxLevel() evolve()\n addBerries(n) setAffinity(0-100) resetFeed() addDays(n)\n addHike(km) clearHikes()  ← 推進成就/每日環/足跡圖\n unlockAch() resetAch()  ← 解鎖/重置成就\n clearAllRecords()  ← 清空所有行程\n clearDebug() resetPet() state() panel()"); return api.state(); },
   };
   return api;
 })();
@@ -2597,7 +2614,8 @@ async function toggleDebugPanel() {
     ["可再餵", () => ttDebug.resetFeed()], ["+30天", () => ttDebug.addDays(30)],
     ["＋行程3km", () => ttDebug.addHike(3)], ["＋行程10km", () => ttDebug.addHike(10)],
     ["清測試行程", () => ttDebug.clearHikes()], ["清debug", () => ttDebug.clearDebug()],
-    ["🏅解全成就", () => ttDebug.unlockAch()],
+    ["🏅解全成就", () => ttDebug.unlockAch()], ["🏅重置成就", () => ttDebug.resetAch()],
+    ["🗑清所有行程", () => { if (confirm("清空全部行程記錄？")) ttDebug.clearAllRecords(); }],
     ["重置🥚", () => ttDebug.resetPet()],
   ];
   p.innerHTML = `<div class="dbg-h">🛠 測試面板 <span id="dbgState"></span><button id="dbgClose">✕</button></div><div class="dbg-grid"></div>`;
