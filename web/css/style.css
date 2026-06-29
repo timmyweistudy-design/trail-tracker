@@ -991,3 +991,12 @@ html[data-theme="dark"] img.trail-photo { background: var(--surface-2); }
 #feedMore { width: 100%; margin: 16px 0; }
 .tabbar .tab { position: relative; }
 .nav-badge { display: none; position: absolute; top: 3px; right: 50%; transform: translateX(15px); min-width: 16px; height: 16px; line-height: 16px; padding: 0 4px; font-size: 10px; font-weight: 700; color: #fff; background: var(--danger); border-radius: 999px; font-family: var(--num); box-shadow: 0 0 0 2px var(--surface); }
+
+/* 粉絲/追蹤名單可點 + 媒體格依張數排版 */
+.cnt-link { cursor: pointer; }
+.cnt-link:active { opacity: .6; }
+.fc-media-1 { grid-template-columns: 1fr; }
+.fc-media-1 img, .fc-media-1 .fc-vid img { aspect-ratio: 16 / 10; }
+.fc-media-2 { grid-template-columns: 1fr 1fr; }
+.fc-media-3 { grid-template-columns: 1fr 1fr 1fr; }
+.fc-media-4 { grid-template-columns: 1fr 1fr; }

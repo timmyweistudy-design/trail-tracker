@@ -36,7 +36,11 @@ const Profiles = (() => {
       </div>`);
     document.getElementById("pfSignout").addEventListener("click", async () => { await Auth.signOut(); SocialUI.route(); });
     document.getElementById("pfEdit").addEventListener("click", () => renderEdit(render, prof));
-    Posts.followCounts(prof.id).then(c => { const el = document.getElementById("pfFollowCounts"); if (el) el.innerHTML = `<b>${c.followers}</b> 粉絲　<b>${c.following}</b> 追蹤中`; });
+    Posts.followCounts(prof.id).then(c => {
+      const el = document.getElementById("pfFollowCounts"); if (!el) return;
+      el.innerHTML = `<span class="cnt-link" data-mode="followers"><b>${c.followers}</b> 粉絲</span>　<span class="cnt-link" data-mode="following"><b>${c.following}</b> 追蹤中</span>`;
+      el.querySelectorAll(".cnt-link").forEach(s => s.addEventListener("click", () => { if (typeof Discover !== "undefined") Discover.openUserList(prof.id, s.dataset.mode); }));
+    });
     Posts.userPosts(prof.id).then(async posts => {
       const pc = document.getElementById("pfPostCount"); if (pc) pc.innerHTML = `<b>${posts.length}</b> 篇　`;
       const box = document.getElementById("pfPosts"); if (!box) return;

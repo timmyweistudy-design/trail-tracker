@@ -28,7 +28,7 @@ const Feed = (() => {
       : `<div class="fc-av fc-av-ph">${esc((a.display_name || a.handle || "?").slice(0, 1))}</div>`;
     const media = (post.post_media || []).slice().sort((x, y) => x.ord - y.ord);
     const imgs = media.length
-      ? `<div class="fc-media">${media.map(m => m.kind === "video"
+      ? `<div class="fc-media fc-media-${Math.min(media.length, 4)}">${media.map(m => m.kind === "video"
           ? `<div class="fc-vid"><img loading="lazy" src="${esc(Media.publicUrl(m.thumb_path || ""))}" alt=""><span class="fc-play">▶</span></div>`
           : `<img loading="lazy" src="${esc(Media.publicUrl(m.thumb_path || m.path))}" alt="">`).join("")}</div>` : "";
     const stats = `${(post.distance_km != null ? post.distance_km.toFixed(2) + "km" : "")}${post.ascent != null ? "　↑" + post.ascent + "m" : ""}`;

@@ -62,7 +62,11 @@ const Discover = (() => {
       </div></div>`;
     document.body.appendChild(wrap);
     wrap.querySelector("#dpX").addEventListener("click", () => wrap.remove());
-    Posts.followCounts(userId).then(c2 => { const el = wrap.querySelector("#dpCounts"); if (el) el.innerHTML = `<b>${c2.followers}</b> 粉絲　<b>${c2.following}</b> 追蹤中`; });
+    Posts.followCounts(userId).then(c2 => {
+      const el = wrap.querySelector("#dpCounts"); if (!el) return;
+      el.innerHTML = `<span class="cnt-link" data-mode="followers"><b>${c2.followers}</b> 粉絲</span>　<span class="cnt-link" data-mode="following"><b>${c2.following}</b> 追蹤中</span>`;
+      el.querySelectorAll(".cnt-link").forEach(s => s.addEventListener("click", () => openUserList(userId, s.dataset.mode)));
+    });
     const fb = wrap.querySelector("#dpFollow");
     if (fb) fb.addEventListener("click", async () => {
       const on = fb.textContent === "追蹤";
@@ -93,5 +97,38 @@ const Discover = (() => {
     box.querySelectorAll(".feed-card").forEach(card => card.addEventListener("click", () => { if (typeof PostView !== "undefined") PostView.open(card.dataset.id); }));
   }
 
-  return { render, openProfile, follow, isFollowing };
+  async function profilesByIds(ids) {
+    if (!ids.length) return [];
+    const c = Supa.client();
+    const { data } = await c.from("profiles").select("id, handle, display_name, avatar_url, pet_level").in("id", ids).limit(200);
+    return data || [];
+  }
+  async function listFollowers(uid) {
+    const c = Supa.client();
+    const { data } = await c.from("follows").select("follower_id").eq("following_id", uid);
+    return profilesByIds((data || []).map(r => r.follower_id));
+  }
+  async function listFollowing(uid) {
+    const c = Supa.client();
+    const { data } = await c.from("follows").select("following_id").eq("follower_id", uid);
+    return profilesByIds((data || []).map(r => r.following_id));
+  }
+  function userRow(p) {
+    return `<div class="disc-row" data-id="${p.id}">${p.avatar_url ? `<img class="fc-av" src="${esc(p.avatar_url)}">` : `<div class="fc-av fc-av-ph">${esc((p.display_name || p.handle).slice(0, 1))}</div>`}<div class="disc-id"><b>${esc(p.display_name || p.handle)}${p.pet_level ? ` <span class="lv-chip">Lv.${p.pet_level}</span>` : ""}</b><span>@${esc(p.handle)}</span></div></div>`;
+  }
+  // 粉絲 / 追蹤中 名單覆蓋層
+  async function openUserList(uid, mode) {
+    const title = mode === "followers" ? "粉絲" : "追蹤中";
+    const wrap = document.createElement("div"); wrap.className = "pv-mask";
+    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" id="ulX">✕</button><b>${title}</b><span></span></div>
+      <div class="pv-body" id="ulBody"><div class="feed-loading"><span class="spin"></span></div></div></div>`;
+    document.body.appendChild(wrap);
+    wrap.querySelector("#ulX").addEventListener("click", () => wrap.remove());
+    const people = mode === "followers" ? await listFollowers(uid) : await listFollowing(uid);
+    const body = wrap.querySelector("#ulBody"); if (!body) return;
+    body.innerHTML = people.length ? people.map(userRow).join("") : `<div class="social-empty">還沒有${title}。</div>`;
+    body.querySelectorAll(".disc-row").forEach(r => r.addEventListener("click", () => { wrap.remove(); openProfile(r.dataset.id); }));
+  }
+
+  return { render, openProfile, follow, isFollowing, openUserList };
 })();
