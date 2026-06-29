@@ -56,6 +56,18 @@ const Profile = (() => {
 
   // 回傳 {svg, gain, min, max, distKm}
   const LS = id => "tt_prof_v2_" + id;   // v2：取樣 90 點演算法；舊版自動失效
+  // 持久化快取，限 25 筆 FIFO，避免塞爆 localStorage 影響其他寫入（如記錄存檔）
+  function persist(id, result) {
+    try {
+      localStorage.setItem(LS(id), JSON.stringify(result));
+      let idx = []; try { idx = JSON.parse(localStorage.getItem("tt_prof_idx") || "[]"); } catch (e) { }
+      idx = idx.filter(x => x !== id); idx.push(id);
+      while (idx.length > 25) { const old = idx.shift(); localStorage.removeItem(LS(old)); }
+      localStorage.setItem("tt_prof_idx", JSON.stringify(idx));
+    } catch (e) {
+      try { JSON.parse(localStorage.getItem("tt_prof_idx") || "[]").forEach(x => localStorage.removeItem(LS(x))); localStorage.removeItem("tt_prof_idx"); } catch (e2) { }
+    }
+  }
   async function build(id, geometry) {
     if (cache[id]) return cache[id];
     try { const s = localStorage.getItem(LS(id)); if (s) { const r = JSON.parse(s); cache[id] = r; return r; } } catch (e) { /* */ }
@@ -100,7 +112,7 @@ const Profile = (() => {
     const samples = xy.map((p, i) => ({ x: +p[0].toFixed(1), d: dist[i] / 1000, e: Math.round(elev[i]) }));
     const result = { svg, gain: Math.round(gain), min: Math.round(min), max: Math.round(max), distKm, samples, W };
     cache[id] = result;
-    try { localStorage.setItem(LS(id), JSON.stringify(result)); } catch (e) { /* quota */ }
+    persist(id, result);
     return result;
   }
 

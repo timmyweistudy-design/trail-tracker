@@ -49,17 +49,20 @@ const Feed = (() => {
     </article>`;
   }
 
-  let _mode = "friends", _posts = [], _into = null;
+  let _mode = "friends", _posts = [], _into = null, _gen = 0;
 
   async function render(renderInto, mode) {
+    const g = ++_gen;   // 世代：切分頁/刷新後，舊查詢結果作廢
     _into = renderInto; _mode = mode; _posts = [];
     renderInto(`<div class="feed-loading"><span class="spin"></span>載入中…</div>`);
-    await loadMore(true);
+    await loadMore(true, g);
   }
 
-  async function loadMore(first) {
+  async function loadMore(first, g) {
+    if (g == null) g = _gen;
     const before = (!first && _posts.length) ? _posts[_posts.length - 1].created_at : null;
     const batch = await Posts.feed(_mode, before);
+    if (g !== _gen) return;   // 已切到別的分頁/刷新 → 丟棄
     _posts = _posts.concat(batch);
     const refresh = `<button class="feed-refresh" id="feedRefresh">↻ 重新整理</button>`;
     if (!_posts.length) {

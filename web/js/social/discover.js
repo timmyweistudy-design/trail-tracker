@@ -18,6 +18,7 @@ const Discover = (() => {
 
   async function search(term) {
     const box = document.getElementById("discResults"); if (!box) return;
+    term = term.replace(/[%,()*\\]/g, "");   // 去除會破壞 PostgREST or() 的字元
     if (term.length < 2) { box.innerHTML = `<div class="social-empty">輸入至少 2 個字搜尋山友。</div>`; return; }
     const c = Supa.client();
     const { data: raw } = await c.from("profiles").select("id, handle, display_name, avatar_url")

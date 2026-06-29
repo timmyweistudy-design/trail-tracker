@@ -18,7 +18,10 @@ const Store = (() => {
   function addRecord(rec) {
     const all = getRecords();
     all.unshift(rec);
-    localStorage.setItem(RK, JSON.stringify(all.slice(0, 100)));
+    // 容量保護：滿了就丟最舊的幾筆重試，確保新記錄存得進去
+    for (let keep = 100; keep >= 20; keep -= 20) {
+      try { localStorage.setItem(RK, JSON.stringify(all.slice(0, keep))); return; } catch (e) { /* quota → 減量重試 */ }
+    }
   }
   function deleteRecord(id) {
     localStorage.setItem(RK, JSON.stringify(getRecords().filter(r => r.id !== id)));
