@@ -4,7 +4,9 @@ const Recorder = (() => {
   const MIN_MOVE = 5;          // 公尺：兩點位移低於此視為原地抖動，不累積
   const MAX_JUMP = 200;        // 公尺：高於此視為 GPS 跳點，捨棄
   const MAX_ACC = 50;          // 公尺：定位精度比這差就忽略該點
-  const ELEV_DEADBAND = 3;     // 公尺：高度變化低於此視為 GPS 雜訊，不計爬升/下降
+  const ELEV_DEADBAND = 5;     // 公尺：高度變化低於此視為 GPS 雜訊，不計爬升/下降（GPS 垂直誤差大，門檻需較大）
+  const ALT_SMOOTH = 0.25;     // 高度 EMA 平滑係數（越小越平滑）：壓掉手機晃動造成的高度抖動
+  const MAX_ALT_ACC = 12;      // 公尺：GPS 垂直精度比這差就不採計爬升/下降（避免雜訊灌爬升）
   // 卡路里係數（kcal /(公斤·公尺)）：上坡為位能/肌肉效率(~23%)，下坡離心約上坡的 30%
   const KCAL_PER_KG_ASCENT = 0.0102;
   const KCAL_PER_KG_DESCENT = 0.0102 * 0.30;
@@ -29,6 +31,7 @@ const Recorder = (() => {
   let ascent = 0;              // 累積爬升（公尺，已去抖動）
   let descent = 0;             // 累積下降（公尺，已去抖動）
   let refAlt = null;           // 高度去抖動基準
+  let smAlt = null;            // EMA 平滑後的高度
   let lastFixAlt = null;       // 上一個被接受點的高度（算 3D 用）
   let smLat = null, smLon = null;   // EMA 平滑後座標
   let elapsedMs = 0, lastResume = 0;   // 總計時（碼表）
@@ -69,13 +72,16 @@ const Recorder = (() => {
   }
 
   // 高度去抖動：累積爬升/下降只計顯著變化，過濾 GPS 高度雜訊
-  function updateElevation(alt) {
+  function updateElevation(alt, altAcc) {
     if (alt == null) return;
-    if (refAlt == null) { refAlt = alt; return; }
-    const dz = alt - refAlt;
+    if (altAcc != null && altAcc > MAX_ALT_ACC) return;   // 垂直精度太差→不採計，避免雜訊灌爬升
+    // 先 EMA 平滑高度，壓掉手機晃動/GPS 雜訊；再用較大門檻去抖動累積
+    smAlt = (smAlt == null) ? alt : ALT_SMOOTH * alt + (1 - ALT_SMOOTH) * smAlt;
+    if (refAlt == null) { refAlt = smAlt; return; }
+    const dz = smAlt - refAlt;
     if (Math.abs(dz) >= ELEV_DEADBAND) {
       if (dz > 0) ascent += dz; else descent += -dz;
-      refAlt = alt;
+      refAlt = smAlt;
     }
   }
 
@@ -105,7 +111,7 @@ const Recorder = (() => {
   }
 
   // 接受一個定位點，套用抖動/跳點/精度過濾，只在真的移動時累積
-  function push(lat, lon, alt, acc, clean, gpsSpeed) {
+  function push(lat, lon, alt, acc, clean, gpsSpeed, altAcc) {
     if (!clean && acc != null && acc > MAX_ACC) return;   // 訊號太差，忽略（模擬點乾淨不過濾）
     const now = Date.now();
     // #7 EMA 平滑座標，降低 GPS 雜訊鋸齒；模擬點本身就在路線上，不平滑、不過濾才不會切彎偏離
@@ -116,7 +122,7 @@ const Recorder = (() => {
     if (!clean && gpsSpeed != null && gpsSpeed >= 0) blendSpeed(gpsSpeed);
 
     if (!lastFix) {                                  // 第一個點：設為錨點
-      lastFix = p; lastAcceptT = now; if (refAlt == null && alt != null) refAlt = alt;
+      lastFix = p; lastAcceptT = now; if (refAlt == null && alt != null) { refAlt = alt; smAlt = alt; }
       if (alt != null) lastFixAlt = alt;
       track.push(p); cb(snapshot()); return;
     }
@@ -158,7 +164,7 @@ const Recorder = (() => {
       dist3D += seg3;
       if (alt != null) lastFixAlt = alt;
       movingMs += now - lastFix.t;
-      updateElevation(alt);                          // 去抖動後累積爬升/下降
+      updateElevation(alt, altAcc);                  // 平滑+去抖動後累積爬升/下降
       track.push(p);
       if (alt != null) altSeries.push({ x: distance, e: alt });   // 即時海拔曲線
       if (now - lastPersist > 4000) { lastPersist = now; persist(); }   // 節流即時存檔
@@ -172,7 +178,7 @@ const Recorder = (() => {
   function startGPS() {
     if (!navigator.geolocation) { alert("此裝置不支援定位，請改用模擬模式"); return false; }
     watchId = navigator.geolocation.watchPosition(
-      pos => push(pos.coords.latitude, pos.coords.longitude, pos.coords.altitude, pos.coords.accuracy, false, pos.coords.speed),
+      pos => push(pos.coords.latitude, pos.coords.longitude, pos.coords.altitude, pos.coords.accuracy, false, pos.coords.speed, pos.coords.altitudeAccuracy),
       err => cb({ ...snapshot(), error: err.message }),
       // 省電模式：關高精度、容許較舊定位，降低 GPS 耗電
       lowPower ? { enableHighAccuracy: false, maximumAge: 8000, timeout: 20000 }
@@ -259,7 +265,7 @@ const Recorder = (() => {
 
   function start(sim) {
     if (state === "running") return;
-    if (state === "idle") { track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; lastFixAlt = null; smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; lastAcceptT = 0; curSpeed = 0; simMode = !!sim; overSpeedHits = 0; autoStopping = false; }
+    if (state === "idle") { track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; smAlt = null; lastFixAlt = null; smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; lastAcceptT = 0; curSpeed = 0; simMode = !!sim; overSpeedHits = 0; autoStopping = false; }
     lastResume = Date.now();
     state = "running";
     autoPaused = false; lastMoveAt = Date.now();   // 開始/繼續都重設靜止計時
@@ -277,7 +283,7 @@ const Recorder = (() => {
     state = "paused"; curSpeed = 0;
     releaseWake();           // 暫停時放開喚醒鎖
     lastFix = null;          // 恢復後重新設錨點，避免把暫停期間算成移動
-    refAlt = null;           // 高度也重新設基準
+    refAlt = null; smAlt = null;   // 高度也重新設基準
     lastFixAlt = null; smLat = null; smLon = null;
     stopSources();
     persist();
@@ -306,7 +312,7 @@ const Recorder = (() => {
       sim: simMode || undefined,
       vehicle: autoStopping || undefined,   // 因車速(>20km/h)自動斷掉→整趟不計里程
     } : null;
-    state = "idle"; track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; lastFixAlt = null;
+    state = "idle"; track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; smAlt = null; lastFixAlt = null;
     smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; lastAcceptT = 0; curSpeed = 0; simPos = null; overSpeedHits = 0; autoStopping = false;
     simRoute = null; simDist = 0;   // 清除殘留路線，避免下次記錄誤跑舊模擬路線
     persist();
@@ -335,7 +341,7 @@ const Recorder = (() => {
     if (!d || !d.track) return null;
     track = d.track; distance = d.distance || 0; dist3D = d.dist3D || 0;
     ascent = d.ascent || 0; descent = d.descent || 0; movingMs = d.movingMs || 0; elapsedMs = d.elapsedMs || 0;
-    refAlt = null; lastFixAlt = null; smLat = null; smLon = null; lastFix = null;
+    refAlt = null; smAlt = null; lastFixAlt = null; smLat = null; smLon = null; lastFix = null;
     state = "paused"; Recorder._trailName = d.trailName || null;
     cb(snapshot());
     return snapshot();
