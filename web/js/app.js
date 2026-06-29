@@ -576,7 +576,6 @@ function trailCard(t) {
     </div>
     <div class="badges">
       <span class="badge diff d${d}"><span class="lvl">${d}</span>${t.difficulty_label}</span>
-      ${done ? `<span class="badge done">✓ 已完成</span>` : ""}
       ${closed ? `<span class="badge closed">⚠️ ${t.condition.status}</span>` : ""}
       ${t.family_friendly ? `<span class="badge family">親子友善</span>` : ""}
       ${t.permit && t.permit !== "無" ? `<span class="badge ghost">需入山證</span>` : ""}
@@ -1501,7 +1500,7 @@ function openTrackReview(rec) {
     <div class="link-row">
       <button class="link-btn" id="trackReplay">▶ 重播路徑</button>
       <button class="link-btn" id="trackCard">🖼 分享圖卡</button>
-      <button class="link-btn" id="trackGpx">⬇️ 匯出 GPX</button>
+      <button class="link-btn" id="trackGpx">⬇️ 下載路線檔</button>
       <button class="link-btn" id="trackShare">↗ 分享行程</button>
       ${rec.sim ? "" : `<button class="link-btn" id="trackSocial">📣 分享到社群</button>`}
     </div>`;
@@ -1530,7 +1529,7 @@ function openTrackReview(rec) {
   }, 120);
   $("#trackReplay").addEventListener("click", () => { if (trackPts && trackPts.length > 1) playTrackReplay(trackPts); });
   $("#trackCard").addEventListener("click", () => shareHikeCard(rec));
-  $("#trackGpx").addEventListener("click", () => { GPX.exportRecord(rec); toast("已匯出 GPX"); });
+  $("#trackGpx").addEventListener("click", () => { GPX.exportRecord(rec); toast("已下載路線檔"); });
   $("#trackShare").addEventListener("click", () => {
     const text = `我走了 ${rec.trailName || "自由路線"}：${km.toFixed(2)} km、爬升 ↑${rec.ascent || 0}m、${rec.kcal} 大卡、${fmtTime(rec.elapsedMs)} ⛰️ — 循徑拾光`;
     if (navigator.share) navigator.share({ title: "我的健行紀錄", text }).catch(() => {});
@@ -1654,7 +1653,7 @@ $("#gpxFile").addEventListener("change", e => {
   const reader = new FileReader();
   reader.onload = () => {
     const pts = GPX.parse(reader.result);
-    if (!pts.length) { toast("GPX 沒有可用的路徑點"); return; }
+    if (!pts.length) { toast("這個檔案沒有可用的路徑"); return; }
     initRecMap();
     if (guideLine) recMap.removeLayer(guideLine);
     const latlngs = pts.map(p => [p.lat, p.lon]);
@@ -1921,7 +1920,7 @@ $("#btnSaveProfile").addEventListener("click", () => {
   toast("已儲存個人資料");
 });
 $("#btnExportGpxAll").addEventListener("click", () => {
-  GPX.exportAll(Store.getRecords()) ? toast("已匯出全部行程 GPX") : toast("尚無行程可匯出");
+  GPX.exportAll(Store.getRecords()) ? toast("已下載全部行程路線檔") : toast("尚無行程可下載");
 });
 $("#btnClearAll").addEventListener("click", () => {
   if (confirm("確定清除「全部」行程紀錄？此動作無法復原。")) {
@@ -2397,20 +2396,12 @@ function renderHistory() {
         <span>${ic("clock")}<b>${fmtTime(r.elapsedMs)}</b></span>
       </div>
       ${r.ascent ? `<div class="row"><span>${ic("mountain")}爬升 <b>↑${r.ascent}</b>m${r.descent ? ` 下降 <b>↓${r.descent}</b>m` : ""}</span></div>` : ""}
-      ${r.note ? `<div class="hist-note">📝 ${r.note.replace(/[<>&]/g, "")}</div>` : ""}
       <div class="hist-actions">
         <button class="hist-view" data-id="${r.id}">🗺️ 回顧軌跡</button>
-        <button class="hist-note-btn" data-id="${r.id}">📝 筆記</button>
-        <button class="hist-gpx" data-id="${r.id}">⬇️ GPX</button>
+        <button class="hist-gpx" data-id="${r.id}">⬇️ 路線檔</button>
         <button class="hist-del" data-id="${r.id}" aria-label="刪除這筆">🗑 刪除</button>
       </div>
     </div>`).join("");
-  wrap.querySelectorAll(".hist-note-btn").forEach(b => b.addEventListener("click", () => {
-    const rec = Store.getRecords().find(r => r.id === b.dataset.id);
-    askInput({ title: "這趟健行的筆記", value: (rec && rec.note) || "", placeholder: "寫下心得、路況、同行的人…", multiline: true }).then(v => {
-      if (v != null) { Store.setRecordNote(b.dataset.id, v.trim()); renderHistory(); }
-    });
-  }));
   wrap.querySelectorAll(".hist-view").forEach(b => b.addEventListener("click", () => {
     const rec = Store.getRecords().find(r => r.id === b.dataset.id);
     if (rec) openTrackReview(rec);
@@ -2424,7 +2415,7 @@ function renderHistory() {
   }));
   wrap.querySelectorAll(".hist-gpx").forEach(b => b.addEventListener("click", () => {
     const rec = Store.getRecords().find(r => r.id === b.dataset.id);
-    if (rec) { GPX.exportRecord(rec); toast("已匯出 GPX"); }
+    if (rec) { GPX.exportRecord(rec); toast("已下載路線檔"); }
   }));
 }
 
