@@ -2387,8 +2387,11 @@ document.addEventListener("visibilitychange", () => {
 });
 // 深連結 ?trail=id → 直接開啟該步道
 (function () {
-  const id = new URLSearchParams(location.search).get("trail");
+  const q = new URLSearchParams(location.search);
+  const id = q.get("trail");
   if (id && TRAILS.some(t => t.id === id)) setTimeout(() => openDetail(id), 200);
+  // 分享的貼文連結 ?post=<id> → 切到社群分頁，由 SocialUI 開啟該貼文
+  if (q.get("post")) { const b = document.querySelector('.tab[data-view="social"]'); if (b) setTimeout(() => b.click(), 250); }
 })();
 
 // ---------- 後台測試（debug） ----------

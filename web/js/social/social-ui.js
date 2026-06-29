@@ -2,6 +2,8 @@
 const SocialUI = (() => {
   const $ = s => document.querySelector(s);
   let mounted = false, sub = "friends", myProf = null, subscribed = false;
+  let pendingPost = null;
+  try { pendingPost = new URLSearchParams(location.search).get("post"); } catch (e) { }
 
   function render(html) { const b = $("#socialBody"); if (b) b.innerHTML = html; }
 
@@ -43,6 +45,12 @@ const SocialUI = (() => {
     else if (sub === "notif") { if (typeof Notifs !== "undefined") Notifs.render(into).then(updateBadge); }
     else if (sub === "me") Profiles.renderMe(into, myProf);
     updateBadge();
+    // 深連結：?post=<id> → 開啟該貼文（登入後才開，開一次後清掉網址參數）
+    if (pendingPost && typeof PostView !== "undefined") {
+      const pid = pendingPost; pendingPost = null;
+      setTimeout(() => PostView.open(pid), 120);
+      try { history.replaceState(null, "", location.pathname); } catch (e) { }
+    }
   }
   function tab(id, label) {
     const badge = id === "notif" ? `<span class="nbadge" id="notifBadge"></span>` : "";

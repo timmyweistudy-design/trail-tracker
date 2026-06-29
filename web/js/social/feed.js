@@ -17,9 +17,9 @@ const Feed = (() => {
     const pts = co.map(c => c[0].toFixed(1) + "," + c[1].toFixed(1)).join(" ");
     const a = co[0], b = co[co.length - 1];
     return `<svg class="fc-route" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">` +
-      `<polyline points="${pts}" fill="none" stroke="#c2683d" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>` +
-      `<circle cx="${a[0].toFixed(1)}" cy="${a[1].toFixed(1)}" r="2.6" fill="#3f7a55"/>` +
-      `<circle cx="${b[0].toFixed(1)}" cy="${b[1].toFixed(1)}" r="2.6" fill="#c2683d"/></svg>`;
+      `<polyline points="${pts}" fill="none" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>` +
+      `<circle class="s" cx="${a[0].toFixed(1)}" cy="${a[1].toFixed(1)}" r="2.6"/>` +
+      `<circle class="e" cx="${b[0].toFixed(1)}" cy="${b[1].toFixed(1)}" r="2.6"/></svg>`;
   }
 
   function card(post, liked) {

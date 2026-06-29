@@ -1000,3 +1000,9 @@ html[data-theme="dark"] img.trail-photo { background: var(--surface-2); }
 .fc-media-2 { grid-template-columns: 1fr 1fr; }
 .fc-media-3 { grid-template-columns: 1fr 1fr 1fr; }
 .fc-media-4 { grid-template-columns: 1fr 1fr; }
+
+/* 路線縮圖用主題色（深色自動適配）+ 詳情頭部按鈕群 */
+.fc-route polyline { stroke: var(--accent); }
+.fc-route .s { fill: var(--brand-mid); }
+.fc-route .e { fill: var(--accent); }
+.pv-head-r { display: inline-flex; align-items: center; gap: 2px; }

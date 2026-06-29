@@ -62,6 +62,9 @@ const Profiles = (() => {
         <h3>編輯檔案</h3>
         <div class="pf-av-edit">${avHtml}
           <label class="comp-add">更換頭像<input type="file" id="edAvFile" accept="image/*" hidden></label></div>
+        <label class="ob-l">帳號 handle（給朋友搜尋你）</label>
+        <input id="edHandle" class="auth-input" value="${esc(prof.handle || "")}" autocapitalize="off" autocomplete="off">
+        <div class="auth-msg" id="edHandleMsg"></div>
         <label class="ob-l">顯示名稱</label>
         <input id="edName" class="auth-input" value="${esc(prof.display_name || "")}">
         <label class="ob-l">簡介</label>
@@ -77,20 +80,39 @@ const Profiles = (() => {
       const img = document.createElement("img"); img.className = "pf-av"; img.id = "edAvImg"; img.src = URL.createObjectURL(f);
       old.replaceWith(img);
     });
+    // handle 即時可用性檢查（與目前相同則略過）
+    const hEl = document.getElementById("edHandle"), hMsg = document.getElementById("edHandleMsg");
+    let ht = null, hOk = true;
+    hEl.addEventListener("input", () => {
+      clearTimeout(ht); const v = Handle.validate(hEl.value);
+      if (v.handle === prof.handle) { hMsg.textContent = ""; hMsg.className = "auth-msg"; hOk = true; return; }
+      if (!v.ok) { hMsg.textContent = v.msg; hMsg.className = "auth-msg bad"; hOk = false; return; }
+      hMsg.textContent = "檢查中…"; hMsg.className = "auth-msg"; hOk = false;
+      ht = setTimeout(async () => {
+        const taken = await Auth.handleTaken(v.handle);
+        if (taken) { hMsg.textContent = "這個 handle 已被使用"; hMsg.className = "auth-msg bad"; hOk = false; }
+        else { hMsg.textContent = "可以使用 ✓"; hMsg.className = "auth-msg ok"; hOk = true; }
+      }, 350);
+    });
     document.getElementById("edCancel").addEventListener("click", () => renderMe(render, prof));
     document.getElementById("edSave").addEventListener("click", async () => {
       const c = Supa.client(); const msg = document.getElementById("edMsg");
       const display_name = (document.getElementById("edName").value || "").trim();
       const bio = (document.getElementById("edBio").value || "").trim();
       if (bio.length > 300) { msg.textContent = "簡介請少於 300 字"; return; }
+      const hv = Handle.validate(hEl.value);
+      if (!hv.ok) { msg.textContent = "handle：" + hv.msg; return; }
+      const handleChanged = hv.handle !== prof.handle;
+      if (handleChanged && !hOk) { msg.textContent = "請確認 handle 可用"; return; }
       msg.textContent = "儲存中…";
       const patch = { display_name, bio };
+      if (handleChanged) patch.handle = hv.handle;
       if (avatarFile) {
         try { patch.avatar_url = await Media.uploadAvatar(prof.id, avatarFile); }
         catch (e) { msg.textContent = "頭像上傳失敗：" + (e && e.message || e); return; }
       }
       const { error } = await c.from("profiles").update(patch).eq("id", prof.id);
-      if (error) { msg.textContent = "儲存失敗：" + error.message; return; }
+      if (error) { msg.textContent = /duplicate|unique/i.test(error.message) ? "這個 handle 已被使用" : ("儲存失敗：" + error.message); return; }
       renderMe(render, Object.assign({}, prof, patch));
     });
   }
