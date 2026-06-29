@@ -1729,10 +1729,13 @@ Recorder.onUpdate(s => {
       // 自己的原點＝頭像 + 寵物徽章（與隊友一致）；移除浮動寵物避免重複
       if (!recMarker || !recMarker._av) {
         if (recMarker) recMap.removeLayer(recMarker);
-        recMarker = L.marker(last, { icon: L.divIcon({ className: "team-marker me-marker", html: `<div class="tm-av"><img src="${meAv}" alt=""><span class="tm-pet">${petEmojiNow()}</span></div>`, iconSize: [32, 32], iconAnchor: [16, 16] }), zIndexOffset: 1100 }).addTo(recMap);
+        recMarker = L.marker(last, { icon: L.divIcon({ className: "team-marker me-marker", html: `<div class="tm-av"><div class="tm-dir"><span class="tm-cone"></span></div><img src="${meAv}" alt=""><span class="tm-pet">${petEmojiNow()}</span></div>`, iconSize: [32, 32], iconAnchor: [16, 16] }), zIndexOffset: 1100 }).addTo(recMap);
         recMarker._av = true;
       }
       recMarker.setLatLng(last);
+      // 面朝方向：旋轉頭像上的方向錐（無 GPS 行進方向時隱藏）
+      const el = recMarker.getElement && recMarker.getElement(), dir = el && el.querySelector(".tm-dir");
+      if (dir) { if (s.heading != null) { dir.style.transform = `rotate(${s.heading}deg)`; dir.style.display = "block"; } else dir.style.display = "none"; }
       if (petMarker) { recMap.removeLayer(petMarker); petMarker = null; }
     } else {
       if (!recMarker || recMarker._av) {

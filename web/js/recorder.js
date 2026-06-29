@@ -19,6 +19,7 @@ const Recorder = (() => {
   let simMode = false;         // 本次記錄是否為模擬（模擬不計入寵物/成就）
   let lastAcceptT = 0;         // 上一個被採計點的時間（算分段速度用）
   let curSpeed = 0;            // 瞬時速度（公尺/秒，平滑後）供顯示
+  let curHeading = null;       // GPS 行進方向（度，0=北，順時針）供地圖標記面朝
   // 混入新速度值：突然暴衝(GPS 雜訊)只給很小權重，避免數字亂飆
   function blendSpeed(r) {
     if (r == null || r < 0 || !isFinite(r)) return;
@@ -105,13 +106,14 @@ const Recorder = (() => {
     const paceSec = (km > 0.01 && movingMs > 0) ? (movingMs / 1000) / km : 0;
     return {
       state, autoPaused, track, altSeries, distanceKm: km, distance3DKm: dist3D / 1000, steps: steps(), kcal: calories(),
-      elapsedMs: ms, movingMs, ascent, descent, speedKmh: kmh, instKmh: (state === "running" && !autoPaused) ? curSpeed * 3.6 : 0,
+      elapsedMs: ms, movingMs, ascent, descent, speedKmh: kmh, instKmh: (state === "running" && !autoPaused) ? curSpeed * 3.6 : 0, heading: curHeading,
       pace: paceSec ? `${Math.floor(paceSec / 60)}'${String(Math.round(paceSec % 60)).padStart(2, "0")}` : "--",
     };
   }
 
   // 接受一個定位點，套用抖動/跳點/精度過濾，只在真的移動時累積
-  function push(lat, lon, alt, acc, clean, gpsSpeed, altAcc) {
+  function push(lat, lon, alt, acc, clean, gpsSpeed, altAcc, heading) {
+    if (heading != null && isFinite(heading) && heading >= 0) curHeading = heading;   // 行進方向
     if (!clean && acc != null && acc > MAX_ACC) return;   // 訊號太差，忽略（模擬點乾淨不過濾）
     const now = Date.now();
     // #7 EMA 平滑座標，降低 GPS 雜訊鋸齒；模擬點本身就在路線上，不平滑、不過濾才不會切彎偏離
@@ -178,7 +180,7 @@ const Recorder = (() => {
   function startGPS() {
     if (!navigator.geolocation) { alert("此裝置不支援定位，請改用模擬模式"); return false; }
     watchId = navigator.geolocation.watchPosition(
-      pos => push(pos.coords.latitude, pos.coords.longitude, pos.coords.altitude, pos.coords.accuracy, false, pos.coords.speed, pos.coords.altitudeAccuracy),
+      pos => push(pos.coords.latitude, pos.coords.longitude, pos.coords.altitude, pos.coords.accuracy, false, pos.coords.speed, pos.coords.altitudeAccuracy, pos.coords.heading),
       err => cb({ ...snapshot(), error: err.message }),
       // 省電模式：關高精度、容許較舊定位，降低 GPS 耗電
       lowPower ? { enableHighAccuracy: false, maximumAge: 8000, timeout: 20000 }

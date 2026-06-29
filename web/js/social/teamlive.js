@@ -8,7 +8,8 @@ const TeamLive = (() => {
   function icon(meta) {
     const av = meta.avatar ? `<img src="${esc(meta.avatar)}" alt="">` : `<span class="tm-ph">${esc((meta.name || "?").slice(0, 1))}</span>`;
     const pet = meta.pet ? `<span class="tm-pet">${esc(meta.pet)}</span>` : "";
-    return L.divIcon({ className: "team-marker", html: `<div class="tm-av">${av}${pet}</div>`, iconSize: [32, 32], iconAnchor: [16, 16] });
+    const dir = (meta.heading != null) ? `<div class="tm-dir" style="transform:rotate(${(+meta.heading).toFixed(0)}deg)"><span class="tm-cone"></span></div>` : "";
+    return L.divIcon({ className: "team-marker", html: `<div class="tm-av">${dir}${av}${pet}</div>`, iconSize: [32, 32], iconAnchor: [16, 16] });
   }
 
   function render() {
@@ -28,9 +29,10 @@ const TeamLive = (() => {
     for (const key in markers) if (!seen[key]) { try { map.removeLayer(markers[key]); } catch (e) { } delete markers[key]; }
   }
 
-  function payload() { return { lat: lastPos.lat, lon: lastPos.lon, name: myInfo.name, avatar: myInfo.avatar || null, pet: myInfo.pet || null, at: Date.now() }; }
+  function payload() { return { lat: lastPos.lat, lon: lastPos.lon, name: myInfo.name, avatar: myInfo.avatar || null, pet: myInfo.pet || null, heading: lastPos.heading, at: Date.now() }; }
   function broadcast(p) {
-    lastPos = { lat: p.coords.latitude, lon: p.coords.longitude };
+    const h = p.coords.heading;
+    lastPos = { lat: p.coords.latitude, lon: p.coords.longitude, heading: (h != null && isFinite(h) && h >= 0) ? h : (lastPos && lastPos.heading != null ? lastPos.heading : null) };
     if (channel) channel.track(payload());
   }
 
