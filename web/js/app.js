@@ -565,6 +565,7 @@ function trailCard(t) {
   const fav = isFavC(t.id), done = logC(t.id).done;
   return `<div class="card" data-id="${t.id}">
     <button class="fav-star${fav ? " on" : ""}" data-fav="${t.id}" aria-label="收藏 ${t.name}">${fav ? "★" : "☆"}</button>
+    <button class="done-check${done ? " on" : ""}" data-done="${t.id}" aria-label="標記完成 ${t.name}" title="標記完成">✓</button>
     <h3>${t.name}</h3>
     <div class="meta">
       <span>${ic("pin")}${t.position || "—"}</span>
@@ -636,7 +637,7 @@ function bindCards() {
   $("#trailList").querySelectorAll(".card:not([data-bound])").forEach(c => {
     c.setAttribute("data-bound", "1");
     c.addEventListener("click", e => {
-      if (e.target.closest(".fav-star")) return;
+      if (e.target.closest(".fav-star") || e.target.closest(".done-check")) return;
       openDetail(c.dataset.id);
     });
     const star = c.querySelector(".fav-star");
@@ -645,6 +646,14 @@ function bindCards() {
       star.classList.toggle("on", added); star.textContent = added ? "★" : "☆";
       if (added) { star.classList.remove("pop"); void star.offsetWidth; star.classList.add("pop"); }
       toast(added ? "已加入收藏" : "已移除收藏");
+    });
+    const chk = c.querySelector(".done-check");
+    if (chk) chk.addEventListener("click", () => {
+      const done = !Store.trailLog(chk.dataset.done).done;
+      Store.setTrailLog(chk.dataset.done, { done });
+      chk.classList.toggle("on", done);
+      if (done) { chk.classList.remove("pop"); void chk.offsetWidth; chk.classList.add("pop"); }
+      toast(done ? "已標記完成 ✓" : "已取消完成");
     });
   });
 }
@@ -877,11 +886,9 @@ function gradeExplain(t) {
 
 // 我的步記區塊
 function myLogHtml(t) {
-  const lg = Store.trailLog(t.id);
   return `<div class="mylog">
     <div class="section-title" style="margin-top:16px">📒 我的步記</div>
-    <button class="btn ghost logdone${lg.done ? " done" : ""}" id="logDone">${lg.done ? "✓ 已完成這條步道" : "標記為已完成"}</button>
-    <button class="btn ghost" id="logShare" style="margin-top:10px">📣 分享到社群（可評星級）</button>
+    <button class="btn ghost" id="logShare">📣 分享到社群（可評星級）</button>
   </div>`;
 }
 
@@ -1067,15 +1074,6 @@ async function openDetail(id) {
   });
 
   // 我的步記
-  const logDone = $("#logDone");
-  if (logDone) logDone.addEventListener("click", () => {
-    const done = !Store.trailLog(t.id).done;
-    Store.setTrailLog(t.id, { done });
-    logDone.classList.toggle("done", done);
-    logDone.textContent = done ? "✓ 已完成這條步道" : "標記為已完成";
-    toast(done ? "已標記完成 🎉" : "已取消完成");
-    if (done) confetti();
-  });
   const logShare = $("#logShare");
   if (logShare) logShare.addEventListener("click", () => {
     if (typeof Composer === "undefined") { toast("社群尚未啟用"); return; }
