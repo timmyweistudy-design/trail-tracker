@@ -152,10 +152,13 @@
   </section>
 
   <!-- 我的 -->
-  <section id="view-me" class="view">
-    <div class="section-title" style="margin-top:4px">🐾 山林夥伴</div>
+  <section id="view-pet" class="view">
+    <div class="pet-head"><h2 class="view-title">🐾 山林夥伴</h2></div>
     <div id="petCard"></div>
+    <div id="petQuests"></div>
+  </section>
 
+  <section id="view-me" class="view">
     <div class="section-title">個人資料（用於估算步數與卡路里）</div>
     <div class="field"><label>體重（公斤）</label><input id="pfWeight" type="number" inputmode="decimal" min="20" max="200" placeholder="60"></div>
     <div class="field"><label>身高（公分）</label><input id="pfHeight" type="number" inputmode="numeric" min="100" max="220" placeholder="170"></div>
@@ -324,6 +327,9 @@
     </button>
     <button class="tab" data-view="record">
       <svg class="ic" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>記錄
+    </button>
+    <button class="tab" data-view="pet">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M12 21c-4 0-7-2.4-7-6 0-3 2.5-5 7-5s7 2 7 5c0 3.6-3 6-7 6Z"/><circle cx="7.5" cy="6.5" r="1.8"/><circle cx="16.5" cy="6.5" r="1.8"/><circle cx="4.5" cy="11" r="1.6"/><circle cx="19.5" cy="11" r="1.6"/></svg>夥伴
     </button>
     <button class="tab" data-view="me">
       <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>我的

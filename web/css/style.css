@@ -1081,3 +1081,24 @@ html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
 .pv-shot { margin: 8px 0; }
 .pv-shot .pv-img { margin: 0; }
 .pv-shot figcaption { font-family: var(--num); font-size: 12px; color: var(--ink-soft); text-align: center; margin-top: 4px; }
+
+/* ===== 夥伴頁：活力、每日任務、連續天數 ===== */
+.pet-head { padding: 0 0 6px; }
+.pet-energy { display: flex; align-items: center; gap: 8px; margin: 9px 0 2px; }
+.pe-l { font-size: 12px; color: rgba(255,255,255,.92); white-space: nowrap; font-family: var(--num); }
+.pe-bar { flex: 1; height: 7px; background: rgba(255,255,255,.28); border-radius: 999px; overflow: hidden; }
+.pe-bar i { display: block; height: 100%; background: linear-gradient(90deg, #ffd66b, #ff9f43); border-radius: 999px; transition: width .4s ease; }
+#petQuests { margin-top: 18px; }
+.streak-chip { font-size: 11px; font-weight: 700; color: #fff; background: linear-gradient(135deg, #ff8a3d, #e8632a); padding: 2px 10px; border-radius: 999px; vertical-align: middle; margin-left: 6px; }
+.quest-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.quest { display: flex; align-items: center; gap: 11px; background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 10px 13px; transition: .2s; }
+.quest.done { border-color: var(--brand-mid); background: var(--brand-soft); }
+.q-ic { font-size: 20px; flex: 0 0 auto; }
+.q-body { flex: 1; min-width: 0; }
+.q-l { font-size: 13.5px; color: var(--ink); margin-bottom: 5px; }
+.q-bar { height: 6px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+.q-bar i { display: block; height: 100%; background: var(--brand-mid); border-radius: 999px; transition: width .4s ease; }
+.quest.done .q-bar i { background: var(--brand); }
+.q-chk { font-family: var(--num); font-size: 13px; font-weight: 700; color: var(--ink-soft); min-width: 24px; text-align: center; flex: 0 0 auto; }
+.quest.done .q-chk { color: var(--brand); font-size: 16px; }
+#qClaim { width: 100%; }
