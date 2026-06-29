@@ -4,9 +4,10 @@ const TeamLive = (() => {
 
   function isOn() { return !!channel; }
 
+  function esc(s) { return (s || "").replace(/[<>&"]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c])); }
   function icon(meta) {
-    const av = meta.avatar ? `<img src="${meta.avatar}" alt="">` : `<span class="tm-ph">${(meta.name || "?").slice(0, 1)}</span>`;
-    const pet = meta.pet ? `<span class="tm-pet">${meta.pet}</span>` : "";
+    const av = meta.avatar ? `<img src="${esc(meta.avatar)}" alt="">` : `<span class="tm-ph">${esc((meta.name || "?").slice(0, 1))}</span>`;
+    const pet = meta.pet ? `<span class="tm-pet">${esc(meta.pet)}</span>` : "";
     return L.divIcon({ className: "team-marker", html: `<div class="tm-av">${av}${pet}</div>`, iconSize: [32, 32], iconAnchor: [16, 16] });
   }
 

@@ -61,14 +61,17 @@ const Feed = (() => {
     const before = (!first && _posts.length) ? _posts[_posts.length - 1].created_at : null;
     const batch = await Posts.feed(_mode, before);
     _posts = _posts.concat(batch);
+    const refresh = `<button class="feed-refresh" id="feedRefresh">↻ 重新整理</button>`;
     if (!_posts.length) {
-      _into(`<div class="social-empty">${_mode === "explore" ? "目前還沒有公開貼文。" : "追蹤山友後，這裡會出現他們的步道旅行（你自己的也會在這）。"}</div>`);
+      _into(`${refresh}<div class="social-empty">${_mode === "explore" ? "目前還沒有公開貼文。" : "追蹤山友後，這裡會出現他們的步道旅行（你自己的也會在這）。"}</div>`);
+      const r0 = document.getElementById("feedRefresh"); if (r0) r0.addEventListener("click", () => render(_into, _mode));
       return;
     }
     const liked = await Posts.likedSet(_posts.map(p => p.id));
     const more = batch.length >= 20 ? `<button class="btn ghost" id="feedMore">載入更多</button>` : "";
-    _into(`<div class="feed-list">${_posts.map(p => card(p, liked.has(p.id))).join("")}</div>${more}`);
+    _into(`${refresh}<div class="feed-list">${_posts.map(p => card(p, liked.has(p.id))).join("")}</div>${more}`);
     bind();
+    const rb = document.getElementById("feedRefresh"); if (rb) rb.addEventListener("click", () => render(_into, _mode));
     const mb = document.getElementById("feedMore"); if (mb) mb.addEventListener("click", () => loadMore(false));
   }
 

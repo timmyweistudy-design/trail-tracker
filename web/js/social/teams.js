@@ -44,7 +44,7 @@ const Team = (() => {
     const prof = await Auth.myProfile(); if (!prof) { alert("請先到「社群」分頁完成註冊"); return; }
     const info = { name: prof.display_name || prof.handle || "我", avatar: prof.avatar_url || null, pet: (typeof petStats === "function" ? petStats().emoji : null) };
     const wrap = document.createElement("div"); wrap.className = "pv-mask";
-    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" id="tmX">✕</button><b>小隊</b><span></span></div>
+    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" aria-label="關閉" id="tmX">✕</button><b>小隊</b><span></span></div>
       <div class="pv-body" id="tmBody"><div class="feed-loading"><span class="spin"></span></div></div></div>`;
     document.body.appendChild(wrap);
     wrap.querySelector("#tmX").addEventListener("click", () => wrap.remove());

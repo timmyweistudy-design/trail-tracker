@@ -7,6 +7,11 @@ const Safety = (() => {
     const { data } = await c.from("blocks").select("blocked_id").eq("blocker_id", m).eq("blocked_id", uid).maybeSingle();
     return !!data;
   }
+  async function blockedIds() {
+    const c = Supa.client(); const m = await me(); if (!m) return new Set();
+    const { data } = await c.from("blocks").select("blocked_id").eq("blocker_id", m);
+    return new Set((data || []).map(r => r.blocked_id));
+  }
   async function block(uid) {
     const c = Supa.client(); const m = await me(); if (!m) return { error: "not-signed-in" };
     const { error } = await c.from("blocks").insert({ blocker_id: m, blocked_id: uid });
@@ -30,5 +35,5 @@ const Safety = (() => {
     const { error } = await c.from("reports").insert({ reporter_id: m, reported_user: uid, reason: reason || null });
     return { error: error && error.message };
   }
-  return { isBlocked, block, unblock, reportPost, reportUser };
+  return { isBlocked, blockedIds, block, unblock, reportPost, reportUser };
 })();

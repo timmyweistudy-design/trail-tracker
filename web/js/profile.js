@@ -55,8 +55,10 @@ const Profile = (() => {
   }
 
   // 回傳 {svg, gain, min, max, distKm}
+  const LS = id => "tt_prof_v2_" + id;   // v2：取樣 90 點演算法；舊版自動失效
   async function build(id, geometry) {
     if (cache[id]) return cache[id];
+    try { const s = localStorage.getItem(LS(id)); if (s) { const r = JSON.parse(s); cache[id] = r; return r; } } catch (e) { /* */ }
     if (!geometry || !geometry.length) return null;
     // 串接全部路段成一條，再沿線等距取樣 90 點（涵蓋整條、解析度更高）
     const route = chainAll(geometry);
@@ -98,6 +100,7 @@ const Profile = (() => {
     const samples = xy.map((p, i) => ({ x: +p[0].toFixed(1), d: dist[i] / 1000, e: Math.round(elev[i]) }));
     const result = { svg, gain: Math.round(gain), min: Math.round(min), max: Math.round(max), distKm, samples, W };
     cache[id] = result;
+    try { localStorage.setItem(LS(id), JSON.stringify(result)); } catch (e) { /* quota */ }
     return result;
   }
 

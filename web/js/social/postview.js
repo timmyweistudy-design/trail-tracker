@@ -15,7 +15,7 @@ const PostView = (() => {
     const wrap = document.createElement("div");
     wrap.className = "pv-mask";
     wrap.dataset.me = myId; wrap.dataset.author = post.author_id;
-    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" id="pvX">✕</button><b>貼文</b><span class="pv-head-r"><button class="comp-x" id="pvShare" title="分享">📤</button>${isMine ? '<button class="comp-x" id="pvEdit" title="編輯">✏️</button><button class="comp-x" id="pvDel" title="刪除">🗑</button>' : ""}</span></div>
+    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" aria-label="關閉" id="pvX">✕</button><b>貼文</b><span class="pv-head-r"><button class="comp-x" id="pvShare" title="分享" aria-label="分享">📤</button>${isMine ? '<button class="comp-x" id="pvEdit" title="編輯" aria-label="編輯">✏️</button><button class="comp-x" id="pvDel" title="刪除" aria-label="刪除">🗑</button>' : ""}</span></div>
       <div class="pv-body" id="pvBody"></div>
       <div class="pv-add"><input id="pvInput" class="auth-input" placeholder="留言…" maxlength="1000"><button class="btn primary" id="pvSend">送出</button></div></div>`;
     document.body.appendChild(wrap);
@@ -24,7 +24,7 @@ const PostView = (() => {
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "comments", filter: `post_id=eq.${postId}` }, () => loadComments(wrap, postId))
       .on("postgres_changes", { event: "*", schema: "public", table: "likes", filter: `post_id=eq.${postId}` }, () => refreshLikes(wrap, postId))
       .subscribe();
-    const close = () => { try { c.removeChannel(channel); } catch (e) { } wrap.remove(); };
+    const close = () => { try { c.removeChannel(channel); } catch (e) { } if (wrap._map) { try { wrap._map.remove(); } catch (e) { } wrap._map = null; } wrap.remove(); };
     wrap.querySelector("#pvX").addEventListener("click", close);
     wrap.querySelector("#pvShare").addEventListener("click", () => {
       const url = location.origin + location.pathname + "?post=" + postId;
@@ -88,7 +88,9 @@ const PostView = (() => {
       const coords = post.track.coordinates.map(p => [p[1], p[0]]);
       setTimeout(() => {
         try {
+          if (wrap._map) { try { wrap._map.remove(); } catch (e) { } }
           const map = L.map(mapEl, { zoomControl: false, attributionControl: false, scrollWheelZoom: false });
+          wrap._map = map;
           (typeof baseTopo === "function" ? baseTopo() : L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png")).addTo(map);
           const line = L.polyline(coords, { color: "#c2683d", weight: 4 }).addTo(map);
           map.fitBounds(line.getBounds(), { padding: [18, 18] });

@@ -1480,6 +1480,7 @@ async function saveImageFile(file) {
 }
 function openTrackReview(rec) {
   if (!rec) return;
+  _shotUrls.forEach(u => URL.revokeObjectURL(u)); _shotUrls = [];   // 回收上一份結算的照片 URL
   const km = rec.distanceKm || 0, t3 = rec.distance3DKm;
   $("#trackBody").innerHTML = `
     <h2>${rec.trailName || "自由路線"}</h2>
@@ -1494,7 +1495,7 @@ function openTrackReview(rec) {
       ${t3 && t3 > km + 0.05 ? `<div class="item"><div class="l">含坡度距離</div><div class="v">${t3.toFixed(2)} km</div></div>` : ""}
     </div>
     ${(rec.id === hikePhotosRecId && hikePhotos.length) ? `<div class="section-title">📷 隨手拍（${hikePhotos.length}）<span class="shot-hint">點照片存到相簿</span></div>
-      <div class="hike-shots">${hikePhotos.map((p, i) => `<figure class="shot" data-i="${i}"><img src="${URL.createObjectURL(p.file)}" alt=""><figcaption>${new Date(p.t).toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" })} · ${p.km.toFixed(2)}km</figcaption></figure>`).join("")}</div>` : ""}
+      <div class="hike-shots">${hikePhotos.map((p, i) => `<figure class="shot" data-i="${i}"><img src="${(u => { _shotUrls.push(u); return u; })(URL.createObjectURL(p.file))}" alt=""><figcaption>${new Date(p.t).toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" })} · ${p.km.toFixed(2)}km</figcaption></figure>`).join("")}</div>` : ""}
     <div class="link-row">
       <button class="link-btn" id="trackReplay">▶ 重播路徑</button>
       <button class="link-btn" id="trackCard">🖼 分享圖卡</button>
@@ -1544,7 +1545,7 @@ function openTrackReview(rec) {
     const p = hikePhotos[+fig.dataset.i]; if (p) saveImageFile(p.file);
   }));
 }
-function closeTrackReview() { if (trackAnim) { clearInterval(trackAnim); trackAnim = null; } const lv = document.getElementById("replayLive"); if (lv) lv.style.display = "none"; const bb = document.getElementById("replayBar"); if (bb) bb.remove(); $("#trackMask").classList.remove("show"); $("#trackSheet").classList.remove("show"); }
+function closeTrackReview() { if (trackAnim) { clearInterval(trackAnim); trackAnim = null; } const lv = document.getElementById("replayLive"); if (lv) lv.style.display = "none"; const bb = document.getElementById("replayBar"); if (bb) bb.remove(); _shotUrls.forEach(u => URL.revokeObjectURL(u)); _shotUrls = []; $("#trackMask").classList.remove("show"); $("#trackSheet").classList.remove("show"); }
 
 // 成果分享圖卡：把這趟健行畫成一張可分享/下載的圖
 async function shareHikeCard(rec) {
@@ -1685,7 +1686,7 @@ function drawRecSpark(series) {
     </svg><div class="rec-spark-cap">即時海拔 ${Math.round(es[es.length - 1])}m　·　${Math.round(minE)}–${Math.round(maxE)}m</div>`;
 }
 // 隨拍隨傳：記錄中拍照，存當下時間與里程；結算頁顯示、可選擇分享
-let hikePhotos = [], hikePhotosRecId = null, recSnap = null;
+let hikePhotos = [], hikePhotosRecId = null, recSnap = null, _shotUrls = [];
 Recorder.onUpdate(s => {
   recSnap = s;
   $("#stDist").textContent = s.distanceKm.toFixed(2);

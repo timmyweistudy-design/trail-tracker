@@ -19,7 +19,7 @@ const SocialUI = (() => {
     if (typeof Auth === "undefined") { render(`<div class="social-empty">社群模組載入失敗，請下拉重新整理。</div>`); return; }
     try {
       const sess = await withTimeout(Auth.session(), 10000);
-      if (!sess) { window.__meAvatar = null; Auth.renderLogin(render); return; }
+      if (!sess) { window.__meAvatar = null; if (typeof TeamLive !== "undefined") TeamLive.stop(); Auth.renderLogin(render); return; }
       myProf = await withTimeout(Auth.myProfile(), 10000);
       if (!myProf) { Auth.renderOnboarding(render); return; }
       const m = (sess.user && sess.user.user_metadata) || {};

@@ -19,7 +19,7 @@ const Composer = (() => {
     wrap.className = "composer-mask";
     wrap.innerHTML = `
       <div class="composer">
-        <div class="composer-head"><button class="comp-x" id="compX">✕</button><b>分享到社群</b><button class="btn primary comp-post" id="compPost">發布</button></div>
+        <div class="composer-head"><button class="comp-x" aria-label="關閉" id="compX">✕</button><b>分享到社群</b><button class="btn primary comp-post" id="compPost">發布</button></div>
         <div class="comp-trail">⛰️ ${esc(rec.trailName || "自由路線")}　${(rec.distanceKm || 0).toFixed(2)}km　↑${rec.ascent || 0}m</div>
         <textarea id="compCaption" class="comp-cap" placeholder="寫下這趟的心得…" maxlength="2000"></textarea>
         <div class="comp-photos" id="compPhotos"></div>
@@ -33,7 +33,7 @@ const Composer = (() => {
         <div class="comp-msg" id="compMsg"></div>
       </div>`;
     document.body.appendChild(wrap);
-    const close = () => wrap.remove();
+    const close = () => { _urls.forEach(u => URL.revokeObjectURL(u)); _urls = []; wrap.remove(); };
     wrap.querySelector("#compX").addEventListener("click", close);
     wrap.querySelector("#compFiles").addEventListener("change", e => {
       for (const f of e.target.files) if (files.length < 9) files.push(f);
@@ -51,9 +51,11 @@ const Composer = (() => {
     if (files.length) renderPhotos(wrap);   // 顯示隨手拍預載的照片（可刪可加）
   }
 
+  let _urls = [];
   function renderPhotos(wrap) {
+    _urls.forEach(u => URL.revokeObjectURL(u)); _urls = [];   // 回收上一輪的物件 URL
     const box = wrap.querySelector("#compPhotos");
-    box.innerHTML = files.map((f, i) => `<div class="comp-thumb"><img src="${URL.createObjectURL(f)}" alt=""><button data-i="${i}" class="comp-del">✕</button></div>`).join("");
+    box.innerHTML = files.map((f, i) => { const u = URL.createObjectURL(f); _urls.push(u); return `<div class="comp-thumb"><img src="${u}" alt=""><button data-i="${i}" class="comp-del">✕</button></div>`; }).join("");
     box.querySelectorAll(".comp-del").forEach(b => b.addEventListener("click", () => { files.splice(+b.dataset.i, 1); renderPhotos(wrap); }));
   }
 

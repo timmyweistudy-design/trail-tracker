@@ -20,9 +20,11 @@ const Discover = (() => {
     const box = document.getElementById("discResults"); if (!box) return;
     if (term.length < 2) { box.innerHTML = `<div class="social-empty">輸入至少 2 個字搜尋山友。</div>`; return; }
     const c = Supa.client();
-    const { data } = await c.from("profiles").select("id, handle, display_name, avatar_url")
-      .or(`handle.ilike.%${term}%,display_name.ilike.%${term}%`).limit(20);
-    if (!data || !data.length) { box.innerHTML = `<div class="social-empty">找不到符合的山友。</div>`; return; }
+    const { data: raw } = await c.from("profiles").select("id, handle, display_name, avatar_url")
+      .or(`handle.ilike.%${term}%,display_name.ilike.%${term}%`).limit(30);
+    const blocked = (typeof Safety !== "undefined") ? await Safety.blockedIds() : new Set();
+    const data = (raw || []).filter(p => !blocked.has(p.id));   // 過濾已封鎖的人
+    if (!data.length) { box.innerHTML = `<div class="social-empty">找不到符合的山友。</div>`; return; }
     box.innerHTML = data.map(p => `<div class="disc-row" data-id="${p.id}">
       ${p.avatar_url ? `<img class="fc-av" src="${esc(p.avatar_url)}">` : `<div class="fc-av fc-av-ph">${esc((p.display_name || p.handle).slice(0, 1))}</div>`}
       <div class="disc-id"><b>${esc(p.display_name || p.handle)}</b><span>@${esc(p.handle)}</span></div></div>`).join("");
@@ -49,7 +51,7 @@ const Discover = (() => {
     const following = isMe ? false : await isFollowing(userId);
     const wrap = document.createElement("div");
     wrap.className = "pv-mask";
-    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" id="dpX">✕</button><b>@${esc(prof.handle)}</b><span></span></div>
+    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" aria-label="關閉" id="dpX">✕</button><b>@${esc(prof.handle)}</b><span></span></div>
       <div class="pv-body">
         <div class="pf-top">${prof.avatar_url ? `<img class="pf-av" src="${esc(prof.avatar_url)}">` : `<div class="pf-av pf-av-ph">${esc((prof.display_name || prof.handle).slice(0, 1))}</div>`}
           <div class="pf-id"><div class="pf-name">${esc(prof.display_name || prof.handle)}</div><div class="pf-handle">@${esc(prof.handle)}</div></div></div>
@@ -120,7 +122,7 @@ const Discover = (() => {
   async function openUserList(uid, mode) {
     const title = mode === "followers" ? "粉絲" : "追蹤中";
     const wrap = document.createElement("div"); wrap.className = "pv-mask";
-    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" id="ulX">✕</button><b>${title}</b><span></span></div>
+    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" aria-label="關閉" id="ulX">✕</button><b>${title}</b><span></span></div>
       <div class="pv-body" id="ulBody"><div class="feed-loading"><span class="spin"></span></div></div></div>`;
     document.body.appendChild(wrap);
     wrap.querySelector("#ulX").addEventListener("click", () => wrap.remove());

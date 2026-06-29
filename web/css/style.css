@@ -1054,3 +1054,7 @@ html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
 .shot-hint { font-family: var(--sans); font-weight: 500; font-size: 11px; color: var(--ink-faint); margin-left: 8px; }
 .hike-shots .shot { cursor: pointer; }
 .hike-shots .shot:active img { opacity: .8; }
+
+/* 動態牆重新整理 */
+.feed-refresh { display: block; margin: 0 auto 12px; background: none; border: none; color: var(--ink-soft); font-size: 13px; cursor: pointer; font-family: var(--sans); padding: 4px 12px; }
+.feed-refresh:active { color: var(--accent); }
