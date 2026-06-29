@@ -1123,3 +1123,31 @@ html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
 .done-check.on { color: var(--brand); }
 .done-check:active { transform: scale(1.25); }
 .done-check.pop { animation: heartPop .45s cubic-bezier(.2,.8,.2,1); }
+
+/* 夥伴手冊：進化圖鑑（詳細） */
+.dex-intro { font-size: 13px; color: var(--ink-soft); line-height: 1.7; margin: 4px 0 10px; }
+.dex-tip { background: var(--accent-soft); color: var(--accent); font-size: 13px; font-weight: 600; padding: 9px 13px; border-radius: var(--r-sm); margin-bottom: 14px; }
+.dex-sec { font-family: var(--serif); font-weight: 700; font-size: 15px; margin: 14px 0 8px; }
+.dex-list { display: flex; flex-direction: column; gap: 8px; }
+.dex-row { display: flex; gap: 12px; align-items: flex-start; background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 11px 13px; }
+.dex-row.now { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-soft); }
+.dex-row.locked { opacity: .62; }
+.dex-row .dex-e { font-size: 32px; line-height: 1; flex: 0 0 auto; width: 40px; text-align: center; }
+.dex-body { flex: 1; min-width: 0; }
+.dex-h { display: flex; align-items: center; gap: 7px; }
+.dex-h b { font-family: var(--serif); font-size: 15px; }
+.dex-lv { font-family: var(--num); font-size: 11px; font-weight: 700; color: #fff; background: var(--brand-mid); border-radius: 5px; padding: 1px 6px; }
+.dex-now { font-size: 11px; font-weight: 700; color: #fff; background: var(--accent); border-radius: 999px; padding: 1px 8px; }
+.dex-k { font-family: var(--num); font-size: 12px; color: var(--ink-faint); margin: 3px 0; }
+.dex-d { font-size: 13px; color: var(--ink-soft); line-height: 1.6; }
+.dex-foot { font-size: 12px; color: var(--ink-faint); margin-top: 14px; line-height: 1.6; }
+
+/* 成就勳章專區（夥伴頁） */
+#petBadges { margin-top: 18px; }
+.badge-count { font-family: var(--num); font-size: 13px; font-weight: 700; color: var(--accent); margin-left: 4px; }
+.ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(98px, 1fr)); gap: 9px; }
+.ach { background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 12px 8px; text-align: center; }
+.ach.locked { opacity: .5; filter: grayscale(.6); }
+.ach-e { font-size: 30px; line-height: 1; }
+.ach-n { font-family: var(--serif); font-weight: 700; font-size: 13px; margin: 6px 0 3px; }
+.ach-d { font-size: 10.5px; color: var(--ink-faint); line-height: 1.4; }

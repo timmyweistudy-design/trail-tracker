@@ -270,7 +270,7 @@ document.querySelectorAll(".tab").forEach(btn => {
       renderRecIdle();
     }
     if (view === "pet") {
-      renderPet(); renderQuests();
+      renderPet(); renderQuests(); renderBadges();
       if (typeof Pets !== "undefined") {
         Pets.claimGifts().then(n => { if (n > 0) { toast(`收到好友送的 ${n} 🍓！`); renderPet(); } });
         Pets.renderFriends();
@@ -2202,43 +2202,71 @@ function petRecommend() {
 // 成就徽章
 function petBadges() {
   const recs = realRecords();
+  const n = recs.length;
   const km = recs.reduce((s, r) => s + (r.distanceKm || 0), 0);
   const asc = recs.reduce((s, r) => s + (r.ascent || 0), 0);
   const maxOne = recs.reduce((m, r) => Math.max(m, r.distanceKm || 0), 0);
   const hrs = recs.map(r => new Date(r.date).getHours());
+  const early = hrs.some(h => h < 7), night = hrs.some(h => h >= 19);
+  const done = (typeof Store.doneCount === "function") ? Store.doneCount() : 0;
+  const favCount = TRAILS.filter(t => Store.isFav(t.id)).length;
+  const wk = weeksStreak(), dstreak = (typeof daysStreak === "function") ? daysStreak() : 0;
   return [
-    { e: "👣", n: "初心者", got: recs.length >= 1, d: "完成第一次記錄" },
-    { e: "🔟", n: "常客", got: recs.length >= 10, d: "累積 10 次出行" },
-    { e: "💯", n: "百K俱樂部", got: km >= 100, d: "總里程達 100 km" },
-    { e: "⛰️", n: "爬升大師", got: asc >= 2000, d: "總爬升達 2000 m" },
+    { e: "👣", n: "初心者", got: n >= 1, d: "完成第一次記錄" },
+    { e: "🥾", n: "常客", got: n >= 10, d: "累積 10 次出行" },
+    { e: "🎒", n: "老山友", got: n >= 30, d: "累積 30 次出行" },
+    { e: "🧗", n: "山痴", got: n >= 100, d: "累積 100 次出行" },
+    { e: "📏", n: "50K", got: km >= 50, d: "總里程 50 km" },
+    { e: "💯", n: "百K俱樂部", got: km >= 100, d: "總里程 100 km" },
+    { e: "🚀", n: "300K", got: km >= 300, d: "總里程 300 km" },
+    { e: "🏆", n: "縱橫五百", got: km >= 500, d: "總里程 500 km" },
+    { e: "⛰️", n: "爬升新手", got: asc >= 1000, d: "總爬升 1000 m" },
+    { e: "🦅", n: "爬升大師", got: asc >= 3000, d: "總爬升 3000 m" },
+    { e: "🗻", n: "玉山高度", got: asc >= 3952, d: "總爬升 3952 m（一座玉山）" },
+    { e: "🏔️", n: "聖母峰高度", got: asc >= 8848, d: "總爬升 8848 m（一座聖母峰）" },
     { e: "🏃", n: "健行馬拉松", got: maxOne >= 10, d: "單次步行 ≥ 10 km" },
-    { e: "🌅", n: "早起鳥", got: hrs.some(h => h < 7), d: "清晨 7 點前出發" },
-    { e: "🌙", n: "夜行者", got: hrs.some(h => h >= 19), d: "晚間 7 點後出發" },
-    { e: "🔥", n: "堅持者", got: weeksStreak() >= 4, d: "連續 4 週都有走" },
+    { e: "🥇", n: "半馬腳力", got: maxOne >= 21, d: "單次步行 ≥ 21 km" },
+    { e: "✅", n: "踏遍五徑", got: done >= 5, d: "完成 5 條步道" },
+    { e: "🗺️", n: "步道收藏家", got: done >= 20, d: "完成 20 條步道" },
+    { e: "⭐", n: "收藏迷", got: favCount >= 10, d: "收藏 10 條步道" },
+    { e: "🌅", n: "早起鳥", got: early, d: "清晨 7 點前出發" },
+    { e: "🌙", n: "夜行者", got: night, d: "晚間 7 點後出發" },
+    { e: "📅", n: "連續一週", got: dstreak >= 7, d: "連續 7 天健行" },
+    { e: "🔥", n: "四週堅持", got: wk >= 4, d: "連續 4 週都有走" },
   ];
+}
+// 成就勳章專區（夥伴頁）
+function renderBadges() {
+  const box = $("#petBadges"); if (!box) return;
+  const list = petBadges(), got = list.filter(b => b.got).length;
+  box.innerHTML = `<div class="section-title">🏅 成就勳章 <span class="badge-count">${got} / ${list.length}</span></div>
+    <div class="ach-grid">${list.map(b => `<div class="ach${b.got ? "" : " locked"}"><div class="ach-e">${b.got ? b.e : "🔒"}</div><div class="ach-n">${b.n}</div><div class="ach-d">${b.d}</div></div>`).join("")}</div>`;
 }
 // 夥伴手冊：進化圖鑑 + 成就徽章
 function openPetDex() {
-  const reached = petStageIndex(totalKm());
-  const stages = PET_STAGES.map((s, i) => `
-    <div class="dex-stage${i <= reached ? "" : " locked"}">
-      <div class="dex-e">${i <= reached ? s.e : "❔"}</div>
-      <div class="dex-t">${i <= reached ? s.n : "？？？"}</div>
-      <div class="dex-k">${s.km} km</div>
-    </div>`).join("");
-  const badges = petBadges().map(b => `
-    <div class="dex-badge${b.got ? "" : " locked"}">
-      <span class="db-e">${b.e}</span><span class="db-n">${b.n}</span><span class="db-d">${b.d}</span>
-    </div>`).join("");
+  const km = totalKm(), reached = petStageIndex(km), next = PET_STAGES[reached + 1];
+  const stages = PET_STAGES.map((s, i) => {
+    const unlocked = i <= reached, isNow = i === reached;
+    return `<div class="dex-row${unlocked ? "" : " locked"}${isNow ? " now" : ""}">
+      <div class="dex-e">${unlocked ? s.e : "❔"}</div>
+      <div class="dex-body">
+        <div class="dex-h"><b>${unlocked ? s.n : "？？？"}</b><span class="dex-lv">Lv.${i + 1}</span>${isNow ? `<span class="dex-now">目前</span>` : ""}</div>
+        <div class="dex-k">${i === 0 ? "起始型態" : `成長里程 ${s.km} km 解鎖`}</div>
+        <div class="dex-d">${unlocked ? s.d : "繼續健行，解鎖牠的樣貌與故事…"}</div>
+      </div>
+    </div>`;
+  }).join("");
+  const tip = next ? `再走 <b>${(next.km - km).toFixed(1)}</b> km 進化成 ${next.e} ${next.n}` : "已達最終型態 ✨ 與你繼續同行";
   const ov = document.createElement("div");
   ov.className = "pet-modal";
   ov.innerHTML = `<div class="pet-modal-card">
     <button class="sheet-close" id="petDexClose" aria-label="關閉">✕</button>
     <h2>夥伴手冊</h2>
-    <div class="dex-sec">進化圖鑑</div>
-    <div class="dex-stages">${stages}</div>
-    <div class="dex-sec">成就徽章</div>
-    <div class="dex-badges">${badges}</div>
+    <p class="dex-intro">你的夥伴會隨著累積的<b>成長里程</b>一階階進化 —— 走路的里程、餵食、每日任務與好友送的果實，都會讓牠成長。</p>
+    <div class="dex-tip">📍 ${tip}</div>
+    <div class="dex-sec">進化圖鑑（共 ${PET_STAGES.length} 階）</div>
+    <div class="dex-list">${stages}</div>
+    <p class="dex-foot">💡 想看成就勳章？回「夥伴」頁往下捲就有。</p>
   </div>`;
   document.body.appendChild(ov);
   const close = () => ov.remove();
