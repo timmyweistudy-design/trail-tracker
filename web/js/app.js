@@ -686,13 +686,16 @@ function enableCompass() {
   } else if (window.DeviceOrientationEvent) start();
   else toast("此裝置不支援方位感測");
 }
-// 首次進記錄頁時一次問完定位＋方位權限（必須由使用者點擊觸發，此處的分頁點擊正是手勢）
+// 一次問完定位＋方位權限（iOS 方位必須由使用者手勢觸發，故綁在「進 App 的第一次點擊」）
 let _entryPermAsked = false;
 function requestEntryPerms() {
   if (_entryPermAsked) return; _entryPermAsked = true;
   try { enableCompass(); } catch (e) { /* */ }
   if (navigator.geolocation) { try { navigator.geolocation.getCurrentPosition(() => {}, () => {}, { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }); } catch (e) { /* */ } }
 }
+// 進 App 第一次互動就問（splash 退場後你碰螢幕的第一下即觸發）
+window.addEventListener("pointerdown", requestEntryPerms, { once: true });
+window.addEventListener("keydown", requestEntryPerms, { once: true });
 function addCompass(map) {
   const c = L.control({ position: "topright" });
   c.onAdd = () => {
