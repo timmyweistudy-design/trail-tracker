@@ -661,13 +661,20 @@ const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services";
 function baseTopo() { return L.tileLayer(`${ESRI}/World_Topo_Map/MapServer/tile/{z}/{y}/{x}`, { attribution: "© Esri 地形", maxZoom: 18, maxNativeZoom: 18 }); }
 function baseSat() { return L.tileLayer(`${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}`, { attribution: "© Esri、Maxar 衛星影像", maxZoom: 18, maxNativeZoom: 18 }); }
 // 指北針：讀裝置方位，轉動手機時指針跟著轉、指向實際北方
-let _compassOn = false, _heading = 0;
+let _compassOn = false, _heading = 0, _gpsHeading = null;
 function rotateCompasses() { document.querySelectorAll(".compass-rose").forEach(r => r.style.transform = `rotate(${-_heading}deg)`); }
+// 更新記錄地圖「我」的面朝錐：優先用手機羅盤(站著轉身也動)，沒有才用 GPS 行進方向
+function updateMeCone() {
+  if (!recMarker || !recMarker._av || !recMarker.getElement) return;
+  const el = recMarker.getElement(); const dir = el && el.querySelector(".tm-dir"); if (!dir) return;
+  const head = (_compassOn && _heading != null) ? _heading : _gpsHeading;
+  if (head != null) { dir.style.transform = `rotate(${head}deg)`; dir.style.display = "block"; } else dir.style.display = "none";
+}
 function onOrient(e) {
   let h = e.webkitCompassHeading;
   if (h == null && e.absolute && e.alpha != null) h = 360 - e.alpha;
   if (h == null) return;
-  _heading = h; rotateCompasses();
+  _heading = h; rotateCompasses(); updateMeCone();
 }
 function enableCompass() {
   if (_compassOn) return;
@@ -1733,9 +1740,8 @@ Recorder.onUpdate(s => {
         recMarker._av = true;
       }
       recMarker.setLatLng(last);
-      // 面朝方向：旋轉頭像上的方向錐（無 GPS 行進方向時隱藏）
-      const el = recMarker.getElement && recMarker.getElement(), dir = el && el.querySelector(".tm-dir");
-      if (dir) { if (s.heading != null) { dir.style.transform = `rotate(${s.heading}deg)`; dir.style.display = "block"; } else dir.style.display = "none"; }
+      if (s.heading != null) _gpsHeading = s.heading;
+      updateMeCone();   // 面朝方向：羅盤優先，否則 GPS 行進方向
       if (petMarker) { recMap.removeLayer(petMarker); petMarker = null; }
     } else {
       if (!recMarker || recMarker._av) {
