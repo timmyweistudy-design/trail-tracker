@@ -38,7 +38,7 @@ const Feed = (() => {
     return `<article class="feed-card" data-id="${post.id}">
       <div class="fc-top fc-author" data-uid="${post.author_id}">${av}<div><div class="fc-name">${esc(a.display_name || a.handle || "山友")}${a.pet_level ? ` <span class="lv-chip lvt-${Math.min(a.pet_level,7)}">Lv.${a.pet_level}</span>` : ""}</div>
         <div class="fc-sub">${fmtAgo(post.created_at)}${post.visibility === "friends" ? " · 好友" : ""}</div></div></div>
-      <div class="fc-trail">${trailName}　<span class="fc-stats">${stats}</span></div>
+      <div class="fc-trail">${trailName}　<span class="fc-stats">${stats}</span>${post.rating ? ` <span class="fc-rate">${"★".repeat(post.rating)}</span>` : ""}</div>
       ${routeSvg(post.track_thumb)}
       ${post.caption ? `<div class="fc-cap">${esc(post.caption)}</div>` : ""}
       ${imgs}

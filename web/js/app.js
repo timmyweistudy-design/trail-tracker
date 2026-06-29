@@ -878,13 +878,10 @@ function gradeExplain(t) {
 // 我的步記區塊
 function myLogHtml(t) {
   const lg = Store.trailLog(t.id);
-  const stars = [1, 2, 3, 4, 5].map(n => `<span class="rate-star${(lg.rating || 0) >= n ? " on" : ""}" data-r="${n}">★</span>`).join("");
   return `<div class="mylog">
     <div class="section-title" style="margin-top:16px">📒 我的步記</div>
     <button class="btn ghost logdone${lg.done ? " done" : ""}" id="logDone">${lg.done ? "✓ 已完成這條步道" : "標記為已完成"}</button>
-    <div class="rate-row">我的評分 <span class="rate-stars" id="rateStars">${stars}</span></div>
-    <textarea id="logNote" class="log-note" placeholder="寫點筆記（自動儲存）…">${(lg.note || "").replace(/</g, "&lt;")}</textarea>
-    <button class="btn ghost" id="logShare" style="margin-top:10px">📣 分享這條步道到社群</button>
+    <button class="btn ghost" id="logShare" style="margin-top:10px">📣 分享到社群（可評星級）</button>
   </div>`;
 }
 
@@ -1079,22 +1076,11 @@ async function openDetail(id) {
     toast(done ? "已標記完成 🎉" : "已取消完成");
     if (done) confetti();
   });
-  $("#rateStars") && $("#rateStars").querySelectorAll(".rate-star").forEach(st =>
-    st.addEventListener("click", () => {
-      const r = +st.dataset.r;
-      Store.setTrailLog(t.id, { rating: r });
-      $("#rateStars").querySelectorAll(".rate-star").forEach(s => s.classList.toggle("on", +s.dataset.r <= r));
-      toast(`已評 ${r} 星`);
-    }));
-  const note = $("#logNote");
-  if (note) note.addEventListener("input", () => {
-    clearTimeout(note._tm); note._tm = setTimeout(() => Store.setTrailLog(t.id, { note: note.value }), 600);
-  });
   const logShare = $("#logShare");
   if (logShare) logShare.addEventListener("click", () => {
     if (typeof Composer === "undefined") { toast("社群尚未啟用"); return; }
     const rec = { id: "trail-" + t.id + "-" + Date.now(), trailName: t.name, trailId: t.id, date: new Date().toISOString() };
-    Composer.open(rec, [], (note && note.value.trim()) || "");   // 帶入筆記當內文
+    Composer.open(rec, []);   // 在發文視窗寫心得、評星級
   });
 
   // 分享步道（含深連結 ?trail=id）

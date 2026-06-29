@@ -21,7 +21,7 @@ const Posts = (() => {
 
   // 從健行記錄 rec + 選好的檔案建立貼文。回傳 { id } 或 { error }。
   async function createFromRecord(rec, opts) {
-    const { caption, visibility, files, video } = opts || {};
+    const { caption, visibility, files, video, rating } = opts || {};
     const c = Supa.client(); if (!c) return { error: "no-client" };
     const { data: u } = await c.auth.getUser(); if (!u || !u.user) return { error: "not-signed-in" };
     const uid = u.user.id, postId = uuid();
@@ -36,6 +36,7 @@ const Posts = (() => {
       visibility: visibility === "public" ? "public" : "friends",
       track: toGeo(rec.track),
       track_thumb: thumbOf(rec.track),
+      rating: (rating && rating > 0) ? rating : null,
     });
     if (pe) return { error: pe.message };
 
@@ -64,7 +65,7 @@ const Posts = (() => {
   }
 
   const SELECT = `
-    id, author_id, trail_id, trail_name, distance_km, duration_ms, ascent, hiked_on, caption, visibility, created_at, track_thumb,
+    id, author_id, trail_id, trail_name, distance_km, duration_ms, ascent, hiked_on, caption, visibility, created_at, track_thumb, rating,
     author:profiles!posts_author_profile_fk(handle, display_name, avatar_url, pet_level),
     post_media(kind, path, thumb_path, ord, taken_at, km),
     likes(count), comments(count)`;

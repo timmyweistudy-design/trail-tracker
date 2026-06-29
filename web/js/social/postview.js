@@ -66,7 +66,7 @@ const PostView = (() => {
       : `⛰️ ${esc(post.trail_name || "自由路線")}`;
     wrap.querySelector("#pvBody").innerHTML = `
       <div class="fc-name fc-author" data-uid="${post.author_id}" style="cursor:pointer">${esc(a.display_name || a.handle || "山友")}${a.pet_level ? ` <span class="lv-chip lvt-${Math.min(a.pet_level,7)}">Lv.${a.pet_level}</span>` : ""} <span class="fc-sub">@${esc(a.handle || "")}</span></div>
-      <div class="fc-trail">${trailName}　<span class="fc-stats">${post.distance_km != null ? post.distance_km.toFixed(2) + "km" : ""}${post.ascent != null ? "　↑" + post.ascent + "m" : ""}</span></div>
+      <div class="fc-trail">${trailName}　<span class="fc-stats">${post.distance_km != null ? post.distance_km.toFixed(2) + "km" : ""}${post.ascent != null ? "　↑" + post.ascent + "m" : ""}</span>${post.rating ? ` <span class="fc-rate">${"★".repeat(post.rating)}</span>` : ""}</div>
       ${(post.track && post.track.coordinates && post.track.coordinates.length > 1) ? `<div class="pv-map"></div>` : ""}
       ${post.caption ? `<div class="fc-cap">${esc(post.caption)}</div>` : ""}
       ${media.map(m => {

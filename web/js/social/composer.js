@@ -2,6 +2,7 @@
 const Composer = (() => {
   let files = [];
   let video = null;
+  let rating = 0;
 
   function open(rec, presetFiles, presetCaption) {
     if (typeof Supa === "undefined" || !Supa.ready()) { alert("社群尚未啟用"); return; }
@@ -14,13 +15,14 @@ const Composer = (() => {
   }
 
   function mount(rec, presetFiles, presetCaption) {
-    files = (presetFiles && presetFiles.length) ? presetFiles.slice(0, 9) : []; video = null;
+    files = (presetFiles && presetFiles.length) ? presetFiles.slice(0, 9) : []; video = null; rating = 0;
     const wrap = document.createElement("div");
     wrap.className = "composer-mask";
     wrap.innerHTML = `
       <div class="composer">
         <div class="composer-head"><button class="comp-x" aria-label="關閉" id="compX">✕</button><b>分享到社群</b><button class="btn primary comp-post" id="compPost">發布</button></div>
         <div class="comp-trail">⛰️ ${esc(rec.trailName || "自由路線")}　${(rec.distanceKm || 0).toFixed(2)}km　↑${rec.ascent || 0}m</div>
+        <div class="comp-rate">這條步道評分　<span class="comp-stars" id="compStars">${[1, 2, 3, 4, 5].map(n => `<span class="cs" data-r="${n}">☆</span>`).join("")}</span></div>
         <textarea id="compCaption" class="comp-cap" placeholder="寫下這趟的心得…" maxlength="2000"></textarea>
         <div class="comp-photos" id="compPhotos"></div>
         <label class="comp-add">＋ 加照片<input type="file" id="compFiles" accept="image/*" multiple hidden></label>
@@ -34,6 +36,8 @@ const Composer = (() => {
       </div>`;
     document.body.appendChild(wrap);
     if (presetCaption) { const cc = wrap.querySelector("#compCaption"); if (cc) cc.value = presetCaption; }
+    const stars = wrap.querySelectorAll("#compStars .cs");
+    stars.forEach(s => s.addEventListener("click", () => { rating = +s.dataset.r; stars.forEach(x => x.textContent = (+x.dataset.r <= rating) ? "★" : "☆"); }));
     const close = () => { _urls.forEach(u => URL.revokeObjectURL(u)); _urls = []; wrap.remove(); };
     wrap.querySelector("#compX").addEventListener("click", close);
     wrap.querySelector("#compFiles").addEventListener("change", e => {
@@ -66,7 +70,7 @@ const Composer = (() => {
     const visibility = wrap.querySelector('input[name="compVis"]:checked').value;
     wrap.querySelector("#compPost").disabled = true;
     msg.textContent = "發布中…（上傳照片可能需要一點時間）";
-    const r = await Posts.createFromRecord(rec, { caption, visibility, files, video });
+    const r = await Posts.createFromRecord(rec, { caption, visibility, files, video, rating });
     if (r.error) { msg.textContent = "發布失敗：" + r.error; wrap.querySelector("#compPost").disabled = false; return; }
     msg.textContent = "已發布！";
     if (typeof toast === "function") toast("已分享到社群");

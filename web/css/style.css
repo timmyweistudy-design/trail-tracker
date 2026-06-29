@@ -1112,3 +1112,8 @@ html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
 .fp-info b { font-size: 14px; }
 .fp-by { font-size: 11px; color: var(--ink-faint); margin-top: 2px; }
 .fp-gift { flex: 0 0 auto; padding: 6px 12px; }
+
+/* 發文星級 / 貼文評分顯示 */
+.comp-rate { font-size: 14px; color: var(--ink-soft); margin: 6px 0 2px; display: flex; align-items: center; gap: 8px; }
+.comp-stars .cs { font-size: 24px; color: #e8a127; cursor: pointer; line-height: 1; padding: 0 1px; }
+.fc-rate { color: #e8a127; font-size: 13px; letter-spacing: 1px; white-space: nowrap; }
