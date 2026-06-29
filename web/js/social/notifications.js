@@ -31,15 +31,27 @@ const Notifs = (() => {
     if (n.type === "comment") return name + " 在你的貼文留言";
     if (n.type === "team") return name + " 邀請你加入小隊";
     if (n.type === "gift") return name + " 送了果實給你的夥伴";
+    if (n.type === "mention") return name + " 在貼文中提到你";
     return name;
   }
-  function icon(t) { return t === "follow" ? "➕" : t === "like" ? "❤️" : t === "team" ? "👥" : t === "gift" ? "🍓" : "💬"; }
+  function icon(t) { return t === "follow" ? "➕" : t === "like" ? "❤️" : t === "team" ? "👥" : t === "gift" ? "🍓" : t === "mention" ? "📣" : "💬"; }
+
+  async function pushBar() {
+    if (typeof Push === "undefined" || !Push.supported()) return "";
+    const on = await Push.isOn();
+    return `<button class="btn ${on ? "ghost" : "primary"} notif-push" id="notifPush">${on ? "🔕 關閉推播通知" : "🔔 開啟推播通知"}</button>`;
+  }
+  function wirePush(into, redraw) {
+    const b = document.getElementById("notifPush"); if (!b) return;
+    b.addEventListener("click", async () => { b.disabled = true; await Push.toggle(); redraw(); });
+  }
 
   async function render(into) {
     into(`<div class="feed-loading"><span class="spin"></span></div>`);
+    const bar = await pushBar();
     const items = await list();
-    if (!items.length) { into(`<div class="social-empty">還沒有通知。</div>`); await markAllRead(); return; }
-    into(`<div class="notif-list">${items.map(n =>
+    if (!items.length) { into(`${bar}<div class="social-empty">還沒有通知。</div>`); wirePush(into, () => render(into)); await markAllRead(); return; }
+    into(`${bar}<div class="notif-list">${items.map(n =>
       `<div class="notif ${n.read ? "" : "unread"}" data-type="${n.type}" data-post="${n.post_id || ""}" data-uid="${n.actor_id || ""}">
         <span class="notif-ic">${icon(n.type)}</span>
         <div class="notif-body">${label(n)}<div class="fc-sub">${ago(n.created_at)}</div></div>
@@ -50,6 +62,7 @@ const Notifs = (() => {
       else if (el.dataset.type === "gift") { const b = document.querySelector('.tab[data-view="pet"]'); if (b) b.click(); }
       else if (el.dataset.post && typeof PostView !== "undefined") PostView.open(el.dataset.post);
     }));
+    wirePush(into, () => render(into));
     await markAllRead();
   }
 

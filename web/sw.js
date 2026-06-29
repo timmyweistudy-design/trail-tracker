@@ -1,5 +1,5 @@
 // 離線快取：app shell + 地圖圖磚
-const CACHE = "trail-tracker-v168";
+const CACHE = "trail-tracker-v169";
 const TILE_CACHE = "tt-tiles";   // 地圖圖磚（不隨版本清除，保留離線地圖）
 const ASSETS = [
   "./", "./index.html",
@@ -7,7 +7,7 @@ const ASSETS = [
   "./js/trails-data.js", "./js/trails-detail.js", "./js/trails-geo.js", "./js/storage.js", "./js/grades.js", "./js/config.js", "./js/conditions.js",
   "./js/photos.js", "./js/amenities.js", "./js/food.js", "./js/attractions.js", "./js/weather.js", "./js/profile.js", "./js/recorder.js", "./js/elevation.js", "./js/offline.js", "./js/gpx.js", "./js/app.js",
   "./vendor/supabase/supabase.js",
-  "./js/social/supa.js", "./js/social/handle.js", "./js/social/media.js", "./js/social/posts.js", "./js/social/composer.js", "./js/social/safety.js", "./js/social/feed.js", "./js/social/postview.js", "./js/social/discover.js", "./js/social/petsocial.js", "./js/social/teamlive.js", "./js/social/teams.js", "./js/social/notifications.js", "./js/social/lightbox.js", "./js/social/auth.js", "./js/social/profiles.js", "./js/social/social-ui.js",
+  "./js/social/supa.js", "./js/social/handle.js", "./js/social/media.js", "./js/social/posts.js", "./js/social/composer.js", "./js/social/safety.js", "./js/social/feed.js", "./js/social/postview.js", "./js/social/discover.js", "./js/social/petsocial.js", "./js/social/teamlive.js", "./js/social/teams.js", "./js/social/notifications.js", "./js/social/push.js", "./js/social/lightbox.js", "./js/social/auth.js", "./js/social/profiles.js", "./js/social/social-ui.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-180.png",
   "./vendor/leaflet/leaflet.js", "./vendor/leaflet/leaflet.css",
@@ -52,4 +52,28 @@ self.addEventListener("fetch", e => {
       return res;
     }).catch(() => caches.match("./index.html")))
   );
+});
+
+// Web Push：收到推播 → 顯示系統通知
+self.addEventListener("push", e => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (_) { d = { body: e.data && e.data.text() }; }
+  const title = d.title || "循徑拾光";
+  const opts = {
+    body: d.body || "你有新的社群動態",
+    icon: "./icons/icon-192.png",
+    badge: "./icons/icon-192.png",
+    data: { url: d.url || "./" },
+    tag: d.tag || undefined,
+  };
+  e.waitUntil(self.registration.showNotification(title, opts));
+});
+// 點通知 → 聚焦既有分頁或開新分頁
+self.addEventListener("notificationclick", e => {
+  e.notification.close();
+  const target = (e.notification.data && e.notification.data.url) || "./";
+  e.waitUntil(clients.matchAll({ type: "window", includeUncontrolled: true }).then(list => {
+    for (const c of list) { if ("focus" in c) { c.navigate && c.navigate(target); return c.focus(); } }
+    if (clients.openWindow) return clients.openWindow(target);
+  }));
 });

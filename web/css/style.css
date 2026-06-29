@@ -1181,3 +1181,6 @@ html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
 .pv-cm-act .cm-reply { font-weight: 600; }
 .pv-reply-hint { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-soft); padding: 6px 12px; background: var(--accent-soft); }
 .pv-reply-hint button { background: none; border: none; cursor: pointer; color: var(--ink-soft); font-size: 14px; margin-left: auto; }
+
+/* 推播開關按鈕 */
+.notif-push { width: 100%; margin-bottom: 12px; }
