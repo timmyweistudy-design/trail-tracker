@@ -12,13 +12,14 @@ const Feed = (() => {
     if (!thumb || thumb.length < 2) return "";
     let minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
     for (const p of thumb) { minX = Math.min(minX, p[0]); maxX = Math.max(maxX, p[0]); minY = Math.min(minY, p[1]); maxY = Math.max(maxY, p[1]); }
-    const w = 100, h = 44, pad = 4, sx = (maxX - minX) || 1e-6, sy = (maxY - minY) || 1e-6;
-    const pts = thumb.map(p => {
-      const px = pad + (p[0] - minX) / sx * (w - 2 * pad);
-      const py = pad + (1 - (p[1] - minY) / sy) * (h - 2 * pad);
-      return px.toFixed(1) + "," + py.toFixed(1);
-    }).join(" ");
-    return `<svg class="fc-route" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="#c2683d" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+    const w = 100, h = 46, pad = 5, sx = (maxX - minX) || 1e-6, sy = (maxY - minY) || 1e-6;
+    const co = thumb.map(p => [pad + (p[0] - minX) / sx * (w - 2 * pad), pad + (1 - (p[1] - minY) / sy) * (h - 2 * pad)]);
+    const pts = co.map(c => c[0].toFixed(1) + "," + c[1].toFixed(1)).join(" ");
+    const a = co[0], b = co[co.length - 1];
+    return `<svg class="fc-route" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">` +
+      `<polyline points="${pts}" fill="none" stroke="#c2683d" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>` +
+      `<circle cx="${a[0].toFixed(1)}" cy="${a[1].toFixed(1)}" r="2.6" fill="#3f7a55"/>` +
+      `<circle cx="${b[0].toFixed(1)}" cy="${b[1].toFixed(1)}" r="2.6" fill="#c2683d"/></svg>`;
   }
 
   function card(post, liked) {
