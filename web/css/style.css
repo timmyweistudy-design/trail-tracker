@@ -1009,3 +1009,20 @@ html[data-theme="dark"] img.trail-photo { background: var(--surface-2); }
 
 /* 深色模式 toast：--brand-deep 在暗色是亮色，會與亮字撞色，改用深底亮字 */
 html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
+
+/* 小隊 */
+.team-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 12px; background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); margin: 6px 0; }
+.team-row.on { border-color: var(--accent); }
+.team-row .btn { padding: 6px 14px; flex: 0 0 auto; }
+.team-code { font-family: var(--num); font-size: 12px; color: var(--ink-faint); letter-spacing: 1px; margin-top: 2px; }
+.team-live { margin: 14px 0 8px; }
+.team-members { display: flex; flex-wrap: wrap; gap: 7px; margin: 4px 0 6px; }
+.team-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px 4px 4px; background: var(--surface-2); border-radius: 999px; font-size: 12.5px; color: var(--ink); }
+.team-chip img, .team-chip i { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; display: inline-flex; align-items: center; justify-content: center; background: var(--brand-mid); color: #fff; font-style: normal; font-size: 11px; }
+.tm-hr { border: none; border-top: 1px solid var(--line-soft); margin: 16px 0; }
+.tm-create { display: flex; gap: 8px; margin-bottom: 4px; }
+.tm-create .auth-input { flex: 1; }
+/* 地圖隊友標記 */
+.team-marker .tm-dot { width: 30px; height: 30px; border-radius: 50%; background: var(--brand); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; border: 2.5px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.35); }
+.leaflet-tooltip.team-tip { background: var(--brand-deep); color: #f2efe4; border: none; border-radius: 6px; font-size: 11px; padding: 2px 7px; box-shadow: var(--sh-sm); }
+.leaflet-tooltip.team-tip::before { display: none; }

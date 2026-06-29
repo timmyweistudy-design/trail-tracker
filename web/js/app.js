@@ -1734,6 +1734,7 @@ $("#lowPowerToggle").addEventListener("change", e => {
 $("#simToggle").addEventListener("change", e => {
   toast(e.target.checked ? "已開模擬模式（無 GPS，沿步道路線預覽）" : "已關模擬模式");
 });
+$("#btnTeam").addEventListener("click", () => { initRecMap(); if (typeof Team !== "undefined") Team.openSheet(); });
 $("#btnShareLoc").addEventListener("click", () => {
   if (!navigator.geolocation) { toast("此裝置不支援定位"); return; }
   toast("定位中…");
