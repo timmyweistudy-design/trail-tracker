@@ -47,10 +47,19 @@ const SocialUI = (() => {
     const badge = id === "notif" ? `<span class="nbadge" id="notifBadge"></span>` : "";
     return `<button class="sub-tab ${sub === id ? "on" : ""}" data-sub="${id}">${label}${badge}</button>`;
   }
+  function setBadge(id, n) { const b = document.getElementById(id); if (b) { b.textContent = n > 0 ? (n > 9 ? "9+" : n) : ""; b.style.display = n > 0 ? "inline-block" : "none"; } }
   function updateBadge() {
     if (typeof Notifs === "undefined") return;
-    Notifs.unreadCount().then(n => { const b = document.getElementById("notifBadge"); if (b) { b.textContent = n > 0 ? (n > 9 ? "9+" : n) : ""; b.style.display = n > 0 ? "inline-block" : "none"; } });
+    Notifs.unreadCount().then(n => { setBadge("notifBadge", n); setBadge("socialNavBadge", n); });
   }
+  // 不在社群分頁時也能顯示底部紅點：登入後就訂閱並更新一次
+  async function bootBadge() {
+    if (typeof Supa === "undefined" || !Supa.ready() || typeof Auth === "undefined" || typeof Notifs === "undefined") return;
+    const sess = await Auth.session().catch(() => null); if (!sess) return;
+    if (!subscribed) { subscribed = true; Notifs.subscribe(updateBadge); }
+    updateBadge();
+  }
+  setTimeout(bootBadge, 1500);
 
   return { onShow, route, render };
 })();

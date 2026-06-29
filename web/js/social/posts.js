@@ -93,7 +93,7 @@ const Posts = (() => {
 
   async function one(postId) {
     const c = Supa.client(); if (!c) return null;
-    const { data } = await c.from("posts").select(SELECT).eq("id", postId).maybeSingle();
+    const { data } = await c.from("posts").select(SELECT + ", track").eq("id", postId).maybeSingle();
     return data || null;
   }
 

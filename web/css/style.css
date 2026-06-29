@@ -961,3 +961,8 @@ html[data-theme="dark"] img.trail-photo { background: var(--surface-2); }
 .pf-safety { display: flex; gap: 14px; margin: 8px 0; }
 .pf-safety .link-btn { color: var(--ink-soft); font-size: 13px; }
 .pv-actions .link-btn { margin-left: 14px; color: var(--ink-soft); font-size: 13px; }
+
+/* 貼文路線地圖 + 底部社群紅點 */
+.pv-map { height: 190px; border-radius: var(--r-sm); margin: 8px 0; overflow: hidden; }
+.tabbar .tab { position: relative; }
+.nav-badge { display: none; position: absolute; top: 4px; right: 50%; transform: translateX(16px); min-width: 16px; height: 16px; line-height: 16px; padding: 0 4px; font-size: 10px; font-weight: 700; color: #fff; background: var(--danger); border-radius: 999px; }

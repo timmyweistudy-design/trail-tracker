@@ -47,6 +47,7 @@ const PostView = (() => {
     wrap.querySelector("#pvBody").innerHTML = `
       <div class="fc-name fc-author" data-uid="${post.author_id}" style="cursor:pointer">${esc(a.display_name || a.handle || "山友")} <span class="fc-sub">@${esc(a.handle || "")}</span></div>
       <div class="fc-trail">⛰️ ${esc(post.trail_name || "自由路線")}　<span class="fc-stats">${post.distance_km != null ? post.distance_km.toFixed(2) + "km" : ""}${post.ascent != null ? "　↑" + post.ascent + "m" : ""}</span></div>
+      ${(post.track && post.track.coordinates && post.track.coordinates.length > 1) ? `<div class="pv-map"></div>` : ""}
       ${post.caption ? `<div class="fc-cap">${esc(post.caption)}</div>` : ""}
       ${media.map(m => m.kind === "video"
         ? `<video class="pv-img" controls preload="metadata" poster="${esc(Media.publicUrl(m.thumb_path || ""))}" src="${esc(Media.publicUrl(m.path))}"></video>`
@@ -55,6 +56,19 @@ const PostView = (() => {
       <div class="pv-comments" id="pvComments"><div class="feed-loading"><span class="spin"></span></div></div>`;
     wrap.querySelectorAll(".pv-photo").forEach(img => img.addEventListener("click", () => { if (typeof Lightbox !== "undefined") Lightbox.open(img.src); }));
     const au = wrap.querySelector(".fc-author"); if (au) au.addEventListener("click", () => { if (typeof Discover !== "undefined") Discover.openProfile(au.dataset.uid); });
+    // 路線地圖（用儲存的軌跡 GeoJSON 畫出走過的路）
+    const mapEl = wrap.querySelector(".pv-map");
+    if (mapEl && post.track && post.track.coordinates && typeof L !== "undefined") {
+      const coords = post.track.coordinates.map(c => [c[1], c[0]]);   // GeoJSON [lon,lat] → Leaflet [lat,lon]
+      setTimeout(() => {
+        try {
+          const map = L.map(mapEl, { zoomControl: false, attributionControl: false, scrollWheelZoom: false });
+          (typeof baseTopo === "function" ? baseTopo() : L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png")).addTo(map);
+          const line = L.polyline(coords, { color: "#c2683d", weight: 4 }).addTo(map);
+          map.fitBounds(line.getBounds(), { padding: [18, 18] });
+        } catch (e) { /* */ }
+      }, 60);
+    }
     const rep = wrap.querySelector("#pvReport"); if (rep) rep.addEventListener("click", async () => {
       const reason = prompt("檢舉這篇貼文的原因（選填）："); if (reason === null) return;
       await Safety.reportPost(post.id, reason);
