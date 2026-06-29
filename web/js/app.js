@@ -1475,7 +1475,7 @@ function openTrackReview(rec) {
     <div class="kv">
       <div class="item"><div class="l">距離</div><div class="v">${km.toFixed(2)} km</div></div>
       <div class="item"><div class="l">時間</div><div class="v">${fmtTime(rec.elapsedMs)}</div></div>
-      <div class="item"><div class="l">總爬升</div><div class="v">↑${rec.ascent || 0} m</div></div>
+      <div class="item"><div class="l">總爬升${rec.altCorrected ? " ·已校正" : ""}</div><div class="v">↑${rec.ascent || 0} m</div></div>
       <div class="item"><div class="l">總下降</div><div class="v">↓${rec.descent || 0} m</div></div>
       <div class="item"><div class="l">卡路里</div><div class="v">${rec.kcal} 大卡</div></div>
       <div class="item"><div class="l">步數</div><div class="v">${(rec.steps || 0).toLocaleString()}</div></div>
@@ -1802,7 +1802,7 @@ $("#btnPause").addEventListener("click", () => {
   $("#btnStart").style.display = "block";
   $("#btnPause").style.display = "none";
 });
-function finishRecording(autoVehicle) {
+async function finishRecording(autoVehicle) {
   const rec = Recorder.stop();
   recPreloaded = false; lastKmMilestone = 0;   // 下次記錄重新預載/里程碑
   $("#btnStart").textContent = "▶ 開始";
@@ -1816,6 +1816,12 @@ function finishRecording(autoVehicle) {
   if (rec) {
     rec.trailName = Recorder._trailName || "自由路線";
     if (selectedTrailId) rec.trailId = selectedTrailId;   // 連回步道，供社群貼文點擊開啟
+    // 地形海拔校正(DEM)：自動內建，用準確的水平軌跡查真實地面高度重算爬升/下降（GPS 高度太雜）
+    if (!rec.sim && rec.track && rec.track.length > 1 && navigator.onLine && typeof Elevation !== "undefined") {
+      $("#recStatus").textContent = "海拔校正中…";
+      const corr = await Promise.race([Elevation.correct(rec.track), new Promise(r => setTimeout(() => r(null), 6000))]);
+      if (corr) { rec.ascent = corr.ascent; rec.descent = corr.descent; rec.altHigh = corr.altHigh; rec.altLow = corr.altLow; rec.altCorrected = true; }
+    }
     Store.addRecord(rec);
     if (isFootRec(rec)) bumpAffinity(8);   // 只有走路/跑步加深羈絆
     checkPetEvolve();
