@@ -260,6 +260,7 @@ document.querySelectorAll(".tab").forEach(btn => {
     const view = btn.dataset.view;
     $("#view-" + view).classList.add("active");
     if (view === "record") {
+      requestEntryPerms();   // 首次進記錄頁＝這一下點擊就是手勢，一次問完定位+方位權限
       // 從底部分頁進入＝自由記錄，清掉先前選定步道的路線疊圖
       selectedTrailGeo = null; selectedTrailId = null;
       if (routeRefLayer && recMap) { recMap.removeLayer(routeRefLayer); routeRefLayer = null; }
@@ -684,6 +685,13 @@ function enableCompass() {
     DOE.requestPermission().then(p => p === "granted" ? start() : toast("需允許「動作與方向」權限")).catch(() => toast("此裝置無法啟用指北針"));
   } else if (window.DeviceOrientationEvent) start();
   else toast("此裝置不支援方位感測");
+}
+// 首次進記錄頁時一次問完定位＋方位權限（必須由使用者點擊觸發，此處的分頁點擊正是手勢）
+let _entryPermAsked = false;
+function requestEntryPerms() {
+  if (_entryPermAsked) return; _entryPermAsked = true;
+  try { enableCompass(); } catch (e) { /* */ }
+  if (navigator.geolocation) { try { navigator.geolocation.getCurrentPosition(() => {}, () => {}, { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }); } catch (e) { /* */ } }
 }
 function addCompass(map) {
   const c = L.control({ position: "topright" });
