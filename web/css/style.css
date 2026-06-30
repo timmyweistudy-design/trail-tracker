@@ -1515,3 +1515,18 @@ html[data-theme="dark"] body::after { opacity: .05; }
 /* 個人頁封面照 */
 .pf-cover { height: 120px; background-size: cover; background-position: center; border-radius: var(--r-sm); margin: 0 0 12px; box-shadow: var(--sh-sm); }
 .ed-cover { height: 92px; background-color: var(--surface-2); background-size: cover; background-position: center; border-radius: var(--r-sm); border: 1px solid var(--line-soft); margin: 4px 0 8px; }
+
+/* 年度回顧卡 */
+.yr-card { background: linear-gradient(160deg, #1f4730, #16301f 70%); color: #f3efe4; }
+.yr-card .sheet-close { color: #f3efe4; }
+.yr-head { text-align: center; margin: 4px 0 18px; }
+.yr-year { font-family: var(--num); font-size: 46px; font-weight: 700; line-height: 1; color: #e0b15a; }
+.yr-title { font-family: var(--serif); font-size: 16px; letter-spacing: 2px; margin-top: 4px; opacity: .9; }
+.yr-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
+.yr-stat { text-align: center; background: rgba(255,255,255,.08); border-radius: var(--r-sm); padding: 14px 8px; }
+.yr-stat b { font-family: var(--num); font-size: 28px; font-weight: 700; display: block; color: #fff; }
+.yr-stat span { font-size: 11.5px; opacity: .8; }
+.yr-lines { font-size: 14px; line-height: 2; text-align: center; opacity: .95; }
+.yr-lines b { color: #e0b15a; }
+.yr-foot { margin-top: 8px; font-size: 12.5px; opacity: .8; }
+.yr-card .btn.primary { margin-top: 16px; }

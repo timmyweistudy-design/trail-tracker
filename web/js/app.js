@@ -2111,6 +2111,52 @@ if (typeof Premium !== "undefined") { setTimeout(() => Premium.refresh(), 1500);
 // 進階分析：基本數據免費看，進階區塊鎖 Premium
 const _aBtn = $("#btnAnalytics");
 if (_aBtn) _aBtn.addEventListener("click", openAnalytics);
+// 年度回顧（PRO）
+const _yBtn = $("#btnYearReview");
+if (_yBtn) _yBtn.addEventListener("click", () => { if (typeof Premium !== "undefined" && !Premium.gate()) return; openYearReview(); });
+function openYearReview() {
+  const year = new Date().getFullYear();
+  const recs = realRecords().filter(r => (r.date || "").slice(0, 4) === String(year));
+  const km = recs.reduce((s, r) => s + (r.distanceKm || 0), 0);
+  const asc = recs.reduce((s, r) => s + (r.ascent || 0), 0);
+  const hrs = recs.reduce((s, r) => s + (r.elapsedMs || 0), 0) / 3.6e6;
+  let longest = 0; recs.forEach(r => longest = Math.max(longest, r.distanceKm || 0));
+  const mo = {}; recs.forEach(r => { const m = +(r.date || "").slice(5, 7); if (m) mo[m] = (mo[m] || 0) + 1; });
+  const busiest = Object.keys(mo).sort((a, b) => mo[b] - mo[a])[0];
+  const tc = {}; recs.forEach(r => { const nm = r.trailName || "自由路線"; tc[nm] = (tc[nm] || 0) + 1; });
+  const top = Object.keys(tc).sort((a, b) => tc[b] - tc[a])[0];
+  const ov = document.createElement("div"); ov.className = "pet-modal";
+  ov.innerHTML = `<div class="pet-modal-card yr-card">
+    <button class="sheet-close" id="yrX" aria-label="關閉">${ic("x")}</button>
+    <div class="yr-head"><div class="yr-year">${year}</div><div class="yr-title">我的山行回顧</div></div>
+    ${recs.length ? `
+    <div class="yr-grid">
+      <div class="yr-stat"><b>${recs.length}</b><span>趟旅程</span></div>
+      <div class="yr-stat"><b>${km.toFixed(0)}</b><span>公里</span></div>
+      <div class="yr-stat"><b>↑${Math.round(asc)}</b><span>公尺爬升</span></div>
+      <div class="yr-stat"><b>${hrs.toFixed(0)}</b><span>小時</span></div>
+    </div>
+    <div class="yr-lines">
+      ${longest ? `<div>單次最長 <b>${longest.toFixed(1)} km</b></div>` : ""}
+      ${busiest ? `<div>最常出門 <b>${busiest} 月</b></div>` : ""}
+      ${top ? `<div>最愛步道 <b>${top}</b></div>` : ""}
+      <div class="yr-foot">↑ 累積爬升約 ${(asc / 3952).toFixed(1)} 座玉山</div>
+    </div>
+    <button class="btn primary" id="yrShare">${ic("share")} 分享我的回顧</button>`
+    : `<div class="social-empty" style="color:#fff">${year} 還沒有行程，今年一起多走幾趟吧！</div>`}
+  </div>`;
+  document.body.appendChild(ov);
+  const close = () => ov.remove();
+  ov.querySelector("#yrX").addEventListener("click", close);
+  ov.addEventListener("click", e => { if (e.target === ov) close(); });
+  const sh = ov.querySelector("#yrShare");
+  if (sh) sh.addEventListener("click", () => {
+    const text = `我的 ${year} 山行回顧：${recs.length} 趟、${km.toFixed(0)} km、累積爬升 ↑${Math.round(asc)} m（約 ${(asc / 3952).toFixed(1)} 座玉山）— 循徑拾光`;
+    if (navigator.share) navigator.share({ title: "我的山行回顧", text }).catch(() => { });
+    else if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast("已複製回顧文字"));
+    else toast(text);
+  });
+}
 function openAnalytics() {
   const recs = realRecords();
   const pro = (typeof Premium !== "undefined") && Premium.isOn();
