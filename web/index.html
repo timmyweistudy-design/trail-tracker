@@ -118,13 +118,19 @@
   <!-- 記錄 -->
   <section id="view-record" class="view">
     <div class="rec-stats">
-      <div class="stat hero"><div class="num" id="stDist">0.00</div><div class="unit">公里</div></div>
-      <div class="stat"><div class="num" id="stSteps">0</div><div class="unit">步數</div></div>
-      <div class="stat"><div class="num" id="stKcal">0</div><div class="unit">大卡</div></div>
-      <div class="stat"><div class="num" id="stTime">00:00</div><div class="unit">時間</div></div>
-      <div class="stat"><div class="num" id="stPace">--</div><div class="unit">速度 公里/小時</div></div>
-      <div class="stat"><div class="num" id="stAscent">↑0</div><div class="unit">爬升 (公尺)</div></div>
-      <div class="stat"><div class="num" id="stDescent">↓0</div><div class="unit">下降 (公尺)</div></div>
+      <div class="rec-hero">
+        <div class="rh-main"><span class="rh-num" id="stDist">0.00</span><span class="rh-unit">公里</span></div>
+        <div class="rh-time"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><b id="stTime">00:00</b></div>
+      </div>
+      <div class="rec-row">
+        <div class="rc"><div class="rc-v" id="stSteps">0</div><div class="rc-l">步數</div></div>
+        <div class="rc"><div class="rc-v" id="stKcal">0</div><div class="rc-l">大卡</div></div>
+        <div class="rc"><div class="rc-v" id="stPace">--</div><div class="rc-l">公里/小時</div></div>
+      </div>
+      <div class="rec-row">
+        <div class="rc"><div class="rc-v" id="stAscent">↑0</div><div class="rc-l">累積爬升 m</div></div>
+        <div class="rc"><div class="rc-v" id="stDescent">↓0</div><div class="rc-l">下降 m</div></div>
+      </div>
     </div>
     <div class="rec-status" id="recStatus">準備就緒，按「開始」記錄路徑</div>
     <div id="recElevSpark" style="display:none"></div>
