@@ -81,8 +81,9 @@ const Discover = (() => {
     const wrap = document.createElement("div");
     wrap.className = "pv-mask";
     wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" aria-label="關閉" id="dpX">✕</button><b>@${esc(prof.handle)}</b><span></span></div>
-      <div class="pv-body">
-        <div class="pf-top">${prof.avatar_url ? `<img class="pf-av" src="${esc(prof.avatar_url)}">` : `<div class="pf-av pf-av-ph">${esc((prof.display_name || prof.handle).slice(0, 1))}</div>`}
+      <div class="pv-body${prof.cover_url ? " has-cover" : ""}">
+        ${prof.cover_url ? `<div class="pf-cover" style="background-image:url('${esc(prof.cover_url)}')"></div>` : ""}
+        <div class="pf-top">${prof.avatar_url ? `<img class="pf-av${prof.is_premium ? " pro-av" : ""}" src="${esc(prof.avatar_url)}">` : `<div class="pf-av pf-av-ph${prof.is_premium ? " pro-av" : ""}">${esc((prof.display_name || prof.handle).slice(0, 1))}</div>`}
           <div class="pf-id"><div class="pf-name">${esc(prof.display_name || prof.handle)}${prof.is_premium ? ` <span class="pro-tag">PRO</span>` : ""}</div><div class="pf-handle">@${esc(prof.handle)}</div></div></div>
         ${petLineFor(prof)}
         <div class="pf-counts" id="dpCounts"></div>

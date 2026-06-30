@@ -1432,7 +1432,7 @@ html[data-theme="dark"] body::after { opacity: .05; }
 .pm-status { display: flex; gap: 11px; align-items: center; background: linear-gradient(135deg, var(--accent-soft), var(--surface-2)); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 14px 16px; }
 .pm-status .pm-b-ic { color: var(--accent); }
 .pm-upgrade .ic { width: 17px; height: 17px; vertical-align: -3px; margin-right: 5px; }
-.pro-tag { font-family: var(--num); font-size: 9.5px; font-weight: 800; letter-spacing: .5px; color: #5a3a00; background: linear-gradient(135deg, #ffe07a, #f0a91e); border-radius: 4px; padding: 1px 5px; margin-left: 7px; vertical-align: 1px; }
+.pro-tag { font-family: var(--num); font-size: 9.5px; font-weight: 800; letter-spacing: .5px; color: var(--pro-ink, #5a3a00); background: linear-gradient(135deg, var(--pro-c1, #ffe07a), var(--pro-c2, #f0a91e)); border-radius: 4px; padding: 1px 5px; margin-left: 7px; vertical-align: 1px; }
 .btn .pro-tag { vertical-align: 2px; }
 /* 進階分析 */
 .ana-list { display: flex; flex-direction: column; gap: 9px; text-align: left; }
@@ -1511,3 +1511,7 @@ html[data-theme="dark"] body::after { opacity: .05; }
 
 /* PRO 頭像金框 */
 .fc-av.pro-av, .pf-av.pro-av { box-shadow: 0 0 0 2px #f0a91e, 0 0 0 4px var(--surface); }
+
+/* 個人頁封面照 */
+.pf-cover { height: 120px; background-size: cover; background-position: center; border-radius: var(--r-sm); margin: 0 0 12px; box-shadow: var(--sh-sm); }
+.ed-cover { height: 92px; background-color: var(--surface-2); background-size: cover; background-position: center; border-radius: var(--r-sm); border: 1px solid var(--line-soft); margin: 4px 0 8px; }

@@ -22,7 +22,8 @@ const Profiles = (() => {
     syncMyStats(prof.id);   // 順手同步到雲端
     if (prof.avatar_url) window.__meAvatar = prof.avatar_url;   // 地圖「我」標記＝社群頭像（換頭像後也同步）
     render(`
-      <div class="pf">
+      <div class="pf${prof.cover_url ? " has-cover" : ""}">
+        ${prof.cover_url ? `<div class="pf-cover" style="background-image:url('${esc(prof.cover_url)}')"></div>` : ""}
         <div class="pf-top">${av}
           <div class="pf-id"><div class="pf-name">${esc(prof.display_name || prof.handle)}${(typeof Premium !== "undefined" && Premium.isOn()) ? '<span class="pro-tag pro-mine">PRO</span>' : ""}</div>
             <div class="pf-handle">@${esc(prof.handle)}</div></div>
@@ -112,7 +113,7 @@ const Profiles = (() => {
   }
 
   function renderEdit(render, prof) {
-    let avatarFile = null;
+    let avatarFile = null, coverFile = null;
     const avHtml = prof.avatar_url
       ? `<img class="pf-av" id="edAvImg" src="${esc(prof.avatar_url)}" alt="">`
       : `<div class="pf-av pf-av-ph" id="edAvImg">${esc((prof.display_name || prof.handle || "?").slice(0, 1))}</div>`;
@@ -121,6 +122,9 @@ const Profiles = (() => {
         <h3>編輯檔案</h3>
         <div class="pf-av-edit">${avHtml}
           <label class="comp-add">更換頭像<input type="file" id="edAvFile" accept="image/*" hidden></label></div>
+        <label class="ob-l">封面照</label>
+        <div class="ed-cover" id="edCoverImg" style="${prof.cover_url ? `background-image:url('${esc(prof.cover_url)}')` : ""}"></div>
+        <label class="comp-add">更換封面<input type="file" id="edCoverFile" accept="image/*" hidden></label>
         <label class="ob-l">帳號 handle（給朋友搜尋你）</label>
         <input id="edHandle" class="auth-input" value="${esc(prof.handle || "")}" autocapitalize="off" autocomplete="off">
         <div class="auth-msg" id="edHandleMsg"></div>
@@ -138,6 +142,10 @@ const Profiles = (() => {
       const old = document.getElementById("edAvImg");
       const img = document.createElement("img"); img.className = "pf-av"; img.id = "edAvImg"; img.src = URL.createObjectURL(f);
       old.replaceWith(img);
+    });
+    document.getElementById("edCoverFile").addEventListener("change", e => {
+      const f = e.target.files[0]; if (!f) return;
+      coverFile = f; document.getElementById("edCoverImg").style.backgroundImage = `url('${URL.createObjectURL(f)}')`;
     });
     // handle 即時可用性檢查（與目前相同則略過）
     const hEl = document.getElementById("edHandle"), hMsg = document.getElementById("edHandleMsg");
@@ -169,6 +177,10 @@ const Profiles = (() => {
       if (avatarFile) {
         try { patch.avatar_url = await Media.uploadAvatar(prof.id, avatarFile); }
         catch (e) { msg.textContent = "頭像上傳失敗：" + (e && e.message || e); return; }
+      }
+      if (coverFile) {
+        try { patch.cover_url = await Media.uploadCover(prof.id, coverFile); }
+        catch (e) { msg.textContent = "封面上傳失敗：" + (e && e.message || e); return; }
       }
       const { error } = await c.from("profiles").update(patch).eq("id", prof.id);
       if (error) { msg.textContent = /duplicate|unique/i.test(error.message) ? "這個 handle 已被使用" : ("儲存失敗：" + error.message); return; }

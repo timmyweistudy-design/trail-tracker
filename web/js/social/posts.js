@@ -99,8 +99,11 @@ const Posts = (() => {
 
   async function userPosts(userId) {
     const c = Supa.client(); if (!c) return [];
-    const { data, error } = await c.from("posts").select(SELECT).eq("author_id", userId)
-      .order("created_at", { ascending: false }).limit(40);
+    let { data, error } = await c.from("posts").select(SELECT).eq("author_id", userId)
+      .order("pinned", { ascending: false }).order("created_at", { ascending: false }).limit(40);
+    if (error) {   // phase16 未跑（無 pinned 欄位）→ 退回只依時間
+      ({ data, error } = await c.from("posts").select(SELECT).eq("author_id", userId).order("created_at", { ascending: false }).limit(40));
+    }
     if (error) { console.warn("userPosts", error.message); return []; }
     return data || [];
   }
@@ -151,7 +154,7 @@ const Posts = (() => {
 
   async function one(postId) {
     const c = Supa.client(); if (!c) return null;
-    const { data } = await c.from("posts").select(SELECT + ", track").eq("id", postId).maybeSingle();
+    const { data } = await c.from("posts").select(SELECT + ", track, pinned").eq("id", postId).maybeSingle();
     return data || null;
   }
 

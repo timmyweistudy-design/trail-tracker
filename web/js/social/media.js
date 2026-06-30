@@ -99,6 +99,14 @@ const Media = (() => {
     return c.storage.from("media").getPublicUrl(path).data.publicUrl;
   }
 
-  return { targetSize, compressImage, videoPoster, upload, publicUrl, validateSize, validateVideo, uploadVideo, uploadAvatar };
+  async function uploadCover(uid, file) {
+    const { main } = await compressImage(file, 1200, 200, 0.82);
+    const c = Supa.client();
+    const path = `${uid}/cover/${Date.now()}.jpg`;
+    const { error } = await c.storage.from("media").upload(path, main, { contentType: "image/jpeg", upsert: true });
+    if (error) throw error;
+    return c.storage.from("media").getPublicUrl(path).data.publicUrl;
+  }
+  return { targetSize, compressImage, videoPoster, upload, publicUrl, validateSize, validateVideo, uploadVideo, uploadAvatar, uploadCover };
 })();
 if (typeof module !== "undefined") module.exports = Media;

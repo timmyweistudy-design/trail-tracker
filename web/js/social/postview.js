@@ -15,7 +15,7 @@ const PostView = (() => {
     const wrap = document.createElement("div");
     wrap.className = "pv-mask";
     wrap.dataset.me = myId; wrap.dataset.author = post.author_id;
-    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" aria-label="關閉" id="pvX">✕</button><b>貼文</b><span class="pv-head-r"><button class="comp-x ${Posts.isSaved(postId) ? "on" : ""}" id="pvSave" title="收藏" aria-label="收藏">${ic("bookmark")}</button><button class="comp-x" id="pvRepost" title="轉發" aria-label="轉發">${ic("repeat")}</button><button class="comp-x" id="pvShare" title="分享" aria-label="分享">${ic("share")}</button>${isMine ? `<button class="comp-x" id="pvEdit" title="編輯" aria-label="編輯">${ic("pencil")}</button><button class="comp-x" id="pvDel" title="刪除" aria-label="刪除">${ic("trash")}</button>` : ""}</span></div>
+    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" aria-label="關閉" id="pvX">✕</button><b>貼文</b><span class="pv-head-r"><button class="comp-x ${Posts.isSaved(postId) ? "on" : ""}" id="pvSave" title="收藏" aria-label="收藏">${ic("bookmark")}</button><button class="comp-x" id="pvRepost" title="轉發" aria-label="轉發">${ic("repeat")}</button><button class="comp-x" id="pvShare" title="分享" aria-label="分享">${ic("share")}</button>${isMine ? `<button class="comp-x ${post.pinned ? "on" : ""}" id="pvPin" title="置頂" aria-label="置頂">${ic("pin")}</button><button class="comp-x" id="pvEdit" title="編輯" aria-label="編輯">${ic("pencil")}</button><button class="comp-x" id="pvDel" title="刪除" aria-label="刪除">${ic("trash")}</button>` : ""}</span></div>
       <div class="pv-body" id="pvBody"></div>
       <div class="pv-add"><input id="pvInput" class="auth-input" placeholder="留言…" maxlength="1000"><button class="btn primary" id="pvSend">送出</button></div></div>`;
     document.body.appendChild(wrap);
@@ -46,6 +46,13 @@ const PostView = (() => {
     });
 
     if (isMine) {
+      wrap.querySelector("#pvPin").addEventListener("click", async () => {
+        const np = !post.pinned;
+        const { error } = await c.from("posts").update({ pinned: np }).eq("id", postId);
+        if (error) { if (typeof toast === "function") toast("置頂失敗：" + error.message); return; }
+        post.pinned = np; wrap.querySelector("#pvPin").classList.toggle("on", np);
+        if (typeof toast === "function") toast(np ? "已置頂到個人頁" : "已取消置頂");
+      });
       wrap.querySelector("#pvDel").addEventListener("click", async () => {
         if (!confirm("確定刪除這篇貼文？")) return;
         const r = await Posts.remove(postId);
