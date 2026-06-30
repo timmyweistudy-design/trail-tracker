@@ -2080,35 +2080,75 @@ $("#btnAllOffline").addEventListener("click", downloadAllTaiwan);
 $("#btnFavOffline").addEventListener("click", downloadFavOffline);
 if (typeof Premium !== "undefined") setTimeout(() => Premium.refresh(), 1500);   // 啟動後同步會員狀態
 
-// Premium：進階數據分析
+// 進階分析：基本數據免費看，進階區塊鎖 Premium
 const _aBtn = $("#btnAnalytics");
-if (_aBtn) _aBtn.addEventListener("click", () => { if (typeof Premium !== "undefined" && !Premium.gate()) return; openAnalytics(); });
+if (_aBtn) _aBtn.addEventListener("click", openAnalytics);
 function openAnalytics() {
   const recs = realRecords();
-  // 總計
+  const pro = (typeof Premium !== "undefined") && Premium.isOn();
   const n = recs.length;
   const totKm = recs.reduce((s, r) => s + (r.distanceKm || 0), 0);
   const totAsc = recs.reduce((s, r) => s + (r.ascent || 0), 0);
   const totHrs = recs.reduce((s, r) => s + (r.elapsedMs || 0), 0) / 3.6e6;
-  // 個人紀錄
-  let longest = null, steepest = null;
-  for (const r of recs) {
-    if (!longest || (r.distanceKm || 0) > (longest.distanceKm || 0)) longest = r;
-    if (!steepest || (r.ascent || 0) > (steepest.ascent || 0)) steepest = r;
-  }
-  const tc = {}; recs.forEach(r => { const nm = r.trailName || "自由路線"; tc[nm] = (tc[nm] || 0) + 1; });
-  const favTrail = Object.keys(tc).sort((a, b) => tc[b] - tc[a])[0];
-  // 月趨勢
+  // 每月里程
   const by = {};
-  for (const r of recs) {
-    const m = (r.date || "").slice(0, 7); if (!m) continue;
-    (by[m] = by[m] || { km: 0, asc: 0, n: 0 });
-    by[m].km += r.distanceKm || 0; by[m].asc += r.ascent || 0; by[m].n++;
-  }
+  for (const r of recs) { const m = (r.date || "").slice(0, 7); if (!m) continue; (by[m] = by[m] || { km: 0, asc: 0, n: 0 }); by[m].km += r.distanceKm || 0; by[m].asc += r.ascent || 0; by[m].n++; }
   const months = Object.keys(by).sort().reverse().slice(0, 12);
   const maxKm = Math.max(1, ...months.map(m => by[m].km));
   const card = (v, l) => `<div class="ana-card"><div class="ana-cv">${v}</div><div class="ana-cl">${l}</div></div>`;
   const pb = (label, val) => `<div class="ana-pb"><span>${label}</span><b>${val}</b></div>`;
+
+  // ── 進階（PRO）數據 ──
+  let longest = null, steepest = null, fastest = 0;
+  for (const r of recs) {
+    if (!longest || (r.distanceKm || 0) > (longest.distanceKm || 0)) longest = r;
+    if (!steepest || (r.ascent || 0) > (steepest.ascent || 0)) steepest = r;
+    const hrs = (r.elapsedMs || 0) / 3.6e6; if (hrs > 0.05) fastest = Math.max(fastest, (r.distanceKm || 0) / hrs);
+  }
+  const tc = {}; recs.forEach(r => { const nm = r.trailName || "自由路線"; tc[nm] = (tc[nm] || 0) + 1; });
+  const favTrail = Object.keys(tc).sort((a, b) => tc[b] - tc[a])[0];
+  const avgPace = totHrs > 0 ? totKm / totHrs : 0;
+  // 難度分布（用 TRAILS 對照 trailId）
+  const tmap = new Map(); if (typeof TRAILS !== "undefined") TRAILS.forEach(t => tmap.set(String(t.id), t.difficulty || 0));
+  const diffN = [0, 0, 0, 0, 0, 0, 0];
+  recs.forEach(r => { const d = r.trailId != null ? (tmap.get(String(r.trailId)) || 0) : 0; if (d >= 1 && d <= 6) diffN[d]++; });
+  const DLBL = ["", "輕鬆", "一般", "進階", "挑戰", "困難", "雪季"];
+  const maxD = Math.max(1, ...diffN);
+  // 年度比較
+  const yr = {}; recs.forEach(r => { const y = (r.date || "").slice(0, 4); if (y) yr[y] = (yr[y] || 0) + (r.distanceKm || 0); });
+  const years = Object.keys(yr).sort().reverse().slice(0, 4);
+  const maxY = Math.max(1, ...years.map(y => yr[y]));
+  // 一週節律
+  const wd = [0, 0, 0, 0, 0, 0, 0]; recs.forEach(r => { const d = new Date(r.date); if (!isNaN(d)) wd[d.getDay()]++; });
+  const WLBL = ["日", "一", "二", "三", "四", "五", "六"]; const maxW = Math.max(1, ...wd);
+
+  const proInner = `
+    <div class="ana-sec">個人紀錄</div>
+    <div class="ana-pbs">
+      ${pb("單次最長", (longest ? longest.distanceKm || 0 : 0).toFixed(2) + " km")}
+      ${pb("單次最大爬升", "↑" + Math.round(steepest ? steepest.ascent || 0 : 0) + " m")}
+      ${pb("最快平均配速", fastest.toFixed(1) + " km/h")}
+      ${pb("整體平均配速", avgPace.toFixed(1) + " km/h")}
+      ${pb("最常走", favTrail ? favTrail + "（" + tc[favTrail] + " 次）" : "—")}
+    </div>
+    <div class="ana-sec">難度分布</div>
+    <div class="ana-list">${diffN.slice(1).map((c, i) => `<div class="ana-row"><div class="ana-m" style="font-size:12px">${DLBL[i + 1]}</div><div class="ana-bar"><i class="d${i + 1}" style="width:${Math.round(c / maxD * 100)}%;background:var(--d${i + 1})"></i></div><div class="ana-v"><b>${c}</b> 次</div></div>`).join("")}</div>
+    <div class="ana-sec">年度里程</div>
+    <div class="ana-list">${years.map(y => `<div class="ana-row"><div class="ana-m">${y}</div><div class="ana-bar"><i style="width:${Math.round(yr[y] / maxY * 100)}%"></i></div><div class="ana-v"><b>${yr[y].toFixed(1)}</b> km</div></div>`).join("")}</div>
+    <div class="ana-sec">一週節律</div>
+    <div class="ana-week">${wd.map((c, i) => `<div class="aw"><div class="aw-bar" style="height:${Math.round(c / maxW * 46) + 4}px"></div><div class="aw-l">${WLBL[i]}</div></div>`).join("")}</div>
+    <div class="ana-exp">
+      <button class="btn ghost" id="anaCsv">${ic("download")} 匯出 CSV</button>
+      <button class="btn ghost" id="anaGpx">${ic("download")} 匯出全部 GPX</button>
+    </div>`;
+
+  const proLocked = `
+    <div class="ana-lock">
+      <div class="ana-lock-ic">${ic("sparkle")}</div>
+      <b>進階分析（PRO）</b>
+      <div class="ana-lock-d">個人紀錄・配速・難度分布・年度比較・一週節律・匯出 CSV/GPX</div>
+      <button class="btn primary" id="anaUp" style="max-width:220px;margin:12px auto 0">升級 Premium 解鎖</button>
+    </div>`;
 
   const ov = document.createElement("div"); ov.className = "pet-modal";
   ov.innerHTML = `<div class="pet-modal-card">
@@ -2121,27 +2161,19 @@ function openAnalytics() {
       ${card("↑" + Math.round(totAsc), "總爬升 m")}
       ${card(totHrs.toFixed(1), "總時數 小時")}
     </div>
-    <div class="ana-sec">個人紀錄</div>
-    <div class="ana-pbs">
-      ${pb("單次最長", (longest.distanceKm || 0).toFixed(2) + " km")}
-      ${pb("單次最大爬升", "↑" + Math.round(steepest.ascent || 0) + " m")}
-      ${pb("最常走", favTrail + "（" + tc[favTrail] + " 次）")}
-    </div>
     <div class="ana-sec">每月里程</div>
     <div class="ana-list">${months.map(m => `
       <div class="ana-row"><div class="ana-m">${m.replace("-", " / ")}</div>
         <div class="ana-bar"><i style="width:${Math.round(by[m].km / maxKm * 100)}%"></i></div>
         <div class="ana-v"><b>${by[m].km.toFixed(1)}</b>km ・ ↑${Math.round(by[m].asc)}m ・ ${by[m].n}次</div></div>`).join("")}</div>
-    <div class="ana-exp">
-      <button class="btn ghost" id="anaCsv">${ic("download")} 匯出 CSV</button>
-      <button class="btn ghost" id="anaGpx">${ic("download")} 匯出全部 GPX</button>
-    </div>`
+    ${pro ? proInner : proLocked}`
     : `<div class="social-empty"><span class="ee">${ic("target")}</span>還沒有行程可分析，先去走一條吧。</div>`}
   </div>`;
   document.body.appendChild(ov);
   const close = () => ov.remove();
   ov.querySelector("#anaX").addEventListener("click", close);
   ov.addEventListener("click", e => { if (e.target === ov) close(); });
+  const up = ov.querySelector("#anaUp"); if (up) up.addEventListener("click", () => { close(); if (typeof Premium !== "undefined") Premium.openUpgrade(); });
   const csv = ov.querySelector("#anaCsv"); if (csv) csv.addEventListener("click", () => exportRecordsCsv(recs));
   const gpx = ov.querySelector("#anaGpx"); if (gpx) gpx.addEventListener("click", () => { if (typeof GPX !== "undefined" && GPX.exportAll) (GPX.exportAll(recs) ? toast("已下載全部 GPX") : toast("無可匯出的軌跡")); });
 }
