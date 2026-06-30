@@ -29,12 +29,12 @@ const Profiles = (() => {
         ${petLine(ps)}
         <div class="pf-counts"><span id="pfPostCount"></span><span id="pfFollowCounts"></span></div>
         ${prof.bio ? `<div class="pf-bio">${esc(prof.bio)}</div>` : ""}
-        <div class="pf-actions">
-          <button class="btn ghost" id="pfEdit">編輯檔案</button>
-          <button class="btn ghost" id="pfSaved">${ic("bookmark")} 收藏</button>
-          <button class="btn ghost" id="pfEvents">${ic("calendar")} 揪團</button>
-          <button class="btn ghost" id="pfSettings">${ic("sliders")} 設定</button>
-          <button class="btn ghost" id="pfSignout">登出</button>
+        <div class="link-row pf-actions">
+          <button class="link-btn" id="pfEdit">${ic("pencil")} 編輯</button>
+          <button class="link-btn" id="pfSaved">${ic("bookmark")} 收藏</button>
+          <button class="link-btn" id="pfEvents">${ic("calendar")} 揪團</button>
+          <button class="link-btn" id="pfSettings">${ic("sliders")} 設定</button>
+          <button class="link-btn" id="pfSignout">${ic("logout")} 登出</button>
         </div>
         <div id="pfPosts" class="feed-loading"><span class="spin"></span></div>
       </div>`);

@@ -159,6 +159,9 @@ const ICON = {
   compare: '<path d="M8 4 4 8l4 4M4 8h11M16 12l4 4-4 4M20 16H9"/>',
   external: '<path d="M14 4h6v6M20 4l-8 8M18 13v6H5V6h6"/>',
   play: '<path d="M7 5l12 7-12 7V5Z"/>',
+  logout: '<path d="M14 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8"/><path d="M14 12H9m11 0-4-4m4 4-4 4"/>',
+  backup: '<path d="M12 16V6m0 0-4 4m4-4 4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>',
+  restore: '<path d="M12 6v10m0 0 4-4m-4 4-4-4"/><path d="M4 8V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2"/>',
 };
 function ic(name, cls) { return `<svg class="ic${cls ? " " + cls : ""}" viewBox="0 0 24 24">${ICON[name] || ""}</svg>`; }
 // 空狀態手繪山林插圖
@@ -1006,12 +1009,12 @@ async function openDetail(id) {
     ${hasGeo ? `<div class="section-title collapsible" id="secElev">${ic("mountain")}海拔剖面</div><div id="profileBox"><div class="food-loading"><span class="spin"></span>計算海拔剖面中…</div></div>` : ""}
     ${t.guide ? `<div class="guide">${t.guide.replace(/\n/g, "<br>")}</div>` : ""}
     <div class="link-row">
-      ${nav ? `<a class="link-btn" href="${nav}" target="_blank" rel="noopener">${ic("compass")} Google 地圖導航</a>` : ""}
-      <a class="link-btn" href="${moreSearch}" target="_blank" rel="noopener">${ic("search")} 查更多步道資訊</a>
-      <button class="link-btn" id="btnShareTrail">${ic("share")} 分享步道</button>
-      <button class="link-btn" id="btnEventTrail">${ic("calendar")} 揪團走這條</button>
+      ${nav ? `<a class="link-btn" href="${nav}" target="_blank" rel="noopener">${ic("compass")} 導航</a>` : ""}
+      <a class="link-btn" href="${moreSearch}" target="_blank" rel="noopener">${ic("search")} 查資訊</a>
+      <button class="link-btn" id="btnShareTrail">${ic("share")} 分享</button>
+      <button class="link-btn" id="btnEventTrail">${ic("calendar")} 揪團</button>
       <button class="link-btn" id="btnCompare">${ic("compare")} ${compareSet.has(t.id) ? "移出比較" : "加入比較"}</button>
-      ${t.url ? `<a class="link-btn" href="${t.url}" target="_blank" rel="noopener">${ic("external")} 官方/原始頁面</a>` : ""}
+      ${t.url ? `<a class="link-btn" href="${t.url}" target="_blank" rel="noopener">${ic("external")} 原始頁</a>` : ""}
     </div>
     ${myLogHtml(t)}
     <button class="btn ghost" id="btnOffline" style="margin-top:10px">⬇️ 預載此步道離線地圖</button>
@@ -1130,7 +1133,7 @@ async function openDetail(id) {
     if (compareSet.has(t.id)) compareSet.delete(t.id);
     else { if (compareSet.size >= 3) { toast("最多比較 3 條"); return; } compareSet.add(t.id); }
     const inSet = compareSet.has(t.id);
-    cmp.innerHTML = `${ic("compare")} ${inSet ? "移出比較" : "加入比較"}`;
+    cmp.innerHTML = `${ic("compare")} ${inSet ? "移出比較" : "加入比較"}`;   // 動作格內 2 行自動換行
     toast(inSet ? "已加入比較" : "已移出比較");
     updateCompareBar();
   });
