@@ -2156,7 +2156,7 @@ function renderPet() {
   box.innerHTML = `<div class="pet-card${i >= 6 ? " final" : ""}" style="background:${PET_BG[i]}">
     <div class="pet-emoji" id="petEmoji" role="img" aria-label="${st.n}">${st.e}</div>
     <div class="pet-info">
-      <div class="pet-name">${nm || st.n}<span class="pet-lv">Lv.${i + 1}</span></div>
+      <div class="pet-name">${nm || st.n}<span class="lv-chip lvt-${Math.min(i + 1, 7)} pet-lv-chip">Lv.${i + 1}</span></div>
       <div class="pet-mood">${mood.e} ${mood.t}　<span class="pet-hearts">${"❤️".repeat(h)}${"🤍".repeat(5 - h)}</span></div>
       <div class="pet-energy"><span class="pe-l">活力 ${en}</span><div class="pe-bar"><i style="width:${en}%"></i></div></div>
       <div class="pet-sub">${nm ? st.n + "・" : ""}已走 <b>${km.toFixed(1)}</b> km${bonus > 0 ? `（含照顧 +${bonus.toFixed(1)}）` : ""}・同行 <b>${days}</b> 天${streak >= 2 ? `・🔥連續${streak}週` : ""}</div>
@@ -2279,7 +2279,7 @@ function openPetDex() {
     return `<div class="dex-row${unlocked ? "" : " locked"}${isNow ? " now" : ""}">
       <div class="dex-e">${unlocked ? s.e : "❔"}</div>
       <div class="dex-body">
-        <div class="dex-h"><b>${unlocked ? s.n : "？？？"}</b><span class="dex-lv">Lv.${i + 1}</span>${isNow ? `<span class="dex-now">目前</span>` : ""}</div>
+        <div class="dex-h"><b>${unlocked ? s.n : "？？？"}</b><span class="lv-chip lvt-${Math.min(i + 1, 7)}">Lv.${i + 1}</span>${isNow ? `<span class="dex-now">目前</span>` : ""}</div>
         <div class="dex-k">${i === 0 ? "起始型態" : `成長里程 ${s.km} km 解鎖`}</div>
         <div class="dex-d">${unlocked ? s.d : "繼續健行，解鎖牠的樣貌與故事…"}</div>
       </div>
@@ -2310,7 +2310,7 @@ function celebrateEvolve(st, lv) {
     <div class="evolve-spark"></div>
     <div class="evolve-emoji">${st.e}</div>
     <div class="evolve-h">進化！</div>
-    <div class="evolve-n">${petName() || st.n}　Lv.${lv}</div>
+    <div class="evolve-n">${petName() || st.n} <span class="lv-chip lvt-${Math.min(lv, 7)}">Lv.${lv}</span></div>
     <div class="evolve-d">${st.d}</div>
     <button class="btn primary" id="evolveOk">太棒了</button>
   </div>`;

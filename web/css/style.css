@@ -1312,3 +1312,8 @@ html[data-theme="dark"] .disc-sec, html[data-theme="dark"] .feed-trending-h { co
 .ev-del { margin-left: auto; color: var(--danger); }
 .ev-form { display: flex; flex-direction: column; }
 .ev-form .comp-cap { min-height: 80px; }
+
+/* 寵物等級徽章：比照社群 lv-chip，並微調對齊/尺寸 */
+.pet-lv-chip { margin-left: 8px; font-size: 11px; vertical-align: middle; }
+.evolve-n .lv-chip { font-size: 13px; vertical-align: middle; }
+.dex-h .lv-chip { vertical-align: middle; }
