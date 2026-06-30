@@ -1441,3 +1441,21 @@ html[data-theme="dark"] body::after { opacity: .05; }
 .ana-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--brand-mid), var(--accent)); border-radius: 4px; }
 .ana-v { font-size: 11.5px; color: var(--ink-soft); }
 .ana-v b { font-family: var(--num); color: var(--ink); }
+
+/* 離線免費額度提示 */
+.offline-quota { font-size: 12px; color: var(--ink-soft); margin-top: 8px; text-align: center; }
+.offline-quota b { font-family: var(--num); color: var(--accent); }
+.oq-up { color: var(--accent); font-weight: 600; cursor: pointer; text-decoration: underline; }
+.oq-pro { color: var(--accent); font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+.oq-pro .ic { width: 13px; height: 13px; }
+/* 進階分析（完整版） */
+.ana-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 4px; }
+.ana-card { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 12px; text-align: center; }
+.ana-cv { font-family: var(--num); font-size: 22px; font-weight: 600; color: var(--brand-deep); line-height: 1; }
+.ana-cl { font-size: 11px; color: var(--ink-faint); margin-top: 5px; letter-spacing: .5px; }
+.ana-sec { font-family: var(--serif); font-weight: 700; font-size: 14px; margin: 16px 0 8px; }
+.ana-pbs { display: flex; flex-direction: column; gap: 7px; }
+.ana-pb { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: var(--surface-2); border-radius: var(--r-sm); padding: 10px 13px; font-size: 13.5px; color: var(--ink-soft); }
+.ana-pb b { color: var(--ink); font-family: var(--num); text-align: right; }
+.ana-exp { display: flex; gap: 8px; margin-top: 16px; }
+.ana-exp .btn { margin-top: 0; flex: 1; }

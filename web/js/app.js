@@ -1364,16 +1364,33 @@ function renderAttractions() {
     b.addEventListener("click", () => { _poiSort = b.dataset.psort; renderAttractions(); }));
 }
 
+// Premium：離線地圖免費 5 次，用完才需升級。回傳是否允許本次下載（允許則計入並提醒剩餘）。
+const OFFLINE_FREE = 5;
+function offlineFreeUsed() { return +(localStorage.getItem("tt_offline_free") || 0); }
+function offlineAllow() {
+  if (typeof Premium !== "undefined" && Premium.isOn()) return true;   // 會員無限
+  const used = offlineFreeUsed();
+  if (used >= OFFLINE_FREE) {
+    toast("免費離線地圖已用完（5/5），升級 Premium 即可無限下載");
+    if (typeof Premium !== "undefined") Premium.openUpgrade();
+    return false;
+  }
+  localStorage.setItem("tt_offline_free", String(used + 1));
+  const left = OFFLINE_FREE - (used + 1);
+  toast(left > 0 ? `免費離線下載 ${used + 1}/${OFFLINE_FREE}（剩 ${left} 次）` : "這是最後 1 次免費離線下載，之後需 Premium");
+  return true;
+}
+
 // 預載此步道範圍的離線地圖圖磚
 // 一鍵下載全台離線地圖（概覽，縮放 7–13；自動壓低 zmax 以控制張數）
 async function downloadAllTaiwan() {
-  if (typeof Premium !== "undefined" && !Premium.gate()) return;   // Premium：無限離線地圖
   const bbox = { n: 25.35, s: 21.85, e: 122.05, w: 119.95 };
   let zmax = 13;
   while (zmax > 9 && Offline.tileList(bbox, 7, zmax).length > 6000) zmax--;
   const tiles = Offline.tileList(bbox, 7, zmax);
   const btn = $("#btnAllOffline"), box = $("#allOfflineBox");
   if (!confirm(`下載全台離線地圖（縮放 7–${zmax}）約 ${tiles.length} 張圖磚、約 ${(tiles.length * 0.02).toFixed(0)} MB？\n\n可離線看全島概覽；個別步道細節請另在步道詳情按「預載離線地圖」。\n下載需幾分鐘，請保持開啟。`)) return;
+  if (!offlineAllow()) return;   // Premium：免費 5 次後需升級
   box.style.display = "block";
   btn.disabled = true; btn.textContent = "下載中…";
   try {
@@ -1390,10 +1407,10 @@ async function downloadAllTaiwan() {
 }
 // 一鍵預載所有收藏步道的離線地圖
 async function downloadFavOffline() {
-  if (typeof Premium !== "undefined" && !Premium.gate()) return;   // Premium：無限離線地圖
   const favs = TRAILS.filter(t => Store.isFav(t.id) && t.lat);
   const btn = $("#btnFavOffline"), box = $("#favOfflineBox");
   if (!favs.length) { toast("尚無含座標的收藏步道"); return; }
+  if (!offlineAllow()) return;   // Premium：免費 5 次後需升級
   const seen = new Set(); let tiles = [];
   for (const t of favs) {
     const bbox = Offline.bboxFor(t);
@@ -1420,6 +1437,7 @@ async function downloadFavOffline() {
 }
 async function downloadOffline(t, btn) {
   if (!t.lat) { toast("此步道無座標，無法下載地圖"); return; }
+  if (!offlineAllow()) return;   // Premium：免費 5 次後需升級
   const box = $("#offlineBox");
   const bbox = Offline.bboxFor(t);
   const { zmin, zmax } = Offline.planZoom(bbox);
@@ -2019,6 +2037,11 @@ async function refreshOfflineStatus() {
   if (!el) return;
   const n = await Offline.cachedCount();
   el.textContent = n ? `已快取地圖圖磚：${n} 張（約 ${(n * 0.02).toFixed(1)} MB）` : "尚未下載任何離線地圖";
+  const q = $("#offlineQuota");
+  if (q) {
+    if (typeof Premium !== "undefined" && Premium.isOn()) q.innerHTML = `<span class="oq-pro">${ic("sparkle")} Premium：無限下載</span>`;
+    else { const left = Math.max(0, OFFLINE_FREE - offlineFreeUsed()); q.innerHTML = `免費額度：剩 <b>${left}</b> / ${OFFLINE_FREE} 次　·　<a class="oq-up" id="oqUp">升級 Premium 無限下載</a>`; const up = $("#oqUp"); if (up) up.addEventListener("click", () => { if (typeof Premium !== "undefined") Premium.openUpgrade(); }); }
+  }
 }
 $("#btnDiag").addEventListener("click", () => {
   const errs = (window.ttErrors ? window.ttErrors() : []);
@@ -2062,6 +2085,20 @@ const _aBtn = $("#btnAnalytics");
 if (_aBtn) _aBtn.addEventListener("click", () => { if (typeof Premium !== "undefined" && !Premium.gate()) return; openAnalytics(); });
 function openAnalytics() {
   const recs = realRecords();
+  // 總計
+  const n = recs.length;
+  const totKm = recs.reduce((s, r) => s + (r.distanceKm || 0), 0);
+  const totAsc = recs.reduce((s, r) => s + (r.ascent || 0), 0);
+  const totHrs = recs.reduce((s, r) => s + (r.elapsedMs || 0), 0) / 3.6e6;
+  // 個人紀錄
+  let longest = null, steepest = null;
+  for (const r of recs) {
+    if (!longest || (r.distanceKm || 0) > (longest.distanceKm || 0)) longest = r;
+    if (!steepest || (r.ascent || 0) > (steepest.ascent || 0)) steepest = r;
+  }
+  const tc = {}; recs.forEach(r => { const nm = r.trailName || "自由路線"; tc[nm] = (tc[nm] || 0) + 1; });
+  const favTrail = Object.keys(tc).sort((a, b) => tc[b] - tc[a])[0];
+  // 月趨勢
   const by = {};
   for (const r of recs) {
     const m = (r.date || "").slice(0, 7); if (!m) continue;
@@ -2070,22 +2107,43 @@ function openAnalytics() {
   }
   const months = Object.keys(by).sort().reverse().slice(0, 12);
   const maxKm = Math.max(1, ...months.map(m => by[m].km));
+  const card = (v, l) => `<div class="ana-card"><div class="ana-cv">${v}</div><div class="ana-cl">${l}</div></div>`;
+  const pb = (label, val) => `<div class="ana-pb"><span>${label}</span><b>${val}</b></div>`;
+
   const ov = document.createElement("div"); ov.className = "pet-modal";
   ov.innerHTML = `<div class="pet-modal-card">
     <button class="sheet-close" id="anaX" aria-label="關閉">${ic("x")}</button>
     <h2>${ic("target")} 進階分析</h2>
-    ${months.length ? `<div class="ana-list">${months.map(m => `
+    ${n ? `
+    <div class="ana-cards">
+      ${card(n, "總出行")}
+      ${card(totKm.toFixed(1), "總里程 km")}
+      ${card("↑" + Math.round(totAsc), "總爬升 m")}
+      ${card(totHrs.toFixed(1), "總時數 小時")}
+    </div>
+    <div class="ana-sec">個人紀錄</div>
+    <div class="ana-pbs">
+      ${pb("單次最長", (longest.distanceKm || 0).toFixed(2) + " km")}
+      ${pb("單次最大爬升", "↑" + Math.round(steepest.ascent || 0) + " m")}
+      ${pb("最常走", favTrail + "（" + tc[favTrail] + " 次）")}
+    </div>
+    <div class="ana-sec">每月里程</div>
+    <div class="ana-list">${months.map(m => `
       <div class="ana-row"><div class="ana-m">${m.replace("-", " / ")}</div>
         <div class="ana-bar"><i style="width:${Math.round(by[m].km / maxKm * 100)}%"></i></div>
-        <div class="ana-v"><b>${by[m].km.toFixed(1)}</b>km ・ ↑${Math.round(by[m].asc)}m ・ ${by[m].n}次</div></div>`).join("")}</div>`
-    : `<div class="social-empty">還沒有行程可分析。</div>`}
-    <button class="btn ghost" id="anaCsv" style="margin-top:14px">${ic("download")} 匯出 CSV（全部行程）</button>
+        <div class="ana-v"><b>${by[m].km.toFixed(1)}</b>km ・ ↑${Math.round(by[m].asc)}m ・ ${by[m].n}次</div></div>`).join("")}</div>
+    <div class="ana-exp">
+      <button class="btn ghost" id="anaCsv">${ic("download")} 匯出 CSV</button>
+      <button class="btn ghost" id="anaGpx">${ic("download")} 匯出全部 GPX</button>
+    </div>`
+    : `<div class="social-empty"><span class="ee">${ic("target")}</span>還沒有行程可分析，先去走一條吧。</div>`}
   </div>`;
   document.body.appendChild(ov);
   const close = () => ov.remove();
   ov.querySelector("#anaX").addEventListener("click", close);
   ov.addEventListener("click", e => { if (e.target === ov) close(); });
-  ov.querySelector("#anaCsv").addEventListener("click", () => exportRecordsCsv(recs));
+  const csv = ov.querySelector("#anaCsv"); if (csv) csv.addEventListener("click", () => exportRecordsCsv(recs));
+  const gpx = ov.querySelector("#anaGpx"); if (gpx) gpx.addEventListener("click", () => { if (typeof GPX !== "undefined" && GPX.exportAll) (GPX.exportAll(recs) ? toast("已下載全部 GPX") : toast("無可匯出的軌跡")); });
 }
 function exportRecordsCsv(recs) {
   const head = "日期,步道,公里,累積爬升m,下降m,大卡,時間分鐘\n";
