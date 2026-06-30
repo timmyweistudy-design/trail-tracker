@@ -313,7 +313,7 @@ document.querySelectorAll(".tab").forEach(btn => {
         Pets.renderFriends();
       }
     }
-    if (view === "me") { renderHistory(); refreshOfflineStatus(); renderAccent(); if (typeof Premium !== "undefined") Premium.refresh().then(() => { Premium.renderBox($("#premiumBox")); renderAccent(); applySeason(); }); }
+    if (view === "me") { renderHistory(); refreshOfflineStatus(); renderAccent(); renderProColor(); if (typeof Premium !== "undefined") Premium.refresh().then(() => { Premium.renderBox($("#premiumBox")); renderAccent(); renderProColor(); applySeason(); }); }
     if (view === "social" && typeof SocialUI !== "undefined") SocialUI.onShow();
   });
 });
@@ -2694,6 +2694,25 @@ function applySeason() {
   const col = m >= 3 && m <= 5 ? "#d2799a" : m >= 6 && m <= 8 ? "#3f8f6a" : m >= 9 && m <= 11 ? "#c2683d" : "#5a86b0";
   document.documentElement.style.setProperty("--accent", col);
 }
+// PRO 徽章配色（會員）：套用到自己的 PRO 標籤
+const PRO_STYLES = [["#ffe07a", "#f0a91e", "#5a3a00", "金"], ["#dfe4ea", "#9aa3ad", "#2a2f36", "銀"], ["#7be0a3", "#2faa6b", "#0c3d24", "翡翠"], ["#ff9a9a", "#e0444f", "#5a0f14", "紅寶"], ["#9ec2ff", "#4f7fe0", "#0f1f4a", "藍寶"], ["#ffb3d1", "#e060a0", "#5a1338", "玫瑰"]];
+function applyProColor() {
+  const i = +(localStorage.getItem("tt_pro_color") || 0);
+  const s = PRO_STYLES[i] || PRO_STYLES[0];
+  const r = document.documentElement.style;
+  r.setProperty("--pro-c1", s[0]); r.setProperty("--pro-c2", s[1]); r.setProperty("--pro-ink", s[2]);
+}
+function renderProColor() {
+  const el = $("#proColorWrap"); if (!el) return;
+  if (!(typeof Premium !== "undefined" && Premium.isOn())) { el.innerHTML = ""; return; }
+  const cur = +(localStorage.getItem("tt_pro_color") || 0);
+  el.innerHTML = `<div class="accent-head">PRO 徽章配色</div><div class="proc-row">${PRO_STYLES.map((s, i) =>
+    `<button class="proc-sw${i === cur ? " on" : ""}" data-i="${i}" title="${s[3]}" style="background:linear-gradient(135deg,${s[0]},${s[1]});color:${s[2]}">PRO</button>`).join("")}</div>`;
+  el.querySelectorAll(".proc-sw").forEach(b => b.addEventListener("click", () => {
+    localStorage.setItem("tt_pro_color", b.dataset.i); applyProColor(); renderProColor();
+    if (typeof toast === "function") toast("已套用徽章配色");
+  }));
+}
 function renderAccent() {
   const row = $("#accentRow"); if (!row) return;
   const pro = typeof Premium !== "undefined" && Premium.isOn();
@@ -2708,6 +2727,7 @@ function renderAccent() {
 }
 function initTheme() {
   applySeason();
+  applyProColor();
   const mode = localStorage.getItem("tt_theme") === "dark" ? "dark" : "light";   // 預設淺色，只有明確選深色才深色
   applyTheme(mode);
   document.querySelectorAll(".theme-opt").forEach(b => b.addEventListener("click", () => {
