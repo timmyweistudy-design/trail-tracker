@@ -626,7 +626,7 @@ function trailCard(t) {
   const stats = [`<div class="jstat"><div class="jnum">${t.length_km != null ? t.length_km : "—"}</div><div class="jlbl">公里</div></div>`];
   const gainC = (typeof Profile !== "undefined" && Profile.cachedGain) ? Profile.cachedGain(t.id) : null;
   const ascShow = gainC != null ? gainC : (t.ascent != null ? Math.round(t.ascent) : null);
-  if (ascShow != null) stats.push(`<div class="jstat"><div class="jnum">↑${ascShow}</div><div class="jlbl">累積爬升 m</div></div>`);
+  if (ascShow != null) stats.push(`<div class="jstat"><div class="jnum" data-card-asc>↑${ascShow}</div><div class="jlbl">累積爬升 m</div></div>`);
   if (t.tour) stats.push(`<div class="jstat"><div class="jnum jnum-sm">${t.tour}</div><div class="jlbl">建議時程</div></div>`);
   else if (distKm) stats.push(`<div class="jstat"><div class="jnum">${distKm}</div><div class="jlbl">公里外</div></div>`);
   const locExtra = (distKm && t.tour) ? `<span class="jloc-dot">·</span>${ic("compass")}<span>${distKm} km</span>` : "";
@@ -1205,7 +1205,12 @@ async function loadElevation(t) {
   try {
     const p = await Profile.build(t.id, geoOf(t));
     if (!p) { box.style.display = "none"; return; }
-    const kvA = $("#kvAscent"); if (kvA && p.gain != null) kvA.textContent = p.gain + " m";   // 以 DEM 真實累積爬升覆蓋
+    if (p.gain != null) {
+      const kvA = $("#kvAscent"); if (kvA) kvA.textContent = p.gain + " m";   // 詳情頁即時覆蓋
+      // 同步更新探索列表中該步道卡的累積爬升（不必重開 App）
+      const sel = (window.CSS && CSS.escape) ? CSS.escape(t.id) : t.id;
+      document.querySelectorAll(`#trailList .card[data-id="${sel}"] [data-card-asc]`).forEach(el => { el.textContent = "↑" + p.gain; });
+    }
     box.innerHTML = `<div class="profile-wrap" id="profWrap">${p.svg}
         <div class="prof-cursor" id="profCursor"></div><div class="prof-tip" id="profTip"></div></div>
       <div class="profile-stat">最低 ${p.min}m　最高 ${p.max}m　累積爬升 ↑${p.gain}m　全長約 ${p.distKm.toFixed(1)}km</div>
