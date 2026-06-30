@@ -2078,7 +2078,7 @@ $("#importFile").addEventListener("change", e => {
 $("#btnFootMap").addEventListener("click", openFootprintMap);
 $("#btnAllOffline").addEventListener("click", downloadAllTaiwan);
 $("#btnFavOffline").addEventListener("click", downloadFavOffline);
-if (typeof Premium !== "undefined") setTimeout(() => Premium.refresh(), 1500);   // 啟動後同步會員狀態
+if (typeof Premium !== "undefined") { setTimeout(() => Premium.refresh(), 1500); Premium.handleReturn(); }   // 啟動後同步會員狀態 + 處理結帳返回
 
 // 進階分析：基本數據免費看，進階區塊鎖 Premium
 const _aBtn = $("#btnAnalytics");

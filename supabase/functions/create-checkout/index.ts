@@ -21,16 +21,19 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const origin = body.origin || Deno.env.get("APP_ORIGIN") || "https://trail-tracker-0ma5.onrender.com";
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!);
+    // 月繳 / 年繳：年繳用 STRIPE_PRICE_ID_YEAR（沒設則退回月繳）
+    const price = (body.plan === "year" && Deno.env.get("STRIPE_PRICE_ID_YEAR"))
+      ? Deno.env.get("STRIPE_PRICE_ID_YEAR")! : Deno.env.get("STRIPE_PRICE_ID")!;
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      line_items: [{ price: Deno.env.get("STRIPE_PRICE_ID")!, quantity: 1 }],
+      line_items: [{ price, quantity: 1 }],
       success_url: origin + "/?premium=success",
       cancel_url: origin + "/?premium=cancel",
       client_reference_id: u.user.id,                 // 對應到我們的 user
       customer_email: u.user.email || undefined,
       metadata: { user_id: u.user.id },
-      subscription_data: { metadata: { user_id: u.user.id } },
+      subscription_data: { metadata: { user_id: u.user.id }, trial_period_days: 7 },   // 免費試用 7 天
     });
     return new Response(JSON.stringify({ url: session.url }), { headers: { ...cors, "Content-Type": "application/json" } });
   } catch (e) {
