@@ -624,7 +624,9 @@ function trailCard(t) {
   const distKm = (myLoc && t.lat) ? (haversine(myLoc, { lat: t.lat, lon: t.lon }) / 1000).toFixed(1) : null;
   // 山誌式 hero 數據（襯線數字當主角，最多三格）
   const stats = [`<div class="jstat"><div class="jnum">${t.length_km != null ? t.length_km : "—"}</div><div class="jlbl">公里</div></div>`];
-  if (t.ascent != null) stats.push(`<div class="jstat"><div class="jnum">↑${Math.round(t.ascent)}</div><div class="jlbl">累積爬升 m</div></div>`);
+  const gainC = (typeof Profile !== "undefined" && Profile.cachedGain) ? Profile.cachedGain(t.id) : null;
+  const ascShow = gainC != null ? gainC : (t.ascent != null ? Math.round(t.ascent) : null);
+  if (ascShow != null) stats.push(`<div class="jstat"><div class="jnum">↑${ascShow}</div><div class="jlbl">累積爬升 m</div></div>`);
   if (t.tour) stats.push(`<div class="jstat"><div class="jnum jnum-sm">${t.tour}</div><div class="jlbl">建議時程</div></div>`);
   else if (distKm) stats.push(`<div class="jstat"><div class="jnum">${distKm}</div><div class="jlbl">公里外</div></div>`);
   const locExtra = (distKm && t.tour) ? `<span class="jloc-dot">·</span>${ic("compass")}<span>${distKm} km</span>` : "";
@@ -957,7 +959,9 @@ async function openDetail(id) {
   const kv = [];
   if (t.length_km != null) kv.push(["長度", `${t.length_km} km${t.source === "osm" ? "（估）" : ""}`]);
   if (t.alt_high != null || t.alt_low != null) kv.push(["海拔範圍", `${t.alt_low ?? "?"}–${t.alt_high ?? "?"} m`]);
-  if (t.ascent != null) kv.push(["累積爬升", `${Math.round(t.ascent)} m`]);
+  const ascCached = (typeof Profile !== "undefined" && Profile.cachedGain) ? Profile.cachedGain(t.id) : null;
+  const ascInit = ascCached != null ? ascCached : (t.ascent != null ? Math.round(t.ascent) : null);
+  if (ascInit != null || geoOf(t)) kv.push(["累積爬升", `<span id="kvAscent">${ascInit != null ? ascInit + " m" : "計算中…"}</span>`]);
   if (t.tour) kv.push(["預估時間", t.tour]);
   const kvHtml = kv.length
     ? `<div class="kv">${kv.map(([l, v]) => `<div class="item"><div class="l">${l}</div><div class="v">${v}</div></div>`).join("")}</div>`
@@ -1201,6 +1205,7 @@ async function loadElevation(t) {
   try {
     const p = await Profile.build(t.id, geoOf(t));
     if (!p) { box.style.display = "none"; return; }
+    const kvA = $("#kvAscent"); if (kvA && p.gain != null) kvA.textContent = p.gain + " m";   // 以 DEM 真實累積爬升覆蓋
     box.innerHTML = `<div class="profile-wrap" id="profWrap">${p.svg}
         <div class="prof-cursor" id="profCursor"></div><div class="prof-tip" id="profTip"></div></div>
       <div class="profile-stat">最低 ${p.min}m　最高 ${p.max}m　累積爬升 ↑${p.gain}m　全長約 ${p.distKm.toFixed(1)}km</div>

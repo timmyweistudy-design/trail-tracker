@@ -116,5 +116,11 @@ const Profile = (() => {
     return result;
   }
 
-  return { build };
+  // 已算過的真實累積爬升（DEM）：有快取就回傳，否則 null（不觸發運算）
+  function cachedGain(id) {
+    if (cache[id]) return cache[id].gain;
+    try { const s = localStorage.getItem(LS(id)); if (s) { const r = JSON.parse(s); cache[id] = r; return r.gain; } } catch (e) { /* */ }
+    return null;
+  }
+  return { build, cachedGain };
 })();
