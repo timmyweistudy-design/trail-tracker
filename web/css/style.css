@@ -442,13 +442,13 @@ body {
 .ridle-e { font-size: 22px; }
 .ridle-sug { width: 100%; text-align: left; background: var(--brand-soft); border: 1px solid var(--line-soft); color: var(--brand-deep); border-radius: var(--r-sm); padding: 11px 14px; font-size: 13px; font-weight: 600; cursor: pointer; }
 .ridle-sug:active { transform: scale(.98); }
-.sim-toggle { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12.5px; color: var(--ink-soft); margin-top: 13px; }
+.sim-toggle { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12.5px; color: var(--ink-soft); margin-top: 13px; white-space: nowrap; }
 .act-modes { display: flex; gap: 7px; overflow-x: auto; padding: 0 2px 4px; margin: 10px 0 4px; scrollbar-width: none; }
 .act-modes::-webkit-scrollbar { display: none; }
 .act-modes .chip { flex: 0 0 auto; }
 .act-hint { font-size: 11.5px; color: var(--ink-faint); text-align: center; margin: 2px 0 6px; }
-.rec-opts { display: flex; gap: 18px; justify-content: center; margin-top: 13px; }
-.rec-opts .sim-toggle { margin-top: 0; }
+.rec-opts { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; margin-top: 14px; padding-left: 4px; }
+.rec-opts .sim-toggle { margin-top: 0; justify-content: flex-start; }
 
 /* ---------- 通用 ---------- */
 .section-title { font-family: var(--serif); font-size: 14px; color: var(--brand-deep); font-weight: 700; margin: 20px 4px 9px; letter-spacing: 1px; }
@@ -573,6 +573,7 @@ body {
 .hist-del:active { background: #faeae7; } .hist-gpx:active { background: var(--brand-soft); }
 .hist-head { display: flex; justify-content: space-between; align-items: center; }
 .btn-clear-all { background: none; border: 1px solid var(--line); color: var(--danger); border-radius: var(--r-xs); padding: 7px 13px; font-size: 12.5px; cursor: pointer; font-weight: 600; }
+.btn-clear-all .ic { width: 13px; height: 13px; vertical-align: -2px; margin-right: 4px; }
 
 .field { margin-bottom: 15px; }
 .field label { display: block; font-size: 13px; color: var(--ink-soft); margin-bottom: 7px; font-weight: 600; }
