@@ -18,4 +18,4 @@ window.VAPID_PUBLIC_KEY = "BBBNERSxfrE0JZbrqZVWKt1agmGjCWC6SG16JoLYdxORGm7v6gXW4
 //   例：https://bkbkamvbczqdejrlpiqo.supabase.co/functions/v1
 // 部署好 create-checkout / stripe-webhook 後把 STRIPE_ENABLED 設 true，「升級」才會去結帳。
 window.FUNCTIONS_URL = "https://bkbkamvbczqdejrlpiqo.supabase.co/functions/v1";
-window.STRIPE_ENABLED = false;
+window.STRIPE_ENABLED = true;
