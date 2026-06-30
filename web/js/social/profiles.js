@@ -10,7 +10,7 @@ const Profiles = (() => {
   }
   function petLine(ps) {
     if (!ps) return "";
-    return `<div class="pf-pet">${ps.emoji} ${esc(ps.name)} · Lv.${ps.level}　·　已走 ${ps.km} km</div>`;
+    return `<div class="pf-pet">${ps.emoji} ${esc(ps.name)} <span class="lv-chip lvt-${Math.min(ps.level, 7)}">Lv.${ps.level}</span>　·　已走 ${ps.km} km</div>`;
   }
 
   function renderMe(render, prof) {
