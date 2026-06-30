@@ -11,6 +11,7 @@ const Premium = (() => {
       const { data } = await c.from("subscriptions").select("status, current_period_end").eq("user_id", u.user.id).maybeSingle();
       _periodEnd = data && data.current_period_end ? data.current_period_end : null;
       _on = !!(data && ["active", "trialing"].includes(data.status) && (!_periodEnd || new Date(_periodEnd) > new Date()));
+      if (_on && !localStorage.getItem("tt_premium_since")) localStorage.setItem("tt_premium_since", new Date().toISOString());
     } catch (e) { _on = false; }
     _loaded = true; sync(); return _on;
   }
@@ -109,7 +110,10 @@ const Premium = (() => {
     if (typeof Supa === "undefined" || !Supa.ready || !Supa.ready()) { el.innerHTML = ""; return; }
     if (isOn()) {
       const until = _periodEnd ? new Date(_periodEnd).toLocaleDateString("zh-TW") : "";
-      el.innerHTML = `<div class="pm-status on"><span class="pm-b-ic">${icc("sparkle")}</span><div><b>Premium 會員</b><div class="pm-b-d">進階功能已全部解鎖${until ? ` ・ 續訂日 ${until}` : ""}</div></div></div>
+      const since = localStorage.getItem("tt_premium_since");
+      let tenure = "";
+      if (since) { const mo = Math.max(0, Math.floor((Date.now() - new Date(since)) / 2.628e9)); const tier = mo >= 12 ? "元老" : mo >= 6 ? "資深" : mo >= 1 ? "會員" : "新會員"; tenure = `<span class="pm-tenure">${tier} ・ 第 ${mo + 1} 個月</span>`; }
+      el.innerHTML = `<div class="pm-status on"><span class="pm-b-ic">${icc("sparkle")}</span><div><b>Premium 會員${tenure}</b><div class="pm-b-d">進階功能已全部解鎖${until ? ` ・ 續訂日 ${until}` : ""}</div></div></div>
         <button class="btn ghost pm-manage" id="pmManage" style="margin-top:8px">${icc("sliders")} 管理訂閱</button>`;
       const m = el.querySelector("#pmManage"); if (m) m.addEventListener("click", openPortal);
     } else {

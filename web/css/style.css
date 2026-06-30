@@ -1509,8 +1509,8 @@ html[data-theme="dark"] body::after { opacity: .05; }
 .proc-sw { border: none; border-radius: 6px; padding: 4px 9px; font-size: 10px; font-weight: 800; letter-spacing: .5px; cursor: pointer; box-shadow: 0 0 0 1px var(--line); }
 .proc-sw.on { box-shadow: 0 0 0 2px var(--accent); }
 
-/* PRO 頭像金框 */
-.fc-av.pro-av, .pf-av.pro-av { box-shadow: 0 0 0 2px #f0a91e, 0 0 0 4px var(--surface); }
+/* PRO 頭像框（跟隨 PRO 配色） */
+.fc-av.pro-av, .pf-av.pro-av { box-shadow: 0 0 0 2px var(--pro-c2, #f0a91e), 0 0 0 4px var(--surface); }
 
 /* 個人頁封面照 */
 .pf-cover { height: 120px; background-size: cover; background-position: center; border-radius: var(--r-sm); margin: 0 0 12px; box-shadow: var(--sh-sm); }
@@ -1530,3 +1530,14 @@ html[data-theme="dark"] body::after { opacity: .05; }
 .yr-lines b { color: #e0b15a; }
 .yr-foot { margin-top: 8px; font-size: 12.5px; opacity: .8; }
 .yr-card .btn.primary { margin-top: 16px; }
+
+/* 會員資歷 + 好友里程比較 */
+.pm-tenure { font-family: var(--num); font-size: 11px; font-weight: 700; color: var(--accent); margin-left: 8px; }
+.cmp-list { display: flex; flex-direction: column; gap: 8px; }
+.cmp-row { display: grid; grid-template-columns: 22px 1fr 70px auto; gap: 8px; align-items: center; }
+.cmp-row.me { background: var(--accent-soft); border-radius: var(--r-xs); padding: 4px 6px; margin: 0 -6px; }
+.cmp-rank { font-family: var(--num); font-weight: 700; color: var(--ink-faint); text-align: center; }
+.cmp-name { font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cmp-bar { height: 6px; background: var(--line-soft); border-radius: 4px; overflow: hidden; }
+.cmp-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--brand-mid), var(--accent)); }
+.cmp-km { font-family: var(--num); font-size: 13px; color: var(--ink); }

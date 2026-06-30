@@ -2211,9 +2211,11 @@ function openAnalytics() {
     <div class="ana-list">${years.map(y => `<div class="ana-row"><div class="ana-m">${y}</div><div class="ana-bar"><i style="width:${Math.round(yr[y] / maxY * 100)}%"></i></div><div class="ana-v"><b>${yr[y].toFixed(1)}</b> km</div></div>`).join("")}</div>
     <div class="ana-sec">一週節律</div>
     <div class="ana-week">${wd.map((c, i) => `<div class="aw"><div class="aw-bar" style="height:${Math.round(c / maxW * 46) + 4}px"></div><div class="aw-l">${WLBL[i]}</div></div>`).join("")}</div>
+    <button class="btn ghost" id="anaCompare" style="margin-top:10px">${ic("users")} 好友里程比較</button>
     <div class="ana-exp">
-      <button class="btn ghost" id="anaCsv">${ic("download")} 匯出 CSV</button>
-      <button class="btn ghost" id="anaGpx">${ic("download")} 匯出全部 GPX</button>
+      <button class="btn ghost" id="anaCsv">${ic("download")} CSV</button>
+      <button class="btn ghost" id="anaGpx">${ic("download")} GPX</button>
+      <button class="btn ghost" id="anaKml">${ic("download")} KML</button>
     </div>`;
 
   const proLocked = `
@@ -2250,6 +2252,44 @@ function openAnalytics() {
   const up = ov.querySelector("#anaUp"); if (up) up.addEventListener("click", () => { close(); if (typeof Premium !== "undefined") Premium.openUpgrade(); });
   const csv = ov.querySelector("#anaCsv"); if (csv) csv.addEventListener("click", () => exportRecordsCsv(recs));
   const gpx = ov.querySelector("#anaGpx"); if (gpx) gpx.addEventListener("click", () => { if (typeof GPX !== "undefined" && GPX.exportAll) (GPX.exportAll(recs) ? toast("已下載全部 GPX") : toast("無可匯出的軌跡")); });
+  const kml = ov.querySelector("#anaKml"); if (kml) kml.addEventListener("click", () => exportRecordsKml(recs));
+  const cmp = ov.querySelector("#anaCompare"); if (cmp) cmp.addEventListener("click", openCompare);
+}
+// KML 匯出（每趟一條 LineString，可匯入 Google Earth）
+function exportRecordsKml(recs) {
+  const tracks = recs.filter(r => r.track && r.track.length > 1);
+  if (!tracks.length) { toast("無可匯出的軌跡"); return; }
+  const esc = s => String(s || "").replace(/[<>&]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c]));
+  const pm = tracks.map(r => {
+    const coords = r.track.map(p => `${p.lon},${p.lat}${p.alt != null ? "," + Math.round(p.alt) : ""}`).join(" ");
+    return `<Placemark><name>${esc(r.trailName || "自由路線")}（${(r.distanceKm || 0).toFixed(1)}km）</name><LineString><tessellate>1</tessellate><coordinates>${coords}</coordinates></LineString></Placemark>`;
+  }).join("");
+  const kml = `<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>循徑拾光 行程</name>${pm}</Document></kml>`;
+  const blob = new Blob([kml], { type: "application/vnd.google-earth.kml+xml" });
+  const url = URL.createObjectURL(blob), a = document.createElement("a");
+  a.href = url; a.download = "trail-records.kml"; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000); toast("已匯出 KML");
+}
+// 好友里程比較：我 + 我追蹤的人，依累積里程排行
+async function openCompare() {
+  if (typeof Supa === "undefined" || !Supa.ready()) { toast("社群尚未啟用"); return; }
+  const c = Supa.client(); const { data: u } = await c.auth.getUser();
+  if (!u || !u.user) { toast("請先到社群分頁登入"); return; }
+  const ov = document.createElement("div"); ov.className = "pet-modal";
+  ov.innerHTML = `<div class="pet-modal-card"><button class="sheet-close" id="cmpX">${ic("x")}</button><h2>${ic("users")} 好友里程比較</h2><div id="cmpBody"><div class="feed-loading"><span class="spin"></span></div></div></div>`;
+  document.body.appendChild(ov);
+  ov.querySelector("#cmpX").addEventListener("click", () => ov.remove());
+  ov.addEventListener("click", e => { if (e.target === ov) ov.remove(); });
+  try {
+    const { data: fol } = await c.from("follows").select("following_id").eq("follower_id", u.user.id);
+    const ids = [u.user.id, ...((fol || []).map(r => r.following_id))];
+    const { data: profs } = await c.from("profiles").select("id, handle, display_name, total_km, pet_level").in("id", ids);
+    const list = (profs || []).map(p => ({ ...p, km: +(p.total_km || 0) })).sort((a, b) => b.km - a.km);
+    const body = ov.querySelector("#cmpBody"); if (!body) return;
+    if (list.length < 2) { body.innerHTML = `<div class="social-empty"><span class="ee">${ic("users")}</span>追蹤更多山友，就能一起比里程！</div>`; return; }
+    const max = Math.max(1, ...list.map(p => p.km));
+    body.innerHTML = `<div class="cmp-list">${list.map((p, i) => `<div class="cmp-row${p.id === u.user.id ? " me" : ""}"><span class="cmp-rank">${i + 1}</span><span class="cmp-name">${(p.display_name || p.handle || "山友")}${p.id === u.user.id ? "（我）" : ""}</span><div class="cmp-bar"><i style="width:${Math.round(p.km / max * 100)}%"></i></div><b class="cmp-km">${p.km.toFixed(0)}</b></div>`).join("")}</div>`;
+  } catch (e) { const b = ov.querySelector("#cmpBody"); if (b) b.innerHTML = `<div class="social-empty">載入失敗</div>`; }
 }
 function exportRecordsCsv(recs) {
   const head = "日期,步道,公里,累積爬升m,下降m,大卡,時間分鐘\n";
