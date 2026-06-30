@@ -2440,7 +2440,7 @@ function renderStats() {
     ${cell(recs.length, "", 0, "出行次數")}
     ${cell(km, "", 1, "總里程 km")}
     ${cell(asc, "↑", 0, "總爬升 m")}
-    ${cell(hrs >= 1 ? hrs : ms / 6e4, "", hrs >= 1 ? 1 : 0, hrs >= 1 ? "總時數 hr" : "總時數 分")}
+    ${cell(hrs, "", 1, "總時數 小時")}
     ${cell(kcal, "", 0, "總卡路里")}
     ${cell(moKm, "", 1, "本月 km")}
     ${cell(doneTrails, "✓", 0, "完成步道")}

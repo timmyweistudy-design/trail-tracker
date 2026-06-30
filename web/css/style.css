@@ -969,6 +969,7 @@ html[data-theme="dark"] img.trail-photo { background: var(--surface-2); }
 .composer, .pv { background: var(--bg); width: 100%; max-width: 540px; max-height: 92vh; overflow-y: auto; border-radius: 22px 22px 0 0; padding: 4px 16px calc(20px + var(--safe-b, 0px)); box-shadow: var(--sh-lg); }
 .composer-head, .pv-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; position: sticky; top: 0; background: var(--bg); padding: 12px 0 10px; z-index: 2; }
 .composer-head b, .pv-head b { font-family: var(--serif); font-size: 16px; }
+.pv-head b .ic, .composer-head b .ic { width: 16px; height: 16px; vertical-align: -2px; margin-right: 5px; }
 .comp-x { background: none; border: none; font-size: 17px; cursor: pointer; color: var(--ink-soft); padding: 4px; }
 .comp-post { padding: 7px 18px !important; }
 .comp-trail { color: var(--ink-soft); font-size: 13px; margin: 4px 0; }
@@ -1296,6 +1297,7 @@ html[data-theme="dark"] .disc-sec, html[data-theme="dark"] .feed-trending-h { co
 /* 我的：子頁標題 + 設定 + 封鎖名單 */
 .pf-sub-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
 .pf-sub-head b { font-family: var(--serif); font-size: 16px; }
+.pf-sub-head b .ic { width: 16px; height: 16px; vertical-align: -2px; margin-right: 5px; }
 .set-group { margin: 14px 0; }
 .set-label { font-weight: 700; font-size: 13.5px; color: var(--ink-soft); margin-bottom: 8px; }
 .set-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 13px; background: var(--surface-2); border-radius: var(--r-sm); margin-bottom: 7px; font-size: 14.5px; }
