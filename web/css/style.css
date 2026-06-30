@@ -1587,3 +1587,10 @@ html[data-theme="dark"] body::after { opacity: .05; }
 .yr-imgbtn .ic { width: 15px; height: 15px; vertical-align: -3px; margin-right: 5px; }
 .ana-radar { width: 200px; max-width: 100%; display: block; margin: 4px auto 0; }
 .ana-empty-note { font-size: 12.5px; color: var(--ink-faint); text-align: center; padding: 12px; }
+
+/* 年度回顧最遠路線縮圖 + 進階分析配速折線 */
+.yr-route { margin: 14px 0 4px; text-align: center; }
+.yr-route-l { font-size: 12px; opacity: .85; margin-bottom: 4px; }
+.yr-route-svg { width: 70%; max-width: 220px; height: 56px; color: #e0b15a; }
+.ana-spark { width: 100%; height: 72px; display: block; }
+.ana-spark-cap { font-size: 11.5px; color: var(--ink-faint); text-align: center; margin-top: 4px; }
