@@ -624,7 +624,7 @@ function trailCard(t) {
   const distKm = (myLoc && t.lat) ? (haversine(myLoc, { lat: t.lat, lon: t.lon }) / 1000).toFixed(1) : null;
   // 山誌式 hero 數據（襯線數字當主角，最多三格）
   const stats = [`<div class="jstat"><div class="jnum">${t.length_km != null ? t.length_km : "—"}</div><div class="jlbl">公里</div></div>`];
-  if (t.ascent != null) stats.push(`<div class="jstat"><div class="jnum">↑${Math.round(t.ascent)}</div><div class="jlbl">公尺爬升</div></div>`);
+  if (t.ascent != null) stats.push(`<div class="jstat"><div class="jnum">↑${Math.round(t.ascent)}</div><div class="jlbl">累積爬升 m</div></div>`);
   if (t.tour) stats.push(`<div class="jstat"><div class="jnum jnum-sm">${t.tour}</div><div class="jlbl">建議時程</div></div>`);
   else if (distKm) stats.push(`<div class="jstat"><div class="jnum">${distKm}</div><div class="jlbl">公里外</div></div>`);
   const locExtra = (distKm && t.tour) ? `<span class="jloc-dot">·</span>${ic("compass")}<span>${distKm} km</span>` : "";
@@ -2244,7 +2244,7 @@ function openCompareSheet() {
       ${row("步道", t => `<b>${t.name}</b>`)}
       ${row("難度", t => `<span class="badge diff d${t.difficulty || 0}" style="font-size:10px">${t.difficulty_label}</span>`)}
       ${row("長度", t => t.length_km != null ? t.length_km + " km" : "—")}
-      ${row("爬升", t => t.ascent != null ? "↑" + Math.round(t.ascent) + " m" : "—")}
+      ${row("累積爬升", t => t.ascent != null ? "↑" + Math.round(t.ascent) + " m" : "—")}
       ${row("預估時間", t => t.tour || "—")}
       ${row("親子友善", t => t.family_friendly ? "✓" : "—")}
       ${row("地區", t => t.region || "—")}
