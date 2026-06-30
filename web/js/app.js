@@ -2118,6 +2118,18 @@ if (_yBtn) _yBtn.addEventListener("click", () => { if (typeof Premium !== "undef
 // 動畫數字 span（配合 countUp）
 function cuSpan(to, pre, dec) { return `<span class="cu" data-to="${to}" data-pre="${pre || ""}" data-dec="${dec || 0}">${pre || ""}0</span>`; }
 function runCountUps(root) { root.querySelectorAll(".cu").forEach(countUp); }
+// 難度雷達圖（6 軸）
+function diffRadar(vals, labels) {
+  const cx = 100, cy = 100, R = 64, N = vals.length, max = Math.max(1, ...vals);
+  const pt = (i, rr) => { const a = (-90 + i * (360 / N)) * Math.PI / 180; return [cx + rr * Math.cos(a), cy + rr * Math.sin(a)]; };
+  const poly = rr => vals.map((_, i) => pt(i, rr).map(n => n.toFixed(1)).join(",")).join(" ");
+  let grid = [R * .34, R * .67, R].map(rr => `<polygon points="${poly(rr)}" fill="none" stroke="var(--line-soft)" stroke-width="1"/>`).join("");
+  let axes = vals.map((_, i) => { const [ax, ay] = pt(i, R); return `<line x1="${cx}" y1="${cy}" x2="${ax.toFixed(1)}" y2="${ay.toFixed(1)}" stroke="var(--line-soft)" stroke-width="1"/>`; }).join("");
+  const dp = vals.map((v, i) => pt(i, R * (v / max)).map(n => n.toFixed(1)).join(",")).join(" ");
+  const data = `<polygon points="${dp}" fill="rgba(194,104,61,.28)" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>`;
+  let labs = labels.map((l, i) => { const [lx, ly] = pt(i, R + 16); return `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" font-size="9.5" fill="var(--ink-soft)" text-anchor="middle" dominant-baseline="middle">${l}<tspan dx="2">${vals[i]}</tspan></text>`; }).join("");
+  return `<svg class="ana-radar" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet">${grid}${axes}${data}${labs}</svg>`;
+}
 function openYearReview() {
   const year = new Date().getFullYear();
   const all = realRecords();
@@ -2133,6 +2145,8 @@ function openYearReview() {
   const top = Object.keys(tc).sort((a, b) => tc[b] - tc[a])[0];
   const lastKm = sum(all.filter(r => (r.date || "").slice(0, 4) === String(year - 1)), r => r.distanceKm);
   const delta = km - lastKm;
+  const mk = Array(12).fill(0); recs.forEach(r => { const m = +(r.date || "").slice(5, 7); if (m) mk[m - 1] += r.distanceKm || 0; });
+  const mkMax = Math.max(1, ...mk);
   const ov = document.createElement("div"); ov.className = "pet-modal";
   ov.innerHTML = `<div class="pet-modal-card yr-card anim-seq">
     <button class="sheet-close" id="yrX" aria-label="關閉">${ic("x")}</button>
@@ -2149,6 +2163,7 @@ function openYearReview() {
       <div><b>${cuSpan(kcal, "", 0)}</b><span>大卡</span></div>
       <div><b>${cuSpan(distinct, "", 0)}</b><span>條步道</span></div>
     </div>
+    <div class="yr-months">${mk.map((v, i) => `<div class="yr-mo"><div class="yr-mo-bar" style="height:${Math.round(v / mkMax * 46) + 3}px;animation-delay:${(i * 0.04).toFixed(2)}s"></div><span>${i + 1}</span></div>`).join("")}</div>
     <div class="yr-lines">
       ${longest ? `<div>單次最長 <b>${longest.toFixed(1)} km</b></div>` : ""}
       ${maxAlt ? `<div>最高造訪海拔 <b>${maxAlt} m</b></div>` : ""}
@@ -2157,7 +2172,7 @@ function openYearReview() {
       <div>較去年里程 <b>${delta >= 0 ? "↑ +" : "↓ "}${Math.abs(delta).toFixed(0)} km</b></div>
       <div class="yr-foot">↑ 累積爬升約 ${(asc / 3952).toFixed(1)} 座玉山</div>
     </div>
-    <button class="btn primary" id="yrShare">${ic("share")} 分享我的回顧</button>`
+    <div class="yr-btns"><button class="btn primary" id="yrShare">${ic("share")} 分享</button><button class="btn ghost yr-imgbtn" id="yrImg">${ic("camera")} 存成圖片</button></div>`
     : `<div class="social-empty" style="color:#fff">${year} 還沒有行程，今年一起多走幾趟吧！</div>`}
   </div>`;
   document.body.appendChild(ov);
@@ -2172,7 +2187,46 @@ function openYearReview() {
     else if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast("已複製回顧文字"));
     else toast(text);
   });
+  const ib = ov.querySelector("#yrImg");
+  if (ib) ib.addEventListener("click", () => drawYearImage({ year, n: recs.length, km, asc, hrs, steps, distinct, top, longest }));
 }
+// 年度回顧 → 畫成可分享圖片（canvas，不需外部套件）
+function drawYearImage(d) {
+  const W = 540, H = 720, c = document.createElement("canvas"); c.width = W; c.height = H;
+  const x = c.getContext("2d");
+  const g = x.createLinearGradient(0, 0, W, H); g.addColorStop(0, "#1f4730"); g.addColorStop(.6, "#16301f"); g.addColorStop(1, "#112619");
+  x.fillStyle = g; x.fillRect(0, 0, W, H);
+  // 等高線點綴
+  x.strokeStyle = "rgba(224,177,90,.10)"; x.lineWidth = 1.5;
+  for (let yy = 80; yy < H; yy += 46) { x.beginPath(); for (let xx = 0; xx <= W; xx += 12) x.lineTo(xx, yy + Math.sin((xx / W) * 6.28) * 10); x.stroke(); }
+  x.textAlign = "center";
+  x.fillStyle = "#e0b15a"; x.font = "700 92px 'Noto Serif TC', serif"; x.fillText(String(d.year), W / 2, 130);
+  x.fillStyle = "#f3efe4"; x.font = "600 22px 'Noto Serif TC', serif"; x.fillText("我的山行回顧", W / 2, 168);
+  const stats = [[d.n, "趟旅程"], [Math.round(d.km), "公里"], ["↑" + Math.round(d.asc), "公尺爬升"], [Math.round(d.hrs), "小時"]];
+  stats.forEach((s, i) => {
+    const cx = W / 2 + (i % 2 ? 120 : -120), cy = 250 + Math.floor(i / 2) * 130;
+    x.fillStyle = "rgba(255,255,255,.07)"; roundRect(x, cx - 110, cy - 46, 220, 110, 14); x.fill();
+    x.fillStyle = "#fff"; x.font = "700 40px 'Fraunces', serif"; x.fillText(String(s[0]), cx, cy + 6);
+    x.fillStyle = "rgba(243,239,228,.75)"; x.font = "400 15px sans-serif"; x.fillText(s[1], cx, cy + 34);
+  });
+  x.fillStyle = "rgba(243,239,228,.9)"; x.font = "400 16px sans-serif"; x.textAlign = "center";
+  let ly = 540;
+  if (d.top) { x.fillText("最愛步道 ‧ " + d.top, W / 2, ly); ly += 30; }
+  if (d.longest) { x.fillText("單次最長 " + d.longest.toFixed(1) + " km", W / 2, ly); ly += 30; }
+  x.fillText("探索 " + d.distinct + " 條步道 ‧ 累積爬升約 " + (d.asc / 3952).toFixed(1) + " 座玉山", W / 2, ly);
+  x.fillStyle = "#e0b15a"; x.font = "700 19px 'Noto Serif TC', serif"; x.fillText("循徑拾光 · Gather the Trail", W / 2, H - 36);
+  c.toBlob(async (blob) => {
+    if (!blob) { toast("產生圖片失敗"); return; }
+    const file = new File([blob], `循徑拾光-${d.year}-回顧.png`, { type: "image/png" });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: "我的山行回顧" }); return; } catch (e) { }
+    }
+    const url = URL.createObjectURL(blob), a = document.createElement("a");
+    a.href = url; a.download = file.name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast("已存成圖片");
+  }, "image/png");
+}
+function roundRect(x, X, Y, w, h, r) { x.beginPath(); x.moveTo(X + r, Y); x.arcTo(X + w, Y, X + w, Y + h, r); x.arcTo(X + w, Y + h, X, Y + h, r); x.arcTo(X, Y + h, X, Y, r); x.arcTo(X, Y, X + w, Y, r); x.closePath(); }
 function openAnalytics() {
   const recs = realRecords();
   const pro = (typeof Premium !== "undefined") && Premium.isOn();
@@ -2222,7 +2276,7 @@ function openAnalytics() {
       ${pb("最常走", favTrail ? favTrail + "（" + tc[favTrail] + " 次）" : "—")}
     </div>
     <div class="ana-sec">難度分布</div>
-    <div class="ana-list">${diffN.slice(1).map((c, i) => `<div class="ana-row"><div class="ana-m" style="font-size:12px">${DLBL[i + 1]}</div><div class="ana-bar"><i class="d${i + 1}" style="width:${Math.round(c / maxD * 100)}%;background:var(--d${i + 1})"></i></div><div class="ana-v"><b>${c}</b> 次</div></div>`).join("")}</div>
+    ${diffN.slice(1).some(c => c > 0) ? diffRadar(diffN.slice(1), DLBL.slice(1)) : `<div class="ana-empty-note">尚無對應到分級步道的紀錄</div>`}
     <div class="ana-sec">年度里程</div>
     <div class="ana-list">${years.map(y => `<div class="ana-row"><div class="ana-m">${y}</div><div class="ana-bar"><i style="width:${Math.round(yr[y] / maxY * 100)}%"></i></div><div class="ana-v"><b>${yr[y].toFixed(1)}</b> km</div></div>`).join("")}</div>
     <div class="ana-sec">一週節律</div>

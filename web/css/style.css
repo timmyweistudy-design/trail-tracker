@@ -1573,3 +1573,17 @@ html[data-theme="dark"] body::after { opacity: .05; }
 .yr-sub div { text-align: center; }
 .yr-sub b { font-family: var(--num); font-size: 19px; font-weight: 700; display: block; color: #e0b15a; }
 .yr-sub span { font-size: 11px; opacity: .8; }
+
+/* 年度回顧月份長條 + 雷達圖 + 圖片按鈕 */
+.yr-months { display: flex; align-items: flex-end; justify-content: space-between; gap: 3px; height: 60px; margin: 12px 2px 4px; }
+.yr-mo { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 3px; }
+.yr-mo-bar { width: 64%; max-width: 16px; background: linear-gradient(180deg, #e0b15a, #c2832c); border-radius: 3px 3px 0 0; transform-origin: bottom; animation: barGrow .5s ease both; }
+.yr-mo span { font-size: 9px; opacity: .65; }
+@keyframes barGrow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@media (prefers-reduced-motion: reduce) { .yr-mo-bar { animation: none; } }
+.yr-btns { display: flex; gap: 8px; }
+.yr-btns .btn { margin-top: 16px; flex: 1; }
+.yr-imgbtn { background: rgba(255,255,255,.12); color: #f3efe4; border: 1px solid rgba(255,255,255,.25); }
+.yr-imgbtn .ic { width: 15px; height: 15px; vertical-align: -3px; margin-right: 5px; }
+.ana-radar { width: 200px; max-width: 100%; display: block; margin: 4px auto 0; }
+.ana-empty-note { font-size: 12.5px; color: var(--ink-faint); text-align: center; padding: 12px; }
