@@ -23,7 +23,7 @@ const Profiles = (() => {
     render(`
       <div class="pf">
         <div class="pf-top">${av}
-          <div class="pf-id"><div class="pf-name">${esc(prof.display_name || prof.handle)}</div>
+          <div class="pf-id"><div class="pf-name">${esc(prof.display_name || prof.handle)}${(typeof Premium !== "undefined" && Premium.isOn()) ? '<span class="pro-tag">PRO</span>' : ""}</div>
             <div class="pf-handle">@${esc(prof.handle)}</div></div>
         </div>
         ${petLine(ps)}

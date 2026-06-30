@@ -313,7 +313,7 @@ document.querySelectorAll(".tab").forEach(btn => {
         Pets.renderFriends();
       }
     }
-    if (view === "me") { renderHistory(); refreshOfflineStatus(); }
+    if (view === "me") { renderHistory(); refreshOfflineStatus(); if (typeof Premium !== "undefined") Premium.refresh().then(() => Premium.renderBox($("#premiumBox"))); }
     if (view === "social" && typeof SocialUI !== "undefined") SocialUI.onShow();
   });
 });
@@ -1367,6 +1367,7 @@ function renderAttractions() {
 // 預載此步道範圍的離線地圖圖磚
 // 一鍵下載全台離線地圖（概覽，縮放 7–13；自動壓低 zmax 以控制張數）
 async function downloadAllTaiwan() {
+  if (typeof Premium !== "undefined" && !Premium.gate()) return;   // Premium：無限離線地圖
   const bbox = { n: 25.35, s: 21.85, e: 122.05, w: 119.95 };
   let zmax = 13;
   while (zmax > 9 && Offline.tileList(bbox, 7, zmax).length > 6000) zmax--;
@@ -1389,6 +1390,7 @@ async function downloadAllTaiwan() {
 }
 // 一鍵預載所有收藏步道的離線地圖
 async function downloadFavOffline() {
+  if (typeof Premium !== "undefined" && !Premium.gate()) return;   // Premium：無限離線地圖
   const favs = TRAILS.filter(t => Store.isFav(t.id) && t.lat);
   const btn = $("#btnFavOffline"), box = $("#favOfflineBox");
   if (!favs.length) { toast("尚無含座標的收藏步道"); return; }
@@ -2053,6 +2055,51 @@ $("#importFile").addEventListener("change", e => {
 $("#btnFootMap").addEventListener("click", openFootprintMap);
 $("#btnAllOffline").addEventListener("click", downloadAllTaiwan);
 $("#btnFavOffline").addEventListener("click", downloadFavOffline);
+if (typeof Premium !== "undefined") setTimeout(() => Premium.refresh(), 1500);   // 啟動後同步會員狀態
+
+// Premium：進階數據分析
+const _aBtn = $("#btnAnalytics");
+if (_aBtn) _aBtn.addEventListener("click", () => { if (typeof Premium !== "undefined" && !Premium.gate()) return; openAnalytics(); });
+function openAnalytics() {
+  const recs = realRecords();
+  const by = {};
+  for (const r of recs) {
+    const m = (r.date || "").slice(0, 7); if (!m) continue;
+    (by[m] = by[m] || { km: 0, asc: 0, n: 0 });
+    by[m].km += r.distanceKm || 0; by[m].asc += r.ascent || 0; by[m].n++;
+  }
+  const months = Object.keys(by).sort().reverse().slice(0, 12);
+  const maxKm = Math.max(1, ...months.map(m => by[m].km));
+  const ov = document.createElement("div"); ov.className = "pet-modal";
+  ov.innerHTML = `<div class="pet-modal-card">
+    <button class="sheet-close" id="anaX" aria-label="關閉">${ic("x")}</button>
+    <h2>${ic("target")} 進階分析</h2>
+    ${months.length ? `<div class="ana-list">${months.map(m => `
+      <div class="ana-row"><div class="ana-m">${m.replace("-", " / ")}</div>
+        <div class="ana-bar"><i style="width:${Math.round(by[m].km / maxKm * 100)}%"></i></div>
+        <div class="ana-v"><b>${by[m].km.toFixed(1)}</b>km ・ ↑${Math.round(by[m].asc)}m ・ ${by[m].n}次</div></div>`).join("")}</div>`
+    : `<div class="social-empty">還沒有行程可分析。</div>`}
+    <button class="btn ghost" id="anaCsv" style="margin-top:14px">${ic("download")} 匯出 CSV（全部行程）</button>
+  </div>`;
+  document.body.appendChild(ov);
+  const close = () => ov.remove();
+  ov.querySelector("#anaX").addEventListener("click", close);
+  ov.addEventListener("click", e => { if (e.target === ov) close(); });
+  ov.querySelector("#anaCsv").addEventListener("click", () => exportRecordsCsv(recs));
+}
+function exportRecordsCsv(recs) {
+  const head = "日期,步道,公里,累積爬升m,下降m,大卡,時間分鐘\n";
+  const rows = recs.map(r => [
+    (r.date || "").slice(0, 10), `"${(r.trailName || "自由路線").replace(/"/g, "'")}"`,
+    (r.distanceKm || 0).toFixed(2), Math.round(r.ascent || 0), Math.round(r.descent || 0),
+    r.kcal || 0, Math.round((r.elapsedMs || 0) / 60000),
+  ].join(",")).join("\n");
+  const blob = new Blob(["﻿" + head + rows], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob), a = document.createElement("a");
+  a.href = url; a.download = "trail-records.csv"; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast("已匯出 CSV");
+}
 $("#btnClearTiles").addEventListener("click", async () => {
   if (confirm("確定清除已下載的離線地圖？")) {
     await Offline.clear();
