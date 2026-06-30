@@ -191,6 +191,19 @@ const Posts = (() => {
     return data || [];
   }
 
+  // 近期熱門標籤（掃描最新公開貼文的 caption）
+  let _hotCache = null, _hotAt = 0;
+  async function hotTags(limit) {
+    if (_hotCache && Date.now() - _hotAt < 120000) return _hotCache.slice(0, limit || 12);
+    const c = Supa.client(); if (!c) return [];
+    const { data } = await c.from("posts").select("caption").eq("visibility", "public").order("created_at", { ascending: false }).limit(120);
+    const counts = {};
+    for (const p of (data || [])) for (const t of parseTags(p.caption)) counts[t] = (counts[t] || 0) + 1;
+    const sorted = Object.keys(counts).sort((a, b) => counts[b] - counts[a]).map(t => ({ tag: t, n: counts[t] }));
+    _hotCache = sorted; _hotAt = Date.now();
+    return sorted.slice(0, limit || 12);
+  }
+
   // ===== @提及通知（需 phase11；失敗則靜默） =====
   async function notifyMentions(text, postId) {
     try {
@@ -269,6 +282,32 @@ const Posts = (() => {
     return { followers: fr.count || 0, following: fg.count || 0 };
   }
 
-  return { createFromRecord, feed, userPosts, byTrail, byTag, trending, suggestions, one, likedSet, toggleLike, likeCount, followingIds, remove, followCounts,
-    parseTags, notifyMentions, reactions, setReaction, clearReaction, commentLikes, toggleCommentLike, createRepost };
+  // ===== 收藏貼文（本機書籤） =====
+  function savedIds() { try { return JSON.parse(localStorage.getItem("tt_saved") || "[]"); } catch { return []; } }
+  function isSaved(id) { return savedIds().includes(id); }
+  function toggleSaved(id) {
+    const a = savedIds(); const i = a.indexOf(id);
+    if (i === -1) a.unshift(id); else a.splice(i, 1);
+    try { localStorage.setItem("tt_saved", JSON.stringify(a.slice(0, 200))); } catch (e) { }
+    return i === -1;
+  }
+  async function savedPosts() {
+    const ids = savedIds(); if (!ids.length) return [];
+    const c = Supa.client(); if (!c) return [];
+    const { data } = await c.from("posts").select(SELECT).in("id", ids);
+    const order = new Map(ids.map((id, i) => [id, i]));   // 維持收藏順序
+    return (data || []).sort((a, b) => (order.get(a.id) ?? 99) - (order.get(b.id) ?? 99));
+  }
+
+  // 依 handle 字首搜尋使用者（@ 自動完成用）
+  async function searchHandles(prefix) {
+    const c = Supa.client(); if (!c || !prefix) return [];
+    const safe = prefix.replace(/[%,()*\\]/g, "");
+    const { data } = await c.from("profiles").select("handle, display_name, avatar_url").ilike("handle", `${safe}%`).limit(6);
+    return data || [];
+  }
+
+  return { createFromRecord, feed, userPosts, byTrail, byTag, trending, suggestions, hotTags, searchHandles, one, likedSet, toggleLike, likeCount, followingIds, remove, followCounts,
+    parseTags, notifyMentions, reactions, setReaction, clearReaction, commentLikes, toggleCommentLike, createRepost,
+    savedIds, isSaved, toggleSaved, savedPosts };
 })();

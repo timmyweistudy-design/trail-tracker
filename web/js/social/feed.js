@@ -105,8 +105,11 @@ const Feed = (() => {
       wireRefresh(); return;
     }
     const liked = await Posts.likedSet(_posts.map(p => p.id));
-    _into(`${refresh}<div class="feed-trending-h">🔥 熱門趨勢</div><div class="feed-list">${_posts.map(p => card(p, liked.has(p.id))).join("")}</div>`);
+    const hot = await Posts.hotTags(10);
+    const hotRow = hot.length ? `<div class="hot-tags">${hot.map(h => `<button class="hot-tag" data-tag="${esc(h.tag)}">#${esc(h.tag)}</button>`).join("")}</div>` : "";
+    _into(`${refresh}<div class="feed-trending-h">🔥 熱門趨勢</div>${hotRow}<div class="feed-list">${_posts.map(p => card(p, liked.has(p.id))).join("")}</div>`);
     bind(); wireRefresh(); writeCache(_mode, _posts);
+    document.querySelectorAll(".hot-tag").forEach(b => b.addEventListener("click", () => openTag(b.dataset.tag)));
   }
 
   async function loadMore(first, g) {

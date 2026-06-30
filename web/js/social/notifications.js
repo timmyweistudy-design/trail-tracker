@@ -46,23 +46,41 @@ const Notifs = (() => {
     b.addEventListener("click", async () => { b.disabled = true; await Push.toggle(); redraw(); });
   }
 
+  let _filter = "all";
+  const GROUPS = [["all", "全部"], ["like", "讚"], ["comment", "留言"], ["follow", "追蹤"]];
+  function inGroup(n, g) {
+    if (g === "all") return true;
+    if (g === "like") return n.type === "like";
+    if (g === "comment") return n.type === "comment" || n.type === "mention";
+    if (g === "follow") return n.type === "follow";
+    return true;
+  }
+
   async function render(into) {
     into(`<div class="feed-loading"><span class="spin"></span></div>`);
     const bar = await pushBar();
     const items = await list();
-    if (!items.length) { into(`${bar}<div class="social-empty"><span class="ee">🔔</span>還沒有通知。</div>`); wirePush(into, () => render(into)); await markAllRead(); return; }
-    into(`${bar}<div class="notif-list">${items.map(n =>
-      `<div class="notif ${n.read ? "" : "unread"}" data-type="${n.type}" data-post="${n.post_id || ""}" data-uid="${n.actor_id || ""}">
-        <span class="notif-ic">${icon(n.type)}</span>
-        <div class="notif-body">${label(n)}<div class="fc-sub">${ago(n.created_at)}</div></div>
-      </div>`).join("")}</div>`);
-    document.querySelectorAll(".notif").forEach(el => el.addEventListener("click", () => {
-      if (el.dataset.type === "follow") { if (typeof Discover !== "undefined" && el.dataset.uid) Discover.openProfile(el.dataset.uid); }
-      else if (el.dataset.type === "team") { if (typeof Team !== "undefined") Team.openSheet(); }
-      else if (el.dataset.type === "gift") { const b = document.querySelector('.tab[data-view="pet"]'); if (b) b.click(); }
-      else if (el.dataset.post && typeof PostView !== "undefined") PostView.open(el.dataset.post);
-    }));
-    wirePush(into, () => render(into));
+    const tabs = `<div class="notif-tabs">${GROUPS.map(([k, l]) => `<button class="notif-tab ${k === _filter ? "on" : ""}" data-g="${k}">${l}</button>`).join("")}</div>`;
+    const paint = () => {
+      const list2 = items.filter(n => inGroup(n, _filter));
+      const body = list2.length
+        ? `<div class="notif-list">${list2.map(n =>
+          `<div class="notif ${n.read ? "" : "unread"}" data-type="${n.type}" data-post="${n.post_id || ""}" data-uid="${n.actor_id || ""}">
+            <span class="notif-ic">${icon(n.type)}</span>
+            <div class="notif-body">${label(n)}<div class="fc-sub">${ago(n.created_at)}</div></div>
+          </div>`).join("")}</div>`
+        : `<div class="social-empty"><span class="ee">🔔</span>${_filter === "all" ? "還沒有通知。" : "這個分類還沒有通知。"}</div>`;
+      into(`${bar}${items.length ? tabs : ""}${body}`);
+      document.querySelectorAll(".notif-tab").forEach(b => b.addEventListener("click", () => { _filter = b.dataset.g; paint(); }));
+      document.querySelectorAll(".notif").forEach(el => el.addEventListener("click", () => {
+        if (el.dataset.type === "follow") { if (typeof Discover !== "undefined" && el.dataset.uid) Discover.openProfile(el.dataset.uid); }
+        else if (el.dataset.type === "team") { if (typeof Team !== "undefined") Team.openSheet(); }
+        else if (el.dataset.type === "gift") { const b = document.querySelector('.tab[data-view="pet"]'); if (b) b.click(); }
+        else if (el.dataset.post && typeof PostView !== "undefined") PostView.open(el.dataset.post);
+      }));
+      wirePush(into, () => render(into));
+    };
+    paint();
     await markAllRead();
   }
 

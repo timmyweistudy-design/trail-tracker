@@ -46,11 +46,18 @@ const Discover = (() => {
       .or(`handle.ilike.%${term}%,display_name.ilike.%${term}%`).limit(30);
     const blocked = (typeof Safety !== "undefined") ? await Safety.blockedIds() : new Set();
     const data = (raw || []).filter(p => !blocked.has(p.id));   // 過濾已封鎖的人
-    if (!data.length) { box.innerHTML = `<div class="social-empty">找不到符合的山友。</div>`; return; }
-    box.innerHTML = data.map(p => `<div class="disc-row" data-id="${p.id}">
+    const cleanTag = term.replace(/^#/, "");
+    const tagRow = `<div class="disc-sec">標籤</div><div class="hot-tags"><button class="hot-tag" data-tag="${esc(cleanTag)}">#${esc(cleanTag)}</button></div>`;
+    if (!data.length) {
+      box.innerHTML = tagRow + `<div class="social-empty">找不到符合的山友。</div>`;
+      box.querySelectorAll(".hot-tag").forEach(b => b.addEventListener("click", () => { if (typeof Feed !== "undefined") Feed.openTag(b.dataset.tag); }));
+      return;
+    }
+    box.innerHTML = tagRow + `<div class="disc-sec">山友</div>` + data.map(p => `<div class="disc-row" data-id="${p.id}">
       ${p.avatar_url ? `<img class="fc-av" src="${esc(p.avatar_url)}">` : `<div class="fc-av fc-av-ph">${esc((p.display_name || p.handle).slice(0, 1))}</div>`}
       <div class="disc-id"><b>${esc(p.display_name || p.handle)}</b><span>@${esc(p.handle)}</span></div></div>`).join("");
     box.querySelectorAll(".disc-row").forEach(r => r.addEventListener("click", () => openProfile(r.dataset.id)));
+    box.querySelectorAll(".hot-tag").forEach(b => b.addEventListener("click", () => { if (typeof Feed !== "undefined") Feed.openTag(b.dataset.tag); }));
   }
 
   async function isFollowing(targetId) {
@@ -100,7 +107,7 @@ const Discover = (() => {
     });
     const rb = wrap.querySelector("#dpReport");
     if (rb) rb.addEventListener("click", async () => {
-      const reason = prompt("檢舉原因（選填）："); if (reason === null) return;
+      const reason = await Safety.pickReason(); if (reason === null) return;
       await Safety.reportUser(userId, reason);
       if (typeof toast === "function") toast("已檢舉，感謝回報");
     });

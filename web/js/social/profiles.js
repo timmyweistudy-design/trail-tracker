@@ -31,12 +31,16 @@ const Profiles = (() => {
         ${prof.bio ? `<div class="pf-bio">${esc(prof.bio)}</div>` : ""}
         <div class="pf-actions">
           <button class="btn ghost" id="pfEdit">編輯檔案</button>
+          <button class="btn ghost" id="pfSaved">🔖 收藏</button>
+          <button class="btn ghost" id="pfSettings">⚙️ 設定</button>
           <button class="btn ghost" id="pfSignout">登出</button>
         </div>
         <div id="pfPosts" class="feed-loading"><span class="spin"></span></div>
       </div>`);
     document.getElementById("pfSignout").addEventListener("click", async () => { await Auth.signOut(); SocialUI.route(); });
     document.getElementById("pfEdit").addEventListener("click", () => renderEdit(render, prof));
+    document.getElementById("pfSaved").addEventListener("click", () => renderSaved(render, prof));
+    document.getElementById("pfSettings").addEventListener("click", () => renderSettings(render, prof));
     Posts.followCounts(prof.id).then(c => {
       const el = document.getElementById("pfFollowCounts"); if (!el) return;
       el.innerHTML = `<span class="cnt-link" data-mode="followers"><b>${c.followers}</b> 粉絲</span>　<span class="cnt-link" data-mode="following"><b>${c.following}</b> 追蹤中</span>`;
@@ -51,6 +55,49 @@ const Profiles = (() => {
       box.innerHTML = posts.map(p => Feed.card(p, liked.has(p.id))).join("");
       box.querySelectorAll(".feed-card").forEach(c => c.addEventListener("click", () => { if (typeof PostView !== "undefined") PostView.open(c.dataset.id); }));
     });
+  }
+
+  // 收藏的貼文
+  async function renderSaved(render, prof) {
+    render(`<div class="pf"><div class="pf-sub-head"><button class="link-btn" id="svBack">‹ 返回</button><b>🔖 我的收藏</b></div><div id="svPosts" class="feed-loading"><span class="spin"></span></div></div>`);
+    document.getElementById("svBack").addEventListener("click", () => renderMe(render, prof));
+    const posts = await Posts.savedPosts();
+    const box = document.getElementById("svPosts"); if (!box) return;
+    if (!posts.length) { box.className = "social-empty"; box.innerHTML = `<span class="ee">🔖</span>還沒有收藏。在貼文右上角點 🏷️ 即可收藏。`; return; }
+    const liked = await Posts.likedSet(posts.map(p => p.id));
+    box.className = "feed-list";
+    box.innerHTML = posts.map(p => Feed.card(p, liked.has(p.id))).join("");
+    box.querySelectorAll(".feed-card").forEach(c => c.addEventListener("click", e => {
+      if (e.target.closest(".fc-author") || e.target.closest(".fc-traillink") || e.target.closest(".fc-like") || e.target.closest(".fc-vid")) return;
+      if (typeof PostView !== "undefined") PostView.open(c.dataset.id);
+    }));
+  }
+
+  // 隱私與設定：預設發文可見度 + 封鎖名單管理
+  async function renderSettings(render, prof) {
+    const defVis = localStorage.getItem("tt_default_vis") || "friends";
+    render(`<div class="pf"><div class="pf-sub-head"><button class="link-btn" id="stBack">‹ 返回</button><b>⚙️ 隱私與設定</b></div>
+      <div class="set-group"><div class="set-label">預設發文可見度</div>
+        <label class="set-row"><span>只給好友</span><input type="radio" name="dvis" value="friends" ${defVis === "friends" ? "checked" : ""}></label>
+        <label class="set-row"><span>公開</span><input type="radio" name="dvis" value="public" ${defVis === "public" ? "checked" : ""}></label>
+      </div>
+      <div class="set-group"><div class="set-label">封鎖名單</div><div id="stBlocks"><div class="feed-loading"><span class="spin"></span></div></div></div>
+      </div>`);
+    document.getElementById("stBack").addEventListener("click", () => renderMe(render, prof));
+    document.querySelectorAll('input[name="dvis"]').forEach(r => r.addEventListener("change", () => {
+      localStorage.setItem("tt_default_vis", r.value); if (typeof toast === "function") toast("已設定預設可見度");
+    }));
+    const bb = document.getElementById("stBlocks");
+    const people = (typeof Safety !== "undefined") ? await Safety.blockedProfiles() : [];
+    if (!bb) return;
+    if (!people.length) { bb.innerHTML = `<div class="set-empty">沒有封鎖任何人。</div>`; return; }
+    bb.innerHTML = people.map(p => `<div class="set-block-row" data-id="${p.id}">
+      ${p.avatar_url ? `<img class="fc-av" src="${esc(p.avatar_url)}">` : `<div class="fc-av fc-av-ph">${esc((p.display_name || p.handle).slice(0, 1))}</div>`}
+      <div class="disc-id"><b>${esc(p.display_name || p.handle)}</b><span>@${esc(p.handle)}</span></div>
+      <button class="btn ghost st-unblock" data-id="${p.id}">解除</button></div>`).join("");
+    bb.querySelectorAll(".st-unblock").forEach(b => b.addEventListener("click", async () => {
+      await Safety.unblock(b.dataset.id); if (typeof toast === "function") toast("已解除封鎖"); renderSettings(render, prof);
+    }));
   }
 
   function renderEdit(render, prof) {
@@ -118,5 +165,5 @@ const Profiles = (() => {
     });
   }
 
-  return { renderMe, renderEdit, syncMyStats };
+  return { renderMe, renderEdit, renderSaved, renderSettings, syncMyStats };
 })();

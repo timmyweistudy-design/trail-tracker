@@ -29,13 +29,14 @@ const Composer = (() => {
         <label class="comp-add">＋ 加影片<input type="file" id="compVideo" accept="video/*" hidden></label>
         <div id="compVideoName" class="comp-trail"></div>
         <div class="comp-vis">
-          <label><input type="radio" name="compVis" value="friends" checked> 只給好友</label>
-          <label><input type="radio" name="compVis" value="public"> 公開</label>
+          <label><input type="radio" name="compVis" value="friends"${(localStorage.getItem("tt_default_vis") || "friends") === "friends" ? " checked" : ""}> 只給好友</label>
+          <label><input type="radio" name="compVis" value="public"${localStorage.getItem("tt_default_vis") === "public" ? " checked" : ""}> 公開</label>
         </div>
         <div class="comp-msg" id="compMsg"></div>
       </div>`;
     document.body.appendChild(wrap);
     if (presetCaption) { const cc = wrap.querySelector("#compCaption"); if (cc) cc.value = presetCaption; }
+    if (typeof Autocomplete !== "undefined") Autocomplete.attach(wrap.querySelector("#compCaption"));
     const stars = wrap.querySelectorAll("#compStars .cs");
     stars.forEach(s => s.addEventListener("click", () => { rating = +s.dataset.r; stars.forEach(x => x.textContent = (+x.dataset.r <= rating) ? "★" : "☆"); }));
     const close = () => { _urls.forEach(u => URL.revokeObjectURL(u)); _urls = []; wrap.remove(); };

@@ -15,7 +15,7 @@ const PostView = (() => {
     const wrap = document.createElement("div");
     wrap.className = "pv-mask";
     wrap.dataset.me = myId; wrap.dataset.author = post.author_id;
-    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" aria-label="關閉" id="pvX">✕</button><b>貼文</b><span class="pv-head-r"><button class="comp-x" id="pvRepost" title="轉發" aria-label="轉發">🔁</button><button class="comp-x" id="pvShare" title="分享" aria-label="分享">📤</button>${isMine ? '<button class="comp-x" id="pvEdit" title="編輯" aria-label="編輯">✏️</button><button class="comp-x" id="pvDel" title="刪除" aria-label="刪除">🗑</button>' : ""}</span></div>
+    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" aria-label="關閉" id="pvX">✕</button><b>貼文</b><span class="pv-head-r"><button class="comp-x" id="pvSave" title="收藏" aria-label="收藏">${Posts.isSaved(postId) ? "🔖" : "🏷️"}</button><button class="comp-x" id="pvRepost" title="轉發" aria-label="轉發">🔁</button><button class="comp-x" id="pvShare" title="分享" aria-label="分享">📤</button>${isMine ? '<button class="comp-x" id="pvEdit" title="編輯" aria-label="編輯">✏️</button><button class="comp-x" id="pvDel" title="刪除" aria-label="刪除">🗑</button>' : ""}</span></div>
       <div class="pv-body" id="pvBody"></div>
       <div class="pv-add"><input id="pvInput" class="auth-input" placeholder="留言…" maxlength="1000"><button class="btn primary" id="pvSend">送出</button></div></div>`;
     document.body.appendChild(wrap);
@@ -26,6 +26,11 @@ const PostView = (() => {
       .subscribe();
     const close = () => { try { c.removeChannel(channel); } catch (e) { } if (wrap._map) { try { wrap._map.remove(); } catch (e) { } wrap._map = null; } wrap.remove(); };
     wrap.querySelector("#pvX").addEventListener("click", close);
+    wrap.querySelector("#pvSave").addEventListener("click", () => {
+      const on = Posts.toggleSaved(postId);
+      wrap.querySelector("#pvSave").textContent = on ? "🔖" : "🏷️";
+      if (typeof toast === "function") toast(on ? "已收藏" : "已取消收藏");
+    });
     wrap.querySelector("#pvRepost").addEventListener("click", async () => {
       const quote = prompt("轉發這篇貼文（可加上你的想法，選填）：", ""); if (quote === null) return;
       const r = await Posts.createRepost(post, quote.trim());
@@ -61,6 +66,7 @@ const PostView = (() => {
 
     renderBody(wrap, post, likedByMe, likeCount, isMine);
     bindLike(wrap, postId);
+    if (typeof Autocomplete !== "undefined") Autocomplete.attach(wrap.querySelector("#pvInput"));
     wrap.querySelector("#pvSend").addEventListener("click", () => send(wrap, postId));
     loadComments(wrap, postId);
   }
@@ -101,7 +107,7 @@ const PostView = (() => {
       setTimeout(() => { if (typeof window.followRoute === "function") window.followRoute(coords); }, 250);
     });
     const rep = wrap.querySelector("#pvReport"); if (rep) rep.addEventListener("click", async () => {
-      const reason = prompt("檢舉這篇貼文的原因（選填）："); if (reason === null) return;
+      const reason = await Safety.pickReason(); if (reason === null) return;
       await Safety.reportPost(post.id, reason);
       try { const k = "tt_reported"; const s = new Set(JSON.parse(localStorage.getItem(k) || "[]")); s.add(post.id); localStorage.setItem(k, JSON.stringify([...s])); } catch (e) { }
       if (typeof toast === "function") toast("已檢舉並隱藏，感謝回報");
