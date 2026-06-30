@@ -33,7 +33,11 @@ const Auth = (() => {
     return { error: error ? error.message : null };
   }
 
-  async function signOut() { const c = Supa.client(); if (c) await c.auth.signOut(); }
+  // 本機登出：只清本地 session，不等伺服器撤銷回應（避免網路慢/卡住，登出才會絲滑即時）
+  async function signOut() {
+    const c = Supa.client(); if (!c) return;
+    try { await c.auth.signOut({ scope: "local" }); } catch (e) { /* 仍視為已登出 */ }
+  }
 
   function esc(s) { return (s || "").replace(/[<>&"]/g, ch => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[ch])); }
 

@@ -38,7 +38,15 @@ const Profiles = (() => {
         </div>
         <div id="pfPosts" class="feed-loading"><span class="spin"></span></div>
       </div>`);
-    document.getElementById("pfSignout").addEventListener("click", async () => { await Auth.signOut(); SocialUI.route(); });
+    document.getElementById("pfSignout").addEventListener("click", async () => {
+      if (!confirm("確定要登出嗎？")) return;
+      const btn = document.getElementById("pfSignout");
+      if (btn) { btn.disabled = true; btn.textContent = "登出中…"; }
+      try { window.__meAvatar = null; if (typeof TeamLive !== "undefined") TeamLive.stop(); } catch (e) { }
+      await Auth.signOut();
+      if (typeof toast === "function") toast("已登出");
+      SocialUI.route();   // 立即切回登入畫面，不必重開 App
+    });
     document.getElementById("pfEdit").addEventListener("click", () => renderEdit(render, prof));
     document.getElementById("pfSaved").addEventListener("click", () => renderSaved(render, prof));
     document.getElementById("pfEvents").addEventListener("click", () => { if (typeof Events !== "undefined") Events.open(); });
