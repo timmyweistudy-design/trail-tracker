@@ -447,8 +447,9 @@ body {
 .act-modes::-webkit-scrollbar { display: none; }
 .act-modes .chip { flex: 0 0 auto; }
 .act-hint { font-size: 11.5px; color: var(--ink-faint); text-align: center; margin: 2px 0 6px; }
-.rec-opts { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; margin-top: 14px; padding-left: 4px; }
-.rec-opts .sim-toggle { margin-top: 0; justify-content: flex-start; }
+.rec-opts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 14px; }
+.rec-opts .sim-toggle { margin-top: 0; gap: 6px; background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 999px; padding: 8px 14px; }
+.rec-opts .sim-toggle:active { background: var(--brand-soft); }
 
 /* ---------- 通用 ---------- */
 .section-title { font-family: var(--serif); font-size: 14px; color: var(--brand-deep); font-weight: 700; margin: 20px 4px 9px; letter-spacing: 1px; }
