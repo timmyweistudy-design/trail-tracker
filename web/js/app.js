@@ -1816,6 +1816,7 @@ function drawRecSpark(series) {
 }
 // 隨拍隨傳：記錄中拍照，存當下時間與里程；結算頁顯示、可選擇分享
 let hikePhotos = [], hikePhotosRecId = null, recSnap = null, _shotUrls = [];
+let _liveElev = null, _liveElevAt = 0, _liveElevLen = 0, _liveElevBusy = false;
 Recorder.onUpdate(s => {
   recSnap = s;
   $("#stDist").textContent = s.distanceKm.toFixed(2);
@@ -1823,8 +1824,18 @@ Recorder.onUpdate(s => {
   $("#stKcal").textContent = s.kcal;
   $("#stTime").textContent = fmtTime(s.elapsedMs);
   $("#stPace").textContent = (s.state === "running" && s.instKmh != null) ? s.instKmh.toFixed(1) : "--";
-  if ($("#stAscent")) $("#stAscent").textContent = `↑${Math.round(s.ascent || 0)}`;
-  if ($("#stDescent")) $("#stDescent").textContent = `↓${Math.round(s.descent || 0)}`;
+  if (s.state === "idle") { _liveElev = null; _liveElevAt = 0; _liveElevLen = 0; }   // 新記錄重置
+  // GPS 高度常為 null → 即時爬升會卡在 0；用地形 DEM 節流校正，讓即時值接近結算值
+  if (s.state === "running" && navigator.onLine && typeof Elevation !== "undefined" && s.track && s.track.length >= 8) {
+    const now = Date.now();
+    if (!_liveElevBusy && now - _liveElevAt > 30000 && s.track.length - _liveElevLen >= 8) {
+      _liveElevBusy = true; _liveElevAt = now; _liveElevLen = s.track.length;
+      Elevation.correct(s.track.slice()).then(c => { if (c) _liveElev = c; _liveElevBusy = false; }).catch(() => { _liveElevBusy = false; });
+    }
+  }
+  const ad = (_liveElev && (s.ascent || 0) < _liveElev.ascent) ? _liveElev : s;   // 取較準（GPS 為 0 時用 DEM）
+  if ($("#stAscent")) $("#stAscent").textContent = `↑${Math.round(ad.ascent || 0)}`;
+  if ($("#stDescent")) $("#stDescent").textContent = `↓${Math.round(ad.descent || 0)}`;
   drawRecSpark(s.altSeries);
   // #11 每公里震動提示
   if (s.state === "running" && !s.autoPaused) {
