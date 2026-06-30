@@ -1342,3 +1342,9 @@ html[data-theme="dark"] .disc-sec, html[data-theme="dark"] .feed-trending-h { co
 .jcard .slope-row { margin: 0 18px 15px; }
 .jcard .badge.closed { display: inline-flex; align-items: center; gap: 3px; }
 .jcard .badge.closed .ic { width: 12px; height: 12px; }
+
+/* ===== 視覺語言 rollout：區塊標題編輯式記號 + 夥伴頁圖示 ===== */
+.section-title::before { content: ""; display: inline-block; width: 3px; height: 13px; background: var(--accent); border-radius: 2px; margin-right: 9px; vertical-align: -1px; opacity: .85; }
+.streak-chip .ic { width: 12px; height: 12px; vertical-align: -2px; margin-right: 2px; }
+.q-ic .ic { width: 20px; height: 20px; opacity: .75; stroke-width: 1.8; }
+.pet-btn .ic { width: 15px; height: 15px; vertical-align: -2px; margin-right: 3px; }

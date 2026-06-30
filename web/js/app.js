@@ -128,6 +128,33 @@ const ICON = {
   star: '<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 17l-5.2 2.7 1-5.8L3.5 9.7l5.9-.9L12 3.5Z"/>',
   route: '<circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="5" r="2.2"/><path d="M8 19h6a4 4 0 0 0 0-8H10a4 4 0 0 1 0-8h6"/>',
   alert: '<path d="M12 4 2.5 20h19L12 4Z"/><path d="M12 10v4"/><circle cx="12" cy="17.3" r=".4" fill="currentColor" stroke="none"/>',
+  // ── 擴充：統一墨線圖示，取代功能性 emoji ──
+  bell: '<path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6Z"/><path d="M10 19a2 2 0 0 0 4 0"/>',
+  chat: '<path d="M4 5h16v11H8l-4 4V5Z"/>',
+  heart: '<path d="M12 20S4 14.5 4 9.2A3.8 3.8 0 0 1 12 7a3.8 3.8 0 0 1 8 2.2C20 14.5 12 20 12 20Z"/>',
+  bookmark: '<path d="M6 4h12v17l-6-4-6 4V4Z"/>',
+  calendar: '<rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 9h16M8 3v4M16 3v4"/>',
+  camera: '<path d="M4 8h3l1.5-2h7L17 8h3v11H4V8Z"/><circle cx="12" cy="13" r="3"/>',
+  map: '<path d="m9 4-6 2v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/>',
+  book: '<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2V5Z"/><path d="M19 17H6"/>',
+  medal: '<circle cx="12" cy="14" r="5"/><path d="M9 9 6 3M15 9l3-6M11 13l1-1v4"/>',
+  footprints: '<path d="M7 13c-1.4 0-2.3-1.5-2.3-4S5.6 4 7 4s1.9 1.9 1.9 4.4S8.4 13 7 13Z"/><path d="M5 13.5V16a2 2 0 0 1-4 0"/><path d="M17 20c-1.2 0-2-1.4-2-3.6S15.8 11 17 11s1.7 1.9 1.7 4.1S18.2 20 17 20Z"/><path d="M19 20.5V22"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  share: '<circle cx="6" cy="12" r="2.4"/><circle cx="18" cy="6" r="2.4"/><circle cx="18" cy="18" r="2.4"/><path d="m8 11 8-4M8 13l8 4"/>',
+  repeat: '<path d="M4 9V8a3 3 0 0 1 3-3h10l-2.5-2.5M20 15v1a3 3 0 0 1-3 3H7l2.5 2.5"/>',
+  pencil: '<path d="M4 20h4L19 9l-4-4L4 16v4Z"/><path d="m14 6 4 4"/>',
+  trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+  users: '<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 5.2A3 3 0 0 1 16 11M21 20a6 6 0 0 0-4-5.7"/>',
+  leaf: '<path d="M4 20C3 11 9 4 20 4c0 11-7 17-16 16Z"/><path d="M4 20 14 10"/>',
+  paw: '<ellipse cx="7" cy="9" rx="1.6" ry="2.2"/><ellipse cx="12" cy="7" rx="1.6" ry="2.4"/><ellipse cx="17" cy="9" rx="1.6" ry="2.2"/><path d="M12 12c-3 0-5 2-5 4.2C7 18 9 19 12 19s5-1 5-2.8C17 14 15 12 12 12Z"/>',
+  target: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".6" fill="currentColor" stroke="none"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>',
+  sliders: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',
+  refresh: '<path d="M20 11a8 8 0 1 0-1.5 5"/><path d="M20 5v6h-6"/>',
+  sparkle: '<path d="M12 3c.7 4.4 1.6 5.3 6 6-4.4.7-5.3 1.6-6 6-.7-4.4-1.6-5.3-6-6 4.4-.7 5.3-1.6 6-6Z"/>',
+  megaphone: '<path d="M4 10v4l9 4V6l-9 4Z"/><path d="M13 8.5a4 4 0 0 1 0 7M4 12H3"/>',
+  x: '<path d="M6 6l12 12M18 6 6 18"/>',
+  trophy: '<path d="M7 4h10v4a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M10 14h4l-.5 4h-3L10 14ZM8 21h8"/>',
 };
 function ic(name, cls) { return `<svg class="ic${cls ? " " + cls : ""}" viewBox="0 0 24 24">${ICON[name] || ""}</svg>`; }
 // 空狀態手繪山林插圖
@@ -2127,14 +2154,14 @@ function renderQuests() {
   const box = $("#petQuests"); if (!box) return;
   const km = todayKm(), asc = todayAscent(), trips = todayTrips(), streak = daysStreak();
   const quests = [
-    { icon: "🥾", label: "今日出門健行", cur: trips, goal: 1, dec: 0 },
-    { icon: "📏", label: "今日里程 1.5 km", cur: km, goal: 1.5, dec: 1 },
-    { icon: "⛰️", label: "今日爬升 50 m", cur: asc, goal: 50, dec: 0 },
+    { icon: "footprints", label: "今日出門健行", cur: trips, goal: 1, dec: 0 },
+    { icon: "ruler", label: "今日里程 1.5 km", cur: km, goal: 1.5, dec: 1 },
+    { icon: "mountain", label: "今日爬升 50 m", cur: asc, goal: 50, dec: 0 },
   ];
   const allDone = quests.every(q => q.cur >= q.goal);
   const claimed = localStorage.getItem("tt_quest_claim") === todayStr();
-  box.innerHTML = `<div class="section-title">📅 每日任務${streak >= 2 ? ` <span class="streak-chip">🔥 連續 ${streak} 天</span>` : ""}</div>
-    <div class="quest-list">${quests.map(q => { const done = q.cur >= q.goal; return `<div class="quest ${done ? "done" : ""}"><span class="q-ic">${q.icon}</span><div class="q-body"><div class="q-l">${q.label}</div><div class="q-bar"><i style="width:${Math.min(100, q.cur / q.goal * 100).toFixed(0)}%"></i></div></div><span class="q-chk">${done ? "✓" : (q.dec ? q.cur.toFixed(q.dec) : Math.round(q.cur))}</span></div>`; }).join("")}</div>
+  box.innerHTML = `<div class="section-title">${ic("calendar")}每日任務${streak >= 2 ? ` <span class="streak-chip">${ic("flame")} 連續 ${streak} 天</span>` : ""}</div>
+    <div class="quest-list">${quests.map(q => { const done = q.cur >= q.goal; return `<div class="quest ${done ? "done" : ""}"><span class="q-ic">${ic(q.icon)}</span><div class="q-body"><div class="q-l">${q.label}</div><div class="q-bar"><i style="width:${Math.min(100, q.cur / q.goal * 100).toFixed(0)}%"></i></div></div><span class="q-chk">${done ? "✓" : (q.dec ? q.cur.toFixed(q.dec) : Math.round(q.cur))}</span></div>`; }).join("")}</div>
     <button class="btn ${allDone && !claimed ? "primary" : "ghost"}" id="qClaim"${allDone && !claimed ? "" : " disabled"}>${claimed ? "今日獎勵已領 ✓" : (allDone ? "領取 +5 🍓" : "完成全部任務可領 🍓")}</button>`;
   const cb = $("#qClaim");
   if (cb && allDone && !claimed) cb.addEventListener("click", () => {
@@ -2168,8 +2195,8 @@ function renderPet() {
         <button class="pet-btn feed" id="petFeed"${canFeed ? "" : " disabled"}>${cd > 0 ? `🍃 ${Math.ceil(cd / 3600e3)} 小時後可餵` : "🍖 餵食 (3🍓)"}</button>
       </div>
       <div class="pet-btns">
-        <button class="pet-btn" id="petDex">📖 夥伴手冊</button>
-        <button class="pet-btn" id="petRec">🧭 帶我去走</button>
+        <button class="pet-btn" id="petDex">${ic("book")} 夥伴手冊</button>
+        <button class="pet-btn" id="petRec">${ic("compass")} 帶我去走</button>
       </div>
     </div>
   </div>`;
@@ -2269,7 +2296,7 @@ function petBadges() {
 function renderBadges() {
   const box = $("#petBadges"); if (!box) return;
   const list = petBadges(), got = list.filter(b => b.got).length;
-  box.innerHTML = `<div class="section-title">🏅 成就勳章 <span class="badge-count">${got} / ${list.length}</span></div>
+  box.innerHTML = `<div class="section-title">${ic("medal")}成就勳章 <span class="badge-count">${got} / ${list.length}</span></div>
     <div class="ach-grid">${list.map(b => `<div class="ach${b.got ? "" : " locked"}"><div class="ach-e">${b.got ? b.e : "🔒"}</div><div class="ach-n">${b.n}</div><div class="ach-d">${b.d}</div></div>`).join("")}</div>`;
 }
 // 夥伴手冊：進化圖鑑 + 成就徽章
