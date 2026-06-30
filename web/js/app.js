@@ -155,6 +155,9 @@ const ICON = {
   megaphone: '<path d="M4 10v4l9 4V6l-9 4Z"/><path d="M13 8.5a4 4 0 0 1 0 7M4 12H3"/>',
   x: '<path d="M6 6l12 12M18 6 6 18"/>',
   trophy: '<path d="M7 4h10v4a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M10 14h4l-.5 4h-3L10 14ZM8 21h8"/>',
+  download: '<path d="M12 4v10m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/>',
+  compare: '<path d="M8 4 4 8l4 4M4 8h11M16 12l4 4-4 4M20 16H9"/>',
+  external: '<path d="M14 4h6v6M20 4l-8 8M18 13v6H5V6h6"/>',
 };
 function ic(name, cls) { return `<svg class="ic${cls ? " " + cls : ""}" viewBox="0 0 24 24">${ICON[name] || ""}</svg>`; }
 // 空狀態手繪山林插圖
@@ -1002,12 +1005,12 @@ async function openDetail(id) {
     ${hasGeo ? `<div class="section-title collapsible" id="secElev">${ic("mountain")}海拔剖面</div><div id="profileBox"><div class="food-loading"><span class="spin"></span>計算海拔剖面中…</div></div>` : ""}
     ${t.guide ? `<div class="guide">${t.guide.replace(/\n/g, "<br>")}</div>` : ""}
     <div class="link-row">
-      ${nav ? `<a class="link-btn" href="${nav}" target="_blank" rel="noopener">🧭 Google 地圖導航</a>` : ""}
-      <a class="link-btn" href="${moreSearch}" target="_blank" rel="noopener">🔍 查更多步道資訊</a>
-      <button class="link-btn" id="btnShareTrail">↗ 分享步道</button>
-      <button class="link-btn" id="btnEventTrail">📅 揪團走這條</button>
-      <button class="link-btn" id="btnCompare">⇄ ${compareSet.has(t.id) ? "移出比較" : "加入比較"}</button>
-      ${t.url ? `<a class="link-btn" href="${t.url}" target="_blank" rel="noopener">↗ 官方/原始頁面</a>` : ""}
+      ${nav ? `<a class="link-btn" href="${nav}" target="_blank" rel="noopener">${ic("compass")} Google 地圖導航</a>` : ""}
+      <a class="link-btn" href="${moreSearch}" target="_blank" rel="noopener">${ic("search")} 查更多步道資訊</a>
+      <button class="link-btn" id="btnShareTrail">${ic("share")} 分享步道</button>
+      <button class="link-btn" id="btnEventTrail">${ic("calendar")} 揪團走這條</button>
+      <button class="link-btn" id="btnCompare">${ic("compare")} ${compareSet.has(t.id) ? "移出比較" : "加入比較"}</button>
+      ${t.url ? `<a class="link-btn" href="${t.url}" target="_blank" rel="noopener">${ic("external")} 官方/原始頁面</a>` : ""}
     </div>
     ${myLogHtml(t)}
     <button class="btn ghost" id="btnOffline" style="margin-top:10px">⬇️ 預載此步道離線地圖</button>
@@ -1126,7 +1129,7 @@ async function openDetail(id) {
     if (compareSet.has(t.id)) compareSet.delete(t.id);
     else { if (compareSet.size >= 3) { toast("最多比較 3 條"); return; } compareSet.add(t.id); }
     const inSet = compareSet.has(t.id);
-    cmp.textContent = inSet ? "⇄ 移出比較" : "⇄ 加入比較";
+    cmp.innerHTML = `${ic("compare")} ${inSet ? "移出比較" : "加入比較"}`;
     toast(inSet ? "已加入比較" : "已移出比較");
     updateCompareBar();
   });
@@ -1534,7 +1537,7 @@ async function loadTrailFeed(t) {
     if (!$("#trailFeedBox") || _detailTrail !== t) return;   // 已切換步道
     if (!posts.length) { box.innerHTML = ""; return; }
     const liked = await Posts.likedSet(posts.map(p => p.id));
-    box.innerHTML = `<div class="section-title">📣 山友走過這條（${posts.length}）</div><div class="feed-list">${posts.map(p => Feed.card(p, liked.has(p.id))).join("")}</div>`;
+    box.innerHTML = `<div class="section-title">${ic("megaphone")}山友走過這條（${posts.length}）</div><div class="feed-list">${posts.map(p => Feed.card(p, liked.has(p.id))).join("")}</div>`;
     box.querySelectorAll(".feed-card").forEach(card => card.addEventListener("click", e => {
       if (e.target.closest(".fc-author") || e.target.closest(".fc-traillink") || e.target.closest(".fc-like")) return;
       if (typeof PostView !== "undefined") PostView.open(card.dataset.id);
@@ -1557,14 +1560,14 @@ function openTrackReview(rec) {
       <div class="item"><div class="l">步數</div><div class="v">${(rec.steps || 0).toLocaleString()}</div></div>
       ${t3 && t3 > km + 0.05 ? `<div class="item"><div class="l">含坡度距離</div><div class="v">${t3.toFixed(2)} km</div></div>` : ""}
     </div>
-    ${(rec.id === hikePhotosRecId && hikePhotos.length) ? `<div class="section-title">📷 隨手拍（${hikePhotos.length}）<span class="shot-hint">點照片存到相簿</span></div>
+    ${(rec.id === hikePhotosRecId && hikePhotos.length) ? `<div class="section-title">${ic("camera")}隨手拍（${hikePhotos.length}）<span class="shot-hint">點照片存到相簿</span></div>
       <div class="hike-shots">${hikePhotos.map((p, i) => `<figure class="shot" data-i="${i}"><img src="${(u => { _shotUrls.push(u); return u; })(URL.createObjectURL(p.file))}" alt=""><figcaption>${new Date(p.t).toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" })} · ${p.km.toFixed(2)}km</figcaption></figure>`).join("")}</div>` : ""}
     <div class="link-row">
       <button class="link-btn" id="trackReplay">▶ 重播路徑</button>
-      <button class="link-btn" id="trackCard">🖼 分享圖卡</button>
-      <button class="link-btn" id="trackGpx">⬇️ 下載路線檔</button>
-      <button class="link-btn" id="trackShare">↗ 分享行程</button>
-      ${rec.sim ? "" : `<button class="link-btn" id="trackSocial">📣 分享到社群</button>`}
+      <button class="link-btn" id="trackCard">${ic("camera")} 分享圖卡</button>
+      <button class="link-btn" id="trackGpx">${ic("download")} 下載路線檔</button>
+      <button class="link-btn" id="trackShare">${ic("share")} 分享行程</button>
+      ${rec.sim ? "" : `<button class="link-btn" id="trackSocial">${ic("megaphone")} 分享到社群</button>`}
     </div>`;
   $("#trackMask").classList.add("show");
   $("#trackSheet").classList.add("show");
@@ -2478,8 +2481,8 @@ function renderHistory(keepShown) {
       </div>
       ${r.ascent ? `<div class="row"><span>${ic("mountain")}爬升 <b>↑${r.ascent}</b>m${r.descent ? ` 下降 <b>↓${r.descent}</b>m` : ""}</span></div>` : ""}
       <div class="hist-actions">
-        <button class="hist-view" data-id="${r.id}">🗺️ 回顧軌跡</button>
-        <button class="hist-gpx" data-id="${r.id}">⬇️ 路線檔</button>
+        <button class="hist-view" data-id="${r.id}">${ic("map")} 回顧軌跡</button>
+        <button class="hist-gpx" data-id="${r.id}">${ic("download")} 路線檔</button>
       </div>
     </div>`).join("")
     + (recs.length > histShown
