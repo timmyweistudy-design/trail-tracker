@@ -1,0 +1,20 @@
+{
+  "name": "trail-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "循徑拾光 Gather the Trail — 台灣登山步道 PWA / Capacitor App",
+  "scripts": {
+    "add:android": "cap add android",
+    "sync": "cap sync",
+    "open:android": "cap open android",
+    "assets": "capacitor-assets generate --iconBackgroundColor #16301f --splashBackgroundColor #16301f"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/core": "^6.1.2"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^6.1.2"
+  }
+}

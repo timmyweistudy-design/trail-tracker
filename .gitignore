@@ -13,6 +13,12 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Capacitor / Node（原生 App 打包用，產生物不進版控）
+node_modules/
+/android/
+/ios/
+package-lock.json
+
 # Python
 __pycache__/
 *.pyc

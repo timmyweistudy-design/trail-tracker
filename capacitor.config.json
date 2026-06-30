@@ -1,0 +1,8 @@
+{
+  "appId": "com.timmyweistudy.trailtracker",
+  "appName": "循徑拾光",
+  "webDir": "web",
+  "android": {
+    "allowMixedContent": false
+  }
+}
