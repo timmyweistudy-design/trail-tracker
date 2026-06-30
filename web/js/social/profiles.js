@@ -14,9 +14,10 @@ const Profiles = (() => {
   }
 
   function renderMe(render, prof) {
+    const pa = (typeof Premium !== "undefined" && Premium.isOn()) ? " pro-av" : "";
     const av = prof.avatar_url
-      ? `<img class="pf-av" src="${esc(prof.avatar_url)}" alt="">`
-      : `<div class="pf-av pf-av-ph">${esc((prof.display_name || prof.handle || "?").slice(0, 1))}</div>`;
+      ? `<img class="pf-av${pa}" src="${esc(prof.avatar_url)}" alt="">`
+      : `<div class="pf-av pf-av-ph${pa}">${esc((prof.display_name || prof.handle || "?").slice(0, 1))}</div>`;
     const ps = (typeof petStats === "function") ? petStats() : null;
     syncMyStats(prof.id);   // 順手同步到雲端
     if (prof.avatar_url) window.__meAvatar = prof.avatar_url;   // 地圖「我」標記＝社群頭像（換頭像後也同步）

@@ -31,8 +31,9 @@ const Feed = (() => {
 
   function card(post, liked) {
     const a = post.author || {};
-    const av = a.avatar_url ? `<img class="fc-av" src="${esc(a.avatar_url)}" alt="">`
-      : `<div class="fc-av fc-av-ph">${esc((a.display_name || a.handle || "?").slice(0, 1))}</div>`;
+    const pa = a.is_premium ? " pro-av" : "";
+    const av = a.avatar_url ? `<img class="fc-av${pa}" src="${esc(a.avatar_url)}" alt="">`
+      : `<div class="fc-av fc-av-ph${pa}">${esc((a.display_name || a.handle || "?").slice(0, 1))}</div>`;
     const media = (post.post_media || []).slice().sort((x, y) => x.ord - y.ord);
     const shown = media.slice(0, 4), extra = media.length - 4;
     const imgs = media.length

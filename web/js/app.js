@@ -499,8 +499,14 @@ function buildPresets() {
     applyPreset(ps[+b.dataset.i]);
   }));
 }
+const PRESET_FREE = 3;
 $("#fsSavePreset").addEventListener("click", () => {
   if (!activeFilters.size && !activeRegions.size && curSort === "default" && !filterOpen && !filterGeo && !maxLen && !maxAsc) { toast("先設定一些篩選再儲存"); return; }
+  if (!(typeof Premium !== "undefined" && Premium.isOn()) && getPresets().length >= PRESET_FREE) {
+    toast(`免費口袋路線上限 ${PRESET_FREE} 組，升級 Premium 無限`);
+    if (typeof Premium !== "undefined") Premium.openUpgrade();
+    return;
+  }
   askInput({ title: "為這組篩選命名", value: "常用篩選", max: 10 }).then(name => {
     if (name == null) return;
     const a = getPresets(); a.push({ name: name.trim().slice(0, 10) || "常用", ...currentFilterState() }); savePresets(a);
@@ -2092,6 +2098,39 @@ $("#importFile").addEventListener("change", e => {
 $("#btnFootMap").addEventListener("click", openFootprintMap);
 $("#btnAllOffline").addEventListener("click", downloadAllTaiwan);
 $("#btnFavOffline").addEventListener("click", downloadFavOffline);
+
+// Premium：雲端備份 / 還原（跨裝置）
+async function cloudClient() {
+  if (typeof Supa === "undefined" || !Supa.ready()) { toast("社群尚未啟用"); return null; }
+  const c = Supa.client(); const { data: u } = await c.auth.getUser();
+  if (!u || !u.user) { toast("請先到社群分頁登入"); return null; }
+  return { c, uid: u.user.id };
+}
+const _cbk = $("#btnCloudBackup");
+if (_cbk) _cbk.addEventListener("click", async () => {
+  if (typeof Premium !== "undefined" && !Premium.gate()) return;
+  const x = await cloudClient(); if (!x) return;
+  try {
+    toast("備份到雲端中…");
+    const { error } = await x.c.from("backups").upsert({ user_id: x.uid, data: Store.exportAll(), updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+    toast(error ? "備份失敗：" + error.message : "已備份到雲端 ✓");
+  } catch (e) { toast("備份失敗：" + (e && e.message || e)); }
+});
+const _crs = $("#btnCloudRestore");
+if (_crs) _crs.addEventListener("click", async () => {
+  if (typeof Premium !== "undefined" && !Premium.gate()) return;
+  const x = await cloudClient(); if (!x) return;
+  try {
+    const { data, error } = await x.c.from("backups").select("data, updated_at").eq("user_id", x.uid).maybeSingle();
+    if (error) { toast("還原失敗：" + error.message); return; }
+    if (!data) { toast("雲端尚無備份，請先按「雲端備份」"); return; }
+    const when = new Date(data.updated_at).toLocaleString("zh-TW");
+    const merge = confirm(`雲端備份（${when}）\n\n要『合併』到現有資料嗎？\n確定 = 合併\n取消 = 完全取代`);
+    Store.importAll(data.data, merge ? "merge" : "replace");
+    renderHistory(); render();
+    toast("已從雲端還原 ✓");
+  } catch (e) { toast("還原失敗：" + (e && e.message || e)); }
+});
 if (typeof Premium !== "undefined") { setTimeout(() => Premium.refresh(), 1500); Premium.handleReturn(); }   // 啟動後同步會員狀態 + 處理結帳返回
 
 // 進階分析：基本數據免費看，進階區塊鎖 Premium
