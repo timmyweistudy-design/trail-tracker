@@ -35,8 +35,11 @@ const Composer = (() => {
         <div class="comp-msg" id="compMsg"></div>
       </div>`;
     document.body.appendChild(wrap);
-    if (presetCaption) { const cc = wrap.querySelector("#compCaption"); if (cc) cc.value = presetCaption; }
-    if (typeof Autocomplete !== "undefined") Autocomplete.attach(wrap.querySelector("#compCaption"));
+    const cap = wrap.querySelector("#compCaption");
+    if (presetCaption) cap.value = presetCaption;
+    else { const d = localStorage.getItem("tt_draft"); if (d) cap.value = d; }   // 還原草稿
+    cap.addEventListener("input", () => { try { localStorage.setItem("tt_draft", cap.value); } catch (e) { } });
+    if (typeof Autocomplete !== "undefined") Autocomplete.attach(cap);
     const stars = wrap.querySelectorAll("#compStars .cs");
     stars.forEach(s => s.addEventListener("click", () => { rating = +s.dataset.r; stars.forEach(x => x.textContent = (+x.dataset.r <= rating) ? "★" : "☆"); }));
     const close = () => { _urls.forEach(u => URL.revokeObjectURL(u)); _urls = []; wrap.remove(); };
@@ -74,6 +77,7 @@ const Composer = (() => {
     const r = await Posts.createFromRecord(rec, { caption, visibility, files, video, rating });
     if (r.error) { msg.textContent = "發布失敗：" + r.error; wrap.querySelector("#compPost").disabled = false; return; }
     msg.textContent = "已發布！";
+    try { localStorage.removeItem("tt_draft"); } catch (e) { }   // 發布成功清草稿
     if (typeof toast === "function") toast("已分享到社群");
     if (typeof SocialUI !== "undefined") SocialUI.route();   // 刷新動態牆，立即看到新貼文
     setTimeout(close, 600);

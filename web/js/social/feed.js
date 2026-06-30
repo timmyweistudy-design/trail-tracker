@@ -94,21 +94,36 @@ const Feed = (() => {
     else await loadMore(true, g);
   }
 
+  // 依步道難度過濾（用全域 TRAILS 對照 post.trail_id）
+  let _exDiff = 0, _trailMap = null;
+  function trailDiff(trailId) {
+    if (!trailId || typeof TRAILS === "undefined") return null;
+    if (!_trailMap) { _trailMap = new Map(); TRAILS.forEach(t => _trailMap.set(String(t.id), t.difficulty)); }
+    return _trailMap.get(String(trailId)) ?? null;
+  }
+  const DIFFS = [[0, "全部"], [1, "輕鬆"], [2, "一般"], [3, "進階"], [4, "挑戰"]];
+
   async function loadTrending(g) {
     if (g == null) g = _gen;
-    const batch = dropReported(await Posts.trending());
+    let batch = dropReported(await Posts.trending());
     if (g !== _gen) return;
+    if (_exDiff) batch = batch.filter(p => { const d = trailDiff(p.trail_id); return _exDiff === 4 ? (d >= 4) : d === _exDiff; });
     _posts = batch;
     const refresh = `<button class="feed-refresh" id="feedRefresh">↻ 重新整理</button>`;
+    const diffRow = `<div class="ex-diff">${DIFFS.map(([v, l]) => `<button class="ex-diff-b ${v === _exDiff ? "on" : ""}" data-d="${v}">${l}</button>`).join("")}</div>`;
+    const wireCommon = () => {
+      wireRefresh();
+      document.querySelectorAll(".ex-diff-b").forEach(b => b.addEventListener("click", () => { _exDiff = +b.dataset.d; loadTrending(); }));
+    };
     if (!_posts.length) {
-      _into(`${refresh}<div class="social-empty"><span class="ee">🏔️</span>目前還沒有公開貼文。</div>`);
-      wireRefresh(); return;
+      _into(`${refresh}<div class="feed-trending-h">🔥 熱門趨勢</div>${diffRow}<div class="social-empty"><span class="ee">🏔️</span>${_exDiff ? "這個難度還沒有公開貼文。" : "目前還沒有公開貼文。"}</div>`);
+      wireCommon(); return;
     }
     const liked = await Posts.likedSet(_posts.map(p => p.id));
     const hot = await Posts.hotTags(10);
     const hotRow = hot.length ? `<div class="hot-tags">${hot.map(h => `<button class="hot-tag" data-tag="${esc(h.tag)}">#${esc(h.tag)}</button>`).join("")}</div>` : "";
-    _into(`${refresh}<div class="feed-trending-h">🔥 熱門趨勢</div>${hotRow}<div class="feed-list">${_posts.map(p => card(p, liked.has(p.id))).join("")}</div>`);
-    bind(); wireRefresh(); writeCache(_mode, _posts);
+    _into(`${refresh}<div class="feed-trending-h">🔥 熱門趨勢</div>${hotRow}${diffRow}<div class="feed-list">${_posts.map(p => card(p, liked.has(p.id))).join("")}</div>`);
+    bind(); wireCommon(); writeCache(_mode, _posts);
     document.querySelectorAll(".hot-tag").forEach(b => b.addEventListener("click", () => openTag(b.dataset.tag)));
   }
 

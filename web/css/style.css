@@ -1289,3 +1289,13 @@ html[data-theme="dark"] .disc-sec, html[data-theme="dark"] .feed-trending-h { co
 .set-empty { color: var(--ink-faint); font-size: 13.5px; padding: 8px 2px; }
 .set-block-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line-soft); }
 .set-block-row .btn { width: auto; flex: 0 0 auto; padding: 6px 14px; margin: 0; font-size: 13px; }
+
+/* 探索難度過濾 */
+.ex-diff { display: flex; gap: 6px; margin: 0 2px 12px; overflow-x: auto; scrollbar-width: none; }
+.ex-diff::-webkit-scrollbar { display: none; }
+.ex-diff-b { flex: 0 0 auto; background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 999px; padding: 5px 14px; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); cursor: pointer; }
+.ex-diff-b.on { background: var(--brand-mid); color: #fff; border-color: var(--brand-mid); }
+/* 發文照片預覽橫向捲動 */
+.comp-photos { display: flex; gap: 7px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.comp-photos::-webkit-scrollbar { display: none; }
+.comp-thumb { flex: 0 0 auto; }
