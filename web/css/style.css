@@ -1510,7 +1510,7 @@ html[data-theme="dark"] body::after { opacity: .05; }
 .proc-sw.on { box-shadow: 0 0 0 2px var(--accent); }
 
 /* PRO 頭像框（跟隨 PRO 配色） */
-.fc-av.pro-av, .pf-av.pro-av { box-shadow: 0 0 0 2px var(--pro-c2, #f0a91e), 0 0 0 4px var(--surface); }
+.fc-av.pro-av, .pf-av.pro-av, .me-av.pro-av { box-shadow: 0 0 0 2px var(--pro-f, #f0a91e), 0 0 0 4px var(--surface); }
 
 /* 個人頁封面照 */
 .pf-cover { height: 120px; background-size: cover; background-position: center; border-radius: var(--r-sm); margin: 0 0 12px; box-shadow: var(--sh-sm); }
@@ -1557,3 +1557,19 @@ html[data-theme="dark"] body::after { opacity: .05; }
 .me-card-pet { font-size: 13px; color: var(--ink-soft); margin-top: 5px; }
 .me-card-pet b { font-family: var(--num); color: var(--ink); }
 .me-card-guest { justify-content: center; color: var(--ink-soft); font-size: 14px; cursor: pointer; }
+
+/* 進場淡入錯落（年度回顧 / 進階分析） */
+@keyframes anim-fadeup { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.anim-seq > * { animation: anim-fadeup .42s ease both; }
+.anim-seq > *:nth-child(2) { animation-delay: .05s; }
+.anim-seq > *:nth-child(3) { animation-delay: .11s; }
+.anim-seq > *:nth-child(4) { animation-delay: .17s; }
+.anim-seq > *:nth-child(5) { animation-delay: .23s; }
+.anim-seq > *:nth-child(6) { animation-delay: .29s; }
+.anim-seq > *:nth-child(n+7) { animation-delay: .34s; }
+@media (prefers-reduced-motion: reduce) { .anim-seq > * { animation: none; } }
+/* 年度回顧次要統計 */
+.yr-sub { display: flex; justify-content: space-around; margin: 12px 0 2px; }
+.yr-sub div { text-align: center; }
+.yr-sub b { font-family: var(--num); font-size: 19px; font-weight: 700; display: block; color: #e0b15a; }
+.yr-sub span { font-size: 11px; opacity: .8; }

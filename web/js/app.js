@@ -2115,38 +2115,53 @@ if (_aBtn) _aBtn.addEventListener("click", openAnalytics);
 // 年度回顧（PRO）
 const _yBtn = $("#btnYearReview");
 if (_yBtn) _yBtn.addEventListener("click", () => { if (typeof Premium !== "undefined" && !Premium.gate()) return; openYearReview(); });
+// 動畫數字 span（配合 countUp）
+function cuSpan(to, pre, dec) { return `<span class="cu" data-to="${to}" data-pre="${pre || ""}" data-dec="${dec || 0}">${pre || ""}0</span>`; }
+function runCountUps(root) { root.querySelectorAll(".cu").forEach(countUp); }
 function openYearReview() {
   const year = new Date().getFullYear();
-  const recs = realRecords().filter(r => (r.date || "").slice(0, 4) === String(year));
-  const km = recs.reduce((s, r) => s + (r.distanceKm || 0), 0);
-  const asc = recs.reduce((s, r) => s + (r.ascent || 0), 0);
-  const hrs = recs.reduce((s, r) => s + (r.elapsedMs || 0), 0) / 3.6e6;
-  let longest = 0; recs.forEach(r => longest = Math.max(longest, r.distanceKm || 0));
+  const all = realRecords();
+  const recs = all.filter(r => (r.date || "").slice(0, 4) === String(year));
+  const sum = (a, f) => a.reduce((s, r) => s + (f(r) || 0), 0);
+  const km = sum(recs, r => r.distanceKm), asc = sum(recs, r => r.ascent), hrs = sum(recs, r => r.elapsedMs) / 3.6e6;
+  const steps = sum(recs, r => r.steps), kcal = sum(recs, r => r.kcal);
+  const distinct = new Set(recs.map(r => r.trailName || "自由路線")).size;
+  let longest = 0, maxAlt = 0; recs.forEach(r => { longest = Math.max(longest, r.distanceKm || 0); maxAlt = Math.max(maxAlt, r.altHigh || 0); });
   const mo = {}; recs.forEach(r => { const m = +(r.date || "").slice(5, 7); if (m) mo[m] = (mo[m] || 0) + 1; });
   const busiest = Object.keys(mo).sort((a, b) => mo[b] - mo[a])[0];
   const tc = {}; recs.forEach(r => { const nm = r.trailName || "自由路線"; tc[nm] = (tc[nm] || 0) + 1; });
   const top = Object.keys(tc).sort((a, b) => tc[b] - tc[a])[0];
+  const lastKm = sum(all.filter(r => (r.date || "").slice(0, 4) === String(year - 1)), r => r.distanceKm);
+  const delta = km - lastKm;
   const ov = document.createElement("div"); ov.className = "pet-modal";
-  ov.innerHTML = `<div class="pet-modal-card yr-card">
+  ov.innerHTML = `<div class="pet-modal-card yr-card anim-seq">
     <button class="sheet-close" id="yrX" aria-label="關閉">${ic("x")}</button>
     <div class="yr-head"><div class="yr-year">${year}</div><div class="yr-title">我的山行回顧</div></div>
     ${recs.length ? `
     <div class="yr-grid">
-      <div class="yr-stat"><b>${recs.length}</b><span>趟旅程</span></div>
-      <div class="yr-stat"><b>${km.toFixed(0)}</b><span>公里</span></div>
-      <div class="yr-stat"><b>↑${Math.round(asc)}</b><span>公尺爬升</span></div>
-      <div class="yr-stat"><b>${hrs.toFixed(0)}</b><span>小時</span></div>
+      <div class="yr-stat"><b>${cuSpan(recs.length, "", 0)}</b><span>趟旅程</span></div>
+      <div class="yr-stat"><b>${cuSpan(km, "", 0)}</b><span>公里</span></div>
+      <div class="yr-stat"><b>${cuSpan(asc, "↑", 0)}</b><span>公尺爬升</span></div>
+      <div class="yr-stat"><b>${cuSpan(hrs, "", 0)}</b><span>小時</span></div>
+    </div>
+    <div class="yr-sub">
+      <div><b>${cuSpan(steps, "", 0)}</b><span>步</span></div>
+      <div><b>${cuSpan(kcal, "", 0)}</b><span>大卡</span></div>
+      <div><b>${cuSpan(distinct, "", 0)}</b><span>條步道</span></div>
     </div>
     <div class="yr-lines">
       ${longest ? `<div>單次最長 <b>${longest.toFixed(1)} km</b></div>` : ""}
+      ${maxAlt ? `<div>最高造訪海拔 <b>${maxAlt} m</b></div>` : ""}
       ${busiest ? `<div>最常出門 <b>${busiest} 月</b></div>` : ""}
       ${top ? `<div>最愛步道 <b>${top}</b></div>` : ""}
+      <div>較去年里程 <b>${delta >= 0 ? "↑ +" : "↓ "}${Math.abs(delta).toFixed(0)} km</b></div>
       <div class="yr-foot">↑ 累積爬升約 ${(asc / 3952).toFixed(1)} 座玉山</div>
     </div>
     <button class="btn primary" id="yrShare">${ic("share")} 分享我的回顧</button>`
     : `<div class="social-empty" style="color:#fff">${year} 還沒有行程，今年一起多走幾趟吧！</div>`}
   </div>`;
   document.body.appendChild(ov);
+  runCountUps(ov);
   const close = () => ov.remove();
   ov.querySelector("#yrX").addEventListener("click", close);
   ov.addEventListener("click", e => { if (e.target === ov) close(); });
@@ -2170,7 +2185,7 @@ function openAnalytics() {
   for (const r of recs) { const m = (r.date || "").slice(0, 7); if (!m) continue; (by[m] = by[m] || { km: 0, asc: 0, n: 0 }); by[m].km += r.distanceKm || 0; by[m].asc += r.ascent || 0; by[m].n++; }
   const months = Object.keys(by).sort().reverse().slice(0, 12);
   const maxKm = Math.max(1, ...months.map(m => by[m].km));
-  const card = (v, l) => `<div class="ana-card"><div class="ana-cv">${v}</div><div class="ana-cl">${l}</div></div>`;
+  const card = (to, pre, dec, l) => `<div class="ana-card"><div class="ana-cv">${cuSpan(to, pre, dec)}</div><div class="ana-cl">${l}</div></div>`;
   const pb = (label, val) => `<div class="ana-pb"><span>${label}</span><b>${val}</b></div>`;
 
   // ── 進階（PRO）數據 ──
@@ -2227,16 +2242,20 @@ function openAnalytics() {
       <button class="btn primary" id="anaUp" style="max-width:220px;margin:12px auto 0">升級 Premium 解鎖</button>
     </div>`;
 
+  const totSteps = recs.reduce((s, r) => s + (r.steps || 0), 0);
+  const distinct = new Set(recs.map(r => r.trailName || "自由路線")).size;
   const ov = document.createElement("div"); ov.className = "pet-modal";
-  ov.innerHTML = `<div class="pet-modal-card">
+  ov.innerHTML = `<div class="pet-modal-card anim-seq">
     <button class="sheet-close" id="anaX" aria-label="關閉">${ic("x")}</button>
     <h2>${ic("target")} 進階分析</h2>
     ${n ? `
     <div class="ana-cards">
-      ${card(n, "總出行")}
-      ${card(totKm.toFixed(1), "總里程 km")}
-      ${card("↑" + Math.round(totAsc), "總爬升 m")}
-      ${card(totHrs.toFixed(1), "總時數 小時")}
+      ${card(n, "", 0, "總出行")}
+      ${card(totKm, "", 1, "總里程 km")}
+      ${card(totAsc, "↑", 0, "總爬升 m")}
+      ${card(totHrs, "", 1, "總時數 小時")}
+      ${card(totSteps, "", 0, "總步數")}
+      ${card(distinct, "", 0, "探索步道")}
     </div>
     <div class="ana-sec">每月里程</div>
     <div class="ana-list">${months.map(m => `
@@ -2247,6 +2266,7 @@ function openAnalytics() {
     : `<div class="social-empty"><span class="ee">${ic("target")}</span>還沒有行程可分析，先去走一條吧。</div>`}
   </div>`;
   document.body.appendChild(ov);
+  runCountUps(ov);
   const close = () => ov.remove();
   ov.querySelector("#anaX").addEventListener("click", close);
   ov.addEventListener("click", e => { if (e.target === ov) close(); });
