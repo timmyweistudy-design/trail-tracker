@@ -2070,32 +2070,7 @@ $("#btnDiag").addEventListener("click", () => {
   if (navigator.clipboard) navigator.clipboard.writeText(info).then(() => toast(errs.length ? `已複製診斷(${errs.length}筆錯誤)，可貼給開發者` : "已複製診斷，目前無錯誤"));
   else alert(info);
 });
-// 備份 / 還原
-$("#btnExport").addEventListener("click", () => {
-  const blob = new Blob([JSON.stringify(Store.exportAll(), null, 2)], { type: "application/json" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `循徑拾光備份_${new Date().toISOString().slice(0, 10)}.json`;
-  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-  toast("已匯出備份檔");
-});
-$("#btnImport").addEventListener("click", () => $("#importFile").click());
-$("#importFile").addEventListener("change", e => {
-  const file = e.target.files[0]; if (!file) return;
-  const rd = new FileReader();
-  rd.onload = () => {
-    try {
-      const data = JSON.parse(rd.result);
-      const merge = confirm("要『合併』到現有資料嗎？\n\n確定 = 合併（保留現有再加入備份）\n取消 = 完全取代");
-      Store.importAll(data, merge ? "merge" : "replace");
-      renderHistory(); render();
-      toast("已還原備份 ✓");
-    } catch { toast("還原失敗：檔案格式不符"); }
-    $("#importFile").value = "";
-  };
-  rd.readAsText(file);
-});
-$("#btnFootMap").addEventListener("click", openFootprintMap);
+$("#btnFootMap").addEventListener("click", () => { if (typeof Premium !== "undefined" && !Premium.gate()) return; openFootprintMap(); });
 $("#btnAllOffline").addEventListener("click", downloadAllTaiwan);
 $("#btnFavOffline").addEventListener("click", downloadFavOffline);
 
