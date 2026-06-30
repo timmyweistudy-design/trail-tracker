@@ -34,12 +34,12 @@ const Notifs = (() => {
     if (n.type === "mention") return name + " 在貼文中提到你";
     return name;
   }
-  function icon(t) { return t === "follow" ? "➕" : t === "like" ? "❤️" : t === "team" ? "👥" : t === "gift" ? "🍓" : t === "mention" ? "📣" : "💬"; }
+  function icon(t) { return t === "follow" ? ic("plus") : t === "like" ? ic("heart") : t === "team" ? ic("users") : t === "gift" ? "🍓" : t === "mention" ? ic("megaphone") : ic("chat"); }
 
   async function pushBar() {
     if (typeof Push === "undefined" || !Push.supported()) return "";
     const on = await Push.isOn();
-    return `<button class="btn ${on ? "ghost" : "primary"} notif-push" id="notifPush">${on ? "🔕 關閉推播通知" : "🔔 開啟推播通知"}</button>`;
+    return `<button class="btn ${on ? "ghost" : "primary"} notif-push" id="notifPush">${ic("bell")} ${on ? "關閉推播通知" : "開啟推播通知"}</button>`;
   }
   function wirePush(into, redraw) {
     const b = document.getElementById("notifPush"); if (!b) return;

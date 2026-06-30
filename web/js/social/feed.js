@@ -55,7 +55,7 @@ const Feed = (() => {
       ${imgs}
       <div class="fc-actions">
         <button class="fc-like ${liked ? "on" : ""}" data-id="${post.id}">${liked ? "❤️" : "🤍"} <span>${count(post.likes)}</span></button>
-        <button class="fc-comment" data-id="${post.id}">💬 ${count(post.comments)}</button>
+        <button class="fc-comment" data-id="${post.id}">${ic("chat")} ${count(post.comments)}</button>
       </div>
     </article>`;
   }
@@ -109,20 +109,20 @@ const Feed = (() => {
     if (g !== _gen) return;
     if (_exDiff) batch = batch.filter(p => { const d = trailDiff(p.trail_id); return _exDiff === 4 ? (d >= 4) : d === _exDiff; });
     _posts = batch;
-    const refresh = `<button class="feed-refresh" id="feedRefresh">↻ 重新整理</button>`;
+    const refresh = `<button class="feed-refresh" id="feedRefresh">${ic("refresh")} 重新整理</button>`;
     const diffRow = `<div class="ex-diff">${DIFFS.map(([v, l]) => `<button class="ex-diff-b ${v === _exDiff ? "on" : ""}" data-d="${v}">${l}</button>`).join("")}</div>`;
     const wireCommon = () => {
       wireRefresh();
       document.querySelectorAll(".ex-diff-b").forEach(b => b.addEventListener("click", () => { _exDiff = +b.dataset.d; loadTrending(); }));
     };
     if (!_posts.length) {
-      _into(`${refresh}<div class="feed-trending-h">🔥 熱門趨勢</div>${diffRow}<div class="social-empty"><span class="ee">🏔️</span>${_exDiff ? "這個難度還沒有公開貼文。" : "目前還沒有公開貼文。"}</div>`);
+      _into(`${refresh}<div class="feed-trending-h">${ic("flame")} 熱門趨勢</div>${diffRow}<div class="social-empty"><span class="ee">🏔️</span>${_exDiff ? "這個難度還沒有公開貼文。" : "目前還沒有公開貼文。"}</div>`);
       wireCommon(); return;
     }
     const liked = await Posts.likedSet(_posts.map(p => p.id));
     const hot = await Posts.hotTags(10);
     const hotRow = hot.length ? `<div class="hot-tags">${hot.map(h => `<button class="hot-tag" data-tag="${esc(h.tag)}">#${esc(h.tag)}</button>`).join("")}</div>` : "";
-    _into(`${refresh}<div class="feed-trending-h">🔥 熱門趨勢</div>${hotRow}${diffRow}<div class="feed-list">${_posts.map(p => card(p, liked.has(p.id))).join("")}</div>`);
+    _into(`${refresh}<div class="feed-trending-h">${ic("flame")} 熱門趨勢</div>${hotRow}${diffRow}<div class="feed-list">${_posts.map(p => card(p, liked.has(p.id))).join("")}</div>`);
     bind(); wireCommon(); writeCache(_mode, _posts);
     document.querySelectorAll(".hot-tag").forEach(b => b.addEventListener("click", () => openTag(b.dataset.tag)));
   }
@@ -133,7 +133,7 @@ const Feed = (() => {
     const batch = dropReported(await Posts.feed(_mode, before));
     if (g !== _gen) return;   // 已切到別的分頁/刷新 → 丟棄
     _posts = _posts.concat(batch);
-    const refresh = `<button class="feed-refresh" id="feedRefresh">↻ 重新整理</button>`;
+    const refresh = `<button class="feed-refresh" id="feedRefresh">${ic("refresh")} 重新整理</button>`;
     if (!_posts.length) {
       _into(`${refresh}<div class="social-empty"><span class="ee">🏞️</span>追蹤山友後，這裡會出現他們的步道旅行（你自己的也會在這）。</div>`);
       wireRefresh();

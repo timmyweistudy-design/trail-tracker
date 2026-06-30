@@ -15,7 +15,7 @@ const PostView = (() => {
     const wrap = document.createElement("div");
     wrap.className = "pv-mask";
     wrap.dataset.me = myId; wrap.dataset.author = post.author_id;
-    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" aria-label="關閉" id="pvX">✕</button><b>貼文</b><span class="pv-head-r"><button class="comp-x" id="pvSave" title="收藏" aria-label="收藏">${Posts.isSaved(postId) ? "🔖" : "🏷️"}</button><button class="comp-x" id="pvRepost" title="轉發" aria-label="轉發">🔁</button><button class="comp-x" id="pvShare" title="分享" aria-label="分享">📤</button>${isMine ? '<button class="comp-x" id="pvEdit" title="編輯" aria-label="編輯">✏️</button><button class="comp-x" id="pvDel" title="刪除" aria-label="刪除">🗑</button>' : ""}</span></div>
+    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" aria-label="關閉" id="pvX">✕</button><b>貼文</b><span class="pv-head-r"><button class="comp-x ${Posts.isSaved(postId) ? "on" : ""}" id="pvSave" title="收藏" aria-label="收藏">${ic("bookmark")}</button><button class="comp-x" id="pvRepost" title="轉發" aria-label="轉發">${ic("repeat")}</button><button class="comp-x" id="pvShare" title="分享" aria-label="分享">${ic("share")}</button>${isMine ? `<button class="comp-x" id="pvEdit" title="編輯" aria-label="編輯">${ic("pencil")}</button><button class="comp-x" id="pvDel" title="刪除" aria-label="刪除">${ic("trash")}</button>` : ""}</span></div>
       <div class="pv-body" id="pvBody"></div>
       <div class="pv-add"><input id="pvInput" class="auth-input" placeholder="留言…" maxlength="1000"><button class="btn primary" id="pvSend">送出</button></div></div>`;
     document.body.appendChild(wrap);
@@ -28,7 +28,7 @@ const PostView = (() => {
     wrap.querySelector("#pvX").addEventListener("click", close);
     wrap.querySelector("#pvSave").addEventListener("click", () => {
       const on = Posts.toggleSaved(postId);
-      wrap.querySelector("#pvSave").textContent = on ? "🔖" : "🏷️";
+      wrap.querySelector("#pvSave").classList.toggle("on", on);
       if (typeof toast === "function") toast(on ? "已收藏" : "已取消收藏");
     });
     wrap.querySelector("#pvRepost").addEventListener("click", async () => {

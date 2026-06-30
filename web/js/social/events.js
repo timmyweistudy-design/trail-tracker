@@ -11,7 +11,7 @@ const Events = (() => {
     if (typeof Supa === "undefined" || !Supa.ready()) { if (typeof toast === "function") toast("社群尚未啟用"); return; }
     const sess = await Auth.session(); if (!sess) { if (typeof toast === "function") toast("請先到社群分頁登入"); return; }
     const wrap = document.createElement("div"); wrap.className = "pv-mask";
-    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" id="evX" aria-label="關閉">✕</button><b>📅 揪團活動</b><button class="comp-x" id="evNew" title="建立">＋</button></div>
+    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" id="evX" aria-label="關閉">✕</button><b>${ic("calendar")} 揪團活動</b><button class="comp-x" id="evNew" title="建立">${ic("plus")}</button></div>
       <div class="pv-body" id="evBody"><div class="feed-loading"><span class="spin"></span></div></div></div>`;
     document.body.appendChild(wrap);
     wrap.querySelector("#evX").addEventListener("click", () => wrap.remove());
@@ -38,9 +38,9 @@ const Events = (() => {
       const going = mine.has(e.id), n = counts[e.id] || 0, isMine = e.creator_id === myId;
       const cname = (e.creator && (e.creator.display_name || e.creator.handle)) || "山友";
       return `<div class="ev-card" data-id="${e.id}">
-        <div class="ev-when">🗓️ ${fmt(e.when_at)}</div>
+        <div class="ev-when">${ic("calendar")} ${fmt(e.when_at)}</div>
         <div class="ev-title">${esc(e.title)}</div>
-        <div class="ev-meta">⛰️ ${esc(e.trail_name || "自由路線")}　·　發起人 ${esc(cname)}</div>
+        <div class="ev-meta">${ic("mountain")} ${esc(e.trail_name || "自由路線")}　·　發起人 ${esc(cname)}</div>
         ${e.note ? `<div class="ev-note">${esc(e.note)}</div>` : ""}
         <div class="ev-actions">
           <button class="btn ${going ? "ghost" : "primary"} ev-go" data-id="${e.id}">${going ? "已報名 ✓" : "我要參加"}</button>
