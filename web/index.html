@@ -141,9 +141,11 @@
       <label class="sim-toggle" id="wakeLockOpt"><input type="checkbox" id="wakeLockToggle"> ☀️ 螢幕保持喚醒</label>
       <label class="sim-toggle"><input type="checkbox" id="simToggle"> 模擬（無 GPS 預覽）</label>
     </div>
-    <button class="btn ghost" id="btnTeam" style="margin-top:10px">👥 小隊（與隊友同行）</button>
-    <button class="btn ghost" id="btnShareLoc" style="margin-top:10px">📍 分享我的即時位置</button>
-    <button class="btn ghost" id="btnImportGpx" style="margin-top:10px">📥 匯入路線跟著走</button>
+    <div class="link-row" style="margin-top:12px">
+      <button class="link-btn" id="btnTeam"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 5.2A3 3 0 0 1 16 11M21 20a6 6 0 0 0-4-5.7"/></svg>隊友同行</button>
+      <button class="link-btn" id="btnShareLoc"><svg class="ic" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>分享位置</button>
+      <button class="link-btn" id="btnImportGpx"><svg class="ic" viewBox="0 0 24 24"><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="5" r="2.2"/><path d="M8 19h6a4 4 0 0 0 0-8H10a4 4 0 0 1 0-8h6"/></svg>跟著路線走</button>
+    </div>
     <input type="file" id="gpxFile" accept=".gpx,application/gpx+xml" style="display:none">
     <div id="recIdle"></div>
   </section>

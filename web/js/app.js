@@ -158,6 +158,7 @@ const ICON = {
   download: '<path d="M12 4v10m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/>',
   compare: '<path d="M8 4 4 8l4 4M4 8h11M16 12l4 4-4 4M20 16H9"/>',
   external: '<path d="M14 4h6v6M20 4l-8 8M18 13v6H5V6h6"/>',
+  play: '<path d="M7 5l12 7-12 7V5Z"/>',
 };
 function ic(name, cls) { return `<svg class="ic${cls ? " " + cls : ""}" viewBox="0 0 24 24">${ICON[name] || ""}</svg>`; }
 // 空狀態手繪山林插圖
@@ -1563,7 +1564,7 @@ function openTrackReview(rec) {
     ${(rec.id === hikePhotosRecId && hikePhotos.length) ? `<div class="section-title">${ic("camera")}隨手拍（${hikePhotos.length}）<span class="shot-hint">點照片存到相簿</span></div>
       <div class="hike-shots">${hikePhotos.map((p, i) => `<figure class="shot" data-i="${i}"><img src="${(u => { _shotUrls.push(u); return u; })(URL.createObjectURL(p.file))}" alt=""><figcaption>${new Date(p.t).toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" })} · ${p.km.toFixed(2)}km</figcaption></figure>`).join("")}</div>` : ""}
     <div class="link-row">
-      <button class="link-btn" id="trackReplay">▶ 重播路徑</button>
+      <button class="link-btn" id="trackReplay">${ic("play")} 重播路徑</button>
       <button class="link-btn" id="trackCard">${ic("camera")} 分享圖卡</button>
       <button class="link-btn" id="trackGpx">${ic("download")} 下載路線檔</button>
       <button class="link-btn" id="trackShare">${ic("share")} 分享行程</button>
