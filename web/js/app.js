@@ -977,6 +977,7 @@ async function openDetail(id) {
       ${nav ? `<a class="link-btn" href="${nav}" target="_blank" rel="noopener">🧭 Google 地圖導航</a>` : ""}
       <a class="link-btn" href="${moreSearch}" target="_blank" rel="noopener">🔍 查更多步道資訊</a>
       <button class="link-btn" id="btnShareTrail">↗ 分享步道</button>
+      <button class="link-btn" id="btnEventTrail">📅 揪團走這條</button>
       <button class="link-btn" id="btnCompare">⇄ ${compareSet.has(t.id) ? "移出比較" : "加入比較"}</button>
       ${t.url ? `<a class="link-btn" href="${t.url}" target="_blank" rel="noopener">↗ 官方/原始頁面</a>` : ""}
     </div>
@@ -1090,6 +1091,8 @@ async function openDetail(id) {
     else if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => toast("步道連結已複製"));
     else window.open(url, "_blank");
   });
+  const evT = $("#btnEventTrail");
+  if (evT) evT.addEventListener("click", () => { if (typeof Events !== "undefined") Events.open(t); else toast("社群尚未啟用"); });
   const cmp = $("#btnCompare");
   if (cmp) cmp.addEventListener("click", () => {
     if (compareSet.has(t.id)) compareSet.delete(t.id);

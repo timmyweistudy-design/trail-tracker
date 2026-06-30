@@ -1299,3 +1299,16 @@ html[data-theme="dark"] .disc-sec, html[data-theme="dark"] .feed-trending-h { co
 .comp-photos { display: flex; gap: 7px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
 .comp-photos::-webkit-scrollbar { display: none; }
 .comp-thumb { flex: 0 0 auto; }
+
+/* 揪團活動卡 */
+.ev-card { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 13px 14px; margin-bottom: 10px; }
+.ev-when { font-family: var(--num); font-size: 13px; font-weight: 700; color: var(--accent); }
+.ev-title { font-family: var(--serif); font-size: 16px; font-weight: 700; margin: 4px 0; }
+.ev-meta { font-size: 12.5px; color: var(--ink-soft); }
+.ev-note { font-size: 13.5px; color: var(--ink-soft); line-height: 1.6; margin-top: 6px; white-space: pre-wrap; }
+.ev-actions { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+.ev-actions .btn { width: auto; flex: 0 0 auto; margin: 0; padding: 8px 18px; font-size: 13.5px; }
+.ev-count { font-size: 12.5px; color: var(--ink-faint); }
+.ev-del { margin-left: auto; color: var(--danger); }
+.ev-form { display: flex; flex-direction: column; }
+.ev-form .comp-cap { min-height: 80px; }

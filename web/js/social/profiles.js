@@ -32,6 +32,7 @@ const Profiles = (() => {
         <div class="pf-actions">
           <button class="btn ghost" id="pfEdit">編輯檔案</button>
           <button class="btn ghost" id="pfSaved">🔖 收藏</button>
+          <button class="btn ghost" id="pfEvents">📅 揪團</button>
           <button class="btn ghost" id="pfSettings">⚙️ 設定</button>
           <button class="btn ghost" id="pfSignout">登出</button>
         </div>
@@ -40,6 +41,7 @@ const Profiles = (() => {
     document.getElementById("pfSignout").addEventListener("click", async () => { await Auth.signOut(); SocialUI.route(); });
     document.getElementById("pfEdit").addEventListener("click", () => renderEdit(render, prof));
     document.getElementById("pfSaved").addEventListener("click", () => renderSaved(render, prof));
+    document.getElementById("pfEvents").addEventListener("click", () => { if (typeof Events !== "undefined") Events.open(); });
     document.getElementById("pfSettings").addEventListener("click", () => renderSettings(render, prof));
     Posts.followCounts(prof.id).then(c => {
       const el = document.getElementById("pfFollowCounts"); if (!el) return;
