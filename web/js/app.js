@@ -127,6 +127,7 @@ const ICON = {
   fire: '<path d="M12 3c1 3.2 4 4.3 4 8.2a4 4 0 0 1-8 0c0-1.6.6-2.6 1.4-3.4.2 1.6.9 2.4 1.8 2.4-.2-2.4-1.2-4 .8-7.2Z"/>',
   star: '<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 17l-5.2 2.7 1-5.8L3.5 9.7l5.9-.9L12 3.5Z"/>',
   route: '<circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="5" r="2.2"/><path d="M8 19h6a4 4 0 0 0 0-8H10a4 4 0 0 1 0-8h6"/>',
+  alert: '<path d="M12 4 2.5 20h19L12 4Z"/><path d="M12 10v4"/><circle cx="12" cy="17.3" r=".4" fill="currentColor" stroke="none"/>',
 };
 function ic(name, cls) { return `<svg class="ic${cls ? " " + cls : ""}" viewBox="0 0 24 24">${ICON[name] || ""}</svg>`; }
 // 空狀態手繪山林插圖
@@ -576,9 +577,6 @@ function matches(t) {
 
 function trailCard(t) {
   const d = t.difficulty || 0;
-  const len = t.length_km != null ? `${t.length_km} km` : "—";
-  const asc = t.ascent != null ? `${Math.round(t.ascent)} m` : "";
-  const dist = (myLoc && t.lat) ? `<span>${ic("compass")}${(haversine(myLoc, { lat: t.lat, lon: t.lon }) / 1000).toFixed(1)} km</span>` : "";
   const closed = t.condition && /暫停|封閉|關閉/.test(t.condition.status || "");
   // 陡度條：每公里爬升（≈400 m/km 視為極陡）
   let slope = "";
@@ -587,20 +585,23 @@ function trailCard(t) {
     slope = `<div class="slope-row"><span class="slope-label">陡度</span><div class="slope-bar"><i style="width:${w}%"></i></div></div>`;
   }
   const fav = isFavC(t.id), done = logC(t.id).done;
-  return `<div class="card" data-id="${t.id}">
+  const distKm = (myLoc && t.lat) ? (haversine(myLoc, { lat: t.lat, lon: t.lon }) / 1000).toFixed(1) : null;
+  // 山誌式 hero 數據（襯線數字當主角，最多三格）
+  const stats = [`<div class="jstat"><div class="jnum">${t.length_km != null ? t.length_km : "—"}</div><div class="jlbl">公里</div></div>`];
+  if (t.ascent != null) stats.push(`<div class="jstat"><div class="jnum">↑${Math.round(t.ascent)}</div><div class="jlbl">公尺爬升</div></div>`);
+  if (t.tour) stats.push(`<div class="jstat"><div class="jnum jnum-sm">${t.tour}</div><div class="jlbl">建議時程</div></div>`);
+  else if (distKm) stats.push(`<div class="jstat"><div class="jnum">${distKm}</div><div class="jlbl">公里外</div></div>`);
+  const locExtra = (distKm && t.tour) ? `<span class="jloc-dot">·</span>${ic("compass")}<span>${distKm} km</span>` : "";
+  return `<div class="card jcard" data-id="${t.id}">
+    <span class="jbar d${d}"></span>
     <button class="fav-star${fav ? " on" : ""}" data-fav="${t.id}" aria-label="收藏 ${t.name}">${fav ? "★" : "☆"}</button>
     <button class="done-check${done ? " on" : ""}" data-done="${t.id}" aria-label="標記完成 ${t.name}" title="標記完成">✓</button>
     <h3>${t.name}</h3>
-    <div class="meta">
-      <span>${ic("pin")}${t.position || "—"}</span>
-      <span>${ic("ruler")}<b>${len}</b></span>
-      ${asc ? `<span>${ic("up")}${asc}</span>` : ""}
-      ${t.tour ? `<span>${ic("clock")}${t.tour}</span>` : ""}
-      ${dist}
-    </div>
+    <div class="jloc">${ic("pin")}<span>${t.position || "—"}</span>${locExtra}</div>
+    <div class="jstats">${stats.join('<span class="jstats-div"></span>')}</div>
     <div class="badges">
       <span class="badge diff d${d}"><span class="lvl">${d}</span>${t.difficulty_label}</span>
-      ${closed ? `<span class="badge closed">⚠️ ${t.condition.status}</span>` : ""}
+      ${closed ? `<span class="badge closed">${ic("alert")} ${t.condition.status}</span>` : ""}
       ${t.family_friendly ? `<span class="badge family">親子友善</span>` : ""}
       ${t.permit && t.permit !== "無" ? `<span class="badge ghost">需入山證</span>` : ""}
       <span class="badge src">${SRC_LABEL[t.source] || t.source}</span>

@@ -1317,3 +1317,28 @@ html[data-theme="dark"] .disc-sec, html[data-theme="dark"] .feed-trending-h { co
 .pet-lv-chip { margin-left: 8px; font-size: 11px; vertical-align: middle; }
 .evolve-n .lv-chip { font-size: 13px; vertical-align: middle; }
 .dex-h .lv-chip { vertical-align: middle; }
+
+/* ===== 山誌式步道卡（探索）— 新視覺樣板 ===== */
+.card.jcard { padding: 0; overflow: hidden; }
+.card.jcard::before { display: none; }          /* 取消舊的左緣細條 */
+.jcard .jbar { position: absolute; left: 0; top: 0; bottom: 0; width: 5px; }
+.jcard h3 { padding: 15px 64px 0 18px; margin: 0 0 2px; font-size: 19px; letter-spacing: .5px; }
+.jloc { display: flex; align-items: center; gap: 4px; padding: 0 18px; font-size: 12px; color: var(--ink-faint); }
+.jloc .ic { width: 13px; height: 13px; opacity: .65; }
+.jloc-dot { margin: 0 3px; opacity: .5; }
+/* hero 數據條：襯線數字當主角，淡淡等高線紙感 */
+.jstats {
+  display: flex; align-items: stretch; gap: 0; margin: 11px 14px 0; padding: 11px 4px;
+  border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='56'%3E%3Cg fill='none' stroke='%23c2683d' stroke-width='1' opacity='0.06'%3E%3Cpath d='M0 12 Q30 2 60 12 T120 12'/%3E%3Cpath d='M0 28 Q30 18 60 28 T120 28'/%3E%3Cpath d='M0 44 Q30 34 60 44 T120 44'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 120px 56px;
+}
+.jstat { flex: 1; text-align: center; }
+.jnum { font-family: var(--num); font-weight: 600; font-size: 24px; line-height: 1; color: var(--ink); letter-spacing: -.5px; }
+.jnum-sm { font-size: 16px; font-weight: 600; }
+.jlbl { font-size: 10px; color: var(--ink-faint); letter-spacing: 1px; margin-top: 4px; }
+.jstats-div { width: 1px; background: var(--line-soft); margin: 2px 0; }
+.jcard .badges { margin: 11px 0 0; padding: 0 18px 15px; }
+.jcard .slope-row { margin: 0 18px 15px; }
+.jcard .badge.closed { display: inline-flex; align-items: center; gap: 3px; }
+.jcard .badge.closed .ic { width: 12px; height: 12px; }
