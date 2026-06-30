@@ -498,7 +498,8 @@ body {
 .pet-bar { height: 6px; background: rgba(255,255,255,.18); border-radius: 6px; margin-top: 7px; overflow: hidden; }
 .pet-bar i { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg, #9fe0b0, #e8c87a); transition: width .6s cubic-bezier(.2,.8,.2,1); }
 @media (prefers-reduced-motion: reduce) { .pet-emoji { animation: none; } }
-.pet-edit { background: rgba(255,255,255,.16); border: none; color: #f3efe4; width: 22px; height: 22px; border-radius: 50%; font-size: 11px; cursor: pointer; margin-left: 8px; flex: 0 0 auto; }
+.pet-edit { background: rgba(255,255,255,.16); border: none; color: #f3efe4; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; margin-left: 8px; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; padding: 0; }
+.pet-edit .ic { width: 13px; height: 13px; }
 .pet-edit:active { transform: scale(.9); }
 .pet-mood { font-size: 12px; opacity: .85; margin-top: 4px; }
 .pet-hearts { font-size: 11px; letter-spacing: 1px; white-space: nowrap; }
