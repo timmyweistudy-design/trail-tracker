@@ -75,12 +75,12 @@ const PostView = (() => {
     const a = post.author || {};
     const media = (post.post_media || []).slice().sort((x, y) => x.ord - y.ord);
     const trailName = post.trail_id
-      ? `<span class="fc-traillink" data-trail="${esc(post.trail_id)}">⛰️ ${esc(post.trail_name || "自由路線")}</span>`
-      : `⛰️ ${esc(post.trail_name || "自由路線")}`;
+      ? `<span class="fc-traillink" data-trail="${esc(post.trail_id)}">${ic("mountain")} ${esc(post.trail_name || "自由路線")}</span>`
+      : `${ic("mountain")} ${esc(post.trail_name || "自由路線")}`;
     wrap.querySelector("#pvBody").innerHTML = `
       <div class="fc-name fc-author" data-uid="${post.author_id}" style="cursor:pointer">${esc(a.display_name || a.handle || "山友")}${a.pet_level ? ` <span class="lv-chip lvt-${Math.min(a.pet_level,7)}">Lv.${a.pet_level}</span>` : ""} <span class="fc-sub">@${esc(a.handle || "")}</span></div>
       <div class="fc-trail">${trailName}　<span class="fc-stats">${post.distance_km != null ? post.distance_km.toFixed(2) + "km" : ""}${post.ascent != null ? "　↑" + post.ascent + "m" : ""}</span>${post.rating ? ` <span class="fc-rate">${"★".repeat(post.rating)}</span>` : ""}</div>
-      ${(post.track && post.track.coordinates && post.track.coordinates.length > 1) ? `<div class="pv-map"></div><button class="btn ghost pv-follow" id="pvFollow">🧭 跟著這條路線走</button>` : ""}
+      ${(post.track && post.track.coordinates && post.track.coordinates.length > 1) ? `<div class="pv-map"></div><button class="btn ghost pv-follow" id="pvFollow">${ic("compass")} 跟著這條路線走</button>` : ""}
       ${post.caption ? `<div class="fc-cap">${(typeof Feed !== "undefined" && Feed.richText) ? Feed.richText(post.caption) : esc(post.caption)}</div>` : ""}
       ${media.map(m => {
         if (m.kind === "video") return `<video class="pv-img" controls preload="metadata" poster="${esc(Media.publicUrl(m.thumb_path || ""))}" src="${esc(Media.publicUrl(m.path))}"></video>`;

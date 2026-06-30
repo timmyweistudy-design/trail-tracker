@@ -89,7 +89,7 @@ const Team = (() => {
     }
     if (aId) {
       const liveOn = (typeof TeamLive !== "undefined" && TeamLive.isOn());
-      html += `<label class="sim-toggle team-live"><input type="checkbox" id="tmLive" ${liveOn ? "checked" : ""}> 👥 與小隊同行（記錄地圖上看到彼此定位）</label>
+      html += `<label class="sim-toggle team-live"><input type="checkbox" id="tmLive" ${liveOn ? "checked" : ""}> ${ic("users")} 與小隊同行（記錄地圖上看到彼此定位）</label>
         <div id="tmMembers"></div>
         <div class="ob-l">邀請好友</div><div id="tmInvite"><div class="feed-loading"><span class="spin"></span></div></div>
         <button class="btn ghost" id="tmLeave" style="margin-top:8px">退出目前小隊</button>`;

@@ -44,8 +44,8 @@ const Feed = (() => {
         }).join("")}</div>` : "";
     const stats = `${(post.distance_km != null ? post.distance_km.toFixed(2) + "km" : "")}${post.ascent != null ? "　↑" + post.ascent + "m" : ""}`;
     const trailName = post.trail_id
-      ? `<span class="fc-traillink" data-trail="${esc(post.trail_id)}">⛰️ ${esc(post.trail_name || "自由路線")}</span>`
-      : `⛰️ ${esc(post.trail_name || "自由路線")}`;
+      ? `<span class="fc-traillink" data-trail="${esc(post.trail_id)}">${ic("mountain")} ${esc(post.trail_name || "自由路線")}</span>`
+      : `${ic("mountain")} ${esc(post.trail_name || "自由路線")}`;
     return `<article class="feed-card" data-id="${post.id}">
       <div class="fc-top fc-author" data-uid="${post.author_id}">${av}<div><div class="fc-name">${esc(a.display_name || a.handle || "山友")}${a.pet_level ? ` <span class="lv-chip lvt-${Math.min(a.pet_level,7)}">Lv.${a.pet_level}</span>` : ""}</div>
         <div class="fc-sub">${fmtAgo(post.created_at)}${post.visibility === "friends" ? " · 好友" : ""}</div></div></div>

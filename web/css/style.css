@@ -1388,3 +1388,14 @@ html[data-theme="dark"] body::after { opacity: .05; }
     linear-gradient(150deg, #f0f4ec, var(--surface));
   background-size: 140px 70px, cover;
 }
+
+/* ===== 全面 emoji→圖示 收尾：各內聯圖示尺寸 ===== */
+.inline-ic { display: inline-flex; vertical-align: -2px; }
+.inline-ic .ic { width: 13px; height: 13px; opacity: .8; }
+.near-label .ic { width: 14px; height: 14px; vertical-align: -2px; margin-right: 2px; }
+.sim-toggle .ic { width: 15px; height: 15px; vertical-align: -3px; margin: 0 1px; opacity: .8; }
+.chip .ic { width: 13px; height: 13px; vertical-align: -2px; margin-right: 3px; }
+.fc-trail .ic, .fc-traillink .ic { width: 14px; height: 14px; vertical-align: -2px; margin-right: 2px; color: var(--brand-mid); }
+.ridle-row .ic { width: 14px; height: 14px; opacity: .8; }
+.dex-tip .ic { width: 13px; height: 13px; }
+.basemap-toggle .bm .ic { width: 13px; height: 13px; vertical-align: -2px; margin-right: 2px; }
