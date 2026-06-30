@@ -161,13 +161,17 @@ const PostView = (() => {
 
   // 表情回應列（需 phase11；無資料則只顯示可點的表情）
   const REACT_EMOJI = ["❤️", "👍", "🔥", "😮", "💪", "😂"];
+  const REACT_PRO = ["🏔️", "🦌", "⛺", "🌟"];   // PRO 專屬反應
   async function loadReactions(wrap, postId) {
     const box = wrap.querySelector("#pvReact"); if (!box) return;
     const rows = await Posts.reactions(postId);
     const myId = wrap.dataset.me;
     const counts = {}; let mine = null;
     for (const r of rows) { counts[r.emoji] = (counts[r.emoji] || 0) + 1; if (r.user_id === myId) mine = r.emoji; }
-    box.innerHTML = REACT_EMOJI.map(e => `<button class="pv-react-b ${mine === e ? "on" : ""}" data-e="${e}">${e}${counts[e] ? ` <span>${counts[e]}</span>` : ""}</button>`).join("");
+    const pro = (typeof Premium !== "undefined") && Premium.isOn();
+    // 顯示：基本表情 +（會員才有的）PRO 表情 + 任何已被使用過的表情
+    const list = [...new Set([...REACT_EMOJI, ...(pro ? REACT_PRO : []), ...rows.map(r => r.emoji)])];
+    box.innerHTML = list.map(e => `<button class="pv-react-b ${mine === e ? "on" : ""}${REACT_PRO.includes(e) ? " pro" : ""}" data-e="${e}">${e}${counts[e] ? ` <span>${counts[e]}</span>` : ""}</button>`).join("");
     box.querySelectorAll(".pv-react-b").forEach(b => b.addEventListener("click", async () => {
       const e = b.dataset.e;
       if (mine === e) { await Posts.clearReaction(postId); }
