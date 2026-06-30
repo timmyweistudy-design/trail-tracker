@@ -313,7 +313,7 @@ document.querySelectorAll(".tab").forEach(btn => {
         Pets.renderFriends();
       }
     }
-    if (view === "me") { renderHistory(); refreshOfflineStatus(); if (typeof Premium !== "undefined") Premium.refresh().then(() => Premium.renderBox($("#premiumBox"))); }
+    if (view === "me") { renderHistory(); refreshOfflineStatus(); renderAccent(); if (typeof Premium !== "undefined") Premium.refresh().then(() => { Premium.renderBox($("#premiumBox")); renderAccent(); applySeason(); }); }
     if (view === "social" && typeof SocialUI !== "undefined") SocialUI.onShow();
   });
 });
@@ -704,6 +704,7 @@ function bindCards() {
     });
     const star = c.querySelector(".fav-star");
     if (star) star.addEventListener("click", () => {
+      if (!Store.isFav(star.dataset.fav) && !favAddAllowed()) return;
       const added = Store.toggleFav(star.dataset.fav);
       star.classList.toggle("on", added); star.textContent = added ? "★" : "☆";
       if (added) { star.classList.remove("pop"); void star.offsetWidth; star.classList.add("pop"); }
@@ -1118,6 +1119,7 @@ async function openDetail(id) {
 
   const favD = $("#favDetail");
   if (favD) favD.addEventListener("click", () => {
+    if (!Store.isFav(t.id) && !favAddAllowed()) return;
     const added = Store.toggleFav(t.id);
     favD.classList.toggle("on", added); favD.textContent = added ? "★ 已收藏" : "☆ 收藏";
     toast(added ? "已加入收藏" : "已移除收藏");
@@ -1378,6 +1380,18 @@ function offlineAllow() {
   localStorage.setItem("tt_offline_free", String(used + 1));
   const left = OFFLINE_FREE - (used + 1);
   toast(left > 0 ? `免費離線下載 ${used + 1}/${OFFLINE_FREE}（剩 ${left} 次）` : "這是最後 1 次免費離線下載，之後需 Premium");
+  return true;
+}
+
+// Premium：免費收藏上限 20，會員無限。回傳是否可再加收藏。
+const FAV_FREE = 20;
+function favAddAllowed() {
+  if (typeof Premium !== "undefined" && Premium.isOn()) return true;
+  if (Store.getFavs().length >= FAV_FREE) {
+    toast(`免費收藏上限 ${FAV_FREE} 條，升級 Premium 無限收藏`);
+    if (typeof Premium !== "undefined") Premium.openUpgrade();
+    return false;
+  }
   return true;
 }
 
@@ -2340,7 +2354,7 @@ function renderPet() {
   box.innerHTML = `<div class="pet-card${i >= 6 ? " final" : ""}" style="background:${PET_BG[i]}">
     <div class="pet-emoji" id="petEmoji" role="img" aria-label="${st.n}">${st.e}</div>
     <div class="pet-info">
-      <div class="pet-name">${nm || st.n}<span class="lv-chip lvt-${Math.min(i + 1, 7)} pet-lv-chip">Lv.${i + 1}</span></div>
+      <div class="pet-name">${nm || st.n}<span class="lv-chip lvt-${Math.min(i + 1, 7)} pet-lv-chip">Lv.${i + 1}</span>${(typeof Premium !== "undefined" && Premium.isOn()) ? `<button class="pet-edit" id="petRename" title="命名" aria-label="命名">${ic("pencil")}</button>` : ""}</div>
       <div class="pet-mood">${mood.e} ${mood.t}　<span class="pet-hearts">${"❤️".repeat(h)}${"🤍".repeat(5 - h)}</span></div>
       <div class="pet-energy"><span class="pe-l">活力 ${en}</span><div class="pe-bar"><i style="width:${en}%"></i></div></div>
       <div class="pet-sub">${nm ? st.n + "・" : ""}已走 <b>${km.toFixed(1)}</b> km${bonus > 0 ? `（含照顧 +${bonus.toFixed(1)}）` : ""}・同行 <b>${days}</b> 天${streak >= 2 ? `・<span class="inline-ic">${ic("flame")}</span>連續${streak}週` : ""}</div>
@@ -2365,6 +2379,12 @@ function renderPet() {
   $("#petDex").addEventListener("click", openPetDex);
   $("#petRec").addEventListener("click", petRecommend);
   $("#petFeed").addEventListener("click", feedPet);
+  const ren = $("#petRename");   // Premium：為夥伴命名
+  if (ren) ren.addEventListener("click", () => {
+    askInput({ title: "幫你的山林夥伴取個名字", value: petName() || st.n, max: 12 }).then(v => {
+      if (v != null) { localStorage.setItem("tt_pet_name", v.trim().slice(0, 12)); renderPet(); }
+    });
+  });
 }
 
 // ---------- 步道比較 ----------
@@ -2665,11 +2685,26 @@ function applyTheme(mode) {
   if (meta) meta.setAttribute("content", dark ? "#13160f" : "#16301f");
   document.querySelectorAll(".theme-opt").forEach(b => b.classList.toggle("on", b.dataset.themeOpt === mode));
 }
-// 季節主題點綴色（春櫻/夏綠/秋楓/冬雪）
+// 季節主題點綴色（春櫻/夏綠/秋楓/冬雪）；Premium 自選主題色會覆蓋
+const ACCENTS = [["#c2683d", "赤陶"], ["#3f8f6a", "森綠"], ["#8068c2", "暮紫"], ["#3a7bd5", "海藍"], ["#c0452f", "楓紅"], ["#d9a441", "金"]];
 function applySeason() {
+  const saved = localStorage.getItem("tt_accent");
+  if (saved && typeof Premium !== "undefined" && Premium.isOn()) { document.documentElement.style.setProperty("--accent", saved); return; }
   const m = new Date().getMonth() + 1;
   const col = m >= 3 && m <= 5 ? "#d2799a" : m >= 6 && m <= 8 ? "#3f8f6a" : m >= 9 && m <= 11 ? "#c2683d" : "#5a86b0";
   document.documentElement.style.setProperty("--accent", col);
+}
+function renderAccent() {
+  const row = $("#accentRow"); if (!row) return;
+  const pro = typeof Premium !== "undefined" && Premium.isOn();
+  const cur = localStorage.getItem("tt_accent");
+  row.innerHTML = ACCENTS.map(([c, n]) => `<button class="acc-sw${pro && cur === c ? " on" : ""}" data-acc="${c}" title="${n}" style="background:${c}">${pro && cur === c ? "✓" : ""}</button>`).join("")
+    + (pro ? `<button class="acc-sw acc-reset" id="accReset" title="自動（季節）">↺</button>` : `<span class="acc-lock">升級 Premium 解鎖</span>`);
+  row.querySelectorAll(".acc-sw[data-acc]").forEach(b => b.addEventListener("click", () => {
+    if (!pro) { if (typeof Premium !== "undefined") Premium.openUpgrade(); return; }
+    localStorage.setItem("tt_accent", b.dataset.acc); document.documentElement.style.setProperty("--accent", b.dataset.acc); renderAccent();
+  }));
+  const rst = $("#accReset"); if (rst) rst.addEventListener("click", () => { localStorage.removeItem("tt_accent"); applySeason(); renderAccent(); });
 }
 function initTheme() {
   applySeason();
