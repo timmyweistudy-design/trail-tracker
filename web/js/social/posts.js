@@ -67,7 +67,7 @@ const Posts = (() => {
 
   const SELECT = `
     id, author_id, trail_id, trail_name, distance_km, duration_ms, ascent, hiked_on, caption, visibility, created_at, track_thumb, rating,
-    author:profiles!posts_author_profile_fk(handle, display_name, avatar_url, pet_level),
+    author:profiles!posts_author_profile_fk(handle, display_name, avatar_url, pet_level, is_premium),
     post_media(kind, path, thumb_path, ord, taken_at, km),
     likes(count), comments(count)`;
 
@@ -145,7 +145,7 @@ const Posts = (() => {
       seen.add(a); ids.push(a); if (ids.length >= 12) break;
     }
     if (!ids.length) return [];
-    const { data: profs } = await c.from("profiles").select("id, handle, display_name, avatar_url, pet_level").in("id", ids);
+    const { data: profs } = await c.from("profiles").select("id, handle, display_name, avatar_url, pet_level, is_premium").in("id", ids);
     return profs || [];
   }
 

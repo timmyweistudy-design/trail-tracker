@@ -26,7 +26,7 @@ const Discover = (() => {
     if (!people.length) { box.innerHTML = `<div class="social-empty">輸入 handle 或名字搜尋山友。</div>`; return; }
     box.innerHTML = `<div class="disc-sec">✨ 推薦追蹤</div>` + people.map(p => `<div class="disc-row" data-id="${p.id}">
       ${p.avatar_url ? `<img class="fc-av" src="${esc(p.avatar_url)}">` : `<div class="fc-av fc-av-ph">${esc((p.display_name || p.handle).slice(0, 1))}</div>`}
-      <div class="disc-id"><b>${esc(p.display_name || p.handle)}${p.pet_level ? ` <span class="lv-chip lvt-${Math.min(p.pet_level,7)}">Lv.${p.pet_level}</span>` : ""}</b><span>@${esc(p.handle)}</span></div>
+      <div class="disc-id"><b>${esc(p.display_name || p.handle)}${p.pet_level ? ` <span class="lv-chip lvt-${Math.min(p.pet_level,7)}">Lv.${p.pet_level}</span>` : ""}${p.is_premium ? ` <span class="pro-tag">PRO</span>` : ""}</b><span>@${esc(p.handle)}</span></div>
       <button class="btn primary disc-follow" data-id="${p.id}">追蹤</button></div>`).join("");
     box.querySelectorAll(".disc-row").forEach(r => r.addEventListener("click", e => { if (e.target.closest(".disc-follow")) return; openProfile(r.dataset.id); }));
     box.querySelectorAll(".disc-follow").forEach(b => b.addEventListener("click", async e => {
@@ -42,7 +42,7 @@ const Discover = (() => {
     term = term.replace(/[%,()*\\]/g, "");   // 去除會破壞 PostgREST or() 的字元
     if (term.length < 2) { box.innerHTML = `<div class="social-empty">輸入至少 2 個字搜尋山友。</div>`; return; }
     const c = Supa.client();
-    const { data: raw } = await c.from("profiles").select("id, handle, display_name, avatar_url")
+    const { data: raw } = await c.from("profiles").select("id, handle, display_name, avatar_url, is_premium")
       .or(`handle.ilike.%${term}%,display_name.ilike.%${term}%`).limit(30);
     const blocked = (typeof Safety !== "undefined") ? await Safety.blockedIds() : new Set();
     const data = (raw || []).filter(p => !blocked.has(p.id));   // 過濾已封鎖的人
@@ -55,7 +55,7 @@ const Discover = (() => {
     }
     box.innerHTML = tagRow + `<div class="disc-sec">山友</div>` + data.map(p => `<div class="disc-row" data-id="${p.id}">
       ${p.avatar_url ? `<img class="fc-av" src="${esc(p.avatar_url)}">` : `<div class="fc-av fc-av-ph">${esc((p.display_name || p.handle).slice(0, 1))}</div>`}
-      <div class="disc-id"><b>${esc(p.display_name || p.handle)}</b><span>@${esc(p.handle)}</span></div></div>`).join("");
+      <div class="disc-id"><b>${esc(p.display_name || p.handle)}${p.is_premium ? ` <span class="pro-tag">PRO</span>` : ""}</b><span>@${esc(p.handle)}</span></div></div>`).join("");
     box.querySelectorAll(".disc-row").forEach(r => r.addEventListener("click", () => openProfile(r.dataset.id)));
     box.querySelectorAll(".hot-tag").forEach(b => b.addEventListener("click", () => { if (typeof Feed !== "undefined") Feed.openTag(b.dataset.tag); }));
   }
@@ -83,7 +83,7 @@ const Discover = (() => {
     wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" aria-label="關閉" id="dpX">✕</button><b>@${esc(prof.handle)}</b><span></span></div>
       <div class="pv-body">
         <div class="pf-top">${prof.avatar_url ? `<img class="pf-av" src="${esc(prof.avatar_url)}">` : `<div class="pf-av pf-av-ph">${esc((prof.display_name || prof.handle).slice(0, 1))}</div>`}
-          <div class="pf-id"><div class="pf-name">${esc(prof.display_name || prof.handle)}</div><div class="pf-handle">@${esc(prof.handle)}</div></div></div>
+          <div class="pf-id"><div class="pf-name">${esc(prof.display_name || prof.handle)}${prof.is_premium ? ` <span class="pro-tag">PRO</span>` : ""}</div><div class="pf-handle">@${esc(prof.handle)}</div></div></div>
         ${petLineFor(prof)}
         <div class="pf-counts" id="dpCounts"></div>
         ${prof.bio ? `<div class="pf-bio">${esc(prof.bio)}</div>` : ""}
@@ -174,7 +174,7 @@ const Discover = (() => {
   async function profilesByIds(ids) {
     if (!ids.length) return [];
     const c = Supa.client();
-    const { data } = await c.from("profiles").select("id, handle, display_name, avatar_url, pet_level").in("id", ids).limit(200);
+    const { data } = await c.from("profiles").select("id, handle, display_name, avatar_url, pet_level, is_premium").in("id", ids).limit(200);
     return data || [];
   }
   async function listFollowers(uid) {
@@ -188,7 +188,7 @@ const Discover = (() => {
     return profilesByIds((data || []).map(r => r.following_id));
   }
   function userRow(p) {
-    return `<div class="disc-row" data-id="${p.id}">${p.avatar_url ? `<img class="fc-av" src="${esc(p.avatar_url)}">` : `<div class="fc-av fc-av-ph">${esc((p.display_name || p.handle).slice(0, 1))}</div>`}<div class="disc-id"><b>${esc(p.display_name || p.handle)}${p.pet_level ? ` <span class="lv-chip lvt-${Math.min(p.pet_level,7)}">Lv.${p.pet_level}</span>` : ""}</b><span>@${esc(p.handle)}</span></div></div>`;
+    return `<div class="disc-row" data-id="${p.id}">${p.avatar_url ? `<img class="fc-av" src="${esc(p.avatar_url)}">` : `<div class="fc-av fc-av-ph">${esc((p.display_name || p.handle).slice(0, 1))}</div>`}<div class="disc-id"><b>${esc(p.display_name || p.handle)}${p.pet_level ? ` <span class="lv-chip lvt-${Math.min(p.pet_level,7)}">Lv.${p.pet_level}</span>` : ""}${p.is_premium ? ` <span class="pro-tag">PRO</span>` : ""}</b><span>@${esc(p.handle)}</span></div></div>`;
   }
   // 粉絲 / 追蹤中 名單覆蓋層
   async function openUserList(uid, mode) {

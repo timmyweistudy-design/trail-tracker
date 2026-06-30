@@ -833,7 +833,7 @@ html[data-theme="dark"] img.trail-photo { background: var(--surface-2); }
 .fs-range input[type=range] { width: 100%; accent-color: var(--brand); }
 
 /* ---------- SVG 圖示 ---------- */
-.ic { display: inline-block; vertical-align: middle; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ic { display: inline-block; width: 18px; height: 18px; vertical-align: middle; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .meta .ic { width: 14px; height: 14px; opacity: .7; stroke-width: 2; }
 .section-title .ic { width: 16px; height: 16px; margin-right: 5px; transform: translateY(-1px); }
 .tab .ic { width: 23px; height: 23px; stroke-width: 1.9; }
@@ -1459,3 +1459,10 @@ html[data-theme="dark"] body::after { opacity: .05; }
 .ana-pb b { color: var(--ink); font-family: var(--num); text-align: right; }
 .ana-exp { display: flex; gap: 8px; margin-top: 16px; }
 .ana-exp .btn { margin-top: 0; flex: 1; }
+
+/* 進階分析標題/空狀態圖示尺寸 */
+.pet-modal-card h2 .ic { width: 18px; height: 18px; vertical-align: -3px; margin-right: 4px; }
+.social-empty .ee .ic { width: 38px; height: 38px; }
+/* PRO 徽章金色光澤（同 Lv.7） */
+.pro-tag { position: relative; overflow: hidden; }
+.pro-tag::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.7) 50%, transparent 65%); background-size: 220% 100%; animation: lv-shine 3.4s ease-in-out infinite; }
