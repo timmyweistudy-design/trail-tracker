@@ -300,7 +300,7 @@ body {
 
 /* 動作格（取代雜亂的堆疊藥丸）：等寬格、圖示在上、小標籤在下，像精緻的動作面板 */
 .link-row {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(74px, 1fr)); gap: 4px;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
   margin: 16px 0 4px; background: var(--surface-2); border: 1px solid var(--line-soft);
   border-radius: var(--r-sm); padding: 5px;
 }
@@ -322,7 +322,7 @@ body {
 .offline-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--brand-mid), var(--brand)); transition: width .2s; }
 .offline-manage { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; box-shadow: var(--sh-sm); }
 .offline-status { font-size: 14px; font-weight: 700; color: var(--brand-deep); font-family: var(--num); }
-.offline-hint { font-size: 12px; color: var(--ink-soft); margin-top: 5px; line-height: 1.6; }
+.offline-hint { font-size: 12px; color: var(--ink-soft); margin-top: 5px; line-height: 1.6; text-align: center; }
 
 /* 美食 */
 .food-loading, .food-empty { font-size: 13px; color: var(--ink-soft); padding: 9px 2px; }
