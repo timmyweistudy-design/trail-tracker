@@ -1542,3 +1542,18 @@ html[data-theme="dark"] body::after { opacity: .05; }
 .cmp-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--brand-mid), var(--accent)); }
 .cmp-km { font-family: var(--num); font-size: 13px; color: var(--ink); }
 .pv-react-b.pro { border-color: var(--pro-c2, #f0a91e); }
+
+/* 記錄頁地圖「我」頭像框跟隨 PRO 配色 */
+.team-marker.me-marker.pro .tm-av img, .team-marker.me-marker.pro .tm-av .tm-ph { border-color: var(--pro-f, #f0a91e); }
+/* 頭像框配色 swatch */
+.frame-sw { color: var(--ink-soft); }
+/* 我的分頁頂端個人檔案卡 */
+.me-card { display: flex; align-items: center; gap: 14px; background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r); padding: 16px; box-shadow: var(--sh-sm); margin-bottom: 16px; }
+.me-av { width: 58px; height: 58px; border-radius: 50%; object-fit: cover; flex: 0 0 auto; }
+.me-av-ph { display: flex; align-items: center; justify-content: center; background: var(--brand-mid); color: #fff; font-family: var(--serif); font-size: 24px; font-weight: 700; }
+.me-card-info { min-width: 0; }
+.me-card-name { font-family: var(--serif); font-weight: 700; font-size: 18px; display: flex; align-items: center; flex-wrap: wrap; gap: 2px; }
+.me-card-handle { font-size: 12.5px; color: var(--ink-faint); margin-top: 1px; }
+.me-card-pet { font-size: 13px; color: var(--ink-soft); margin-top: 5px; }
+.me-card-pet b { font-family: var(--num); color: var(--ink); }
+.me-card-guest { justify-content: center; color: var(--ink-soft); font-size: 14px; cursor: pointer; }

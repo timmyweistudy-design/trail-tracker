@@ -313,7 +313,7 @@ document.querySelectorAll(".tab").forEach(btn => {
         Pets.renderFriends();
       }
     }
-    if (view === "me") { renderHistory(); refreshOfflineStatus(); renderAccent(); renderProColor(); if (typeof Premium !== "undefined") Premium.refresh().then(() => { Premium.renderBox($("#premiumBox")); renderAccent(); renderProColor(); applySeason(); }); }
+    if (view === "me") { renderHistory(); refreshOfflineStatus(); renderAccent(); renderProColor(); renderMeProfileCard(); if (typeof Premium !== "undefined") Premium.refresh().then(() => { Premium.renderBox($("#premiumBox")); renderAccent(); renderProColor(); renderMeProfileCard(); applySeason(); }); }
     if (view === "social" && typeof SocialUI !== "undefined") SocialUI.onShow();
   });
 });
@@ -1858,7 +1858,8 @@ Recorder.onUpdate(s => {
       // 自己的原點＝頭像 + 寵物徽章（與隊友一致）；移除浮動寵物避免重複
       if (!recMarker || !recMarker._av) {
         if (recMarker) recMap.removeLayer(recMarker);
-        recMarker = L.marker(last, { icon: L.divIcon({ className: "team-marker me-marker", html: `<div class="tm-av"><div class="tm-dir"><span class="tm-cone"></span></div><img src="${meAv}" alt=""><span class="tm-pet">${petEmojiNow()}</span></div>`, iconSize: [32, 32], iconAnchor: [16, 16] }), zIndexOffset: 1100 }).addTo(recMap);
+        const mePro = (typeof Premium !== "undefined" && Premium.isOn()) ? " pro" : "";
+        recMarker = L.marker(last, { icon: L.divIcon({ className: "team-marker me-marker" + mePro, html: `<div class="tm-av"><div class="tm-dir"><span class="tm-cone"></span></div><img src="${meAv}" alt=""><span class="tm-pet">${petEmojiNow()}</span></div>`, iconSize: [32, 32], iconAnchor: [16, 16] }), zIndexOffset: 1100 }).addTo(recMap);
         recMarker._av = true;
       }
       recMarker.setLatLng(last);
@@ -2796,22 +2797,54 @@ function applySeason() {
 }
 // PRO 徽章配色（會員）：套用到自己的 PRO 標籤
 const PRO_STYLES = [["#ffe07a", "#f0a91e", "#5a3a00", "金"], ["#dfe4ea", "#9aa3ad", "#2a2f36", "銀"], ["#7be0a3", "#2faa6b", "#0c3d24", "翡翠"], ["#ff9a9a", "#e0444f", "#5a0f14", "紅寶"], ["#9ec2ff", "#4f7fe0", "#0f1f4a", "藍寶"], ["#ffb3d1", "#e060a0", "#5a1338", "玫瑰"]];
+const PRO_FRAMES = [["#f0a91e", "金"], ["#9aa3ad", "銀"], ["#2faa6b", "翡翠"], ["#e0444f", "紅寶"], ["#4f7fe0", "藍寶"], ["#e060a0", "玫瑰"], ["#2c5d3f", "松綠"]];
 function applyProColor() {
-  const i = +(localStorage.getItem("tt_pro_color") || 0);
-  const s = PRO_STYLES[i] || PRO_STYLES[0];
   const r = document.documentElement.style;
+  const s = PRO_STYLES[+(localStorage.getItem("tt_pro_color") || 0)] || PRO_STYLES[0];
   r.setProperty("--pro-c1", s[0]); r.setProperty("--pro-c2", s[1]); r.setProperty("--pro-ink", s[2]);
+  const f = PRO_FRAMES[+(localStorage.getItem("tt_pro_frame") || 0)] || PRO_FRAMES[0];
+  r.setProperty("--pro-f", f[0]);
 }
 function renderProColor() {
   const el = $("#proColorWrap"); if (!el) return;
   if (!(typeof Premium !== "undefined" && Premium.isOn())) { el.innerHTML = ""; return; }
-  const cur = +(localStorage.getItem("tt_pro_color") || 0);
-  el.innerHTML = `<div class="accent-head">PRO 徽章配色</div><div class="proc-row">${PRO_STYLES.map((s, i) =>
-    `<button class="proc-sw${i === cur ? " on" : ""}" data-i="${i}" title="${s[3]}" style="background:linear-gradient(135deg,${s[0]},${s[1]});color:${s[2]}">PRO</button>`).join("")}</div>`;
-  el.querySelectorAll(".proc-sw").forEach(b => b.addEventListener("click", () => {
-    localStorage.setItem("tt_pro_color", b.dataset.i); applyProColor(); renderProColor();
+  const cb = +(localStorage.getItem("tt_pro_color") || 0), cf = +(localStorage.getItem("tt_pro_frame") || 0);
+  el.innerHTML = `<div class="accent-head">PRO 徽章配色</div>
+    <div class="proc-row">${PRO_STYLES.map((s, i) => `<button class="proc-sw${i === cb ? " on" : ""}" data-b="${i}" title="${s[3]}" style="background:linear-gradient(135deg,${s[0]},${s[1]});color:${s[2]}">PRO</button>`).join("")}</div>
+    <div class="accent-head">頭像框配色</div>
+    <div class="proc-row">${PRO_FRAMES.map((s, i) => `<button class="acc-sw frame-sw${i === cf ? " on" : ""}" data-f="${i}" title="${s[1]}" style="box-shadow:0 0 0 3px ${s[0]} inset">${i === cf ? "✓" : ""}</button>`).join("")}</div>`;
+  el.querySelectorAll(".proc-sw[data-b]").forEach(b => b.addEventListener("click", () => {
+    localStorage.setItem("tt_pro_color", b.dataset.b); applyProColor(); renderProColor();
     if (typeof toast === "function") toast("已套用徽章配色");
   }));
+  el.querySelectorAll(".frame-sw[data-f]").forEach(b => b.addEventListener("click", () => {
+    localStorage.setItem("tt_pro_frame", b.dataset.f); applyProColor(); renderProColor();
+    if (typeof toast === "function") toast("已套用頭像框配色");
+  }));
+}
+// 我的分頁頂端：社群個人檔案摘要（頭像/名字/勳章/handle/寵物里程）
+async function renderMeProfileCard() {
+  const el = $("#meProfileCard"); if (!el) return;
+  if (typeof Supa === "undefined" || !Supa.ready() || typeof Auth === "undefined") { el.innerHTML = ""; return; }
+  const sess = await Auth.session().catch(() => null);
+  if (!sess) { el.innerHTML = `<div class="me-card me-card-guest" id="meCardLogin">登入社群以顯示個人檔案 ›</div>`; const b = $("#meCardLogin"); if (b) b.addEventListener("click", () => { const t = document.querySelector('.tab[data-view="social"]'); if (t) t.click(); }); return; }
+  const prof = await Auth.myProfile().catch(() => null);
+  if (!prof) { el.innerHTML = `<div class="me-card me-card-guest" id="meCardLogin">完成社群註冊以顯示個人檔案 ›</div>`; const b = $("#meCardLogin"); if (b) b.addEventListener("click", () => { const t = document.querySelector('.tab[data-view="social"]'); if (t) t.click(); }); return; }
+  const esc = s => (s || "").replace(/[<>&"]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c]));
+  const pro = typeof Premium !== "undefined" && Premium.isOn();
+  const ps = (typeof petStats === "function") ? petStats() : null;
+  const lvl = ps ? ps.level : 0;
+  const av = prof.avatar_url
+    ? `<img class="me-av${pro ? " pro-av" : ""}" src="${esc(prof.avatar_url)}" alt="">`
+    : `<div class="me-av me-av-ph${pro ? " pro-av" : ""}">${esc((prof.display_name || prof.handle || "?").slice(0, 1))}</div>`;
+  el.innerHTML = `<div class="me-card">
+    ${av}
+    <div class="me-card-info">
+      <div class="me-card-name">${esc(prof.display_name || prof.handle)}${lvl ? ` <span class="lv-chip lvt-${Math.min(lvl, 7)}">Lv.${lvl}</span>` : ""}${pro ? ` <span class="pro-tag pro-mine">PRO</span>` : ""}</div>
+      <div class="me-card-handle">@${esc(prof.handle)}</div>
+      ${ps ? `<div class="me-card-pet">${ps.emoji} ${esc(ps.name)}　·　已走 <b>${ps.km}</b> km</div>` : ""}
+    </div>
+  </div>`;
 }
 function renderAccent() {
   const row = $("#accentRow"); if (!row) return;

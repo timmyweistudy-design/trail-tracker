@@ -161,7 +161,7 @@ const PostView = (() => {
 
   // 表情回應列（需 phase11；無資料則只顯示可點的表情）
   const REACT_EMOJI = ["❤️", "👍", "🔥", "😮", "💪", "😂"];
-  const REACT_PRO = ["🏔️", "🦌", "⛺", "🌟"];   // PRO 專屬反應
+  const REACT_PRO = ["🏔️", "🦌", "⛺", "🌟", "🐻", "🦅", "🍂", "❄️", "🌄", "🥾", "🌲", "🏕️"];   // PRO 專屬反應
   async function loadReactions(wrap, postId) {
     const box = wrap.querySelector("#pvReact"); if (!box) return;
     const rows = await Posts.reactions(postId);
