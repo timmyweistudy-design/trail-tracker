@@ -132,7 +132,11 @@ const Recorder = (() => {
     }
 
     const d = haversine(lastFix, p);
-    if (!clean && d < MIN_MOVE) {                    // 原地抖動：不累積，只推進時間基準
+    // 靜止漂移過濾：門檻隨定位精度放大（位移小於精度圓 0.9 倍多半是漂移）；
+    // 且 GPS 回報速度趨近 0（<0.4 m/s＝沒在走）時，30m 內的位移一律當漂移——修「人沒動卻一直累積里程」
+    const gate = Math.max(MIN_MOVE, acc != null ? Math.min(acc, 30) * 0.9 : 0);
+    const still = (gpsSpeed != null && gpsSpeed >= 0 && gpsSpeed < 0.4);
+    if (!clean && (d < gate || (still && d < Math.max(gate, 30)))) {   // 原地抖動/漂移：不累積，只推進時間基準
       lastFix.t = now;
       if (gpsSpeed == null) curSpeed *= 0.6;         // 無 GPS 速度時，靜止逐漸歸零
       cb(snapshot()); return;

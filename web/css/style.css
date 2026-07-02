@@ -1093,8 +1093,10 @@ html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
 
 /* 地圖頭像標記：面朝方向錐（融入頭像，無文字） */
 .team-marker .tm-dir { position: absolute; inset: 0; pointer-events: none; transition: transform .25s ease; }
-.team-marker .tm-cone { position: absolute; left: 50%; top: -8px; margin-left: -7px; width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-bottom: 10px solid var(--brand); filter: drop-shadow(0 1px 1px rgba(0,0,0,.35)); }
+/* 方向三角形顏色＝頭像相框顏色（隊友白框、自己主題色框、PRO 跟框配色） */
+.team-marker .tm-cone { position: absolute; left: 50%; top: -8px; margin-left: -7px; width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-bottom: 10px solid #fff; filter: drop-shadow(0 1px 1px rgba(0,0,0,.35)); }
 .team-marker.me-marker .tm-cone { border-bottom-color: var(--accent); }
+.team-marker.me-marker.pro .tm-cone { border-bottom-color: var(--pro-f, #f0a91e); }
 
 /* 等級徽章：等級越高越高級（樸素 → 漸層 → 金色傳說） */
 .lv-chip { color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,.18); }

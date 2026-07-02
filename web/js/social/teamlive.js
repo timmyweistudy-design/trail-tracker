@@ -4,6 +4,8 @@
 const TeamLive = (() => {
   let channel = null, watchId = null, map = null, markers = {}, me = null, myInfo = {}, lastPos = null;
   let leaderId = null, myReady = false, onStartCb = null;
+  let myStartAt = null;        // 隊長按下開始的時間（跟著 presence 傳，凍結分頁回前景也能補收到）
+  let startHandled = false;    // 這次同行已處理過開始訊號，避免重複觸發
 
   function isOn() { return !!channel; }
   function isLeader() { return !!me && me === leaderId; }
@@ -25,16 +27,28 @@ const TeamLive = (() => {
     for (const key in state) {
       const metas = state[key] || [];
       const last = metas[metas.length - 1] || {};
-      out.push({ id: key, name: last.name || "隊友", ready: metas.some(m => m && m.ready), me: key === me, leader: key === leaderId });
+      // 自己的準備狀態以本地為準（分頁切換時 presence 可能還沒同步回來，別把自己誤判成未準備）
+      const ready = (key === me) ? (myReady || metas.some(m => m && m.ready)) : metas.some(m => m && m.ready);
+      out.push({ id: key, name: last.name || "隊友", ready, me: key === me, leader: key === leaderId });
     }
     return out.sort((a, b) => (b.leader - a.leader) || (b.me - a.me));
   }
   function allReady() { const r = roster(); return r.length > 0 && r.every(m => m.ready); }
   function notReadyNames() { return roster().filter(m => !m.ready).map(m => m.name); }
 
+  // 隊長的開始訊號也寫在 presence meta（started）：分頁被凍結錯過 broadcast 的隊員，
+  // 回前景 presence 同步時仍會看到並補開始
+  function checkPresenceStart() {
+    if (!channel || startHandled || !onStartCb || isLeader() || !leaderId || !myReady) return;
+    const metas = channel.presenceState()[leaderId] || [];
+    const started = metas.reduce((t, m) => Math.max(t, (m && m.started) || 0), 0);
+    if (started && Date.now() - started < 10 * 60e3) { startHandled = true; onStartCb(); }
+  }
+
   function render() {
     if (!channel) return;
     renderReadyBar();
+    checkPresenceStart();
     if (!map || typeof L === "undefined") return;
     const state = channel.presenceState();
     const seen = {};
@@ -55,7 +69,7 @@ const TeamLive = (() => {
   function payload() {
     return { lat: lastPos ? lastPos.lat : null, lon: lastPos ? lastPos.lon : null,
       name: myInfo.name, avatar: myInfo.avatar || null, pet: myInfo.pet || null,
-      heading: lastPos ? lastPos.heading : null, ready: myReady, at: Date.now() };
+      heading: lastPos ? lastPos.heading : null, ready: myReady, started: myStartAt || 0, at: Date.now() };
   }
   function broadcast(p) {
     const h = p.coords.heading;
@@ -69,8 +83,14 @@ const TeamLive = (() => {
     renderReadyBar();
   }
   function onStart(cb) { onStartCb = cb; }
-  // 隊長廣播「開始」：全員同時開始記錄（broadcast 不會送回自己，隊長本地另行開始）
-  function sendStart() { if (channel) channel.send({ type: "broadcast", event: "start", payload: { at: Date.now() } }); }
+  // 隊長廣播「開始」：全員同時開始記錄（broadcast 不會送回自己，隊長本地另行開始）。
+  // 同時把 started 寫進 presence，讓凍結中的分頁回前景也補收得到
+  function sendStart() {
+    if (!channel) return;
+    myStartAt = Date.now();
+    channel.send({ type: "broadcast", event: "start", payload: { at: myStartAt } });
+    channel.track(payload());
+  }
 
   // 記錄頁準備列：✋ 準備切換 + 全隊準備狀態；隊長多一顆「開始小隊記錄」提示
   function readyBarEl() {
@@ -114,10 +134,11 @@ const TeamLive = (() => {
       catch (e) { /* 查不到就維持 null，準備列會提示 */ }
     }
     channel = c.channel("team:" + teamId, { config: { presence: { key: me } } });
+    myStartAt = null; startHandled = false;
     channel.on("presence", { event: "sync" }, render);
     channel.on("presence", { event: "join" }, render);
     channel.on("presence", { event: "leave" }, render);
-    channel.on("broadcast", { event: "start" }, () => { if (onStartCb) onStartCb(); });
+    channel.on("broadcast", { event: "start" }, () => { if (onStartCb && !startHandled) { startHandled = true; onStartCb(); } });
     channel.subscribe(st => { if (st === "SUBSCRIBED") channel.track(payload()); });
     if (navigator.geolocation) {
       watchId = navigator.geolocation.watchPosition(broadcast, () => { }, { enableHighAccuracy: true, maximumAge: 3000, timeout: 15000 });
@@ -130,7 +151,21 @@ const TeamLive = (() => {
     if (channel) { try { Supa.client().removeChannel(channel); } catch (e) { } channel = null; }
     for (const k in markers) { try { map.removeLayer(markers[k]); } catch (e) { } }
     markers = {}; map = null; lastPos = null; leaderId = null; myReady = false;
+    myStartAt = null; startHandled = false;
     const el = document.getElementById("teamReadyBar"); if (el) el.remove();
+  }
+
+  // 分頁切回前景：手機會凍結背景分頁、Realtime 斷線，回來後立刻重新註冊自己的 presence
+  // （帶著 ready/started 狀態），並補查有沒有錯過隊長的開始訊號
+  if (typeof document !== "undefined" && document.addEventListener) {
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState !== "visible" || !channel) return;
+      setTimeout(() => {
+        if (!channel) return;
+        try { channel.track(payload()); } catch (e) { /* 重連中 */ }
+        render();
+      }, 600);
+    });
   }
 
   return { start, stop, isOn, isLeader, setReady, allReady, roster, notReadyNames, sendStart, onStart };
