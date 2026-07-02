@@ -39,6 +39,7 @@ const Team = (() => {
   }
 
   async function openSheet() {
+    if (typeof ttBusy === "function" && ttBusy("teamsheet")) return;   // 防連點（登入/建檔查詢的空窗）
     if (typeof Supa === "undefined" || !Supa.ready()) { alert("社群尚未啟用"); return; }
     const sess = await Auth.session(); if (!sess) { alert("請先到「社群」分頁登入"); return; }
     const prof = await Auth.myProfile(); if (!prof) { alert("請先到「社群」分頁完成註冊"); return; }

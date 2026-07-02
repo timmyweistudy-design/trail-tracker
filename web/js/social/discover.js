@@ -101,6 +101,7 @@ const Discover = (() => {
   }
 
   async function openProfile(userId) {
+    if (typeof ttBusy === "function" && ttBusy("profile-" + userId)) return;   // 防連點（含抓資料空窗）
     const c = Supa.client();
     const { data: prof } = await c.from("profiles").select("*").eq("id", userId).maybeSingle();
     if (!prof) return;
@@ -226,6 +227,7 @@ const Discover = (() => {
   }
   // 粉絲 / 追蹤中 名單覆蓋層
   async function openUserList(uid, mode) {
+    if (typeof ttBusy === "function" && ttBusy("ulist")) return;   // 防連點
     const title = mode === "followers" ? "粉絲" : "追蹤中";
     if (document.querySelector('[data-ov="ulist"]')) return;   // 防連點疊層
     const wrap = document.createElement("div"); wrap.className = "pv-mask"; wrap.dataset.ov = "ulist";

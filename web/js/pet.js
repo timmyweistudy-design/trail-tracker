@@ -330,6 +330,7 @@ function renderRecIdle() {
 // 我的足跡熱力圖：所有真實軌跡疊在一張地圖上
 async function openFootprintMap() {
   if (document.querySelector('[data-ov="footmap"]')) return;   // 防連點疊層
+  if (typeof ttBusy === "function" && ttBusy("footmap")) return;   // 同步鎖：讀封存的空窗期連點也擋
   const recs = (await Store.allFull()).filter(r => isFootRec(r) && r.track && r.track.length > 1);
   if (!recs.length) { toast("還沒有可顯示的軌跡，先去走一條吧"); return; }
   const ov = document.createElement("div");

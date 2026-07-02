@@ -8,6 +8,7 @@ const Events = (() => {
   async function me() { const c = Supa.client(); if (!c) return null; const { data } = await c.auth.getUser(); return data && data.user ? data.user.id : null; }
 
   async function open(presetTrail) {
+    if (typeof ttBusy === "function" && ttBusy("events")) return;   // 防連點
     if (typeof Supa === "undefined" || !Supa.ready()) { if (typeof toast === "function") toast("社群尚未啟用"); return; }
     const sess = await Auth.session(); if (!sess) { if (typeof toast === "function") toast("請先到社群分頁登入"); return; }
     if (document.querySelector('[data-ov="events"]')) return;   // 防連點疊層

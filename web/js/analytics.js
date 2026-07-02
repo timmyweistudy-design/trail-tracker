@@ -287,6 +287,7 @@ function exportRecordsKml(recs) {
 // 好友里程比較：我 + 我追蹤的人，依累積里程排行
 async function openCompare() {
   if (document.querySelector('[data-ov="cmpfriends"]')) return;   // 防連點疊層
+  if (typeof ttBusy === "function" && ttBusy("cmpfriends")) return;   // 同步鎖
   if (typeof Supa === "undefined" || !Supa.ready()) { toast("社群尚未啟用"); return; }
   const c = Supa.client(); const { data: u } = await c.auth.getUser();
   if (!u || !u.user) { toast("請先到社群分頁登入"); return; }

@@ -199,6 +199,16 @@ const Store = (() => {
            life, fullRecord, allFull };
 })();
 
+// 公用：同步防連點鎖。非同步開啟的面板（要先抓資料）在資料回來前 data-ov 標記還沒掛上，
+// 連點會穿過去疊開多層——在函式第一行（await 之前）呼叫此鎖即可。ms 內重複呼叫回傳 true（忙碌中）。
+function ttBusy(key, ms) {
+  const now = Date.now();
+  window.__ttBusy = window.__ttBusy || {};
+  if (window.__ttBusy[key] && now - window.__ttBusy[key] < (ms || 1500)) return true;
+  window.__ttBusy[key] = now;
+  return false;
+}
+
 // 公用：把軌跡依 gap 標記切成多段（暫停→繼續的跳段不相連）。回傳 [[{lat,lon,..}...], ...]
 function trackSegments(track) {
   const segs = [];

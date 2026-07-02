@@ -2409,6 +2409,12 @@ function initTheme() {
     localStorage.setItem("tt_theme", b.dataset.themeOpt);
     applyTheme(b.dataset.themeOpt);
   }));
+  // 語言切換（中/英）：存偏好後重載，由 i18n.js 在啟動時翻譯整個介面
+  const curLang = (typeof I18n !== "undefined") ? I18n.lang() : "zh";
+  document.querySelectorAll(".lang-opt").forEach(b => {
+    b.classList.toggle("on", b.dataset.langOpt === curLang);
+    b.addEventListener("click", () => { if (b.dataset.langOpt !== curLang && typeof I18n !== "undefined") I18n.set(b.dataset.langOpt); });
+  });
 }
 
 // ---------- 崩潰復原：載入時若有未結束的記錄，復原為暫停狀態 ----------

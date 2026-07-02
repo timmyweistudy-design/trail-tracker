@@ -74,6 +74,7 @@ const BACKUP_EXEMPT = new Set([
   "tt_team", "tt_team_name", "tt_team_live",              // 目前小隊/同行開關：裝置選擇
   "tt_reported", "tt_saved", "tt_draft", "tt_prof_idx",   // 社群端另存雲端/暫存
   "tt_debug_km",                                          // 測試用
+  "tt_lang",                                              // 語言：裝置偏好
 ]);
 const storageSrc = read(path.join(WEB, "js", "storage.js"));
 const bkMatch = storageSrc.match(/BACKUP_KEYS\s*=\s*\[([^\]]*)\]/);

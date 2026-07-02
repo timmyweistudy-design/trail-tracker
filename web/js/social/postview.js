@@ -4,6 +4,7 @@ const PostView = (() => {
 
   async function open(postId) {
     if (document.querySelector(`[data-ov="post-${postId}"]`)) return;   // 防連點疊層
+    if (typeof ttBusy === "function" && ttBusy("pv-open-" + postId)) return;   // 同步鎖：抓資料的空窗期連點也擋
     const post = await Posts.one(postId);
     if (!post) { if (typeof toast === "function") toast("貼文不存在或無權限"); return; }
     const c = Supa.client();
