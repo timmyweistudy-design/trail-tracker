@@ -17,17 +17,20 @@ const TeamLive = (() => {
   }
 
   // 目前在線名單（含準備狀態），供準備列與「全員準備」判斷
+  // 同一帳號可能同時有多個分頁/裝置＝多筆 meta：任一筆 ready 就算 ready，名字取最新一筆
   function roster() {
     if (!channel) return [];
     const state = channel.presenceState();
     const out = [];
     for (const key in state) {
-      const meta = (state[key] && state[key][0]) || {};
-      out.push({ id: key, name: meta.name || "隊友", ready: !!meta.ready, me: key === me, leader: key === leaderId });
+      const metas = state[key] || [];
+      const last = metas[metas.length - 1] || {};
+      out.push({ id: key, name: last.name || "隊友", ready: metas.some(m => m && m.ready), me: key === me, leader: key === leaderId });
     }
     return out.sort((a, b) => (b.leader - a.leader) || (b.me - a.me));
   }
   function allReady() { const r = roster(); return r.length > 0 && r.every(m => m.ready); }
+  function notReadyNames() { return roster().filter(m => !m.ready).map(m => m.name); }
 
   function render() {
     if (!channel) return;
@@ -87,10 +90,12 @@ const TeamLive = (() => {
     if (!channel) { el.remove(); return; }
     const r = roster();
     const chips = r.map(m => `<span class="trb-chip ${m.ready ? "ok" : ""}">${m.leader ? "👑 " : ""}${esc(m.name)}${m.me ? "（我）" : ""} ${m.ready ? "✓" : "…"}</span>`).join("");
+    const nr = notReadyNames();
     const hint = isLeader()
-      ? (allReady() ? "全員已準備，按「▶ 開始」一起記錄！" : "等待全員按「準備」…")
-      : (myReady ? "已準備，等待隊長開始…" : "按「準備」告訴隊長你就緒");
-    el.innerHTML = `<div class="trb-top"><b>👥 小隊同行</b><button class="trb-ready ${myReady ? "on" : ""}" id="trbReady">${myReady ? "✓ 已準備" : "✋ 準備"}</button></div>
+      ? (allReady() ? "✅ 全員已準備！按下面的「▶ 開始」，全隊一起記錄" : `等待按「準備」：${nr.join("、") || "…"}`)
+      : (leaderId == null ? "⚠️ 讀不到隊長資訊，請隊長重開「與小隊同行」"
+        : (myReady ? (allReady() ? "✅ 全員已準備，等隊長按開始…" : "已準備，等其他隊員…") : "按「準備」告訴隊長你就緒"));
+    el.innerHTML = `<div class="trb-top"><b>👥 小隊同行${isLeader() ? "・我是隊長 👑" : ""}</b><button class="trb-ready ${myReady ? "on" : ""}" id="trbReady">${myReady ? "✓ 已準備" : "✋ 準備"}</button></div>
       <div class="trb-chips">${chips || "<span class='trb-chip'>等待隊友上線…</span>"}</div>
       <div class="trb-hint">${hint}</div>`;
     const b = el.querySelector("#trbReady");
@@ -103,6 +108,11 @@ const TeamLive = (() => {
     leaderId = (opts && opts.leader) || null;
     const c = Supa.client(); if (!c || !leafletMap) return;
     const { data: u } = await c.auth.getUser(); me = u && u.user ? u.user.id : null; if (!me) return;
+    // 沒拿到隊長資訊時直接查 DB（teams.owner），避免「誰都不是隊長→誰都不能開始」
+    if (!leaderId) {
+      try { const { data: t } = await c.from("teams").select("owner").eq("id", teamId).maybeSingle(); leaderId = (t && t.owner) || null; }
+      catch (e) { /* 查不到就維持 null，準備列會提示 */ }
+    }
     channel = c.channel("team:" + teamId, { config: { presence: { key: me } } });
     channel.on("presence", { event: "sync" }, render);
     channel.on("presence", { event: "join" }, render);
@@ -123,5 +133,5 @@ const TeamLive = (() => {
     const el = document.getElementById("teamReadyBar"); if (el) el.remove();
   }
 
-  return { start, stop, isOn, isLeader, setReady, allReady, roster, sendStart, onStart };
+  return { start, stop, isOn, isLeader, setReady, allReady, roster, notReadyNames, sendStart, onStart };
 })();

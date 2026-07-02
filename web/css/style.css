@@ -555,18 +555,6 @@ body {
 .backup-row { display: flex; gap: 10px; }
 .backup-row .btn { flex: 1; }
 
-/* 每日目標環 */
-.ring-card { display: flex; align-items: center; gap: 16px; background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r); padding: 14px 18px; box-shadow: var(--sh-sm); margin-bottom: 12px; }
-.ring { width: 80px; height: 80px; flex: 0 0 auto; }
-.ring-bg { fill: none; stroke: var(--surface-2); stroke-width: 8; }
-.ring-fg { fill: none; stroke: var(--brand); stroke-width: 8; stroke-linecap: round; transform: rotate(-90deg); transform-origin: center; transition: stroke-dashoffset .7s cubic-bezier(.2,.8,.2,1); }
-.ring-km { font-family: var(--num); font-size: 20px; font-weight: 700; fill: var(--brand-deep); text-anchor: middle; }
-.ring-unit { font-size: 10px; fill: var(--ink-soft); text-anchor: middle; }
-.ring-info { flex: 1; }
-.ring-t { font-family: var(--serif); font-weight: 700; font-size: 15px; color: var(--ink); }
-.ring-s { font-size: 12.5px; color: var(--ink-soft); margin-top: 4px; }
-.ring-info .info-link { padding-left: 0; }
-
 /* 我的足跡統計 */
 .mstat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; }
 .mstat { background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 12px 6px; text-align: center; box-shadow: var(--sh-sm); }
@@ -1430,7 +1418,10 @@ html[data-theme="dark"] body::after { opacity: .05; }
 
 /* ===== Premium 付費 ===== */
 .premium-mask { align-items: center; }
-.premium-card { background: var(--surface); width: min(92%, 380px); margin: auto; border-radius: var(--r); padding: 26px 22px 20px; position: relative; text-align: center; box-shadow: var(--sh-lg); animation: sheet-up .24s ease; }
+/* 內容多會超出螢幕 → 卡片限高、內部可滑動 */
+.premium-card { background: var(--surface); width: min(92%, 380px); margin: auto; border-radius: var(--r); padding: 26px 22px 20px; position: relative; text-align: center; box-shadow: var(--sh-lg); animation: sheet-up .24s ease;
+  max-height: min(88dvh, 88vh); overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.oq-up-line { margin-top: 4px; }
 .pm-crown { color: var(--accent); margin-bottom: 6px; }
 .pm-crown .ic { width: 34px; height: 34px; }
 .premium-card h2 { font-family: var(--serif); font-size: 21px; margin: 0; }

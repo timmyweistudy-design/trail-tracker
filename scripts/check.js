@@ -71,7 +71,7 @@ const BACKUP_EXEMPT = new Set([
   "tt_offline_mb", "tt_offline_free",                     // 離線額度：綁裝置，不跨機還原
   "tt_premium", "tt_premium_since",                       // 訂閱狀態：由 Supabase 決定
   "tt_active_rec",                                        // 記錄中暫存
-  "tt_team", "tt_team_name",                              // 目前小隊：裝置選擇
+  "tt_team", "tt_team_name", "tt_team_live",              // 目前小隊/同行開關：裝置選擇
   "tt_reported", "tt_saved", "tt_draft", "tt_prof_idx",   // 社群端另存雲端/暫存
   "tt_debug_km",                                          // 測試用
 ]);

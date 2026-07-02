@@ -68,6 +68,24 @@ const Team = (() => {
     return { ok: !error && data, error: error && error.message };
   }
 
+  // 與小隊同行「預設開啟」：進記錄頁時，有目前小隊＋已登入就自動連上（使用者手動關過則不自動開）
+  async function autoLive(map) {
+    try {
+      if (typeof TeamLive === "undefined" || TeamLive.isOn()) return;
+      if (localStorage.getItem("tt_team_live") === "0") return;   // 使用者手動關閉過
+      const aId = activeId(); if (!aId || !map) return;
+      if (typeof Supa === "undefined" || !Supa.ready()) return;
+      const sess = await Auth.session().catch(() => null); if (!sess) return;
+      const prof = await Auth.myProfile().catch(() => null); if (!prof) return;
+      const info = { name: prof.display_name || prof.handle || "我", avatar: prof.avatar_url || null, pet: (typeof petStats === "function" ? petStats().emoji : null) };
+      const teams = await myTeams();
+      const t = teams.find(x => x.id === aId);
+      if (!t) return;   // 已退出小隊 → 不自動連
+      await TeamLive.start(aId, map, info, { leader: t.owner || null });
+      if (typeof toast === "function") toast(`已自動開啟小隊同行（${t.name}）`);
+    } catch (e) { /* 自動開啟失敗不影響記錄 */ }
+  }
+
   async function renderSheet(wrap, info) {
     const myName = info.name;
     const body = wrap.querySelector("#tmBody"); if (!body) return;
@@ -132,11 +150,12 @@ const Team = (() => {
       live.addEventListener("change", e => {
         if (typeof TeamLive === "undefined") return;
         if (e.target.checked) {
+          localStorage.setItem("tt_team_live", "1");   // 之後進記錄頁自動開啟
           const m = (typeof recMap !== "undefined") ? recMap : null;
           if (!m) { if (typeof toast === "function") toast("請先到記錄頁開啟地圖"); e.target.checked = false; return; }
           TeamLive.start(aId, m, info, { leader: activeTeam ? activeTeam.owner : null });
           if (typeof toast === "function") toast("已開啟小隊同行，回記錄頁按「準備」等隊長開始");
-        } else TeamLive.stop();
+        } else { localStorage.setItem("tt_team_live", "0"); TeamLive.stop(); }
       });
     }
 
@@ -160,5 +179,5 @@ const Team = (() => {
     });
   }
 
-  return { openSheet, activeId, activeName, setActive };
+  return { openSheet, activeId, activeName, setActive, autoLive };
 })();

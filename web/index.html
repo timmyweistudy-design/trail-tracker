@@ -2,7 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+  <!-- 開放兩指縮放（年長者放大字體用）：不設 maximum-scale/user-scalable 限制；地圖內縮放由 Leaflet 自己處理不受影響 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5, user-scalable=yes">
   <meta name="theme-color" content="#16301f">
   <title>循徑拾光 Gather the Trail</title>
   <script>
@@ -160,7 +161,6 @@
   <section id="view-pet" class="view">
     <div class="pet-head"><h2 class="view-title">🐾 山林夥伴</h2></div>
     <div id="petCard"></div>
-    <div id="dailyRing"></div>
     <div id="petQuests"></div>
     <div id="petBadges"></div>
     <div id="petFriends"></div>

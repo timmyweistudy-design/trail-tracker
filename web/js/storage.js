@@ -67,7 +67,7 @@ const Store = (() => {
     "tt_pet_name", "tt_pet_hatch", "tt_pet_stage", "tt_pet_base",
     "tt_pet_berry_spent", "tt_pet_berry_bonus", "tt_pet_aff", "tt_pet_aff_t",
     "tt_pet_fed", "tt_pet_fed_t", "tt_pet_feedkm",
-    "tt_daily_goal", "tt_quest_claim", "tt_quest_hi", "tt_badges_got",
+    "tt_quest_claim", "tt_quest_hi", "tt_badges_got",
     "tt_theme", "tt_accent", "tt_pro_color", "tt_pro_frame",
     "tt_presets", "tt_default_vis", "tt_wakelock",
   ];
