@@ -15,6 +15,7 @@ const Composer = (() => {
   }
 
   function mount(rec, presetFiles, presetCaption) {
+    if (document.querySelector(".composer-mask")) return;   // 防連點疊層
     files = (presetFiles && presetFiles.length) ? presetFiles.slice(0, 9) : []; video = null; rating = 0;
     const wrap = document.createElement("div");
     wrap.className = "composer-mask";

@@ -100,9 +100,24 @@ appSrc.split("\n").forEach((l, i) => {
   }
 });
 
+// F. web/ 有改動但 sw.js 快取版本沒 bump → 使用者拿不到新版（PWA 用舊快取）
+try {
+  const changed = execFileSync("git", ["diff", "--name-only", "HEAD"], { cwd: ROOT, stdio: "pipe" }).toString().trim().split("\n").filter(Boolean);
+  const webChanged = changed.some(f => f.startsWith("web/") && f !== "web/sw.js");
+  if (webChanged) {
+    const cur = (read(path.join(WEB, "sw.js")).match(/CACHE = "([^"]+)"/) || [])[1];
+    const old = (execFileSync("git", ["show", "HEAD:web/sw.js"], { cwd: ROOT, stdio: "pipe" }).toString().match(/CACHE = "([^"]+)"/) || [])[1];
+    if (cur && old && cur === old) err(`[版本] web/ 有改動但 web/sw.js 的 CACHE 版本仍是 ${cur}——沒 bump 版本使用者拿不到更新`);
+  }
+} catch (e) { /* 非 git 環境或首次 commit → 略過 */ }
+
+// G. 跑核心邏輯單元測試
+try { execFileSync(process.execPath, [path.join(__dirname, "tests", "test-fixes.js")], { stdio: "pipe" }); }
+catch (e) { err(`[測試] 單元測試失敗：\n${String(e.stdout || e.message).trim().split("\n").filter(l => l.startsWith("✗")).join("\n")}`); }
+
 if (errors.length) {
   console.error(`✗ 檢查未通過（${errors.length} 個問題）：\n`);
   for (const e of errors) console.error("• " + e + "\n");
   process.exit(1);
 }
-console.log(`✓ 檢查通過：${files.length + 1} 個 JS 檔語法 OK、行內按鈕/日期/備份鍵/HTML id 規則皆符合`);
+console.log(`✓ 檢查通過：${files.length + 1} 個 JS 檔語法、單元測試、按鈕寬度/日期/備份鍵/HTML id/SW 版本規則皆符合`);

@@ -41,26 +41,42 @@ const Offline = (() => {
     };
   }
 
+  // 併發下載（Esri 商用圖磚伺服器，5 併發沒問題）：全台 6000 張從 ~15 分鐘縮到 1–2 分鐘
   async function download(tiles, onProgress) {
     const cache = await caches.open(TILE_CACHE);
-    let done = 0, ok = 0, bytes = 0;
-    for (const url of tiles) {
-      try {
-        if (await cache.match(url)) { ok++; }   // 已快取過的不重複計流量
-        else {
-          const res = await fetch(url, { mode: "cors" });
-          if (res.ok) {
-            const buf = await res.clone().arrayBuffer();   // 實際大小，供 MB 額度計算
-            bytes += buf.byteLength;
-            await cache.put(url, res); ok++;
+    let done = 0, ok = 0, bytes = 0, idx = 0;
+    async function worker() {
+      while (idx < tiles.length) {
+        const url = tiles[idx++];
+        try {
+          if (await cache.match(url)) { ok++; }   // 已快取過的不重複計流量
+          else {
+            const res = await fetch(url, { mode: "cors" });
+            if (res.ok) {
+              const buf = await res.clone().arrayBuffer();   // 實際大小，供 MB 額度計算
+              bytes += buf.byteLength;
+              await cache.put(url, res); ok++;
+            }
           }
-        }
-      } catch { /* 單張失敗略過 */ }
-      done++;
-      if (onProgress) onProgress(done, tiles.length, ok);
-      await new Promise(r => setTimeout(r, 45));   // 禮貌節流，善待公用圖磚伺服器
+        } catch { /* 單張失敗略過 */ }
+        done++;
+        if (onProgress) onProgress(done, tiles.length, ok);
+      }
     }
+    await Promise.all(Array.from({ length: Math.min(5, tiles.length || 1) }, worker));
+    enforceCap().catch(() => { });   // 下載完順手控管快取上限
     return { total: tiles.length, ok, bytes, mb: bytes / 1048576 };
+  }
+
+  // 圖磚快取上限：只進不出會慢慢撐爆手機儲存。超過上限刪最舊的（Cache keys 依寫入順序）
+  const TILE_CAP = 6000;   // 約 120 MB
+  async function enforceCap(max = TILE_CAP) {
+    try {
+      const cache = await caches.open(TILE_CACHE);
+      const keys = await cache.keys();
+      const excess = keys.length - max;
+      for (let i = 0; i < excess; i++) await cache.delete(keys[i]);
+    } catch { /* ignore */ }
   }
 
   async function cachedCount() {
@@ -68,5 +84,5 @@ const Offline = (() => {
   }
   async function clear() { try { await caches.delete(TILE_CACHE); } catch { /* ignore */ } }
 
-  return { tileList, planZoom, bboxFor, download, cachedCount, clear };
+  return { tileList, planZoom, bboxFor, download, cachedCount, clear, enforceCap };
 })();

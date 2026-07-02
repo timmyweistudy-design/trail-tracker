@@ -107,8 +107,9 @@ const Discover = (() => {
     const { data: me } = await c.auth.getUser();
     const isMe = me && me.user && me.user.id === userId;
     const fstate = isMe ? "no" : await followState(userId);
+    if (document.querySelector(`[data-ov="profile-${userId}"]`)) return;   // 防連點疊層（不同人的頁面仍可堆疊）
     const wrap = document.createElement("div");
-    wrap.className = "pv-mask";
+    wrap.className = "pv-mask"; wrap.dataset.ov = "profile-" + userId;
     wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" aria-label="關閉" id="dpX">✕</button><b>@${esc(prof.handle)}</b><span></span></div>
       <div class="pv-body${prof.cover_url ? " has-cover" : ""}">
         ${prof.cover_url ? `<div class="pf-cover" style="background-image:url('${esc(prof.cover_url)}')"></div>` : ""}
@@ -226,7 +227,8 @@ const Discover = (() => {
   // 粉絲 / 追蹤中 名單覆蓋層
   async function openUserList(uid, mode) {
     const title = mode === "followers" ? "粉絲" : "追蹤中";
-    const wrap = document.createElement("div"); wrap.className = "pv-mask";
+    if (document.querySelector('[data-ov="ulist"]')) return;   // 防連點疊層
+    const wrap = document.createElement("div"); wrap.className = "pv-mask"; wrap.dataset.ov = "ulist";
     wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" aria-label="關閉" id="ulX">✕</button><b>${title}</b><span></span></div>
       <div class="pv-body" id="ulBody"><div class="feed-loading"><span class="spin"></span></div></div></div>`;
     document.body.appendChild(wrap);

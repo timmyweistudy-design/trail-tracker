@@ -6,6 +6,7 @@ const Lightbox = (() => {
     let i = Math.max(0, Math.min(srcs.length - 1, start || 0));
     let zoom = 1, tx = 0, ty = 0;
 
+    if (document.querySelector(".lightbox")) return;   // 防連點疊層
     const m = document.createElement("div");
     m.className = "lightbox";
     m.innerHTML = `

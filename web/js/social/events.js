@@ -10,7 +10,8 @@ const Events = (() => {
   async function open(presetTrail) {
     if (typeof Supa === "undefined" || !Supa.ready()) { if (typeof toast === "function") toast("社群尚未啟用"); return; }
     const sess = await Auth.session(); if (!sess) { if (typeof toast === "function") toast("請先到社群分頁登入"); return; }
-    const wrap = document.createElement("div"); wrap.className = "pv-mask";
+    if (document.querySelector('[data-ov="events"]')) return;   // 防連點疊層
+    const wrap = document.createElement("div"); wrap.className = "pv-mask"; wrap.dataset.ov = "events";
     wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" id="evX" aria-label="關閉">✕</button><b>${ic("calendar")} 揪團活動</b><button class="comp-x" id="evNew" title="建立">${ic("plus")}</button></div>
       <div class="pv-body" id="evBody"><div class="feed-loading"><span class="spin"></span></div></div></div>`;
     document.body.appendChild(wrap);

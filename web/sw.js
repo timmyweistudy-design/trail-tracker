@@ -1,11 +1,11 @@
 // 離線快取：app shell + 地圖圖磚
-const CACHE = "trail-tracker-v218";
+const CACHE = "trail-tracker-v219";
 const TILE_CACHE = "tt-tiles";   // 地圖圖磚（不隨版本清除，保留離線地圖）
 const ASSETS = [
   "./", "./index.html",
   "./css/style.css",
   "./js/trails-data.js", "./js/trails-detail.js", "./js/trails-geo.js", "./js/storage.js", "./js/grades.js", "./js/config.js", "./js/conditions.js",
-  "./js/photos.js", "./js/amenities.js", "./js/food.js", "./js/attractions.js", "./js/weather.js", "./js/profile.js", "./js/recorder.js", "./js/elevation.js", "./js/offline.js", "./js/gpx.js", "./js/premium.js", "./js/app.js",
+  "./js/photos.js", "./js/amenities.js", "./js/food.js", "./js/attractions.js", "./js/weather.js", "./js/profile.js", "./js/recorder.js", "./js/elevation.js", "./js/offline.js", "./js/gpx.js", "./js/premium.js", "./js/pet.js", "./js/analytics.js", "./js/app.js",
   "./vendor/supabase/supabase.js",
   "./js/social/supa.js", "./js/social/handle.js", "./js/social/media.js", "./js/social/posts.js", "./js/social/composer.js", "./js/social/safety.js", "./js/social/feed.js", "./js/social/postview.js", "./js/social/discover.js", "./js/social/petsocial.js", "./js/social/teamlive.js", "./js/social/teams.js", "./js/social/notifications.js", "./js/social/push.js", "./js/social/autocomplete.js", "./js/social/events.js", "./js/social/lightbox.js", "./js/social/auth.js", "./js/social/profiles.js", "./js/social/social-ui.js",
   "./manifest.webmanifest",
@@ -19,7 +19,8 @@ const ASSETS = [
 
 self.addEventListener("install", e => {
   // 不自動 skipWaiting：讓新版進入 waiting，由前端顯示「有新版本」橫幅，使用者點擊才更新
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
+  // 逐檔快取＋容錯：addAll 只要一個檔 404 整個安裝就失敗（新版永遠裝不上），改為單檔失敗略過
+  e.waitUntil(caches.open(CACHE).then(c => Promise.allSettled(ASSETS.map(a => c.add(a)))));
 });
 self.addEventListener("message", e => { if (e.data === "skipWaiting") self.skipWaiting(); });
 self.addEventListener("activate", e => {

@@ -42,6 +42,7 @@ const Premium = (() => {
   const icc = n => (typeof ic === "function" ? ic(n) : "");
 
   function openUpgrade() {
+    if (document.querySelector(".premium-mask")) return;   // 防連點疊層
     let plan = "month";
     const ov = document.createElement("div");
     ov.className = "pv-mask premium-mask";

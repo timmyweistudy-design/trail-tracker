@@ -3,6 +3,7 @@ const PostView = (() => {
   function esc(s) { return (s || "").replace(/[<>&"]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c])); }
 
   async function open(postId) {
+    if (document.querySelector(`[data-ov="post-${postId}"]`)) return;   // 防連點疊層
     const post = await Posts.one(postId);
     if (!post) { if (typeof toast === "function") toast("貼文不存在或無權限"); return; }
     const c = Supa.client();
@@ -13,7 +14,7 @@ const PostView = (() => {
     const likedByMe = (await Posts.likedSet([postId])).has(postId);
 
     const wrap = document.createElement("div");
-    wrap.className = "pv-mask";
+    wrap.className = "pv-mask"; wrap.dataset.ov = "post-" + postId;
     wrap.dataset.me = myId; wrap.dataset.author = post.author_id;
     wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" aria-label="關閉" id="pvX">✕</button><b>貼文</b><span class="pv-head-r"><button class="comp-x ${Posts.isSaved(postId) ? "on" : ""}" id="pvSave" title="收藏" aria-label="收藏">${ic("bookmark")}</button><button class="comp-x" id="pvRepost" title="轉發" aria-label="轉發">${ic("repeat")}</button><button class="comp-x" id="pvShare" title="分享" aria-label="分享">${ic("share")}</button>${isMine ? `<button class="comp-x ${post.pinned ? "on" : ""}" id="pvPin" title="置頂" aria-label="置頂">${ic("pin")}</button><button class="comp-x" id="pvEdit" title="編輯" aria-label="編輯">${ic("pencil")}</button><button class="comp-x" id="pvDel" title="刪除" aria-label="刪除">${ic("trash")}</button>` : ""}</span></div>
       <div class="pv-body" id="pvBody"></div>

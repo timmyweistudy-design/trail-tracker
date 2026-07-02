@@ -242,8 +242,9 @@ function toast(msg) {
 // 內嵌輸入框（取代原生 prompt），回傳 Promise<string|null>
 function askInput(opts) {
   return new Promise(resolve => {
+    if (document.querySelector('[data-ov="askinput"]')) { resolve(null); return; }   // 防連點疊層
     const ov = document.createElement("div");
-    ov.className = "input-modal";
+    ov.className = "input-modal"; ov.dataset.ov = "askinput";
     const esc = v => String(v == null ? "" : v).replace(/</g, "&lt;").replace(/"/g, "&quot;");
     const field = opts.multiline
       ? `<textarea id="imField" rows="4" placeholder="${esc(opts.placeholder)}">${esc(opts.value)}</textarea>`
@@ -1195,8 +1196,9 @@ async function loadPhoto(t) {
 
 // 照片燈箱：全螢幕放大、可左右滑
 function openLightbox(urls, start) {
+  if (document.querySelector('[data-ov="lightbox"]')) return;   // 防連點疊層
   const ov = document.createElement("div");
-  ov.className = "lightbox";
+  ov.className = "lightbox"; ov.dataset.ov = "lightbox";
   ov.innerHTML = `<button class="lb-close" aria-label="關閉">✕</button>
     <div class="lb-track">${urls.map(u => `<div class="lb-slide"><img src="${u}" alt=""></div>`).join("")}</div>`;
   document.body.appendChild(ov);
@@ -2075,7 +2077,7 @@ async function finishRecording(autoVehicle) {
       if (corr) { rec.ascent = corr.ascent; rec.descent = corr.descent; rec.altHigh = corr.altHigh; rec.altLow = corr.altLow; rec.altCorrected = true; }
     }
     Store.addRecord(rec);
-    if (isFootRec(rec)) bumpAffinity(8);   // 只有走路/跑步加深羈絆
+    if (isFootRec(rec)) { bumpAffinity(8); autoCloudBackup(); }   // 走路/跑步：加深羈絆 + Premium 自動雲端備份
     checkPetEvolve();
     $("#recStatus").textContent = autoVehicle ? "偵測到車輛速度，已自動結束" : "準備就緒，按「開始」記錄路徑";
     openTrackReview(rec);              // 結束後顯示總結頁
@@ -2101,13 +2103,14 @@ $("#btnSaveProfile").addEventListener("click", () => {
   Store.saveProfile({ weight: Number($("#pfWeight").value) || 60, height: Number($("#pfHeight").value) || 170, pack: Math.max(0, Number($("#pfPack").value) || 0) });
   toast("已儲存個人資料");
 });
-$("#btnExportGpxAll").addEventListener("click", () => {
-  GPX.exportAll(Store.getRecords()) ? toast("已下載全部行程路線檔") : toast("尚無行程可下載");
+$("#btnExportGpxAll").addEventListener("click", async () => {
+  GPX.exportAll(await Store.allFull()) ? toast("已下載全部行程路線檔") : toast("尚無行程可下載");
 });
 
 async function refreshOfflineStatus() {
   const el = $("#offlineStatus");
   if (!el) return;
+  Offline.enforceCap && Offline.enforceCap().catch(() => { });   // 順手控管圖磚快取上限（瀏覽時 SW 也會塞）
   const n = await Offline.cachedCount();
   el.textContent = n ? `已快取地圖圖磚：${n} 張（約 ${(n * 0.02).toFixed(1)} MB）` : "尚未下載任何離線地圖";
   const q = $("#offlineQuota");
@@ -2134,15 +2137,29 @@ async function cloudClient() {
   if (!u || !u.user) { toast("請先到社群分頁登入"); return null; }
   return { c, uid: u.user.id };
 }
+async function cloudBackupNow(silent) {
+  const x = await cloudClient(); if (!x) return false;
+  try {
+    if (!silent) toast("備份到雲端中…");
+    const { error } = await x.c.from("backups").upsert({ user_id: x.uid, data: Store.exportAll(), updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+    if (!silent) toast(error ? "備份失敗：" + error.message : "已備份到雲端 ✓");
+    return !error;
+  } catch (e) { if (!silent) toast("備份失敗：" + (e && e.message || e)); return false; }
+}
+// Premium：每趟走完自動雲端備份（靜默，失敗不打擾）
+async function autoCloudBackup() {
+  try {
+    if (typeof Premium === "undefined" || !Premium.isOn()) return;
+    if (typeof Supa === "undefined" || !Supa.ready()) return;
+    const c = Supa.client(); const { data: u } = await c.auth.getUser();
+    if (!u || !u.user) return;
+    if (await cloudBackupNow(true)) toast("已自動備份到雲端 ☁️");
+  } catch (e) { /* 靜默 */ }
+}
 const _cbk = $("#btnCloudBackup");
 if (_cbk) _cbk.addEventListener("click", async () => {
   if (typeof Premium !== "undefined" && !Premium.gate()) return;
-  const x = await cloudClient(); if (!x) return;
-  try {
-    toast("備份到雲端中…");
-    const { error } = await x.c.from("backups").upsert({ user_id: x.uid, data: Store.exportAll(), updated_at: new Date().toISOString() }, { onConflict: "user_id" });
-    toast(error ? "備份失敗：" + error.message : "已備份到雲端 ✓");
-  } catch (e) { toast("備份失敗：" + (e && e.message || e)); }
+  cloudBackupNow(false);
 });
 const _crs = $("#btnCloudRestore");
 if (_crs) _crs.addEventListener("click", async () => {
@@ -2169,322 +2186,6 @@ if (_aBtn) _aBtn.addEventListener("click", () => { if (typeof Premium !== "undef
 // 年度回顧（PRO）
 const _yBtn = $("#btnYearReview");
 if (_yBtn) _yBtn.addEventListener("click", () => { if (typeof Premium !== "undefined" && !Premium.gate()) return; openYearReview(); });
-// 動畫數字 span（配合 countUp）
-function cuSpan(to, pre, dec) { return `<span class="cu" data-to="${to}" data-pre="${pre || ""}" data-dec="${dec || 0}">${pre || ""}0</span>`; }
-function runCountUps(root) { root.querySelectorAll(".cu").forEach(countUp); }
-// 折線圖（配速趨勢用）
-function sparkLine(vals) {
-  if (!vals || vals.length < 2) return "";
-  const W = 280, H = 64, pad = 8;
-  const mn = Math.min(...vals), mx = Math.max(...vals), sp = (mx - mn) || 1;
-  const xy = vals.map((v, i) => [pad + (W - 2 * pad) * i / (vals.length - 1), pad + (H - 2 * pad) * (1 - (v - mn) / sp)]);
-  const line = xy.map((p, i) => `${i ? "L" : "M"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
-  const area = `${line} L${xy[xy.length - 1][0].toFixed(1)},${H - pad} L${xy[0][0].toFixed(1)},${H - pad} Z`;
-  const dots = xy.map(p => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="2.2" fill="var(--accent)"/>`).join("");
-  return `<svg class="ana-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><path d="${area}" fill="rgba(194,104,61,.16)"/><path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>${dots}</svg>`;
-}
-// 難度雷達圖（6 軸）
-function diffRadar(vals, labels) {
-  const cx = 100, cy = 100, R = 64, N = vals.length, max = Math.max(1, ...vals);
-  const pt = (i, rr) => { const a = (-90 + i * (360 / N)) * Math.PI / 180; return [cx + rr * Math.cos(a), cy + rr * Math.sin(a)]; };
-  const poly = rr => vals.map((_, i) => pt(i, rr).map(n => n.toFixed(1)).join(",")).join(" ");
-  let grid = [R * .34, R * .67, R].map(rr => `<polygon points="${poly(rr)}" fill="none" stroke="var(--line-soft)" stroke-width="1"/>`).join("");
-  let axes = vals.map((_, i) => { const [ax, ay] = pt(i, R); return `<line x1="${cx}" y1="${cy}" x2="${ax.toFixed(1)}" y2="${ay.toFixed(1)}" stroke="var(--line-soft)" stroke-width="1"/>`; }).join("");
-  const dp = vals.map((v, i) => pt(i, R * (v / max)).map(n => n.toFixed(1)).join(",")).join(" ");
-  const data = `<polygon points="${dp}" fill="rgba(194,104,61,.28)" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>`;
-  let labs = labels.map((l, i) => { const [lx, ly] = pt(i, R + 16); return `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" font-size="9.5" fill="var(--ink-soft)" text-anchor="middle" dominant-baseline="middle">${l}<tspan dx="2">${vals[i]}</tspan></text>`; }).join("");
-  return `<svg class="ana-radar" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet">${grid}${axes}${data}${labs}</svg>`;
-}
-// 軌跡縮圖（純 SVG 路線形狀），track = [{lat,lon}]
-function routeMini(track, cls) {
-  if (!track || track.length < 2) return "";
-  let minLa = 1e9, maxLa = -1e9, minLo = 1e9, maxLo = -1e9;
-  for (const p of track) { minLa = Math.min(minLa, p.lat); maxLa = Math.max(maxLa, p.lat); minLo = Math.min(minLo, p.lon); maxLo = Math.max(maxLo, p.lon); }
-  const w = 100, h = 56, pad = 6, sx = (maxLo - minLo) || 1e-6, sy = (maxLa - minLa) || 1e-6;
-  const sc = Math.min((w - 2 * pad) / sx, (h - 2 * pad) / sy);
-  const ox = (w - sx * sc) / 2, oy = (h - sy * sc) / 2;
-  const lines = trackSegments(track).map(seg =>
-    `<polyline points="${seg.map(p => `${(ox + (p.lon - minLo) * sc).toFixed(1)},${(oy + (maxLa - p.lat) * sc).toFixed(1)}`).join(" ")}" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>`).join("");
-  return `<svg class="route-mini ${cls || ""}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet">${lines}</svg>`;
-}
-function openYearReview() {
-  const year = new Date().getFullYear();
-  const all = realRecords();
-  const recs = all.filter(r => (r.date || "").slice(0, 4) === String(year));
-  const sum = (a, f) => a.reduce((s, r) => s + (f(r) || 0), 0);
-  const km = sum(recs, r => r.distanceKm), asc = sum(recs, r => r.ascent), hrs = sum(recs, r => r.elapsedMs) / 3.6e6;
-  const steps = sum(recs, r => r.steps), kcal = sum(recs, r => r.kcal);
-  const distinct = new Set(recs.map(r => r.trailName || "自由路線")).size;
-  let longest = 0, maxAlt = 0, longestRec = null; recs.forEach(r => { if ((r.distanceKm || 0) > longest) { longest = r.distanceKm || 0; longestRec = r; } maxAlt = Math.max(maxAlt, r.altHigh || 0); });
-  const mo = {}; recs.forEach(r => { const m = +(r.date || "").slice(5, 7); if (m) mo[m] = (mo[m] || 0) + 1; });
-  const busiest = Object.keys(mo).sort((a, b) => mo[b] - mo[a])[0];
-  const tc = {}; recs.forEach(r => { const nm = r.trailName || "自由路線"; tc[nm] = (tc[nm] || 0) + 1; });
-  const top = Object.keys(tc).sort((a, b) => tc[b] - tc[a])[0];
-  const lastKm = sum(all.filter(r => (r.date || "").slice(0, 4) === String(year - 1)), r => r.distanceKm);
-  const delta = km - lastKm;
-  const mk = Array(12).fill(0); recs.forEach(r => { const m = +(r.date || "").slice(5, 7); if (m) mk[m - 1] += r.distanceKm || 0; });
-  const mkMax = Math.max(1, ...mk);
-  const ov = document.createElement("div"); ov.className = "pet-modal";
-  ov.innerHTML = `<div class="pet-modal-card yr-card anim-seq">
-    <button class="sheet-close" id="yrX" aria-label="關閉">${ic("x")}</button>
-    <div class="yr-head"><div class="yr-year">${year}</div><div class="yr-title">我的山行回顧</div></div>
-    ${recs.length ? `
-    <div class="yr-grid">
-      <div class="yr-stat"><b>${cuSpan(recs.length, "", 0)}</b><span>趟旅程</span></div>
-      <div class="yr-stat"><b>${cuSpan(km, "", 0)}</b><span>公里</span></div>
-      <div class="yr-stat"><b>${cuSpan(asc, "↑", 0)}</b><span>公尺爬升</span></div>
-      <div class="yr-stat"><b>${cuSpan(hrs, "", 0)}</b><span>小時</span></div>
-    </div>
-    <div class="yr-sub">
-      <div><b>${cuSpan(steps, "", 0)}</b><span>步</span></div>
-      <div><b>${cuSpan(kcal, "", 0)}</b><span>大卡</span></div>
-      <div><b>${cuSpan(distinct, "", 0)}</b><span>條步道</span></div>
-    </div>
-    <div class="yr-months">${mk.map((v, i) => `<div class="yr-mo"><div class="yr-mo-v">${v > 0 ? (v >= 10 ? Math.round(v) : v.toFixed(1)) : ""}</div><div class="yr-mo-bar" style="height:${Math.round(v / mkMax * 46) + 3}px;animation-delay:${(i * 0.04).toFixed(2)}s"></div><span>${i + 1}</span></div>`).join("")}</div>
-    <div class="yr-mo-cap">每月里程（單位：km）</div>
-    ${longestRec && longestRec.track && longestRec.track.length > 1 ? `<div class="yr-route"><div class="yr-route-l">最遠的一條 ‧ ${(longestRec.trailName || "自由路線")}（${longest.toFixed(1)} km）</div>${routeMini(longestRec.track, "yr-route-svg")}</div>` : ""}
-    <div class="yr-lines">
-      ${longest ? `<div>單次最長 <b>${longest.toFixed(1)} km</b></div>` : ""}
-      ${maxAlt ? `<div>最高造訪海拔 <b>${maxAlt} m</b></div>` : ""}
-      ${busiest ? `<div>最常出門 <b>${busiest} 月</b></div>` : ""}
-      ${top ? `<div>最愛步道 <b>${top}</b></div>` : ""}
-      <div>較去年里程 <b>${delta >= 0 ? "↑ +" : "↓ "}${Math.abs(delta).toFixed(0)} km</b></div>
-      <div class="yr-foot">↑ 累積爬升約 ${(asc / 3952).toFixed(1)} 座玉山</div>
-    </div>
-    <div class="yr-btns"><button class="btn primary" id="yrShare">${ic("share")} 分享</button><button class="btn ghost yr-imgbtn" id="yrImg">${ic("camera")} 存成圖片</button></div>`
-    : `<div class="social-empty" style="color:#fff">${year} 還沒有行程，今年一起多走幾趟吧！</div>`}
-  </div>`;
-  document.body.appendChild(ov);
-  runCountUps(ov);
-  const close = () => ov.remove();
-  ov.querySelector("#yrX").addEventListener("click", close);
-  ov.addEventListener("click", e => { if (e.target === ov) close(); });
-  const sh = ov.querySelector("#yrShare");
-  if (sh) sh.addEventListener("click", () => {
-    const text = `我的 ${year} 山行回顧：${recs.length} 趟、${km.toFixed(0)} km、累積爬升 ↑${Math.round(asc)} m（約 ${(asc / 3952).toFixed(1)} 座玉山）— 循徑拾光`;
-    if (navigator.share) navigator.share({ title: "我的山行回顧", text }).catch(() => { });
-    else if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast("已複製回顧文字"));
-    else toast(text);
-  });
-  const ib = ov.querySelector("#yrImg");
-  const ps = (typeof petStats === "function") ? petStats() : null;
-  if (ib) ib.addEventListener("click", () => drawYearImage({ year, n: recs.length, km, asc, hrs, steps, distinct, top, longest, pet: ps, avatar: window.__meAvatar }));
-}
-// 年度回顧 → 畫成可分享圖片（canvas，不需外部套件）
-function drawYearImage(d) {
-  if (d.avatar) { const img = new Image(); img.crossOrigin = "anonymous"; img.onload = () => build(img); img.onerror = () => build(null); img.src = d.avatar; }
-  else build(null);
-  function build(avImg) {
-  const W = 540, H = 760, c = document.createElement("canvas"); c.width = W; c.height = H;
-  const x = c.getContext("2d");
-  const g = x.createLinearGradient(0, 0, W, H); g.addColorStop(0, "#1f4730"); g.addColorStop(.6, "#16301f"); g.addColorStop(1, "#112619");
-  x.fillStyle = g; x.fillRect(0, 0, W, H);
-  x.strokeStyle = "rgba(224,177,90,.10)"; x.lineWidth = 1.5;
-  for (let yy = 80; yy < H; yy += 46) { x.beginPath(); for (let xx = 0; xx <= W; xx += 12) x.lineTo(xx, yy + Math.sin((xx / W) * 6.28) * 10); x.stroke(); }
-  x.textAlign = "center";
-  // 頭像 + 寵物
-  const acx = W / 2, acy = 78, r = 40;
-  if (avImg) {
-    x.save(); x.beginPath(); x.arc(acx, acy, r, 0, 7); x.closePath(); x.clip();
-    x.drawImage(avImg, acx - r, acy - r, r * 2, r * 2); x.restore();
-    x.beginPath(); x.arc(acx, acy, r, 0, 7); x.lineWidth = 3; x.strokeStyle = "#e0b15a"; x.stroke();
-  }
-  if (d.pet) { x.font = "30px sans-serif"; x.fillText(d.pet.emoji || "🐾", avImg ? acx + r - 4 : acx, avImg ? acy + r - 2 : acy + 12); }
-  x.fillStyle = "#e0b15a"; x.font = "700 76px 'Noto Serif TC', serif"; x.fillText(String(d.year), W / 2, 200);
-  x.fillStyle = "#f3efe4"; x.font = "600 21px 'Noto Serif TC', serif"; x.fillText("我的山行回顧", W / 2, 234);
-  const stats = [[d.n, "趟旅程"], [Math.round(d.km), "公里"], ["↑" + Math.round(d.asc), "公尺爬升"], [Math.round(d.hrs), "小時"]];
-  stats.forEach((s, i) => {
-    const cx = W / 2 + (i % 2 ? 120 : -120), cy = 310 + Math.floor(i / 2) * 124;
-    x.fillStyle = "rgba(255,255,255,.07)"; roundRect(x, cx - 110, cy - 46, 220, 104, 14); x.fill();
-    x.fillStyle = "#fff"; x.font = "700 38px 'Fraunces', serif"; x.fillText(String(s[0]), cx, cy + 4);
-    x.fillStyle = "rgba(243,239,228,.75)"; x.font = "400 15px sans-serif"; x.fillText(s[1], cx, cy + 32);
-  });
-  x.fillStyle = "rgba(243,239,228,.9)"; x.font = "400 16px sans-serif"; x.textAlign = "center";
-  let ly = 596;
-  if (d.top) { x.fillText("最愛步道 ‧ " + d.top, W / 2, ly); ly += 30; }
-  if (d.longest) { x.fillText("單次最長 " + d.longest.toFixed(1) + " km", W / 2, ly); ly += 30; }
-  if (d.pet) { x.fillText("夥伴 " + (d.pet.name || "") + " Lv." + d.pet.level, W / 2, ly); ly += 30; }
-  x.fillText("探索 " + d.distinct + " 條步道 ‧ 約 " + (d.asc / 3952).toFixed(1) + " 座玉山", W / 2, ly);
-  x.fillStyle = "#e0b15a"; x.font = "700 19px 'Noto Serif TC', serif"; x.fillText("循徑拾光 · Gather the Trail", W / 2, H - 32);
-  try { exportCanvas(c, d, avImg); } catch (e) { if (avImg) build(null); else toast("產生圖片失敗"); }
-  }
-}
-function exportCanvas(c, d, avImg) {
-  c.toBlob(async (blob) => {
-    if (!blob) { toast("產生圖片失敗"); return; }
-    const file = new File([blob], `循徑拾光-${d.year}-回顧.png`, { type: "image/png" });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try { await navigator.share({ files: [file], title: "我的山行回顧" }); return; } catch (e) { }
-    }
-    const url = URL.createObjectURL(blob), a = document.createElement("a");
-    a.href = url; a.download = file.name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
-    toast("已存成圖片");
-  }, "image/png");
-}
-function roundRect(x, X, Y, w, h, r) { x.beginPath(); x.moveTo(X + r, Y); x.arcTo(X + w, Y, X + w, Y + h, r); x.arcTo(X + w, Y + h, X, Y + h, r); x.arcTo(X, Y + h, X, Y, r); x.arcTo(X, Y, X + w, Y, r); x.closePath(); }
-function openAnalytics() {
-  const recs = realRecords();
-  const pro = (typeof Premium !== "undefined") && Premium.isOn();
-  const n = recs.length;
-  const totKm = recs.reduce((s, r) => s + (r.distanceKm || 0), 0);
-  const totAsc = recs.reduce((s, r) => s + (r.ascent || 0), 0);
-  const totHrs = recs.reduce((s, r) => s + (r.elapsedMs || 0), 0) / 3.6e6;
-  // 每月里程
-  const by = {};
-  for (const r of recs) { const m = (r.date || "").slice(0, 7); if (!m) continue; (by[m] = by[m] || { km: 0, asc: 0, n: 0, kcal: 0 }); by[m].km += r.distanceKm || 0; by[m].asc += r.ascent || 0; by[m].kcal += r.kcal || 0; by[m].n++; }
-  const months = Object.keys(by).sort().reverse().slice(0, 12);
-  const maxKm = Math.max(1, ...months.map(m => by[m].km));
-  const maxKcal = Math.max(1, ...months.map(m => by[m].kcal));
-  const card = (to, pre, dec, l) => `<div class="ana-card"><div class="ana-cv">${cuSpan(to, pre, dec)}</div><div class="ana-cl">${l}</div></div>`;
-  const pb = (label, val) => `<div class="ana-pb"><span>${label}</span><b>${val}</b></div>`;
-
-  // ── 進階（PRO）數據 ──
-  let longest = null, steepest = null, fastest = 0;
-  for (const r of recs) {
-    if (!longest || (r.distanceKm || 0) > (longest.distanceKm || 0)) longest = r;
-    if (!steepest || (r.ascent || 0) > (steepest.ascent || 0)) steepest = r;
-    const hrs = (r.elapsedMs || 0) / 3.6e6; if (hrs > 0.05) fastest = Math.max(fastest, (r.distanceKm || 0) / hrs);
-  }
-  const tc = {}; recs.forEach(r => { const nm = r.trailName || "自由路線"; tc[nm] = (tc[nm] || 0) + 1; });
-  const favTrail = Object.keys(tc).sort((a, b) => tc[b] - tc[a])[0];
-  const avgPace = totHrs > 0 ? totKm / totHrs : 0;
-  // 難度分布（用 TRAILS 對照 trailId）
-  const tmap = new Map(); if (typeof TRAILS !== "undefined") TRAILS.forEach(t => tmap.set(String(t.id), t.difficulty || 0));
-  const diffN = [0, 0, 0, 0, 0, 0, 0];
-  recs.forEach(r => { const d = r.trailId != null ? (tmap.get(String(r.trailId)) || 0) : 0; if (d >= 1 && d <= 6) diffN[d]++; });
-  const DLBL = ["", "輕鬆", "一般", "進階", "挑戰", "困難", "雪季"];
-  const maxD = Math.max(1, ...diffN);
-  // 年度比較
-  const yr = {}; recs.forEach(r => { const y = (r.date || "").slice(0, 4); if (y) yr[y] = (yr[y] || 0) + (r.distanceKm || 0); });
-  const years = Object.keys(yr).sort().reverse().slice(0, 4);
-  const maxY = Math.max(1, ...years.map(y => yr[y]));
-  // 一週節律
-  const wd = [0, 0, 0, 0, 0, 0, 0]; recs.forEach(r => { const d = new Date(r.date); if (!isNaN(d)) wd[d.getDay()]++; });
-  const WLBL = ["日", "一", "二", "三", "四", "五", "六"]; const maxW = Math.max(1, ...wd);
-  // 配速趨勢（近 14 趟，由舊到新）
-  const paced = recs.filter(r => (r.elapsedMs || 0) > 6e4 && (r.distanceKm || 0) > 0)
-    .slice(0, 14).reverse().map(r => r.distanceKm / (r.elapsedMs / 3.6e6));
-
-  const proInner = `
-    <div class="ana-sec">個人紀錄</div>
-    <div class="ana-pbs">
-      ${pb("單次最長", (longest ? longest.distanceKm || 0 : 0).toFixed(2) + " km")}
-      ${pb("單次最大爬升", "↑" + Math.round(steepest ? steepest.ascent || 0 : 0) + " m")}
-      ${pb("最快平均配速", fastest.toFixed(1) + " km/h")}
-      ${pb("整體平均配速", avgPace.toFixed(1) + " km/h")}
-      ${pb("最常走", favTrail ? favTrail + "（" + tc[favTrail] + " 次）" : "—")}
-    </div>
-    ${paced.length >= 2 ? `<div class="ana-sec">配速趨勢</div>${sparkLine(paced)}<div class="ana-spark-cap">近 ${paced.length} 趟平均配速（km/h，由舊到新）</div>` : ""}
-    <div class="ana-sec">難度分布</div>
-    ${diffN.slice(1).some(c => c > 0) ? diffRadar(diffN.slice(1), DLBL.slice(1)) : `<div class="ana-empty-note">尚無對應到分級步道的紀錄</div>`}
-    <div class="ana-sec">年度里程</div>
-    <div class="ana-list">${years.map(y => `<div class="ana-row"><div class="ana-m">${y}</div><div class="ana-bar"><i style="width:${Math.round(yr[y] / maxY * 100)}%"></i></div><div class="ana-v"><b>${yr[y].toFixed(1)}</b> km</div></div>`).join("")}</div>
-    <div class="ana-sec">每月卡路里消耗</div>
-    <div class="ana-list">${months.map(m => `
-      <div class="ana-row"><div class="ana-m">${m.replace("-", " / ")}</div>
-        <div class="ana-bar kcal"><i style="width:${Math.round(by[m].kcal / maxKcal * 100)}%"></i></div>
-        <div class="ana-v"><b>${Math.round(by[m].kcal).toLocaleString()}</b> kcal</div></div>`).join("")}</div>
-    <div class="ana-sec">一週節律</div>
-    <div class="ana-week">${wd.map((c, i) => `<div class="aw"><div class="aw-v">${c}</div><div class="aw-bar" style="height:${Math.round(c / maxW * 46) + 4}px"></div><div class="aw-l">${WLBL[i]}</div></div>`).join("")}</div>
-    <div class="ana-spark-cap">各星期的出行次數（單位：次）</div>
-    <button class="btn ghost" id="anaCompare" style="margin-top:10px">${ic("users")} 好友里程比較</button>
-    <div class="ana-exp">
-      <button class="btn ghost" id="anaCsv">${ic("download")} CSV</button>
-      <button class="btn ghost" id="anaGpx">${ic("download")} GPX</button>
-      <button class="btn ghost" id="anaKml">${ic("download")} KML</button>
-    </div>`;
-
-  const proLocked = `
-    <div class="ana-lock">
-      <div class="ana-lock-ic">${ic("sparkle")}</div>
-      <b>進階分析（PRO）</b>
-      <div class="ana-lock-d">個人紀錄・配速・難度分布・年度比較・一週節律・匯出 CSV/GPX</div>
-      <button class="btn primary" id="anaUp" style="max-width:220px;margin:12px auto 0">升級 Premium 解鎖</button>
-    </div>`;
-
-  const totSteps = recs.reduce((s, r) => s + (r.steps || 0), 0);
-  const distinct = new Set(recs.map(r => r.trailName || "自由路線")).size;
-  const ov = document.createElement("div"); ov.className = "pet-modal";
-  ov.innerHTML = `<div class="pet-modal-card anim-seq">
-    <button class="sheet-close" id="anaX" aria-label="關閉">${ic("x")}</button>
-    <h2>${ic("target")} 進階分析</h2>
-    ${n ? `
-    <div class="ana-cards">
-      ${card(n, "", 0, "總出行")}
-      ${card(totKm, "", 1, "總里程 km")}
-      ${card(totAsc, "↑", 0, "總爬升 m")}
-      ${card(totHrs, "", 1, "總時數 小時")}
-      ${card(totSteps, "", 0, "總步數")}
-      ${card(distinct, "", 0, "探索步道")}
-    </div>
-    <div class="ana-sec">每月里程</div>
-    <div class="ana-list">${months.map(m => `
-      <div class="ana-row"><div class="ana-m">${m.replace("-", " / ")}</div>
-        <div class="ana-bar"><i style="width:${Math.round(by[m].km / maxKm * 100)}%"></i></div>
-        <div class="ana-v"><b>${by[m].km.toFixed(1)}</b>km ・ ↑${Math.round(by[m].asc)}m ・ ${by[m].n}次</div></div>`).join("")}</div>
-    ${pro ? proInner : proLocked}`
-    : `<div class="social-empty"><span class="ee">${ic("target")}</span>還沒有行程可分析，先去走一條吧。</div>`}
-  </div>`;
-  document.body.appendChild(ov);
-  runCountUps(ov);
-  const close = () => ov.remove();
-  ov.querySelector("#anaX").addEventListener("click", close);
-  ov.addEventListener("click", e => { if (e.target === ov) close(); });
-  const up = ov.querySelector("#anaUp"); if (up) up.addEventListener("click", () => { close(); if (typeof Premium !== "undefined") Premium.openUpgrade(); });
-  const csv = ov.querySelector("#anaCsv"); if (csv) csv.addEventListener("click", () => exportRecordsCsv(recs));
-  const gpx = ov.querySelector("#anaGpx"); if (gpx) gpx.addEventListener("click", () => { if (typeof GPX !== "undefined" && GPX.exportAll) (GPX.exportAll(recs) ? toast("已下載全部 GPX") : toast("無可匯出的軌跡")); });
-  const kml = ov.querySelector("#anaKml"); if (kml) kml.addEventListener("click", () => exportRecordsKml(recs));
-  const cmp = ov.querySelector("#anaCompare"); if (cmp) cmp.addEventListener("click", openCompare);
-}
-// KML 匯出（每趟一條 LineString，可匯入 Google Earth）
-function exportRecordsKml(recs) {
-  const tracks = recs.filter(r => r.track && r.track.length > 1);
-  if (!tracks.length) { toast("無可匯出的軌跡"); return; }
-  const esc = s => String(s || "").replace(/[<>&]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c]));
-  const pm = tracks.map(r => {
-    const coords = r.track.map(p => `${p.lon},${p.lat}${p.alt != null ? "," + Math.round(p.alt) : ""}`).join(" ");
-    return `<Placemark><name>${esc(r.trailName || "自由路線")}（${(r.distanceKm || 0).toFixed(1)}km）</name><LineString><tessellate>1</tessellate><coordinates>${coords}</coordinates></LineString></Placemark>`;
-  }).join("");
-  const kml = `<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>循徑拾光 行程</name>${pm}</Document></kml>`;
-  const blob = new Blob([kml], { type: "application/vnd.google-earth.kml+xml" });
-  const url = URL.createObjectURL(blob), a = document.createElement("a");
-  a.href = url; a.download = "trail-records.kml"; a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000); toast("已匯出 KML");
-}
-// 好友里程比較：我 + 我追蹤的人，依累積里程排行
-async function openCompare() {
-  if (typeof Supa === "undefined" || !Supa.ready()) { toast("社群尚未啟用"); return; }
-  const c = Supa.client(); const { data: u } = await c.auth.getUser();
-  if (!u || !u.user) { toast("請先到社群分頁登入"); return; }
-  const ov = document.createElement("div"); ov.className = "pet-modal";
-  ov.innerHTML = `<div class="pet-modal-card"><button class="sheet-close" id="cmpX">${ic("x")}</button><h2>${ic("users")} 好友里程比較</h2><div id="cmpBody"><div class="feed-loading"><span class="spin"></span></div></div></div>`;
-  document.body.appendChild(ov);
-  ov.querySelector("#cmpX").addEventListener("click", () => ov.remove());
-  ov.addEventListener("click", e => { if (e.target === ov) ov.remove(); });
-  try {
-    const { data: fol } = await c.from("follows").select("following_id").eq("follower_id", u.user.id);
-    const ids = [u.user.id, ...((fol || []).map(r => r.following_id))];
-    const { data: profs } = await c.from("profiles").select("id, handle, display_name, total_km, pet_level").in("id", ids);
-    const list = (profs || []).map(p => ({ ...p, km: +(p.total_km || 0) })).sort((a, b) => b.km - a.km);
-    const body = ov.querySelector("#cmpBody"); if (!body) return;
-    if (list.length < 2) { body.innerHTML = `<div class="social-empty"><span class="ee">${ic("users")}</span>追蹤更多山友，就能一起比里程！</div>`; return; }
-    const max = Math.max(1, ...list.map(p => p.km));
-    body.innerHTML = `<div class="cmp-list">${list.map((p, i) => `<div class="cmp-row${p.id === u.user.id ? " me" : ""}"><span class="cmp-rank">${i + 1}</span><span class="cmp-name">${(p.display_name || p.handle || "山友")}${p.id === u.user.id ? "（我）" : ""}</span><div class="cmp-bar"><i style="width:${Math.round(p.km / max * 100)}%"></i></div><b class="cmp-km">${p.km.toFixed(0)}</b></div>`).join("")}</div>`;
-  } catch (e) { const b = ov.querySelector("#cmpBody"); if (b) b.innerHTML = `<div class="social-empty">載入失敗</div>`; }
-}
-function exportRecordsCsv(recs) {
-  const head = "日期,步道,公里,累積爬升m,下降m,大卡,時間分鐘\n";
-  const rows = recs.map(r => [
-    (r.date || "").slice(0, 10), `"${(r.trailName || "自由路線").replace(/"/g, "'")}"`,
-    (r.distanceKm || 0).toFixed(2), Math.round(r.ascent || 0), Math.round(r.descent || 0),
-    r.kcal || 0, Math.round((r.elapsedMs || 0) / 60000),
-  ].join(",")).join("\n");
-  const blob = new Blob(["﻿" + head + rows], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob), a = document.createElement("a");
-  a.href = url; a.download = "trail-records.csv"; a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-  toast("已匯出 CSV");
-}
 $("#btnClearTiles").addEventListener("click", async () => {
   if (confirm("確定清除已下載的離線地圖？")) {
     await Offline.clear();
@@ -2492,200 +2193,6 @@ $("#btnClearTiles").addEventListener("click", async () => {
     toast("已清除離線地圖");
   }
 });
-
-// 山林夥伴：靠累積里程進化的虛擬寵物
-const PET_STAGES = [
-  { km: 0, e: "🥚", n: "神秘之卵", d: "靜靜等待破殼的那一刻……多走幾步喚醒牠。" },
-  { km: 3, e: "🐛", n: "草叢幼蟲", d: "剛孵化的小生命，在步道邊探出了頭。" },
-  { km: 12, e: "🦋", n: "翩翩彩蝶", d: "蛻變成蝶，隨你翻山越嶺。" },
-  { km: 30, e: "🦊", n: "靈巧山狐", d: "穿梭林間的夥伴，腳程越來越好。" },
-  { km: 70, e: "🐅", n: "山林猛虎", d: "氣勢威猛，群山都是牠的領地。" },
-  { km: 130, e: "🐲", n: "初醒幼龍", d: "傳說的力量正在覺醒……" },
-  { km: 220, e: "🐉", n: "騰雲神龍", d: "已達最終型態！與你一同騰雲駕霧。" },
-];
-const PET_TAPS = ["要再去走走嗎？", "今天也一起爬山吧！", "我準備好出發了！", "下一座山在等我們～", "腳力越來越好囉！", "謝謝你帶我看風景 🌲"];
-// 棲息地背景（隨進化升級）
-const PET_BG = [
-  "linear-gradient(140deg,#403626,#2a2418)", "linear-gradient(140deg,#33502d,#1d3019)",
-  "linear-gradient(140deg,#356b4a,#1f4730)", "linear-gradient(140deg,#2a5a3a,#16301f)",
-  "linear-gradient(140deg,#5a4a2a,#2c2a1a)", "linear-gradient(140deg,#3a3a6b,#1f2547)",
-  "linear-gradient(140deg,#2b5a3a,#234a6b 55%,#16301f)",
-];
-// 排除模擬；過快(交通工具)的移動段在記錄端就已不計入里程
-const isFootRec = r => !r.sim && !r.vehicle;   // 模擬、車速自動斷掉的整趟都不計里程
-function realRecords() { return Store.getRecords().filter(isFootRec); }
-function debugKm() { return +(localStorage.getItem("tt_debug_km") || 0); }   // 測試用里程偏移
-function realTotalKm() { return realRecords().reduce((s, r) => s + (r.distanceKm || 0), 0) + debugKm(); }
-function petBase() { return +(localStorage.getItem("tt_pet_base") || 0); }
-function feedBonusKm() { return +(localStorage.getItem("tt_pet_feedkm") || 0); }
-function totalKm() { return Math.max(0, realTotalKm() - petBase()) + feedBonusKm(); }   // 成長里程＝走路 + 照顧獎勵
-// 🍓 果實：每走 1 km 得 1 顆，餵食消耗
-function berriesEarned() { return Math.floor(realTotalKm()); }
-function berryBonus() { return +(localStorage.getItem("tt_pet_berry_bonus") || 0); }   // 每日任務等額外果實
-function addBerryBonus(n) { localStorage.setItem("tt_pet_berry_bonus", String(berryBonus() + n)); }
-function berriesBalance() { return Math.max(0, berriesEarned() + berryBonus() - (+(localStorage.getItem("tt_pet_berry_spent") || 0))); }
-// ❤️ 親密度 0–100（久未互動緩降，永不影響等級）
-function affinity() {
-  const raw = +(localStorage.getItem("tt_pet_aff") || 0);
-  const t = localStorage.getItem("tt_pet_aff_t");
-  const idle = t ? Math.max(0, daysSince(t) - 1) : 0;
-  return Math.max(0, Math.min(100, Math.round(raw - idle * 2)));
-}
-function petHearts() { return Math.max(0, Math.min(5, Math.floor(affinity() / 20))); }
-function bumpAffinity(amt) {
-  const cur = affinity();
-  localStorage.setItem("tt_pet_aff", String(Math.max(0, Math.min(100, cur + amt))));
-  localStorage.setItem("tt_pet_aff_t", new Date().toISOString());
-}
-// 每日任務/目標一律用「本地日期」：toISOString 是 UTC，台灣早上 8 點前會被算成前一天，
-// 造成任務進度看起來莫名被刷新。跨日以本地午夜為準。
-function localDayOf(d) { const t = new Date(d); if (isNaN(t)) return ""; return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`; }
-function todayStr() { return localDayOf(new Date()); }
-function localDay(iso) { return localDayOf(iso); }
-const FEED_COOLDOWN = 8 * 3600e3;   // 餵食冷卻 8 小時
-function feedCooldownMs() { return Math.max(0, FEED_COOLDOWN - (Date.now() - (+(localStorage.getItem("tt_pet_fed_t") || 0)))); }
-function canFeedToday() { return berriesBalance() >= 3 && feedCooldownMs() === 0; }
-function feedPet() {
-  if (feedCooldownMs() > 0) { toast(`還在休息，約 ${Math.ceil(feedCooldownMs() / 3600e3)} 小時後可再餵 🍃`); return; }
-  if (berriesBalance() < 3) { toast("果實不足，多走幾步才有果實 🍓"); return; }
-  const heartsBefore = petHearts();
-  localStorage.setItem("tt_pet_berry_spent", String((+(localStorage.getItem("tt_pet_berry_spent") || 0)) + 3));
-  bumpAffinity(15);
-  localStorage.setItem("tt_pet_fed_t", String(Date.now()));
-  const gain = heartsBefore >= 5 ? 0.5 : 0.3;                  // 親密度滿時照顧獎勵更多
-  localStorage.setItem("tt_pet_feedkm", String(+(feedBonusKm() + gain).toFixed(2)));
-  if (navigator.vibrate) navigator.vibrate([20, 30, 20]);
-  const em = $("#petEmoji"); if (em) { em.classList.remove("tap"); void em.offsetWidth; em.classList.add("tap"); }
-  toast(`餵食成功！🍓 親密度上升、照顧 +${gain}km`);
-  checkPetEvolve();
-  renderPet();
-}
-function petStageIndex(km) { let i = 0; for (let k = 0; k < PET_STAGES.length; k++) if (km >= PET_STAGES[k].km) i = k; return i; }
-function petName() { return localStorage.getItem("tt_pet_name") || ""; }
-// 供社群同步：寵物名字/等級/成長里程，讓好友看到你的進度
-function petStats() {
-  const km = totalKm(), i = petStageIndex(km), st = PET_STAGES[i];
-  return { name: petName() || st.n, level: i + 1, stage: st.n, emoji: st.e, km: +km.toFixed(1) };
-}
-function petHatch() { let h = localStorage.getItem("tt_pet_hatch"); if (!h) { h = new Date().toISOString(); localStorage.setItem("tt_pet_hatch", h); } return h; }
-function daysSince(iso) { return Math.max(0, Math.floor((Date.now() - new Date(iso)) / 864e5)); }
-function weekIndex(d) { const dt = new Date(d); dt.setHours(0, 0, 0, 0); dt.setDate(dt.getDate() - ((dt.getDay() + 6) % 7)); return Math.round(dt / 6048e5); }
-function weeksStreak() {
-  const recs = realRecords(); if (!recs.length) return 0;
-  const weeks = new Set(recs.map(r => weekIndex(r.date)));
-  const now = weekIndex(Date.now());
-  let w = weeks.has(now) ? now : now - 1, s = 0;
-  while (weeks.has(w)) { s++; w--; }
-  return s;
-}
-function petMood() {
-  const last = realRecords()[0];   // 最新一筆（紀錄為新到舊）
-  if (!last) return { e: "🌙", t: "等你帶牠出門走走" };
-  const d = daysSince(last.date);
-  if (d <= 1) return { e: "😊", t: "剛運動完，活力滿滿！" };
-  if (d <= 4) return { e: "🙂", t: "狀態不錯，隨時能出發" };
-  if (d <= 9) return { e: "🥺", t: "有點想念山林了…" };
-  return { e: "😴", t: "好久沒出門，懶洋洋的" };
-}
-// 活力：越久沒出門越低，出門健行恢復（約 7 天歸零）
-function energy() {
-  const last = realRecords()[0]; if (!last) return 25;
-  return Math.max(0, Math.min(100, Math.round(100 - daysSince(last.date) * 14)));
-}
-// 連續健行天數
-function daysStreak() {
-  const recs = realRecords(); if (!recs.length) return 0;
-  const days = new Set(recs.map(r => localDay(r.date)));
-  const d = new Date(); d.setHours(0, 0, 0, 0);
-  const key = () => localDayOf(d);
-  if (!days.has(key())) d.setDate(d.getDate() - 1);   // 今天還沒走→從昨天起算
-  let s = 0; while (days.has(key())) { s++; d.setDate(d.getDate() - 1); }
-  return s;
-}
-function todayAscent() { const ds = todayStr(); return realRecords().filter(r => localDay(r.date) === ds).reduce((s, r) => s + (r.ascent || 0), 0); }
-function todayTrips() { const ds = todayStr(); return realRecords().filter(r => localDay(r.date) === ds).length; }
-// 每日任務進度高水位：當天內只增不減（防止任何資料裁切/日期邊界造成進度倒退），過了本地午夜才重置
-function questProgress() {
-  let hi = null;
-  try { hi = JSON.parse(localStorage.getItem("tt_quest_hi")); } catch { /* ignore */ }
-  const d = todayStr();
-  const cur = { d, km: todayKm(), asc: todayAscent(), trips: todayTrips() };
-  if (hi && hi.d === d) {
-    cur.km = Math.max(cur.km, +hi.km || 0);
-    cur.asc = Math.max(cur.asc, +hi.asc || 0);
-    cur.trips = Math.max(cur.trips, +hi.trips || 0);
-  }
-  try { localStorage.setItem("tt_quest_hi", JSON.stringify(cur)); } catch { /* ignore */ }
-  return cur;
-}
-// 每日任務
-function renderQuests() {
-  const box = $("#petQuests"); if (!box) return;
-  const p = questProgress();
-  const km = p.km, asc = p.asc, trips = p.trips, streak = daysStreak();
-  const quests = [
-    { icon: "footprints", label: "今日出門健行", cur: trips, goal: 1, dec: 0 },
-    { icon: "ruler", label: "今日里程 1.5 km", cur: km, goal: 1.5, dec: 1 },
-    { icon: "mountain", label: "今日爬升 50 m", cur: asc, goal: 50, dec: 0 },
-  ];
-  const allDone = quests.every(q => q.cur >= q.goal);
-  const claimed = localStorage.getItem("tt_quest_claim") === todayStr();
-  box.innerHTML = `<div class="section-title">${ic("calendar")}每日任務${streak >= 2 ? ` <span class="streak-chip">${ic("flame")} 連續 ${streak} 天</span>` : ""}</div>
-    <div class="quest-list">${quests.map(q => { const done = q.cur >= q.goal; return `<div class="quest ${done ? "done" : ""}"><span class="q-ic">${ic(q.icon)}</span><div class="q-body"><div class="q-l">${q.label}</div><div class="q-bar"><i style="width:${Math.min(100, q.cur / q.goal * 100).toFixed(0)}%"></i></div></div><span class="q-chk">${done ? "✓" : (q.dec ? q.cur.toFixed(q.dec) : Math.round(q.cur))}</span></div>`; }).join("")}</div>
-    <button class="btn ${allDone && !claimed ? "primary" : "ghost"}" id="qClaim"${allDone && !claimed ? "" : " disabled"}>${claimed ? "今日獎勵已領 ✓" : (allDone ? "領取 +5 🍓" : "完成全部任務可領 🍓")}</button>`;
-  const cb = $("#qClaim");
-  if (cb && allDone && !claimed) cb.addEventListener("click", () => {
-    addBerryBonus(5); localStorage.setItem("tt_quest_claim", todayStr()); bumpAffinity(5);
-    toast("每日任務完成！+5 🍓"); confetti && confetti(); renderQuests(); renderPet();
-  });
-}
-function renderPet() {
-  const box = $("#petCard");
-  if (!box) return;
-  const km = totalKm(), i = petStageIndex(km), st = PET_STAGES[i], next = PET_STAGES[i + 1];
-  const nm = petName(), mood = petMood(), days = daysSince(petHatch()), streak = weeksStreak(), en = energy();
-  const berries = berriesBalance(), h = petHearts(), bonus = feedBonusKm(), canFeed = canFeedToday(), cd = feedCooldownMs();
-  let prog = "", sub;
-  if (next) {
-    const pct = Math.max(2, Math.min(100, Math.round((km - st.km) / (next.km - st.km) * 100)));
-    sub = `再 <b>${(next.km - km).toFixed(1)}</b> km 進化成 ${next.e} ${next.n}`;
-    prog = `<div class="pet-bar"><i style="width:${pct}%"></i></div>`;
-  } else sub = "已是最終型態 ✨ 繼續同行！";
-  box.innerHTML = `<div class="pet-card${i >= 6 ? " final" : ""}" style="background:${PET_BG[i]}">
-    <div class="pet-emoji" id="petEmoji" role="img" aria-label="${st.n}">${st.e}</div>
-    <div class="pet-info">
-      <div class="pet-name">${nm || st.n}<span class="lv-chip lvt-${Math.min(i + 1, 7)} pet-lv-chip">Lv.${i + 1}</span>${(typeof Premium !== "undefined" && Premium.isOn()) ? `<button class="pet-edit" id="petRename" title="命名" aria-label="命名">${ic("pencil")}</button>` : ""}</div>
-      <div class="pet-mood">${mood.e} ${mood.t}　<span class="pet-hearts">${"❤️".repeat(h)}${"🤍".repeat(5 - h)}</span></div>
-      <div class="pet-energy"><span class="pe-l">活力 ${en}</span><div class="pe-bar"><i style="width:${en}%"></i></div></div>
-      <div class="pet-sub">${nm ? st.n + "・" : ""}已走 <b>${km.toFixed(1)}</b> km${bonus > 0 ? `（含照顧 +${bonus.toFixed(1)}）` : ""}・同行 <b>${days}</b> 天${streak >= 2 ? `・<span class="inline-ic">${ic("flame")}</span>連續${streak}週` : ""}</div>
-      <div class="pet-sub" style="opacity:.9">${sub}</div>
-      ${prog}
-      <div class="pet-care">
-        <span class="pet-berry">🍓 ${berries}</span>
-        <button class="pet-btn feed" id="petFeed"${canFeed ? "" : " disabled"}>${cd > 0 ? `🍃 ${Math.ceil(cd / 3600e3)} 小時後可餵` : "🍖 餵食 (3🍓)"}</button>
-      </div>
-      <div class="pet-btns">
-        <button class="pet-btn" id="petDex">${ic("book")} 夥伴手冊</button>
-        <button class="pet-btn" id="petRec">${ic("compass")} 帶我去走</button>
-      </div>
-    </div>
-  </div>`;
-  const em = $("#petEmoji");
-  if (em) em.addEventListener("click", () => {
-    em.classList.remove("tap"); void em.offsetWidth; em.classList.add("tap");
-    if (navigator.vibrate) navigator.vibrate(20);
-    toast(PET_TAPS[Math.floor(Math.random() * PET_TAPS.length)]);
-  });
-  $("#petDex").addEventListener("click", openPetDex);
-  $("#petRec").addEventListener("click", petRecommend);
-  $("#petFeed").addEventListener("click", feedPet);
-  const ren = $("#petRename");   // Premium：為夥伴命名
-  if (ren) ren.addEventListener("click", () => {
-    askInput({ title: "幫你的山林夥伴取個名字", value: petName() || st.n, max: 12 }).then(v => {
-      if (v != null) { localStorage.setItem("tt_pet_name", v.trim().slice(0, 12)); renderPet(); }
-    });
-  });
-}
 
 // ---------- 步道比較 ----------
 let compareSet = new Set();
@@ -2699,11 +2206,12 @@ function updateCompareBar() {
   bar.querySelector("#cmpGo").onclick = () => { if (compareSet.size >= 2) openCompareSheet(); };
 }
 function openCompareSheet() {
+  if (document.querySelector('[data-ov="cmptrails"]')) return;   // 防連點疊層
   const ts = [...compareSet].map(id => TRAILS.find(t => t.id === id)).filter(Boolean);
   if (ts.length < 2) return;
   const row = (label, fn) => `<tr><th>${label}</th>${ts.map(t => `<td>${fn(t)}</td>`).join("")}</tr>`;
   const ov = document.createElement("div");
-  ov.className = "pet-modal";
+  ov.className = "pet-modal"; ov.dataset.ov = "cmptrails";
   ov.innerHTML = `<div class="pet-modal-card">
     <button class="sheet-close" id="cmpClose" aria-label="關閉">✕</button>
     <h2>步道比較</h2>
@@ -2723,177 +2231,24 @@ function openCompareSheet() {
   ov.querySelector("#cmpClose").onclick = close;
   ov.addEventListener("click", e => { if (e.target === ov) close(); });
 }
-// 夥伴推薦一條主題
-function petRecommend() {
-  const picks = [["tag:瀑布", "瀑布"], ["tag:古道", "古道"], ["tag:海景", "海景"], ["tag:森林", "森林"], ["family", "親子友善"], ["tag:湖泊", "湖泊"]];
-  const [f, label] = picks[Math.floor(Math.random() * picks.length)];
-  document.querySelector('.tab[data-view="explore"]').click();
-  activeFilters = new Set([f]); activeRegions.clear(); curQuery = ""; $("#searchInput").value = "";
-  syncFilterUI(); syncRegionUI(); updateFilterDot(); render();
-  toast(`夥伴想去走「${label}」！`);
-}
-// 成就徽章
-function petBadges() {
-  const recs = realRecords();
-  const n = recs.length;
-  const km = recs.reduce((s, r) => s + (r.distanceKm || 0), 0);
-  const asc = recs.reduce((s, r) => s + (r.ascent || 0), 0);
-  const maxOne = recs.reduce((m, r) => Math.max(m, r.distanceKm || 0), 0);
-  const hrs = recs.map(r => new Date(r.date).getHours());
-  const early = hrs.some(h => h < 7), night = hrs.some(h => h >= 19);
-  const done = (typeof Store.doneCount === "function") ? Store.doneCount() : 0;
-  const favCount = TRAILS.filter(t => Store.isFav(t.id)).length;
-  const wk = weeksStreak(), dstreak = (typeof daysStreak === "function") ? daysStreak() : 0;
-  const list = [
-    { e: "👣", n: "初心者", got: n >= 1, d: "完成第一次記錄" },
-    { e: "🥾", n: "常客", got: n >= 10, d: "累積 10 次出行" },
-    { e: "🎒", n: "老山友", got: n >= 30, d: "累積 30 次出行" },
-    { e: "🧗", n: "山痴", got: n >= 100, d: "累積 100 次出行" },
-    { e: "📏", n: "50K", got: km >= 50, d: "總里程 50 km" },
-    { e: "💯", n: "百K俱樂部", got: km >= 100, d: "總里程 100 km" },
-    { e: "🚀", n: "300K", got: km >= 300, d: "總里程 300 km" },
-    { e: "🏆", n: "縱橫五百", got: km >= 500, d: "總里程 500 km" },
-    { e: "⛰️", n: "爬升新手", got: asc >= 1000, d: "總爬升 1000 m" },
-    { e: "🦅", n: "爬升大師", got: asc >= 3000, d: "總爬升 3000 m" },
-    { e: "🗻", n: "玉山高度", got: asc >= 3952, d: "總爬升 3952 m（一座玉山）" },
-    { e: "🏔️", n: "聖母峰高度", got: asc >= 8848, d: "總爬升 8848 m（一座聖母峰）" },
-    { e: "🏃", n: "健行馬拉松", got: maxOne >= 10, d: "單次步行 ≥ 10 km" },
-    { e: "🥇", n: "半馬腳力", got: maxOne >= 21, d: "單次步行 ≥ 21 km" },
-    { e: "✅", n: "踏遍五徑", got: done >= 5, d: "完成 5 條步道" },
-    { e: "🗺️", n: "步道收藏家", got: done >= 20, d: "完成 20 條步道" },
-    { e: "⭐", n: "收藏迷", got: favCount >= 10, d: "收藏 10 條步道" },
-    { e: "🌅", n: "早起鳥", got: early, d: "清晨 7 點前出發" },
-    { e: "🌙", n: "夜行者", got: night, d: "晚間 7 點後出發" },
-    { e: "📅", n: "連續一週", got: dstreak >= 7, d: "連續 7 天健行" },
-    { e: "🔥", n: "四週堅持", got: wk >= 4, d: "連續 4 週都有走" },
-  ];
-  // 成就一旦解鎖就永久保留：舊紀錄被容量保護裁掉（最多存 100 筆）時，重算會低於門檻，
-  // 所以把解鎖過的名字存進 tt_badges_got，顯示時取聯集。
-  let saved = [];
-  try { saved = JSON.parse(localStorage.getItem("tt_badges_got")) || []; } catch { /* ignore */ }
-  const got = new Set(saved);
-  let changed = false;
-  for (const b of list) {
-    if (b.got && !got.has(b.n)) { got.add(b.n); changed = true; }
-    if (got.has(b.n)) b.got = true;
-  }
-  if (changed) try { localStorage.setItem("tt_badges_got", JSON.stringify([...got])); } catch { /* ignore */ }
-  return list;
-}
-// 成就勳章專區（夥伴頁）
-function renderBadges() {
-  const box = $("#petBadges"); if (!box) return;
-  const list = petBadges(), got = list.filter(b => b.got).length;
-  box.innerHTML = `<div class="section-title">${ic("medal")}成就勳章 <span class="badge-count">${got} / ${list.length}</span></div>
-    <div class="ach-grid">${list.map(b => `<div class="ach${b.got ? "" : " locked"}"><div class="ach-e">${b.got ? b.e : "🔒"}</div><div class="ach-n">${b.n}</div><div class="ach-d">${b.d}</div></div>`).join("")}</div>`;
-}
-// 夥伴手冊：進化圖鑑 + 成就徽章
-function openPetDex() {
-  const km = totalKm(), reached = petStageIndex(km), next = PET_STAGES[reached + 1];
-  const stages = PET_STAGES.map((s, i) => {
-    const unlocked = i <= reached, isNow = i === reached;
-    return `<div class="dex-row${unlocked ? "" : " locked"}${isNow ? " now" : ""}">
-      <div class="dex-e">${unlocked ? s.e : "❔"}</div>
-      <div class="dex-body">
-        <div class="dex-h"><b>${unlocked ? s.n : "？？？"}</b><span class="lv-chip lvt-${Math.min(i + 1, 7)}">Lv.${i + 1}</span>${isNow ? `<span class="dex-now">目前</span>` : ""}</div>
-        <div class="dex-k">${i === 0 ? "起始型態" : `成長里程 ${s.km} km 解鎖`}</div>
-        <div class="dex-d">${unlocked ? s.d : "繼續健行，解鎖牠的樣貌與故事…"}</div>
-      </div>
-    </div>`;
-  }).join("");
-  const tip = next ? `再走 <b>${(next.km - km).toFixed(1)}</b> km 進化成 ${next.e} ${next.n}` : "已達最終型態 ✨ 與你繼續同行";
-  const ov = document.createElement("div");
-  ov.className = "pet-modal";
-  ov.innerHTML = `<div class="pet-modal-card">
-    <button class="sheet-close" id="petDexClose" aria-label="關閉">✕</button>
-    <h2>夥伴手冊</h2>
-    <p class="dex-intro">你的夥伴會隨著累積的<b>成長里程</b>一階階進化 —— 走路的里程、餵食、每日任務與好友送的果實，都會讓牠成長。</p>
-    <div class="dex-tip"><span class="inline-ic">${ic("footprints")}</span> ${tip}</div>
-    <div class="dex-sec">進化圖鑑（共 ${PET_STAGES.length} 階）</div>
-    <div class="dex-list">${stages}</div>
-    <p class="dex-foot">💡 想看成就勳章？回「夥伴」頁往下捲就有。</p>
-  </div>`;
-  document.body.appendChild(ov);
-  const close = () => ov.remove();
-  ov.addEventListener("click", e => { if (e.target === ov) close(); });
-  ov.querySelector("#petDexClose").addEventListener("click", close);
-}
-// 全螢幕進化慶祝
-function celebrateEvolve(st, lv) {
-  const ov = document.createElement("div");
-  ov.className = "evolve-ov";
-  ov.innerHTML = `<div class="evolve-card">
-    <div class="evolve-spark"></div>
-    <div class="evolve-emoji">${st.e}</div>
-    <div class="evolve-h">進化！</div>
-    <div class="evolve-n">${petName() || st.n} <span class="lv-chip lvt-${Math.min(lv, 7)}">Lv.${lv}</span></div>
-    <div class="evolve-d">${st.d}</div>
-    <button class="btn primary" id="evolveOk">太棒了</button>
-  </div>`;
-  document.body.appendChild(ov);
-  if (navigator.vibrate) navigator.vibrate([60, 40, 120]);
-  const close = () => ov.remove();
-  ov.querySelector("#evolveOk").addEventListener("click", close);
-  ov.addEventListener("click", e => { if (e.target === ov) close(); });
-}
-// 走完後檢查是否進化（跨次也記住）
-function checkPetEvolve() {
-  const i = petStageIndex(totalKm());
-  const prev = +(localStorage.getItem("tt_pet_stage") || 0);
-  if (i !== prev) localStorage.setItem("tt_pet_stage", i);
-  if (i > prev) setTimeout(() => celebrateEvolve(PET_STAGES[i], i + 1), 800);
-}
-// 記錄頁待機面板（未開始記錄時顯示夥伴/上次/推薦）
-function renderRecIdle() {
-  const box = $("#recIdle"); if (!box) return;
-  if (Recorder.getState && Recorder.getState() !== "idle") { box.style.display = "none"; return; }
-  const last = realRecords()[0];
-  if (!last) { box.style.display = "none"; return; }
-  box.style.display = "block";
-  box.innerHTML = `<div class="ridle-row"><span class="inline-ic">${ic("pin")}</span> 上次：${last.trailName || "自由路線"}・<b>${(last.distanceKm || 0).toFixed(2)}</b> km</div>`;
-}
-// 我的足跡熱力圖：所有真實軌跡疊在一張地圖上
-function openFootprintMap() {
-  const recs = realRecords().filter(r => r.track && r.track.length > 1);
-  if (!recs.length) { toast("還沒有可顯示的軌跡，先去走一條吧"); return; }
-  const ov = document.createElement("div");
-  ov.className = "foot-modal";
-  ov.innerHTML = `<button class="lb-close" id="footClose" aria-label="關閉">✕</button><div id="footMap"></div><div class="foot-cap">我的足跡 · ${recs.length} 段軌跡</div>`;
-  document.body.appendChild(ov);
-  const close = () => ov.remove();
-  $("#footClose").addEventListener("click", close);
-  setTimeout(() => {
-    const m = L.map("footMap", { zoomControl: true });
-    baseTopo().addTo(m);
-    const all = [];
-    recs.forEach(r => {
-      const pts = r.track.map(p => [p.lat, p.lon]);
-      L.polyline(trackSegments(r.track).map(s => s.map(p => [p.lat, p.lon])), { color: "#e8893b", weight: 5, opacity: .35 }).addTo(m);   // 疊加＝熱力（gap 分段）
-      all.push(...pts);
-    });
-    if (all.length) m.fitBounds(all, { padding: [30, 30] });
-    m.invalidateSize();
-  }, 90);
-}
-// 每日目標環
-function todayKm() { const d = todayStr(); return realRecords().filter(r => localDay(r.date) === d).reduce((s, r) => s + (r.distanceKm || 0), 0); }
-// （每日目標環已依使用者要求移除；todayKm 仍供每日任務使用）
 function renderStats() {
   const box = $("#meStats");
   if (!box) return;
   const recs = realRecords();   // 成就統計不計入模擬
   const favs = TRAILS.filter(t => Store.isFav(t.id)).length;
   const doneTrails = new Set(TRAILS.filter(t => Store.trailLog(t.id).done).map(t => t.id)).size;
-  const km = recs.reduce((s, r) => s + (r.distanceKm || 0), 0);
-  const asc = recs.reduce((s, r) => s + (r.ascent || 0), 0);
-  const kcal = recs.reduce((s, r) => s + (r.kcal || 0), 0);
-  const ms = recs.reduce((s, r) => s + (r.elapsedMs || 0), 0);
+  // 各欄取「終身統計」與「現存紀錄合計」較大者（舊紀錄被容量保護砍掉也不縮水）
+  const lf = (Store.life && Store.life()) || {};
+  const km = Math.max(recs.reduce((s, r) => s + (r.distanceKm || 0), 0), lf.km || 0);
+  const asc = Math.max(recs.reduce((s, r) => s + (r.ascent || 0), 0), lf.asc || 0);
+  const kcal = Math.max(recs.reduce((s, r) => s + (r.kcal || 0), 0), lf.kcal || 0);
+  const ms = Math.max(recs.reduce((s, r) => s + (r.elapsedMs || 0), 0), lf.ms || 0);
   const now = new Date(), moKm = recs.filter(r => { const d = new Date(r.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); })
     .reduce((s, r) => s + (r.distanceKm || 0), 0);
   const hrs = ms / 3.6e6;
   const cell = (to, pre, dec, l) => `<div class="mstat"><div class="mv" data-to="${to}" data-pre="${pre}" data-dec="${dec}">${pre}0</div><div class="ml">${l}</div></div>`;
   box.innerHTML = `<div class="mstat-grid">
-    ${cell(recs.length, "", 0, "出行次數")}
+    ${cell(Math.max(recs.length, lf.trips || 0), "", 0, "出行次數")}
     ${cell(km, "", 1, "總里程 km")}
     ${cell(asc, "↑", 0, "總爬升 m")}
     ${cell(hrs, "", 1, "總時數 小時")}
@@ -2949,12 +2304,12 @@ function renderHistory(keepShown) {
     + (recs.length > histShown
       ? `<button class="btn ghost hist-more" id="histMore">顯示更多（剩 ${recs.length - histShown} 筆）</button>`
       : (recs.length > HIST_PAGE ? `<button class="btn ghost hist-more" id="histLess">收合</button>` : ""));
-  wrap.querySelectorAll(".hist-view").forEach(b => b.addEventListener("click", () => {
-    const rec = Store.getRecords().find(r => r.id === b.dataset.id);
+  wrap.querySelectorAll(".hist-view").forEach(b => b.addEventListener("click", async () => {
+    const rec = await Store.fullRecord(b.dataset.id);   // 軌跡被容量保護精簡過就到封存撈完整版
     if (rec) openTrackReview(rec);
   }));
-  wrap.querySelectorAll(".hist-gpx").forEach(b => b.addEventListener("click", () => {
-    const rec = Store.getRecords().find(r => r.id === b.dataset.id);
+  wrap.querySelectorAll(".hist-gpx").forEach(b => b.addEventListener("click", async () => {
+    const rec = await Store.fullRecord(b.dataset.id);
     if (rec) { GPX.exportRecord(rec); toast("已下載路線檔"); }
   }));
   const more = $("#histMore"); if (more) more.addEventListener("click", () => { histShown += HIST_PAGE; renderHistory(true); });
