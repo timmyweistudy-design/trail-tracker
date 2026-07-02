@@ -36,7 +36,7 @@ ${trks}
     const blob = new Blob([xml], { type: "application/gpx+xml" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `循徑拾光_全部行程_${new Date().toISOString().slice(0, 10)}.gpx`;
+    a.download = `循徑拾光_全部行程_${(d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`)(new Date())}.gpx`;   // 本地日期
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     return true;

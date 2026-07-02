@@ -126,6 +126,8 @@ const Recorder = (() => {
     if (!lastFix) {                                  // 第一個點：設為錨點
       lastFix = p; lastAcceptT = now; if (refAlt == null && alt != null) { refAlt = alt; smAlt = alt; }
       if (alt != null) lastFixAlt = alt;
+      // 暫停/復原後的第一個點標記 gap：畫線與海拔校正都按此分段，跳段距離/爬升絕不列入
+      if (track.length) p.gap = true;
       track.push(p); cb(snapshot()); return;
     }
 

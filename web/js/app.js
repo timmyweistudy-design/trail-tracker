@@ -1373,19 +1373,22 @@ function renderAttractions() {
 }
 
 // Premium：離線地圖免費 5 次，用完才需升級。回傳是否允許本次下載（允許則計入並提醒剩餘）。
-const OFFLINE_FREE = 5;
-function offlineFreeUsed() { return +(localStorage.getItem("tt_offline_free") || 0); }
-function offlineAllow() {
+// 非會員離線地圖：以容量（MB）計額度，一次大量下載也照實際大小扣，會員不限
+const OFFLINE_FREE_MB = 50;
+const TILE_EST_MB = 0.02;   // 估每張圖磚約 20 KB（顯示用；實際扣款以下載 bytes 為準）
+function offlineMbUsed() { return +(localStorage.getItem("tt_offline_mb") || 0); }
+function addOfflineMb(mb) { if (mb > 0) localStorage.setItem("tt_offline_mb", String(+(offlineMbUsed() + mb).toFixed(2))); }
+function offlineAllow(tiles, silent) {
   if (typeof Premium !== "undefined" && Premium.isOn()) return true;   // 會員無限
-  const used = offlineFreeUsed();
-  if (used >= OFFLINE_FREE) {
-    toast("免費離線地圖已用完（5/5），升級 Premium 即可無限下載");
-    if (typeof Premium !== "undefined") Premium.openUpgrade();
+  const need = (tiles ? tiles.length : 0) * TILE_EST_MB;
+  const left = OFFLINE_FREE_MB - offlineMbUsed();
+  if (need > left) {
+    if (!silent) {
+      toast(`免費離線地圖額度不足（剩 ${Math.max(0, left).toFixed(1)} MB，這次約需 ${need.toFixed(1)} MB），升級 Premium 無限下載`);
+      if (typeof Premium !== "undefined") Premium.openUpgrade();
+    }
     return false;
   }
-  localStorage.setItem("tt_offline_free", String(used + 1));
-  const left = OFFLINE_FREE - (used + 1);
-  toast(left > 0 ? `免費離線下載 ${used + 1}/${OFFLINE_FREE}（剩 ${left} 次）` : "這是最後 1 次免費離線下載，之後需 Premium");
   return true;
 }
 
@@ -1410,13 +1413,14 @@ async function downloadAllTaiwan() {
   const tiles = Offline.tileList(bbox, 7, zmax);
   const btn = $("#btnAllOffline"), box = $("#allOfflineBox");
   if (!confirm(`下載全台離線地圖（縮放 7–${zmax}）約 ${tiles.length} 張圖磚、約 ${(tiles.length * 0.02).toFixed(0)} MB？\n\n可離線看全島概覽；個別步道細節請另在步道詳情按「預載離線地圖」。\n下載需幾分鐘，請保持開啟。`)) return;
-  if (!offlineAllow()) return;   // Premium：免費 5 次後需升級
+  if (!offlineAllow(tiles)) return;   // 非會員：MB 額度制
   box.style.display = "block";
   btn.disabled = true; btn.textContent = "下載中…";
   try {
     const r = await Offline.download(tiles, (done, total) => {
       box.innerHTML = `下載全台地圖中… ${done}/${total}<div class="offline-bar"><i style="width:${Math.round(done / total * 100)}%"></i></div>`;
     });
+    addOfflineMb(r.mb);
     box.innerHTML = `✅ 已下載 ${r.ok}/${r.total} 張圖磚，全台概覽地圖可離線看了。`;
     btn.textContent = "✓ 已下載全台離線地圖";
     refreshOfflineStatus();
@@ -1430,7 +1434,6 @@ async function downloadFavOffline() {
   const favs = TRAILS.filter(t => Store.isFav(t.id) && t.lat);
   const btn = $("#btnFavOffline"), box = $("#favOfflineBox");
   if (!favs.length) { toast("尚無含座標的收藏步道"); return; }
-  if (!offlineAllow()) return;   // Premium：免費 5 次後需升級
   const seen = new Set(); let tiles = [];
   for (const t of favs) {
     const bbox = Offline.bboxFor(t);
@@ -1440,6 +1443,7 @@ async function downloadFavOffline() {
       if (!seen.has(key)) { seen.add(key); tiles.push(k); }
     }
   }
+  if (!offlineAllow(tiles)) return;   // 非會員：MB 額度制
   box.style.display = "block";
   box.innerHTML = `準備下載 ${favs.length} 條收藏、約 ${tiles.length} 張圖磚（約 ${(tiles.length * 0.02).toFixed(1)} MB）…`;
   btn.disabled = true; btn.textContent = "下載中…";
@@ -1447,6 +1451,7 @@ async function downloadFavOffline() {
     const r = await Offline.download(tiles, (done, total) => {
       box.innerHTML = `下載中… ${done}/${total}<div class="offline-bar"><i style="width:${Math.round(done / total * 100)}%"></i></div>`;
     });
+    addOfflineMb(r.mb);
     box.innerHTML = `✅ 已下載 ${r.ok}/${r.total} 張圖磚，${favs.length} 條收藏步道可離線看地圖了。`;
     btn.textContent = "✓ 已預載收藏";
     refreshOfflineStatus();
@@ -1457,11 +1462,11 @@ async function downloadFavOffline() {
 }
 async function downloadOffline(t, btn) {
   if (!t.lat) { toast("此步道無座標，無法下載地圖"); return; }
-  if (!offlineAllow()) return;   // Premium：免費 5 次後需升級
   const box = $("#offlineBox");
   const bbox = Offline.bboxFor(t);
   const { zmin, zmax } = Offline.planZoom(bbox);
   const tiles = Offline.tileList(bbox, zmin, zmax);
+  if (!offlineAllow(tiles)) return;   // 非會員：MB 額度制
   box.style.display = "block";
   box.innerHTML = `準備下載約 ${tiles.length} 張圖磚（約 ${(tiles.length * 0.02).toFixed(1)} MB）…`;
   btn.disabled = true; btn.textContent = "下載中…";
@@ -1470,6 +1475,7 @@ async function downloadOffline(t, btn) {
       box.innerHTML = `下載離線地圖中… ${done}/${total}
         <div class="offline-bar"><i style="width:${Math.round(done / total * 100)}%"></i></div>`;
     });
+    addOfflineMb(r.mb);
     box.innerHTML = `✅ 已下載 ${r.ok}/${r.total} 張圖磚，此步道範圍可離線看地圖了。`;
     btn.textContent = "✓ 已預載離線地圖";
   } catch {
@@ -1515,14 +1521,15 @@ document.addEventListener("keydown", e => {
 
 // ---------- 記錄頁 ----------
 // 行程軌跡回顧 / 結束總結
-let trackMap = null, trackLayer = null, trackAnim = null, trackReplayLayer = null, trackPts = null, trackStats = null;
+let trackMap = null, trackLayer = null, trackAnim = null, trackReplayLayer = null, trackPts = null, trackSegsLL = null, trackStats = null;
 const _hav = (a, b) => haversine({ lat: a[0], lon: a[1] }, { lat: b[0], lon: b[1] });
 // 結算頁滑行重播：marker 沿軌跡滑行、路線同步畫出（約8秒）
-function playTrackReplay(pts) {
+function playTrackReplay(pts, segLL) {
   if (trackAnim) { clearInterval(trackAnim); trackAnim = null; }
   if (!trackMap || !pts || pts.length < 2) return;
   if (trackReplayLayer) trackMap.removeLayer(trackReplayLayer);
   trackReplayLayer = L.layerGroup().addTo(trackMap);
+  const finalLL = (segLL && segLL.length) ? segLL : pts;   // 完整顯示時依 gap 分段，暫停跳段不連直線
   const cum = [0];
   for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + _hav(pts[i - 1], pts[i]));
   const total = cum[cum.length - 1] || 1;
@@ -1531,7 +1538,7 @@ function playTrackReplay(pts) {
   const fullBounds = L.polyline(pts).getBounds();
   // 系統設定「減少動態」→ 直接顯示完整路線，不播放動畫
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    grow.setLatLngs(pts);
+    grow.setLatLngs(finalLL);
     L.circleMarker(pts[pts.length - 1], { radius: 6, color: "#fff", weight: 2, fillColor: "#d2542e", fillOpacity: 1 }).addTo(trackReplayLayer);
     trackMap.fitBounds(fullBounds, { padding: [24, 24] });
     return;
@@ -1566,7 +1573,7 @@ function playTrackReplay(pts) {
     barFill.style.width = (frac * 100) + "%";
     if (f >= frames || d >= total) {
       clearInterval(trackAnim); trackAnim = null;
-      grow.setLatLngs(pts);
+      grow.setLatLngs(finalLL);
       L.circleMarker(pts[pts.length - 1], { radius: 6, color: "#fff", weight: 2, fillColor: "#d2542e", fillOpacity: 1 }).addTo(trackReplayLayer);
       live.innerHTML = `<b>${(trackStats ? trackStats.km : d / 1000).toFixed(2)}</b> km　·　${fmtTime(totMs)}　🏁`;
       trackMap.flyToBounds(fullBounds, { padding: [24, 24], duration: 0.8 });   // 走完拉遠看全程
@@ -1637,18 +1644,19 @@ function openTrackReview(rec) {
     trackLayer = L.layerGroup().addTo(trackMap);
     const pts = (rec.track || []).map(p => [p.lat, p.lon]);
     trackPts = pts;
+    trackSegsLL = trackSegments(rec.track || []).map(s => s.map(p => [p.lat, p.lon]));   // gap 分段，顯示不連跳段
     trackStats = { km, ms: rec.elapsedMs };
     trackMap.invalidateSize();
     if (pts.length > 1) {
       trackMap.fitBounds(L.polyline(pts).getBounds(), { padding: [24, 24] });
       L.circleMarker(pts[0], { radius: 6, color: "#fff", weight: 2, fillColor: "#2f7d4f", fillOpacity: 1 }).addTo(trackLayer);   // 起點
-      playTrackReplay(pts);                       // 滑行重播
+      playTrackReplay(pts, trackSegsLL);          // 滑行重播
     } else if (pts.length === 1) {
       trackMap.setView(pts[0], 15);
       L.circleMarker(pts[0], { radius: 6, color: "#fff", weight: 2, fillColor: "#2f7d4f", fillOpacity: 1 }).addTo(trackLayer);
     } else { trackMap.setView([23.8, 121], 7); }
   }, 120);
-  $("#trackReplay").addEventListener("click", () => { if (trackPts && trackPts.length > 1) playTrackReplay(trackPts); });
+  $("#trackReplay").addEventListener("click", () => { if (trackPts && trackPts.length > 1) playTrackReplay(trackPts, trackSegsLL); });
   $("#trackCard").addEventListener("click", () => shareHikeCard(rec));
   $("#trackGpx").addEventListener("click", () => { GPX.exportRecord(rec); toast("已下載路線檔"); });
   $("#trackShare").addEventListener("click", () => {
@@ -1699,9 +1707,9 @@ async function shareHikeCard(rec) {
       const ox = bx + (bw - spanLo * sc) / 2, oy = by + (bh - spanLa * sc) / 2;
       x.strokeStyle = "rgba(232,137,59,.95)"; x.lineWidth = 7; x.lineJoin = "round"; x.lineCap = "round";
       x.beginPath();
-      pts.forEach((p, i) => {
-        const px = ox + (p[1] - minLo) * sc, py = oy + (maxLa - p[0]) * sc;
-        i ? x.lineTo(px, py) : x.moveTo(px, py);
+      (rec.track || []).forEach((p, i) => {
+        const px = ox + (p.lon - minLo) * sc, py = oy + (maxLa - p.lat) * sc;
+        (i && !p.gap) ? x.lineTo(px, py) : x.moveTo(px, py);   // gap＝暫停跳段，不連線
       });
       x.stroke();
     }
@@ -1759,10 +1767,11 @@ function initRecMap() {
     recLine = L.polyline([], { color: "#2f7d4f", weight: 5 }).addTo(recMap);
   }
   recMap.invalidateSize();
-  // 復原中的軌跡重畫
+  // 復原中的軌跡重畫（依 gap 分段，暫停跳段不連線）
   if (recLine && Recorder.getState() !== "idle") {
-    const pts = (Recorder.snapshot().track || []).map(p => [p.lat, p.lon]);
-    if (pts.length) { recLine.setLatLngs(pts); setTimeout(() => recMap.fitBounds(L.polyline(pts).getBounds(), { padding: [20, 20] }), 60); }
+    const tr = Recorder.snapshot().track || [];
+    const pts = tr.map(p => [p.lat, p.lon]);
+    if (pts.length) { recLine.setLatLngs(trackSegments(tr).map(s => s.map(p => [p.lat, p.lon]))); setTimeout(() => recMap.fitBounds(L.polyline(pts).getBounds(), { padding: [20, 20] }), 60); }
   }
 }
 
@@ -1837,10 +1846,15 @@ Recorder.onUpdate(s => {
   if ($("#stAscent")) $("#stAscent").textContent = `↑${Math.round(ad.ascent || 0)}`;
   if ($("#stDescent")) $("#stDescent").textContent = `↓${Math.round(ad.descent || 0)}`;
   drawRecSpark(s.altSeries);
-  // #11 每公里震動提示
+  // #11 每公里震動提示 + 果實收集提示（每走 1 km 得 1 顆 🍓）
   if (s.state === "running" && !s.autoPaused) {
     const kmDone = Math.floor(s.distanceKm);
-    if (kmDone > lastKmMilestone) { lastKmMilestone = kmDone; if (navigator.vibrate) navigator.vibrate([120, 60, 120]); }
+    if (kmDone > lastKmMilestone) {
+      const gained = kmDone - lastKmMilestone;
+      lastKmMilestone = kmDone;
+      if (navigator.vibrate) navigator.vibrate([120, 60, 120]);
+      if (!sim()) toast(`🍓 收集到果實 +${gained}！已走 ${kmDone} km，繼續加油`);
+    }
   }
   if (s.error) $("#recStatus").innerHTML = `⚠️ ${s.error}（可改用模擬模式）`;
   else if (s.state === "running" && s.autoPaused) $("#recStatus").innerHTML = `<span class="offroute">⏸ 自動暫停（偵測到靜止，移動即恢復）</span>`;
@@ -1862,7 +1876,7 @@ Recorder.onUpdate(s => {
   }
   if (recLine && s.track.length) {
     const pts = s.track.map(p => [p.lat, p.lon]);
-    recLine.setLatLngs(pts);
+    recLine.setLatLngs(trackSegments(s.track).map(seg => seg.map(p => [p.lat, p.lon])));   // 依 gap 分段畫線
     const last = pts[pts.length - 1];
     const meAv = window.__meAvatar;   // 登入且有頭像才用頭像標記
     if (meAv) {
@@ -1953,15 +1967,19 @@ $("#btnShareLoc").addEventListener("click", () => {
   }, () => toast("定位失敗，請允許定位權限"), { enableHighAccuracy: true, timeout: 10000 });
 });
 
-// 開始記錄時，背景預載當前位置周邊圖磚（保險，避免途中失去訊號）
+// 開始記錄時，背景預載當前位置周邊圖磚（保險，避免途中失去訊號）。
+// 這也是離線地圖：非會員縮小範圍（±1km、縮放 14–15）並計入 MB 額度；額度不足只跳過預載、不影響記錄。Premium 完整預載（±2km、14–16）。
 let recPreloaded = false;
 async function preloadAround(lat, lon) {
-  const m = 0.018;   // 約 ±2km
+  const pro = typeof Premium !== "undefined" && Premium.isOn();
+  const m = pro ? 0.018 : 0.009;
   const bbox = { n: lat + m, s: lat - m, e: lon + m, w: lon - m };
-  const tiles = Offline.tileList(bbox, 14, 16);
+  const tiles = Offline.tileList(bbox, 14, pro ? 16 : 15);
+  if (!pro && !offlineAllow(tiles, true)) { toast("免費離線額度已用完，本次不預載周邊地圖（升級 Premium 記錄時自動完整預載）"); return; }
   try {
-    await Offline.download(tiles, () => {});
-    toast(`已預載周邊離線地圖（${tiles.length} 張）`);
+    const r = await Offline.download(tiles, () => {});
+    if (!pro) addOfflineMb(r.mb);
+    toast(`已預載周邊離線地圖（${tiles.length} 張${pro ? "" : `，免費額度剩 ${Math.max(0, OFFLINE_FREE_MB - offlineMbUsed()).toFixed(1)} MB`}）`);
   } catch { /* 靜默 */ }
 }
 
@@ -1975,7 +1993,8 @@ function pickSimTrail() {
   const pool = nice.length ? nice : cands;
   return pool[Math.floor(Math.random() * pool.length)];
 }
-$("#btnStart").addEventListener("click", () => {
+// 開始記錄（本人按鈕 / 小隊隊長廣播都走這裡）
+function startRecordingUI() {
   initRecMap();
   ensureMeAvatar();
   const ri = $("#recIdle"); if (ri) ri.style.display = "none";
@@ -2003,6 +2022,22 @@ $("#btnStart").addEventListener("click", () => {
   $("#btnPause").style.display = "block";
   $("#btnStop").style.display = "block";
   if (!sim()) $("#btnSnap").style.display = "block";   // 模擬不拍照
+}
+$("#btnStart").addEventListener("click", () => {
+  // 小隊同行中：只有隊長能開始，且需全員（含隊長）已按「準備」；隊長開始時廣播全隊一起開始
+  if (typeof TeamLive !== "undefined" && TeamLive.isOn() && Recorder.getState() === "idle") {
+    if (!TeamLive.isLeader()) { toast("小隊記錄由隊長開始：請先按「✋ 準備」，等隊長按開始"); return; }
+    if (!TeamLive.allReady()) { toast("還有隊員未準備，全員（含隊長）按「準備」後才能一起開始"); return; }
+    TeamLive.sendStart();
+  }
+  startRecordingUI();
+});
+// 收到隊長的開始廣播 → 已按準備的隊員自動一起開始記錄
+if (typeof TeamLive !== "undefined" && TeamLive.onStart) TeamLive.onStart(() => {
+  if (Recorder.getState() === "running") return;
+  const tab = document.querySelector('.tab[data-view="record"]'); if (tab) tab.click();
+  toast("👑 隊長開始了！小隊一起記錄");
+  startRecordingUI();
 });
 $("#btnPause").addEventListener("click", () => {
   Recorder.pause();
@@ -2072,7 +2107,7 @@ async function refreshOfflineStatus() {
   const q = $("#offlineQuota");
   if (q) {
     if (typeof Premium !== "undefined" && Premium.isOn()) q.innerHTML = `<span class="oq-pro">${ic("sparkle")} Premium：無限下載</span>`;
-    else { const left = Math.max(0, OFFLINE_FREE - offlineFreeUsed()); q.innerHTML = `免費額度：剩 <b>${left}</b> / ${OFFLINE_FREE} 次　·　<a class="oq-up" id="oqUp">升級 Premium 無限下載</a>`; const up = $("#oqUp"); if (up) up.addEventListener("click", () => { if (typeof Premium !== "undefined") Premium.openUpgrade(); }); }
+    else { const left = Math.max(0, OFFLINE_FREE_MB - offlineMbUsed()); q.innerHTML = `免費額度：剩 <b>${left.toFixed(1)}</b> / ${OFFLINE_FREE_MB} MB（含記錄時預載）　·　<a class="oq-up" id="oqUp">升級 Premium 無限下載</a>`; const up = $("#oqUp"); if (up) up.addEventListener("click", () => { if (typeof Premium !== "undefined") Premium.openUpgrade(); }); }
   }
 }
 $("#btnDiag").addEventListener("click", () => {
@@ -2115,14 +2150,16 @@ if (_crs) _crs.addEventListener("click", async () => {
     const merge = confirm(`雲端備份（${when}）\n\n要『合併』到現有資料嗎？\n確定 = 合併\n取消 = 完全取代`);
     Store.importAll(data.data, merge ? "merge" : "replace");
     renderHistory(); render();
+    // 主題/外觀與寵物、任務、成就一併還原後重繪
+    try { initTheme(); renderPet(); renderQuests(); renderBadges(); renderStats(); renderDailyRing(); loadProfile(); } catch (e) { /* 個別區塊未載入時忽略 */ }
     toast("已從雲端還原 ✓");
   } catch (e) { toast("還原失敗：" + (e && e.message || e)); }
 });
 if (typeof Premium !== "undefined") { setTimeout(() => Premium.refresh(), 1500); Premium.handleReturn(); }   // 啟動後同步會員狀態 + 處理結帳返回
 
-// 進階分析：基本數據免費看，進階區塊鎖 Premium
+// 進階分析：整頁 PRO（與年度回顧一致）
 const _aBtn = $("#btnAnalytics");
-if (_aBtn) _aBtn.addEventListener("click", openAnalytics);
+if (_aBtn) _aBtn.addEventListener("click", () => { if (typeof Premium !== "undefined" && !Premium.gate()) return; openAnalytics(); });
 // 年度回顧（PRO）
 const _yBtn = $("#btnYearReview");
 if (_yBtn) _yBtn.addEventListener("click", () => { if (typeof Premium !== "undefined" && !Premium.gate()) return; openYearReview(); });
@@ -2160,8 +2197,9 @@ function routeMini(track, cls) {
   const w = 100, h = 56, pad = 6, sx = (maxLo - minLo) || 1e-6, sy = (maxLa - minLa) || 1e-6;
   const sc = Math.min((w - 2 * pad) / sx, (h - 2 * pad) / sy);
   const ox = (w - sx * sc) / 2, oy = (h - sy * sc) / 2;
-  const pts = track.map(p => `${(ox + (p.lon - minLo) * sc).toFixed(1)},${(oy + (maxLa - p.lat) * sc).toFixed(1)}`).join(" ");
-  return `<svg class="route-mini ${cls || ""}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet"><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+  const lines = trackSegments(track).map(seg =>
+    `<polyline points="${seg.map(p => `${(ox + (p.lon - minLo) * sc).toFixed(1)},${(oy + (maxLa - p.lat) * sc).toFixed(1)}`).join(" ")}" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>`).join("");
+  return `<svg class="route-mini ${cls || ""}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet">${lines}</svg>`;
 }
 function openYearReview() {
   const year = new Date().getFullYear();
@@ -2196,7 +2234,8 @@ function openYearReview() {
       <div><b>${cuSpan(kcal, "", 0)}</b><span>大卡</span></div>
       <div><b>${cuSpan(distinct, "", 0)}</b><span>條步道</span></div>
     </div>
-    <div class="yr-months">${mk.map((v, i) => `<div class="yr-mo"><div class="yr-mo-bar" style="height:${Math.round(v / mkMax * 46) + 3}px;animation-delay:${(i * 0.04).toFixed(2)}s"></div><span>${i + 1}</span></div>`).join("")}</div>
+    <div class="yr-months">${mk.map((v, i) => `<div class="yr-mo"><div class="yr-mo-v">${v > 0 ? (v >= 10 ? Math.round(v) : v.toFixed(1)) : ""}</div><div class="yr-mo-bar" style="height:${Math.round(v / mkMax * 46) + 3}px;animation-delay:${(i * 0.04).toFixed(2)}s"></div><span>${i + 1}</span></div>`).join("")}</div>
+    <div class="yr-mo-cap">每月里程（單位：km）</div>
     ${longestRec && longestRec.track && longestRec.track.length > 1 ? `<div class="yr-route"><div class="yr-route-l">最遠的一條 ‧ ${(longestRec.trailName || "自由路線")}（${longest.toFixed(1)} km）</div>${routeMini(longestRec.track, "yr-route-svg")}</div>` : ""}
     <div class="yr-lines">
       ${longest ? `<div>單次最長 <b>${longest.toFixed(1)} km</b></div>` : ""}
@@ -2286,9 +2325,10 @@ function openAnalytics() {
   const totHrs = recs.reduce((s, r) => s + (r.elapsedMs || 0), 0) / 3.6e6;
   // 每月里程
   const by = {};
-  for (const r of recs) { const m = (r.date || "").slice(0, 7); if (!m) continue; (by[m] = by[m] || { km: 0, asc: 0, n: 0 }); by[m].km += r.distanceKm || 0; by[m].asc += r.ascent || 0; by[m].n++; }
+  for (const r of recs) { const m = (r.date || "").slice(0, 7); if (!m) continue; (by[m] = by[m] || { km: 0, asc: 0, n: 0, kcal: 0 }); by[m].km += r.distanceKm || 0; by[m].asc += r.ascent || 0; by[m].kcal += r.kcal || 0; by[m].n++; }
   const months = Object.keys(by).sort().reverse().slice(0, 12);
   const maxKm = Math.max(1, ...months.map(m => by[m].km));
+  const maxKcal = Math.max(1, ...months.map(m => by[m].kcal));
   const card = (to, pre, dec, l) => `<div class="ana-card"><div class="ana-cv">${cuSpan(to, pre, dec)}</div><div class="ana-cl">${l}</div></div>`;
   const pb = (label, val) => `<div class="ana-pb"><span>${label}</span><b>${val}</b></div>`;
 
@@ -2333,8 +2373,14 @@ function openAnalytics() {
     ${diffN.slice(1).some(c => c > 0) ? diffRadar(diffN.slice(1), DLBL.slice(1)) : `<div class="ana-empty-note">尚無對應到分級步道的紀錄</div>`}
     <div class="ana-sec">年度里程</div>
     <div class="ana-list">${years.map(y => `<div class="ana-row"><div class="ana-m">${y}</div><div class="ana-bar"><i style="width:${Math.round(yr[y] / maxY * 100)}%"></i></div><div class="ana-v"><b>${yr[y].toFixed(1)}</b> km</div></div>`).join("")}</div>
+    <div class="ana-sec">每月卡路里消耗</div>
+    <div class="ana-list">${months.map(m => `
+      <div class="ana-row"><div class="ana-m">${m.replace("-", " / ")}</div>
+        <div class="ana-bar kcal"><i style="width:${Math.round(by[m].kcal / maxKcal * 100)}%"></i></div>
+        <div class="ana-v"><b>${Math.round(by[m].kcal).toLocaleString()}</b> kcal</div></div>`).join("")}</div>
     <div class="ana-sec">一週節律</div>
-    <div class="ana-week">${wd.map((c, i) => `<div class="aw"><div class="aw-bar" style="height:${Math.round(c / maxW * 46) + 4}px"></div><div class="aw-l">${WLBL[i]}</div></div>`).join("")}</div>
+    <div class="ana-week">${wd.map((c, i) => `<div class="aw"><div class="aw-v">${c}</div><div class="aw-bar" style="height:${Math.round(c / maxW * 46) + 4}px"></div><div class="aw-l">${WLBL[i]}</div></div>`).join("")}</div>
+    <div class="ana-spark-cap">各星期的出行次數（單位：次）</div>
     <button class="btn ghost" id="anaCompare" style="margin-top:10px">${ic("users")} 好友里程比較</button>
     <div class="ana-exp">
       <button class="btn ghost" id="anaCsv">${ic("download")} CSV</button>
@@ -2485,7 +2531,11 @@ function bumpAffinity(amt) {
   localStorage.setItem("tt_pet_aff", String(Math.max(0, Math.min(100, cur + amt))));
   localStorage.setItem("tt_pet_aff_t", new Date().toISOString());
 }
-function todayStr() { return new Date().toISOString().slice(0, 10); }
+// 每日任務/目標一律用「本地日期」：toISOString 是 UTC，台灣早上 8 點前會被算成前一天，
+// 造成任務進度看起來莫名被刷新。跨日以本地午夜為準。
+function localDayOf(d) { const t = new Date(d); if (isNaN(t)) return ""; return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`; }
+function todayStr() { return localDayOf(new Date()); }
+function localDay(iso) { return localDayOf(iso); }
 const FEED_COOLDOWN = 8 * 3600e3;   // 餵食冷卻 8 小時
 function feedCooldownMs() { return Math.max(0, FEED_COOLDOWN - (Date.now() - (+(localStorage.getItem("tt_pet_fed_t") || 0)))); }
 function canFeedToday() { return berriesBalance() >= 3 && feedCooldownMs() === 0; }
@@ -2539,19 +2589,34 @@ function energy() {
 // 連續健行天數
 function daysStreak() {
   const recs = realRecords(); if (!recs.length) return 0;
-  const days = new Set(recs.map(r => (r.date || "").slice(0, 10)));
+  const days = new Set(recs.map(r => localDay(r.date)));
   const d = new Date(); d.setHours(0, 0, 0, 0);
-  const key = () => d.toISOString().slice(0, 10);
+  const key = () => localDayOf(d);
   if (!days.has(key())) d.setDate(d.getDate() - 1);   // 今天還沒走→從昨天起算
   let s = 0; while (days.has(key())) { s++; d.setDate(d.getDate() - 1); }
   return s;
 }
-function todayAscent() { const ds = todayStr(); return realRecords().filter(r => (r.date || "").slice(0, 10) === ds).reduce((s, r) => s + (r.ascent || 0), 0); }
-function todayTrips() { const ds = todayStr(); return realRecords().filter(r => (r.date || "").slice(0, 10) === ds).length; }
+function todayAscent() { const ds = todayStr(); return realRecords().filter(r => localDay(r.date) === ds).reduce((s, r) => s + (r.ascent || 0), 0); }
+function todayTrips() { const ds = todayStr(); return realRecords().filter(r => localDay(r.date) === ds).length; }
+// 每日任務進度高水位：當天內只增不減（防止任何資料裁切/日期邊界造成進度倒退），過了本地午夜才重置
+function questProgress() {
+  let hi = null;
+  try { hi = JSON.parse(localStorage.getItem("tt_quest_hi")); } catch { /* ignore */ }
+  const d = todayStr();
+  const cur = { d, km: todayKm(), asc: todayAscent(), trips: todayTrips() };
+  if (hi && hi.d === d) {
+    cur.km = Math.max(cur.km, +hi.km || 0);
+    cur.asc = Math.max(cur.asc, +hi.asc || 0);
+    cur.trips = Math.max(cur.trips, +hi.trips || 0);
+  }
+  try { localStorage.setItem("tt_quest_hi", JSON.stringify(cur)); } catch { /* ignore */ }
+  return cur;
+}
 // 每日任務
 function renderQuests() {
   const box = $("#petQuests"); if (!box) return;
-  const km = todayKm(), asc = todayAscent(), trips = todayTrips(), streak = daysStreak();
+  const p = questProgress();
+  const km = p.km, asc = p.asc, trips = p.trips, streak = daysStreak();
   const quests = [
     { icon: "footprints", label: "今日出門健行", cur: trips, goal: 1, dec: 0 },
     { icon: "ruler", label: "今日里程 1.5 km", cur: km, goal: 1.5, dec: 1 },
@@ -2673,7 +2738,7 @@ function petBadges() {
   const done = (typeof Store.doneCount === "function") ? Store.doneCount() : 0;
   const favCount = TRAILS.filter(t => Store.isFav(t.id)).length;
   const wk = weeksStreak(), dstreak = (typeof daysStreak === "function") ? daysStreak() : 0;
-  return [
+  const list = [
     { e: "👣", n: "初心者", got: n >= 1, d: "完成第一次記錄" },
     { e: "🥾", n: "常客", got: n >= 10, d: "累積 10 次出行" },
     { e: "🎒", n: "老山友", got: n >= 30, d: "累積 30 次出行" },
@@ -2696,6 +2761,18 @@ function petBadges() {
     { e: "📅", n: "連續一週", got: dstreak >= 7, d: "連續 7 天健行" },
     { e: "🔥", n: "四週堅持", got: wk >= 4, d: "連續 4 週都有走" },
   ];
+  // 成就一旦解鎖就永久保留：舊紀錄被容量保護裁掉（最多存 100 筆）時，重算會低於門檻，
+  // 所以把解鎖過的名字存進 tt_badges_got，顯示時取聯集。
+  let saved = [];
+  try { saved = JSON.parse(localStorage.getItem("tt_badges_got")) || []; } catch { /* ignore */ }
+  const got = new Set(saved);
+  let changed = false;
+  for (const b of list) {
+    if (b.got && !got.has(b.n)) { got.add(b.n); changed = true; }
+    if (got.has(b.n)) b.got = true;
+  }
+  if (changed) try { localStorage.setItem("tt_badges_got", JSON.stringify([...got])); } catch { /* ignore */ }
+  return list;
 }
 // 成就勳章專區（夥伴頁）
 function renderBadges() {
@@ -2785,7 +2862,7 @@ function openFootprintMap() {
     const all = [];
     recs.forEach(r => {
       const pts = r.track.map(p => [p.lat, p.lon]);
-      L.polyline(pts, { color: "#e8893b", weight: 5, opacity: .35 }).addTo(m);   // 疊加＝熱力
+      L.polyline(trackSegments(r.track).map(s => s.map(p => [p.lat, p.lon])), { color: "#e8893b", weight: 5, opacity: .35 }).addTo(m);   // 疊加＝熱力（gap 分段）
       all.push(...pts);
     });
     if (all.length) m.fitBounds(all, { padding: [30, 30] });
@@ -2793,7 +2870,7 @@ function openFootprintMap() {
   }, 90);
 }
 // 每日目標環
-function todayKm() { const d = todayStr(); return realRecords().filter(r => (r.date || "").slice(0, 10) === d).reduce((s, r) => s + (r.distanceKm || 0), 0); }
+function todayKm() { const d = todayStr(); return realRecords().filter(r => localDay(r.date) === d).reduce((s, r) => s + (r.distanceKm || 0), 0); }
 function dailyGoal() { return +(localStorage.getItem("tt_daily_goal") || 3); }
 function renderDailyRing() {
   const box = $("#dailyRing"); if (!box) return;

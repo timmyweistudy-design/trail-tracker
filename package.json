@@ -4,6 +4,7 @@
   "private": true,
   "description": "循徑拾光 Gather the Trail — 台灣登山步道 PWA / Capacitor App",
   "scripts": {
+    "check": "node scripts/check.js",
     "add:android": "cap add android",
     "sync": "cap sync",
     "open:android": "cap open android",

@@ -25,3 +25,8 @@ __pycache__/
 .venv/
 venv/
 data/tw_counties.geojson
+
+# 規劃工作檔（AI 會話用）
+/task_plan.md
+/findings.md
+/progress.md

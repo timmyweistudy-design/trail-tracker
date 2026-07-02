@@ -262,7 +262,7 @@ const Posts = (() => {
       id, author_id: u.user.id, repost_of: original.id,
       trail_id: original.trail_id || null, trail_name: original.trail_name || "自由路線",
       distance_km: original.distance_km, ascent: original.ascent,
-      hiked_on: (original.hiked_on || new Date().toISOString().slice(0, 10)),
+      hiked_on: (original.hiked_on || (d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`)(new Date())),   // 本地日期
       caption, track_thumb: original.track_thumb || null,
       visibility: "public", rating: original.rating || null,
     });

@@ -414,6 +414,11 @@ body {
 .btn.ghost { background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
 .btn.amber { background: var(--accent); color: #fff; }
 .btn:active { transform: translateY(1px); }
+/* 行內小按鈕：列（好友/隊伍/邀請/封鎖名單/通知）裡的 .btn 不吃全域 width:100%，避免突出撐版 */
+.disc-row .btn, .team-row .btn, .fp .btn, .set-block-row .btn, .notif-acts .btn {
+  width: auto; flex: 0 0 auto; margin-top: 0; padding: 8px 14px;
+  font-size: 13px; white-space: nowrap; letter-spacing: 0; }
+.notif-acts { display: flex; gap: 8px; margin-top: 8px; }
 
 /* ---------- Recorder ---------- */
 /* 記錄頁儀表：襯線英雄數據 + 分隔數據條（山誌風） */
@@ -1049,6 +1054,16 @@ html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
 .team-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px 4px 4px; background: var(--surface-2); border-radius: 999px; font-size: 12.5px; color: var(--ink); }
 .team-chip img, .team-chip i { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; display: inline-flex; align-items: center; justify-content: center; background: var(--brand-mid); color: #fff; font-style: normal; font-size: 11px; }
 .tm-hr { border: none; border-top: 1px solid var(--line-soft); margin: 16px 0; }
+.team-rule { font-size: 12px; color: var(--ink-soft); background: var(--surface-2); border-radius: var(--r-xs); padding: 8px 10px; margin: 6px 0; line-height: 1.5; }
+/* 記錄頁小隊準備列 */
+.team-ready-bar { background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 10px 12px; margin: 8px 0; }
+.trb-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13.5px; }
+.trb-ready { border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); border-radius: 999px; padding: 7px 14px; font-size: 13px; font-weight: 700; cursor: pointer; }
+.trb-ready.on { background: var(--brand-mid); border-color: var(--brand-mid); color: #f6f3ea; }
+.trb-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.trb-chip { font-size: 11.5px; background: var(--surface-2); border-radius: 999px; padding: 4px 10px; color: var(--ink-soft); }
+.trb-chip.ok { background: rgba(47,125,79,.14); color: var(--brand-mid); font-weight: 700; }
+.trb-hint { font-size: 11.5px; color: var(--ink-faint); margin-top: 7px; }
 .tm-create { display: flex; gap: 8px; margin-bottom: 4px; }
 .tm-create .auth-input { flex: 1; }
 /* 地圖隊友標記 */
@@ -1138,8 +1153,9 @@ html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
 .fp { display: flex; align-items: center; gap: 11px; background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 9px 12px; }
 .fp-pet { font-size: 26px; flex: 0 0 auto; }
 .fp-info { flex: 1; min-width: 0; }
-.fp-info b { font-size: 14px; }
-.fp-by { font-size: 11px; color: var(--ink-faint); margin-top: 2px; }
+.fp-info b { font-size: 14px; display: inline-flex; align-items: center; gap: 5px; max-width: 100%; overflow: hidden; }
+.fp-info b .lv-chip { flex: 0 0 auto; }
+.fp-by { font-size: 11px; color: var(--ink-faint); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fp-gift { flex: 0 0 auto; padding: 6px 12px; }
 
 /* 發文星級 / 貼文評分顯示 */
@@ -1469,10 +1485,12 @@ html[data-theme="dark"] body::after { opacity: .05; }
 .pro-tag::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.7) 50%, transparent 65%); background-size: 220% 100%; animation: lv-shine 3.4s ease-in-out infinite; }
 
 /* 進階分析：一週節律 + PRO 鎖卡 */
-.ana-week { display: flex; align-items: flex-end; justify-content: space-between; gap: 4px; height: 64px; padding: 0 4px; }
-.aw { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; }
+.ana-week { display: flex; align-items: flex-end; justify-content: space-between; gap: 4px; height: 80px; padding: 0 4px; }
+.aw { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 3px; }
 .aw-bar { width: 60%; max-width: 22px; background: linear-gradient(180deg, var(--brand-mid), var(--brand)); border-radius: 4px 4px 0 0; }
 .aw-l { font-size: 11px; color: var(--ink-faint); }
+.aw-v { font-size: 10.5px; font-weight: 700; color: var(--ink-soft); line-height: 1; }
+.ana-bar.kcal i { background: linear-gradient(90deg, #d8a127, #d2542e); }
 .ana-lock { text-align: center; background: linear-gradient(150deg, var(--accent-soft), var(--surface-2)); border: 1px dashed var(--line); border-radius: var(--r-sm); padding: 22px 16px; margin-top: 16px; }
 .ana-lock-ic { color: var(--accent); }
 .ana-lock-ic .ic { width: 28px; height: 28px; }
@@ -1575,10 +1593,12 @@ html[data-theme="dark"] body::after { opacity: .05; }
 .yr-sub span { font-size: 11px; opacity: .8; }
 
 /* 年度回顧月份長條 + 雷達圖 + 圖片按鈕 */
-.yr-months { display: flex; align-items: flex-end; justify-content: space-between; gap: 3px; height: 60px; margin: 12px 2px 4px; }
+.yr-months { display: flex; align-items: flex-end; justify-content: space-between; gap: 3px; height: 74px; margin: 12px 2px 4px; }
 .yr-mo { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 3px; }
 .yr-mo-bar { width: 64%; max-width: 16px; background: linear-gradient(180deg, #e0b15a, #c2832c); border-radius: 3px 3px 0 0; transform-origin: bottom; animation: barGrow .5s ease both; }
 .yr-mo span { font-size: 9px; opacity: .65; }
+.yr-mo-v { font-size: 8.5px; font-weight: 700; color: #f3efe4; opacity: .9; line-height: 1; min-height: 9px; }
+.yr-mo-cap { font-size: 10.5px; color: rgba(243,239,228,.65); text-align: center; margin: 2px 0 6px; }
 @keyframes barGrow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
 @media (prefers-reduced-motion: reduce) { .yr-mo-bar { animation: none; } }
 .yr-btns { display: flex; gap: 8px; }

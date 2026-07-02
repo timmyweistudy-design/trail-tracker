@@ -27,6 +27,8 @@ const Notifs = (() => {
   function label(n) {
     const name = esc((n.actor && (n.actor.display_name || n.actor.handle)) || "有人");
     if (n.type === "follow") return name + " 開始追蹤你";
+    if (n.type === "follow_req") return name + " 請求追蹤你";
+    if (n.type === "follow_ok") return name + " 同意了你的追蹤請求";
     if (n.type === "like") return name + " 讚了你的貼文";
     if (n.type === "comment") return name + " 在你的貼文留言";
     if (n.type === "team") return name + " 邀請你加入小隊";
@@ -34,7 +36,17 @@ const Notifs = (() => {
     if (n.type === "mention") return name + " 在貼文中提到你";
     return name;
   }
-  function icon(t) { return t === "follow" ? ic("plus") : t === "like" ? ic("heart") : t === "team" ? ic("users") : t === "gift" ? "🍓" : t === "mention" ? ic("megaphone") : ic("chat"); }
+  function icon(t) { return (t === "follow" || t === "follow_req" || t === "follow_ok") ? ic("plus") : t === "like" ? ic("heart") : t === "team" ? ic("users") : t === "gift" ? "🍓" : t === "mention" ? ic("megaphone") : ic("chat"); }
+
+  // 我收到、還沒處理的追蹤請求（phase18；未升級回空集合）
+  async function pendingRequestIds() {
+    try {
+      const c = Supa.client(); const uid = await me(); if (!uid) return new Set();
+      const { data, error } = await c.from("follow_requests").select("requester_id").eq("target_id", uid);
+      if (error) return new Set();
+      return new Set((data || []).map(r => r.requester_id));
+    } catch (e) { return new Set(); }
+  }
 
   async function pushBar() {
     if (typeof Push === "undefined" || !Push.supported()) return "";
@@ -52,28 +64,42 @@ const Notifs = (() => {
     if (g === "all") return true;
     if (g === "like") return n.type === "like";
     if (g === "comment") return n.type === "comment" || n.type === "mention";
-    if (g === "follow") return n.type === "follow";
+    if (g === "follow") return n.type === "follow" || n.type === "follow_req" || n.type === "follow_ok";
     return true;
   }
 
   async function render(into) {
     into(`<div class="feed-loading"><span class="spin"></span></div>`);
     const bar = await pushBar();
-    const items = await list();
+    const [items, pending] = await Promise.all([list(), pendingRequestIds()]);
     const tabs = `<div class="notif-tabs">${GROUPS.map(([k, l]) => `<button class="notif-tab ${k === _filter ? "on" : ""}" data-g="${k}">${l}</button>`).join("")}</div>`;
     const paint = () => {
       const list2 = items.filter(n => inGroup(n, _filter));
       const body = list2.length
-        ? `<div class="notif-list">${list2.map(n =>
-          `<div class="notif ${n.read ? "" : "unread"}" data-type="${n.type}" data-post="${n.post_id || ""}" data-uid="${n.actor_id || ""}">
+        ? `<div class="notif-list">${list2.map(n => {
+          const askBtns = (n.type === "follow_req" && n.actor_id && pending.has(n.actor_id))
+            ? `<div class="notif-acts"><button class="btn primary nf-ok" data-uid="${n.actor_id}">同意</button><button class="btn ghost nf-no" data-uid="${n.actor_id}">拒絕</button></div>` : "";
+          return `<div class="notif ${n.read ? "" : "unread"}" data-type="${n.type}" data-post="${n.post_id || ""}" data-uid="${n.actor_id || ""}">
             <span class="notif-ic">${icon(n.type)}</span>
-            <div class="notif-body">${label(n)}<div class="fc-sub">${ago(n.created_at)}</div></div>
-          </div>`).join("")}</div>`
+            <div class="notif-body">${label(n)}<div class="fc-sub">${ago(n.created_at)}</div>${askBtns}</div>
+          </div>`;
+        }).join("")}</div>`
         : `<div class="social-empty"><span class="ee">🔔</span>${_filter === "all" ? "還沒有通知。" : "這個分類還沒有通知。"}</div>`;
       into(`${bar}${items.length ? tabs : ""}${body}`);
       document.querySelectorAll(".notif-tab").forEach(b => b.addEventListener("click", () => { _filter = b.dataset.g; paint(); }));
+      // 同意 / 拒絕追蹤請求
+      document.querySelectorAll(".nf-ok, .nf-no").forEach(b => b.addEventListener("click", async e => {
+        e.stopPropagation();
+        const c = Supa.client(); const ok = b.classList.contains("nf-ok");
+        b.disabled = true;
+        const { error } = await c.rpc(ok ? "approve_follow" : "decline_follow", { p_requester: b.dataset.uid });
+        if (error) { b.disabled = false; if (typeof toast === "function") toast("操作失敗，請先更新資料庫（phase18）"); return; }
+        if (typeof toast === "function") toast(ok ? "已同意，對方現在追蹤你了" : "已拒絕請求");
+        pending.delete(b.dataset.uid);
+        paint();
+      }));
       document.querySelectorAll(".notif").forEach(el => el.addEventListener("click", () => {
-        if (el.dataset.type === "follow") { if (typeof Discover !== "undefined" && el.dataset.uid) Discover.openProfile(el.dataset.uid); }
+        if (el.dataset.type === "follow" || el.dataset.type === "follow_req" || el.dataset.type === "follow_ok") { if (typeof Discover !== "undefined" && el.dataset.uid) Discover.openProfile(el.dataset.uid); }
         else if (el.dataset.type === "team") { if (typeof Team !== "undefined") Team.openSheet(); }
         else if (el.dataset.type === "gift") { const b = document.querySelector('.tab[data-view="pet"]'); if (b) b.click(); }
         else if (el.dataset.post && typeof PostView !== "undefined") PostView.open(el.dataset.post);

@@ -62,11 +62,19 @@ const Store = (() => {
   function doneCount() { return Object.values(getLog()).filter(v => v.done).length; }
 
   // 備份 / 還原（避免換手機或清快取資料遺失）
+  // 完整鍵清單：寵物、果實、成就、每日任務、外觀主題、篩選預設全都備份（新增鍵記得加進來）
+  const BACKUP_KEYS = [
+    "tt_pet_name", "tt_pet_hatch", "tt_pet_stage", "tt_pet_base",
+    "tt_pet_berry_spent", "tt_pet_berry_bonus", "tt_pet_aff", "tt_pet_aff_t",
+    "tt_pet_fed", "tt_pet_fed_t", "tt_pet_feedkm",
+    "tt_daily_goal", "tt_quest_claim", "tt_quest_hi", "tt_badges_got",
+    "tt_theme", "tt_accent", "tt_pro_color", "tt_pro_frame",
+    "tt_presets", "tt_default_vis", "tt_wakelock",
+  ];
   function exportAll() {
     const pet = {};
-    for (const k of ["tt_pet_name", "tt_pet_hatch", "tt_pet_stage", "tt_pet_base",
-      "tt_pet_berry_spent", "tt_pet_aff", "tt_pet_aff_t", "tt_pet_fed", "tt_pet_feedkm", "tt_daily_goal"]) { const v = localStorage.getItem(k); if (v != null) pet[k] = v; }
-    return { v: 1, exportedAt: new Date().toISOString(),
+    for (const k of BACKUP_KEYS) { const v = localStorage.getItem(k); if (v != null) pet[k] = v; }
+    return { v: 2, exportedAt: new Date().toISOString(),
       profile: getProfile(), records: getRecords(), favs: getFavs(), log: getLog(), pet };
   }
   function importAll(data, mode) {
@@ -90,6 +98,18 @@ const Store = (() => {
   return { getProfile, saveProfile, weight, height, getRecords, addRecord, deleteRecord, clearRecords,
            getFavs, isFav, toggleFav, trailLog, setTrailLog, doneCount, exportAll, importAll, clearSimRecords, packWeight, setRecordNote };
 })();
+
+// 公用：把軌跡依 gap 標記切成多段（暫停→繼續的跳段不相連）。回傳 [[{lat,lon,..}...], ...]
+function trackSegments(track) {
+  const segs = [];
+  let cur = [];
+  for (const p of (track || [])) {
+    if (p && p.gap && cur.length) { segs.push(cur); cur = []; }
+    cur.push(p);
+  }
+  if (cur.length) segs.push(cur);
+  return segs;
+}
 
 // 公用：兩點 haversine 距離（公尺）
 function haversine(a, b) {

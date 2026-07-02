@@ -87,9 +87,11 @@ const Team = (() => {
     } else {
       html += `<div class="social-empty">還沒有小隊。建立一個，把加入碼給隊友。</div>`;
     }
+    const activeTeam = teams.find(t => t.id === aId) || null;
     if (aId) {
       const liveOn = (typeof TeamLive !== "undefined" && TeamLive.isOn());
       html += `<label class="sim-toggle team-live"><input type="checkbox" id="tmLive" ${liveOn ? "checked" : ""}> ${ic("users")} 與小隊同行（記錄地圖上看到彼此定位）</label>
+        <div class="team-rule">👑 隊長（小隊建立者）才能開始記錄；全員在記錄頁按「✋ 準備」後，隊長按開始即全隊一起記錄。</div>
         <div id="tmMembers"></div>
         <div class="ob-l">邀請好友</div><div id="tmInvite"><div class="feed-loading"><span class="spin"></span></div></div>
         <button class="btn ghost" id="tmLeave" style="margin-top:8px">退出目前小隊</button>`;
@@ -132,8 +134,8 @@ const Team = (() => {
         if (e.target.checked) {
           const m = (typeof recMap !== "undefined") ? recMap : null;
           if (!m) { if (typeof toast === "function") toast("請先到記錄頁開啟地圖"); e.target.checked = false; return; }
-          TeamLive.start(aId, m, info);
-          if (typeof toast === "function") toast("已開啟小隊同行，回記錄頁地圖看隊友");
+          TeamLive.start(aId, m, info, { leader: activeTeam ? activeTeam.owner : null });
+          if (typeof toast === "function") toast("已開啟小隊同行，回記錄頁按「準備」等隊長開始");
         } else TeamLive.stop();
       });
     }

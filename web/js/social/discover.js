@@ -31,9 +31,12 @@ const Discover = (() => {
     box.querySelectorAll(".disc-row").forEach(r => r.addEventListener("click", e => { if (e.target.closest(".disc-follow")) return; openProfile(r.dataset.id); }));
     box.querySelectorAll(".disc-follow").forEach(b => b.addEventListener("click", async e => {
       e.stopPropagation();
-      const on = b.textContent === "追蹤";
-      b.textContent = on ? "已追蹤" : "追蹤"; b.className = "btn disc-follow " + (on ? "ghost" : "primary");
-      await follow(b.dataset.id, on);
+      const on = (b.dataset.fstate || "no") === "no";
+      b.disabled = true;
+      const r = await follow(b.dataset.id, on);
+      b.disabled = false;
+      paintFollowBtn(b, r === "requested" ? "requested" : r === "followed" ? "following" : "no");
+      if (r === "requested" && typeof toast === "function") toast("已送出追蹤請求，等對方同意");
     }));
   }
 
@@ -65,10 +68,36 @@ const Discover = (() => {
     const { data } = await c.from("follows").select("following_id").eq("follower_id", u.user.id).eq("following_id", targetId).maybeSingle();
     return !!data;
   }
+  // 追蹤狀態：'no' | 'following' | 'requested'（requested＝已送出請求、等對方同意）
+  async function followState(targetId) {
+    const c = Supa.client(); const { data: u } = await c.auth.getUser(); if (!u || !u.user) return "no";
+    if (await isFollowing(targetId)) return "following";
+    try {
+      const { data } = await c.from("follow_requests").select("id").eq("requester_id", u.user.id).eq("target_id", targetId).maybeSingle();
+      if (data) return "requested";
+    } catch (e) { /* phase18 未跑 → 沒有請求表 */ }
+    return "no";
+  }
+  // 追蹤（預設需對方同意）。回傳 'followed' | 'requested' | 'unfollowed'
   async function follow(targetId, on) {
-    const c = Supa.client(); const { data: u } = await c.auth.getUser(); if (!u || !u.user) return;
-    if (on) await c.from("follows").insert({ follower_id: u.user.id, following_id: targetId });
-    else await c.from("follows").delete().eq("follower_id", u.user.id).eq("following_id", targetId);
+    const c = Supa.client(); const { data: u } = await c.auth.getUser(); if (!u || !u.user) return "no";
+    if (on) {
+      const { data, error } = await c.rpc("request_follow", { p_target: targetId });
+      if (error) {   // 資料庫未升級 phase18 → 退回舊行為直接追蹤
+        await c.from("follows").insert({ follower_id: u.user.id, following_id: targetId });
+        return "followed";
+      }
+      return data === "requested" ? "requested" : "followed";
+    }
+    await c.from("follows").delete().eq("follower_id", u.user.id).eq("following_id", targetId);
+    try { await c.from("follow_requests").delete().eq("requester_id", u.user.id).eq("target_id", targetId); } catch (e) { /* 無請求表 */ }
+    return "unfollowed";
+  }
+  const FOLLOW_LBL = { no: "追蹤", following: "已追蹤", requested: "已申請" };
+  function paintFollowBtn(b, state) {
+    b.dataset.fstate = state;
+    b.textContent = FOLLOW_LBL[state] || "追蹤";
+    b.className = b.className.replace(/\b(primary|ghost)\b/g, "").trim() + (state === "no" ? " primary" : " ghost");
   }
 
   async function openProfile(userId) {
@@ -77,7 +106,7 @@ const Discover = (() => {
     if (!prof) return;
     const { data: me } = await c.auth.getUser();
     const isMe = me && me.user && me.user.id === userId;
-    const following = isMe ? false : await isFollowing(userId);
+    const fstate = isMe ? "no" : await followState(userId);
     const wrap = document.createElement("div");
     wrap.className = "pv-mask";
     wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" aria-label="關閉" id="dpX">✕</button><b>@${esc(prof.handle)}</b><span></span></div>
@@ -88,7 +117,7 @@ const Discover = (() => {
         ${petLineFor(prof)}
         <div class="pf-counts" id="dpCounts"></div>
         ${prof.bio ? `<div class="pf-bio">${esc(prof.bio)}</div>` : ""}
-        ${isMe ? "" : `<button class="btn ${following ? "ghost" : "primary"}" id="dpFollow">${following ? "已追蹤" : "追蹤"}</button>
+        ${isMe ? "" : `<button class="btn ${fstate === "no" ? "primary" : "ghost"}" id="dpFollow" data-fstate="${fstate}">${fstate === "following" ? "已追蹤" : fstate === "requested" ? "已申請" : "追蹤"}</button>
         <div class="pf-safety">${isMe ? "" : `<button class="link-btn" id="dpReport">檢舉</button><button class="link-btn" id="dpBlock">封鎖</button>`}</div>`}
         <div class="pf-tabs"><button class="pf-tab on" data-pt="posts">貼文</button><button class="pf-tab" data-pt="photos">相片</button><button class="pf-tab" data-pt="map">足跡</button></div>
         <div id="dpTabBody"><div class="feed-loading"><span class="spin"></span></div></div>
@@ -102,9 +131,12 @@ const Discover = (() => {
     });
     const fb = wrap.querySelector("#dpFollow");
     if (fb) fb.addEventListener("click", async () => {
-      const on = fb.textContent === "追蹤";
-      fb.textContent = on ? "已追蹤" : "追蹤"; fb.className = "btn " + (on ? "ghost" : "primary");
-      await follow(userId, on);
+      const on = (fb.dataset.fstate || "no") === "no";
+      fb.disabled = true;
+      const r = await follow(userId, on);
+      fb.disabled = false;
+      paintFollowBtn(fb, r === "requested" ? "requested" : r === "followed" ? "following" : "no");
+      if (r === "requested" && typeof toast === "function") toast("已送出追蹤請求，等對方同意");
     });
     const rb = wrap.querySelector("#dpReport");
     if (rb) rb.addEventListener("click", async () => {
@@ -205,5 +237,5 @@ const Discover = (() => {
     body.querySelectorAll(".disc-row").forEach(r => r.addEventListener("click", () => { wrap.remove(); openProfile(r.dataset.id); }));
   }
 
-  return { render, openProfile, openByHandle, follow, isFollowing, openUserList };
+  return { render, openProfile, openByHandle, follow, isFollowing, followState, openUserList };
 })();

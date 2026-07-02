@@ -88,7 +88,11 @@ const Profiles = (() => {
   // 隱私與設定：預設發文可見度 + 封鎖名單管理
   async function renderSettings(render, prof) {
     const defVis = localStorage.getItem("tt_default_vis") || "friends";
+    const approval = prof.follow_approval !== false;   // 預設開啟：別人追蹤需我同意
     render(`<div class="pf"><div class="pf-sub-head"><button class="link-btn" id="stBack">‹ 返回</button><b>${ic("sliders")} 隱私與設定</b></div>
+      <div class="set-group"><div class="set-label">追蹤請求</div>
+        <label class="set-row"><span>別人追蹤我需要我同意（關閉＝任何人可直接追蹤）</span><input type="checkbox" id="stApprove" ${approval ? "checked" : ""}></label>
+      </div>
       <div class="set-group"><div class="set-label">預設發文可見度</div>
         <label class="set-row"><span>只給好友</span><input type="radio" name="dvis" value="friends" ${defVis === "friends" ? "checked" : ""}></label>
         <label class="set-row"><span>公開</span><input type="radio" name="dvis" value="public" ${defVis === "public" ? "checked" : ""}></label>
@@ -96,6 +100,14 @@ const Profiles = (() => {
       <div class="set-group"><div class="set-label">封鎖名單</div><div id="stBlocks"><div class="feed-loading"><span class="spin"></span></div></div></div>
       </div>`);
     document.getElementById("stBack").addEventListener("click", () => renderMe(render, prof));
+    const ap = document.getElementById("stApprove");
+    if (ap) ap.addEventListener("change", async () => {
+      const c = Supa.client();
+      const { error } = await c.from("profiles").update({ follow_approval: ap.checked }).eq("id", prof.id);
+      if (error) { ap.checked = !ap.checked; if (typeof toast === "function") toast("儲存失敗，請先更新資料庫（phase18）"); return; }
+      prof.follow_approval = ap.checked;
+      if (typeof toast === "function") toast(ap.checked ? "已開啟：追蹤需你同意" : "已關閉：任何人可直接追蹤你");
+    });
     document.querySelectorAll('input[name="dvis"]').forEach(r => r.addEventListener("change", () => {
       localStorage.setItem("tt_default_vis", r.value); if (typeof toast === "function") toast("已設定預設可見度");
     }));

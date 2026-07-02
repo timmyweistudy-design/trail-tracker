@@ -43,20 +43,24 @@ const Offline = (() => {
 
   async function download(tiles, onProgress) {
     const cache = await caches.open(TILE_CACHE);
-    let done = 0, ok = 0;
+    let done = 0, ok = 0, bytes = 0;
     for (const url of tiles) {
       try {
-        if (await cache.match(url)) { ok++; }
+        if (await cache.match(url)) { ok++; }   // 已快取過的不重複計流量
         else {
           const res = await fetch(url, { mode: "cors" });
-          if (res.ok) { await cache.put(url, res.clone()); ok++; }
+          if (res.ok) {
+            const buf = await res.clone().arrayBuffer();   // 實際大小，供 MB 額度計算
+            bytes += buf.byteLength;
+            await cache.put(url, res); ok++;
+          }
         }
       } catch { /* 單張失敗略過 */ }
       done++;
       if (onProgress) onProgress(done, tiles.length, ok);
       await new Promise(r => setTimeout(r, 45));   // 禮貌節流，善待公用圖磚伺服器
     }
-    return { total: tiles.length, ok };
+    return { total: tiles.length, ok, bytes, mb: bytes / 1048576 };
   }
 
   async function cachedCount() {
