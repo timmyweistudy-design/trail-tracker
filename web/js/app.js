@@ -2228,6 +2228,7 @@ if (_yBtn) _yBtn.addEventListener("click", () => { if (typeof Premium !== "undef
 const _pkBox = $("#packBox");
 function _pkMsg(html) { if (_pkBox) { _pkBox.style.display = "block"; _pkBox.innerHTML = html; } }
 $("#btnPackExport").addEventListener("click", async () => {
+  if (typeof Premium !== "undefined" && !Premium.gate()) return;   // PRO 限定
   if (typeof ttBusy === "function" && ttBusy("packexp", 4000)) return;
   const n = await Offline.cachedCount();
   if (!n) { toast("尚未下載任何離線地圖"); return; }
@@ -2243,7 +2244,7 @@ $("#btnPackExport").addEventListener("click", async () => {
     _pkMsg(`✅ 已匯出離線地圖包（${r.count} 張、${(r.bytes / 1048576).toFixed(1)} MB）`);
   } catch (e) { _pkMsg("匯出失敗，請再試一次"); }
 });
-$("#btnPackImport").addEventListener("click", () => $("#packFile").click());
+$("#btnPackImport").addEventListener("click", () => { if (typeof Premium !== "undefined" && !Premium.gate()) return; $("#packFile").click(); });
 $("#packFile").addEventListener("change", async e => {
   const f = e.target.files[0]; e.target.value = "";
   if (!f) return;

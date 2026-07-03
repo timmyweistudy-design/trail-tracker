@@ -564,6 +564,21 @@ body {
 .backup-row { display: flex; gap: 10px; }
 .backup-row .btn { flex: 1; }
 
+/* 離線地圖面板 */
+.offline-panel { background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r); padding: 14px 14px 12px; box-shadow: var(--sh-sm); }
+.op-status { display: flex; gap: 11px; align-items: flex-start; }
+.op-ic { width: 26px; height: 26px; flex: 0 0 auto; color: var(--brand-mid); margin-top: 2px; }
+.op-status-txt { flex: 1; min-width: 0; }
+.offline-panel .offline-status { font-weight: 700; font-size: 13.5px; }
+.offline-panel .offline-quota { margin-top: 3px; }
+.op-sec { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: var(--ink-faint);
+  margin: 14px 0 2px; padding-top: 12px; border-top: 1px dashed var(--line-soft); }
+.offline-panel .op-btn { margin-top: 8px; padding: 12px; font-size: 14px; }
+.op-io { display: flex; gap: 8px; margin-top: 8px; }
+.op-io .btn { width: auto; flex: 1; margin-top: 0; padding: 11px 8px; font-size: 13.5px; letter-spacing: 0; }
+.op-hint { font-size: 11.5px; color: var(--ink-faint); line-height: 1.55; margin-top: 7px; }
+.op-foot { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--line-soft); display: flex; justify-content: flex-end; }
+
 /* 我的足跡統計 */
 .mstat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; }
 .mstat { background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 12px 6px; text-align: center; box-shadow: var(--sh-sm); }

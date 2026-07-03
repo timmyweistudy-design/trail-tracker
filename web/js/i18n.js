@@ -228,6 +228,8 @@ const I18n = (() => {
     "確定清除已下載的離線地圖？": "Clear all downloaded offline maps?",
     "已清除離線地圖": "Offline maps cleared",
     "匯出離線地圖包": "Export map pack", "匯入離線地圖包": "Import map pack",
+    "匯出地圖包": "Export pack", "匯入地圖包": "Import pack", "下載": "Download", "備份與分享": "Backup & Share",
+    "把下載好的地圖打包成檔案備份，或傳到另一台裝置匯入，不必重新下載。": "Pack downloaded maps into a file to back up or import on another device — no re-downloading.",
     "打包離線地圖中…": "Packing offline maps…", "匯入離線地圖中…": "Importing offline maps…",
     "匯出失敗，請再試一次": "Export failed — try again",
     "這不是有效的離線地圖包（.ttmap）": "Not a valid map pack (.ttmap)",
@@ -263,6 +265,8 @@ const I18n = (() => {
     "免費": "Free", "無限": "Unlimited", "完整": "Full", "縮小範圍": "Reduced area",
     "無限離線地圖": "Unlimited offline maps",
     "免費共 50 MB；會員不限量，一鍵預載全台、收藏與記錄周邊": "Free 50 MB total; members unlimited incl. Taiwan overview & auto-preload",
+    "免費共 50 MB；會員不限量，還能匯出/匯入地圖包跨裝置共用": "Free 50 MB total; members unlimited, plus map pack export/import across devices",
+    "地圖包匯出 / 匯入": "Map pack export / import",
     "進階分析＋年度回顧": "Analytics + Year in Review",
     "個人紀錄、配速趨勢、難度雷達、每月卡路里、年度回顧圖卡、匯出 GPX/CSV/KML": "Personal records, pace trend, radar, monthly calories, year card, GPX/CSV/KML export",
     "雲端備份還原": "Cloud backup & restore",
@@ -536,7 +540,7 @@ const I18n = (() => {
     [/^(\d+)級·(.+)$/, m => `Grade ${m[1]} · ${tx(m[2]) || m[2]}`],
     [/^適合：(.+)　·　建議裝備：(.+)$/, m => `For: ${tx(m[1]) || m[1]} · Gear: ${tx(m[2]) || m[2]}`],
     [/^：(.+)$/, m => { const r = tx(m[1]); return r ? `: ${r}` : null; }],   // <b>標籤</b>：內容 的內容段
-    [/^(.{2,14}失敗)：([^]+)$/, m => { const h = tx(m[1]); return h ? `${h}: ${m[2]}` : null; }],   // ○○失敗：detail
+    [/^(.{2,14}失敗)：([^]+)$/, m => { const h = tx(m[1]); return h ? `${h}: ${tx(m[2]) || m[2]}` : null; }],   // ○○失敗：detail（詳情也試翻，如連線逾時）
     [/^⚠️ 偏離步道約 (\d+)m，請確認方向$/, m => `⚠️ ~${m[1]} m off trail — check your direction`],
     [/^([\d.]+) 公里外$/, m => `${m[1]} km away`],
     [/^\(含坡度 (.+)\)$/, m => `(3D ${m[1]})`],

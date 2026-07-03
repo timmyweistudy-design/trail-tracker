@@ -207,21 +207,29 @@
     <div class="offline-hint" style="margin-top:6px">足跡地圖與雲端同步為 Premium 功能，跨裝置保存你的行程與收藏。<span class="pro-tag">PRO</span></div>
 
     <div class="section-title">離線地圖<span class="pro-tag">PRO</span></div>
-    <div class="offline-manage">
-      <div id="offlineStatus" class="offline-status">已快取地圖圖磚：計算中…</div>
-      <div class="offline-hint">在步道詳情頁按「預載離線地圖」可下載該步道範圍，山區無網路也能看地圖。</div>
-      <div id="offlineQuota" class="offline-quota"></div>
-      <button class="btn ghost" id="btnAllOffline" style="margin-top:10px"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18"/></svg> 一鍵下載全台離線地圖（概覽）</button>
-      <div id="allOfflineBox" class="offline-box" style="display:none"></div>
-      <button class="btn ghost" id="btnFavOffline" style="margin-top:10px"><svg class="ic" viewBox="0 0 24 24"><path d="M12 4v10m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/></svg> 預載所有收藏步道的離線地圖</button>
-      <div id="favOfflineBox" class="offline-box" style="display:none"></div>
-      <div class="link-row" style="margin-top:10px">
-        <button class="link-btn" id="btnPackExport"><svg class="ic" viewBox="0 0 24 24"><path d="M12 14V4m0 10 4-4m-4 4-4-4"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></svg>匯出離線地圖包</button>
-        <button class="link-btn" id="btnPackImport"><svg class="ic" viewBox="0 0 24 24"><path d="M12 4v10m0 0 4-4m-4 4-4-4" transform="rotate(180 12 9)"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></svg>匯入離線地圖包</button>
+    <div class="offline-panel">
+      <div class="op-status">
+        <svg class="ic op-ic" viewBox="0 0 24 24"><path d="m9 4-6 2v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/></svg>
+        <div class="op-status-txt">
+          <div id="offlineStatus" class="offline-status">已快取地圖圖磚：計算中…</div>
+          <div id="offlineQuota" class="offline-quota"></div>
+        </div>
       </div>
+      <div class="op-sec">下載</div>
+      <button class="btn ghost op-btn" id="btnAllOffline"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18"/></svg> 一鍵下載全台離線地圖（概覽）</button>
+      <div id="allOfflineBox" class="offline-box" style="display:none"></div>
+      <button class="btn ghost op-btn" id="btnFavOffline"><svg class="ic" viewBox="0 0 24 24"><path d="M12 4v10m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/></svg> 預載所有收藏步道的離線地圖</button>
+      <div id="favOfflineBox" class="offline-box" style="display:none"></div>
+      <div class="op-hint">在步道詳情頁按「預載離線地圖」可下載該步道範圍，山區無網路也能看地圖。</div>
+      <div class="op-sec">備份與分享<span class="pro-tag">PRO</span></div>
+      <div class="op-io">
+        <button class="btn ghost" id="btnPackExport"><svg class="ic" viewBox="0 0 24 24"><path d="M12 14V4m0 10 4-4m-4 4-4-4"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></svg> 匯出地圖包</button>
+        <button class="btn ghost" id="btnPackImport"><svg class="ic" viewBox="0 0 24 24"><path d="M12 10v10m0-10 4 4m-4-4-4 4"/><path d="M4 9V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v4"/></svg> 匯入地圖包</button>
+      </div>
+      <div class="op-hint">把下載好的地圖打包成檔案備份，或傳到另一台裝置匯入，不必重新下載。</div>
       <input type="file" id="packFile" style="display:none">
       <div id="packBox" class="offline-box" style="display:none"></div>
-      <button class="btn-clear-all" id="btnClearTiles" style="margin-top:10px">清除離線地圖</button>
+      <div class="op-foot"><button class="btn-clear-all" id="btnClearTiles">清除離線地圖</button></div>
     </div>
 
     <div class="hist-head">
