@@ -35,22 +35,6 @@ function ensureDetail() {
 function mergeDetail(t) { const d = (window.TRAILS_DETAIL || {})[t.id]; if (d) Object.assign(t, d); return t; }
 // 真實登山客走法：把路段建成路徑圖，沿實際路徑走；遇叉路/死路「原路折返」回岔口再走下一條，
 // 不會憑空斜穿。只有資料本身斷成不相連的區塊時，才不得已直線接過去。
-// 沿路線走到 maxMeters 就截斷（最後一點內插），模擬里程才會跟官方長度一致
-function truncateRoute(pts, maxMeters) {
-  if (!pts || pts.length < 2 || !maxMeters || maxMeters <= 0) return pts;
-  let acc = 0;
-  for (let i = 1; i < pts.length; i++) {
-    const seg = haversine({ lat: pts[i - 1][0], lon: pts[i - 1][1] }, { lat: pts[i][0], lon: pts[i][1] });
-    if (acc + seg >= maxMeters) {
-      const f = seg ? (maxMeters - acc) / seg : 0;
-      const cut = [pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * f, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * f];
-      return pts.slice(0, i).concat([cut]);
-    }
-    acc += seg;
-  }
-  return pts;
-}
-
 function chainSegments(geo) {
   const segs = (geo || []).filter(s => s && s.length >= 2).map(s => s.slice());
   if (segs.length <= 1) return segs[0] || [];
@@ -87,7 +71,12 @@ function chainSegments(geo) {
     for (let i = 0; i < nodes.length; i++) { const dx = pt[0] - nodes[i][0], dy = pt[1] - nodes[i][1]; if (dx * dx + dy * dy < TOL2) return i; }
     nodes.push([pt[0], pt[1]]); return nodes.length - 1;
   };
-  const edges = subs.map(s => ({ a: nodeOf(s[0]), b: nodeOf(s[s.length - 1]), pts: s, used: false }));
+  const edgeLen = e => { let L = 0; for (let i = 1; i < e.pts.length; i++) L += distM(e.pts[i - 1], e.pts[i]); return L; };
+  const allEdges = subs.map(s => ({ a: nodeOf(s[0]), b: nodeOf(s[s.length - 1]), pts: s, used: false }));
+  allEdges.forEach(e => { e.len = edgeLen(e); });
+  // 濾掉「短自環」：小 spur 兩端都吸附到同一頂點會變自環，DFS 遇到會在同節點重入、把主線折返一半
+  // （南澳古道 3.4km→5.2km 的元兇）。真正的環狀步道是長自環，保留。
+  const edges = allEdges.filter(e => !(e.a === e.b && e.len < 60));
   const adj = nodes.map(() => []);
   edges.forEach(e => { adj[e.a].push({ e, fwd: true }); adj[e.b].push({ e, fwd: false }); });
 
@@ -96,19 +85,56 @@ function chainSegments(geo) {
     const arr = fwd ? pts : pts.slice().reverse();
     for (let k = route.length ? 1 : 0; k < arr.length; k++) route.push(arr[k]);   // 略過與上一點重複的岔口點
   };
+  // 「經此邊往外能觸及的路網總長」——決定哪條分支最深、要留到最後不折返
+  const reachBeyond = (farNode, viaEdge) => {   // 從 farNode 出發、不回頭走 viaEdge，可觸及的邊總長
+    const vis = new Set([viaEdge]); let tot = 0; const stack = [farNode];
+    while (stack.length) { const n = stack.pop(); for (const l of adj[n]) { if (vis.has(l.e)) continue; vis.add(l.e); tot += l.e.len; stack.push(l.fwd ? l.e.b : l.e.a); } }
+    return tot;
+  };
   const dfs = node => {
-    for (const link of adj[node]) {
-      if (link.e.used) continue;
+    // 取此節點所有還沒走的分支，依「往外可觸及總長」由淺到深排序——最深的留到最後
+    const pending = adj[node].filter(l => !l.e.used).map(l => {
+      const far = l.fwd ? l.e.b : l.e.a;
+      return { link: l, depth: l.e.len + reachBeyond(far, l.e) };
+    }).sort((a, b) => a.depth - b.depth);
+    for (let i = 0; i < pending.length; i++) {
+      const link = pending[i].link;
+      if (link.e.used) continue;                     // 迴圈路網：可能已被前一分支繞回走掉
       link.e.used = true;
       pushPts(link.e.pts, link.fwd);                 // 沿這條岔路走出去
       dfs(link.fwd ? link.e.b : link.e.a);           // 繼續從對端往下走
-      pushPts(link.e.pts, !link.fwd);                // 走到底→原路折返回此岔口
+      // 最深的那條（最後一條）走到底就不折返——樹狀路網最小覆蓋、主線不重複走
+      if (i < pending.length - 1) pushPts(link.e.pts, !link.fwd);
     }
   };
-  // 先從只有一條路的端點(步道起終點)出發，較自然；逐個連通區塊處理
-  const order = nodes.map((_, i) => i).sort((a, b) => adj[a].length - adj[b].length);
+  // 只走「最大的連通路網」：很多步道的幾何含離主線很遠的零碎小段（資料雜訊），
+  // 全部硬串會用直線瞬移接起來＝假里程＋畫面亂跳。找出總長最大的連通元件，只模擬它。
+  const comp = nodes.map(() => -1); let nc = 0;
+  for (let i = 0; i < nodes.length; i++) {
+    if (comp[i] !== -1) continue;
+    const stack = [i]; comp[i] = nc;
+    while (stack.length) { const n = stack.pop(); for (const l of adj[n]) { const o = l.fwd ? l.e.b : l.e.a; if (comp[o] === -1) { comp[o] = nc; stack.push(o); } } }
+    nc++;
+  }
+  const compLen = new Array(nc).fill(0);
+  edges.forEach(e => { compLen[comp[e.a]] += e.len; });
+  let best = 0; for (let c = 1; c < nc; c++) if (compLen[c] > compLen[best]) best = c;
+  edges.forEach(e => { if (comp[e.a] !== best) e.used = true; });   // 非最大元件的邊視為已走（跳過）
+
+  // 起點要挑「看出去路網最長」的端點(步道真正的一端)，主脊才會落在最後不折返的那段；
+  // 若從小分支末端起步，會把主線折返一半（南澳 3.4km 會變 5km）
+  const leafScore = i => {
+    if (comp[i] !== best) return -1;
+    const open = adj[i].filter(l => !l.e.used);
+    if (open.length !== 1) return -1;                          // 只從端點(degree 1)起步
+    const l = open[0], far = l.fwd ? l.e.b : l.e.a;
+    return l.e.len + reachBeyond(far, l.e);                    // 看出去能觸及多長
+  };
+  const order = nodes.map((_, i) => i).sort((a, b) => leafScore(b) - leafScore(a));
   for (const sn of order) if (adj[sn].some(l => !l.e.used)) dfs(sn);
-  return route.length ? route : segs[0];
+  // 完全沒接起來（每段都獨立）→ 退回最長的單段，至少走一條連續線、不瞬移
+  if (!route.length) return segs.slice().sort((a, b) => b.length - a.length)[0];
+  return route;
 }
 // 骨架卡（載入占位）
 function skelCards(n) {
@@ -2088,23 +2114,19 @@ function startRecordingUI() {
     } else {
       toast("模擬：沿此步道路線前進");
     }
-    let route = selectedTrailGeo && selectedTrailGeo.length ? chainSegments(selectedTrailGeo) : null;   // 串接全部路段
-    // 模擬要「走完地圖上畫的整條線」但不來回重走：封頂＝幾何各段單趟總長。
-    // （官方 length_km 常是精華段，比地圖線短——之前封在官方值會看起來停在半路）
-    if (route && route.length > 1) {
-      const capM = selectedTrailGeo.reduce((sum, seg) => {
-        let L = 0; for (let i = 1; i < seg.length; i++) L += haversine({ lat: seg[i - 1][0], lon: seg[i - 1][1] }, { lat: seg[i][0], lon: seg[i][1] });
-        return sum + L;
-      }, 0);
-      route = truncateRoute(route, capM);
-    }
+    // chainSegments 已是「走完所有岔路、主線不重複」的最小覆蓋走法（樹狀路網最後一條分支不折返），
+    // 不再截斷——截斷會把岔路砍掉（就是「岔路走不完」的原因）
+    const route = selectedTrailGeo && selectedTrailGeo.length ? chainSegments(selectedTrailGeo) : null;
     Recorder.setSimRoute(route);
   }
   if (Recorder.getState() === "paused") Recorder.resume(sim());
   else { hikePhotos = []; $("#snapCount").textContent = ""; Recorder.start(sim()); }   // 新的一趟：清空隨手拍
   $("#btnStart").style.display = "none";
   $("#btnPause").style.display = "block";
-  $("#btnStop").style.display = "block";
+  // 小隊記錄：只有隊長能結束（隊長按結束後全隊一起進結算）；隊員不顯示暫停/結束鈕
+  const teamMember = typeof TeamLive !== "undefined" && TeamLive.isOn() && !TeamLive.isLeader();
+  $("#btnStop").style.display = teamMember ? "none" : "block";
+  if (teamMember) $("#btnPause").style.display = "none";
   if (!sim()) $("#btnSnap").style.display = "block";   // 模擬不拍照
 }
 $("#btnStart").addEventListener("click", () => {
@@ -2172,7 +2194,21 @@ async function finishRecording(autoVehicle) {
     $("#recStatus").textContent = "準備就緒，按「開始」記錄路徑";
   }
 }
-$("#btnStop").addEventListener("click", () => finishRecording(false));
+$("#btnStop").addEventListener("click", () => {
+  // 小隊記錄：隊長按結束 → 廣播全隊一起進各自結算；隊員的結束鈕本就隱藏，保險再擋一次
+  if (typeof TeamLive !== "undefined" && TeamLive.isOn() && Recorder.getState() !== "idle") {
+    if (!TeamLive.isLeader()) { toast("小隊記錄由隊長結束"); return; }
+    if (TeamLive.sendStop) TeamLive.sendStop();
+  }
+  finishRecording(false);
+});
+// 隊長按結束 → 隊員收到訊號各自進結算（與開始同款三路遞送）
+if (typeof TeamLive !== "undefined" && TeamLive.onStop) TeamLive.onStop(() => {
+  if (Recorder.getState() === "idle") return;
+  toast("👑 隊長結束了小隊記錄，一起看結算");
+  if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+  finishRecording(false);
+});
 // 偵測到車輛速度(>20km/h)→記錄器自動斷掉→跑與按「結束」相同的收尾流程
 Recorder.onAutoStop(() => finishRecording(true));
 

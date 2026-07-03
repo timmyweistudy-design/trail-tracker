@@ -4,7 +4,7 @@
 const TeamLive = (() => {
   let channel = null, watchId = null, map = null, markers = {}, me = null, myInfo = {}, lastPos = null;
   let leaderId = null, myReady = false, onStartCb = null;
-  let myStartAt = null;        // 隊長按下開始的時間（跟著 presence 傳，凍結分頁回前景也能補收到）
+  let myStartAt = null, myStopAt = null, lastStopHandled = 0, onStopCb = null;        // 隊長按下開始的時間（跟著 presence 傳，凍結分頁回前景也能補收到）
   let myStartSim = false;      // 隊長開始時是否用模擬模式：跟著訊號送，全隊一致才能一起動
   let lastHandledAt = 0;       // 已處理過的開始訊號時間戳：同一次開始只觸發一次，但「新的一次開始」永遠會觸發
   let joinedAt = 0;            // 我開啟同行的時間：比這更早太多的舊訊號不理（別人上一趟的殘留）
@@ -53,21 +53,45 @@ const TeamLive = (() => {
     lastHandledAt = at;
     onStartCb(!!simFlag);   // 帶上隊長的模擬模式，全隊跟隨（測試時大家才會一起動）
   }
+  // 結束訊號（與開始同款三路遞送＋時間戳去重）：只有隊長能結束，全隊各自進結算
+  function handleStop(at) {
+    at = +at || 0;
+    if (!at || at <= lastStopHandled) return;
+    if (isLeader()) { lastStopHandled = at; return; }
+    if (Date.now() - at > 10 * 60e3 || at < joinedAt - 60e3) { lastStopHandled = at; return; }
+    lastStopHandled = at;
+    if (onStopCb) onStopCb();
+  }
+  function onStop(cb) { onStopCb = cb; }
+  function sendStop() {
+    if (!channel) return;
+    myStopAt = Date.now();
+    lastStopHandled = myStopAt;
+    try { channel.send({ type: "broadcast", event: "stop", payload: { at: myStopAt } }); } catch (e) { /* */ }
+    try { channel.track(payload()); } catch (e) { /* */ }
+    try { const c = Supa.client(); if (c && curTeamId) c.rpc("team_stop", { p_team: curTeamId }).then(() => { }, () => { }); } catch (e) { /* */ }
+  }
+
   // presence 路徑：隊長的 started 跟著 presence 傳，凍結分頁回前景同步時補收
   function checkPresenceStart() {
     if (!channel || !leaderId) return;
     const metas = channel.presenceState()[leaderId] || [];
-    let started = 0, ssim = false;
-    for (const m of metas) if (m && (m.started || 0) > started) { started = m.started; ssim = !!m.startedSim; }
+    let started = 0, ssim = false, stopped = 0;
+    for (const m of metas) {
+      if (m && (m.started || 0) > started) { started = m.started; ssim = !!m.startedSim; }
+      if (m && (m.stopped || 0) > stopped) stopped = m.stopped;
+    }
     if (started) handleStart(started, ssim);
+    if (stopped) handleStop(stopped);
   }
   // DB 輪詢路徑（每 5 秒）：postgres_changes/broadcast 全漏接也追得回來
   async function pollDbStart() {
     if (!channel || !curTeamId || isLeader() || !myReady) return;
     try {
       const c = Supa.client(); if (!c) return;
-      const { data } = await c.from("team_starts").select("started_at, sim").eq("team_id", curTeamId).maybeSingle();
+      const { data } = await c.from("team_starts").select("started_at, sim, stopped_at").eq("team_id", curTeamId).maybeSingle();
       if (data && data.started_at) handleStart(Date.parse(data.started_at), data.sim);
+      if (data && data.stopped_at) handleStop(Date.parse(data.stopped_at));
     } catch (e) { /* phase20 未跑或離線 → 其他兩路仍有效 */ }
   }
 
@@ -84,10 +108,18 @@ const TeamLive = (() => {
       const meta = metas.reduce((best, m) => (m && m.lat != null && (!best || (m.at || 0) > (best.at || 0))) ? m : best, null);
       if (!meta) continue;
       seen[key] = true;
-      const ll = [meta.lat, meta.lon];
+      let ll = [meta.lat, meta.lon];
+      // 在家測試/集合點：大家座標幾乎重疊會蓋在一起看不到 → 距我 15m 內的隊友沿小圈散開
+      if (lastPos) {
+        const dLat = (meta.lat - lastPos.lat) * 111320, dLon = (meta.lon - lastPos.lon) * 111320 * Math.cos(meta.lat * Math.PI / 180);
+        if (Math.hypot(dLat, dLon) < 15) {
+          const a = (Object.keys(seen).length + 1) * 2.1;
+          ll = [meta.lat + 0.00012 * Math.sin(a), meta.lon + 0.00012 * Math.cos(a)];
+        }
+      }
       if (markers[key]) { markers[key].setLatLng(ll); markers[key].setIcon(icon(meta)); markers[key].setTooltipContent(meta.name || "隊友"); }
-      else markers[key] = L.marker(ll, { icon: icon(meta) }).addTo(map)
-        .bindTooltip(meta.name || "隊友", { permanent: true, direction: "top", className: "team-tip", offset: [0, -22] });
+      else markers[key] = L.marker(ll, { icon: icon(meta), zIndexOffset: 900 }).addTo(map)
+        .bindTooltip(meta.name || "隊友", { permanent: true, direction: "bottom", className: "team-tip", offset: [0, 14] });   // 名字放下方，不擋寵物
     }
     for (const key in markers) if (!seen[key]) { try { map.removeLayer(markers[key]); } catch (e) { } delete markers[key]; }
   }
@@ -96,7 +128,7 @@ const TeamLive = (() => {
   function payload() {
     return { lat: lastPos ? lastPos.lat : null, lon: lastPos ? lastPos.lon : null,
       name: myInfo.name, avatar: myInfo.avatar || null, pet: myInfo.pet || null,
-      heading: lastPos ? lastPos.heading : null, ready: myReady, started: myStartAt || 0, startedSim: myStartSim, at: Date.now() };
+      heading: lastPos ? lastPos.heading : null, ready: myReady, started: myStartAt || 0, startedSim: myStartSim, stopped: myStopAt || 0, at: Date.now() };
   }
   function _trackThrottled() {
     if (!channel) return;
@@ -191,19 +223,27 @@ const TeamLive = (() => {
       catch (e) { /* 查不到就維持 null，準備列會提示 */ }
     }
     channel = c.channel("team:" + teamId, { config: { presence: { key: me } } });
-    curTeamId = teamId; myStartAt = null; lastHandledAt = 0; joinedAt = Date.now();
+    curTeamId = teamId; myStartAt = null; myStopAt = null; lastHandledAt = 0; lastStopHandled = 0; joinedAt = Date.now();
     channel.on("presence", { event: "sync" }, render);
     channel.on("presence", { event: "join" }, render);
     channel.on("presence", { event: "leave" }, render);
     channel.on("broadcast", { event: "start" }, msg => { const pl = msg && msg.payload; if (pl) handleStart(pl.at, pl.sim); });
+    channel.on("broadcast", { event: "stop" }, msg => { const pl = msg && msg.payload; if (pl) handleStop(pl.at); });
     // DB 即時訂閱：隊長寫入 team_starts 就開始（需 phase20；沒跑也有輪詢與 presence 兜底）
     channel.on("postgres_changes", { event: "*", schema: "public", table: "team_starts", filter: "team_id=eq." + teamId },
-      p => { const row = p && p.new; if (row && row.started_at) handleStart(Date.parse(row.started_at), row.sim); });
+      p => { const row = p && p.new; if (row) { if (row.started_at) handleStart(Date.parse(row.started_at), row.sim); if (row.stopped_at) handleStop(Date.parse(row.stopped_at)); } });
     channel.subscribe(st => { if (st === "SUBSCRIBED") channel.track(payload()); });
     if (pollTimer) clearInterval(pollTimer);
     pollTimer = setInterval(pollDbStart, 5000);   // 輪詢補收：任何漏接 5 秒內追回
     if (navigator.geolocation) {
-      watchId = navigator.geolocation.watchPosition(broadcast, () => { }, { enableHighAccuracy: true, maximumAge: 3000, timeout: 15000 });
+      // 立刻要一次粗略定位（可用快取）當種子——室內測試也能盡快讓隊友看到你；失敗就用地圖中心兜底
+      navigator.geolocation.getCurrentPosition(broadcast, () => {
+        if (!lastPos && map) { const ctr = map.getCenter(); lastPos = { lat: ctr.lat, lon: ctr.lng, heading: null }; _trackThrottled(); }
+      }, { enableHighAccuracy: false, maximumAge: 60000, timeout: 8000 });
+      // 高精度持續追蹤（走動時更新）；室內逾時的錯誤不清空既有位置
+      watchId = navigator.geolocation.watchPosition(broadcast, () => {
+        if (!lastPos && map) { const ctr = map.getCenter(); lastPos = { lat: ctr.lat, lon: ctr.lng, heading: null }; _trackThrottled(); }
+      }, { enableHighAccuracy: true, maximumAge: 3000, timeout: 15000 });
     }
     renderReadyBar();
   }
@@ -213,7 +253,7 @@ const TeamLive = (() => {
     if (channel) { try { Supa.client().removeChannel(channel); } catch (e) { } channel = null; }
     for (const k in markers) { try { map.removeLayer(markers[k]); } catch (e) { } }
     markers = {}; map = null; lastPos = null; leaderId = null; myReady = false;
-    myStartAt = null; lastHandledAt = 0; curTeamId = null;
+    myStartAt = null; myStopAt = null; lastHandledAt = 0; lastStopHandled = 0; curTeamId = null;
     if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
     const el = document.getElementById("teamReadyBar"); if (el) el.remove();
   }
@@ -231,5 +271,5 @@ const TeamLive = (() => {
     });
   }
 
-  return { start, stop, isOn, isLeader, setReady, allReady, roster, notReadyNames, sendStart, onStart, updatePos };
+  return { start, stop, isOn, isLeader, setReady, allReady, roster, notReadyNames, sendStart, onStart, sendStop, onStop, updatePos };
 })();

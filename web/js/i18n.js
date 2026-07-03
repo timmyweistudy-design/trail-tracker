@@ -160,6 +160,9 @@ const I18n = (() => {
     "篇": "posts", "我的收藏": "My saved posts", "隱私與設定": "Privacy & Settings",
     "天・": "days ·", "出發前仍請留意現場天候與狀況": "Check on-site weather and conditions before heading out",
     "重新整理": "Refresh", "跳到底部": "Jump to bottom",
+    "👑 隊長結束了小隊記錄，一起看結算": "👑 The leader ended the team hike — here's your summary",
+    "小隊記錄由隊長結束": "The team leader ends the hike",
+    "小隊記錄由隊長開始：請先按「✋ 準備」，等隊長按開始": "The leader starts the team hike — tap “✋ Ready” and wait",
     "模擬已走完整條路線，按「⏹ 結束」看結算": "Simulation finished the route — tap “⏹ Finish” for the summary",
     // 路面/季節（詳細資料）
     "泥土": "Dirt", "未鋪面": "Unpaved", "木棧道": "Boardwalk", "水泥": "Concrete", "碎石": "Gravel",
@@ -650,6 +653,9 @@ const I18n = (() => {
   // 西班牙語字典（機翻底稿＋172 條人工校正）——key 與 DICT 完全相同
   const ES_DICT = {
     "天・": "días ·", "跳到底部": "Ir al final",
+    "👑 隊長結束了小隊記錄，一起看結算": "👑 El líder terminó la ruta en grupo — aquí está tu resumen",
+    "小隊記錄由隊長結束": "El líder del grupo termina la ruta",
+    "小隊記錄由隊長開始：請先按「✋ 準備」，等隊長按開始": "El líder inicia la ruta en grupo — toca «✋ Listo» y espera",
     "模擬已走完整條路線，按「⏹ 結束」看結算": "La simulación terminó la ruta — toca «⏹ Terminar» para el resumen", "出發前仍請留意現場天候與狀況": "Revisa el clima y las condiciones del lugar antes de salir",
     "緩": "Suave", "中": "Media", "陡": "Empinada", "注意": "Precaución",
     "此步道非林業署轄管，目前無即時封閉公告來源。出發前請查詢當地主管單位公告或近期山友回報。": "Este sendero no depende de la Agencia Forestal y no hay avisos de cierre en vivo. Consulta avisos locales o reportes recientes antes de salir.",
@@ -1137,6 +1143,9 @@ const I18n = (() => {
   // 日本語字典（機翻底稿＋297 條人工校正）
   const JA_DICT = {
     "跳到底部": "一番下へ",
+    "👑 隊長結束了小隊記錄，一起看結算": "👑 隊長がチーム記録を終了 — まとめを見よう",
+    "小隊記錄由隊長結束": "チーム記録は隊長が終了します",
+    "小隊記錄由隊長開始：請先按「✋ 準備」，等隊長按開始": "チーム記録は隊長が開始 — 「✋ 準備OK」を押して待ってね",
     "模擬已走完整條路線，按「⏹ 結束」看結算": "シミュレーション完了 — 「⏹ 終了」でまとめを見る",
     "社群": "コミュニティ", "記錄": "記録", "探索": "探索",
     "夥伴": "相棒", "我的": "マイページ", "關閉": "閉じる",

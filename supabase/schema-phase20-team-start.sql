@@ -9,6 +9,7 @@ create table if not exists public.team_starts (
   sim boolean not null default false          -- 隊長是否用模擬模式：全隊跟隨，測試才能一起動
 );
 alter table public.team_starts add column if not exists sim boolean not null default false;
+alter table public.team_starts add column if not exists stopped_at timestamptz;   -- 隊長結束時間：全隊一起進結算
 
 alter table public.team_starts enable row level security;
 -- 隊員可讀自己小隊的開始訊號
@@ -26,11 +27,25 @@ begin
     raise exception 'not team owner';
   end if;
   insert into team_starts(team_id, started_by, started_at, sim) values (p_team, auth.uid(), now(), coalesce(p_sim, false))
-    on conflict (team_id) do update set started_by = auth.uid(), started_at = now(), sim = coalesce(p_sim, false);
+    on conflict (team_id) do update set started_by = auth.uid(), started_at = now(), sim = coalesce(p_sim, false), stopped_at = null;
   select started_at into t from team_starts where team_id = p_team;
   return t;
 end $$;
 grant execute on function public.team_start(uuid, boolean) to authenticated;
+
+-- 隊長按結束：全隊收到後各自進自己的結算
+create or replace function public.team_stop(p_team uuid) returns timestamptz
+language plpgsql security definer set search_path = public as $$
+declare t timestamptz;
+begin
+  if not exists (select 1 from teams where id = p_team and owner = auth.uid()) then
+    raise exception 'not team owner';
+  end if;
+  update team_starts set stopped_at = now() where team_id = p_team;
+  select stopped_at into t from team_starts where team_id = p_team;
+  return t;
+end $$;
+grant execute on function public.team_stop(uuid) to authenticated;
 
 -- Realtime：隊員訂閱 team_starts 的變更即時開始
 do $$ begin
