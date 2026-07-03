@@ -51,7 +51,15 @@ const before = Store.life().km;
 Store.importAll({ records: [mk("a", 1)] }, "replace");
 ok("還原較舊備份，終身統計不倒退", Store.life().km >= before);
 
-// 6) 本地日期
+// 6) i18n 翻譯層：字典與規則式
+eval(fs.readFileSync(web("i18n.js"), "utf8") + "\n;globalThis.I18n = I18n;");
+ok("i18n 字典：探索→Explore", I18n.tx("探索") === "Explore");
+ok("i18n 規則：X 分鐘前", I18n.tx("5 分鐘前") === "5 min ago");
+ok("i18n 規則：通知含名字", I18n.tx("小明 開始追蹤你") === "小明 started following you");
+ok("i18n 規則：還差 X km", I18n.tx("還差 1.2 km") === "1.2 km to go");
+ok("i18n 不翻無中文字串", I18n.tx("hello 123") === null);
+
+// 7) 本地日期
 function localDayOf(d) { const t = new Date(d); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`; }
 const noon = new Date(); noon.setHours(12, 0, 0, 0);
 ok("localDay 與本地日期一致", localDayOf(noon) === `${noon.getFullYear()}-${String(noon.getMonth() + 1).padStart(2, "0")}-${String(noon.getDate()).padStart(2, "0")}`);
