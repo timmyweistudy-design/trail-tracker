@@ -1,5 +1,5 @@
 // 離線快取：app shell + 地圖圖磚
-const CACHE = "trail-tracker-v241";
+const CACHE = "trail-tracker-v242";
 const TILE_CACHE = "tt-tiles";   // 地圖圖磚（不隨版本清除，保留離線地圖）
 const ASSETS = [
   "./", "./index.html",
@@ -18,8 +18,9 @@ const ASSETS = [
 ];
 
 self.addEventListener("install", e => {
-  // 不自動 skipWaiting：讓新版進入 waiting，由前端顯示「有新版本」橫幅，使用者點擊才更新
-  // 逐檔快取＋容錯：addAll 只要一個檔 404 整個安裝就失敗（新版永遠裝不上），改為單檔失敗略過
+  // ⚠️ 緊急模式（v242）：v241 日文版有無限迴圈凍結 bug，中招頁面點不到更新橫幅，
+  // 暫時自動 skipWaiting 讓所有裝置重開即修復。全數恢復後可改回橫幅模式。
+  self.skipWaiting();
   e.waitUntil(caches.open(CACHE).then(c => Promise.allSettled(ASSETS.map(a => c.add(a)))));
 });
 self.addEventListener("message", e => { if (e.data === "skipWaiting") self.skipWaiting(); });

@@ -1653,11 +1653,14 @@ const I18n = (() => {
       let n;
       while ((n = w.nextNode())) {
         const v = tx(n.nodeValue);
-        if (v) n.nodeValue = n.nodeValue.replace(n.nodeValue.trim(), v);
+        if (v) {
+          const nv = n.nodeValue.replace(n.nodeValue.trim(), v);
+          if (nv !== n.nodeValue) n.nodeValue = nv;   // 值沒變絕不寫回：同形詞條（日文漢字）寫回會再觸發 observer → 無限迴圈
+        }
       }
       if (root.querySelectorAll) {
         for (const el of root.querySelectorAll("[placeholder],[title],[aria-label]")) {
-          for (const a of ATTRS) { const v = el.getAttribute(a); const t = v && tx(v); if (t) el.setAttribute(a, t); }
+          for (const a of ATTRS) { const v = el.getAttribute(a); const t = v && tx(v); if (t && t !== v) el.setAttribute(a, t); }
         }
       }
     } catch (e) { /* 翻譯失敗不影響功能 */ }
@@ -1678,9 +1681,13 @@ const I18n = (() => {
     walk(document.body);
     const obs = new MutationObserver(muts => {
       for (const m of muts) {
-        if (m.type === "characterData") { const v = tx(m.target.nodeValue); if (v) m.target.nodeValue = v; continue; }
+        if (m.type === "characterData") {
+          const v = tx(m.target.nodeValue);
+          if (v && v !== m.target.nodeValue) m.target.nodeValue = v;   // 同值不寫回，防迴圈
+          continue;
+        }
         for (const node of m.addedNodes) {
-          if (node.nodeType === 3) { const v = tx(node.nodeValue); if (v) node.nodeValue = v; }
+          if (node.nodeType === 3) { const v = tx(node.nodeValue); if (v && v !== node.nodeValue) node.nodeValue = v; }
           else if (node.nodeType === 1) walk(node);
         }
       }
