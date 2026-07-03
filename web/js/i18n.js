@@ -158,6 +158,14 @@ const I18n = (() => {
     "總爬升 ·已校正": "Total ascent · corrected",
     // 社群補遺
     "篇": "posts", "我的收藏": "My saved posts", "隱私與設定": "Privacy & Settings",
+    "重新整理": "Refresh",
+    // 路面/季節（詳細資料）
+    "泥土": "Dirt", "未鋪面": "Unpaved", "木棧道": "Boardwalk", "水泥": "Concrete", "碎石": "Gravel",
+    "鋪面": "Paved", "岩石": "Rock", "石階、山徑、木棧道": "Stone steps, trail & boardwalk",
+    "四季皆宜": "All seasons", "全年": "Year-round", "全年適宜": "Year-round", "全年皆宜": "Year-round",
+    "春": "Spring", "秋季": "Autumn", "秋冬季": "Autumn–winter", "冬季及春季較佳": "Best in winter & spring",
+    // 分級詳情最後一段
+    "標示「": "Trails marked “", "估": "est.", "再": "In",
     "揪團活動": "Events", "熱門趨勢": "Trending", "跟著這條路線走": "Follow this route",
     // 翻譯年糕
     "🍡 翻譯年糕": "🍡 Translate", "收合翻譯": "Hide translation", "翻譯中…": "Translating…",
@@ -548,8 +556,20 @@ const I18n = (() => {
     [/^(新會員|會員|資深|元老) ・ 第 (\d+) 個月$/, m => `${({ "新會員": "New member", "會員": "Member", "資深": "Senior", "元老": "Founding" })[m[1]]} · Month ${m[2]}`],
     [/^(.+) · 好友$/, m => { const t = tx(m[1]); return t ? `${t} · friends` : `${m[1]} · friends`; }],
     [/^山友走過這條（(\d+)）$/, m => `Hikers' trips here (${m[1]})`],
+    // 通用：emoji 開頭＋空格＋內文（心情列、路面/季節列、分級 chip）→ 翻內文、保留 emoji
+    [/^([\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{1F1E6}-\u{1F1FF}♿️⛰️]\u{FE0F}?)\s*(.+)$/u,
+      m => { const r = tx(m[2]); return r ? `${m[1]} ${r}` : null; }],
     [/^隨手拍（(\d+)）$/, m => `Snapshots (${m[1]})`],
     [/^(.+)　·　已走$/, m => `${m[1]} · walked`],
+    [/^適合：(.+)　·　(.+)　·　(.+)$/, m => `For: ${tx(m[1]) || m[1]} · ${tx(m[2]) || m[2]} · ${tx(m[3]) || m[3]}`],
+    [/^km（含照顧 \+([\d.]+)）・同行$/, m => `km (incl. care +${m[1]}) · together`],
+    [/^km・同行$/, () => `km · together`],
+    [/^(.+)・已走$/, m => `${tx(m[1]) || m[1]} · walked`],
+    [/^進化圖鑑（共 (\d+) 階）$/, m => `Evolution stages (${m[1]} total)`],
+    [/^成長里程 ([\d.]+) km 解鎖$/, m => `Unlocks at ${m[1]} growth km`],
+    [/^Wikimedia Commons · 左右滑看更多$/, () => "Wikimedia Commons · swipe for more"],
+    [/^」的步道為社群（OpenStreetMap）資料，依步道實際長度推估等級，僅供參考；\s*林業署步道則為官方正式分級。出發前請再查詢即時路況與天氣。$/,
+      () => "” are community (OpenStreetMap) trails with grades estimated from length — reference only. Forestry Agency trails carry official grades. Check live conditions and weather before you go."],
   ];
   const ATTRS = ["placeholder", "title", "aria-label"];
 
