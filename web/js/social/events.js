@@ -3,7 +3,7 @@ const Events = (() => {
   function esc(s) { return (s || "").replace(/[<>&"]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c])); }
   function fmt(iso) {
     const d = new Date(iso);
-    return d.toLocaleString("zh-TW", { month: "numeric", day: "numeric", weekday: "short", hour: "2-digit", minute: "2-digit" });
+    return d.toLocaleString(ttLocale(), { month: "numeric", day: "numeric", weekday: "short", hour: "2-digit", minute: "2-digit" });
   }
   async function me() { const c = Supa.client(); if (!c) return null; const { data } = await c.auth.getUser(); return data && data.user ? data.user.id : null; }
 

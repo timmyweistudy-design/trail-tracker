@@ -906,7 +906,7 @@ function fmtYmd(s) { return s && s.length === 8 ? `${s.slice(0, 4)}/${s.slice(4,
 function condStamp() {
   const u = (typeof Conditions !== "undefined" && Conditions.lastUpdated()) || 0;
   if (!u) return "";
-  return `　·　即時更新於 ${new Date(u).toLocaleString("zh-TW", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}`;
+  return `　·　即時更新於 ${new Date(u).toLocaleString(ttLocale(), { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}`;
 }
 function conditionBanner(t) {
   const c = t.condition;
@@ -1620,7 +1620,7 @@ function openTrackReview(rec) {
   const km = rec.distanceKm || 0, t3 = rec.distance3DKm;
   $("#trackBody").innerHTML = `
     <h2>${rec.trailName || "自由路線"}</h2>
-    <div class="track-date">${new Date(rec.date).toLocaleString("zh-TW")}</div>
+    <div class="track-date">${new Date(rec.date).toLocaleString(ttLocale())}</div>
     <div class="kv">
       <div class="item"><div class="l">距離</div><div class="v">${km.toFixed(2)} km</div></div>
       <div class="item"><div class="l">時間</div><div class="v">${fmtTime(rec.elapsedMs)}</div></div>
@@ -1631,7 +1631,7 @@ function openTrackReview(rec) {
       ${t3 && t3 > km + 0.05 ? `<div class="item"><div class="l">含坡度距離</div><div class="v">${t3.toFixed(2)} km</div></div>` : ""}
     </div>
     ${(rec.id === hikePhotosRecId && hikePhotos.length) ? `<div class="section-title">${ic("camera")}隨手拍（${hikePhotos.length}）<span class="shot-hint">點照片存到相簿</span></div>
-      <div class="hike-shots">${hikePhotos.map((p, i) => `<figure class="shot" data-i="${i}"><img src="${(u => { _shotUrls.push(u); return u; })(URL.createObjectURL(p.file))}" alt=""><figcaption>${new Date(p.t).toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" })} · ${p.km.toFixed(2)}km</figcaption></figure>`).join("")}</div>` : ""}
+      <div class="hike-shots">${hikePhotos.map((p, i) => `<figure class="shot" data-i="${i}"><img src="${(u => { _shotUrls.push(u); return u; })(URL.createObjectURL(p.file))}" alt=""><figcaption>${new Date(p.t).toLocaleTimeString(ttLocale(), { hour: "2-digit", minute: "2-digit" })} · ${p.km.toFixed(2)}km</figcaption></figure>`).join("")}</div>` : ""}
     <div class="link-row">
       <button class="link-btn" id="trackReplay">${ic("play")} 重播路徑</button>
       <button class="link-btn" id="trackCard">${ic("camera")} 分享圖卡</button>
@@ -1702,7 +1702,7 @@ async function shareHikeCard(rec) {
     const name = (rec.trailName || "自由路線").slice(0, 12);
     x.fillText(name, 70, 188);
     x.fillStyle = "rgba(231,237,222,.6)"; x.font = "400 28px serif";
-    x.fillText(new Date(rec.date).toLocaleDateString("zh-TW"), 70, 234);
+    x.fillText(new Date(rec.date).toLocaleDateString(ttLocale()), 70, 234);
     // 路線縮圖
     const pts = (rec.track || []).map(p => [p.lat, p.lon]);
     if (pts.length > 1) {
@@ -2172,7 +2172,7 @@ if (_crs) _crs.addEventListener("click", async () => {
     const { data, error } = await x.c.from("backups").select("data, updated_at").eq("user_id", x.uid).maybeSingle();
     if (error) { toast("還原失敗：" + error.message); return; }
     if (!data) { toast("雲端尚無備份，請先按「雲端備份」"); return; }
-    const when = new Date(data.updated_at).toLocaleString("zh-TW");
+    const when = new Date(data.updated_at).toLocaleString(ttLocale());
     const merge = confirm(`雲端備份（${when}）\n\n要『合併』到現有資料嗎？\n確定 = 合併\n取消 = 完全取代`);
     Store.importAll(data.data, merge ? "merge" : "replace");
     renderHistory(); render();
@@ -2290,7 +2290,7 @@ function renderHistory(keepShown) {
     <div class="hist-card" data-id="${r.id}">
       <div class="top">
         <b>${r.trailName || "自由路線"}${r.sim ? ` <span class="sim-tag">模擬</span>` : ""}${r.vehicle ? ` <span class="sim-tag">車速·不計里程</span>` : ""}</b>
-        <span class="date">${new Date(r.date).toLocaleString("zh-TW", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+        <span class="date">${new Date(r.date).toLocaleString(ttLocale(), { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
       </div>
       <div class="row">
         <span>${ic("ruler")}<b>${r.distanceKm.toFixed(2)}</b> km${r.distance3DKm && r.distance3DKm > r.distanceKm + 0.05 ? ` <small>(含坡度 ${r.distance3DKm.toFixed(2)})</small>` : ""}</span>

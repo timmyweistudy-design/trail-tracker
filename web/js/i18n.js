@@ -138,6 +138,27 @@ const I18n = (() => {
     "到「記錄」分頁開始你的第一條路線": "Start your first route on the Record tab",
     "足跡熱力圖": "Footprint heatmap", "步道": "Trail",
     "還沒有可顯示的軌跡，先去走一條吧": "No tracks to show yet — go hike one!",
+    // 探索/詳情補遺
+    "地形": "Terrain", "衛星": "Satellite",
+    "暫停開放": "Temporarily closed", "部分封閉": "Partially closed", "全線": "Entire trail",
+    "導航": "Navigate", "查資訊": "Look up", "原始頁": "Source page",
+    "預載此步道離線地圖": "Preload this trail's offline map",
+    "在此步道開始記錄": "Start recording on this trail",
+    "評價": "Rating", "星級": "Stars",
+    "天氣（步道所在地）": "Weather (at the trail)", "海拔剖面": "Elevation profile",
+    "附近人文景點": "Nearby attractions", "步道周邊美食": "Food nearby",
+    // 小隊面板補遺
+    "與小隊同行（記錄地圖上看到彼此定位）": "Team Live (see each other on the recording map)",
+    "👑 隊長（小隊建立者）才能開始記錄；全員在記錄頁按「✋ 準備」後，隊長按開始即全隊一起記錄。": "👑 Only the leader (team creator) can start. Once everyone taps “Ready” on the Record tab, the leader's Start begins recording for the whole team.",
+    // 寵物補遺
+    "親密度": "Bond",
+    // 我的頁補遺
+    "·　已走": "· walked", "Premium：無限下載": "Premium: unlimited downloads",
+    "步": "steps", "m 下降": "m · Descent", "回顧軌跡": "View track", "路線檔": "GPX file",
+    "總爬升 ·已校正": "Total ascent · corrected",
+    // 社群補遺
+    "篇": "posts", "我的收藏": "My saved posts", "隱私與設定": "Privacy & Settings",
+    "揪團活動": "Events", "熱門趨勢": "Trending", "跟著這條路線走": "Follow this route",
     // 翻譯年糕
     "🍡 翻譯年糕": "🍡 Translate", "收合翻譯": "Hide translation", "翻譯中…": "Translating…",
     "翻譯失敗，點此重試": "Translation failed — tap to retry",
@@ -477,6 +498,7 @@ const I18n = (() => {
     [/^已預載周邊離線地圖（(.+)）$/, m => `Nearby offline map preloaded (${m[1]})`],
     [/^免費離線額度已用完，本次不預載周邊地圖（升級 Premium 記錄時自動完整預載）$/,
       () => "Free offline quota used up — skipping preload (Premium preloads automatically)"],
+    [/^已快取地圖圖磚：([\d,]+) 張（約 (.+) MB）$/, m => `Cached tiles: ${m[1]} (~${m[2]} MB)`],
     [/^已快取地圖圖磚：(.+)$/, m => `Cached tiles: ${m[1]}`],
     [/^約 (.+) 小時後可再餵/, m => `Can feed again in ~${m[1]} hr`],
     [/^🍃 (\d+) 小時後可餵$/, m => `🍃 Feed in ${m[1]} hr`],
@@ -520,6 +542,14 @@ const I18n = (() => {
     [/^(.+)（(\d+) 次）$/, m => `${m[1]} (${m[2]}×)`],
     [/^免費離線地圖額度不足（剩 (.+) MB，這次約需 (.+) MB），升級 Premium 無限下載$/,
       m => `Not enough free offline quota (${m[1]} MB left, needs ~${m[2]} MB) — upgrade to Premium for unlimited`],
+    [/^共 (\d+) 條步道$/, m => `${m[1]} trails`],
+    [/^活力 (\d+)$/, m => `Energy ${m[1]}`],
+    [/^加入碼 ([A-Z0-9]+)$/, m => `Join code ${m[1]}`],
+    [/^(新會員|會員|資深|元老) ・ 第 (\d+) 個月$/, m => `${({ "新會員": "New member", "會員": "Member", "資深": "Senior", "元老": "Founding" })[m[1]]} · Month ${m[2]}`],
+    [/^(.+) · 好友$/, m => { const t = tx(m[1]); return t ? `${t} · friends` : `${m[1]} · friends`; }],
+    [/^山友走過這條（(\d+)）$/, m => `Hikers' trips here (${m[1]})`],
+    [/^隨手拍（(\d+)）$/, m => `Snapshots (${m[1]})`],
+    [/^(.+)　·　已走$/, m => `${m[1]} · walked`],
   ];
   const ATTRS = ["placeholder", "title", "aria-label"];
 
@@ -583,3 +613,5 @@ const I18n = (() => {
   return { lang, set, start, walk, tx };
 })();
 I18n.start();
+// 顯示用日期/時間的 locale（英文介面用英文月份與 AM/PM）
+function ttLocale() { return I18n.lang() === "en" ? "en-US" : "zh-TW"; }

@@ -97,7 +97,7 @@ const PostView = (() => {
         if (m.kind === "video") return `<video class="pv-img" controls preload="metadata" poster="${esc(Media.publicUrl(m.thumb_path || ""))}" src="${esc(Media.publicUrl(m.path))}"></video>`;
         const img = `<img class="pv-img pv-photo" loading="lazy" src="${esc(Media.publicUrl(m.path))}" alt="">`;
         const meta = (m.taken_at || m.km != null)
-          ? `<figcaption>${m.taken_at ? new Date(m.taken_at).toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" }) : ""}${m.km != null ? (m.taken_at ? " · " : "") + (+m.km).toFixed(2) + "km" : ""}</figcaption>` : "";
+          ? `<figcaption>${m.taken_at ? new Date(m.taken_at).toLocaleTimeString(ttLocale(), { hour: "2-digit", minute: "2-digit" }) : ""}${m.km != null ? (m.taken_at ? " · " : "") + (+m.km).toFixed(2) + "km" : ""}</figcaption>` : "";
         return meta ? `<figure class="pv-shot">${img}${meta}</figure>` : img;
       }).join("")}
       <div class="pv-actions"><button class="fc-like ${likedByMe ? "on" : ""}" id="pvLike">${likedByMe ? "❤️" : "🤍"} <span>${likeCount}</span></button>${isMine ? "" : `<button class="link-btn" id="pvReport">檢舉</button>`}</div>

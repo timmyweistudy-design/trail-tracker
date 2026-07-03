@@ -117,7 +117,7 @@ const Premium = (() => {
     if (!el) return;
     if (typeof Supa === "undefined" || !Supa.ready || !Supa.ready()) { el.innerHTML = ""; return; }
     if (isOn()) {
-      const until = _periodEnd ? new Date(_periodEnd).toLocaleDateString("zh-TW") : "";
+      const until = _periodEnd ? new Date(_periodEnd).toLocaleDateString(ttLocale()) : "";
       const since = localStorage.getItem("tt_premium_since");
       let tenure = "";
       if (since) { const mo = Math.max(0, Math.floor((Date.now() - new Date(since)) / 2.628e9)); const tier = mo >= 12 ? "元老" : mo >= 6 ? "資深" : mo >= 1 ? "會員" : "新會員"; tenure = `<span class="pm-tenure">${tier} ・ 第 ${mo + 1} 個月</span>`; }
