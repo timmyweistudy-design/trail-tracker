@@ -5,7 +5,9 @@ const TeamLive = (() => {
   let channel = null, watchId = null, map = null, markers = {}, me = null, myInfo = {}, lastPos = null;
   let leaderId = null, myReady = false, onStartCb = null;
   let myStartAt = null;        // 隊長按下開始的時間（跟著 presence 傳，凍結分頁回前景也能補收到）
-  let startHandled = false;    // 這次同行已處理過開始訊號，避免重複觸發
+  let lastHandledAt = 0;       // 已處理過的開始訊號時間戳：同一次開始只觸發一次，但「新的一次開始」永遠會觸發
+  let joinedAt = 0;            // 我開啟同行的時間：比這更早太多的舊訊號不理（別人上一趟的殘留）
+  let pollTimer = null, curTeamId = null;
 
   function isOn() { return !!channel; }
   function isLeader() { return !!me && me === leaderId; }
@@ -36,13 +38,34 @@ const TeamLive = (() => {
   function allReady() { const r = roster(); return r.length > 0 && r.every(m => m.ready); }
   function notReadyNames() { return roster().filter(m => !m.ready).map(m => m.name); }
 
-  // 隊長的開始訊號也寫在 presence meta（started）：分頁被凍結錯過 broadcast 的隊員，
-  // 回前景 presence 同步時仍會看到並補開始
+  // 統一的開始訊號處理：broadcast / presence / DB 輪詢三路都進這裡。
+  // 用「時間戳」去重：同一次開始只觸發一次；新的開始（新時間戳）一定會再觸發——
+  // 修掉舊版布林旗標被上一趟殘留訊號卡死、之後真開始卻沒反應的 bug。
+  function handleStart(at) {
+    at = +at || 0;
+    if (!at || at <= lastHandledAt) return;
+    if (isLeader()) { lastHandledAt = at; return; }              // 隊長本地自己開始，不吃訊號
+    if (Date.now() - at > 10 * 60e3) { lastHandledAt = at; return; }   // 太舊：標記已處理但不觸發
+    if (at < joinedAt - 60e3) { lastHandledAt = at; return; }    // 我加入前就存在的殘留訊號
+    if (!myReady || !onStartCb) return;                          // 還沒按準備：先不吃，按了準備後輪詢會再進來
+    lastHandledAt = at;
+    onStartCb();
+  }
+  // presence 路徑：隊長的 started 跟著 presence 傳，凍結分頁回前景同步時補收
   function checkPresenceStart() {
-    if (!channel || startHandled || !onStartCb || isLeader() || !leaderId || !myReady) return;
+    if (!channel || !leaderId) return;
     const metas = channel.presenceState()[leaderId] || [];
     const started = metas.reduce((t, m) => Math.max(t, (m && m.started) || 0), 0);
-    if (started && Date.now() - started < 10 * 60e3) { startHandled = true; onStartCb(); }
+    if (started) handleStart(started);
+  }
+  // DB 輪詢路徑（每 5 秒）：postgres_changes/broadcast 全漏接也追得回來
+  async function pollDbStart() {
+    if (!channel || !curTeamId || isLeader() || !myReady) return;
+    try {
+      const c = Supa.client(); if (!c) return;
+      const { data } = await c.from("team_starts").select("started_at").eq("team_id", curTeamId).maybeSingle();
+      if (data && data.started_at) handleStart(Date.parse(data.started_at));
+    } catch (e) { /* phase20 未跑或離線 → 其他兩路仍有效 */ }
   }
 
   function render() {
@@ -81,6 +104,7 @@ const TeamLive = (() => {
     myReady = !!v;
     if (channel) channel.track(payload());
     renderReadyBar();
+    if (myReady) { checkPresenceStart(); pollDbStart(); }   // 按下準備立刻補收（隊伍可能已經開始）
   }
   function onStart(cb) { onStartCb = cb; }
   // 隊長廣播「開始」：全員同時開始記錄（broadcast 不會送回自己，隊長本地另行開始）。
@@ -88,8 +112,11 @@ const TeamLive = (() => {
   function sendStart() {
     if (!channel) return;
     myStartAt = Date.now();
-    channel.send({ type: "broadcast", event: "start", payload: { at: myStartAt } });
-    channel.track(payload());
+    lastHandledAt = myStartAt;   // 自己不再吃這個訊號
+    // 三路齊發：broadcast（最快）+ presence（回前景補收）+ DB（最可靠，需 phase20 SQL）
+    try { channel.send({ type: "broadcast", event: "start", payload: { at: myStartAt } }); } catch (e) { /* */ }
+    try { channel.track(payload()); } catch (e) { /* */ }
+    try { const c = Supa.client(); if (c && curTeamId) c.rpc("team_start", { p_team: curTeamId }).then(() => { }, () => { }); } catch (e) { /* */ }
   }
 
   // 記錄頁準備列：✋ 準備切換 + 全隊準備狀態；隊長多一顆「開始小隊記錄」提示
@@ -135,12 +162,17 @@ const TeamLive = (() => {
       catch (e) { /* 查不到就維持 null，準備列會提示 */ }
     }
     channel = c.channel("team:" + teamId, { config: { presence: { key: me } } });
-    myStartAt = null; startHandled = false;
+    curTeamId = teamId; myStartAt = null; lastHandledAt = 0; joinedAt = Date.now();
     channel.on("presence", { event: "sync" }, render);
     channel.on("presence", { event: "join" }, render);
     channel.on("presence", { event: "leave" }, render);
-    channel.on("broadcast", { event: "start" }, () => { if (onStartCb && !startHandled) { startHandled = true; onStartCb(); } });
+    channel.on("broadcast", { event: "start" }, msg => handleStart(msg && msg.payload && msg.payload.at));
+    // DB 即時訂閱：隊長寫入 team_starts 就開始（需 phase20；沒跑也有輪詢與 presence 兜底）
+    channel.on("postgres_changes", { event: "*", schema: "public", table: "team_starts", filter: "team_id=eq." + teamId },
+      p => { const row = p && p.new; if (row && row.started_at) handleStart(Date.parse(row.started_at)); });
     channel.subscribe(st => { if (st === "SUBSCRIBED") channel.track(payload()); });
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(pollDbStart, 5000);   // 輪詢補收：任何漏接 5 秒內追回
     if (navigator.geolocation) {
       watchId = navigator.geolocation.watchPosition(broadcast, () => { }, { enableHighAccuracy: true, maximumAge: 3000, timeout: 15000 });
     }
@@ -152,7 +184,8 @@ const TeamLive = (() => {
     if (channel) { try { Supa.client().removeChannel(channel); } catch (e) { } channel = null; }
     for (const k in markers) { try { map.removeLayer(markers[k]); } catch (e) { } }
     markers = {}; map = null; lastPos = null; leaderId = null; myReady = false;
-    myStartAt = null; startHandled = false;
+    myStartAt = null; lastHandledAt = 0; curTeamId = null;
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
     const el = document.getElementById("teamReadyBar"); if (el) el.remove();
   }
 
