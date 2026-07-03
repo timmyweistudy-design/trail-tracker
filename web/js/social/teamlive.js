@@ -8,6 +8,7 @@ const TeamLive = (() => {
   let lastHandledAt = 0;       // 已處理過的開始訊號時間戳：同一次開始只觸發一次，但「新的一次開始」永遠會觸發
   let joinedAt = 0;            // 我開啟同行的時間：比這更早太多的舊訊號不理（別人上一趟的殘留）
   let pollTimer = null, curTeamId = null;
+  let lastTrackAt = 0;         // presence 位置更新節流（避免每秒打 realtime）
 
   function isOn() { return !!channel; }
   function isLeader() { return !!me && me === leaderId; }
@@ -77,8 +78,9 @@ const TeamLive = (() => {
     const seen = {};
     for (const key in state) {
       if (key === me) continue;                       // 不畫自己
-      const meta = (state[key] && state[key][0]) || null;
-      if (!meta || meta.lat == null) continue;
+      const metas = state[key] || [];
+      const meta = metas.reduce((best, m) => (m && m.lat != null && (!best || (m.at || 0) > (best.at || 0))) ? m : best, null);
+      if (!meta) continue;
       seen[key] = true;
       const ll = [meta.lat, meta.lon];
       if (markers[key]) { markers[key].setLatLng(ll); markers[key].setIcon(icon(meta)); markers[key].setTooltipContent(meta.name || "隊友"); }
@@ -94,10 +96,23 @@ const TeamLive = (() => {
       name: myInfo.name, avatar: myInfo.avatar || null, pet: myInfo.pet || null,
       heading: lastPos ? lastPos.heading : null, ready: myReady, started: myStartAt || 0, at: Date.now() };
   }
+  function _trackThrottled() {
+    if (!channel) return;
+    const now = Date.now();
+    if (now - lastTrackAt < 3000) return;   // 3 秒節流：位置更新夠即時又不會灌爆 realtime
+    lastTrackAt = now;
+    try { channel.track(payload()); } catch (e) { /* 重連中 */ }
+  }
   function broadcast(p) {
     const h = p.coords.heading;
     lastPos = { lat: p.coords.latitude, lon: p.coords.longitude, heading: (h != null && isFinite(h) && h >= 0) ? h : (lastPos && lastPos.heading != null ? lastPos.heading : null) };
-    if (channel) channel.track(payload());
+    _trackThrottled();
+  }
+  // 由記錄器餵位置（模擬模式/室內測試 TeamLive 自己拿不到 GPS 時，隊友也看得到你）
+  function updatePos(lat, lon, heading) {
+    if (lat == null || lon == null) return;
+    lastPos = { lat, lon, heading: (heading != null && isFinite(heading) && heading >= 0) ? heading : (lastPos && lastPos.heading != null ? lastPos.heading : null) };
+    _trackThrottled();
   }
 
   function setReady(v) {
@@ -202,5 +217,5 @@ const TeamLive = (() => {
     });
   }
 
-  return { start, stop, isOn, isLeader, setReady, allReady, roster, notReadyNames, sendStart, onStart };
+  return { start, stop, isOn, isLeader, setReady, allReady, roster, notReadyNames, sendStart, onStart, updatePos };
 })();

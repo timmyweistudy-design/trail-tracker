@@ -1900,6 +1900,8 @@ Recorder.onUpdate(s => {
     const pts = s.track.map(p => [p.lat, p.lon]);
     recLine.setLatLngs(trackSegments(s.track).map(seg => seg.map(p => [p.lat, p.lon])));   // 依 gap 分段畫線
     const last = pts[pts.length - 1];
+    // 小隊同行：把記錄位置（含模擬）餵給隊伍圖層，隊友才看得到我（TeamLive 內部有 3 秒節流）
+    if (typeof TeamLive !== "undefined" && TeamLive.isOn() && TeamLive.updatePos) TeamLive.updatePos(last[0], last[1], s.heading);
     const meAv = window.__meAvatar;   // 登入且有頭像才用頭像標記
     if (meAv) {
       // 自己的原點＝頭像 + 寵物徽章（與隊友一致）；移除浮動寵物避免重複

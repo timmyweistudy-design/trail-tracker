@@ -45,6 +45,7 @@ const Recorder = (() => {
   let cb = () => {};
   let autoStopCb = () => {};
   let overSpeedHits = 0;       // 連續偵測到超速(>20km/h)的次數
+  let stillHits = 0;           // 連續低速（近乎靜止）讀數次數，供漂移過濾
   let autoStopping = false;    // 已觸發自動結束，避免重複
 
   function onUpdate(fn) { cb = fn; }
@@ -132,11 +133,12 @@ const Recorder = (() => {
     }
 
     const d = haversine(lastFix, p);
-    // 靜止漂移過濾：門檻隨定位精度放大（位移小於精度圓 0.9 倍多半是漂移）；
-    // 且 GPS 回報速度趨近 0（<0.4 m/s＝沒在走）時，30m 內的位移一律當漂移——修「人沒動卻一直累積里程」
-    const gate = Math.max(MIN_MOVE, acc != null ? Math.min(acc, 30) * 0.9 : 0);
-    const still = (gpsSpeed != null && gpsSpeed >= 0 && gpsSpeed < 0.4);
-    if (!clean && (d < gate || (still && d < Math.max(gate, 30)))) {   // 原地抖動/漂移：不累積，只推進時間基準
+    // 靜止漂移過濾（v2）：v1 門檻隨精度放大到 30m 太兇——部分手機走路時速度回報 0、精度 25m+，
+    // 會整趟記不到距離。改為：門檻上限 12m；「靜止」需連續 3 次低速且只擋 15m 內的位移。
+    const gate = Math.max(MIN_MOVE, acc != null ? Math.min(acc * 0.6, 12) : 0);
+    const stillNow = (gpsSpeed != null && gpsSpeed >= 0 && gpsSpeed < 0.3);
+    stillHits = stillNow ? stillHits + 1 : 0;
+    if (!clean && (d < gate || (stillHits >= 3 && d < 15))) {   // 原地抖動/漂移：不累積，只推進時間基準
       lastFix.t = now;
       if (gpsSpeed == null) curSpeed *= 0.6;         // 無 GPS 速度時，靜止逐漸歸零
       cb(snapshot()); return;
@@ -160,6 +162,7 @@ const Recorder = (() => {
     }
     if (clean || d <= MAX_JUMP) {                    // 視為真實移動
       lastAcceptT = now;
+      stillHits = 0;   // 真實移動→靜止計數歸零
       if (autoPaused) { lastResume = Date.now(); autoPaused = false; }   // 移動→自動恢復計時
       lastMoveAt = Date.now();
       distance += d;
@@ -280,7 +283,7 @@ const Recorder = (() => {
 
   function start(sim) {
     if (state === "running") return;
-    if (state === "idle") { track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; smAlt = null; lastFixAlt = null; smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; lastAcceptT = 0; curSpeed = 0; simMode = !!sim; overSpeedHits = 0; autoStopping = false; }
+    if (state === "idle") { track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; smAlt = null; lastFixAlt = null; smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; lastAcceptT = 0; curSpeed = 0; simMode = !!sim; overSpeedHits = 0; stillHits = 0; autoStopping = false; }
     lastResume = Date.now();
     state = "running";
     autoPaused = false; lastMoveAt = Date.now();   // 開始/繼續都重設靜止計時
@@ -328,7 +331,7 @@ const Recorder = (() => {
       vehicle: autoStopping || undefined,   // 因車速(>20km/h)自動斷掉→整趟不計里程
     } : null;
     state = "idle"; track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; smAlt = null; lastFixAlt = null;
-    smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; lastAcceptT = 0; curSpeed = 0; simPos = null; overSpeedHits = 0; autoStopping = false;
+    smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; lastAcceptT = 0; curSpeed = 0; simPos = null; overSpeedHits = 0; stillHits = 0; autoStopping = false;
     simRoute = null; simDist = 0;   // 清除殘留路線，避免下次記錄誤跑舊模擬路線
     persist();
     cb(snapshot());
