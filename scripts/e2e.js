@@ -27,7 +27,9 @@ const PORT = 8899;
     const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
     await page.addInitScript(() => { try { localStorage.setItem("tt_onboarded_v2", "1"); } catch (e) { } });   // 跳過首次導覽浮層
     page.on("pageerror", e => errors.push("pageerror: " + e.message));
-    page.on("console", m => { if (m.type() === "error" && !/net::|favicon|404 \(|Failed to load resource/.test(m.text())) errors.push("console: " + m.text()); });
+    // 忽略外部服務在無頭測試環境的網路/CORS 失敗（線上皆有 try/catch＋後備）：海拔 DEM、翻譯、Supabase、Overpass、圖磚
+    const EXT_NOISE = /net::|favicon|404 \(|Failed to load resource|CORS policy|opentopodata|translate\.googleapis|mymemory|supabase|overpass|tile\.|Access to fetch/i;
+    page.on("console", m => { if (m.type() === "error" && !EXT_NOISE.test(m.text())) errors.push("console: " + m.text()); });
 
     const ok = (name, cond) => { console.log((cond ? "✓" : "✗") + " " + name); if (!cond) errors.push("assert: " + name); };
 
