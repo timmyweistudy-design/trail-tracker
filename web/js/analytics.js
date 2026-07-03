@@ -98,7 +98,9 @@ function openYearReview() {
       ? `My ${year} on the trails: ${recs.length} trips, ${km.toFixed(0)} km, ↑${Math.round(asc)} m ascent (≈ ${(asc / 3952).toFixed(1)}× Yushan) — Gather the Trail`
       : _L === "es"
         ? `Mi ${year} en los senderos: ${recs.length} salidas, ${km.toFixed(0)} km, ↑${Math.round(asc)} m (≈ ${(asc / 3952).toFixed(1)}× Yushan) — Gather the Trail`
-        : `我的 ${year} 山行回顧：${recs.length} 趟、${km.toFixed(0)} km、累積爬升 ↑${Math.round(asc)} m（約 ${(asc / 3952).toFixed(1)} 座玉山）— 循徑拾光`;
+        : _L === "ja"
+          ? `わたしの${year}年の山あるき：${recs.length}回、${km.toFixed(0)} km、累積上昇 ↑${Math.round(asc)} m（玉山 約${(asc / 3952).toFixed(1)}個分）— Gather the Trail`
+          : `我的 ${year} 山行回顧：${recs.length} 趟、${km.toFixed(0)} km、累積爬升 ↑${Math.round(asc)} m（約 ${(asc / 3952).toFixed(1)} 座玉山）— 循徑拾光`;
     if (navigator.share) navigator.share({ title: ttT("我的山行回顧"), text }).catch(() => { });
     else if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast("已複製回顧文字"));
     else toast(text);

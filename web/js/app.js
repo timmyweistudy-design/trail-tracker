@@ -1700,7 +1700,9 @@ function openTrackReview(rec) {
       ? `I hiked ${rec.trailName || ttT("自由路線")}: ${km.toFixed(2)} km, ↑${rec.ascent || 0} m, ${rec.kcal} kcal, ${fmtTime(rec.elapsedMs)} ⛰️ — Gather the Trail`
       : _L === "es"
         ? `Caminé ${rec.trailName || ttT("自由路線")}: ${km.toFixed(2)} km, ↑${rec.ascent || 0} m, ${rec.kcal} kcal, ${fmtTime(rec.elapsedMs)} ⛰️ — Gather the Trail`
-        : `我走了 ${rec.trailName || "自由路線"}：${km.toFixed(2)} km、爬升 ↑${rec.ascent || 0}m、${rec.kcal} 大卡、${fmtTime(rec.elapsedMs)} ⛰️ — 循徑拾光`;
+        : _L === "ja"
+          ? `${rec.trailName || ttT("自由路線")}を歩きました：${km.toFixed(2)} km、↑${rec.ascent || 0} m、${rec.kcal} kcal、${fmtTime(rec.elapsedMs)} ⛰️ — Gather the Trail`
+          : `我走了 ${rec.trailName || "自由路線"}：${km.toFixed(2)} km、爬升 ↑${rec.ascent || 0}m、${rec.kcal} 大卡、${fmtTime(rec.elapsedMs)} ⛰️ — 循徑拾光`;
     if (navigator.share) navigator.share({ title: ttT("我的健行紀錄"), text }).catch(() => {});
     else if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast("已複製,可貼給朋友"));
     else toast(text);

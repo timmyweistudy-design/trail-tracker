@@ -66,6 +66,11 @@ ok("i18n(es) 字典：探索→Explorar", I18n.tx("探索") === "Explorar");
 ok("i18n(es) 字典：儲存→Guardar", I18n.tx("儲存") === "Guardar");
 ok("i18n(es) 規則：X 分鐘前", I18n.tx("5 分鐘前") === "hace 5 min");
 ok("i18n(es) 規則：通知含名字", I18n.tx("Ana 開始追蹤你") === "Ana empezó a seguirte");
+localStorage.setItem("tt_lang", "ja");
+ok("i18n(ja) 字典：記錄→記録", I18n.tx("記錄") === "記録");
+ok("i18n(ja) 字典：翻譯年糕→ほんやくコンニャク", I18n.tx("翻譯年糕") === "ほんやくコンニャク");
+ok("i18n(ja) 規則：X 分鐘前", I18n.tx("5 分鐘前") === "5分前");
+ok("i18n(ja) 規則：通知含名字", I18n.tx("花子 開始追蹤你") === "花子 さんがフォローしました");
 localStorage.removeItem("tt_lang");
 // 地名字典後備（i18n-names.js）
 global.window = global.window || {};
