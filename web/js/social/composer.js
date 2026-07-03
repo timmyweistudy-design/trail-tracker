@@ -79,6 +79,10 @@ const Composer = (() => {
     const r = await Posts.createFromRecord(rec, { caption, visibility, files, video, rating });
     if (r.error) { msg.textContent = "發布失敗：" + r.error; wrap.querySelector("#compPost").disabled = false; return; }
     msg.textContent = "已發布！";
+    // 貼文星星 → 回寫本機步道評分，讓「我評 4★+」篩選連動（自由路線無 trailId 不算）
+    if (rec.trailId && rating > 0 && typeof Store !== "undefined") {
+      try { Store.setTrailLog(String(rec.trailId), { rating }); } catch (e) { /* */ }
+    }
     try { localStorage.removeItem("tt_draft"); } catch (e) { }   // 發布成功清草稿
     if (typeof toast === "function") toast("已分享到社群");
     if (typeof SocialUI !== "undefined") SocialUI.route();   // 刷新動態牆，立即看到新貼文

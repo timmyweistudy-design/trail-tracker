@@ -59,6 +59,14 @@ const Profiles = (() => {
       el.querySelectorAll(".cnt-link").forEach(s => s.addEventListener("click", () => { if (typeof Discover !== "undefined") Discover.openUserList(prof.id, s.dataset.mode); }));
     });
     Posts.userPosts(prof.id).then(async posts => {
+      // 舊貼文的星星回填本機步道評分（只補「本機未評分」的，不覆蓋較新的本機評分；自由路線不算）
+      try {
+        if (typeof Store !== "undefined") for (const p of posts) {
+          if (p.trail_id && p.rating > 0 && !(Store.trailLog(String(p.trail_id)).rating > 0)) {
+            Store.setTrailLog(String(p.trail_id), { rating: p.rating });
+          }
+        }
+      } catch (e) { /* */ }
       const pc = document.getElementById("pfPostCount"); if (pc) pc.innerHTML = `<b>${posts.length}</b> 篇　`;
       const box = document.getElementById("pfPosts"); if (!box) return;
       box.className = "feed-list";
