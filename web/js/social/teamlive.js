@@ -109,13 +109,14 @@ const TeamLive = (() => {
     const el = readyBarEl(); if (!el) return;
     if (!channel) { el.remove(); return; }
     const r = roster();
-    const chips = r.map(m => `<span class="trb-chip ${m.ready ? "ok" : ""}">${m.leader ? "👑 " : ""}${esc(m.name)}${m.me ? "（我）" : ""} ${m.ready ? "✓" : "…"}</span>`).join("");
+    const chips = r.map(m => `<span class="trb-chip ${m.ready ? "ok" : ""}">${m.leader ? `${typeof ic === "function" ? ic("crown") : ""} ` : ""}${esc(m.name)}${m.me ? "（我）" : ""} ${m.ready ? "✓" : "…"}</span>`).join("");
     const nr = notReadyNames();
     const hint = isLeader()
       ? (allReady() ? "✅ 全員已準備！按下面的「▶ 開始」，全隊一起記錄" : `等待按「準備」：${nr.join("、") || "…"}`)
       : (leaderId == null ? "⚠️ 讀不到隊長資訊，請隊長重開「與小隊同行」"
         : (myReady ? (allReady() ? "✅ 全員已準備，等隊長按開始…" : "已準備，等其他隊員…") : "按「準備」告訴隊長你就緒"));
-    el.innerHTML = `<div class="trb-top"><b>👥 小隊同行${isLeader() ? "・我是隊長 👑" : ""}</b><button class="trb-ready ${myReady ? "on" : ""}" id="trbReady">${myReady ? "✓ 已準備" : "✋ 準備"}</button></div>
+    const icn = n => (typeof ic === "function" ? ic(n) : "");
+    el.innerHTML = `<div class="trb-top"><b>${icn("users")} 小隊同行${isLeader() ? `・我是隊長 ${icn("crown")}` : ""}</b><button class="trb-ready ${myReady ? "on" : ""}" id="trbReady">${myReady ? "✓ 已準備" : `${icn("hand")} 準備`}</button></div>
       <div class="trb-chips">${chips || "<span class='trb-chip'>等待隊友上線…</span>"}</div>
       <div class="trb-hint">${hint}</div>`;
     const b = el.querySelector("#trbReady");

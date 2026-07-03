@@ -91,7 +91,7 @@ const PostView = (() => {
       <div class="fc-trail">${trailName}　<span class="fc-stats">${post.distance_km != null ? post.distance_km.toFixed(2) + "km" : ""}${post.ascent != null ? "　↑" + post.ascent + "m" : ""}</span>${post.rating ? ` <span class="fc-rate">${"★".repeat(post.rating)}</span>` : ""}</div>
       ${(post.track && post.track.coordinates && post.track.coordinates.length > 1) ? `<div class="pv-map"></div><button class="btn ghost pv-follow" id="pvFollow">${ic("compass")} 跟著這條路線走</button>` : ""}
       ${post.caption ? `<div class="fc-cap">${(typeof Feed !== "undefined" && Feed.richText) ? Feed.richText(post.caption) : esc(post.caption)}</div>
-      <div class="pv-tr-row"><button class="link-btn" id="pvTranslate">🍡 翻譯年糕</button></div>
+      <div class="pv-tr-row"><button class="link-btn" id="pvTranslate">${ic("translate")} 翻譯年糕</button></div>
       <div class="fc-cap pv-cap-tr" id="pvCapTr" style="display:none"></div>` : ""}
       ${media.map(m => {
         if (m.kind === "video") return `<video class="pv-img" controls preload="metadata" poster="${esc(Media.publicUrl(m.thumb_path || ""))}" src="${esc(Media.publicUrl(m.path))}"></video>`;
@@ -122,13 +122,13 @@ const PostView = (() => {
     if (trBtn) trBtn.addEventListener("click", async () => {
       const out = wrap.querySelector("#pvCapTr"); if (!out) return;
       const en = (typeof I18n !== "undefined" && I18n.lang() === "en");
-      if (out.style.display !== "none") { out.style.display = "none"; trBtn.textContent = en ? "🍡 Translate" : "🍡 翻譯年糕"; return; }
+      if (out.style.display !== "none") { out.style.display = "none"; trBtn.innerHTML = `${ic("translate")} ${en ? "Translate" : "翻譯年糕"}`; return; }
       if (out.dataset.done) { out.style.display = "block"; trBtn.textContent = en ? "Hide translation" : "收合翻譯"; return; }
       trBtn.disabled = true; trBtn.textContent = en ? "Translating…" : "翻譯中…";
       const t = await translateText(post.caption, en ? "en" : "zh-TW");
       trBtn.disabled = false;
       if (!t) { trBtn.textContent = en ? "Translation failed — tap to retry" : "翻譯失敗，點此重試"; return; }
-      out.textContent = "🍡 " + t; out.dataset.done = "1"; out.style.display = "block";
+      out.textContent = t; out.dataset.done = "1"; out.style.display = "block";
       trBtn.textContent = en ? "Hide translation" : "收合翻譯";
     });
     const rep = wrap.querySelector("#pvReport"); if (rep) rep.addEventListener("click", async () => {

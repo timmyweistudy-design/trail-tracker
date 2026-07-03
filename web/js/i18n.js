@@ -102,6 +102,42 @@ const I18n = (() => {
     "偏遠高山（約 3,000 公尺以上），路況不佳、危險路段多，需三天以上，建議專業人員帶領。": "Remote high mountains (3,000 m+), poor conditions, many dangers, 3+ days — go with professionals.",
     "積雪或結冰的高山路線，需要雪地攀登技術與專門裝備。": "Snowy or icy alpine routes — needs snow climbing skills and special gear.",
     "適合：": "For: ", "建議裝備：": "Gear: ",
+    // 天氣（WMO 描述）
+    "晴": "Sunny", "晴時多雲": "Mostly sunny", "多雲": "Cloudy", "陰": "Overcast",
+    "霧": "Fog", "霧凇": "Rime fog", "毛毛雨": "Drizzle", "凍毛雨": "Freezing drizzle",
+    "小雨": "Light rain", "中雨": "Rain", "大雨": "Heavy rain", "凍雨": "Freezing rain",
+    "小雪": "Light snow", "中雪": "Snow", "大雪": "Heavy snow", "霰": "Snow grains",
+    "陣雨": "Showers", "強陣雨": "Heavy showers", "陣雪": "Snow showers", "強陣雪": "Heavy snow showers",
+    "雷雨": "Thunderstorm", "雷雨夾雹": "Thunderstorm with hail", "強雷雨": "Severe thunderstorm",
+    "週一": "Mon", "週二": "Tue", "週三": "Wed", "週四": "Thu", "週五": "Fri", "週六": "Sat", "週日": "Sun",
+    "今天": "Today", "最低": "Low", "🌤 最適合出發：": "🌤 Best day to go: ",
+    // 首次導覽段落
+    "全台 2100+ 條步道一手掌握。搜尋、分級、記錄、養成，一起走進山林。": "2,100+ Taiwan trails at your fingertips. Search, grade, record and raise your buddy.",
+    "搜尋步道看官方難度分級、真實路線與海拔剖面；還有天氣、周邊人文景點與美食。用『精選主題輯』快速找古道、瀑布、親子路線。": "Search trails with official grades, real routes and elevation profiles — plus weather, sights and food nearby. Use Collections to find historic, waterfall or family routes fast.",
+    "邊走邊記里程、步數、卡路里、爬升與即時海拔曲線；自動暫停、中斷可復原，離線也能用。": "Track distance, steps, calories, ascent and live elevation as you walk. Auto-pause, crash recovery, works offline.",
+    "走路就能養寵物！從一顆蛋開始，靠里程進化：🥚→🦊→🐅→🐉。撿果實、每天餵食、提升親密度，走越多牠陪你長越快。": "Walk to raise a pet! From an egg it evolves with your distance: 🥚→🦊→🐅→🐉. Collect berries, feed it daily and bond.",
+    "出發前可預載離線地圖，山區沒訊號也看得到；收藏步道、行程可一鍵備份，換手機不怕遺失。": "Preload offline maps before you go. Save trails and back up trips in one tap — safe across phones.",
+    // 雜項補遺
+    "小隊同行": "Team Live", "小隊同行・我是隊長": "Team Live · I'm the leader", "準備": "Ready",
+    "記錄中・在路線上": "Recording · on route",
+    "模擬：沿此步道路線前進": "Simulating along this trail",
+    "此步道尚無分級資料": "No grade data for this trail",
+    "林業及自然保育署「自然步道使用困難度分級標準」": "Forestry Agency trail difficulty standard",
+    "分級數字越大代表越難走。等級依": "Higher numbers mean harder. Grades follow ",
+    "是另一個獨立標記（不是難度等級）：代表這條步道": "is a separate badge (not a grade): it means this trail is ",
+    "一階階進化 —— 走路的里程、餵食、每日任務與好友送的果實，都會讓牠成長。": "and evolves stage by stage — walking, feeding, daily quests and friends' berries all help it grow.",
+    "資料來源：OpenStreetMap 貢獻者（社群步道，詳細資料有限": "Source: OpenStreetMap contributors (community trails, limited details",
+    "美食功能尚未設定（需在 Render 設定 GOOGLE_PLACES_KEY": "Food search not configured (set GOOGLE_PLACES_KEY",
+    "景點功能尚未設定（需在 Render 設定 GOOGLE_PLACES_KEY": "Attractions not configured (set GOOGLE_PLACES_KEY",
+    "全台概覽地圖可離線看了": "Taiwan overview now works offline",
+    "此步道範圍可離線看地圖了": "this trail's area now works offline",
+    "更新失敗": "Update failed", "無法開啟": "Can't open", "翻譯年糕": "Translate",
+    "🅿️ 停車": "🅿️ Parking", "🚻 廁所": "🚻 Restrooms", "🏪 超商": "🏪 Stores", "餐飲": "Food",
+    "（估）": "(est.)", "（我）": "(me)", "（無）": "(none)", "（無名）": "(unnamed)",
+    "🍖 餵食 (3🍓)": "🍖 Feed (3🍓)", "進階者專屬": "For advanced hikers",
+    "到「記錄」分頁開始你的第一條路線": "Start your first route on the Record tab",
+    "足跡熱力圖": "Footprint heatmap", "步道": "Trail",
+    "還沒有可顯示的軌跡，先去走一條吧": "No tracks to show yet — go hike one!",
     // 翻譯年糕
     "🍡 翻譯年糕": "🍡 Translate", "收合翻譯": "Hide translation", "翻譯中…": "Translating…",
     "翻譯失敗，點此重試": "Translation failed — tap to retry",
@@ -461,6 +497,29 @@ const I18n = (() => {
     [/^(\d+)級·(.+)$/, m => `Grade ${m[1]} · ${tx(m[2]) || m[2]}`],
     [/^適合：(.+)　·　建議裝備：(.+)$/, m => `For: ${tx(m[1]) || m[1]} · Gear: ${tx(m[2]) || m[2]}`],
     [/^：(.+)$/, m => { const r = tx(m[1]); return r ? `: ${r}` : null; }],   // <b>標籤</b>：內容 的內容段
+    [/^(.{2,14}失敗)：([^]+)$/, m => { const h = tx(m[1]); return h ? `${h}: ${m[2]}` : null; }],   // ○○失敗：detail
+    [/^⚠️ 偏離步道約 (\d+)m，請確認方向$/, m => `⚠️ ~${m[1]} m off trail — check your direction`],
+    [/^([\d.]+) 公里外$/, m => `${m[1]} km away`],
+    [/^\(含坡度 (.+)\)$/, m => `(3D ${m[1]})`],
+    [/^（含照顧 \+(.+)）$/, m => `(incl. care +${m[1]})`],
+    [/^（降雨 (.+)）$/, m => `(rain ${m[1]})`],
+    [/^驗證碼已寄到 (.+)$/, m => `Code sent to ${m[1]}`],
+    [/^找不到 @(.+)$/, m => `@${m[1]} not found`],
+    [/^還沒有 #(.+) 的貼文$/, m => `No posts for #${m[1]} yet`],
+    [/^🔁 轉發 @(.+)$/, m => `🔁 Reposted @${m[1]}`],
+    [/^我的足跡 · (\d+) 段軌跡$/, m => `My tracks · ${m[1]} segments`],
+    [/^預計重新開放：(.+)$/, m => `Expected to reopen: ${m[1]}`],
+    [/^準備下載約? ?([\d,]+) 張圖磚（約 (.+) MB）…$/, m => `Preparing ${m[1]} tiles (~${m[2]} MB)…`],
+    [/^準備下載 (\d+) 條收藏、約 ([\d,]+) 張圖磚（約 (.+) MB）…$/, m => `Preparing ${m[1]} saved trails, ~${m[2]} tiles (~${m[3]} MB)…`],
+    [/^✅ 已下載 (\d+)\/(\d+) 張圖磚，(.+)$/, m => `✅ Downloaded ${m[1]}/${m[2]} tiles — ${tx(m[3]) || m[3]}`],
+    [/^(\d+) 條收藏步道可離線看地圖了。?$/, m => `${m[1]} saved trails now work offline`],
+    [/^進階功能已全部解鎖(?: ・ 續訂日 (.+))?$/, m => m[1] ? `All premium features unlocked · Renews ${m[1]}` : `All premium features unlocked`],
+    [/^，\s*綜合海拔、坡度、危險地形、天候、路況、長度等 10 項因子評定。$/, () => ", weighted across 10 factors (altitude, slope, hazards, weather, surface, length…)."],
+    [/^，特別適合帶小孩。一條步道可能同時是「輕鬆」難度又被標為「親子友善」。$/, () => ", great for kids. A trail can be both “Easy” and “Family-friendly”."],
+    [/^·\s*已走 ([\d.]+) km$/, m => `· ${m[1]} km walked`],
+    [/^(.+)（(\d+) 次）$/, m => `${m[1]} (${m[2]}×)`],
+    [/^免費離線地圖額度不足（剩 (.+) MB，這次約需 (.+) MB），升級 Premium 無限下載$/,
+      m => `Not enough free offline quota (${m[1]} MB left, needs ~${m[2]} MB) — upgrade to Premium for unlimited`],
   ];
   const ATTRS = ["placeholder", "title", "aria-label"];
 
@@ -469,8 +528,19 @@ const I18n = (() => {
     if (s == null) return null;
     const k = s.trim();
     if (!k || !/[一-鿿]/.test(k)) return null;   // 沒中文就不必查
-    const hit = DICT[k];
+    let hit = DICT[k];
     if (hit) return hit;
+    // 句尾標點正規化：詞條可能沒收句尾的 。／）／：，逐步剝掉再查（補回對應英文標點）
+    let base = k, tail = "";
+    for (let i = 0; i < 2 && base; i++) {
+      const last = base[base.length - 1];
+      if (last === "。" || last === "．") { base = base.slice(0, -1); tail = "." ; }
+      else if (last === "）") { base = base.slice(0, -1); tail = ")" + tail; }
+      else if (last === "：") { base = base.slice(0, -1); tail = ":" + tail; }
+      else break;
+      hit = DICT[base];
+      if (hit) return hit + (tail === "." ? "" : tail);
+    }
     for (const [re, fn] of PATTERNS) { const m = k.match(re); if (m) { const r = fn(m); if (r) return r; } }
     return null;
   }
