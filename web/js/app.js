@@ -916,6 +916,7 @@ function conditionBanner(t) {
     return `<div class="cond-banner ${closed ? "danger" : "warn"}">
       <div class="cond-h">${closed ? "⛔" : "⚠️"} ${c.status}${c.section ? `（${c.section}）` : ""}</div>
       ${c.title ? `<div class="cond-body">${c.title}</div>` : ""}
+      ${(c.title && typeof I18n !== "undefined" && I18n.lang() !== "zh") ? `<div class="pv-tr-row"><button class="link-btn" id="condTranslate">${ic("translate")} ${ttT("翻譯年糕")}</button></div><div class="cond-body pv-cap-tr" id="condTr" style="display:none"></div>` : ""}
       ${c.reopen ? `<div class="cond-meta">預計重新開放：${fmtYmd(c.reopen)}　${c.dep || ""}</div>` : ""}
       <div class="cond-meta">資料來源：林業及自然保育署（請以官方公告為準）${condStamp()}</div>
     </div>`;
@@ -1047,6 +1048,20 @@ async function openDetail(id) {
     <button class="btn primary" id="btnGoRecord">${ic("pin")}在此步道開始記錄</button>
     <div style="font-size:11px;color:var(--ink-soft);text-align:center;margin-top:14px">${credit}</div>
   `;
+  // 路況公告翻譯年糕（非中文介面）：官方公告原文翻成介面語言
+  const ctr = $("#condTranslate");
+  if (ctr) ctr.addEventListener("click", async () => {
+    const out = $("#condTr"); if (!out) return;
+    if (out.style.display !== "none") { out.style.display = "none"; ctr.innerHTML = `${ic("translate")} ${ttT("翻譯年糕")}`; return; }
+    if (out.dataset.done) { out.style.display = "block"; ctr.innerHTML = `${ic("translate")} ${ttT("收合翻譯")}`; return; }
+    ctr.disabled = true; ctr.textContent = ttT("翻譯中…");
+    const src = (t.condition && [t.condition.title, t.condition.content].filter(Boolean).join("\n")) || "";
+    const tr = (typeof ttTranslate === "function" && src) ? await ttTranslate(src, ttTrTarget()) : null;
+    ctr.disabled = false;
+    if (!tr) { ctr.textContent = ttT("翻譯失敗，點此重試"); return; }
+    out.textContent = tr; out.dataset.done = "1"; out.style.display = "block";
+    ctr.innerHTML = `${ic("translate")} ${ttT("收合翻譯")}`;
+  });
   // 介紹文翻譯年糕（英文介面）：翻成英文、可收合
   const gtr = $("#guideTranslate");
   if (gtr) gtr.addEventListener("click", async () => {

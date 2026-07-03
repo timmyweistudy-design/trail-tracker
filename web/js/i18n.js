@@ -162,6 +162,22 @@ const I18n = (() => {
     "重新整理": "Refresh",
     // 路面/季節（詳細資料）
     "泥土": "Dirt", "未鋪面": "Unpaved", "木棧道": "Boardwalk", "水泥": "Concrete", "碎石": "Gravel",
+    "緩": "Gentle", "中": "Moderate", "陡": "Steep", "注意": "Caution",
+    "此步道非林業署轄管，目前無即時封閉公告來源。出發前請查詢當地主管單位公告或近期山友回報。": "This trail isn't managed by the Forestry Agency, so there's no live closure feed. Check local authority notices or recent hiker reports before you go.",
+    "山徑": "Trail path", "原始山徑": "Rugged trail", "土徑": "Dirt path", "土石路": "Dirt-gravel road",
+    "土石路面": "Dirt-gravel surface", "土路面": "Dirt surface", "碎石路": "Gravel road", "碎石山徑": "Gravel trail",
+    "細碎石": "Fine gravel", "碎石鋪面": "Gravel surface", "石子路": "Pebble road", "石板": "Stone slabs",
+    "石板步道": "Stone-slab path", "石板階梯": "Stone-slab steps", "石砌": "Stonework", "石階": "Stone steps",
+    "砌石階梯": "Stone steps", "階梯": "Steps", "木階梯": "Wooden steps", "土木階梯": "Earth-and-wood steps",
+    "枕木階梯": "Sleeper steps", "枕木步道": "Sleeper path", "枕木": "Sleepers", "木棧橋": "Wooden footbridge",
+    "棧橋": "Trestle bridge", "棧道": "Boardwalk", "木棧階梯": "Boardwalk steps", "吊橋": "Suspension bridge",
+    "吊索橋": "Suspension bridge", "產業道路": "Farm road", "柏油": "Asphalt", "沙地": "Sand", "泥濘": "Muddy",
+    "草坡": "Grassy slope", "攀岩": "Rock scramble", "木梯": "Wooden ladder", "木爬梯": "Wooden ladder",
+    "溪床步道": "Creek-bed path", "壓實土石": "Compacted earth", "鐵道": "Rail path", "木馬道": "Log-sled path",
+    "石礫": "Gravel", "混凝土階梯": "Concrete steps", "枕木碎石步道": "Sleeper-gravel path",
+    "枕木石板步道": "Sleeper-slab path", "粉砂路面": "Silty surface", "水泥產業道路": "Concrete farm road",
+    "原木及碎木屑鋪設": "Log and wood-chip surface", "枕木棧道": "Sleeper boardwalk", "枕木碎步道": "Sleeper path",
+    "枕木階梯步道": "Sleeper-step path", "土徑步道": "Dirt path", "溪床": "Creek bed", "水泥鋪面": "Concrete surface",
     "鋪面": "Paved", "岩石": "Rock", "石階、山徑、木棧道": "Stone steps, trail & boardwalk",
     "四季皆宜": "All seasons", "全年": "Year-round", "全年適宜": "Year-round", "全年皆宜": "Year-round",
     "春": "Spring", "秋季": "Autumn", "秋冬季": "Autumn–winter", "冬季及春季較佳": "Best in winter & spring",
@@ -571,7 +587,7 @@ const I18n = (() => {
     [/^，\s*綜合海拔、坡度、危險地形、天候、路況、長度等 10 項因子評定。$/, () => ", weighted across 10 factors (altitude, slope, hazards, weather, surface, length…)."],
     [/^，特別適合帶小孩。一條步道可能同時是「輕鬆」難度又被標為「親子友善」。$/, () => ", great for kids. A trail can be both “Easy” and “Family-friendly”."],
     [/^·\s*已走 ([\d.]+) km$/, m => `· ${m[1]} km walked`],
-    [/^(.+)（(\d+) 次）$/, m => `${m[1]} (${m[2]}×)`],
+    [/^(.+)（(\d+) 次）$/, m => `${tx(m[1]) || m[1]} (${m[2]}×)`],
     [/^免費離線地圖額度不足（剩 (.+) MB，這次約需 (.+) MB），升級 Premium 無限下載$/,
       m => `Not enough free offline quota (${m[1]} MB left, needs ~${m[2]} MB) — upgrade to Premium for unlimited`],
     [/^共 (\d+) 條步道$/, m => `${m[1]} trails`],
@@ -612,9 +628,14 @@ const I18n = (() => {
     [/^最高 ([\d.]+)m$/, m => `High ${m[1]}m`],
     [/^累積爬升 ↑([\d.]+)m$/, m => `Ascent ↑${m[1]}m`],
     [/^全長約 ([\d.]+)km$/, m => `Length ~${m[1]} km`],
-    [/^(暫停開放|部分封閉|封閉)（(.+)）$/, m => `${tx(m[1]) || m[1]} (${tx(m[2]) || m[2]})`],
+    [/^(暫停開放|部分封閉|封閉|注意)（(.+)）$/, m => `${tx(m[1]) || m[1]} (${tx(m[2]) || m[2]})`],
     [/^資料來源：林業及自然保育署即時路況$/, () => "Source: Forestry Agency live trail status"],
     [/^即時更新於 (.+)$/, m => `updated ${m[1]}`],
+    [/^[^、]{1,10}(?:、[^、]{1,10})+$/, m => {
+      const parts = m[0].split("、"); let hit = false;
+      const out = parts.map(p => { const r = tx(p.trim()); if (r) hit = true; return r || p; });
+      return hit ? out.join(", ") : null;
+    }],
     // 全形空格串接的複合節點（路面季節交通列、天氣現況列、海拔剖面統計列）：逐段翻、翻得動才替換。放最後。
     [/^[^　]+(?:　[^　]+)+$/, m => {
       const parts = m[0].split("　"); let hit = false;
@@ -625,6 +646,25 @@ const I18n = (() => {
   // 西班牙語字典（機翻底稿＋172 條人工校正）——key 與 DICT 完全相同
   const ES_DICT = {
     "天・": "días ·", "出發前仍請留意現場天候與狀況": "Revisa el clima y las condiciones del lugar antes de salir",
+    "緩": "Suave", "中": "Media", "陡": "Empinada", "注意": "Precaución",
+    "此步道非林業署轄管，目前無即時封閉公告來源。出發前請查詢當地主管單位公告或近期山友回報。": "Este sendero no depende de la Agencia Forestal y no hay avisos de cierre en vivo. Consulta avisos locales o reportes recientes antes de salir.",
+    "山徑": "Senda", "原始山徑": "Senda natural", "土徑": "Camino de tierra", "土石路": "Camino de tierra y grava",
+    "土石路面": "Superficie de tierra y grava", "土路面": "Superficie de tierra", "碎石路": "Camino de grava",
+    "碎石山徑": "Senda de grava", "細碎石": "Grava fina", "碎石鋪面": "Superficie de grava", "石子路": "Camino de piedras",
+    "石板": "Losas de piedra", "石板步道": "Sendero de losas", "石板階梯": "Escalones de losa", "石砌": "Mampostería",
+    "石階": "Escalones de piedra", "砌石階梯": "Escalones de piedra", "階梯": "Escalones", "木階梯": "Escalones de madera",
+    "土木階梯": "Escalones de tierra y madera", "枕木階梯": "Escalones de traviesas", "枕木步道": "Sendero de traviesas",
+    "枕木": "Traviesas", "木棧橋": "Pasarela de madera", "棧橋": "Pasarela", "棧道": "Pasarela de madera",
+    "木棧階梯": "Escalones de pasarela", "吊橋": "Puente colgante", "吊索橋": "Puente colgante",
+    "產業道路": "Camino rural", "柏油": "Asfalto", "沙地": "Arena", "泥濘": "Barro", "草坡": "Ladera de hierba",
+    "攀岩": "Trepada en roca", "木梯": "Escalera de madera", "木爬梯": "Escalera de madera",
+    "溪床步道": "Sendero de lecho de arroyo", "壓實土石": "Tierra compactada", "鐵道": "Vía férrea",
+    "木馬道": "Camino de troncos", "石礫": "Grava", "混凝土階梯": "Escalones de hormigón",
+    "枕木碎石步道": "Sendero de traviesas y grava", "枕木石板步道": "Sendero de traviesas y losas",
+    "粉砂路面": "Superficie de limo", "水泥產業道路": "Camino rural de hormigón",
+    "原木及碎木屑鋪設": "Superficie de troncos y astillas", "枕木棧道": "Pasarela de traviesas",
+    "枕木碎步道": "Sendero de traviesas", "枕木階梯步道": "Sendero de escalones de traviesas",
+    "土徑步道": "Camino de tierra", "溪床": "Lecho de arroyo", "水泥鋪面": "Superficie de hormigón",
     "記錄": "Registrar", "探索": "Explorar", "社群": "Social",
     "我的": "Yo", "夥伴": "Compañero", "尋徑・分級・記錄你的每一步": "Encuentra senderos · Calificaciones · Sigue cada paso",
     "🔄 有新版本，點此更新": "🔄 Nueva versión: toque para actualizar", "📴 離線模式（地圖與已快取內容仍可用）": "📴 Sin conexión (los mapas en caché aún funcionan)", "取消": "Cancelar",
@@ -732,7 +772,7 @@ const I18n = (() => {
     "我的收藏": "Mis guardados", "未鋪面": "Sin pavimentar", "泥土": "Tierra",
     "重新整理": "Refrescar", "水泥": "Concreto", "鋪面": "Pavimentado",
     "木棧道": "paseo marítimo", "岩石": "Roca", "碎石": "Grava",
-    "全年適宜": "Todo el año", "石階、山徑、木棧道": "Escalones de piedra, sendero y paseo marítimo", "全年皆宜": "Todo el año",
+    "全年適宜": "Todo el año", "石階、山徑、木棧道": "Escalones de piedra, senda y pasarela", "全年皆宜": "Todo el año",
     "四季皆宜": "Todas las estaciones", "全年": "Todo el año", "冬季及春季較佳": "Mejor en invierno y primavera.",
     "標示「": "Senderos marcados “", "秋冬季": "Otoño-invierno", "估": "est.",
     "秋季": "Otoño", "春": "Primavera", "再": "En",
@@ -1031,7 +1071,7 @@ const I18n = (() => {
     [/^，\s*綜合海拔、坡度、危險地形、天候、路況、長度等 10 項因子評定。$/, () => ", ponderado con 10 factores (altitud, pendiente, peligros, clima, superficie, longitud…)."],
     [/^，特別適合帶小孩。一條步道可能同時是「輕鬆」難度又被標為「親子友善」。$/, () => ", ideal para niños. Un sendero puede ser «Fácil» y «Apto para familias» a la vez."],
     [/^·\s*已走 ([\d.]+) km$/, m => `· ${m[1]} km recorridos`],
-    [/^(.+)（(\d+) 次）$/, m => `${m[1]} (${m[2]}×)`],
+    [/^(.+)（(\d+) 次）$/, m => `${tx(m[1]) || m[1]} (${m[2]}×)`],
     [/^免費離線地圖額度不足（剩 (.+) MB，這次約需 (.+) MB），升級 Premium 無限下載$/,
       m => `Cuota sin conexión insuficiente (quedan ${m[1]} MB, se necesitan ~${m[2]} MB) — Premium es ilimitado`],
     [/^共 (\d+) 條步道$/, m => `${m[1]} senderos`],
@@ -1071,9 +1111,14 @@ const I18n = (() => {
     [/^最高 ([\d.]+)m$/, m => `Máx ${m[1]}m`],
     [/^累積爬升 ↑([\d.]+)m$/, m => `Ascenso ↑${m[1]}m`],
     [/^全長約 ([\d.]+)km$/, m => `Longitud ~${m[1]} km`],
-    [/^(暫停開放|部分封閉|封閉)（(.+)）$/, m => `${tx(m[1]) || m[1]} (${tx(m[2]) || m[2]})`],
+    [/^(暫停開放|部分封閉|封閉|注意)（(.+)）$/, m => `${tx(m[1]) || m[1]} (${tx(m[2]) || m[2]})`],
     [/^資料來源：林業及自然保育署即時路況$/, () => "Fuente: estado en vivo de la Agencia Forestal"],
     [/^即時更新於 (.+)$/, m => `actualizado ${m[1]}`],
+    [/^[^、]{1,10}(?:、[^、]{1,10})+$/, m => {
+      const parts = m[0].split("、"); let hit = false;
+      const out = parts.map(p => { const r = tx(p.trim()); if (r) hit = true; return r || p; });
+      return hit ? out.join(", ") : null;
+    }],
     [/^[^　]+(?:　[^　]+)+$/, m => {
       const parts = m[0].split("　"); let hit = false;
       const out = parts.map(p => { const r = tx(p.trim()); if (r) hit = true; return r || p; });
