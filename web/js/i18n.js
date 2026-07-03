@@ -158,6 +158,7 @@ const I18n = (() => {
     "總爬升 ·已校正": "Total ascent · corrected",
     // 社群補遺
     "篇": "posts", "我的收藏": "My saved posts", "隱私與設定": "Privacy & Settings",
+    "天・": "days ·", "出發前仍請留意現場天候與狀況": "Check on-site weather and conditions before heading out",
     "重新整理": "Refresh",
     // 路面/季節（詳細資料）
     "泥土": "Dirt", "未鋪面": "Unpaved", "木棧道": "Boardwalk", "水泥": "Concrete", "碎石": "Gravel",
@@ -603,9 +604,27 @@ const I18n = (() => {
     [/^Wikimedia Commons · 左右滑看更多$/, () => "Wikimedia Commons · swipe for more"],
     [/^」的步道為社群（OpenStreetMap）資料，依步道實際長度推估等級，僅供參考；\s*林業署步道則為官方正式分級。出發前請再查詢即時路況與天氣。$/,
       () => "” are community (OpenStreetMap) trails with grades estimated from length — reference only. Forestry Agency trails carry official grades. Check live conditions and weather before you go."],
+
+    [/^([\d,]+) 大卡$/, m => `${m[1]} kcal`],
+    [/^濕度 (\d+)%$/, m => `Humidity ${m[1]}%`],
+    [/^風 ([\d.]+) km\/h$/, m => `Wind ${m[1]} km/h`],
+    [/^最低 ([\d.]+)m$/, m => `Low ${m[1]}m`],
+    [/^最高 ([\d.]+)m$/, m => `High ${m[1]}m`],
+    [/^累積爬升 ↑([\d.]+)m$/, m => `Ascent ↑${m[1]}m`],
+    [/^全長約 ([\d.]+)km$/, m => `Length ~${m[1]} km`],
+    [/^(暫停開放|部分封閉|封閉)（(.+)）$/, m => `${tx(m[1]) || m[1]} (${tx(m[2]) || m[2]})`],
+    [/^資料來源：林業及自然保育署即時路況$/, () => "Source: Forestry Agency live trail status"],
+    [/^即時更新於 (.+)$/, m => `updated ${m[1]}`],
+    // 全形空格串接的複合節點（路面季節交通列、天氣現況列、海拔剖面統計列）：逐段翻、翻得動才替換。放最後。
+    [/^[^　]+(?:　[^　]+)+$/, m => {
+      const parts = m[0].split("　"); let hit = false;
+      const out = parts.map(p => { const r = tx(p.trim()); if (r) hit = true; return r || p; });
+      return hit ? out.join("　") : null;
+    }],
   ];
   // 西班牙語字典（機翻底稿＋172 條人工校正）——key 與 DICT 完全相同
   const ES_DICT = {
+    "天・": "días ·", "出發前仍請留意現場天候與狀況": "Revisa el clima y las condiciones del lugar antes de salir",
     "記錄": "Registrar", "探索": "Explorar", "社群": "Social",
     "我的": "Yo", "夥伴": "Compañero", "尋徑・分級・記錄你的每一步": "Encuentra senderos · Calificaciones · Sigue cada paso",
     "🔄 有新版本，點此更新": "🔄 Nueva versión: toque para actualizar", "📴 離線模式（地圖與已快取內容仍可用）": "📴 Sin conexión (los mapas en caché aún funcionan)", "取消": "Cancelar",
@@ -710,7 +729,7 @@ const I18n = (() => {
     "步道周邊美食": "Comida cerca", "m 下降": "m · Descenso", "Premium：無限下載": "Premium: descargas ilimitadas",
     "步": "pasos", "回顧軌跡": "Ver ruta", "路線檔": "Archivo GPX",
     "總爬升 ·已校正": "Ascenso total · corregido", "篇": "publicaciones", "隱私與設定": "Privacidad y ajustes",
-    "我的收藏": "Mis guardados", "未鋪面": "Sin pavimentar", "泥土": "Suciedad",
+    "我的收藏": "Mis guardados", "未鋪面": "Sin pavimentar", "泥土": "Tierra",
     "重新整理": "Refrescar", "水泥": "Concreto", "鋪面": "Pavimentado",
     "木棧道": "paseo marítimo", "岩石": "Roca", "碎石": "Grava",
     "全年適宜": "Todo el año", "石階、山徑、木棧道": "Escalones de piedra, sendero y paseo marítimo", "全年皆宜": "Todo el año",
@@ -720,7 +739,7 @@ const I18n = (() => {
     "再走": "Caminar", "揪團活動": "Eventos", "跟著這條路線走": "Seguir esta ruta",
     "熱門趨勢": "Tendencias", "強陣雪": "Nevadas fuertes", "🍡 翻譯年糕": "🍡 Traducir",
     "收合翻譯": "Ocultar traducción", "翻譯中…": "Traduciendo…", "翻譯失敗，點此重試": "Error al traducir — toca para reintentar",
-    "🚌 有公車": "🚌 Acceso al autobús", "🚗 可開車": "🚗 Acceso a la unidad", "· 左右滑看更多": "· desliza para más",
+    "🚌 有公車": "🚌 Hay autobús", "🚗 可開車": "🚗 Acceso en coche", "· 左右滑看更多": "· desliza para más",
     "適合": "Bueno para", "準備就緒，按「開始」記錄路徑": "Listo — toca «Iniciar» para grabar", "查看詳情": "Ver detalles",
     "▶ 開始": "▶ Iniciar", "⏹ 結束": "⏹ Terminar", "公里": "kilómetros",
     "▶ 繼續": "▶ Continuar", "已暫停": "En pausa", "步數": "Pasos",
@@ -1044,6 +1063,22 @@ const I18n = (() => {
     [/^Wikimedia Commons · 左右滑看更多$/, () => "Wikimedia Commons · desliza para ver más"],
     [/^」的步道為社群（OpenStreetMap）資料，依步道實際長度推估等級，僅供參考；\s*林業署步道則為官方正式分級。出發前請再查詢即時路況與天氣。$/,
       () => "» son senderos comunitarios (OpenStreetMap) con niveles estimados por longitud — solo referencia. Los de la Agencia Forestal tienen nivel oficial. Consulta el estado y el clima antes de salir."],
+
+    [/^([\d,]+) 大卡$/, m => `${m[1]} kcal`],
+    [/^濕度 (\d+)%$/, m => `Humedad ${m[1]}%`],
+    [/^風 ([\d.]+) km\/h$/, m => `Viento ${m[1]} km/h`],
+    [/^最低 ([\d.]+)m$/, m => `Mín ${m[1]}m`],
+    [/^最高 ([\d.]+)m$/, m => `Máx ${m[1]}m`],
+    [/^累積爬升 ↑([\d.]+)m$/, m => `Ascenso ↑${m[1]}m`],
+    [/^全長約 ([\d.]+)km$/, m => `Longitud ~${m[1]} km`],
+    [/^(暫停開放|部分封閉|封閉)（(.+)）$/, m => `${tx(m[1]) || m[1]} (${tx(m[2]) || m[2]})`],
+    [/^資料來源：林業及自然保育署即時路況$/, () => "Fuente: estado en vivo de la Agencia Forestal"],
+    [/^即時更新於 (.+)$/, m => `actualizado ${m[1]}`],
+    [/^[^　]+(?:　[^　]+)+$/, m => {
+      const parts = m[0].split("　"); let hit = false;
+      const out = parts.map(p => { const r = tx(p.trim()); if (r) hit = true; return r || p; });
+      return hit ? out.join("　") : null;
+    }],
   ];
 
   // 語言表：加新語言＝加一組 { D, P }（key 一律是中文原文；詳見 docs/i18n.md）
