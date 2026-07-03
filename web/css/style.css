@@ -422,6 +422,12 @@ body {
   width: auto; flex: 0 0 auto; margin-top: 0; padding: 8px 14px;
   font-size: 13px; white-space: nowrap; letter-spacing: 0; }
 .notif-acts { display: flex; gap: 8px; margin-top: 8px; }
+/* 留言/內文翻譯年糕輸出 */
+.pv-cap-tr { border-left: 3px solid var(--accent); padding-left: 10px; color: var(--ink-soft); }
+.pv-cm-tr { font-size: 12.5px; color: var(--ink-soft); border-left: 2px solid var(--accent); padding-left: 8px; margin: 3px 0 2px; }
+.cm-tr { background: none; border: none; color: var(--ink-faint); cursor: pointer; padding: 2px 6px; }
+.cm-tr .ic { width: 13px; height: 13px; }
+.pv-tr-row { margin: 2px 0 6px; }
 
 /* ---------- Recorder ---------- */
 /* 記錄頁儀表：襯線英雄數據 + 分隔數據條（山誌風） */

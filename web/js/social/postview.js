@@ -205,6 +205,7 @@ const PostView = (() => {
   function cmName(cm) { return esc((cm.author && (cm.author.display_name || cm.author.handle)) || "山友"); }
   function cmBody(b) { return (typeof Feed !== "undefined" && Feed.richText) ? Feed.richText(b) : esc(b); }
 
+  const _cmBodies = {};   // 留言原文（翻譯年糕用）
   async function loadComments(wrap, postId) {
     const c = Supa.client();
     const me = wrap.dataset.me, postAuthor = wrap.dataset.author;
@@ -228,10 +229,13 @@ const PostView = (() => {
     const row = (cm, isReply) => {
       const canDel = cm.author_id === me || postAuthor === me;
       const n = cl.counts[cm.id] || 0, liked = cl.mine.has(cm.id);
+      _cmBodies[cm.id] = cm.body || "";
       return `<div class="pv-cm ${isReply ? "pv-cm-reply" : ""}" data-id="${cm.id}">
         <div class="pv-cm-main"><b>${cmName(cm)}</b> ${cmBody(cm.body)}</div>
+        <div class="pv-cm-tr" data-for="${cm.id}" style="display:none"></div>
         <div class="pv-cm-act">
           <button class="cm-like ${liked ? "on" : ""}" data-id="${cm.id}">${liked ? "❤️" : "🤍"}<span>${n || ""}</span></button>
+          <button class="cm-tr" data-id="${cm.id}" title="翻譯" aria-label="翻譯">${ic("translate")}</button>
           ${!isReply ? `<button class="cm-reply" data-id="${cm.id}" data-name="${cmName(cm)}">回覆</button>` : ""}
           ${canDel ? `<button class="cm-del" data-id="${cm.id}" aria-label="刪除">✕</button>` : ""}
         </div></div>`;
@@ -248,6 +252,18 @@ const PostView = (() => {
       await Posts.toggleCommentLike(b.dataset.id, on);
     }));
     box.querySelectorAll(".cm-reply").forEach(b => b.addEventListener("click", () => setReplyTarget(wrap, b.dataset.id, b.dataset.name)));
+    // 留言翻譯年糕：翻成介面語言、再點收合
+    box.querySelectorAll(".cm-tr").forEach(b => b.addEventListener("click", async () => {
+      const out = box.querySelector(`.pv-cm-tr[data-for="${b.dataset.id}"]`); if (!out) return;
+      if (out.style.display !== "none") { out.style.display = "none"; return; }
+      if (out.dataset.done) { out.style.display = "block"; return; }
+      const en = (typeof I18n !== "undefined" && I18n.lang() === "en");
+      b.disabled = true;
+      const t = await translateText(_cmBodies[b.dataset.id] || "", en ? "en" : "zh-TW");
+      b.disabled = false;
+      if (!t) { if (typeof toast === "function") toast(en ? "Translation failed" : "翻譯失敗，稍後再試"); return; }
+      out.textContent = t; out.dataset.done = "1"; out.style.display = "block";
+    }));
     box.querySelectorAll(".pv-cm .mention").forEach(b => b.addEventListener("click", () => { if (typeof Discover !== "undefined") Discover.openByHandle(b.dataset.handle); }));
     box.querySelectorAll(".pv-cm .ht").forEach(b => b.addEventListener("click", () => { const x = wrap.querySelector("#pvX"); if (x) x.click(); if (typeof Feed !== "undefined") Feed.openTag(b.dataset.tag); }));
   }

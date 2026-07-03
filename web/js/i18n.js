@@ -285,7 +285,10 @@ const I18n = (() => {
     "赤陶": "Terracotta", "森綠": "Forest", "暮紫": "Dusk", "海藍": "Sea", "楓紅": "Maple", "金": "Gold",
     "銀": "Silver", "翡翠": "Emerald", "紅寶": "Ruby", "藍寶": "Sapphire", "玫瑰": "Rose", "松綠": "Pine",
     // ── 進階分析 / 年度回顧 ──
-    "個人紀錄": "Personal records", "單次最長": "Longest hike", "單次最大爬升": "Biggest ascent",
+    "個人紀錄": "Personal records",
+    "個人紀錄・配速・難度分布・年度比較・一週節律・匯出 CSV/GPX": "Records · Pace · Difficulty · Yearly compare · Weekly rhythm · CSV/GPX export",
+    // 一週節律星期字（單字縮寫）
+    "日": "S", "一": "M", "二": "T", "三": "W", "四": "T", "五": "F", "六": "S", "單次最長": "Longest hike", "單次最大爬升": "Biggest ascent",
     "最快平均配速": "Fastest pace", "整體平均配速": "Average pace", "最常走": "Most walked",
     "配速趨勢": "Pace trend", "難度分布": "Difficulty spread", "年度里程": "Yearly distance", "一週節律": "Weekly rhythm",
     "每月里程": "Monthly distance", "每月卡路里消耗": "Monthly calories",
@@ -298,7 +301,7 @@ const I18n = (() => {
     "已下載全部 GPX": "All GPX downloaded",
     "我的山行回顧": "My Year on the Trails", "趟旅程": "trips", "公尺爬升": "m ascent", "小時": "hours",
     "條步道": "trails", "最遠的一條 ‧": "Longest ‧", "最高造訪海拔": "Highest point", "最常出門": "Most active month",
-    "最愛步道": "Favorite trail", "較去年里程": "vs last year", "座玉山": "× Yushan",
+    "最愛步道": "Favorite trail", "較去年里程": "vs last year", "座玉山": "× Yushan", "玉山": "Yushan",
     "↑ 累積爬升約": "↑ Total ascent ≈", "存成圖片": "Save image", "已存成圖片": "Image saved",
     "已複製回顧文字": "Recap copied", "產生圖片失敗": "Image failed",
     "分享": "Share",
@@ -567,6 +570,12 @@ const I18n = (() => {
     [/^(.+)・已走$/, m => `${tx(m[1]) || m[1]} · walked`],
     [/^進化圖鑑（共 (\d+) 階）$/, m => `Evolution stages (${m[1]} total)`],
     [/^成長里程 ([\d.]+) km 解鎖$/, m => `Unlocks at ${m[1]} growth km`],
+    [/^km ・ ↑(\d+)m ・ (\d+)次$/, m => `km · ↑${m[1]}m · ${m[2]}×`],
+    [/^近 (\d+) 趟平均配速（km\/h，由舊到新）$/, m => `Avg pace, last ${m[1]} trips (km/h, oldest→newest)`],
+    [/^(\d{1,2}) 月$/, m => ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][+m[1] - 1] || m[0]],
+    [/^↑ 累積爬升約 ([\d.]+) 座玉山$/, m => `↑ Total ascent ≈ ${m[1]}× Yushan`],
+    [/^(\d{4}) 還沒有行程，今年一起多走幾趟吧！$/, m => `No trips in ${m[1]} yet — let's hit the trails this year!`],
+    [/^最遠的一條 ‧ (.+)（([\d.]+) km）$/, m => `Longest one · ${m[1]} (${m[2]} km)`],
     [/^Wikimedia Commons · 左右滑看更多$/, () => "Wikimedia Commons · swipe for more"],
     [/^」的步道為社群（OpenStreetMap）資料，依步道實際長度推估等級，僅供參考；\s*林業署步道則為官方正式分級。出發前請再查詢即時路況與天氣。$/,
       () => "” are community (OpenStreetMap) trails with grades estimated from length — reference only. Forestry Agency trails carry official grades. Check live conditions and weather before you go."],
@@ -647,5 +656,7 @@ async function ttTranslate(text, target) {
   } catch (e) { /* 放棄 */ }
   return null;
 }
+// 純 JS 產生的文字（canvas 圖卡等，不經過 DOM 觀察器）用這個包一層
+function ttT(str) { try { return (I18n.lang() === "en" && I18n.tx(str)) || str; } catch (e) { return str; } }
 // 顯示用日期/時間的 locale（英文介面用英文月份與 AM/PM）
 function ttLocale() { return I18n.lang() === "en" ? "en-US" : "zh-TW"; }

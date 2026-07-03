@@ -1736,9 +1736,9 @@ async function shareHikeCard(rec) {
     // 大數字：距離
     x.fillStyle = "#fbf8ee"; x.font = "600 132px 'Fraunces', serif";
     x.fillText((rec.distanceKm || 0).toFixed(2), 70, 900);
-    x.fillStyle = "rgba(231,237,222,.7)"; x.font = "500 40px serif"; x.fillText("公里", 72, 952);
+    x.fillStyle = "rgba(231,237,222,.7)"; x.font = "500 40px serif"; x.fillText(ttT("公里"), 72, 952);
     // 統計列
-    const stats = [["時間", fmtTime(rec.elapsedMs)], ["爬升", "↑" + (rec.ascent || 0) + "m"], ["大卡", String(rec.kcal || 0)], ["步數", (rec.steps || 0).toLocaleString()]];
+    const stats = [[ttT("時間"), fmtTime(rec.elapsedMs)], [ttT("爬升"), "↑" + (rec.ascent || 0) + "m"], [ttT("大卡"), String(rec.kcal || 0)], [ttT("步數"), (rec.steps || 0).toLocaleString()]];
     const cw = (S - 140) / stats.length;
     stats.forEach(([l, v], i) => {
       const cx = 70 + cw * i;
