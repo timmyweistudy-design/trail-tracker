@@ -2224,6 +2224,36 @@ if (_aBtn) _aBtn.addEventListener("click", () => { if (typeof Premium !== "undef
 // 年度回顧（PRO）
 const _yBtn = $("#btnYearReview");
 if (_yBtn) _yBtn.addEventListener("click", () => { if (typeof Premium !== "undefined" && !Premium.gate()) return; openYearReview(); });
+// 離線地圖包：把快取圖磚打包成單一檔案（備份/給另一台裝置匯入，不必重新下載，也不占下載額度）
+const _pkBox = $("#packBox");
+function _pkMsg(html) { if (_pkBox) { _pkBox.style.display = "block"; _pkBox.innerHTML = html; } }
+$("#btnPackExport").addEventListener("click", async () => {
+  if (typeof ttBusy === "function" && ttBusy("packexp", 4000)) return;
+  const n = await Offline.cachedCount();
+  if (!n) { toast("尚未下載任何離線地圖"); return; }
+  _pkMsg("打包離線地圖中…");
+  try {
+    const r = await Offline.exportPack((done, total) => { if (done % 200 === 0) _pkMsg(`打包離線地圖中… ${done}/${total}`); });
+    if (!r) { _pkMsg("尚未下載任何離線地圖"); return; }
+    const en = (typeof I18n !== "undefined" && I18n.lang() === "en");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(r.blob);
+    a.download = (en ? "gather-the-trail-maps" : "循徑拾光離線地圖") + ".ttmap";
+    a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    _pkMsg(`✅ 已匯出離線地圖包（${r.count} 張、${(r.bytes / 1048576).toFixed(1)} MB）`);
+  } catch (e) { _pkMsg("匯出失敗，請再試一次"); }
+});
+$("#btnPackImport").addEventListener("click", () => $("#packFile").click());
+$("#packFile").addEventListener("change", async e => {
+  const f = e.target.files[0]; e.target.value = "";
+  if (!f) return;
+  _pkMsg("匯入離線地圖中…");
+  try {
+    const n = await Offline.importPack(f, (done, total) => { if (done % 200 === 0) _pkMsg(`匯入離線地圖中… ${done}/${total}`); });
+    _pkMsg(`✅ 已匯入 ${n} 張圖磚，離線可用`);
+    refreshOfflineStatus();
+  } catch (err) { _pkMsg("這不是有效的離線地圖包（.ttmap）"); }
+});
 $("#btnClearTiles").addEventListener("click", async () => {
   if (confirm("確定清除已下載的離線地圖？")) {
     await Offline.clear();

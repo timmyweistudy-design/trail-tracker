@@ -227,6 +227,10 @@ const I18n = (() => {
     "此步道無座標，無法下載地圖": "No coordinates — can't download map",
     "確定清除已下載的離線地圖？": "Clear all downloaded offline maps?",
     "已清除離線地圖": "Offline maps cleared",
+    "匯出離線地圖包": "Export map pack", "匯入離線地圖包": "Import map pack",
+    "打包離線地圖中…": "Packing offline maps…", "匯入離線地圖中…": "Importing offline maps…",
+    "匯出失敗，請再試一次": "Export failed — try again",
+    "這不是有效的離線地圖包（.ttmap）": "Not a valid map pack (.ttmap)",
     "在步道詳情頁按「預載離線地圖」可下載該步道範圍，山區無網路也能看地圖。":
       "Tap “Preload offline map” on a trail page to use maps without signal in the mountains.",
     // ── 我的頁 ──
@@ -565,7 +569,11 @@ const I18n = (() => {
     [/^([\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{1F1E6}-\u{1F1FF}♿️⛰️]\u{FE0F}?)\s*(.+)$/u,
       m => { const r = tx(m[2]); return r ? `${m[1]} ${r}` : null; }],
     [/^隨手拍（(\d+)）$/, m => `Snapshots (${m[1]})`],
-    [/^(.+)　·　已走$/, m => `${m[1]} · walked`],
+    [/^打包離線地圖中… (\d+)\/(\d+)$/, m => `Packing offline maps… ${m[1]}/${m[2]}`],
+    [/^匯入離線地圖中… (\d+)\/(\d+)$/, m => `Importing offline maps… ${m[1]}/${m[2]}`],
+    [/^✅ 已匯出離線地圖包（(\d+) 張、(.+) MB）$/, m => `✅ Map pack exported (${m[1]} tiles, ${m[2]} MB)`],
+    [/^✅ 已匯入 (\d+) 張圖磚，離線可用$/, m => `✅ Imported ${m[1]} tiles — ready offline`],
+    [/^(.+)　·　已走$/, m => `${tx(m[1]) || m[1]} · walked`],   // 名字可能是未命名的階段預設名（emoji+中文）
     [/^適合：(.+)　·　(.+)　·　(.+)$/, m => `For: ${tx(m[1]) || m[1]} · ${tx(m[2]) || m[2]} · ${tx(m[3]) || m[3]}`],
     [/^km（含照顧 \+([\d.]+)）・同行$/, m => `km (incl. care +${m[1]}) · together`],
     [/^km・同行$/, () => `km · together`],

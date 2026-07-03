@@ -84,5 +84,50 @@ const Offline = (() => {
   }
   async function clear() { try { await caches.delete(TILE_CACHE); } catch { /* ignore */ } }
 
-  return { tileList, planZoom, bboxFor, download, cachedCount, clear, enforceCap };
+  // ---- 離線地圖包匯出/匯入（.ttmap）----
+  // 格式：8 bytes（魔數 "TTMP" + 索引長度）+ JSON 索引 + 圖磚原始位元組串接。
+  // 用途：把下載好的圖磚存成一個檔案備份，或傳給朋友/另一台裝置匯入，不必重新下載。
+  const MAGIC = 0x54544d50;   // "TTMP"
+  async function exportPack(onProgress) {
+    const cache = await caches.open(TILE_CACHE);
+    const keys = await cache.keys();
+    if (!keys.length) return null;
+    const parts = [], index = [];
+    let off = 0, done = 0;
+    for (const req of keys) {
+      try {
+        const res = await cache.match(req); if (!res) continue;
+        const buf = await res.arrayBuffer();
+        index.push({ u: req.url, o: off, l: buf.byteLength });
+        parts.push(buf); off += buf.byteLength;
+      } catch { /* 單張略過 */ }
+      done++;
+      if (onProgress) onProgress(done, keys.length);
+    }
+    const head = new TextEncoder().encode(JSON.stringify({ v: 1, tiles: index }));
+    const lenBuf = new ArrayBuffer(8);
+    const dv = new DataView(lenBuf); dv.setUint32(0, MAGIC); dv.setUint32(4, head.byteLength);
+    return { blob: new Blob([lenBuf, head, ...parts], { type: "application/octet-stream" }), count: index.length, bytes: off };
+  }
+  async function importPack(file, onProgress) {
+    const dv = new DataView(await file.slice(0, 8).arrayBuffer());
+    if (dv.getUint32(0) !== MAGIC) throw new Error("badformat");
+    const hl = dv.getUint32(4);
+    const head = JSON.parse(new TextDecoder().decode(await file.slice(8, 8 + hl).arrayBuffer()));
+    const cache = await caches.open(TILE_CACHE);
+    const base = 8 + hl;
+    let done = 0;
+    for (const t of (head.tiles || [])) {
+      try {
+        const buf = await file.slice(base + t.o, base + t.o + t.l).arrayBuffer();
+        await cache.put(t.u, new Response(buf, { headers: { "Content-Type": "image/jpeg" } }));
+      } catch { /* 單張略過 */ }
+      done++;
+      if (onProgress) onProgress(done, head.tiles.length);
+    }
+    enforceCap().catch(() => { });
+    return done;
+  }
+
+  return { tileList, planZoom, bboxFor, download, cachedCount, clear, enforceCap, exportPack, importPack };
 })();
