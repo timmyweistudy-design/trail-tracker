@@ -58,6 +58,9 @@ ok("i18n 規則：X 分鐘前", I18n.tx("5 分鐘前") === "5 min ago");
 ok("i18n 規則：通知含名字", I18n.tx("小明 開始追蹤你") === "小明 started following you");
 ok("i18n 規則：還差 X km", I18n.tx("還差 1.2 km") === "1.2 km to go");
 ok("i18n 不翻無中文字串", I18n.tx("hello 123") === null);
+ok("i18n 上次那行", I18n.tx("上次：象山步道・") === "Last: 象山步道 · ");
+ok("i18n 時程：半天", I18n.tx("半天") === "Half a day");
+ok("i18n 時程：2~3小時", I18n.tx("2~3小時") === "2–3 hr");
 
 // 7) 本地日期
 function localDayOf(d) { const t = new Date(d); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`; }

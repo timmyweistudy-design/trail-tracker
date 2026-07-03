@@ -90,7 +90,9 @@ const PostView = (() => {
       <div class="fc-name fc-author" data-uid="${post.author_id}" style="cursor:pointer">${esc(a.display_name || a.handle || "山友")}${a.pet_level ? ` <span class="lv-chip lvt-${Math.min(a.pet_level,7)}">Lv.${a.pet_level}</span>` : ""}${a.is_premium ? ` <span class="pro-tag">PRO</span>` : ""} <span class="fc-sub">@${esc(a.handle || "")}</span></div>
       <div class="fc-trail">${trailName}　<span class="fc-stats">${post.distance_km != null ? post.distance_km.toFixed(2) + "km" : ""}${post.ascent != null ? "　↑" + post.ascent + "m" : ""}</span>${post.rating ? ` <span class="fc-rate">${"★".repeat(post.rating)}</span>` : ""}</div>
       ${(post.track && post.track.coordinates && post.track.coordinates.length > 1) ? `<div class="pv-map"></div><button class="btn ghost pv-follow" id="pvFollow">${ic("compass")} 跟著這條路線走</button>` : ""}
-      ${post.caption ? `<div class="fc-cap">${(typeof Feed !== "undefined" && Feed.richText) ? Feed.richText(post.caption) : esc(post.caption)}</div>` : ""}
+      ${post.caption ? `<div class="fc-cap">${(typeof Feed !== "undefined" && Feed.richText) ? Feed.richText(post.caption) : esc(post.caption)}</div>
+      <div class="pv-tr-row"><button class="link-btn" id="pvTranslate">🍡 翻譯年糕</button></div>
+      <div class="fc-cap pv-cap-tr" id="pvCapTr" style="display:none"></div>` : ""}
       ${media.map(m => {
         if (m.kind === "video") return `<video class="pv-img" controls preload="metadata" poster="${esc(Media.publicUrl(m.thumb_path || ""))}" src="${esc(Media.publicUrl(m.path))}"></video>`;
         const img = `<img class="pv-img pv-photo" loading="lazy" src="${esc(Media.publicUrl(m.path))}" alt="">`;
@@ -114,6 +116,20 @@ const PostView = (() => {
       const x = wrap.querySelector("#pvX"); if (x) x.click(); else wrap.remove();   // 走正常關閉流程（清掉地圖/頻道）
       const tab = document.querySelector('.tab[data-view="record"]'); if (tab) tab.click();
       setTimeout(() => { if (typeof window.followRoute === "function") window.followRoute(coords); }, 250);
+    });
+    // 🍡 翻譯年糕：把內文翻成使用者的介面語言（原文保留、翻譯顯示在下方，可收合）
+    const trBtn = wrap.querySelector("#pvTranslate");
+    if (trBtn) trBtn.addEventListener("click", async () => {
+      const out = wrap.querySelector("#pvCapTr"); if (!out) return;
+      const en = (typeof I18n !== "undefined" && I18n.lang() === "en");
+      if (out.style.display !== "none") { out.style.display = "none"; trBtn.textContent = en ? "🍡 Translate" : "🍡 翻譯年糕"; return; }
+      if (out.dataset.done) { out.style.display = "block"; trBtn.textContent = en ? "Hide translation" : "收合翻譯"; return; }
+      trBtn.disabled = true; trBtn.textContent = en ? "Translating…" : "翻譯中…";
+      const t = await translateText(post.caption, en ? "en" : "zh-TW");
+      trBtn.disabled = false;
+      if (!t) { trBtn.textContent = en ? "Translation failed — tap to retry" : "翻譯失敗，點此重試"; return; }
+      out.textContent = "🍡 " + t; out.dataset.done = "1"; out.style.display = "block";
+      trBtn.textContent = en ? "Hide translation" : "收合翻譯";
     });
     const rep = wrap.querySelector("#pvReport"); if (rep) rep.addEventListener("click", async () => {
       const reason = await Safety.pickReason(); if (reason === null) return;
@@ -181,6 +197,21 @@ const PostView = (() => {
       else { const r = await Posts.setReaction(postId, e); if (r && r.error) { if (typeof toast === "function") toast("回應失敗，請先更新資料庫"); return; } if (window.ttFloat) window.ttFloat(b, e); }
       loadReactions(wrap, postId);
     }));
+  }
+
+  // 翻譯內文：Google 免金鑰端點優先，失敗退 MyMemory（免費、有每日額度）
+  async function translateText(text, target) {
+    try {
+      const r = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${target}&dt=t&q=${encodeURIComponent(text)}`);
+      if (r.ok) { const j = await r.json(); const out = (j && j[0] ? j[0] : []).map(seg => seg && seg[0]).join(""); if (out) return out; }
+    } catch (e) { /* 換後備 */ }
+    try {
+      const src = /[一-鿿]/.test(text) ? "zh-TW" : "en";
+      if (src === target) return text;
+      const r = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text.slice(0, 450))}&langpair=${src}|${target}`);
+      if (r.ok) { const j = await r.json(); const out = j && j.responseData && j.responseData.translatedText; if (out && !/QUERY LENGTH|INVALID/i.test(out)) return out; }
+    } catch (e) { /* 放棄 */ }
+    return null;
   }
 
   function cmName(cm) { return esc((cm.author && (cm.author.display_name || cm.author.handle)) || "山友"); }

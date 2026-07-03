@@ -82,6 +82,29 @@ const I18n = (() => {
     "林業署": "Forestry Agency", "OSM社群": "OSM community",
     "依步道長度估算（標示「估」，僅供參考": "Estimated from length (marked “est.”, reference only",
     "路面・季節・交通": "Surface · Season · Transport", "建議時程": "Suggested itinerary",
+    // 時程/分級說明
+    "半天": "Half a day", "一天": "One day", "一天以上": "Over a day",
+    "約半天～1 天": "About half a day to 1 day", "1 天以內": "Within 1 day",
+    "1 天或 1～3 天": "1 day, or 1–3 days", "多日行程": "Multi-day trip", "3 天以上": "3+ days",
+    "所有人，含長輩、嬰幼兒車": "Everyone, incl. seniors & strollers",
+    "一般大眾、親子同遊": "General public & families", "體力普通的一般人": "Anyone with average fitness",
+    "有健行經驗、體力較佳者": "Experienced hikers with good fitness", "有登山經驗者": "Experienced mountaineers",
+    "受過訓練的登山者": "Trained mountaineers", "受過雪地訓練的登山者": "Mountaineers with snow training",
+    "輕裝、帶水即可": "Light gear, just bring water", "輕裝、帶水與少許糧食": "Light gear, water & snacks",
+    "輕裝、帶水與適量糧食": "Light gear, water & food", "過夜裝備、足夠飲水食物": "Overnight gear, plenty of food & water",
+    "齊全登山裝備、禦寒衣物": "Full mountaineering gear & warm layers", "完整登山與過夜裝備": "Complete climbing & overnight gear",
+    "雪攀裝備（冰斧、冰爪等）": "Snow gear (ice axe, crampons…)",
+    "路面平整、坡度平緩，連娃娃車和輪椅都能通行。": "Flat, gentle paths — stroller and wheelchair friendly.",
+    "交通方便、路面好走、設施完善，半天到一天就能輕鬆走完。": "Easy access, good surface, full facilities — done in half a day to a day.",
+    "坡度稍陡或有少數比較難走的路段，但設施完善、路面平整，一天內可完成。": "Slightly steep or a few rough spots, but well maintained — doable within a day.",
+    "較偏遠，部分路況較差、坡度較陡，海拔約 2,000～3,000 公尺，可能需要過夜準備。": "More remote, rougher and steeper in places, ~2,000–3,000 m — may need overnight prep.",
+    "高海拔、困難或危險路段較多、坡度陡、天氣多變，需要登山經驗與齊全裝備。": "High altitude, many hard/dangerous sections, steep and changeable weather — needs experience and full gear.",
+    "偏遠高山（約 3,000 公尺以上），路況不佳、危險路段多，需三天以上，建議專業人員帶領。": "Remote high mountains (3,000 m+), poor conditions, many dangers, 3+ days — go with professionals.",
+    "積雪或結冰的高山路線，需要雪地攀登技術與專門裝備。": "Snowy or icy alpine routes — needs snow climbing skills and special gear.",
+    "適合：": "For: ", "建議裝備：": "Gear: ",
+    // 翻譯年糕
+    "🍡 翻譯年糕": "🍡 Translate", "收合翻譯": "Hide translation", "翻譯中…": "Translating…",
+    "翻譯失敗，點此重試": "Translation failed — tap to retry",
     "🚌 有公車": "🚌 Bus access", "🚗 可開車": "🚗 Drive access", "適合": "Good for",
     "· 左右滑看更多": "· swipe for more", "查看詳情": "View details",
     // ── 記錄頁 ──
@@ -432,6 +455,12 @@ const I18n = (() => {
     [/^你常走「(.+)」/, m => `You often hike “${m[1]}”`],
     [/^已選擇「(.+)」$/, m => `Selected “${m[1]}”`],
     [/^(\d+) 趟$/, m => `${m[1]} trips`],
+    [/^上次：(.+)・$/, m => `Last: ${tx(m[1]) || m[1]} · `],
+    [/^已復原上次未結束的記錄（(.+) km），可「繼續」或「結束」$/, m => `Restored unfinished recording (${m[1]} km) — Resume or Finish`],
+    [/^([\d.]+)\s*[~～]\s*([\d.]+)\s*小時$/, m => `${m[1]}–${m[2]} hr`],
+    [/^(\d+)級·(.+)$/, m => `Grade ${m[1]} · ${tx(m[2]) || m[2]}`],
+    [/^適合：(.+)　·　建議裝備：(.+)$/, m => `For: ${tx(m[1]) || m[1]} · Gear: ${tx(m[2]) || m[2]}`],
+    [/^：(.+)$/, m => { const r = tx(m[1]); return r ? `: ${r}` : null; }],   // <b>標籤</b>：內容 的內容段
   ];
   const ATTRS = ["placeholder", "title", "aria-label"];
 
@@ -442,7 +471,7 @@ const I18n = (() => {
     if (!k || !/[一-鿿]/.test(k)) return null;   // 沒中文就不必查
     const hit = DICT[k];
     if (hit) return hit;
-    for (const [re, fn] of PATTERNS) { const m = k.match(re); if (m) return fn(m); }
+    for (const [re, fn] of PATTERNS) { const m = k.match(re); if (m) { const r = fn(m); if (r) return r; } }
     return null;
   }
 
