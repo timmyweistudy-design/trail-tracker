@@ -1524,6 +1524,19 @@ function closeDetail() {
   $("#sheetMask").classList.remove("show");
   $("#detailSheet").classList.remove("show");
 }
+// 詳情頁很長：浮動鈕一鍵到底（在此步道開始記錄）/回頂部，依捲動位置自動換方向
+(() => {
+  const sheet = $("#detailSheet"), jump = $("#detailJump");
+  if (!sheet || !jump) return;
+  const nearBottom = () => sheet.scrollTop + sheet.clientHeight >= sheet.scrollHeight - 220;
+  jump.addEventListener("click", () => {
+    sheet.scrollTo({ top: nearBottom() ? 0 : sheet.scrollHeight, behavior: "smooth" });
+  });
+  sheet.addEventListener("scroll", () => {
+    jump.classList.toggle("up", nearBottom());
+    jump.title = jump.getAttribute("aria-label");
+  }, { passive: true });
+})();
 $("#sheetMask").addEventListener("click", closeDetail);
 $("#closeDetailBtn").addEventListener("click", closeDetail);
 // 下拉關閉手勢（拖曳握把往下滑關閉面板）

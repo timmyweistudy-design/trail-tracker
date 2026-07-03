@@ -159,7 +159,7 @@ const I18n = (() => {
     // 社群補遺
     "篇": "posts", "我的收藏": "My saved posts", "隱私與設定": "Privacy & Settings",
     "天・": "days ·", "出發前仍請留意現場天候與狀況": "Check on-site weather and conditions before heading out",
-    "重新整理": "Refresh",
+    "重新整理": "Refresh", "跳到底部": "Jump to bottom",
     // 路面/季節（詳細資料）
     "泥土": "Dirt", "未鋪面": "Unpaved", "木棧道": "Boardwalk", "水泥": "Concrete", "碎石": "Gravel",
     "緩": "Gentle", "中": "Moderate", "陡": "Steep", "注意": "Caution",
@@ -648,7 +648,7 @@ const I18n = (() => {
   ];
   // 西班牙語字典（機翻底稿＋172 條人工校正）——key 與 DICT 完全相同
   const ES_DICT = {
-    "天・": "días ·", "出發前仍請留意現場天候與狀況": "Revisa el clima y las condiciones del lugar antes de salir",
+    "天・": "días ·", "跳到底部": "Ir al final", "出發前仍請留意現場天候與狀況": "Revisa el clima y las condiciones del lugar antes de salir",
     "緩": "Suave", "中": "Media", "陡": "Empinada", "注意": "Precaución",
     "此步道非林業署轄管，目前無即時封閉公告來源。出發前請查詢當地主管單位公告或近期山友回報。": "Este sendero no depende de la Agencia Forestal y no hay avisos de cierre en vivo. Consulta avisos locales o reportes recientes antes de salir.",
     "山徑": "Senda", "原始山徑": "Senda natural", "土徑": "Camino de tierra", "土石路": "Camino de tierra y grava",
@@ -1134,6 +1134,7 @@ const I18n = (() => {
 
   // 日本語字典（機翻底稿＋297 條人工校正）
   const JA_DICT = {
+    "跳到底部": "一番下へ",
     "社群": "コミュニティ", "記錄": "記録", "探索": "探索",
     "夥伴": "相棒", "我的": "マイページ", "關閉": "閉じる",
     "取消": "キャンセル", "確定": "OK", "了解了": "わかった",

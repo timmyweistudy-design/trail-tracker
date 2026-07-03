@@ -579,6 +579,14 @@ body {
 .op-hint { font-size: 11.5px; color: var(--ink-faint); line-height: 1.55; margin-top: 7px; }
 .op-foot { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--line-soft); display: flex; justify-content: flex-end; }
 
+/* 步道詳情：跳到底部/回頂部 浮動鈕 */
+.detail-jump { position: sticky; bottom: 18px; margin: 0 14px 10px auto; display: flex; align-items: center; justify-content: center;
+  width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface);
+  color: var(--brand-mid); box-shadow: var(--sh-md, 0 4px 14px rgba(0,0,0,.18)); cursor: pointer; z-index: 5; transition: transform .15s; }
+.detail-jump:active { transform: scale(.92); }
+.detail-jump .ic { width: 20px; height: 20px; transition: transform .2s; }
+.detail-jump.up .ic { transform: rotate(180deg); }
+
 /* 我的足跡統計 */
 .mstat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; }
 .mstat { background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 12px 6px; text-align: center; box-shadow: var(--sh-sm); }
