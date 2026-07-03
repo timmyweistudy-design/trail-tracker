@@ -67,6 +67,12 @@ ok("i18n(es) 字典：儲存→Guardar", I18n.tx("儲存") === "Guardar");
 ok("i18n(es) 規則：X 分鐘前", I18n.tx("5 分鐘前") === "hace 5 min");
 ok("i18n(es) 規則：通知含名字", I18n.tx("Ana 開始追蹤你") === "Ana empezó a seguirte");
 localStorage.removeItem("tt_lang");
+// 地名字典後備（i18n-names.js）
+global.window = global.window || {};
+eval(fs.readFileSync(web("i18n-names.js"), "utf8"));
+ok("地名：宜蘭縣→Yilan County", I18n.tx("宜蘭縣") === "Yilan County");
+ok("地名：南澳古道含 Nan'ao", /Nan'ao/.test(I18n.tx("南澳古道") || ""));
+delete global.window.TT_NAMES;
 
 // 7) 本地日期
 function localDayOf(d) { const t = new Date(d); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`; }

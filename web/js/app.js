@@ -616,7 +616,7 @@ function matches(t) {
   if (tags.length) { const tt = tagsOf(t); if (!tags.some(g => tt.includes(g))) return false; }
   if (curQuery) {
     const q = curQuery.toLowerCase().replace(/\s+/g, "");
-    const hay = `${t.name} ${t.position || ""} ${t.region || ""} ${t.system || ""} ${tagsOf(t).join("")}`
+    const hay = `${t.name} ${t.position || ""} ${t.region || ""} ${t.system || ""} ${tagsOf(t).join("")} ${(typeof window !== "undefined" && window.TT_NAMES && window.TT_NAMES[t.name]) || ""}`
       .toLowerCase().replace(/\s+/g, "");
     if (!hay.includes(q)) return false;
   }

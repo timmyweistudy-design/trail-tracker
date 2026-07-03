@@ -554,12 +554,12 @@ const I18n = (() => {
     [/^顯示更多（剩 (\d+) 筆）$/, m => `Show more (${m[1]} left)`],
     [/^今日目標 (.+) km$/, m => `Daily goal ${m[1]} km`],
     [/^偏離步道約 (\d+)m，請確認方向$/, m => `~${m[1]} m off trail — check your direction`],
-    [/^模擬「(.+)」路線$/, m => `Simulating “${m[1]}”`],
-    [/^模擬：沿「(.+)」前進$/, m => `Simulating along “${m[1]}”`],
+    [/^模擬「(.+)」路線$/, m => `Simulating “${tx(m[1]) || m[1]}”`],
+    [/^模擬：沿「(.+)」前進$/, m => `Simulating along “${tx(m[1]) || m[1]}”`],
     [/^已載入路線（(\d+) 點），橘色虛線即參考路徑$/, m => `Route loaded (${m[1]} pts) — orange dashes are the reference`],
     [/^夥伴想去走「(.+)」！$/, m => `Your buddy wants to hike “${tx(m[1]) || m[1]}”!`],
     [/^你常走「(.+)」/, m => `You often hike “${tx(m[1]) || m[1]}”`],
-    [/^已選擇「(.+)」$/, m => `Selected “${m[1]}”`],
+    [/^已選擇「(.+)」$/, m => `Selected “${tx(m[1]) || m[1]}”`],
     [/^(\d+) 趟$/, m => `${m[1]} trips`],
     [/^上次：(.+)・$/, m => `Last: ${tx(m[1]) || m[1]} · `],
     [/^已復原上次未結束的記錄（(.+) km），可「繼續」或「結束」$/, m => `Restored unfinished recording (${m[1]} km) — Resume or Finish`],
@@ -616,7 +616,7 @@ const I18n = (() => {
     [/^(\d{1,2}) 月$/, m => ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][+m[1] - 1] || m[0]],
     [/^↑ 累積爬升約 ([\d.]+) 座玉山$/, m => `↑ Total ascent ≈ ${m[1]}× Yushan`],
     [/^(\d{4}) 還沒有行程，今年一起多走幾趟吧！$/, m => `No trips in ${m[1]} yet — let's hit the trails this year!`],
-    [/^最遠的一條 ‧ (.+)（([\d.]+) km）$/, m => `Longest one · ${m[1]} (${m[2]} km)`],
+    [/^最遠的一條 ‧ (.+)（([\d.]+) km）$/, m => `Longest one · ${tx(m[1]) || m[1]} (${m[2]} km)`],
     [/^Wikimedia Commons · 左右滑看更多$/, () => "Wikimedia Commons · swipe for more"],
     [/^」的步道為社群（OpenStreetMap）資料，依步道實際長度推估等級，僅供參考；\s*林業署步道則為官方正式分級。出發前請再查詢即時路況與天氣。$/,
       () => "” are community (OpenStreetMap) trails with grades estimated from length — reference only. Forestry Agency trails carry official grades. Check live conditions and weather before you go."],
@@ -1038,12 +1038,12 @@ const I18n = (() => {
     [/^顯示更多（剩 (\d+) 筆）$/, m => `Mostrar más (${m[1]} restantes)`],
     [/^今日目標 (.+) km$/, m => `Meta diaria ${m[1]} km`],
     [/^偏離步道約 (\d+)m，請確認方向$/, m => `~${m[1]} m fuera del sendero — revisa tu dirección`],
-    [/^模擬「(.+)」路線$/, m => `Simulando «${m[1]}»`],
-    [/^模擬：沿「(.+)」前進$/, m => `Simulando por «${m[1]}»`],
+    [/^模擬「(.+)」路線$/, m => `Simulando «${tx(m[1]) || m[1]}»`],
+    [/^模擬：沿「(.+)」前進$/, m => `Simulando por «${tx(m[1]) || m[1]}»`],
     [/^已載入路線（(\d+) 點），橘色虛線即參考路徑$/, m => `Ruta cargada (${m[1]} pts) — la línea naranja es la referencia`],
     [/^夥伴想去走「(.+)」！$/, m => `¡Tu compañero quiere ir a «${tx(m[1]) || m[1]}»!`],
     [/^你常走「(.+)」/, m => `Sueles caminar «${tx(m[1]) || m[1]}»`],
-    [/^已選擇「(.+)」$/, m => `Seleccionado: «${m[1]}»`],
+    [/^已選擇「(.+)」$/, m => `Seleccionado: «${tx(m[1]) || m[1]}»`],
     [/^(\d+) 趟$/, m => `${m[1]} salidas`],
     [/^上次：(.+)・$/, m => `Última: ${tx(m[1]) || m[1]} · `],
     [/^已復原上次未結束的記錄（(.+) km），可「繼續」或「結束」$/, m => `Grabación recuperada (${m[1]} km) — Continuar o Terminar`],
@@ -1099,7 +1099,7 @@ const I18n = (() => {
     [/^(\d{1,2}) 月$/, m => ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"][+m[1] - 1] || m[0]],
     [/^↑ 累積爬升約 ([\d.]+) 座玉山$/, m => `↑ Ascenso total ≈ ${m[1]}× Yushan`],
     [/^(\d{4}) 還沒有行程，今年一起多走幾趟吧！$/, m => `Sin salidas en ${m[1]} — ¡a caminar este año!`],
-    [/^最遠的一條 ‧ (.+)（([\d.]+) km）$/, m => `La más larga · ${m[1]} (${m[2]} km)`],
+    [/^最遠的一條 ‧ (.+)（([\d.]+) km）$/, m => `La más larga · ${tx(m[1]) || m[1]} (${m[2]} km)`],
     [/^Wikimedia Commons · 左右滑看更多$/, () => "Wikimedia Commons · desliza para ver más"],
     [/^」的步道為社群（OpenStreetMap）資料，依步道實際長度推估等級，僅供參考；\s*林業署步道則為官方正式分級。出發前請再查詢即時路況與天氣。$/,
       () => "» son senderos comunitarios (OpenStreetMap) con niveles estimados por longitud — solo referencia. Los de la Agencia Forestal tienen nivel oficial. Consulta el estado y el clima antes de salir."],
@@ -1150,6 +1150,8 @@ const I18n = (() => {
       hit = T.D[base];
       if (hit) return hit + (tail === "." ? "" : tail);
     }
+    // 地名字典（i18n-names.js 延遲載入）：步道名/縣市/鄉鎮的英文名，各語言共用（專有名詞用羅馬拼音）
+    if (typeof window !== "undefined" && window.TT_NAMES && window.TT_NAMES[k]) return window.TT_NAMES[k];
     for (const [re, fn] of T.P) { const m = k.match(re); if (m) { const r = fn(m); if (r) return r; } }
     return null;
   }
@@ -1175,6 +1177,13 @@ const I18n = (() => {
     const l = lang();
     if (l === "zh" || !LANGS[l]) return;
     document.documentElement.lang = l;
+    // 地名字典（~85KB）只在非中文介面載，載完重翻整頁讓既有的步道名/縣市也換掉
+    try {
+      const sc = document.createElement("script");
+      sc.src = "js/i18n-names.js";
+      sc.onload = () => { try { walk(document.body); } catch (e) { /* */ } };
+      document.head.appendChild(sc);
+    } catch (e) { /* 載不到就只翻介面字 */ }
     walk(document.body);
     const obs = new MutationObserver(muts => {
       for (const m of muts) {
