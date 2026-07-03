@@ -199,20 +199,8 @@ const PostView = (() => {
     }));
   }
 
-  // 翻譯內文：Google 免金鑰端點優先，失敗退 MyMemory（免費、有每日額度）
-  async function translateText(text, target) {
-    try {
-      const r = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${target}&dt=t&q=${encodeURIComponent(text)}`);
-      if (r.ok) { const j = await r.json(); const out = (j && j[0] ? j[0] : []).map(seg => seg && seg[0]).join(""); if (out) return out; }
-    } catch (e) { /* 換後備 */ }
-    try {
-      const src = /[一-鿿]/.test(text) ? "zh-TW" : "en";
-      if (src === target) return text;
-      const r = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text.slice(0, 450))}&langpair=${src}|${target}`);
-      if (r.ok) { const j = await r.json(); const out = j && j.responseData && j.responseData.translatedText; if (out && !/QUERY LENGTH|INVALID/i.test(out)) return out; }
-    } catch (e) { /* 放棄 */ }
-    return null;
-  }
+  // 翻譯內文：共用 i18n.js 的全域 ttTranslate
+  function translateText(text, target) { return (typeof ttTranslate === "function") ? ttTranslate(text, target) : Promise.resolve(null); }
 
   function cmName(cm) { return esc((cm.author && (cm.author.display_name || cm.author.handle)) || "山友"); }
   function cmBody(b) { return (typeof Feed !== "undefined" && Feed.richText) ? Feed.richText(b) : esc(b); }

@@ -950,7 +950,9 @@ html[data-theme="dark"] img.trail-photo { background: var(--surface-2); }
 .pf-name { font-family: var(--serif); font-size: 20px; font-weight: 700; color: var(--ink); }
 .pf-handle { color: var(--ink-faint); font-size: 13px; margin-top: 2px; }
 .pf-pet { display: inline-flex; align-items: center; gap: 6px; margin: 13px 0 2px; padding: 6px 13px; background: var(--accent-soft); border-radius: 999px; font-size: 13px; color: var(--accent); font-weight: 600; }
-.pf-counts { margin: 10px 0 2px; font-size: 13.5px; color: var(--ink-soft); }
+.pf-counts { margin: 10px 0 2px; font-size: 13.5px; color: var(--ink-soft); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
+.pf-counts .cnt-link { margin-right: 10px; }
+.pf-counts .cnt-link:last-child { margin-right: 0; }
 .pf-counts b { color: var(--ink); font-family: var(--num); }
 .pf-bio { margin: 10px 0; line-height: 1.7; color: var(--ink); font-size: 14px; }
 .pf-actions { margin: 14px 0; }

@@ -1026,7 +1026,7 @@ async function openDetail(id) {
     <div id="weatherBox"><div class="food-loading"><span class="spin"></span>查詢天氣中…</div></div>
     ${metaHtml}
     ${hasGeo ? `<div class="section-title collapsible" id="secElev">${ic("mountain")}海拔剖面</div><div id="profileBox"><div class="food-loading"><span class="spin"></span>計算海拔剖面中…</div></div>` : ""}
-    ${t.guide ? `<div class="guide">${t.guide.replace(/\n/g, "<br>")}</div>` : ""}
+    ${t.guide ? `<div class="guide">${t.guide.replace(/\n/g, "<br>")}</div>${(typeof I18n !== "undefined" && I18n.lang() === "en") ? `<div class="pv-tr-row"><button class="link-btn" id="guideTranslate">${ic("translate")} Translate</button></div><div class="guide pv-cap-tr" id="guideTr" style="display:none"></div>` : ""}` : ""}
     <div class="link-row">
       ${nav ? `<a class="link-btn" href="${nav}" target="_blank" rel="noopener">${ic("compass")} 導航</a>` : ""}
       <a class="link-btn" href="${moreSearch}" target="_blank" rel="noopener">${ic("search")} 查資訊</a>
@@ -1047,6 +1047,19 @@ async function openDetail(id) {
     <button class="btn primary" id="btnGoRecord">${ic("pin")}在此步道開始記錄</button>
     <div style="font-size:11px;color:var(--ink-soft);text-align:center;margin-top:14px">${credit}</div>
   `;
+  // 介紹文翻譯年糕（英文介面）：翻成英文、可收合
+  const gtr = $("#guideTranslate");
+  if (gtr) gtr.addEventListener("click", async () => {
+    const out = $("#guideTr"); if (!out) return;
+    if (out.style.display !== "none") { out.style.display = "none"; gtr.innerHTML = `${ic("translate")} Translate`; return; }
+    if (out.dataset.done) { out.style.display = "block"; gtr.innerHTML = `${ic("translate")} Hide translation`; return; }
+    gtr.disabled = true; gtr.textContent = "Translating…";
+    const tr = (typeof ttTranslate === "function") ? await ttTranslate(t.guide, "en") : null;
+    gtr.disabled = false;
+    if (!tr) { gtr.textContent = "Translation failed — tap to retry"; return; }
+    out.textContent = tr; out.dataset.done = "1"; out.style.display = "block";
+    gtr.innerHTML = `${ic("translate")} Hide translation`;
+  });
   // 詳情子頁籤：點一下捲到該區塊
   const navBtns = $("#detailNav").querySelectorAll("button");
   navBtns.forEach(b => b.addEventListener("click", () => {

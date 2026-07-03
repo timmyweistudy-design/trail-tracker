@@ -517,8 +517,8 @@ const I18n = (() => {
     [/^模擬「(.+)」路線$/, m => `Simulating “${m[1]}”`],
     [/^模擬：沿「(.+)」前進$/, m => `Simulating along “${m[1]}”`],
     [/^已載入路線（(\d+) 點），橘色虛線即參考路徑$/, m => `Route loaded (${m[1]} pts) — orange dashes are the reference`],
-    [/^夥伴想去走「(.+)」！$/, m => `Your buddy wants to hike “${m[1]}”!`],
-    [/^你常走「(.+)」/, m => `You often hike “${m[1]}”`],
+    [/^夥伴想去走「(.+)」！$/, m => `Your buddy wants to hike “${tx(m[1]) || m[1]}”!`],
+    [/^你常走「(.+)」/, m => `You often hike “${tx(m[1]) || m[1]}”`],
     [/^已選擇「(.+)」$/, m => `Selected “${m[1]}”`],
     [/^(\d+) 趟$/, m => `${m[1]} trips`],
     [/^上次：(.+)・$/, m => `Last: ${tx(m[1]) || m[1]} · `],
@@ -633,5 +633,19 @@ const I18n = (() => {
   return { lang, set, start, walk, tx };
 })();
 I18n.start();
+// 全域翻譯（翻譯年糕共用）：Google 免金鑰端點優先，失敗退 MyMemory
+async function ttTranslate(text, target) {
+  try {
+    const r = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${target}&dt=t&q=${encodeURIComponent(text)}`);
+    if (r.ok) { const j = await r.json(); const out = (j && j[0] ? j[0] : []).map(seg => seg && seg[0]).join(""); if (out) return out; }
+  } catch (e) { /* 換後備 */ }
+  try {
+    const src = /[一-鿿]/.test(text) ? "zh-TW" : "en";
+    if (src === target) return text;
+    const r = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text.slice(0, 450))}&langpair=${src}|${target}`);
+    if (r.ok) { const j = await r.json(); const out = j && j.responseData && j.responseData.translatedText; if (out && !/QUERY LENGTH|INVALID/i.test(out)) return out; }
+  } catch (e) { /* 放棄 */ }
+  return null;
+}
 // 顯示用日期/時間的 locale（英文介面用英文月份與 AM/PM）
 function ttLocale() { return I18n.lang() === "en" ? "en-US" : "zh-TW"; }
