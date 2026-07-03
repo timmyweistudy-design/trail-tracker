@@ -137,6 +137,17 @@ try {
   }
   for (const t of [...news].sort().slice(0, 20))
     err(`[i18n] 新的中文字串沒有翻譯：「${t}」——請補 web/js/i18n.js 詞條/規則，或加進 scripts/i18n-ignore.json`);
+  // H2. 多語表平行性：en 有的 key 其他語言都要有；規則數要一致（新增詞條/規則記得每個語言都補）
+  const tables = global.__I18n.tables();
+  const enKeys = Object.keys(tables.en.D);
+  for (const lng of Object.keys(tables)) {
+    if (lng === "en") continue;
+    const missing = enKeys.filter(k => !(k in tables[lng].D));
+    for (const k of missing.slice(0, 10)) err(`[i18n:${lng}] 缺詞條：「${k}」（en 有、${lng} 沒有）`);
+    if (missing.length > 10) err(`[i18n:${lng}] …另有 ${missing.length - 10} 條缺詞條`);
+    if (tables[lng].P.length !== tables.en.P.length)
+      err(`[i18n:${lng}] 規則數 ${tables[lng].P.length} ≠ en 的 ${tables.en.P.length}——新規則要每個語言都加`);
+  }
 } catch (e) { err("[i18n] 覆蓋檢查本身失敗：" + (e && e.message)); }
 
 // G. 跑核心邏輯單元測試

@@ -121,15 +121,15 @@ const PostView = (() => {
     const trBtn = wrap.querySelector("#pvTranslate");
     if (trBtn) trBtn.addEventListener("click", async () => {
       const out = wrap.querySelector("#pvCapTr"); if (!out) return;
-      const en = (typeof I18n !== "undefined" && I18n.lang() === "en");
-      if (out.style.display !== "none") { out.style.display = "none"; trBtn.innerHTML = `${ic("translate")} ${en ? "Translate" : "翻譯年糕"}`; return; }
-      if (out.dataset.done) { out.style.display = "block"; trBtn.textContent = en ? "Hide translation" : "收合翻譯"; return; }
-      trBtn.disabled = true; trBtn.textContent = en ? "Translating…" : "翻譯中…";
-      const t = await translateText(post.caption, en ? "en" : "zh-TW");
+      const T = (typeof ttT === "function") ? ttT : (x => x);
+      if (out.style.display !== "none") { out.style.display = "none"; trBtn.innerHTML = `${ic("translate")} ${T("翻譯年糕")}`; return; }
+      if (out.dataset.done) { out.style.display = "block"; trBtn.textContent = T("收合翻譯"); return; }
+      trBtn.disabled = true; trBtn.textContent = T("翻譯中…");
+      const t = await translateText(post.caption, (typeof ttTrTarget === "function") ? ttTrTarget() : "zh-TW");
       trBtn.disabled = false;
-      if (!t) { trBtn.textContent = en ? "Translation failed — tap to retry" : "翻譯失敗，點此重試"; return; }
+      if (!t) { trBtn.textContent = T("翻譯失敗，點此重試"); return; }
       out.textContent = t; out.dataset.done = "1"; out.style.display = "block";
-      trBtn.textContent = en ? "Hide translation" : "收合翻譯";
+      trBtn.textContent = T("收合翻譯");
     });
     const rep = wrap.querySelector("#pvReport"); if (rep) rep.addEventListener("click", async () => {
       const reason = await Safety.pickReason(); if (reason === null) return;
@@ -257,11 +257,10 @@ const PostView = (() => {
       const out = box.querySelector(`.pv-cm-tr[data-for="${b.dataset.id}"]`); if (!out) return;
       if (out.style.display !== "none") { out.style.display = "none"; return; }
       if (out.dataset.done) { out.style.display = "block"; return; }
-      const en = (typeof I18n !== "undefined" && I18n.lang() === "en");
       b.disabled = true;
-      const t = await translateText(_cmBodies[b.dataset.id] || "", en ? "en" : "zh-TW");
+      const t = await translateText(_cmBodies[b.dataset.id] || "", (typeof ttTrTarget === "function") ? ttTrTarget() : "zh-TW");
       b.disabled = false;
-      if (!t) { if (typeof toast === "function") toast(en ? "Translation failed" : "翻譯失敗，稍後再試"); return; }
+      if (!t) { if (typeof toast === "function") toast((typeof ttT === "function") ? ttT("翻譯失敗，稍後再試") : "翻譯失敗，稍後再試"); return; }
       out.textContent = t; out.dataset.done = "1"; out.style.display = "block";
     }));
     box.querySelectorAll(".pv-cm .mention").forEach(b => b.addEventListener("click", () => { if (typeof Discover !== "undefined") Discover.openByHandle(b.dataset.handle); }));

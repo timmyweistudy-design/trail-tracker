@@ -93,9 +93,12 @@ function openYearReview() {
   ov.addEventListener("click", e => { if (e.target === ov) close(); });
   const sh = ov.querySelector("#yrShare");
   if (sh) sh.addEventListener("click", () => {
-    const text = (typeof I18n !== "undefined" && I18n.lang() === "en")
+    const _L = (typeof I18n !== "undefined") ? I18n.lang() : "zh";
+    const text = _L === "en"
       ? `My ${year} on the trails: ${recs.length} trips, ${km.toFixed(0)} km, ↑${Math.round(asc)} m ascent (≈ ${(asc / 3952).toFixed(1)}× Yushan) — Gather the Trail`
-      : `我的 ${year} 山行回顧：${recs.length} 趟、${km.toFixed(0)} km、累積爬升 ↑${Math.round(asc)} m（約 ${(asc / 3952).toFixed(1)} 座玉山）— 循徑拾光`;
+      : _L === "es"
+        ? `Mi ${year} en los senderos: ${recs.length} salidas, ${km.toFixed(0)} km, ↑${Math.round(asc)} m (≈ ${(asc / 3952).toFixed(1)}× Yushan) — Gather the Trail`
+        : `我的 ${year} 山行回顧：${recs.length} 趟、${km.toFixed(0)} km、累積爬升 ↑${Math.round(asc)} m（約 ${(asc / 3952).toFixed(1)} 座玉山）— 循徑拾光`;
     if (navigator.share) navigator.share({ title: ttT("我的山行回顧"), text }).catch(() => { });
     else if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast("已複製回顧文字"));
     else toast(text);
@@ -146,7 +149,7 @@ function drawYearImage(d) {
 function exportCanvas(c, d, avImg) {
   c.toBlob(async (blob) => {
     if (!blob) { toast("產生圖片失敗"); return; }
-    const file = new File([blob], (typeof I18n !== "undefined" && I18n.lang() === "en") ? `gather-the-trail-${d.year}-recap.png` : `循徑拾光-${d.year}-回顧.png`, { type: "image/png" });
+    const file = new File([blob], (typeof I18n !== "undefined" && I18n.lang() !== "zh") ? `gather-the-trail-${d.year}-recap.png` : `循徑拾光-${d.year}-回顧.png`, { type: "image/png" });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       try { await navigator.share({ files: [file], title: ttT("我的山行回顧") }); return; } catch (e) { }
     }

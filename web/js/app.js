@@ -1026,7 +1026,7 @@ async function openDetail(id) {
     <div id="weatherBox"><div class="food-loading"><span class="spin"></span>查詢天氣中…</div></div>
     ${metaHtml}
     ${hasGeo ? `<div class="section-title collapsible" id="secElev">${ic("mountain")}海拔剖面</div><div id="profileBox"><div class="food-loading"><span class="spin"></span>計算海拔剖面中…</div></div>` : ""}
-    ${t.guide ? `<div class="guide">${t.guide.replace(/\n/g, "<br>")}</div>${(typeof I18n !== "undefined" && I18n.lang() === "en") ? `<div class="pv-tr-row"><button class="link-btn" id="guideTranslate">${ic("translate")} Translate</button></div><div class="guide pv-cap-tr" id="guideTr" style="display:none"></div>` : ""}` : ""}
+    ${t.guide ? `<div class="guide">${t.guide.replace(/\n/g, "<br>")}</div>${(typeof I18n !== "undefined" && I18n.lang() !== "zh") ? `<div class="pv-tr-row"><button class="link-btn" id="guideTranslate">${ic("translate")} ${ttT("翻譯年糕")}</button></div><div class="guide pv-cap-tr" id="guideTr" style="display:none"></div>` : ""}` : ""}
     <div class="link-row">
       ${nav ? `<a class="link-btn" href="${nav}" target="_blank" rel="noopener">${ic("compass")} 導航</a>` : ""}
       <a class="link-btn" href="${moreSearch}" target="_blank" rel="noopener">${ic("search")} 查資訊</a>
@@ -1051,14 +1051,14 @@ async function openDetail(id) {
   const gtr = $("#guideTranslate");
   if (gtr) gtr.addEventListener("click", async () => {
     const out = $("#guideTr"); if (!out) return;
-    if (out.style.display !== "none") { out.style.display = "none"; gtr.innerHTML = `${ic("translate")} Translate`; return; }
-    if (out.dataset.done) { out.style.display = "block"; gtr.innerHTML = `${ic("translate")} Hide translation`; return; }
-    gtr.disabled = true; gtr.textContent = "Translating…";
-    const tr = (typeof ttTranslate === "function") ? await ttTranslate(t.guide, "en") : null;
+    if (out.style.display !== "none") { out.style.display = "none"; gtr.innerHTML = `${ic("translate")} ${ttT("翻譯年糕")}`; return; }
+    if (out.dataset.done) { out.style.display = "block"; gtr.innerHTML = `${ic("translate")} ${ttT("收合翻譯")}`; return; }
+    gtr.disabled = true; gtr.textContent = ttT("翻譯中…");
+    const tr = (typeof ttTranslate === "function") ? await ttTranslate(t.guide, ttTrTarget()) : null;
     gtr.disabled = false;
-    if (!tr) { gtr.textContent = "Translation failed — tap to retry"; return; }
+    if (!tr) { gtr.textContent = ttT("翻譯失敗，點此重試"); return; }
     out.textContent = tr; out.dataset.done = "1"; out.style.display = "block";
-    gtr.innerHTML = `${ic("translate")} Hide translation`;
+    gtr.innerHTML = `${ic("translate")} ${ttT("收合翻譯")}`;
   });
   // 詳情子頁籤：點一下捲到該區塊
   const navBtns = $("#detailNav").querySelectorAll("button");
@@ -1680,9 +1680,12 @@ function openTrackReview(rec) {
   $("#trackCard").addEventListener("click", () => shareHikeCard(rec));
   $("#trackGpx").addEventListener("click", () => { GPX.exportRecord(rec); toast("已下載路線檔"); });
   $("#trackShare").addEventListener("click", () => {
-    const text = (typeof I18n !== "undefined" && I18n.lang() === "en")
+    const _L = (typeof I18n !== "undefined") ? I18n.lang() : "zh";
+    const text = _L === "en"
       ? `I hiked ${rec.trailName || ttT("自由路線")}: ${km.toFixed(2)} km, ↑${rec.ascent || 0} m, ${rec.kcal} kcal, ${fmtTime(rec.elapsedMs)} ⛰️ — Gather the Trail`
-      : `我走了 ${rec.trailName || "自由路線"}：${km.toFixed(2)} km、爬升 ↑${rec.ascent || 0}m、${rec.kcal} 大卡、${fmtTime(rec.elapsedMs)} ⛰️ — 循徑拾光`;
+      : _L === "es"
+        ? `Caminé ${rec.trailName || ttT("自由路線")}: ${km.toFixed(2)} km, ↑${rec.ascent || 0} m, ${rec.kcal} kcal, ${fmtTime(rec.elapsedMs)} ⛰️ — Gather the Trail`
+        : `我走了 ${rec.trailName || "自由路線"}：${km.toFixed(2)} km、爬升 ↑${rec.ascent || 0}m、${rec.kcal} 大卡、${fmtTime(rec.elapsedMs)} ⛰️ — 循徑拾光`;
     if (navigator.share) navigator.share({ title: ttT("我的健行紀錄"), text }).catch(() => {});
     else if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast("已複製,可貼給朋友"));
     else toast(text);
@@ -1748,11 +1751,11 @@ async function shareHikeCard(rec) {
       x.fillStyle = "rgba(231,237,222,.55)"; x.font = "400 26px serif"; x.fillText(l, cx, 1060);
     });
     const blob = await new Promise(r => c.toBlob(r, "image/png"));
-    const file = new File([blob], (typeof I18n !== "undefined" && I18n.lang() === "en") ? "gather-the-trail-card.png" : "循徑拾光.png", { type: "image/png" });
+    const file = new File([blob], (typeof I18n !== "undefined" && I18n.lang() !== "zh") ? "gather-the-trail-card.png" : "循徑拾光.png", { type: "image/png" });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({ files: [file], title: ttT("我的健行紀錄") });
     } else {
-      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = (typeof I18n !== "undefined" && I18n.lang() === "en") ? "gather-the-trail-card.png" : "循徑拾光健行卡.png"; a.click();
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = (typeof I18n !== "undefined" && I18n.lang() !== "zh") ? "gather-the-trail-card.png" : "循徑拾光健行卡.png"; a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 5000);
       toast("圖卡已下載");
     }

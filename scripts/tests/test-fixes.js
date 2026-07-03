@@ -61,6 +61,12 @@ ok("i18n 不翻無中文字串", I18n.tx("hello 123") === null);
 ok("i18n 上次那行", I18n.tx("上次：象山步道・") === "Last: 象山步道 · ");
 ok("i18n 時程：半天", I18n.tx("半天") === "Half a day");
 ok("i18n 時程：2~3小時", I18n.tx("2~3小時") === "2–3 hr");
+localStorage.setItem("tt_lang", "es");
+ok("i18n(es) 字典：探索→Explorar", I18n.tx("探索") === "Explorar");
+ok("i18n(es) 字典：儲存→Guardar", I18n.tx("儲存") === "Guardar");
+ok("i18n(es) 規則：X 分鐘前", I18n.tx("5 分鐘前") === "hace 5 min");
+ok("i18n(es) 規則：通知含名字", I18n.tx("Ana 開始追蹤你") === "Ana empezó a seguirte");
+localStorage.removeItem("tt_lang");
 
 // 7) 本地日期
 function localDayOf(d) { const t = new Date(d); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`; }
