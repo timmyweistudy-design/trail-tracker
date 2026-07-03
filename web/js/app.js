@@ -1927,6 +1927,8 @@ Recorder.onUpdate(s => {
       if (!sim()) toast(`🍓 收集到果實 +${gained}！已走 ${kmDone} km，繼續加油`);
     }
   }
+  if (s.simDone && !window.__simDoneToasted) { window.__simDoneToasted = true; toast("模擬已走完整條路線，按「⏹ 結束」看結算"); if (navigator.vibrate) navigator.vibrate([60, 40, 60]); }
+  if (s.state === "idle") window.__simDoneToasted = false;
   if (s.error) $("#recStatus").innerHTML = `⚠️ ${s.error}（可改用模擬模式）`;
   else if (s.state === "running" && s.autoPaused) $("#recStatus").innerHTML = `<span class="offroute">⏸ 自動暫停（偵測到靜止，移動即恢復）</span>`;
   else if (s.state === "running") {
@@ -2087,12 +2089,10 @@ function startRecordingUI() {
       toast("模擬：沿此步道路線前進");
     }
     let route = selectedTrailGeo && selectedTrailGeo.length ? chainSegments(selectedTrailGeo) : null;   // 串接全部路段
-    // 模擬里程要跟卡片數字一致：串接演算法為了走完整個路網會來回重走（南澳古道 1.5km 會變 6.7km），
-    // 依官方 length_km 截斷；沒有官方值就截在「各段單趟總長」（至少不重複走）
+    // 模擬要「走完地圖上畫的整條線」但不來回重走：封頂＝幾何各段單趟總長。
+    // （官方 length_km 常是精華段，比地圖線短——之前封在官方值會看起來停在半路）
     if (route && route.length > 1) {
-      const st = TRAILS.find(x => x.id === selectedTrailId);
-      let capM = st && st.length_km ? st.length_km * 1000 : 0;
-      if (!capM) capM = selectedTrailGeo.reduce((sum, seg) => {
+      const capM = selectedTrailGeo.reduce((sum, seg) => {
         let L = 0; for (let i = 1; i < seg.length; i++) L += haversine({ lat: seg[i - 1][0], lon: seg[i - 1][1] }, { lat: seg[i][0], lon: seg[i][1] });
         return sum + L;
       }, 0);

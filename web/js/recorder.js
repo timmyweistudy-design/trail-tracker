@@ -266,7 +266,7 @@ const Recorder = (() => {
         const p = _pointAt(simRoute, simDist);
         const alt = _terrainAlt(p[0], p[1]);          // 依座標的假地形：往上算爬升、往下算下降
         push(p[0], p[1], alt, null, true);            // clean：不平滑、不過濾，精準貼線
-        if (i >= frames || simDist >= total) { clearInterval(simTimer); simTimer = null; }   // 走到終點停
+        if (i >= frames || simDist >= total) { clearInterval(simTimer); simTimer = null; cb({ ...snapshot(), simDone: true }); }   // 走到終點停＋通知前端
       }, interval);
       return;
     }
