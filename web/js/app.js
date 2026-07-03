@@ -35,6 +35,22 @@ function ensureDetail() {
 function mergeDetail(t) { const d = (window.TRAILS_DETAIL || {})[t.id]; if (d) Object.assign(t, d); return t; }
 // 真實登山客走法：把路段建成路徑圖，沿實際路徑走；遇叉路/死路「原路折返」回岔口再走下一條，
 // 不會憑空斜穿。只有資料本身斷成不相連的區塊時，才不得已直線接過去。
+// 沿路線走到 maxMeters 就截斷（最後一點內插），模擬里程才會跟官方長度一致
+function truncateRoute(pts, maxMeters) {
+  if (!pts || pts.length < 2 || !maxMeters || maxMeters <= 0) return pts;
+  let acc = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const seg = haversine({ lat: pts[i - 1][0], lon: pts[i - 1][1] }, { lat: pts[i][0], lon: pts[i][1] });
+    if (acc + seg >= maxMeters) {
+      const f = seg ? (maxMeters - acc) / seg : 0;
+      const cut = [pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * f, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * f];
+      return pts.slice(0, i).concat([cut]);
+    }
+    acc += seg;
+  }
+  return pts;
+}
+
 function chainSegments(geo) {
   const segs = (geo || []).filter(s => s && s.length >= 2).map(s => s.slice());
   if (segs.length <= 1) return segs[0] || [];
@@ -2070,7 +2086,18 @@ function startRecordingUI() {
     } else {
       toast("模擬：沿此步道路線前進");
     }
-    const route = selectedTrailGeo && selectedTrailGeo.length ? chainSegments(selectedTrailGeo) : null;   // 串接全部路段，整條走完
+    let route = selectedTrailGeo && selectedTrailGeo.length ? chainSegments(selectedTrailGeo) : null;   // 串接全部路段
+    // 模擬里程要跟卡片數字一致：串接演算法為了走完整個路網會來回重走（南澳古道 1.5km 會變 6.7km），
+    // 依官方 length_km 截斷；沒有官方值就截在「各段單趟總長」（至少不重複走）
+    if (route && route.length > 1) {
+      const st = TRAILS.find(x => x.id === selectedTrailId);
+      let capM = st && st.length_km ? st.length_km * 1000 : 0;
+      if (!capM) capM = selectedTrailGeo.reduce((sum, seg) => {
+        let L = 0; for (let i = 1; i < seg.length; i++) L += haversine({ lat: seg[i - 1][0], lon: seg[i - 1][1] }, { lat: seg[i][0], lon: seg[i][1] });
+        return sum + L;
+      }, 0);
+      route = truncateRoute(route, capM);
+    }
     Recorder.setSimRoute(route);
   }
   if (Recorder.getState() === "paused") Recorder.resume(sim());

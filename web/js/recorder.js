@@ -231,10 +231,11 @@ const Recorder = (() => {
   // 模擬用的平滑假地形：同一座標必得同高度，原路折返會自然下降（即時爬升/下降才正確）。
   // 結束時仍會用真實 DEM 校正覆蓋，這裡只負責記錄過程中的即時數字方向正確。
   function _terrainAlt(lat, lon) {
+    // 振幅調小（±82m）：舊值 ±355m 讓模擬的即時爬升動輒數百公尺；結束時仍用真實 DEM 校正覆蓋
     return 600
-      + 200 * Math.sin(lat * 210 + lon * 90)
-      + 110 * Math.sin(lon * 350 - lat * 60)
-      + 45 * Math.sin((lat + lon) * 700);
+      + 45 * Math.sin(lat * 210 + lon * 90)
+      + 25 * Math.sin(lon * 350 - lat * 60)
+      + 12 * Math.sin((lat + lon) * 700);
   }
   function _pointAt(r, d) {   // 沿路線距離 d(公尺) 取插值點
     let acc = 0;
