@@ -5,8 +5,10 @@
 create table if not exists public.team_starts (
   team_id uuid primary key references public.teams(id) on delete cascade,
   started_by uuid references auth.users(id) on delete set null,
-  started_at timestamptz not null default now()
+  started_at timestamptz not null default now(),
+  sim boolean not null default false          -- 隊長是否用模擬模式：全隊跟隨，測試才能一起動
 );
+alter table public.team_starts add column if not exists sim boolean not null default false;
 
 alter table public.team_starts enable row level security;
 -- 隊員可讀自己小隊的開始訊號
@@ -16,19 +18,19 @@ create policy ts_select on public.team_starts for select to authenticated
 -- 寫入一律走 RPC（security definer 檢查隊長身分）
 
 -- 隊長按開始：寫入/覆蓋這個小隊的開始時間
-create or replace function public.team_start(p_team uuid) returns timestamptz
+create or replace function public.team_start(p_team uuid, p_sim boolean default false) returns timestamptz
 language plpgsql security definer set search_path = public as $$
 declare t timestamptz;
 begin
   if not exists (select 1 from teams where id = p_team and owner = auth.uid()) then
     raise exception 'not team owner';
   end if;
-  insert into team_starts(team_id, started_by, started_at) values (p_team, auth.uid(), now())
-    on conflict (team_id) do update set started_by = auth.uid(), started_at = now();
+  insert into team_starts(team_id, started_by, started_at, sim) values (p_team, auth.uid(), now(), coalesce(p_sim, false))
+    on conflict (team_id) do update set started_by = auth.uid(), started_at = now(), sim = coalesce(p_sim, false);
   select started_at into t from team_starts where team_id = p_team;
   return t;
 end $$;
-grant execute on function public.team_start(uuid) to authenticated;
+grant execute on function public.team_start(uuid, boolean) to authenticated;
 
 -- Realtime：隊員訂閱 team_starts 的變更即時開始
 do $$ begin

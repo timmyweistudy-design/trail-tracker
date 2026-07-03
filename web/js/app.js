@@ -2056,15 +2056,19 @@ $("#btnStart").addEventListener("click", () => {
       toast(nr.length ? `還沒準備：${nr.join("、")}（全員按「準備」後才能一起開始）` : "還有隊員未準備，全員按「準備」後才能一起開始");
       return;
     }
-    TeamLive.sendStart();
+    TeamLive.sendStart({ sim: sim() });   // 把隊長的模擬模式帶給全隊
   }
   startRecordingUI();
 });
 // 收到隊長的開始廣播 → 已按準備的隊員自動一起開始記錄
-if (typeof TeamLive !== "undefined" && TeamLive.onStart) TeamLive.onStart(() => {
+if (typeof TeamLive !== "undefined" && TeamLive.onStart) TeamLive.onStart((simFlag) => {
   if (Recorder.getState() === "running") return;
   const tab = document.querySelector('.tab[data-view="record"]'); if (tab) tab.click();
-  toast("👑 隊長開始了！小隊一起記錄");
+  // 跟隨隊長的模擬模式：隊長模擬全隊模擬（在家測試才動得了）、隊長真走全隊真走
+  const st = $("#simToggle");
+  if (st && st.checked !== !!simFlag) { st.checked = !!simFlag; }
+  toast(simFlag ? "👑 隊長開始了（模擬模式）！小隊一起記錄" : "👑 隊長開始了！小隊一起記錄");
+  if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
   startRecordingUI();
 });
 $("#btnPause").addEventListener("click", () => {

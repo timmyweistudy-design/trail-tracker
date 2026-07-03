@@ -5,6 +5,7 @@ const TeamLive = (() => {
   let channel = null, watchId = null, map = null, markers = {}, me = null, myInfo = {}, lastPos = null;
   let leaderId = null, myReady = false, onStartCb = null;
   let myStartAt = null;        // 隊長按下開始的時間（跟著 presence 傳，凍結分頁回前景也能補收到）
+  let myStartSim = false;      // 隊長開始時是否用模擬模式：跟著訊號送，全隊一致才能一起動
   let lastHandledAt = 0;       // 已處理過的開始訊號時間戳：同一次開始只觸發一次，但「新的一次開始」永遠會觸發
   let joinedAt = 0;            // 我開啟同行的時間：比這更早太多的舊訊號不理（別人上一趟的殘留）
   let pollTimer = null, curTeamId = null;
@@ -42,7 +43,7 @@ const TeamLive = (() => {
   // 統一的開始訊號處理：broadcast / presence / DB 輪詢三路都進這裡。
   // 用「時間戳」去重：同一次開始只觸發一次；新的開始（新時間戳）一定會再觸發——
   // 修掉舊版布林旗標被上一趟殘留訊號卡死、之後真開始卻沒反應的 bug。
-  function handleStart(at) {
+  function handleStart(at, simFlag) {
     at = +at || 0;
     if (!at || at <= lastHandledAt) return;
     if (isLeader()) { lastHandledAt = at; return; }              // 隊長本地自己開始，不吃訊號
@@ -50,22 +51,23 @@ const TeamLive = (() => {
     if (at < joinedAt - 60e3) { lastHandledAt = at; return; }    // 我加入前就存在的殘留訊號
     if (!myReady || !onStartCb) return;                          // 還沒按準備：先不吃，按了準備後輪詢會再進來
     lastHandledAt = at;
-    onStartCb();
+    onStartCb(!!simFlag);   // 帶上隊長的模擬模式，全隊跟隨（測試時大家才會一起動）
   }
   // presence 路徑：隊長的 started 跟著 presence 傳，凍結分頁回前景同步時補收
   function checkPresenceStart() {
     if (!channel || !leaderId) return;
     const metas = channel.presenceState()[leaderId] || [];
-    const started = metas.reduce((t, m) => Math.max(t, (m && m.started) || 0), 0);
-    if (started) handleStart(started);
+    let started = 0, ssim = false;
+    for (const m of metas) if (m && (m.started || 0) > started) { started = m.started; ssim = !!m.startedSim; }
+    if (started) handleStart(started, ssim);
   }
   // DB 輪詢路徑（每 5 秒）：postgres_changes/broadcast 全漏接也追得回來
   async function pollDbStart() {
     if (!channel || !curTeamId || isLeader() || !myReady) return;
     try {
       const c = Supa.client(); if (!c) return;
-      const { data } = await c.from("team_starts").select("started_at").eq("team_id", curTeamId).maybeSingle();
-      if (data && data.started_at) handleStart(Date.parse(data.started_at));
+      const { data } = await c.from("team_starts").select("started_at, sim").eq("team_id", curTeamId).maybeSingle();
+      if (data && data.started_at) handleStart(Date.parse(data.started_at), data.sim);
     } catch (e) { /* phase20 未跑或離線 → 其他兩路仍有效 */ }
   }
 
@@ -94,7 +96,7 @@ const TeamLive = (() => {
   function payload() {
     return { lat: lastPos ? lastPos.lat : null, lon: lastPos ? lastPos.lon : null,
       name: myInfo.name, avatar: myInfo.avatar || null, pet: myInfo.pet || null,
-      heading: lastPos ? lastPos.heading : null, ready: myReady, started: myStartAt || 0, at: Date.now() };
+      heading: lastPos ? lastPos.heading : null, ready: myReady, started: myStartAt || 0, startedSim: myStartSim, at: Date.now() };
   }
   function _trackThrottled() {
     if (!channel) return;
@@ -124,14 +126,19 @@ const TeamLive = (() => {
   function onStart(cb) { onStartCb = cb; }
   // 隊長廣播「開始」：全員同時開始記錄（broadcast 不會送回自己，隊長本地另行開始）。
   // 同時把 started 寫進 presence，讓凍結中的分頁回前景也補收得到
-  function sendStart() {
+  function sendStart(opts) {
     if (!channel) return;
     myStartAt = Date.now();
+    myStartSim = !!(opts && opts.sim);
     lastHandledAt = myStartAt;   // 自己不再吃這個訊號
     // 三路齊發：broadcast（最快）+ presence（回前景補收）+ DB（最可靠，需 phase20 SQL）
-    try { channel.send({ type: "broadcast", event: "start", payload: { at: myStartAt } }); } catch (e) { /* */ }
+    try { channel.send({ type: "broadcast", event: "start", payload: { at: myStartAt, sim: myStartSim } }); } catch (e) { /* */ }
     try { channel.track(payload()); } catch (e) { /* */ }
-    try { const c = Supa.client(); if (c && curTeamId) c.rpc("team_start", { p_team: curTeamId }).then(() => { }, () => { }); } catch (e) { /* */ }
+    try {
+      const c = Supa.client();
+      if (c && curTeamId) c.rpc("team_start", { p_team: curTeamId, p_sim: myStartSim })
+        .then(r => { if (r && r.error) c.rpc("team_start", { p_team: curTeamId }).then(() => { }, () => { }); }, () => { });   // 舊版 RPC 相容
+    } catch (e) { /* */ }
   }
 
   // 記錄頁準備列：✋ 準備切換 + 全隊準備狀態；隊長多一顆「開始小隊記錄」提示
@@ -152,6 +159,13 @@ const TeamLive = (() => {
     if (!channel) { el.remove(); return; }
     const r = roster();
     const chips = r.map(m => `<span class="trb-chip ${m.ready ? "ok" : ""}">${m.leader ? `${typeof ic === "function" ? ic("crown") : ""} ` : ""}${esc(m.name)}${m.me ? "（我）" : ""} ${m.ready ? "✓" : "…"}</span>`).join("");
+    // 記錄中：改顯示隊伍即時狀態（在線人數/地圖可見人數），不再顯示準備提示
+    if (typeof Recorder !== "undefined" && Recorder.getState && Recorder.getState() === "running") {
+      const visible = Object.keys(markers).length;
+      el.innerHTML = `<div class="trb-top"><b>${typeof ic === "function" ? ic("users") : ""} 小隊記錄中</b><span class="trb-chip ok">在線 ${r.length} 人・地圖可見 ${visible + 1} 人</span></div>
+        <div class="trb-chips">${chips}</div>`;
+      return;
+    }
     const nr = notReadyNames();
     const hint = isLeader()
       ? (allReady() ? "✅ 全員已準備！按下面的「▶ 開始」，全隊一起記錄" : `等待按「準備」：${nr.join("、") || "…"}`)
@@ -181,10 +195,10 @@ const TeamLive = (() => {
     channel.on("presence", { event: "sync" }, render);
     channel.on("presence", { event: "join" }, render);
     channel.on("presence", { event: "leave" }, render);
-    channel.on("broadcast", { event: "start" }, msg => handleStart(msg && msg.payload && msg.payload.at));
+    channel.on("broadcast", { event: "start" }, msg => { const pl = msg && msg.payload; if (pl) handleStart(pl.at, pl.sim); });
     // DB 即時訂閱：隊長寫入 team_starts 就開始（需 phase20；沒跑也有輪詢與 presence 兜底）
     channel.on("postgres_changes", { event: "*", schema: "public", table: "team_starts", filter: "team_id=eq." + teamId },
-      p => { const row = p && p.new; if (row && row.started_at) handleStart(Date.parse(row.started_at)); });
+      p => { const row = p && p.new; if (row && row.started_at) handleStart(Date.parse(row.started_at), row.sim); });
     channel.subscribe(st => { if (st === "SUBSCRIBED") channel.track(payload()); });
     if (pollTimer) clearInterval(pollTimer);
     pollTimer = setInterval(pollDbStart, 5000);   // 輪詢補收：任何漏接 5 秒內追回
