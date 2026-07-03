@@ -75,6 +75,7 @@ const BACKUP_EXEMPT = new Set([
   "tt_reported", "tt_saved", "tt_draft", "tt_prof_idx",   // 社群端另存雲端/暫存
   "tt_debug_km",                                          // 測試用
   "tt_lang",                                              // 語言：裝置偏好
+  "tt_tr_cache", "tt_places_quota", "tt_errors_sent",     // 翻譯快取/用量統計/錯誤上報游標：裝置性
 ]);
 const storageSrc = read(path.join(WEB, "js", "storage.js"));
 const bkMatch = storageSrc.match(/BACKUP_KEYS\s*=\s*\[([^\]]*)\]/);
@@ -111,6 +112,32 @@ try {
     if (cur && old && cur === old) err(`[版本] web/ 有改動但 web/sw.js 的 CACHE 版本仍是 ${cur}——沒 bump 版本使用者拿不到更新`);
   }
 } catch (e) { /* 非 git 環境或首次 commit → 略過 */ }
+
+// H. i18n 覆蓋守門：JS 介面模板裡「新增」的中文字串必須翻得出來（字典或規則），
+//    否則英文版會漏翻。既有未翻清單凍結在 scripts/i18n-ignore.json（資料值/除錯/品牌/片段誤報），
+//    只擋新出現的。新增字串請補 web/js/i18n.js 的 DICT/PATTERNS，或（確屬資料/除錯）加進 ignore 檔。
+try {
+  const ignore = new Set(JSON.parse(read(path.join(__dirname, "i18n-ignore.json"))));
+  global.localStorage = global.localStorage || { getItem: () => null, setItem: () => { }, removeItem: () => { } };
+  const src = read(path.join(WEB, "js", "i18n.js")).replace(/I18n\.start\(\);[^]*$/, "");
+  // eslint-disable-next-line no-eval
+  eval(src + ";global.__I18n = I18n;");
+  const tx = global.__I18n.tx;
+  const news = new Set();
+  for (const f of files) {
+    if (f.endsWith("i18n.js") || /trails-(data|detail|geo)\.js$/.test(f)) continue;
+    const src2 = read(f);
+    for (const m of src2.matchAll(/[>"`]([^<>`"$\\{}]*[\u4e00-\u9fff][^<>`"$\\{}]*)[<"`$]/g)) {
+      const t = m[1].trim();
+      if (!t || t.length < 2 || t.length > 40) continue;
+      if (/[/;=]|function|\/\//.test(t)) continue;
+      if (ignore.has(t) || tx(t)) continue;
+      news.add(t);
+    }
+  }
+  for (const t of [...news].sort().slice(0, 20))
+    err(`[i18n] 新的中文字串沒有翻譯：「${t}」——請補 web/js/i18n.js 詞條/規則，或加進 scripts/i18n-ignore.json`);
+} catch (e) { err("[i18n] 覆蓋檢查本身失敗：" + (e && e.message)); }
 
 // G. 跑核心邏輯單元測試
 try { execFileSync(process.execPath, [path.join(__dirname, "tests", "test-fixes.js")], { stdio: "pipe" }); }

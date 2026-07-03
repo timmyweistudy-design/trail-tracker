@@ -93,8 +93,10 @@ function openYearReview() {
   ov.addEventListener("click", e => { if (e.target === ov) close(); });
   const sh = ov.querySelector("#yrShare");
   if (sh) sh.addEventListener("click", () => {
-    const text = `我的 ${year} 山行回顧：${recs.length} 趟、${km.toFixed(0)} km、累積爬升 ↑${Math.round(asc)} m（約 ${(asc / 3952).toFixed(1)} 座玉山）— 循徑拾光`;
-    if (navigator.share) navigator.share({ title: "我的山行回顧", text }).catch(() => { });
+    const text = (typeof I18n !== "undefined" && I18n.lang() === "en")
+      ? `My ${year} on the trails: ${recs.length} trips, ${km.toFixed(0)} km, ↑${Math.round(asc)} m ascent (≈ ${(asc / 3952).toFixed(1)}× Yushan) — Gather the Trail`
+      : `我的 ${year} 山行回顧：${recs.length} 趟、${km.toFixed(0)} km、累積爬升 ↑${Math.round(asc)} m（約 ${(asc / 3952).toFixed(1)} 座玉山）— 循徑拾光`;
+    if (navigator.share) navigator.share({ title: ttT("我的山行回顧"), text }).catch(() => { });
     else if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast("已複製回顧文字"));
     else toast(text);
   });
@@ -137,16 +139,16 @@ function drawYearImage(d) {
   if (d.longest) { x.fillText(ttT("單次最長") + " " + d.longest.toFixed(1) + " km", W / 2, ly); ly += 30; }
   if (d.pet) { x.fillText(ttT("夥伴") + " " + (d.pet.name || "") + " Lv." + d.pet.level, W / 2, ly); ly += 30; }
   x.fillText(ttT("探索") + " " + d.distinct + " " + ttT("條步道") + " ‧ ≈ " + (d.asc / 3952).toFixed(1) + "× " + ttT("玉山"), W / 2, ly);
-  x.fillStyle = "#e0b15a"; x.font = "700 19px 'Noto Serif TC', serif"; x.fillText("循徑拾光 · Gather the Trail", W / 2, H - 32);
+  x.fillStyle = "#e0b15a"; x.font = "700 19px 'Noto Serif TC', serif"; x.fillText(ttT("循徑拾光 · Gather the Trail"), W / 2, H - 32);
   try { exportCanvas(c, d, avImg); } catch (e) { if (avImg) build(null); else toast("產生圖片失敗"); }
   }
 }
 function exportCanvas(c, d, avImg) {
   c.toBlob(async (blob) => {
     if (!blob) { toast("產生圖片失敗"); return; }
-    const file = new File([blob], `循徑拾光-${d.year}-回顧.png`, { type: "image/png" });
+    const file = new File([blob], (typeof I18n !== "undefined" && I18n.lang() === "en") ? `gather-the-trail-${d.year}-recap.png` : `循徑拾光-${d.year}-回顧.png`, { type: "image/png" });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try { await navigator.share({ files: [file], title: "我的山行回顧" }); return; } catch (e) { }
+      try { await navigator.share({ files: [file], title: ttT("我的山行回顧") }); return; } catch (e) { }
     }
     const url = URL.createObjectURL(blob), a = document.createElement("a");
     a.href = url; a.download = file.name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);

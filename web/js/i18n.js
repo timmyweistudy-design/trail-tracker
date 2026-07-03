@@ -302,6 +302,8 @@ const I18n = (() => {
     "我的山行回顧": "My Year on the Trails", "趟旅程": "trips", "公尺爬升": "m ascent", "小時": "hours",
     "條步道": "trails", "最遠的一條 ‧": "Longest ‧", "最高造訪海拔": "Highest point", "最常出門": "Most active month",
     "最愛步道": "Favorite trail", "較去年里程": "vs last year", "座玉山": "× Yushan", "玉山": "Yushan",
+    "循徑拾光 · Gather the Trail": "Gather the Trail", "循徑拾光 · GATHER THE TRAIL": "GATHER THE TRAIL",
+    "我的健行紀錄": "My hike record",
     "↑ 累積爬升約": "↑ Total ascent ≈", "存成圖片": "Save image", "已存成圖片": "Image saved",
     "已複製回顧文字": "Recap copied", "產生圖片失敗": "Image failed",
     "分享": "Share",
@@ -642,8 +644,33 @@ const I18n = (() => {
   return { lang, set, start, walk, tx };
 })();
 I18n.start();
-// 全域翻譯（翻譯年糕共用）：Google 免金鑰端點優先，失敗退 MyMemory
+// 全域翻譯（翻譯年糕共用）：Google 免金鑰端點優先，失敗退 MyMemory。
+// 兩層快取：同段文字只翻一次（記憶體 + localStorage 各存 120 筆，免費 API 有每日額度）
+const _trMem = new Map();
+function _trKey(text, target) { let h = 0; for (let i = 0; i < text.length; i++) h = (h * 31 + text.charCodeAt(i)) | 0; return `${target}:${h}:${text.length}`; }
+function _trCacheGet(k) {
+  if (_trMem.has(k)) return _trMem.get(k);
+  try { const c = JSON.parse(localStorage.getItem("tt_tr_cache") || "{}"); return c[k] || null; } catch { return null; }
+}
+function _trCacheSet(k, v) {
+  _trMem.set(k, v);
+  try {
+    const c = JSON.parse(localStorage.getItem("tt_tr_cache") || "{}");
+    c[k] = v;
+    const keys = Object.keys(c);
+    if (keys.length > 120) for (const old of keys.slice(0, keys.length - 120)) delete c[old];
+    localStorage.setItem("tt_tr_cache", JSON.stringify(c));
+  } catch (e) { /* 快取滿了就算了 */ }
+}
 async function ttTranslate(text, target) {
+  const ck = _trKey(text, target);
+  const hit = _trCacheGet(ck);
+  if (hit) return hit;
+  const out = await _ttTranslateNet(text, target);
+  if (out) _trCacheSet(ck, out);
+  return out;
+}
+async function _ttTranslateNet(text, target) {
   try {
     const r = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${target}&dt=t&q=${encodeURIComponent(text)}`);
     if (r.ok) { const j = await r.json(); const out = (j && j[0] ? j[0] : []).map(seg => seg && seg[0]).join(""); if (out) return out; }

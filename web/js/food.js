@@ -23,6 +23,7 @@ const Food = (() => {
   }
 
   async function query(lat, lon) {
+    if (typeof ttPlacesAllow === "function" && !ttPlacesAllow()) return [];   // 每日用量守門：超限改用快取
     const res = await fetch(ENDPOINT, {
       method: "POST",
       headers: {

@@ -1680,8 +1680,10 @@ function openTrackReview(rec) {
   $("#trackCard").addEventListener("click", () => shareHikeCard(rec));
   $("#trackGpx").addEventListener("click", () => { GPX.exportRecord(rec); toast("已下載路線檔"); });
   $("#trackShare").addEventListener("click", () => {
-    const text = `我走了 ${rec.trailName || "自由路線"}：${km.toFixed(2)} km、爬升 ↑${rec.ascent || 0}m、${rec.kcal} 大卡、${fmtTime(rec.elapsedMs)} ⛰️ — 循徑拾光`;
-    if (navigator.share) navigator.share({ title: "我的健行紀錄", text }).catch(() => {});
+    const text = (typeof I18n !== "undefined" && I18n.lang() === "en")
+      ? `I hiked ${rec.trailName || ttT("自由路線")}: ${km.toFixed(2)} km, ↑${rec.ascent || 0} m, ${rec.kcal} kcal, ${fmtTime(rec.elapsedMs)} ⛰️ — Gather the Trail`
+      : `我走了 ${rec.trailName || "自由路線"}：${km.toFixed(2)} km、爬升 ↑${rec.ascent || 0}m、${rec.kcal} 大卡、${fmtTime(rec.elapsedMs)} ⛰️ — 循徑拾光`;
+    if (navigator.share) navigator.share({ title: ttT("我的健行紀錄"), text }).catch(() => {});
     else if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast("已複製,可貼給朋友"));
     else toast(text);
   });
@@ -1709,7 +1711,7 @@ async function shareHikeCard(rec) {
     x.fillStyle = g; x.fillRect(0, 0, S, S);
     // 品牌
     x.fillStyle = "rgba(220,232,210,.7)"; x.font = "600 30px serif";
-    x.fillText("循徑拾光 · GATHER THE TRAIL", 70, 96);
+    x.fillText(ttT("循徑拾光 · GATHER THE TRAIL"), 70, 96);
     // 步道名
     x.fillStyle = "#fbf8ee"; x.font = "700 64px 'Noto Serif TC', serif";
     const name = (rec.trailName || "自由路線").slice(0, 12);
@@ -1746,11 +1748,11 @@ async function shareHikeCard(rec) {
       x.fillStyle = "rgba(231,237,222,.55)"; x.font = "400 26px serif"; x.fillText(l, cx, 1060);
     });
     const blob = await new Promise(r => c.toBlob(r, "image/png"));
-    const file = new File([blob], "循徑拾光.png", { type: "image/png" });
+    const file = new File([blob], (typeof I18n !== "undefined" && I18n.lang() === "en") ? "gather-the-trail-card.png" : "循徑拾光.png", { type: "image/png" });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: "我的健行紀錄" });
+      await navigator.share({ files: [file], title: ttT("我的健行紀錄") });
     } else {
-      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "循徑拾光健行卡.png"; a.click();
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = (typeof I18n !== "undefined" && I18n.lang() === "en") ? "gather-the-trail-card.png" : "循徑拾光健行卡.png"; a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 5000);
       toast("圖卡已下載");
     }
@@ -2195,6 +2197,26 @@ if (_crs) _crs.addEventListener("click", async () => {
   } catch (e) { toast("還原失敗：" + (e && e.message || e)); }
 });
 if (typeof Premium !== "undefined") { setTimeout(() => Premium.refresh(), 1500); Premium.handleReturn(); }   // 啟動後同步會員狀態 + 處理結帳返回
+
+// 前端錯誤自動上報（phase19）：把 index.html 記到 localStorage 的錯誤批次上傳，
+// 開發者才能主動發現問題。已上傳的用時間戳記號避免重複；未登入/未跑 SQL 都靜默略過。
+async function reportClientErrors() {
+  try {
+    if (typeof Supa === "undefined" || !Supa.ready()) return;
+    const errs = JSON.parse(localStorage.getItem("tt_errors") || "[]");
+    const lastSent = localStorage.getItem("tt_errors_sent") || "";
+    const fresh = errs.filter(e => e.t > lastSent).slice(0, 10);
+    if (!fresh.length) return;
+    const c = Supa.client(); const { data: u } = await c.auth.getUser();
+    if (!u || !u.user) return;
+    let ver = "";
+    try { ver = ((await (await fetch("sw.js")).text()).match(/trail-tracker-(v\d+)/) || [])[1] || ""; } catch (e) { /* 離線 */ }
+    const rows = fresh.map(e => ({ user_id: u.user.id, message: e.m, app_ver: ver, ua: navigator.userAgent.slice(0, 200), happened_at: e.t }));
+    const { error } = await c.from("client_errors").insert(rows);
+    if (!error) localStorage.setItem("tt_errors_sent", fresh[0].t);   // errs 由新到舊，第一筆最新
+  } catch (e) { /* 靜默 */ }
+}
+setTimeout(reportClientErrors, 6000);
 
 // 進階分析：整頁 PRO（與年度回顧一致）
 const _aBtn = $("#btnAnalytics");

@@ -1,5 +1,5 @@
 // 離線快取：app shell + 地圖圖磚
-const CACHE = "trail-tracker-v227";
+const CACHE = "trail-tracker-v228";
 const TILE_CACHE = "tt-tiles";   // 地圖圖磚（不隨版本清除，保留離線地圖）
 const ASSETS = [
   "./", "./index.html",
@@ -33,12 +33,14 @@ self.addEventListener("fetch", e => {
   // 地圖圖磚：cache 優先，順手存入圖磚快取 → 看過/預載過的離線可用
   if (url.includes("server.arcgisonline.com") || url.includes("tile.opentopomap.org") || url.includes("tile.openstreetmap")) {
     e.respondWith(
-      caches.open(TILE_CACHE).then(c => c.match(e.request).then(hit =>
-        hit || fetch(e.request).then(res => {
+      caches.open(TILE_CACHE).then(c => c.match(e.request).then(hit => {
+        // 近似 LRU：命中時 2% 抽樣重新寫入（移到快取尾端），常看的圖磚不會被上限清掉
+        if (hit && Math.random() < 0.02) { c.delete(e.request).then(() => c.put(e.request, hit.clone())).catch(() => {}); }
+        return hit || fetch(e.request).then(res => {
           if (res && res.status === 200) c.put(e.request, res.clone());
           return res;
-        }).catch(() => hit)   // 離線且未快取 → 該圖磚留白
-      ))
+        }).catch(() => hit);   // 離線且未快取 → 該圖磚留白
+      }))
     );
     return;
   }
@@ -51,7 +53,8 @@ self.addEventListener("fetch", e => {
       const copy = res.clone();
       caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
       return res;
-    }).catch(() => caches.match("./index.html")))
+      // 只有「頁面導航」失敗才回 index.html；其他資源（圖片/JSON）失敗不能拿 HTML 充數
+    }).catch(() => (e.request.mode === "navigate" ? caches.match("./index.html") : undefined)))
   );
 });
 

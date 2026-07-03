@@ -25,6 +25,7 @@ const Amenities = (() => {
     if (!KEY || !trail.lat) return null;
     const cached = cacheGet(trail.id);
     if (cached) return cached;
+    if (typeof ttPlacesAllow === "function" && !ttPlacesAllow()) return null;   // 每日用量守門：超限改用快取
     const res = await fetch(ENDPOINT, {
       method: "POST",
       headers: {

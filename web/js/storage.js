@@ -97,9 +97,11 @@ const Store = (() => {
   function addRecord(rec) {
     _bumpLife(rec, +1);
     Archive.put(rec);   // 完整封存（含軌跡），失敗不影響主流程
-    const all = [rec, ...getRecords()].slice(0, 100);
+    // 軌跡以 IndexedDB 為正本：localStorage 常態只留最近 20 筆的軌跡（省一半以上空間），
+    // 更舊的存統計列，需要軌跡時 fullRecord()/allFull() 會自動到封存撈
+    const all = [rec, ...getRecords()].slice(0, 100).map((r, i) => i < 20 ? r : _stripTrack(r));
     if (_saveRecords(all)) return;
-    const slim = all.map((r, i) => i < 20 ? r : _stripTrack(r));   // 保留最近 20 筆軌跡
+    const slim = all.map((r, i) => i < 5 ? r : _stripTrack(r));    // 空間不足：只留最近 5 筆軌跡
     if (_saveRecords(slim)) return;
     for (let keep = 80; keep >= 20; keep -= 20) { if (_saveRecords(slim.slice(0, keep))) return; }
   }
@@ -207,6 +209,20 @@ function ttBusy(key, ms) {
   if (window.__ttBusy[key] && now - window.__ttBusy[key] < (ms || 1500)) return true;
   window.__ttBusy[key] = now;
   return false;
+}
+
+// 公用：Google Places 用量守門（控成本）：每裝置每日軟上限，超過改用快取/略過
+function ttPlacesAllow() {
+  try {
+    const d = new Date();
+    const day = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+    const rec = JSON.parse(localStorage.getItem("tt_places_quota") || "{}");
+    if (rec.day !== day) { rec.day = day; rec.n = 0; }
+    if ((rec.n || 0) >= 150) return false;
+    rec.n = (rec.n || 0) + 1;
+    localStorage.setItem("tt_places_quota", JSON.stringify(rec));
+  } catch (e) { /* 統計失敗不擋功能 */ }
+  return true;
 }
 
 // 公用：把軌跡依 gap 標記切成多段（暫停→繼續的跳段不相連）。回傳 [[{lat,lon,..}...], ...]
