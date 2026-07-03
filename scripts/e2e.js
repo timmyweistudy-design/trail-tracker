@@ -8,6 +8,11 @@ const ROOT = path.join(__dirname, "..");
 const PORT = 8899;
 
 (async () => {
+  // WSL 無 sudo 安裝的系統函式庫：用使用者目錄的本地副本（~/pw-libs，apt-get download + dpkg -x）
+  const localLibs = path.join(process.env.HOME || "", "pw-libs", "root", "usr", "lib", "x86_64-linux-gnu");
+  if (require("fs").existsSync(localLibs)) {
+    process.env.LD_LIBRARY_PATH = localLibs + (process.env.LD_LIBRARY_PATH ? ":" + process.env.LD_LIBRARY_PATH : "");
+  }
   let chromium;
   try { ({ chromium } = require("playwright")); }
   catch { console.error("✗ 請先安裝：npm i -D playwright && npx playwright install chromium"); process.exit(2); }
@@ -20,6 +25,7 @@ const PORT = 8899;
   try {
     browser = await chromium.launch();
     const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    await page.addInitScript(() => { try { localStorage.setItem("tt_onboarded_v2", "1"); } catch (e) { } });   // 跳過首次導覽浮層
     page.on("pageerror", e => errors.push("pageerror: " + e.message));
     page.on("console", m => { if (m.type() === "error" && !/net::|favicon|404 \(|Failed to load resource/.test(m.text())) errors.push("console: " + m.text()); });
 
@@ -28,7 +34,7 @@ const PORT = 8899;
     await page.goto(`http://localhost:${PORT}/`, { waitUntil: "domcontentloaded" });
     await page.waitForTimeout(2500);
     ok("App 載入、標題正確", (await page.title()).includes("循徑拾光"));
-    ok("步道列表有卡片", await page.locator(".trail-card").count() > 0);
+    ok("步道列表有卡片", await page.locator(".card.jcard").count() > 0);
 
     // 切五個分頁
     for (const v of ["record", "pet", "me", "social", "explore"]) {
@@ -38,7 +44,7 @@ const PORT = 8899;
     }
 
     // 開步道詳情 → 關閉
-    await page.click(".trail-card");
+    await page.click(".card.jcard");
     await page.waitForTimeout(1500);
     ok("步道詳情開啟", await page.locator("#detailSheet.show").count() === 1);
     await page.click("#closeDetailBtn");
@@ -58,6 +64,19 @@ const PORT = 8899;
     const ttErrs = await page.evaluate(() => (window.ttErrors ? window.ttErrors() : []));
     ok("App 內錯誤日誌乾淨", ttErrs.length === 0);
     if (ttErrs.length) ttErrs.slice(0, 5).forEach(e => console.log("  ttError:", e.m));
+
+    // 四語言凍結回歸（v241 日文同形詞條無限迴圈事故）：每個語言載入後主執行緒必須 3 秒內有回應
+    for (const lng of ["es", "ja", "zh"]) {
+      await page.evaluate(l => localStorage.setItem("tt_lang", l), lng).catch(() => {});
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await page.waitForTimeout(2500);
+      const alive = await Promise.race([
+        page.evaluate(() => 1 + 1).then(v => v === 2),
+        new Promise(r => setTimeout(() => r(false), 3000)),
+      ]);
+      ok(`語言 ${lng}：載入後主執行緒有回應（無凍結）`, alive);
+      if (!alive) break;
+    }
   } catch (e) {
     errors.push("fatal: " + e.message);
   } finally {
