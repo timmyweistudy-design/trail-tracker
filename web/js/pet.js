@@ -138,14 +138,31 @@ function renderQuests() {
   ];
   const allDone = quests.every(q => q.cur >= q.goal);
   const claimed = localStorage.getItem("tt_quest_claim") === todayStr();
-  box.innerHTML = `<div class="section-title">${ic("calendar")}每日任務${streak >= 2 ? ` <span class="streak-chip">${ic("flame")} 連續 ${streak} 天</span>` : ""}</div>
+  // #7 連續達成獎勵：基礎 +5，連續每多一天 +1（上限 +5），到 3/7/14/30 天再給里程碑大獎
+  const reward = questReward(streak);
+  const nextMile = QUEST_MILES.find(m => m.day > streak);
+  const streakChip = streak >= 2 ? ` <span class="streak-chip">${ic("flame")} ${ttT("連續")} ${streak} ${ttT("天")}</span>` : "";
+  const btnLabel = claimed ? ttT("今日獎勵已領 ✓") : (allDone ? `${ttT("領取")} +${reward.total} 🍓` : ttT("完成全部任務可領 🍓"));
+  const mileHint = (!claimed && nextMile) ? `<div class="quest-mile">${ic("flame")} ${ttT("下個連續里程碑")}：${nextMile.day} ${ttT("天")} +${nextMile.bonus} 🍓</div>` : "";
+  box.innerHTML = `<div class="section-title">${ic("calendar")}每日任務${streakChip}</div>
     <div class="quest-list">${quests.map(q => { const done = q.cur >= q.goal; return `<div class="quest ${done ? "done" : ""}"><span class="q-ic">${ic(q.icon)}</span><div class="q-body"><div class="q-l">${q.label}</div><div class="q-bar"><i style="width:${Math.min(100, q.cur / q.goal * 100).toFixed(0)}%"></i></div></div><span class="q-chk">${done ? "✓" : (q.dec ? q.cur.toFixed(q.dec) : Math.round(q.cur))}</span></div>`; }).join("")}</div>
-    <button class="btn ${allDone && !claimed ? "primary" : "ghost"}" id="qClaim"${allDone && !claimed ? "" : " disabled"}>${claimed ? "今日獎勵已領 ✓" : (allDone ? "領取 +5 🍓" : "完成全部任務可領 🍓")}</button>`;
+    <button class="btn ${allDone && !claimed ? "primary" : "ghost"}" id="qClaim"${allDone && !claimed ? "" : " disabled"}>${btnLabel}</button>${mileHint}`;
   const cb = $("#qClaim");
   if (cb && allDone && !claimed) cb.addEventListener("click", () => {
-    addBerryBonus(5); localStorage.setItem("tt_quest_claim", todayStr()); bumpAffinity(5);
-    toast("每日任務完成！+5 🍓"); confetti && confetti(); renderQuests(); renderPet();
+    const r = questReward(daysStreak());
+    addBerryBonus(r.total); localStorage.setItem("tt_quest_claim", todayStr()); bumpAffinity(5);
+    toast(`${ttT(r.mile ? "連續達成獎勵！" : "每日任務完成！")} +${r.total} 🍓`);
+    if (navigator.vibrate) navigator.vibrate(r.mile ? [120, 60, 120] : 40);
+    confetti && confetti(); renderQuests(); renderPet();
   });
+}
+// 每日任務里程碑：連續 N 天達成的一次性大獎
+const QUEST_MILES = [{ day: 3, bonus: 5 }, { day: 7, bonus: 15 }, { day: 14, bonus: 25 }, { day: 30, bonus: 50 }];
+function questReward(streak) {
+  const stBonus = Math.min(Math.max(streak - 1, 0), 5);   // 連續加成，上限 +5
+  const m = QUEST_MILES.find(x => x.day === streak);
+  const mile = m ? m.bonus : 0;
+  return { total: 5 + stBonus + mile, mile, stBonus };
 }
 function renderPet() {
   const box = $("#petCard");

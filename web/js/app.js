@@ -740,6 +740,20 @@ function trailCard(t) {
   </div>`;
 }
 
+// 「熱門」排序分數：沒有全站造訪數，用「資料完整度＋可近性」當熱門度代理
+// （官方建置、有路況監測、親子友善、交通便利、有季節/時程資訊、難度親民＝越熱門）
+function popularityScore(t) {
+  let s = 0;
+  if (t.source === "forestry") s += 4;
+  if (t.condition) s += 1;
+  if (t.family_friendly) s += 2;
+  if (t.tour) s += 1;
+  if (t.best_season) s += 1;
+  if (t.pave) s += 1;
+  if (t.transport && (t.transport.car || t.transport.m_bus || t.transport.l_bus)) s += 1;
+  s += (6 - (t.difficulty || 3)) * 0.5;   // 難度越低越大眾
+  return s;
+}
 // 詳情頁「附近其他步道」：優先用座標找最近的，否則同縣市
 function nearbyTrails(t, n = 8) {
   const pool = TRAILS.filter(x => x.id !== t.id);
@@ -785,11 +799,23 @@ function render() {
   else if (curSort !== "default") {
     const ln = t => t.length_km == null ? 9e9 : t.length_km;
     const df = t => t.difficulty == null ? 99 : t.difficulty;
+    // 最近走過：用紀錄裡各步道的最新日期
+    let lastWalk = null;
+    if (curSort === "recent") {
+      lastWalk = new Map();
+      for (const r of Store.getRecords()) {
+        if (r.trailId == null || !r.date) continue;
+        const k = String(r.trailId), d = String(r.date);
+        if (!lastWalk.has(k) || d > lastWalk.get(k)) lastWalk.set(k, d);
+      }
+    }
     const cmp = {
       "length-asc": (a, b) => ln(a) - ln(b), "length-desc": (a, b) => ln(b) - ln(a),
       "diff-asc": (a, b) => df(a) - df(b), "diff-desc": (a, b) => df(b) - df(a),
       "rating-desc": (a, b) => (Store.trailLog(b.id).rating || 0) - (Store.trailLog(a.id).rating || 0),
       "name": (a, b) => a.name.localeCompare(b.name, "zh-Hant"),
+      "recent": (a, b) => (lastWalk.get(String(b.id)) || "").localeCompare(lastWalk.get(String(a.id)) || "") || ln(a) - ln(b),
+      "popular": (a, b) => popularityScore(b) - popularityScore(a) || ln(a) - ln(b),
     }[curSort];
     if (cmp) curList.sort(cmp);
   }
