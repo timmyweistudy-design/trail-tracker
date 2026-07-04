@@ -1,0 +1,23 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright (chromium)
+        run: |
+          npm i -D playwright@1.61.1
+          npx playwright install --with-deps chromium
+      - name: Check
+        run: node scripts/check.js
+      - name: E2E
+        run: node scripts/e2e.js
