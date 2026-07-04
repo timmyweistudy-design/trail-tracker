@@ -2667,6 +2667,17 @@ if (localStorage.getItem("tt_pet_stage") === null) localStorage.setItem("tt_pet_
 render();
 loadProfile();
 restoreActiveRecording();
+// 資料自動救援：localStorage 紀錄被清空（iOS 清快取/儲存）但 IndexedDB 封存還在 → 回填
+(async () => {
+  try {
+    if (typeof Store === "undefined" || !Store.recoverFromArchive) return;
+    const n = await Store.recoverFromArchive();
+    if (n > 0) {
+      try { renderHistory(); render(); renderStats && renderStats(); } catch (e) { /* */ }
+      if (typeof toast === "function") toast(`已從本機封存救回 ${n} 筆行程紀錄`);
+    }
+  } catch (e) { /* */ }
+})();
 // 即時路況（若有設定代理）→ 抓最新並重繪
 // 即時路況：啟動先抓一次；之後每次回到前景且距上次更新超過 10 分鐘再抓一次，保持新鮮
 function refreshConditions() {

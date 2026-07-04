@@ -112,6 +112,19 @@ const Store = (() => {
     _saveRecords(getRecords().filter(r => r.id !== id));
   }
   function clearRecords() { localStorage.removeItem(RK); _recCache = null; _lifeSave({ km: 0, asc: 0, kcal: 0, steps: 0, ms: 0, trips: 0 }); Archive.clear(); }
+  // 自動救援：若 localStorage 紀錄被清空（如 iOS 只清了 localStorage、或快取被清），
+  // 但 IndexedDB 封存正本還在 → 從封存回填，讓紀錄自動回來。回傳救回的筆數。
+  async function recoverFromArchive() {
+    try {
+      if (getRecords().length > 0) return 0;                 // localStorage 有資料 → 不動
+      const arch = await Archive.all();
+      if (!arch || !arch.length) return 0;                   // 封存也空 → 無法救（需雲端）
+      arch.sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")) || (b.id || 0) - (a.id || 0));
+      _saveRecords(arch.slice(0, 100).map((r, i) => i < 20 ? r : _stripTrack(r)));
+      if (!_lifeRead()) _lifeSave(_lifeFrom(arch));           // 終身統計若也遺失 → 從封存重建
+      return arch.length;
+    } catch (e) { return 0; }
+  }
   function setRecordNote(id, note) {
     const all = getRecords(); const r = all.find(x => x.id === id);
     if (r) { if (note) r.note = note; else delete r.note; _saveRecords(all); Archive.put(r); }
@@ -198,7 +211,7 @@ const Store = (() => {
 
   return { getProfile, saveProfile, weight, height, getRecords, addRecord, deleteRecord, clearRecords,
            getFavs, isFav, toggleFav, trailLog, setTrailLog, doneCount, exportAll, importAll, clearSimRecords, packWeight, setRecordNote,
-           life, fullRecord, allFull };
+           life, fullRecord, allFull, recoverFromArchive };
 })();
 
 // 公用：同步防連點鎖。非同步開啟的面板（要先抓資料）在資料回來前 data-ov 標記還沒掛上，
