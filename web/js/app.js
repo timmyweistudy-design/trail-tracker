@@ -2580,10 +2580,24 @@ function initTheme() {
   applyProColor();
   const mode = localStorage.getItem("tt_theme") === "dark" ? "dark" : "light";   // 預設淺色，只有明確選深色才深色
   applyTheme(mode);
-  document.querySelectorAll(".theme-opt").forEach(b => b.addEventListener("click", () => {
-    localStorage.setItem("tt_theme", b.dataset.themeOpt);
-    applyTheme(b.dataset.themeOpt);
-  }));
+  document.querySelectorAll("[data-theme-opt]").forEach(b => {
+    b.classList.toggle("on", b.dataset.themeOpt === mode);
+    b.addEventListener("click", () => {
+      localStorage.setItem("tt_theme", b.dataset.themeOpt);
+      applyTheme(b.dataset.themeOpt);
+      document.querySelectorAll("[data-theme-opt]").forEach(x => x.classList.toggle("on", x === b));
+    });
+  });
+  // 字體大小（無障礙）：標準/大/特大 → 設 --fs 倍率，只放大文字不動地圖版面
+  const curFs = (() => { try { return localStorage.getItem("tt_fontscale") || "1"; } catch (e) { return "1"; } })();
+  document.querySelectorAll(".fs-opt").forEach(b => {
+    b.classList.toggle("on", b.dataset.fs === curFs);
+    b.addEventListener("click", () => {
+      try { localStorage.setItem("tt_fontscale", b.dataset.fs); } catch (e) { /* */ }
+      document.documentElement.style.setProperty("--fs", b.dataset.fs);
+      document.querySelectorAll(".fs-opt").forEach(x => x.classList.toggle("on", x === b));
+    });
+  });
   // 語言清單（設定頁）：搜尋框 + 可捲動清單（國旗＋原名＋英文名），高度上限避免頁面過長
   const curLang = (typeof I18n !== "undefined") ? I18n.lang() : "zh";
   const row = document.getElementById("langRow");

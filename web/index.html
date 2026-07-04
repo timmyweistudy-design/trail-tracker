@@ -7,10 +7,12 @@
   <meta name="theme-color" content="#16301f">
   <title>循徑拾光 Gather the Trail</title>
   <script>
-    // 主題：在繪製前套用，避免閃白
+    // 主題＋字體大小：在繪製前套用，避免閃白/閃字級
     (function () {
       try {
         if (localStorage.getItem("tt_theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");
+        var fs = localStorage.getItem("tt_fontscale");
+        if (fs) document.documentElement.style.setProperty("--fs", fs);
       } catch (e) { /* */ }
     })();
   </script>
@@ -183,6 +185,13 @@
         <svg class="ic" viewBox="0 0 24 24"><path d="M21 13A8.5 8.5 0 0 1 11 3a7 7 0 1 0 10 10Z"/></svg>深色
       </button>
     </div>
+    <div class="accent-head">字體大小</div>
+    <div class="theme-row" id="fontRow">
+      <button class="theme-opt fs-opt" data-fs="1" aria-label="標準"><span style="font-size:15px">A</span></button>
+      <button class="theme-opt fs-opt" data-fs="1.15" aria-label="大"><span style="font-size:19px">A</span></button>
+      <button class="theme-opt fs-opt" data-fs="1.3" aria-label="特大"><span style="font-size:24px">A</span></button>
+    </div>
+
     <div class="accent-head">語言 Language</div>
     <div class="lang-list" id="langRow"></div>
     <div class="accent-head">主題色<span class="pro-tag">PRO</span></div>

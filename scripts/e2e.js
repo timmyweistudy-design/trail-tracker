@@ -95,6 +95,17 @@ const PORT = 8899;
     await fp.waitForTimeout(2500);
     ok("選英文後套用（Explore 分頁）", /Explore/i.test(await fp.locator('.tab[data-view="explore"]').innerText()));
     await fresh.close();
+    // 字體大小（無障礙）：套用 --fs 後根字級倍率生效、CSS calc 放大文字
+    await page.evaluate(() => { localStorage.setItem("tt_fontscale", "1.3"); });
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(1500);
+    const fsVal = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--fs").trim());
+    ok("字體大小 --fs 套用（1.3）", fsVal === "1.3");
+    const scaled = await page.evaluate(() => {
+      const el = document.querySelector(".tab"); if (!el) return 0;
+      return parseFloat(getComputedStyle(el).fontSize);
+    });
+    ok("字體實際放大（分頁字級 >11px）", scaled > 11);
   } catch (e) {
     errors.push("fatal: " + e.message);
   } finally {
