@@ -1711,3 +1711,12 @@ html[data-theme="dark"] body::after { opacity: .05; }
   background: var(--surface-2); color: var(--ink); padding: 10px; font-size: calc(14px * var(--fs, 1)); font-family: inherit; resize: vertical; }
 .ttdlg-btns { display: flex; gap: 8px; margin-top: 16px; }
 .ttdlg-btns .btn { flex: 1; width: auto; margin: 0; padding: 11px 8px; font-size: calc(14px * var(--fs, 1)); }
+
+/* 社群下拉重新整理指示器（跟手的箭頭→轉圈） */
+.ptr-ind { height: 0; overflow: hidden; display: flex; align-items: center; justify-content: center;
+  color: var(--ink-faint); transition: height .18s ease; }
+.ptr-ind .ptr-arrow { width: 20px; height: 20px; transition: transform .2s; }
+.ptr-ind.ready .ptr-arrow { transform: rotate(180deg); color: var(--brand-mid); }
+.ptr-ind .ptr-spin { display: none; }
+.ptr-ind.loading .ptr-arrow { display: none; }
+.ptr-ind.loading .ptr-spin { display: inline-block; }

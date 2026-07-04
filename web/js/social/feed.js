@@ -161,18 +161,33 @@ const Feed = (() => {
     attachPTR();
   }
 
-  // 下拉刷新：列表捲到頂時往下拉超過門檻 → 重新整理
+  // 下拉刷新：列表捲到頂時往下拉——跟手的視覺指示器（箭頭→轉圈），超過門檻放開即重整
   function attachPTR() {
     const sc = document.getElementById("view-social"); if (!sc || sc._ptr) return; sc._ptr = true;
-    let startY = 0, pulling = false;
-    sc.addEventListener("touchstart", e => { pulling = sc.scrollTop <= 0; startY = e.touches[0].clientY; }, { passive: true });
+    const TH = 72;   // 觸發門檻
+    let startY = 0, pulling = false, dy = 0;
+    let ind = document.getElementById("ptrInd");
+    if (!ind) {
+      ind = document.createElement("div"); ind.id = "ptrInd"; ind.className = "ptr-ind";
+      ind.innerHTML = `<svg class="ic ptr-arrow" viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg><span class="spin ptr-spin"></span>`;
+      sc.prepend(ind);
+    }
+    const active = () => _into && document.getElementById("feedRefresh");   // 只在動態牆畫面
+    const atTop = () => (window.scrollY || document.documentElement.scrollTop || 0) <= 2;   // 頁面捲到最頂（window 才是捲動容器）
+    const reset = () => { ind.style.height = "0px"; ind.classList.remove("ready", "loading"); };
+    sc.addEventListener("touchstart", e => { pulling = atTop() && active(); startY = e.touches[0].clientY; dy = 0; }, { passive: true });
     sc.addEventListener("touchmove", e => {
       if (!pulling) return;
-      const dy = e.touches[0].clientY - startY;
-      // 僅在動態牆畫面（有重新整理鈕）時觸發，避免在搜尋/通知分頁誤刷
-      if (dy > 90 && _into && document.getElementById("feedRefresh")) { pulling = false; if (typeof toast === "function") toast("重新整理中…"); render(_into, _mode); }
+      dy = Math.max(0, e.touches[0].clientY - startY);
+      const h = Math.min(dy * 0.5, 64);              // 阻尼：拉一半、上限 64px
+      ind.style.height = h + "px";
+      ind.classList.toggle("ready", dy > TH);        // 達門檻：箭頭轉向、提示可放開
     }, { passive: true });
-    sc.addEventListener("touchend", () => { pulling = false; }, { passive: true });
+    sc.addEventListener("touchend", () => {
+      if (pulling && dy > TH) { ind.classList.add("loading"); ind.style.height = "44px"; render(_into, _mode); setTimeout(reset, 600); }
+      else reset();
+      pulling = false;
+    }, { passive: true });
   }
 
   function bind() {
