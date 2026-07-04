@@ -4,6 +4,9 @@
 // 步道名稱/介紹等資料內容維持中文。要補翻譯：加 DICT 詞條或 PATTERNS 規則即可。
 const I18n = (() => {
   const DICT = {
+    "匯出備份檔": "Export backup",
+    "匯入備份檔": "Import backup",
+    "登入後每趟走完會自動雲端備份，換手機或資料遺失都救得回。也可匯出備份檔自己保管。": "Once logged in, every hike is auto-backed up to the cloud — recoverable if you switch phones or lose data. You can also export a backup file to keep yourself.",
     "字體大小": "Text size",
     "（我）": "(Me)", "隊友": "Teammate",
     "搜尋語言": "Search languages",

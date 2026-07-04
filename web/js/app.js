@@ -2270,24 +2270,20 @@ async function cloudBackupNow(silent) {
     return !error;
   } catch (e) { if (!silent) toast("備份失敗：" + (e && e.message || e)); return false; }
 }
-// Premium：每趟走完自動雲端備份（靜默，失敗不打擾）
+// 每趟走完自動雲端備份（靜默，失敗不打擾）——資料安全不鎖付費：任何登入者都自動備份
 async function autoCloudBackup() {
   try {
-    if (typeof Premium === "undefined" || !Premium.isOn()) return;
     if (typeof Supa === "undefined" || !Supa.ready()) return;
     const c = Supa.client(); const { data: u } = await c.auth.getUser();
-    if (!u || !u.user) return;
+    if (!u || !u.user) return;   // 沒登入就沒雲端備份（改用匯出備份檔）
     if (await cloudBackupNow(true)) toast("已自動備份到雲端 ☁️");
   } catch (e) { /* 靜默 */ }
 }
+// 雲端備份/還原：資料安全，任何登入者可用（不鎖 Premium）
 const _cbk = $("#btnCloudBackup");
-if (_cbk) _cbk.addEventListener("click", async () => {
-  if (typeof Premium !== "undefined" && !Premium.gate()) return;
-  cloudBackupNow(false);
-});
+if (_cbk) _cbk.addEventListener("click", () => cloudBackupNow(false));
 const _crs = $("#btnCloudRestore");
 if (_crs) _crs.addEventListener("click", async () => {
-  if (typeof Premium !== "undefined" && !Premium.gate()) return;
   const x = await cloudClient(); if (!x) return;
   try {
     const { data, error } = await x.c.from("backups").select("data, updated_at").eq("user_id", x.uid).maybeSingle();
@@ -2302,6 +2298,40 @@ if (_crs) _crs.addEventListener("click", async () => {
     toast("已從雲端還原 ✓");
   } catch (e) { toast("還原失敗：" + (e && e.message || e)); }
 });
+// 本機備份檔：匯出 JSON 自己保管（不需登入、不需網路）／匯入還原
+const _fbk = $("#btnFileBackup");
+if (_fbk) _fbk.addEventListener("click", () => {
+  try {
+    const blob = new Blob([JSON.stringify(Store.exportAll())], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `循徑拾光備份_${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast("已匯出備份檔，請妥善保存");
+  } catch (e) { toast("匯出失敗：" + (e && e.message || e)); }
+});
+const _frs = $("#btnFileRestore"), _fri = $("#fileRestoreInput");
+if (_frs && _fri) {
+  _frs.addEventListener("click", () => _fri.click());
+  _fri.addEventListener("change", () => {
+    const f = _fri.files && _fri.files[0]; if (!f) return;
+    const rd = new FileReader();
+    rd.onload = () => {
+      try {
+        const data = JSON.parse(rd.result);
+        if (!data || (!data.records && !data.pet && !data.v)) { toast("這不是有效的備份檔"); return; }
+        const merge = confirm("匯入備份檔\n\n要『合併』到現有資料嗎？\n確定 = 合併\n取消 = 完全取代");
+        Store.importAll(data, merge ? "merge" : "replace");
+        renderHistory(); render();
+        try { initTheme(); renderPet(); renderQuests(); renderBadges(); renderStats(); loadProfile(); } catch (e) { /* */ }
+        toast("已從備份檔還原 ✓");
+      } catch (e) { toast("匯入失敗：檔案可能損壞"); }
+      _fri.value = "";
+    };
+    rd.readAsText(f);
+  });
+}
 if (typeof Premium !== "undefined") { setTimeout(() => Premium.refresh(), 1500); Premium.handleReturn(); }   // 啟動後同步會員狀態 + 處理結帳返回
 
 // 前端錯誤自動上報（phase19）：把 index.html 記到 localStorage 的錯誤批次上傳，
