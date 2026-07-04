@@ -1296,6 +1296,16 @@ html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
 /* 成就勳章專區（夥伴頁） */
 #petBadges { margin-top: 18px; }
 .badge-count { font-family: var(--num); font-size: calc(13px * var(--fs, 1)); font-weight: 700; color: var(--accent); margin-left: 4px; }
+/* #8 下一個成就進度 */
+.ach-next { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.anx { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 9px 12px; }
+.anx-e { font-size: calc(20px * var(--fs, 1)); flex: none; filter: grayscale(0.3); }
+.anx-body { flex: 1; min-width: 0; }
+.anx-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.anx-top b { font-size: calc(13px * var(--fs, 1)); color: var(--ink); }
+.anx-remain { font-family: var(--num); font-size: calc(11.5px * var(--fs, 1)); font-weight: 700; color: var(--accent); flex: none; }
+.anx-bar { height: 6px; background: var(--line-soft); border-radius: 4px; overflow: hidden; }
+.anx-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--brand-mid), var(--accent)); border-radius: 4px; }
 .ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(98px, 1fr)); gap: 9px; }
 .ach { background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 12px 8px; text-align: center; }
 .ach.locked { opacity: .5; filter: grayscale(.6); }
