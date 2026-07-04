@@ -362,7 +362,11 @@ document.querySelectorAll(".tab").forEach(btn => {
       }
     }
     if (view === "me") { renderHistory(); refreshOfflineStatus(); renderAccent(); renderProColor(); renderMeProfileCard(); if (typeof Premium !== "undefined") Premium.refresh().then(() => { Premium.renderBox($("#premiumBox")); renderAccent(); renderProColor(); renderMeProfileCard(); applySeason(); }); }
-    if (view === "social" && typeof SocialUI !== "undefined") SocialUI.onShow();
+    if (view === "social") {
+      // 社群模組延遲載入：還沒載就先載完再進（開機後 2 秒會自動載，多數時候已就緒）
+      if (typeof SocialUI === "undefined" && window.loadSocial) window.loadSocial().then(() => { if (typeof SocialUI !== "undefined") SocialUI.onShow(); });
+      else if (typeof SocialUI !== "undefined") SocialUI.onShow();
+    }
   });
 });
 

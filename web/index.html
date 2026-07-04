@@ -409,27 +409,28 @@
 <script src="js/gpx.js"></script>
 <script src="js/recorder.js"></script>
 <script src="js/elevation.js"></script>
-<script src="vendor/supabase/supabase.js"></script>
-<script src="js/social/supa.js"></script>
-<script src="js/social/handle.js"></script>
-<script src="js/social/media.js"></script>
-<script src="js/social/posts.js"></script>
-<script src="js/social/composer.js"></script>
-<script src="js/social/safety.js"></script>
-<script src="js/social/feed.js"></script>
-<script src="js/social/postview.js"></script>
-<script src="js/social/discover.js"></script>
-<script src="js/social/petsocial.js"></script>
-<script src="js/social/teamlive.js"></script>
-<script src="js/social/teams.js"></script>
-<script src="js/social/notifications.js"></script>
-<script src="js/social/push.js"></script>
-<script src="js/social/autocomplete.js"></script>
-<script src="js/social/events.js"></script>
-<script src="js/social/lightbox.js"></script>
-<script src="js/social/auth.js"></script>
-<script src="js/social/profiles.js"></script>
-<script src="js/social/social-ui.js"></script>
+<script>
+// 社群模組延遲載入：378KB（supabase+20 支 social）不佔開機。順序注入（彼此有依賴），
+// 只跑一次；切到社群分頁時等它載完，其餘時間開機後閒置 2 秒自動載（紅點/自動登入照常）。
+window.loadSocial = (function () {
+  const FILES = ["vendor/supabase/supabase.js", "js/social/supa.js", "js/social/handle.js",
+    "js/social/media.js", "js/social/posts.js", "js/social/composer.js", "js/social/safety.js",
+    "js/social/feed.js", "js/social/postview.js", "js/social/discover.js", "js/social/petsocial.js",
+    "js/social/teamlive.js", "js/social/teams.js", "js/social/notifications.js", "js/social/push.js",
+    "js/social/autocomplete.js", "js/social/events.js", "js/social/lightbox.js", "js/social/auth.js",
+    "js/social/profiles.js", "js/social/social-ui.js"];
+  let p = null;
+  return function () {
+    if (!p) p = FILES.reduce((chain, f) => chain.then(() => new Promise((res, rej) => {
+      const sc = document.createElement("script"); sc.src = f;
+      sc.onload = res; sc.onerror = res;   // 單檔失敗不卡整串（社群功能屆時自然降級）
+      document.body.appendChild(sc);
+    })), Promise.resolve());
+    return p;
+  };
+})();
+window.addEventListener("load", () => setTimeout(() => window.loadSocial(), 2000));
+</script>
 <script src="js/premium.js"></script>
 <script src="js/pet.js"></script>
 <script src="js/analytics.js"></script>
