@@ -2590,7 +2590,7 @@ function initTheme() {
   if (row) {
     const itemHtml = ([c, f, n, sub]) =>
       `<button class="lang-item${c === curLang ? " on" : ""}" data-lang-opt="${c}" data-search="${(n + " " + sub + " " + c).toLowerCase()}">
-        <span class="flag">${f}</span><span class="names"><span class="native">${n}</span><span class="sub">${sub}</span></span><span class="tick">✓</span>
+        <span class="flag">${f}</span><span class="names"><span class="native">${n}</span>${n === sub ? "" : ` <span class="sub">${sub}</span>`}</span><span class="tick">✓</span>
       </button>`;
     row.innerHTML = `<input type="search" class="lang-search" id="langSearch" placeholder="${ttT("搜尋語言")}" autocomplete="off">
       <div class="lang-scroll" id="langScroll">${TT_LANGS.map(itemHtml).join("")}</div>`;
@@ -2620,6 +2620,9 @@ const TT_LANGS = [
   ["tl", "🇵🇭", "Filipino", "Filipino"], ["ms", "🇲🇾", "Bahasa Melayu", "Malay"],
   ["nl", "🇳🇱", "Nederlands", "Dutch"], ["pl", "🇵🇱", "Polski", "Polish"],
   ["tr", "🇹🇷", "Türkçe", "Turkish"], ["hi", "🇮🇳", "हिन्दी", "Hindi"],
+  ["my", "🇲🇲", "မြန်မာ", "Burmese"], ["km", "🇰🇭", "ខ្មែរ", "Khmer"],
+  ["ne", "🇳🇵", "नेपाली", "Nepali"], ["mn", "🇲🇳", "Монгол", "Mongolian"],
+  ["uk", "🇺🇦", "Українська", "Ukrainian"],
 ];
 if (typeof window !== "undefined") window.TT_LANGS = TT_LANGS;
 
@@ -2828,7 +2831,7 @@ if (new URLSearchParams(location.search).get("debug") === "1") setTimeout(toggle
     </div>
     <input type="search" class="lang-search" id="lgSearch" placeholder="Search · 搜尋" autocomplete="off">
     <div class="lang-list" id="lgList">${TT_LANGS.map(([c, f, n, sub]) =>
-      `<button class="lang-item" data-lg="${c}" data-search="${(n + " " + sub + " " + c).toLowerCase()}"><span class="flag">${f}</span><span class="names"><span class="native">${n}</span><span class="sub">${sub}</span></span></button>`).join("")}</div>
+      `<button class="lang-item" data-lg="${c}" data-search="${(n + " " + sub + " " + c).toLowerCase()}"><span class="flag">${f}</span><span class="names"><span class="native">${n}</span>${n === sub ? "" : ` <span class="sub">${sub}</span>`}</span></button>`).join("")}</div>
   </div>`;
   const lgs = ov.querySelector("#lgSearch");
   if (lgs) lgs.addEventListener("input", () => {

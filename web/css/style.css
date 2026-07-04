@@ -814,9 +814,9 @@ html[data-theme="dark"] img.trail-photo { background: var(--surface-2); }
   border-radius: var(--r-sm); padding: 11px 13px; cursor: pointer; transition: .15s; }
 .lang-item:active { transform: scale(.99); }
 .lang-item .flag { font-size: 22px; line-height: 1; flex: none; }
-.lang-item .names { flex: 1; min-width: 0; }
-.lang-item .native { font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.lang-item .sub { font-size: 12px; color: var(--ink-faint); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lang-item .names { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lang-item .native { font-weight: 600; font-size: 15px; }
+.lang-item .sub { font-size: 12.5px; color: var(--ink-faint); }
 .lang-item .tick { flex: none; color: var(--brand-mid); font-weight: 700; opacity: 0; }
 .lang-item.on { border-color: var(--brand); background: color-mix(in srgb, var(--brand) 8%, var(--surface)); }
 .lang-item.on .tick { opacity: 1; }

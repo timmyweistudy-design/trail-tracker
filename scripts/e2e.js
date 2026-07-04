@@ -68,7 +68,7 @@ const PORT = 8899;
     if (ttErrs.length) ttErrs.slice(0, 5).forEach(e => console.log("  ttError:", e.m));
 
     // 四語言凍結回歸（v241 日文同形詞條無限迴圈事故）：每個語言載入後主執行緒必須 3 秒內有回應
-    for (const lng of ["es", "ja", "ko", "fr", "de", "cn", "pt", "it", "ru", "th", "vi", "id", "tl", "ms", "nl", "pl", "tr", "hi", "zh"]) {
+    for (const lng of ["es", "ja", "ko", "fr", "de", "cn", "pt", "it", "ru", "th", "vi", "id", "tl", "ms", "nl", "pl", "tr", "hi", "my", "km", "ne", "mn", "uk", "zh"]) {
       await page.evaluate(l => localStorage.setItem("tt_lang", l), lng).catch(() => {});
       await page.reload({ waitUntil: "domcontentloaded" });
       await page.waitForTimeout(2500);
@@ -85,7 +85,7 @@ const PORT = 8899;
     await fp.goto(`http://localhost:${PORT}/`, { waitUntil: "domcontentloaded" });
     await fp.waitForTimeout(2000);
     ok("首次進入顯示語言選擇", await fp.locator(".lang-gate").count() === 1);
-    ok("語言選擇有 20 種", await fp.locator(".lang-gate [data-lg]").count() === 20);
+    ok("語言選擇有 25 種", await fp.locator(".lang-gate [data-lg]").count() === 25);
     await fp.click('.lang-gate [data-lg="en"]');
     await fp.waitForTimeout(2500);
     ok("選英文後套用（Explore 分頁）", /Explore/i.test(await fp.locator('.tab[data-view="explore"]').innerText()));

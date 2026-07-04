@@ -98,6 +98,8 @@ ok("i18n(it) 字典：步道→Sentiero", I18n.tx("步道") === "Sentiero");
 localStorage.setItem("tt_lang", "tl"); ok("i18n(tl) 字典：步道→Trail", I18n.tx("步道") === "Trail");
 localStorage.setItem("tt_lang", "pl"); ok("i18n(pl) 字典：儲存→Zapisz", I18n.tx("儲存") === "Zapisz");
 localStorage.setItem("tt_lang", "hi"); ok("i18n(hi) 字典：難度", I18n.tx("難度") === "कठिनाई");
+localStorage.setItem("tt_lang", "uk"); ok("i18n(uk) 字典：步道→Стежка", I18n.tx("步道") === "Стежка");
+localStorage.setItem("tt_lang", "my"); ok("i18n(my) 團隊：隊友有值", (I18n.tx("隊友") || "").length > 0);
 localStorage.setItem("tt_lang", "en"); ok("i18n 小隊：（我）→(Me)", I18n.tx("（我）") === "(Me)");
 localStorage.setItem("tt_lang", "cn");
 ok("i18n(cn) 繁→簡：記錄→记录", I18n.tx("記錄") === "记录");
