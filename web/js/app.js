@@ -4,19 +4,26 @@ const TRAILS = window.TRAILS || [];
 const SRC_LABEL = { forestry: "林業署", osm: "OSM社群", osm_path: "OSM社群" };
 const GRADES = window.GRADES || {};
 const geoOf = t => (window.TRAILS_GEO || {})[t.id] || null;   // 路線幾何（延遲載入檔）
-// 幾何檔 1.4MB：首屏不載，等真正需要（看詳情/地圖/記錄/篩選有路線）才抓，列表瀏覽更快
-let _geoPromise = null;
-function ensureGeo() {
-  if (window.TRAILS_GEO) return Promise.resolve();
-  if (_geoPromise) return _geoPromise;
-  _geoPromise = new Promise(resolve => {
+// 幾何依縣市分片（web/js/geo/geo-*.js，manifest 開機載）：開詳情只抓該縣市 ~60KB；
+// 記錄/篩選需要全台時才載全部分片。載過的分片不重複抓。
+const _geoLoaded = new Set();
+const _geoPromises = {};
+function _loadGeoShard(file) {
+  if (_geoLoaded.has(file)) return Promise.resolve();
+  if (_geoPromises[file]) return _geoPromises[file];
+  _geoPromises[file] = new Promise(resolve => {
     const s = document.createElement("script");
-    s.src = "js/trails-geo.js";
-    s.onload = () => resolve();
+    s.src = "js/geo/" + file;
+    s.onload = () => { _geoLoaded.add(file); resolve(); };
     s.onerror = () => resolve();   // 失敗也放行，退化為「無路線」
     document.head.appendChild(s);
   });
-  return _geoPromise;
+  return _geoPromises[file];
+}
+function ensureGeo(region) {
+  const M = window.TT_GEO_SHARDS || {};
+  if (region && M[region]) return _loadGeoShard(M[region]);   // 只載這個縣市
+  return Promise.all(Object.values(M).map(_loadGeoShard));    // 全台（模擬挑步道/「有路線」篩選）
 }
 // 詳情欄位（guide/entrances/交通…）拆出懶載，首屏更輕
 let _detailPromise = null;
@@ -1012,7 +1019,7 @@ async function openDetail(id) {
   $("#detailSheet").classList.add("show");
   $("#detailSheet").scrollTop = 0;
   $("#closeDetailBtn").focus({ preventScroll: true });
-  await Promise.all([ensureGeo(), ensureDetail()]);
+  await Promise.all([ensureGeo(t.region), ensureDetail()]);   // 幾何只載這條步道的縣市分片
   mergeDetail(t);                       // 併入 guide/entrances/交通等詳情欄位
   const d = t.difficulty || 0;
   // 只列出有資料的欄位（OSM 步道欄位較少，避免顯示空白「—」）

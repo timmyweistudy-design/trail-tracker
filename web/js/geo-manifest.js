@@ -1,0 +1,2 @@
+// 自動產生（scripts/shard-geo.mjs)：縣市→幾何分片檔名
+window.TT_GEO_SHARDS = {"南投縣":"geo-0.js","嘉義市":"geo-1.js","嘉義縣":"geo-2.js","基隆市":"geo-3.js","宜蘭縣":"geo-4.js","屏東縣":"geo-5.js","彰化縣":"geo-6.js","新北市":"geo-7.js","新竹市":"geo-8.js","新竹縣":"geo-9.js","桃園市":"geo-10.js","澎湖縣":"geo-11.js","臺中市":"geo-12.js","臺北市":"geo-13.js","臺南市":"geo-14.js","臺東縣":"geo-15.js","花蓮縣":"geo-16.js","苗栗縣":"geo-17.js","連江縣":"geo-18.js","金門縣":"geo-19.js","雲林縣":"geo-20.js","高雄市":"geo-21.js"};
