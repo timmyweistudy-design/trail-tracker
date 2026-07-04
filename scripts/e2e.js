@@ -106,6 +106,28 @@ const PORT = 8899;
       return parseFloat(getComputedStyle(el).fontSize);
     });
     ok("字體實際放大（分頁字級 >11px）", scaled > 11);
+    // 關鍵流程①：模擬記錄一趟走完（免 GPS）→ 里程>0 → 結束 → 結算頁出現
+    await page.evaluate(() => localStorage.setItem("tt_lang", "zh"));
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(2000);
+    await page.click('.tab[data-view="record"]');
+    await page.waitForTimeout(800);
+    await page.evaluate(() => { const t = document.getElementById("simToggle"); if (t && !t.checked) t.click(); });
+    await page.click("#btnStart");
+    await page.waitForTimeout(12000);   // 模擬 10 秒走完整條路線
+    const dist = await page.evaluate(() => parseFloat(document.getElementById("stDist").textContent));
+    ok(`模擬記錄有里程（${dist} km > 0.1）`, dist > 0.1);
+    await page.click("#btnStop");
+    await page.waitForTimeout(2500);
+    ok("結束後結算頁開啟", await page.locator("#trackSheet.show").count() === 1);
+    await page.click("#trackSheet .sheet-close").catch(() => {});
+    await page.waitForTimeout(500);
+    // 關鍵流程②：匯出備份檔會觸發下載
+    await page.click('.tab[data-view="me"]');
+    await page.waitForTimeout(600);
+    const dl = page.waitForEvent("download", { timeout: 5000 }).catch(() => null);
+    await page.click("#btnFileBackup");
+    ok("匯出備份檔觸發下載", !!(await dl));
   } catch (e) {
     errors.push("fatal: " + e.message);
   } finally {

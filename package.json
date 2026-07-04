@@ -9,7 +9,9 @@
     "add:android": "cap add android",
     "sync": "cap sync",
     "open:android": "cap open android",
-    "assets": "capacitor-assets generate --iconBackgroundColor #16301f --splashBackgroundColor #16301f"
+    "assets": "capacitor-assets generate --iconBackgroundColor #16301f --splashBackgroundColor #16301f",
+    "data:update": "python3 data/build_data.py && python3 data/refine_geo.py && node data/apply_geo.js && node scripts/pack-trails.mjs && node scripts/shard-geo.mjs && node scripts/check.js",
+    "data:pack": "node scripts/pack-trails.mjs && node scripts/shard-geo.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^6.1.2",
