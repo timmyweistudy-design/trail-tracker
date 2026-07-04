@@ -308,6 +308,7 @@ body {
   margin: 16px 0 4px; background: var(--surface-2); border: 1px solid var(--line-soft);
   border-radius: var(--r-sm); padding: 5px;
 }
+.link-row.two { grid-template-columns: repeat(2, 1fr); }   /* 資料備份：4 顆排成 2×2，不留空格 */
 .link-row .link-btn {
   display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 6px;
   background: transparent; border: none; border-radius: var(--r-xs); padding: 11px 3px;
