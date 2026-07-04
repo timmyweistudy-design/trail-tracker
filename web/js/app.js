@@ -1855,17 +1855,20 @@ async function shareHikeCard(rec) {
       });
       x.stroke();
     }
-    // 大數字：距離
+    // 大數字：距離（整體上移，底部留足白）
     x.fillStyle = "#fbf8ee"; x.font = "600 132px 'Fraunces', serif";
-    x.fillText((rec.distanceKm || 0).toFixed(2), 70, 900);
-    x.fillStyle = "rgba(231,237,222,.7)"; x.font = "500 40px serif"; x.fillText(ttT("公里"), 72, 952);
+    x.fillText((rec.distanceKm || 0).toFixed(2), 70, 846);
+    x.fillStyle = "rgba(231,237,222,.7)"; x.font = "500 40px serif"; x.fillText(ttT("公里"), 72, 896);
+    // 分隔細線
+    x.strokeStyle = "rgba(220,232,210,.14)"; x.lineWidth = 2;
+    x.beginPath(); x.moveTo(70, 940); x.lineTo(S - 70, 940); x.stroke();
     // 統計列
     const stats = [[ttT("時間"), fmtTime(rec.elapsedMs)], [ttT("爬升"), "↑" + (rec.ascent || 0) + "m"], [ttT("大卡"), String(rec.kcal || 0)], [ttT("步數"), (rec.steps || 0).toLocaleString()]];
     const cw = (S - 140) / stats.length;
     stats.forEach(([l, v], i) => {
       const cx = 70 + cw * i;
-      x.fillStyle = "#9fe0b0"; x.font = "600 46px 'Fraunces', serif"; x.fillText(v, cx, 1024);
-      x.fillStyle = "rgba(231,237,222,.55)"; x.font = "400 26px serif"; x.fillText(l, cx, 1060);
+      x.fillStyle = "#9fe0b0"; x.font = "600 46px 'Fraunces', serif"; x.fillText(v, cx, 1000);
+      x.fillStyle = "rgba(231,237,222,.55)"; x.font = "400 26px serif"; x.fillText(l, cx, 1038);
     });
     const blob = await new Promise(r => c.toBlob(r, "image/png"));
     const file = new File([blob], (typeof I18n !== "undefined" && I18n.lang() !== "zh") ? "gather-the-trail-card.png" : "循徑拾光.png", { type: "image/png" });
