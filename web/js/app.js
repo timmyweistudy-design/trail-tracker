@@ -1971,8 +1971,26 @@ function drawRecSpark(series) {
 // 隨拍隨傳：記錄中拍照，存當下時間與里程；結算頁顯示、可選擇分享
 let hikePhotos = [], hikePhotosRecId = null, recSnap = null, _shotUrls = [];
 let _liveElev = null, _liveElevAt = 0, _liveElevLen = 0, _liveElevBusy = false;
+let _gpsWeakHits = 0, _gpsWarnAt = 0;
+// 依定位精度更新「GPS 訊號」小燈號（綠=好 / 黃=普通 / 紅=弱），並在持續弱訊號時提醒一次
+function updateGpsSig(s) {
+  const gs = $("#gpsSig"); if (!gs) return;
+  if (s.state !== "running" || (typeof sim === "function" && sim())) { gs.hidden = true; _gpsWeakHits = 0; return; }
+  const a = s.acc;
+  let lvl = "weak";
+  if (a != null && a <= 15) lvl = "good"; else if (a != null && a <= 35) lvl = "ok";
+  gs.hidden = false;
+  gs.className = "gps-sig " + lvl;
+  const t = gs.querySelector(".gs-txt"); if (t) t.textContent = (a != null && isFinite(a)) ? `GPS ±${Math.round(a)}m` : "GPS…";
+  if (lvl === "weak") {
+    _gpsWeakHits++;
+    // 連續多次弱訊號才提醒，且每 25 秒最多一次，避免洗版
+    if (_gpsWeakHits >= 4 && Date.now() - _gpsWarnAt > 25000) { _gpsWarnAt = Date.now(); toast(ttT("📡 GPS 訊號較弱，走到空曠處收訊會更準")); }
+  } else _gpsWeakHits = 0;
+}
 Recorder.onUpdate(s => {
   recSnap = s;
+  updateGpsSig(s);
   $("#stDist").textContent = s.distanceKm.toFixed(2);
   $("#stSteps").textContent = s.steps.toLocaleString();
   $("#stKcal").textContent = s.kcal;
@@ -2004,7 +2022,7 @@ Recorder.onUpdate(s => {
   if (s.simDone && !window.__simDoneToasted) { window.__simDoneToasted = true; toast("模擬已走完整條路線，按「⏹ 結束」看結算"); if (navigator.vibrate) navigator.vibrate([60, 40, 60]); }
   if (s.state === "idle") window.__simDoneToasted = false;
   if (s.error) $("#recStatus").innerHTML = `⚠️ ${s.error}（可改用模擬模式）`;
-  else if (s.state === "running" && s.autoPaused) $("#recStatus").innerHTML = `<span class="offroute">⏸ 自動暫停（偵測到靜止，移動即恢復）</span>`;
+  else if (s.state === "running" && s.autoPaused) $("#recStatus").innerHTML = `<span class="autopause">⏸ 自動暫停（偵測到靜止，移動即恢復）</span>`;
   else if (s.state === "running") {
     // #9 偏離步道路線提醒
     let off = null;

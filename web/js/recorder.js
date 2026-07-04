@@ -20,6 +20,7 @@ const Recorder = (() => {
   let lastAcceptT = 0;         // 上一個被採計點的時間（算分段速度用）
   let curSpeed = 0;            // 瞬時速度（公尺/秒，平滑後）供顯示
   let curHeading = null;       // GPS 行進方向（度，0=北，順時針）供地圖標記面朝
+  let curAcc = null;           // 最近一次定位精度（公尺）供訊號強弱顯示
   // 混入新速度值：突然暴衝(GPS 雜訊)只給很小權重，避免數字亂飆
   function blendSpeed(r) {
     if (r == null || r < 0 || !isFinite(r)) return;
@@ -109,13 +110,15 @@ const Recorder = (() => {
       state, autoPaused, track, altSeries, distanceKm: km, distance3DKm: dist3D / 1000, steps: steps(), kcal: calories(),
       elapsedMs: ms, movingMs, ascent, descent, speedKmh: kmh, instKmh: (state === "running" && !autoPaused) ? curSpeed * 3.6 : 0, heading: curHeading,
       pace: paceSec ? `${Math.floor(paceSec / 60)}'${String(Math.round(paceSec % 60)).padStart(2, "0")}` : "--",
+      acc: curAcc,
     };
   }
 
   // 接受一個定位點，套用抖動/跳點/精度過濾，只在真的移動時累積
   function push(lat, lon, alt, acc, clean, gpsSpeed, altAcc, heading) {
     if (heading != null && isFinite(heading) && heading >= 0) curHeading = heading;   // 行進方向
-    if (!clean && acc != null && acc > MAX_ACC) return;   // 訊號太差，忽略（模擬點乾淨不過濾）
+    if (!clean && acc != null && isFinite(acc)) curAcc = acc;   // 記錄訊號精度（模擬點不覆寫，維持「良好」）
+    if (!clean && acc != null && acc > MAX_ACC) { cb(snapshot()); return; }   // 訊號太差，忽略此點但仍更新訊號指示
     const now = Date.now();
     // #7 EMA 平滑座標，降低 GPS 雜訊鋸齒；模擬點本身就在路線上，不平滑、不過濾才不會切彎偏離
     if (clean || smLat == null) { smLat = lat; smLon = lon; }
