@@ -348,6 +348,7 @@ document.querySelectorAll(".tab").forEach(btn => {
     document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
     btn.classList.add("active");
     const view = btn.dataset.view;
+    document.body.dataset.view = view;   // 供 CSS 在內頁縮小頂部 Banner
     $("#view-" + view).classList.add("active");
     if (view === "record") {
       requestEntryPerms();   // 首次進記錄頁＝這一下點擊就是手勢，一次問完定位+方位權限
@@ -854,10 +855,13 @@ function addCompass(map) {
 }
 // 地圖全螢幕（用 CSS 假全螢幕，iOS 也支援）
 function addFullscreen(map) {
+  // SVG 圖示（不用 ⛶／✕ 文字符號——部分手機字型會顯示成空框 □）
+  const SVG_EXPAND = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
+  const SVG_CLOSE = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
   const c = L.control({ position: "topright" });
   c.onAdd = () => {
     const d = L.DomUtil.create("div", "map-fs-btn");
-    d.innerHTML = "⛶"; d.title = "全螢幕";
+    d.innerHTML = SVG_EXPAND; d.title = "全螢幕";
     L.DomEvent.disableClickPropagation(d);
     d.addEventListener("click", () => {
       const el = map.getContainer();
@@ -867,11 +871,11 @@ function addFullscreen(map) {
         el.parentNode.insertBefore(el._fsHolder, el);
         document.body.appendChild(el);
         el.classList.add("map-fs"); document.body.classList.add("map-fs-open");
-        d.innerHTML = "✕";
+        d.innerHTML = SVG_CLOSE;
       } else {    // 關閉：搬回原位
         el.classList.remove("map-fs"); document.body.classList.remove("map-fs-open");
         if (el._fsHolder) { el._fsHolder.parentNode.insertBefore(el, el._fsHolder); el._fsHolder.remove(); el._fsHolder = null; }
-        d.innerHTML = "⛶";
+        d.innerHTML = SVG_EXPAND;
       }
       const fix = () => map.invalidateSize({ animate: false });
       requestAnimationFrame(() => requestAnimationFrame(fix));
@@ -1081,7 +1085,7 @@ async function openDetail(id) {
     ${metaHtml}
     ${hasGeo ? `<div class="section-title collapsible" id="secElev">${ic("mountain")}海拔剖面</div><div id="profileBox"><div class="food-loading"><span class="spin"></span>計算海拔剖面中…</div></div>` : ""}
     ${t.guide ? `<div class="guide">${t.guide.replace(/\n/g, "<br>")}</div>${(typeof I18n !== "undefined" && I18n.lang() !== "zh") ? `<div class="pv-tr-row"><button class="link-btn" id="guideTranslate">${ic("translate")} ${ttT("翻譯年糕")}</button></div><div class="guide pv-cap-tr" id="guideTr" style="display:none"></div>` : ""}` : ""}
-    <div class="link-row">
+    <div class="link-row flow">
       ${nav ? `<a class="link-btn" href="${nav}" target="_blank" rel="noopener">${ic("compass")} 導航</a>` : ""}
       <a class="link-btn" href="${moreSearch}" target="_blank" rel="noopener">${ic("search")} 查資訊</a>
       <button class="link-btn" id="btnShareTrail">${ic("share")} 分享</button>
@@ -1726,7 +1730,7 @@ function openTrackReview(rec) {
     </div>
     ${(rec.id === hikePhotosRecId && hikePhotos.length) ? `<div class="section-title">${ic("camera")}隨手拍（${hikePhotos.length}）<span class="shot-hint">點照片存到相簿</span></div>
       <div class="hike-shots">${hikePhotos.map((p, i) => `<figure class="shot" data-i="${i}"><img src="${(u => { _shotUrls.push(u); return u; })(URL.createObjectURL(p.file))}" alt=""><figcaption>${new Date(p.t).toLocaleTimeString(ttLocale(), { hour: "2-digit", minute: "2-digit" })} · ${p.km.toFixed(2)}km</figcaption></figure>`).join("")}</div>` : ""}
-    <div class="link-row">
+    <div class="link-row flow">
       <button class="link-btn" id="trackReplay">${ic("play")} 重播路徑</button>
       <button class="link-btn" id="trackCard">${ic("camera")} 分享圖卡</button>
       <button class="link-btn" id="trackGpx">${ic("download")} 下載路線檔</button>

@@ -90,6 +90,14 @@ body {
   color: rgba(231,237,222,.72); font-weight: 300;
 }
 
+/* 內頁（記錄/夥伴/我的/社群）：縮小頂部 Banner，把空間留給內容——探索頁維持完整品牌感 */
+body[data-view]:not([data-view="explore"]) .app-header-inner { padding: 11px 20px 11px; }
+body[data-view]:not([data-view="explore"]) .app-header .sub { display: none; }
+body[data-view]:not([data-view="explore"]) .app-header h1 { font-size: calc(20px * var(--fs, 1)); letter-spacing: 2px; }
+body[data-view]:not([data-view="explore"]) .brand-en { font-size: calc(8.5px * var(--fs, 1)); letter-spacing: 3px; margin-top: 3px; }
+body[data-view]:not([data-view="explore"]) .brand-mark { width: 36px; height: 36px; font-size: calc(19px * var(--fs, 1)); }
+body[data-view]:not([data-view="explore"]) .app-header::before { opacity: .5; }
+
 /* ---------- Views ---------- */
 .view { display: none; padding: 16px 15px calc(94px + var(--safe-b)); }
 .view.active { display: block; animation: viewIn .34s ease both; }
@@ -309,6 +317,9 @@ body {
   border-radius: var(--r-sm); padding: 5px;
 }
 .link-row.two { grid-template-columns: repeat(2, 1fr); }   /* 資料備份：4 顆排成 2×2，不留空格 */
+/* 動態數量的按鈕列（結算頁 4~5 顆、詳情頁 4~6 顆）：改 flex 置中流排，最後一排置中不留孤單空角 */
+.link-row.flow { display: flex; flex-wrap: wrap; justify-content: center; }
+.link-row.flow .link-btn { flex: 1 1 28%; min-width: 92px; max-width: 34%; }
 .link-row .link-btn {
   display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 6px;
   background: transparent; border: none; border-radius: var(--r-xs); padding: 11px 3px;
