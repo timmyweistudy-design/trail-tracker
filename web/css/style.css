@@ -1065,6 +1065,9 @@ html[lang="de"] .chip, html[lang="nl"] .chip, html[lang="ru"] .chip, html[lang="
 .notif-ic { width: 38px; height: 38px; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; font-size: calc(17px * var(--fs, 1)); background: var(--surface-2); border-radius: 50%; }
 .notif-body { font-size: calc(14px * var(--fs, 1)); line-height: 1.4; color: var(--ink); }
 .notif-body .fc-sub { margin-top: 2px; }
+.notif-line { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.notif-count { flex: none; display: inline-flex; align-items: center; gap: 2px; font-family: var(--num); font-size: calc(11px * var(--fs, 1)); font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: var(--r-pill); padding: 1px 7px; }
+.notif-count .ic { width: 12px; height: 12px; }
 
 /* 發文 / 詳情 覆蓋層 */
 .composer-mask, .pv-mask { position: fixed; inset: 0; z-index: 120; background: rgba(22,30,20,.5); backdrop-filter: blur(2px); display: flex; align-items: flex-end; justify-content: center; }

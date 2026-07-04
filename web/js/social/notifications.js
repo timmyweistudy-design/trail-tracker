@@ -58,6 +58,24 @@ const Notifs = (() => {
     b.addEventListener("click", async () => { b.disabled = true; await Push.toggle(); redraw(); });
   }
 
+  // 把同型別／同貼文的通知收合成一列（如「小明 讚了你的貼文」＋👥3），減少洗版
+  function collapseKey(n) {
+    if (n.type === "like") return "like:" + (n.post_id || "");
+    if (n.type === "comment") return "comment:" + (n.post_id || "");
+    if (n.type === "follow") return "follow";
+    return "solo:" + n.id;   // 其餘（留言提及/小隊/送禮/追蹤請求/同意）各自成列，保留動作鈕
+  }
+  function groupNotifs(items) {
+    const map = new Map();
+    for (const n of items) {   // items 已依時間新→舊排序，第一個即代表（最新）
+      const k = collapseKey(n);
+      const g = map.get(k);
+      if (g) { g.count++; if (!n.read) g.unread = true; }
+      else map.set(k, { rep: n, count: 1, unread: !n.read });
+    }
+    return [...map.values()];
+  }
+
   let _filter = "all";
   const GROUPS = [["all", "全部"], ["like", "讚"], ["comment", "留言"], ["follow", "追蹤"]];
   function inGroup(n, g) {
@@ -74,14 +92,16 @@ const Notifs = (() => {
     const [items, pending] = await Promise.all([list(), pendingRequestIds()]);
     const tabs = `<div class="notif-tabs">${GROUPS.map(([k, l]) => `<button class="notif-tab ${k === _filter ? "on" : ""}" data-g="${k}">${l}</button>`).join("")}</div>`;
     const paint = () => {
-      const list2 = items.filter(n => inGroup(n, _filter));
+      const list2 = groupNotifs(items.filter(n => inGroup(n, _filter)));
       const body = list2.length
-        ? `<div class="notif-list">${list2.map(n => {
+        ? `<div class="notif-list">${list2.map(g => {
+          const n = g.rep;
           const askBtns = (n.type === "follow_req" && n.actor_id && pending.has(n.actor_id))
             ? `<div class="notif-acts"><button class="btn primary nf-ok" data-uid="${n.actor_id}">同意</button><button class="btn ghost nf-no" data-uid="${n.actor_id}">拒絕</button></div>` : "";
-          return `<div class="notif ${n.read ? "" : "unread"}" data-type="${n.type}" data-post="${n.post_id || ""}" data-uid="${n.actor_id || ""}">
+          const countChip = g.count > 1 ? `<span class="notif-count">${ic("users")}${g.count}</span>` : "";
+          return `<div class="notif ${g.unread ? "unread" : ""}" data-type="${n.type}" data-post="${n.post_id || ""}" data-uid="${n.actor_id || ""}">
             <span class="notif-ic">${icon(n.type)}</span>
-            <div class="notif-body">${label(n)}<div class="fc-sub">${ago(n.created_at)}</div>${askBtns}</div>
+            <div class="notif-body"><div class="notif-line">${label(n)}${countChip}</div><div class="fc-sub">${ago(n.created_at)}</div>${askBtns}</div>
           </div>`;
         }).join("")}</div>`
         : `<div class="social-empty"><span class="ee">🔔</span>${_filter === "all" ? "還沒有通知。" : "這個分類還沒有通知。"}</div>`;
