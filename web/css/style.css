@@ -163,8 +163,8 @@ body {
 .adv-tgl { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 13px; font-size: calc(12.5px * var(--fs, 1)); color: var(--ink-soft); cursor: pointer; font-weight: 600; transition: .15s; }
 .adv-tgl.on { background: var(--brand); color: #f4f1e8; border-color: var(--brand); }
 
-.count-row { display: flex; justify-content: space-between; align-items: center; margin: 8px 2px 12px; gap: 8px; }
-.count { font-size: calc(12px * var(--fs, 1)); color: var(--ink-soft); letter-spacing: .3px; font-variant-numeric: tabular-nums; }
+.count-row { display: flex; justify-content: space-between; align-items: center; margin: 8px 2px 12px; gap: 8px; flex-wrap: wrap; }
+.count { font-size: calc(12px * var(--fs, 1)); color: var(--ink-soft); letter-spacing: .3px; font-variant-numeric: tabular-nums; white-space: nowrap; flex-shrink: 0; }
 .count b, .count .num { font-family: var(--num); }
 .info-link {
   background: none; border: none; color: var(--brand-mid); font-size: calc(12.5px * var(--fs, 1));
@@ -852,11 +852,12 @@ html[lang="de"] .chip, html[lang="nl"] .chip, html[lang="ru"] .chip, html[lang="
 /* ===================================================================
    排版精簡：篩選列 + 篩選面板 + 分段控制
    =================================================================== */
-.toolbar { display: flex; align-items: center; gap: 8px; margin: 2px 0 12px; }
+.toolbar { display: flex; align-items: center; gap: 8px; margin: 2px 0 12px; flex-wrap: wrap; }
 .toolbar .seg { display: inline-flex; background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 999px; padding: 3px; }
 .seg-btn {
   border: none; background: none; cursor: pointer; border-radius: 999px; padding: 6px 13px;
   font-size: calc(12.5px * var(--fs, 1)); font-weight: 600; color: var(--ink-soft); display: inline-flex; align-items: center; gap: 5px; transition: .15s;
+  white-space: nowrap;   /* 字體放大時「篩選/列表/地圖」不被擠成上下兩字 */
 }
 .seg-btn.on { background: var(--surface); color: var(--brand); box-shadow: var(--sh-sm); }
 .seg-btn .ic { width: 15px; height: 15px; }
@@ -865,7 +866,7 @@ html[lang="de"] .chip, html[lang="nl"] .chip, html[lang="ru"] .chip, html[lang="
   display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line);
   background: var(--surface); color: var(--ink); border-radius: 999px; padding: 8px 14px;
   font-size: calc(13px * var(--fs, 1)); font-weight: 600; cursor: pointer; transition: .15s; position: relative;
-}
+ white-space: nowrap; }
 .btn-filter .ic { width: 15px; height: 15px; }
 .btn-filter.active { border-color: var(--brand); color: var(--brand); }
 .btn-filter .dot { position: absolute; top: -3px; right: -3px; min-width: 16px; height: 16px; padding: 0 4px;
