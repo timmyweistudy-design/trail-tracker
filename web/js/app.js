@@ -2782,10 +2782,38 @@ if (new URLSearchParams(location.search).get("debug") === "1") setTimeout(toggle
   brand.addEventListener("click", () => { n++; clearTimeout(tm); tm = setTimeout(() => n = 0, 1200); if (n >= 5) { n = 0; toggleDebugPanel(); } });
 })();
 
+// 首次進 App 先問語言（新用戶：尚未選語言且未看過導覽）。每語言用自身名稱顯示，選完 set() 會重載。
+(function langGate() {
+  const chosen = (() => { try { return localStorage.getItem("tt_lang"); } catch (e) { return null; } })();
+  const onboarded = (() => { try { return localStorage.getItem("tt_onboarded_v2"); } catch (e) { return null; } })();
+  if (chosen || onboarded || new URLSearchParams(location.search).get("trail")) return;
+  const LANGS = [
+    ["zh", "🇹🇼 中文"], ["en", "🇬🇧 English"], ["es", "🇪🇸 Español"], ["ja", "🇯🇵 日本語"],
+    ["ko", "🇰🇷 한국어"], ["fr", "🇫🇷 Français"], ["de", "🇩🇪 Deutsch"], ["cn", "🇨🇳 简体中文"],
+  ];
+  const ov = document.createElement("div");
+  ov.className = "lang-gate";
+  ov.innerHTML = `<div class="lang-gate-card">
+    <div class="lang-gate-mark">🌐</div>
+    <h2>選擇語言 · Language</h2>
+    <p>循徑拾光 · Gather the Trail</p>
+    <div class="lang-gate-grid">${LANGS.map(([c, n]) => `<button class="lang-opt" data-lg="${c}">${n}</button>`).join("")}</div>
+  </div>`;
+  ov.querySelectorAll("[data-lg]").forEach(b => b.addEventListener("click", () => {
+    const code = b.dataset.lg;
+    try {
+      if (code === "zh") { localStorage.setItem("tt_lang", "zh"); ov.remove(); onboarding(); }  // 中文＝原文，不需重載
+      else if (typeof I18n !== "undefined") I18n.set(code);   // 其他語言：set() 存 tt_lang 後重載，導覽即以該語言顯示
+    } catch (e) { ov.remove(); onboarding(); }
+  }));
+  document.body.appendChild(ov);
+})();
+
 // #22 首次使用導覽
-(function onboarding() {
+function onboarding() {
   const KEY = "tt_onboarded_v2";   // 改版 → 現有用戶也會再看一次新版導覽
   if (localStorage.getItem(KEY) || new URLSearchParams(location.search).get("trail")) return;
+  if (!localStorage.getItem("tt_lang")) return;   // 尚未選語言 → 等語言選擇覆蓋層先處理
   const slides = [
     { e: "⛰️", h: "歡迎來到循徑拾光", p: "全台 2100+ 條步道一手掌握。搜尋、分級、記錄、養成，一起走進山林。" },
     { e: "🧭", h: "探索與分級", p: "搜尋步道看官方難度分級、真實路線與海拔剖面；還有天氣、周邊人文景點與美食。用『精選主題輯』快速找古道、瀑布、親子路線。" },
@@ -2815,7 +2843,9 @@ if (new URLSearchParams(location.search).get("debug") === "1") setTimeout(toggle
   };
   document.body.appendChild(ov);
   render();
-})();
+}
+// 已選過語言的用戶（含重載回來的）：直接跑導覽；新用戶則由 langGate 選完語言後再觸發
+onboarding();
 
 // 浮起的小表情（按讚/表情回應時從按鈕飄起）
 window.ttFloat = function (el, emoji) {

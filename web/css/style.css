@@ -803,6 +803,18 @@ html[data-theme="dark"] img.trail-photo { background: var(--surface-2); }
 
 /* 主題切換器（我的頁） */
 .theme-row { display: flex; gap: 8px; margin-top: 4px; }
+/* 語言按鈕：每行 4 個（8 種 → 2 排） */
+#langRow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+
+/* 首次語言選擇覆蓋層 */
+.lang-gate { position: fixed; inset: 0; z-index: 9000; background: var(--bg, #f4f1e8);
+  display: flex; align-items: center; justify-content: center; padding: 24px; }
+.lang-gate-card { width: 100%; max-width: 420px; text-align: center; }
+.lang-gate-mark { font-size: 44px; }
+.lang-gate h2 { margin: 10px 0 2px; font-size: 20px; }
+.lang-gate p { color: var(--ink-soft); font-size: 13px; margin: 0 0 18px; }
+.lang-gate-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.lang-gate-grid .lang-opt { padding: 15px 8px; font-size: 15px; }
 .lang-opt,
 .theme-opt {
   flex: 1; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft);

@@ -79,6 +79,17 @@ const PORT = 8899;
       ok(`語言 ${lng}：載入後主執行緒有回應（無凍結）`, alive);
       if (!alive) break;
     }
+    // 首次語言選擇覆蓋層：用全新 context（無跳過導覽的 initScript、儲存空白）→ 應出現 .lang-gate
+    const fresh = await browser.newContext();
+    const fp = await fresh.newPage({ viewport: { width: 390, height: 844 } });
+    await fp.goto(`http://localhost:${PORT}/`, { waitUntil: "domcontentloaded" });
+    await fp.waitForTimeout(2000);
+    ok("首次進入顯示語言選擇", await fp.locator(".lang-gate").count() === 1);
+    ok("語言選擇有 8 種", await fp.locator(".lang-gate [data-lg]").count() === 8);
+    await fp.click('.lang-gate [data-lg="en"]');
+    await fp.waitForTimeout(2500);
+    ok("選英文後套用（Explore 分頁）", /Explore/i.test(await fp.locator('.tab[data-view="explore"]').innerText()));
+    await fresh.close();
   } catch (e) {
     errors.push("fatal: " + e.message);
   } finally {
