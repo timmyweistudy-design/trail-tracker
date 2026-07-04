@@ -132,7 +132,10 @@ const Team = (() => {
     if (live) {
       members(aId).then(ms => {
         const el = body.querySelector("#tmMembers"); if (!el) return;
-        el.innerHTML = `<div class="team-members">${ms.map(m => { const u = m.user || {}; return `<span class="team-chip">${u.avatar_url ? `<img src="${esc(u.avatar_url)}">` : `<i>${esc((u.display_name || u.handle || "?").slice(0, 1))}</i>`}${esc(u.display_name || u.handle || "隊友")}</span>`; }).join("")}</div>`;
+        const ownerId = activeTeam ? activeTeam.owner : null;
+        // 隊長排在最前面並掛皇冠，讓「加入別人小隊」的人也一眼看到誰是隊長（修：設為目前的小隊看不到隊長）
+        const sorted = ms.slice().sort((a, b) => (b.user_id === ownerId) - (a.user_id === ownerId));
+        el.innerHTML = `<div class="team-members">${sorted.map(m => { const u = m.user || {}; const isLead = m.user_id === ownerId; return `<span class="team-chip${isLead ? " leader" : ""}">${isLead ? `${ic("crown")} ` : ""}${u.avatar_url ? `<img src="${esc(u.avatar_url)}">` : `<i>${esc((u.display_name || u.handle || "?").slice(0, 1))}</i>`}${esc(u.display_name || u.handle || "隊友")}</span>`; }).join("")}</div>`;
       });
       // 邀請好友（互相追蹤、且尚未在隊上的）
       (async () => {

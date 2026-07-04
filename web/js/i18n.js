@@ -341,6 +341,7 @@ const I18n = (() => {
     "連續": "Streak", "領取": "Claim", "下個連續里程碑": "Next streak milestone",
     "連續達成獎勵！": "Streak bonus!", "每日任務完成！": "Daily quests done!",
     "次": "times", "週": "weeks",
+    "隊長": "Leader", "還沒看到隊友？請隊友也在記錄頁開啟「與小隊同行」": "Don't see teammates? Ask them to also turn on “Hike with team” on the Record tab",
     "尚無對應到分級步道的紀錄": "No records matched to graded trails yet",
     "還沒有行程可分析，先去走一條吧": "No trips to analyze — go hike one!",
     "無可匯出的軌跡": "No tracks to export", "已匯出 CSV": "CSV exported", "已匯出 KML": "KML exported",

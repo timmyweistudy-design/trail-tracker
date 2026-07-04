@@ -3,7 +3,7 @@
 // 廣播 start 事件讓所有隊員同時開始記錄。每位隊員都能在記錄地圖上看到彼此定位。
 const TeamLive = (() => {
   let channel = null, watchId = null, map = null, markers = {}, me = null, myInfo = {}, lastPos = null;
-  let leaderId = null, myReady = false, onStartCb = null;
+  let leaderId = null, leaderName = null, myReady = false, onStartCb = null;
   let myStartAt = null, myStopAt = null, lastStopHandled = 0, onStopCb = null;        // 隊長按下開始的時間（跟著 presence 傳，凍結分頁回前景也能補收到）
   let myStartSim = false;      // 隊長開始時是否用模擬模式：跟著訊號送，全隊一致才能一起動
   let lastHandledAt = 0;       // 已處理過的開始訊號時間戳：同一次開始只觸發一次，但「新的一次開始」永遠會觸發
@@ -190,7 +190,12 @@ const TeamLive = (() => {
     const el = readyBarEl(); if (!el) return;
     if (!channel) { el.remove(); return; }
     const r = roster();
-    const chips = r.map(m => `<span class="trb-chip ${m.ready ? "ok" : ""}">${m.leader ? `${typeof ic === "function" ? ic("crown") : ""} ` : ""}${esc(m.name)}${m.me ? (typeof ttT === "function" ? ttT("（我）") : "（我）") : ""} ${m.ready ? "✓" : "…"}</span>`).join("");
+    let chips = r.map(m => `<span class="trb-chip ${m.ready ? "ok" : ""}">${m.leader ? `${typeof ic === "function" ? ic("crown") : ""} ` : ""}${esc(m.name)}${m.me ? (typeof ttT === "function" ? ttT("（我）") : "（我）") : ""} ${m.ready ? "✓" : "…"}</span>`).join("");
+    // 隊長此刻不在線 → 仍顯示一個離線隊長 chip（⏳），讓「加入別人小隊」的隊員知道誰是隊長
+    if (leaderId && !r.some(m => m.leader)) {
+      const lname = esc(leaderName || (typeof ttT === "function" ? ttT("隊長") : "隊長"));
+      chips = `<span class="trb-chip leader-off">${typeof ic === "function" ? ic("crown") : ""} ${lname} ⏳</span>` + chips;
+    }
     // 記錄中：改顯示隊伍即時狀態（在線人數/地圖可見人數），不再顯示準備提示
     if (typeof Recorder !== "undefined" && Recorder.getState && Recorder.getState() === "running") {
       const visible = Object.keys(markers).length;
@@ -204,9 +209,11 @@ const TeamLive = (() => {
       : (leaderId == null ? "⚠️ 讀不到隊長資訊，請隊長重開「與小隊同行」"
         : (myReady ? (allReady() ? "✅ 全員已準備，等隊長按開始…" : "已準備，等其他隊員…") : "按「準備」告訴隊長你就緒"));
     const icn = n => (typeof ic === "function" ? ic(n) : "");
+    // 只有自己在線（看不到隊友）→ 明確提示：隊友也要在記錄頁開啟「與小隊同行」
+    const guide = (r.length <= 1) ? `<div class="trb-guide">${typeof ttT === "function" ? ttT("還沒看到隊友？請隊友也在記錄頁開啟「與小隊同行」") : "還沒看到隊友？請隊友也在記錄頁開啟「與小隊同行」"}</div>` : "";
     el.innerHTML = `<div class="trb-top"><b>${icn("users")} 小隊同行${isLeader() ? `・我是隊長 ${icn("crown")}` : ""}</b><button class="trb-ready ${myReady ? "on" : ""}" id="trbReady">${myReady ? "✓ 已準備" : `${icn("hand")} 準備`}</button></div>
       <div class="trb-chips">${chips || "<span class='trb-chip'>等待隊友上線…</span>"}</div>
-      <div class="trb-hint">${hint}</div>`;
+      <div class="trb-hint">${hint}</div>${guide}`;
     const b = el.querySelector("#trbReady");
     if (b) b.addEventListener("click", () => setReady(!myReady));
   }
@@ -221,6 +228,12 @@ const TeamLive = (() => {
     if (!leaderId) {
       try { const { data: t } = await c.from("teams").select("owner").eq("id", teamId).maybeSingle(); leaderId = (t && t.owner) || null; }
       catch (e) { /* 查不到就維持 null，準備列會提示 */ }
+    }
+    // 記住隊長名字：即使隊長此刻不在線，準備列也能顯示「👑 隊長（離線）」，不會讓人以為沒有隊長
+    leaderName = null;
+    if (leaderId) {
+      try { const { data: lp } = await c.from("profiles").select("display_name,handle").eq("id", leaderId).maybeSingle(); leaderName = lp ? (lp.display_name || lp.handle) : null; }
+      catch (e) { /* 查不到名字不影響功能 */ }
     }
     channel = c.channel("team:" + teamId, { config: { presence: { key: me } } });
     curTeamId = teamId; myStartAt = null; myStopAt = null; lastHandledAt = 0; lastStopHandled = 0; joinedAt = Date.now();

@@ -1161,13 +1161,20 @@ html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
 .team-rule { font-size: calc(12px * var(--fs, 1)); color: var(--ink-soft); background: var(--surface-2); border-radius: var(--r-xs); padding: 8px 10px; margin: 6px 0; line-height: 1.5; }
 /* 記錄頁小隊準備列 */
 .team-ready-bar { background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 10px 12px; margin: 8px 0; }
-.trb-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: calc(13.5px * var(--fs, 1)); }
+.trb-top { display: flex; align-items: center; justify-content: space-between; gap: 8px 10px; flex-wrap: wrap; font-size: calc(13.5px * var(--fs, 1)); }
+.trb-top > b { flex: 1 1 auto; min-width: 0; display: inline-flex; align-items: center; gap: 4px; }
+.trb-top > .trb-chip, .trb-top > .trb-ready { flex: 0 0 auto; }
 .trb-ready { border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); border-radius: var(--r-pill); padding: 7px 14px; font-size: calc(13px * var(--fs, 1)); font-weight: 700; cursor: pointer; }
 .trb-ready.on { background: var(--brand-mid); border-color: var(--brand-mid); color: #f6f3ea; }
 .trb-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .trb-chip { font-size: calc(11.5px * var(--fs, 1)); background: var(--surface-2); border-radius: var(--r-pill); padding: 4px 10px; color: var(--ink-soft); }
 .trb-chip.ok { background: rgba(47,125,79,.14); color: var(--brand-mid); font-weight: 700; }
 .trb-hint { font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-faint); margin-top: 7px; }
+.trb-guide { font-size: calc(11.5px * var(--fs, 1)); color: var(--brand-mid); background: rgba(47,125,79,.10); border-radius: var(--r-xs); padding: 7px 10px; margin-top: 7px; line-height: 1.45; }
+.trb-chip.leader-off { background: var(--surface-2); color: var(--ink-soft); font-weight: 700; }
+.trb-chip.leader-off .ic { width: 12px; height: 12px; vertical-align: -2px; }
+.team-chip.leader { background: rgba(240,169,30,.16); font-weight: 700; }
+.team-chip.leader .ic { width: 13px; height: 13px; color: #e0972a; }
 .tm-create { display: flex; gap: 8px; margin-bottom: 4px; }
 .tm-create .auth-input { flex: 1; }
 /* 地圖隊友標記 */
