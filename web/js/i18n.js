@@ -4,6 +4,7 @@
 // 步道名稱/介紹等資料內容維持中文。要補翻譯：加 DICT 詞條或 PATTERNS 規則即可。
 const I18n = (() => {
   const DICT = {
+    "最近搜尋": "Recent",
     "合併": "Merge", "完全取代": "Replace all",
     "資料備份": "Data backup",
     "匯出備份檔": "Export backup",

@@ -37,6 +37,11 @@ const PORT = 8899;
     await page.waitForTimeout(2500);
     ok("App 載入、標題正確", (await page.title()).includes("循徑拾光"));
     ok("步道列表有卡片", await page.locator(".card.jcard").count() > 0);
+    // 搜尋清除鈕：打字→出現→點擊清空
+    await page.fill("#searchInput", "古道"); await page.waitForTimeout(400);
+    ok("搜尋清除鈕顯示", await page.locator("#searchClear").isVisible());
+    await page.click("#searchClear"); await page.waitForTimeout(300);
+    ok("清除後搜尋框空", (await page.inputValue("#searchInput")) === "");
 
     // 切五個分頁
     for (const v of ["record", "pet", "me", "social", "explore"]) {

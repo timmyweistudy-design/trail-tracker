@@ -579,12 +579,25 @@ $("#closeFilterBtn").addEventListener("click", closeFilter);
 $("#fsApply").addEventListener("click", closeFilter);
 
 let _searchTm;
+// 最近搜尋（裝置本機，最多 8 筆）
+function _recent() { try { return JSON.parse(localStorage.getItem("tt_recent") || "[]"); } catch { return []; } }
+function _pushRecent(q) {
+  q = (q || "").trim(); if (q.length < 1) return;
+  try { const a = _recent().filter(x => x !== q); a.unshift(q); localStorage.setItem("tt_recent", JSON.stringify(a.slice(0, 8))); } catch (e) { /* */ }
+}
+function _toggleClear() { const b = $("#searchClear"); if (b) b.style.display = $("#searchInput").value ? "flex" : "none"; }
 $("#searchInput").addEventListener("input", e => {
   curQuery = e.target.value.trim();
+  _toggleClear();
   buildSuggest(curQuery);
   clearTimeout(_searchTm); _searchTm = setTimeout(render, 180);   // 防抖，打字更順
 });
 $("#searchInput").addEventListener("focus", e => buildSuggest(e.target.value.trim()));
+$("#searchInput").addEventListener("keydown", e => { if (e.key === "Enter") { _pushRecent(curQuery); $("#searchInput").blur(); } });
+$("#searchClear").addEventListener("click", () => {
+  const inp = $("#searchInput"); inp.value = ""; curQuery = ""; _toggleClear();
+  buildSuggest(""); render(); inp.focus();
+});
 // 語音搜尋
 (function () {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -607,7 +620,20 @@ $("#searchInput").addEventListener("blur", () => setTimeout(() => { $("#searchSu
 function buildSuggest(q) {
   const box = $("#searchSuggest");
   q = q.toLowerCase().replace(/\s+/g, "");
-  if (!q) { box.style.display = "none"; return; }
+  // 空查詢＋有最近搜尋 → 顯示「最近搜尋」清單（點一下帶入並搜尋）
+  if (!q) {
+    const rec = _recent();
+    if (!rec.length) { box.style.display = "none"; return; }
+    box.innerHTML = `<div class="sug-head">${ttT("最近搜尋")}<button class="sug-clear" id="sugClearRecent">${ttT("清除")}</button></div>` +
+      rec.map(r => `<button class="sug" data-q="${r.replace(/"/g, "&quot;")}">${ic("clock")}<span class="sug-n">${r}</span></button>`).join("");
+    box.style.display = "block";
+    const cb = box.querySelector("#sugClearRecent");
+    if (cb) cb.addEventListener("mousedown", e => { e.preventDefault(); try { localStorage.removeItem("tt_recent"); } catch (x) { } box.style.display = "none"; });
+    box.querySelectorAll(".sug[data-q]").forEach(b => b.addEventListener("mousedown", e => {
+      e.preventDefault(); const inp = $("#searchInput"); inp.value = b.dataset.q; curQuery = b.dataset.q; _toggleClear(); buildSuggest(b.dataset.q); render();
+    }));
+    return;
+  }
   const hits = [];
   for (const t of TRAILS) {
     const n = (t.name || "").toLowerCase().replace(/\s+/g, "");
@@ -621,7 +647,7 @@ function buildSuggest(q) {
     `<button class="sug" data-id="${t.id}">${ic("pin")}<span class="sug-n">${t.name}</span><span class="sug-r">${t.region || ""}</span></button>`).join("");
   box.style.display = "block";
   box.querySelectorAll(".sug").forEach(b => b.addEventListener("mousedown", e => {
-    e.preventDefault(); box.style.display = "none"; openDetail(b.dataset.id);
+    e.preventDefault(); box.style.display = "none"; _pushRecent($("#searchInput").value.trim()); openDetail(b.dataset.id);
   }));
 }
 

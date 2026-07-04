@@ -76,6 +76,7 @@ const BACKUP_EXEMPT = new Set([
   "tt_debug_km",                                          // 測試用
   "tt_lang",                                              // 語言：裝置偏好
   "tt_fontscale",                                         // 字體大小：裝置無障礙偏好
+  "tt_recent",                                           // 最近搜尋：裝置本機歷史
   "tt_tr_cache", "tt_places_quota", "tt_errors_sent",     // 翻譯快取/用量統計/錯誤上報游標：裝置性
 ]);
 const storageSrc = read(path.join(WEB, "js", "storage.js"));
