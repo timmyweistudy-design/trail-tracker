@@ -2788,7 +2788,7 @@ if (new URLSearchParams(location.search).get("debug") === "1") setTimeout(toggle
   const onboarded = (() => { try { return localStorage.getItem("tt_onboarded_v2"); } catch (e) { return null; } })();
   if (chosen || onboarded || new URLSearchParams(location.search).get("trail")) return;
   const LANGS = [
-    ["zh", "🇹🇼 中文"], ["en", "🇬🇧 English"], ["es", "🇪🇸 Español"], ["ja", "🇯🇵 日本語"],
+    ["zh", "🇹🇼 繁體中文"], ["en", "🇬🇧 English"], ["es", "🇪🇸 Español"], ["ja", "🇯🇵 日本語"],
     ["ko", "🇰🇷 한국어"], ["fr", "🇫🇷 Français"], ["de", "🇩🇪 Deutsch"], ["cn", "🇨🇳 简体中文"],
   ];
   const ov = document.createElement("div");
