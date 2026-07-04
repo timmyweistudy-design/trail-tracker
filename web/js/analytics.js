@@ -309,6 +309,8 @@ async function openCompare() {
   ov.querySelector("#cmpX").addEventListener("click", () => ov.remove());
   ov.addEventListener("click", e => { if (e.target === ov) ov.remove(); });
   try {
+    // 先把自己最新的里程同步到雲端 profile，避免自己那列顯示過時數字
+    if (typeof Profiles !== "undefined" && Profiles.syncMyStats) { try { await Profiles.syncMyStats(u.user.id); } catch (e) { /* */ } }
     const { data: fol } = await c.from("follows").select("following_id").eq("follower_id", u.user.id);
     const ids = [u.user.id, ...((fol || []).map(r => r.following_id))];
     const { data: profs } = await c.from("profiles").select("id, handle, display_name, total_km, pet_level").in("id", ids);

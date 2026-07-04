@@ -2231,7 +2231,7 @@ async function finishRecording(autoVehicle) {
       if (corr) { rec.ascent = corr.ascent; rec.descent = corr.descent; rec.altHigh = corr.altHigh; rec.altLow = corr.altLow; rec.altCorrected = true; }
     }
     Store.addRecord(rec);
-    if (isFootRec(rec)) { bumpAffinity(8); autoCloudBackup(); }   // 走路/跑步：加深羈絆 + Premium 自動雲端備份
+    if (isFootRec(rec)) { bumpAffinity(8); autoCloudBackup(); syncMyStatsToCloud(); }   // 走路/跑步：加深羈絆 + 自動雲端備份 + 同步里程給好友比較
     checkPetEvolve();
     $("#recStatus").textContent = autoVehicle ? "偵測到車輛速度，已自動結束" : "準備就緒，按「開始」記錄路徑";
     openTrackReview(rec);              // 結束後顯示總結頁
@@ -2323,6 +2323,15 @@ async function autoCloudBackup() {
     if (await cloudBackupNow(true)) toast("已自動備份到雲端 ☁️");
   } catch (e) { /* 靜默 */ }
 }
+// 同步累積里程/寵物到雲端 profile：好友比較讀 profiles.total_km，走完就更新才不會過時
+async function syncMyStatsToCloud() {
+  try {
+    if (typeof Supa === "undefined" || !Supa.ready() || typeof Profiles === "undefined") return;
+    const c = Supa.client(); const { data: u } = await c.auth.getUser();
+    if (u && u.user) await Profiles.syncMyStats(u.user.id);
+  } catch (e) { /* 靜默；社群模組未載入或未登入就略過 */ }
+}
+if (typeof window !== "undefined") window.syncMyStatsToCloud = syncMyStatsToCloud;
 // 雲端備份/還原：資料安全，任何登入者可用（不鎖 Premium）
 const _cbk = $("#btnCloudBackup");
 if (_cbk) _cbk.addEventListener("click", () => cloudBackupNow(false));
