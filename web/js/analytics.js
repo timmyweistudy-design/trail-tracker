@@ -104,7 +104,7 @@ function openYearReview() {
       de: `Mein Wanderjahr ${year}: ${_n} Touren, ${_km} km, ↑${_a} m (≈ ${_y}× Yushan) — Gather the Trail`,
       cn: `我的 ${year} 山行回顾：${_n} 趟、${_km} km、累积爬升 ↑${_a} m（约 ${_y} 座玉山）— 循径拾光`,
     };
-    const text = _share[_L] || `我的 ${year} 山行回顧：${_n} 趟、${_km} km、累積爬升 ↑${_a} m（約 ${_y} 座玉山）— 循徑拾光`;
+    const text = _share[_L] || (_L === "zh" ? `我的 ${year} 山行回顧：${_n} 趟、${_km} km、累積爬升 ↑${_a} m（約 ${_y} 座玉山）— 循徑拾光` : _share.en);
     if (navigator.share) navigator.share({ title: ttT("我的山行回顧"), text }).catch(() => { });
     else if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast("已複製回顧文字"));
     else toast(text);

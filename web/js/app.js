@@ -1761,7 +1761,7 @@ function openTrackReview(rec) {
       de: `Ich bin ${_tn} gewandert: ${_km} km, ↑${_a} m, ${rec.kcal} kcal, ${_t} ⛰️ — Gather the Trail`,
       cn: `我走了 ${_tn}：${_km} km、爬升 ↑${_a}m、${rec.kcal} 大卡、${_t} ⛰️ — 循径拾光`,
     };
-    const text = _share[_L] || `我走了 ${rec.trailName || "自由路線"}：${_km} km、爬升 ↑${_a}m、${rec.kcal} 大卡、${_t} ⛰️ — 循徑拾光`;
+    const text = _share[_L] || (_L === "zh" ? `我走了 ${rec.trailName || "自由路線"}：${_km} km、爬升 ↑${_a}m、${rec.kcal} 大卡、${_t} ⛰️ — 循徑拾光` : _share.en);
     if (navigator.share) navigator.share({ title: ttT("我的健行紀錄"), text }).catch(() => {});
     else if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast("已複製,可貼給朋友"));
     else toast(text);
@@ -2584,13 +2584,30 @@ function initTheme() {
     localStorage.setItem("tt_theme", b.dataset.themeOpt);
     applyTheme(b.dataset.themeOpt);
   }));
-  // 語言切換（中/英）：存偏好後重載，由 i18n.js 在啟動時翻譯整個介面
+  // 語言清單（設定頁）：國旗＋原名＋英文名一列一語言，選定後重載
   const curLang = (typeof I18n !== "undefined") ? I18n.lang() : "zh";
-  document.querySelectorAll(".lang-opt").forEach(b => {
-    b.classList.toggle("on", b.dataset.langOpt === curLang);
-    b.addEventListener("click", () => { if (b.dataset.langOpt !== curLang && typeof I18n !== "undefined") I18n.set(b.dataset.langOpt); });
-  });
+  const row = document.getElementById("langRow");
+  if (row) {
+    row.innerHTML = TT_LANGS.map(([c, f, n, sub]) =>
+      `<button class="lang-item${c === curLang ? " on" : ""}" data-lang-opt="${c}">
+        <span class="flag">${f}</span><span class="names"><span class="native">${n}</span><span class="sub">${sub}</span></span><span class="tick">✓</span>
+      </button>`).join("");
+    row.querySelectorAll("[data-lang-opt]").forEach(b => b.addEventListener("click", () => {
+      if (b.dataset.langOpt !== curLang && typeof I18n !== "undefined") I18n.set(b.dataset.langOpt);
+    }));
+  }
 }
+// 語言清單單一事實來源（設定頁與首次選擇覆蓋層共用）：[代碼, 國旗, 原名, 英文名]
+const TT_LANGS = [
+  ["zh", "🇹🇼", "繁體中文", "Traditional Chinese"], ["cn", "🇨🇳", "简体中文", "Simplified Chinese"],
+  ["en", "🇬🇧", "English", "English"], ["es", "🇪🇸", "Español", "Spanish"],
+  ["ja", "🇯🇵", "日本語", "Japanese"], ["ko", "🇰🇷", "한국어", "Korean"],
+  ["fr", "🇫🇷", "Français", "French"], ["de", "🇩🇪", "Deutsch", "German"],
+  ["pt", "🇧🇷", "Português", "Portuguese"], ["it", "🇮🇹", "Italiano", "Italian"],
+  ["ru", "🇷🇺", "Русский", "Russian"], ["th", "🇹🇭", "ไทย", "Thai"],
+  ["vi", "🇻🇳", "Tiếng Việt", "Vietnamese"], ["id", "🇮🇩", "Bahasa Indonesia", "Indonesian"],
+];
+if (typeof window !== "undefined") window.TT_LANGS = TT_LANGS;
 
 // ---------- 崩潰復原：載入時若有未結束的記錄，復原為暫停狀態 ----------
 function restoreActiveRecording() {
@@ -2787,17 +2804,16 @@ if (new URLSearchParams(location.search).get("debug") === "1") setTimeout(toggle
   const chosen = (() => { try { return localStorage.getItem("tt_lang"); } catch (e) { return null; } })();
   const onboarded = (() => { try { return localStorage.getItem("tt_onboarded_v2"); } catch (e) { return null; } })();
   if (chosen || onboarded || new URLSearchParams(location.search).get("trail")) return;
-  const LANGS = [
-    ["zh", "🇹🇼 繁體中文"], ["en", "🇬🇧 English"], ["es", "🇪🇸 Español"], ["ja", "🇯🇵 日本語"],
-    ["ko", "🇰🇷 한국어"], ["fr", "🇫🇷 Français"], ["de", "🇩🇪 Deutsch"], ["cn", "🇨🇳 简体中文"],
-  ];
   const ov = document.createElement("div");
   ov.className = "lang-gate";
   ov.innerHTML = `<div class="lang-gate-card">
-    <div class="lang-gate-mark">🌐</div>
-    <h2>選擇語言 · Language</h2>
-    <p>循徑拾光 · Gather the Trail</p>
-    <div class="lang-gate-grid">${LANGS.map(([c, n]) => `<button class="lang-opt" data-lg="${c}">${n}</button>`).join("")}</div>
+    <div class="lang-gate-head">
+      <div class="lang-gate-mark">🌐</div>
+      <h2>選擇語言 · Language</h2>
+      <p>循徑拾光 · Gather the Trail</p>
+    </div>
+    <div class="lang-list">${TT_LANGS.map(([c, f, n, sub]) =>
+      `<button class="lang-item" data-lg="${c}"><span class="flag">${f}</span><span class="names"><span class="native">${n}</span><span class="sub">${sub}</span></span></button>`).join("")}</div>
   </div>`;
   ov.querySelectorAll("[data-lg]").forEach(b => b.addEventListener("click", () => {
     const code = b.dataset.lg;
