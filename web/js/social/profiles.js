@@ -41,7 +41,7 @@ const Profiles = (() => {
         <div id="pfPosts" class="feed-loading"><span class="spin"></span></div>
       </div>`);
     document.getElementById("pfSignout").addEventListener("click", async () => {
-      if (!confirm("確定要登出嗎？")) return;
+      if (!(await ttConfirm("確定要登出嗎？"))) return;
       const btn = document.getElementById("pfSignout");
       if (btn) { btn.disabled = true; btn.textContent = "登出中…"; }
       try { window.__meAvatar = null; if (typeof TeamLive !== "undefined") TeamLive.stop(); } catch (e) { }

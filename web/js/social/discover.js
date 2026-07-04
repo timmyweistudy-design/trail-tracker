@@ -151,7 +151,7 @@ const Discover = (() => {
       Safety.isBlocked(userId).then(b => { bb.textContent = b ? "解除封鎖" : "封鎖"; });
       bb.addEventListener("click", async () => {
         const blocked = bb.textContent === "解除封鎖";
-        if (!blocked && !confirm("封鎖後你們將看不到彼此的貼文，並解除互相追蹤。確定？")) return;
+        if (!blocked && !(await ttConfirm("封鎖後你們將看不到彼此的貼文，並解除互相追蹤。確定？"))) return;
         if (blocked) { await Safety.unblock(userId); bb.textContent = "封鎖"; if (typeof toast === "function") toast("已解除封鎖"); }
         else { await Safety.block(userId); if (typeof toast === "function") toast("已封鎖"); wrap.remove(); if (typeof SocialUI !== "undefined") SocialUI.route(); }
       });

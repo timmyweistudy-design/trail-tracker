@@ -57,7 +57,7 @@ const Events = (() => {
       renderList(wrap);
     }));
     body.querySelectorAll(".ev-del").forEach(b => b.addEventListener("click", async () => {
-      if (!confirm("刪除這個活動？")) return;
+      if (!(await ttConfirm("刪除這個活動？"))) return;
       await c.from("events").delete().eq("id", b.dataset.id); renderList(wrap);
     }));
   }

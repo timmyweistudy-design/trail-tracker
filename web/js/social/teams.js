@@ -40,9 +40,9 @@ const Team = (() => {
 
   async function openSheet() {
     if (typeof ttBusy === "function" && ttBusy("teamsheet")) return;   // 防連點（登入/建檔查詢的空窗）
-    if (typeof Supa === "undefined" || !Supa.ready()) { alert("社群尚未啟用"); return; }
-    const sess = await Auth.session(); if (!sess) { alert("請先到「社群」分頁登入"); return; }
-    const prof = await Auth.myProfile(); if (!prof) { alert("請先到「社群」分頁完成註冊"); return; }
+    if (typeof Supa === "undefined" || !Supa.ready()) { toast("社群尚未啟用"); return; }
+    const sess = await Auth.session(); if (!sess) { toast("請先到「社群」分頁登入"); return; }
+    const prof = await Auth.myProfile(); if (!prof) { toast("請先到「社群」分頁完成註冊"); return; }
     const info = { name: prof.display_name || prof.handle || "我", avatar: prof.avatar_url || null, pet: (typeof petStats === "function" ? petStats().emoji : null) };
     if (document.querySelector('[data-ov="team"]')) return;   // 防連點疊層
     const wrap = document.createElement("div"); wrap.className = "pv-mask"; wrap.dataset.ov = "team";
@@ -126,7 +126,7 @@ const Team = (() => {
 
     body.querySelectorAll(".team-pick").forEach(b => b.addEventListener("click", () => { setActive(b.dataset.id, b.dataset.name); renderSheet(wrap, info); }));
     const leaveBtn = body.querySelector("#tmLeave");
-    if (leaveBtn) leaveBtn.addEventListener("click", async () => { if (!confirm("退出目前小隊？")) return; if (typeof TeamLive !== "undefined") TeamLive.stop(); await leave(aId); renderSheet(wrap, info); });
+    if (leaveBtn) leaveBtn.addEventListener("click", async () => { if (!(await ttConfirm("退出目前小隊？"))) return; if (typeof TeamLive !== "undefined") TeamLive.stop(); await leave(aId); renderSheet(wrap, info); });
 
     const live = body.querySelector("#tmLive");
     if (live) {

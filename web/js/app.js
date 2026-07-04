@@ -1500,7 +1500,7 @@ async function downloadAllTaiwan() {
   while (zmax > 9 && Offline.tileList(bbox, 7, zmax).length > 6000) zmax--;
   const tiles = Offline.tileList(bbox, 7, zmax);
   const btn = $("#btnAllOffline"), box = $("#allOfflineBox");
-  if (!confirm(`下載全台離線地圖（縮放 7–${zmax}）約 ${tiles.length} 張圖磚、約 ${(tiles.length * 0.02).toFixed(0)} MB？\n\n可離線看全島概覽；個別步道細節請另在步道詳情按「預載離線地圖」。\n下載需幾分鐘，請保持開啟。`)) return;
+  if (!(await ttConfirm(`下載全台離線地圖（縮放 7–${zmax}）約 ${tiles.length} 張圖磚、約 ${(tiles.length * 0.02).toFixed(0)} MB？\n\n可離線看全島概覽；個別步道細節請另在步道詳情按「預載離線地圖」。\n下載需幾分鐘，請保持開啟。`))) return;
   if (!offlineAllow(tiles)) return;   // 非會員：MB 額度制
   box.style.display = "block";
   btn.disabled = true; btn.textContent = "下載中…";
@@ -2259,7 +2259,7 @@ $("#btnDiag").addEventListener("click", () => {
   const info = `循徑拾光診斷\n版本SW:${"v34"}\n螢幕:${innerWidth}x${innerHeight}\n步道資料:${TRAILS.length}條\n近期錯誤(${errs.length}):\n` +
     (errs.slice(0, 8).map(e => `· ${e.t.slice(5, 16)} ${e.m}`).join("\n") || "（無）");
   if (navigator.clipboard) navigator.clipboard.writeText(info).then(() => toast(errs.length ? `已複製診斷(${errs.length}筆錯誤)，可貼給開發者` : "已複製診斷，目前無錯誤"));
-  else alert(info);
+  else ttAlertBox(info);
 });
 $("#btnFootMap").addEventListener("click", () => { if (typeof Premium !== "undefined" && !Premium.gate()) return; openFootprintMap(); });
 $("#btnAllOffline").addEventListener("click", downloadAllTaiwan);
@@ -2301,8 +2301,13 @@ if (_crs) _crs.addEventListener("click", async () => {
     if (error) { toast("還原失敗：" + error.message); return; }
     if (!data) { toast("雲端尚無備份，請先按「雲端備份」"); return; }
     const when = new Date(data.updated_at).toLocaleString(ttLocale());
-    const merge = confirm(`雲端備份（${when}）\n\n要『合併』到現有資料嗎？\n確定 = 合併\n取消 = 完全取代`);
-    Store.importAll(data.data, merge ? "merge" : "replace");
+    const mode = await ttChoice(`雲端備份（${when}）\n要怎麼還原？`, [
+      { label: "取消", value: null, cls: "ghost" },
+      { label: "完全取代", value: "replace", cls: "ghost" },
+      { label: "合併", value: "merge", cls: "primary" },
+    ]);
+    if (!mode) return;
+    Store.importAll(data.data, mode);
     renderHistory(); render();
     // 主題/外觀與寵物、任務、成就一併還原後重繪
     try { initTheme(); renderPet(); renderQuests(); renderBadges(); renderStats(); loadProfile(); } catch (e) { /* 個別區塊未載入時忽略 */ }
@@ -2328,12 +2333,17 @@ if (_frs && _fri) {
   _fri.addEventListener("change", () => {
     const f = _fri.files && _fri.files[0]; if (!f) return;
     const rd = new FileReader();
-    rd.onload = () => {
+    rd.onload = async () => {
       try {
         const data = JSON.parse(rd.result);
         if (!data || (!data.records && !data.pet && !data.v)) { toast("這不是有效的備份檔"); return; }
-        const merge = confirm("匯入備份檔\n\n要『合併』到現有資料嗎？\n確定 = 合併\n取消 = 完全取代");
-        Store.importAll(data, merge ? "merge" : "replace");
+        const mode = await ttChoice("匯入備份檔\n要怎麼還原？", [
+          { label: "取消", value: null, cls: "ghost" },
+          { label: "完全取代", value: "replace", cls: "ghost" },
+          { label: "合併", value: "merge", cls: "primary" },
+        ]);
+        if (!mode) { _fri.value = ""; return; }
+        Store.importAll(data, mode);
         renderHistory(); render();
         try { initTheme(); renderPet(); renderQuests(); renderBadges(); renderStats(); loadProfile(); } catch (e) { /* */ }
         toast("已從備份檔還原 ✓");
@@ -2403,7 +2413,7 @@ $("#packFile").addEventListener("change", async e => {
   } catch (err) { _pkMsg("這不是有效的離線地圖包（.ttmap）"); }
 });
 $("#btnClearTiles").addEventListener("click", async () => {
-  if (confirm("確定清除已下載的離線地圖？")) {
+  if (await ttConfirm("確定清除已下載的離線地圖？")) {
     await Offline.clear();
     refreshOfflineStatus();
     toast("已清除離線地圖");
@@ -2864,7 +2874,7 @@ async function toggleDebugPanel() {
     ["清測試行程", () => ttDebug.clearHikes()], ["清debug", () => ttDebug.clearDebug()],
     ["🏅解全成就", () => ttDebug.unlockAch()], ["🏅重置成就", () => ttDebug.resetAch()],
     ["📅重置每日任務", () => ttDebug.resetQuests()],
-    ["🗑清所有行程", () => { if (confirm("清空全部行程記錄？")) ttDebug.clearAllRecords(); }],
+    ["🗑清所有行程", async () => { if (await ttConfirm("清空全部行程記錄？")) ttDebug.clearAllRecords(); }],
     ["重置🥚", () => ttDebug.resetPet()],
   ];
   p.innerHTML = `<div class="dbg-h">🛠 測試面板 <span id="dbgState"></span><button id="dbgClose">✕</button></div><div class="dbg-grid"></div>`;

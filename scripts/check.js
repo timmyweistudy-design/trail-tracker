@@ -103,6 +103,16 @@ appSrc.split("\n").forEach((l, i) => {
   }
 });
 
+// I. 禁用原生對話框：confirm/prompt/alert 樣式醜、翻譯不了、擋主執行緒——
+//    一律用 dialog.js 的 ttConfirm/ttChoice/ttPrompt/ttAlertBox 或 toast
+for (const f of files) {
+  if (f.endsWith("dialog.js")) continue;
+  read(f).split("\n").forEach((l, i) => {
+    if (/(^|[^.\w])(confirm|prompt|alert)\(/.test(l) && !/\/\/|ttConfirm|ttPrompt|ttAlertBox|ttChoice/.test(l))
+      err(`[對話框] ${rel(f)}:${i + 1} 用了原生 ${RegExp.$2}()——請改用 ttConfirm/ttChoice/ttPrompt/ttAlertBox（dialog.js）`);
+  });
+}
+
 // F. web/ 有改動但 sw.js 快取版本沒 bump → 使用者拿不到新版（PWA 用舊快取）
 try {
   const changed = execFileSync("git", ["diff", "--name-only", "HEAD"], { cwd: ROOT, stdio: "pipe" }).toString().trim().split("\n").filter(Boolean);

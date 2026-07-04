@@ -34,7 +34,7 @@ const PostView = (() => {
       if (typeof toast === "function") toast(on ? "已收藏" : "已取消收藏");
     });
     wrap.querySelector("#pvRepost").addEventListener("click", async () => {
-      const quote = prompt("轉發這篇貼文（可加上你的想法，選填）：", ""); if (quote === null) return;
+      const quote = await ttPrompt("轉發這篇貼文（可加上你的想法，選填）：", ""); if (quote === null) return;
       const r = await Posts.createRepost(post, quote.trim());
       if (r.error) { if (typeof toast === "function") toast("轉發失敗：" + r.error); return; }
       if (typeof toast === "function") toast("已轉發到你的動態");
@@ -56,14 +56,14 @@ const PostView = (() => {
         if (typeof toast === "function") toast(np ? "已置頂到個人頁" : "已取消置頂");
       });
       wrap.querySelector("#pvDel").addEventListener("click", async () => {
-        if (!confirm("確定刪除這篇貼文？")) return;
+        if (!(await ttConfirm("確定刪除這篇貼文？"))) return;
         const r = await Posts.remove(postId);
         if (r.error) { if (typeof toast === "function") toast("刪除失敗：" + r.error); return; }
         close(); if (typeof toast === "function") toast("已刪除");
         if (typeof SocialUI !== "undefined") SocialUI.route();
       });
       wrap.querySelector("#pvEdit").addEventListener("click", async () => {
-        const v = prompt("編輯內文：", post.caption || ""); if (v === null) return;
+        const v = await ttPrompt("編輯內文：", post.caption || ""); if (v === null) return;
         const { error } = await c.from("posts").update({ caption: v.trim() || null }).eq("id", postId);
         if (error) { if (typeof toast === "function") toast("更新失敗：" + error.message); return; }
         post.caption = v.trim();
@@ -282,7 +282,7 @@ const PostView = (() => {
   async function send(wrap, postId) {
     const input = wrap.querySelector("#pvInput"); const body = input.value.trim();
     if (!body) return;
-    const c = Supa.client(); const { data: u } = await c.auth.getUser(); if (!u || !u.user) { alert("請先登入"); return; }
+    const c = Supa.client(); const { data: u } = await c.auth.getUser(); if (!u || !u.user) { toast("請先登入"); return; }
     const parent = wrap.dataset.reply || null;
     input.disabled = true;
     const rec = { post_id: postId, author_id: u.user.id, body };

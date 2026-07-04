@@ -187,7 +187,7 @@ const Recorder = (() => {
 
   // --- 真實 GPS ---
   function startGPS() {
-    if (!navigator.geolocation) { alert("此裝置不支援定位，請改用模擬模式"); return false; }
+    if (!navigator.geolocation) { if (typeof ttAlertBox === "function") ttAlertBox("此裝置不支援定位，請改用模擬模式"); return false; }
     watchId = navigator.geolocation.watchPosition(
       pos => push(pos.coords.latitude, pos.coords.longitude, pos.coords.altitude, pos.coords.accuracy, false, pos.coords.speed, pos.coords.altitudeAccuracy, pos.coords.heading),
       err => cb({ ...snapshot(), error: err.message }),

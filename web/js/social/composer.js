@@ -6,11 +6,11 @@ const Composer = (() => {
 
   function open(rec, presetFiles, presetCaption) {
     if (typeof ttBusy === "function" && ttBusy("composer")) return;   // 防連點
-    if (typeof Supa === "undefined" || !Supa.ready()) { alert("社群尚未啟用"); return; }
+    if (typeof Supa === "undefined" || !Supa.ready()) { toast("社群尚未啟用"); return; }
     Auth.session().then(async (s) => {
-      if (!s) { alert("請先到「社群」分頁登入"); return; }
+      if (!s) { toast("請先到「社群」分頁登入"); return; }
       const prof = await Auth.myProfile();
-      if (!prof) { alert("請先到「社群」分頁完成註冊"); return; }
+      if (!prof) { toast("請先到「社群」分頁完成註冊"); return; }
       mount(rec, presetFiles, presetCaption);
     });
   }

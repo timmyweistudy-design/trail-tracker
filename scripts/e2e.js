@@ -128,6 +128,14 @@ const PORT = 8899;
     const dl = page.waitForEvent("download", { timeout: 5000 }).catch(() => null);
     await page.click("#btnFileBackup");
     ok("匯出備份檔觸發下載", !!(await dl));
+    // 關鍵流程③：自製對話框（取代原生 confirm）——清除離線地圖 → 對話框出現 → 取消
+    await page.evaluate(() => document.getElementById("btnClearTiles")?.scrollIntoView());
+    await page.click("#btnClearTiles");
+    await page.waitForTimeout(500);
+    ok("自製確認對話框出現", await page.locator(".ttdlg").count() === 1);
+    await page.click(".ttdlg .btn.ghost");
+    await page.waitForTimeout(400);
+    ok("取消後對話框關閉", await page.locator(".ttdlg").count() === 0);
   } catch (e) {
     errors.push("fatal: " + e.message);
   } finally {
