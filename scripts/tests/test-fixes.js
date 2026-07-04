@@ -52,7 +52,10 @@ Store.importAll({ records: [mk("a", 1)] }, "replace");
 ok("還原較舊備份，終身統計不倒退", Store.life().km >= before);
 
 // 6) i18n 翻譯層：字典與規則式
-eval(fs.readFileSync(web("i18n.js"), "utf8") + "\n;globalThis.I18n = I18n;");
+eval(fs.readFileSync(web("i18n.js"), "utf8").replace(/I18n\.start\(\);[^]*$/, "") + "\n;globalThis.I18n = I18n;");
+// 按需語言檔：載入全部（測試會切到各語言驗 tx）
+global.window = global.window || {}; global.window.I18n = I18n;
+{ const d = web("i18n"); if (fs.existsSync(d)) for (const lf of fs.readdirSync(d).filter(x => x.endsWith(".js"))) eval(fs.readFileSync(path.join(d, lf), "utf8")); }
 ok("i18n 字典：探索→Explore", I18n.tx("探索") === "Explore");
 ok("i18n 規則：X 分鐘前", I18n.tx("5 分鐘前") === "5 min ago");
 ok("i18n 規則：通知含名字", I18n.tx("小明 開始追蹤你") === "小明 started following you");

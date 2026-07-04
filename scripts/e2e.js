@@ -79,6 +79,11 @@ const PORT = 8899;
       ok(`語言 ${lng}：載入後主執行緒有回應（無凍結）`, alive);
       if (!alive) break;
     }
+    // 按需載入端到端：切西語重載 → 應動態抓 js/i18n/es.js 並實際翻譯（Explore→Explorar）
+    await page.evaluate(() => localStorage.setItem("tt_lang", "es"));
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(2500);
+    ok("按需載入西語生效（Explorar）", /Explorar/i.test(await page.locator('.tab[data-view="explore"]').innerText()));
     // 首次語言選擇覆蓋層：用全新 context（無跳過導覽的 initScript、儲存空白）→ 應出現 .lang-gate
     const fresh = await browser.newContext();
     const fp = await fresh.newPage({ viewport: { width: 390, height: 844 } });

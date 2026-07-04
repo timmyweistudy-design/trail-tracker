@@ -122,10 +122,17 @@ try {
   const src = read(path.join(WEB, "js", "i18n.js")).replace(/I18n\.start\(\);[^]*$/, "");
   // eslint-disable-next-line no-eval
   eval(src + ";global.__I18n = I18n;");
+  // 按需語言檔（web/js/i18n/*.js）呼叫 window.I18n.registerLang → 全部載入以驗 H2 平行性
+  global.window = global.window || {}; global.window.I18n = global.__I18n;
+  const langDir = path.join(WEB, "js", "i18n");
+  if (fs.existsSync(langDir)) for (const lf of fs.readdirSync(langDir).filter(x => x.endsWith(".js"))) {
+    // eslint-disable-next-line no-eval
+    try { eval(read(path.join(langDir, lf))); } catch (e) { err(`[i18n] 語言檔 ${lf} 載入失敗：${e && e.message}`); }
+  }
   const tx = global.__I18n.tx;
   const news = new Set();
   for (const f of files) {
-    if (f.endsWith("i18n.js") || f.endsWith("i18n-names.js") || /trails-(data|detail|geo)\.js$/.test(f)) continue;
+    if (f.endsWith("i18n.js") || f.endsWith("i18n-names.js") || /[\\/]i18n[\\/]/.test(f) || /trails-(data|detail|geo)\.js$/.test(f)) continue;
     const src2 = read(f);
     for (const m of src2.matchAll(/[>"`]([^<>`"$\\{}]*[\u4e00-\u9fff][^<>`"$\\{}]*)[<"`$]/g)) {
       const t = m[1].trim();
