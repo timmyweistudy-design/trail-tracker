@@ -1,0 +1,51 @@
+import fs from "fs";
+const FIX = {
+  tl: { "探索": "Tuklasin", "記錄": "Mag-record", "夥伴": "Kasama", "社群": "Komunidad", "我的": "Profile",
+    "儲存": "I-save", "貼文": "Post", "留言": "Komento", "讚": "Gusto", "追蹤": "Sundan", "粉絲": "Followers",
+    "步道": "Trail", "難度": "Hirap", "輕鬆": "Madali", "一般": "Katamtaman", "進階": "Advanced", "挑戰": "Mahirap", "困難": "Napakahirap",
+    "離線地圖": "Offline na mapa", "翻譯年糕": "Isalin", "小隊": "Team", "準備": "Handa", "免費": "Libre", "無限": "Walang limitasyon",
+    "日": "Lin", "一": "Lun", "二": "Mar", "三": "Miy", "四": "Huw", "五": "Biy", "六": "Sab",
+    "晴": "Maaraw", "多雲": "Maulap", "陰": "Makulimlim", "霧": "Hamog", "自由路線": "Malayang ruta",
+    "（我）": "(Ako)", "隊友": "Kakampi" },
+  ms: { "探索": "Teroka", "記錄": "Rakam", "夥伴": "Rakan", "社群": "Komuniti", "我的": "Profil",
+    "儲存": "Simpan", "貼文": "Kiriman", "留言": "Komen", "讚": "Suka", "追蹤": "Ikut", "粉絲": "Pengikut",
+    "步道": "Denai", "難度": "Kesukaran", "輕鬆": "Mudah", "一般": "Sederhana", "進階": "Lanjutan", "挑戰": "Sukar", "困難": "Sangat sukar",
+    "離線地圖": "Peta luar talian", "翻譯年糕": "Terjemah", "小隊": "Pasukan", "準備": "Sedia", "免費": "Percuma", "無限": "Tanpa had",
+    "日": "Ahd", "一": "Isn", "二": "Sel", "三": "Rab", "四": "Kha", "五": "Jum", "六": "Sab",
+    "晴": "Cerah", "多雲": "Berawan", "陰": "Mendung", "霧": "Kabus", "自由路線": "Laluan bebas",
+    "（我）": "(Saya)", "隊友": "Rakan" },
+  nl: { "探索": "Ontdek", "記錄": "Vastleggen", "夥伴": "Maatje", "社群": "Community", "我的": "Profiel",
+    "儲存": "Opslaan", "貼文": "Bericht", "留言": "Reactie", "讚": "Leuk", "追蹤": "Volgen", "粉絲": "Volgers",
+    "步道": "Pad", "難度": "Moeilijkheid", "輕鬆": "Makkelijk", "一般": "Gemiddeld", "進階": "Gevorderd", "挑戰": "Zwaar", "困難": "Zeer zwaar",
+    "離線地圖": "Offline kaarten", "翻譯年糕": "Vertalen", "小隊": "Team", "準備": "Klaar", "免費": "Gratis", "無限": "Onbeperkt",
+    "日": "Zo", "一": "Ma", "二": "Di", "三": "Wo", "四": "Do", "五": "Vr", "六": "Za",
+    "晴": "Zonnig", "多雲": "Bewolkt", "陰": "Betrokken", "霧": "Mist", "自由路線": "Vrije route",
+    "（我）": "(Ik)", "隊友": "Teamlid" },
+  pl: { "探索": "Odkrywaj", "記錄": "Nagraj", "夥伴": "Towarzysz", "社群": "Społeczność", "我的": "Profil",
+    "儲存": "Zapisz", "貼文": "Post", "留言": "Komentarz", "讚": "Lubię to", "追蹤": "Obserwuj", "粉絲": "Obserwujący",
+    "步道": "Szlak", "難度": "Trudność", "輕鬆": "Łatwy", "一般": "Średni", "進階": "Zaawansowany", "挑戰": "Trudny", "困難": "Bardzo trudny",
+    "離線地圖": "Mapy offline", "翻譯年糕": "Przetłumacz", "小隊": "Zespół", "準備": "Gotowy", "免費": "Za darmo", "無限": "Bez limitu",
+    "日": "Nd", "一": "Pn", "二": "Wt", "三": "Śr", "四": "Cz", "五": "Pt", "六": "So",
+    "晴": "Słonecznie", "多雲": "Pochmurno", "陰": "Zachmurzenie", "霧": "Mgła", "自由路線": "Wolna trasa",
+    "（我）": "(Ja)", "隊友": "Kolega" },
+  tr: { "探索": "Keşfet", "記錄": "Kaydet", "夥伴": "Dost", "社群": "Topluluk", "我的": "Profil",
+    "儲存": "Kaydet", "貼文": "Gönderi", "留言": "Yorum", "讚": "Beğen", "追蹤": "Takip et", "粉絲": "Takipçi",
+    "步道": "Patika", "難度": "Zorluk", "輕鬆": "Kolay", "一般": "Orta", "進階": "İleri", "挑戰": "Zor", "困難": "Çok zor",
+    "離線地圖": "Çevrimdışı harita", "翻譯年糕": "Çevir", "小隊": "Takım", "準備": "Hazır", "免費": "Ücretsiz", "無限": "Sınırsız",
+    "日": "Paz", "一": "Pzt", "二": "Sal", "三": "Çar", "四": "Per", "五": "Cum", "六": "Cmt",
+    "晴": "Güneşli", "多雲": "Bulutlu", "陰": "Kapalı", "霧": "Sis", "自由路線": "Serbest rota",
+    "（我）": "(Ben)", "隊友": "Takım arkadaşı" },
+  hi: { "探索": "खोजें", "記錄": "रिकॉर्ड", "夥伴": "साथी", "社群": "समुदाय", "我的": "प्रोफ़ाइल",
+    "儲存": "सहेजें", "貼文": "पोस्ट", "留言": "टिप्पणी", "讚": "पसंद", "追蹤": "फ़ॉलो करें", "粉絲": "फ़ॉलोअर",
+    "步道": "पगडंडी", "難度": "कठिनाई", "輕鬆": "आसान", "一般": "मध्यम", "進階": "उन्नत", "挑戰": "कठिन", "困難": "बहुत कठिन",
+    "離線地圖": "ऑफ़लाइन नक्शे", "翻譯年糕": "अनुवाद", "小隊": "टीम", "準備": "तैयार", "免費": "मुफ़्त", "無限": "असीमित",
+    "日": "रवि", "一": "सोम", "二": "मंगल", "三": "बुध", "四": "गुरु", "五": "शुक्र", "六": "शनि",
+    "晴": "धूप", "多雲": "बादल", "陰": "मेघाच्छादित", "霧": "कोहरा", "自由路線": "स्वतंत्र मार्ग",
+    "（我）": "(मैं)", "隊友": "साथी" },
+};
+for (const code of Object.keys(FIX)) {
+  const raw = JSON.parse(fs.readFileSync(`scratchpad/${code}-dict-raw.json`, "utf8"));
+  const merged = Object.assign({}, raw, FIX[code]);
+  fs.writeFileSync(`scratchpad/${code}-dict.json`, JSON.stringify(merged, null, 1));
+  console.log(code, "final", Object.keys(merged).length, "fixes", Object.keys(FIX[code]).length);
+}

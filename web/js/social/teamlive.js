@@ -33,7 +33,7 @@ const TeamLive = (() => {
       const last = metas[metas.length - 1] || {};
       // 自己的準備狀態以本地為準（分頁切換時 presence 可能還沒同步回來，別把自己誤判成未準備）
       const ready = (key === me) ? (myReady || metas.some(m => m && m.ready)) : metas.some(m => m && m.ready);
-      out.push({ id: key, name: last.name || "隊友", ready, me: key === me, leader: key === leaderId });
+      out.push({ id: key, name: last.name || (typeof ttT === "function" ? ttT("隊友") : "隊友"), ready, me: key === me, leader: key === leaderId });
     }
     return out.sort((a, b) => (b.leader - a.leader) || (b.me - a.me));
   }
@@ -117,9 +117,9 @@ const TeamLive = (() => {
           ll = [meta.lat + 0.00012 * Math.sin(a), meta.lon + 0.00012 * Math.cos(a)];
         }
       }
-      if (markers[key]) { markers[key].setLatLng(ll); markers[key].setIcon(icon(meta)); markers[key].setTooltipContent(meta.name || "隊友"); }
+      if (markers[key]) { markers[key].setLatLng(ll); markers[key].setIcon(icon(meta)); markers[key].setTooltipContent(meta.name || (typeof ttT === "function" ? ttT("隊友") : "隊友")); }
       else markers[key] = L.marker(ll, { icon: icon(meta), zIndexOffset: 900 }).addTo(map)
-        .bindTooltip(meta.name || "隊友", { permanent: true, direction: "bottom", className: "team-tip", offset: [0, 14] });   // 名字放下方，不擋寵物
+        .bindTooltip(meta.name || (typeof ttT === "function" ? ttT("隊友") : "隊友"), { permanent: true, direction: "bottom", className: "team-tip", offset: [0, 14] });   // 名字放下方，不擋寵物
     }
     for (const key in markers) if (!seen[key]) { try { map.removeLayer(markers[key]); } catch (e) { } delete markers[key]; }
   }
@@ -190,7 +190,7 @@ const TeamLive = (() => {
     const el = readyBarEl(); if (!el) return;
     if (!channel) { el.remove(); return; }
     const r = roster();
-    const chips = r.map(m => `<span class="trb-chip ${m.ready ? "ok" : ""}">${m.leader ? `${typeof ic === "function" ? ic("crown") : ""} ` : ""}${esc(m.name)}${m.me ? "（我）" : ""} ${m.ready ? "✓" : "…"}</span>`).join("");
+    const chips = r.map(m => `<span class="trb-chip ${m.ready ? "ok" : ""}">${m.leader ? `${typeof ic === "function" ? ic("crown") : ""} ` : ""}${esc(m.name)}${m.me ? (typeof ttT === "function" ? ttT("（我）") : "（我）") : ""} ${m.ready ? "✓" : "…"}</span>`).join("");
     // 記錄中：改顯示隊伍即時狀態（在線人數/地圖可見人數），不再顯示準備提示
     if (typeof Recorder !== "undefined" && Recorder.getState && Recorder.getState() === "running") {
       const visible = Object.keys(markers).length;

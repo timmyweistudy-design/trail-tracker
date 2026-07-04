@@ -2584,17 +2584,28 @@ function initTheme() {
     localStorage.setItem("tt_theme", b.dataset.themeOpt);
     applyTheme(b.dataset.themeOpt);
   }));
-  // 語言清單（設定頁）：國旗＋原名＋英文名一列一語言，選定後重載
+  // 語言清單（設定頁）：搜尋框 + 可捲動清單（國旗＋原名＋英文名），高度上限避免頁面過長
   const curLang = (typeof I18n !== "undefined") ? I18n.lang() : "zh";
   const row = document.getElementById("langRow");
   if (row) {
-    row.innerHTML = TT_LANGS.map(([c, f, n, sub]) =>
-      `<button class="lang-item${c === curLang ? " on" : ""}" data-lang-opt="${c}">
+    const itemHtml = ([c, f, n, sub]) =>
+      `<button class="lang-item${c === curLang ? " on" : ""}" data-lang-opt="${c}" data-search="${(n + " " + sub + " " + c).toLowerCase()}">
         <span class="flag">${f}</span><span class="names"><span class="native">${n}</span><span class="sub">${sub}</span></span><span class="tick">✓</span>
-      </button>`).join("");
-    row.querySelectorAll("[data-lang-opt]").forEach(b => b.addEventListener("click", () => {
+      </button>`;
+    row.innerHTML = `<input type="search" class="lang-search" id="langSearch" placeholder="${ttT("搜尋語言")}" autocomplete="off">
+      <div class="lang-scroll" id="langScroll">${TT_LANGS.map(itemHtml).join("")}</div>`;
+    const bind = b => b.addEventListener("click", () => {
       if (b.dataset.langOpt !== curLang && typeof I18n !== "undefined") I18n.set(b.dataset.langOpt);
-    }));
+    });
+    row.querySelectorAll("[data-lang-opt]").forEach(bind);
+    const sc = document.getElementById("langScroll"), sr = document.getElementById("langSearch");
+    if (sr) sr.addEventListener("input", () => {
+      const q = sr.value.trim().toLowerCase();
+      sc.querySelectorAll(".lang-item").forEach(b => { b.style.display = (!q || b.dataset.search.includes(q)) ? "" : "none"; });
+      // 目前選中的語言捲到最上，方便看見
+      const on = sc.querySelector(".lang-item.on"); if (on && !q) sc.scrollTop = Math.max(0, on.offsetTop - 60);
+    });
+    const on = sc.querySelector(".lang-item.on"); if (on) sc.scrollTop = Math.max(0, on.offsetTop - 60);
   }
 }
 // 語言清單單一事實來源（設定頁與首次選擇覆蓋層共用）：[代碼, 國旗, 原名, 英文名]
@@ -2606,6 +2617,9 @@ const TT_LANGS = [
   ["pt", "🇧🇷", "Português", "Portuguese"], ["it", "🇮🇹", "Italiano", "Italian"],
   ["ru", "🇷🇺", "Русский", "Russian"], ["th", "🇹🇭", "ไทย", "Thai"],
   ["vi", "🇻🇳", "Tiếng Việt", "Vietnamese"], ["id", "🇮🇩", "Bahasa Indonesia", "Indonesian"],
+  ["tl", "🇵🇭", "Filipino", "Filipino"], ["ms", "🇲🇾", "Bahasa Melayu", "Malay"],
+  ["nl", "🇳🇱", "Nederlands", "Dutch"], ["pl", "🇵🇱", "Polski", "Polish"],
+  ["tr", "🇹🇷", "Türkçe", "Turkish"], ["hi", "🇮🇳", "हिन्दी", "Hindi"],
 ];
 if (typeof window !== "undefined") window.TT_LANGS = TT_LANGS;
 
@@ -2812,9 +2826,15 @@ if (new URLSearchParams(location.search).get("debug") === "1") setTimeout(toggle
       <h2>選擇語言 · Language</h2>
       <p>循徑拾光 · Gather the Trail</p>
     </div>
-    <div class="lang-list">${TT_LANGS.map(([c, f, n, sub]) =>
-      `<button class="lang-item" data-lg="${c}"><span class="flag">${f}</span><span class="names"><span class="native">${n}</span><span class="sub">${sub}</span></span></button>`).join("")}</div>
+    <input type="search" class="lang-search" id="lgSearch" placeholder="Search · 搜尋" autocomplete="off">
+    <div class="lang-list" id="lgList">${TT_LANGS.map(([c, f, n, sub]) =>
+      `<button class="lang-item" data-lg="${c}" data-search="${(n + " " + sub + " " + c).toLowerCase()}"><span class="flag">${f}</span><span class="names"><span class="native">${n}</span><span class="sub">${sub}</span></span></button>`).join("")}</div>
   </div>`;
+  const lgs = ov.querySelector("#lgSearch");
+  if (lgs) lgs.addEventListener("input", () => {
+    const q = lgs.value.trim().toLowerCase();
+    ov.querySelectorAll("#lgList .lang-item").forEach(b => { b.style.display = (!q || b.dataset.search.includes(q)) ? "" : "none"; });
+  });
   ov.querySelectorAll("[data-lg]").forEach(b => b.addEventListener("click", () => {
     const code = b.dataset.lg;
     try {

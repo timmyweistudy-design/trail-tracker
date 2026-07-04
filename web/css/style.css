@@ -803,19 +803,31 @@ html[data-theme="dark"] img.trail-photo { background: var(--surface-2); }
 
 /* 主題切換器（我的頁） */
 .theme-row { display: flex; gap: 8px; margin-top: 4px; }
-/* 語言清單（設定頁＋首次選擇共用）：國旗＋原名＋英文名，直式一列一語言，可捲動 */
-.lang-list { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+/* 語言清單（設定頁＋首次選擇共用）：搜尋框 + 可捲動清單（國旗＋原名＋英文名） */
+.lang-list { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.lang-search { width: 100%; border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  border-radius: var(--r-sm); padding: 10px 13px; font-size: 14px; }
+.lang-scroll { display: flex; flex-direction: column; gap: 6px; max-height: 292px; overflow-y: auto;
+  -webkit-overflow-scrolling: touch; padding: 2px; }
 .lang-item { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
   border: 1px solid var(--line); background: var(--surface); color: var(--ink);
   border-radius: var(--r-sm); padding: 11px 13px; cursor: pointer; transition: .15s; }
 .lang-item:active { transform: scale(.99); }
 .lang-item .flag { font-size: 22px; line-height: 1; flex: none; }
 .lang-item .names { flex: 1; min-width: 0; }
-.lang-item .native { font-weight: 600; font-size: 15px; }
-.lang-item .sub { font-size: 12px; color: var(--ink-faint); margin-top: 1px; }
+.lang-item .native { font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lang-item .sub { font-size: 12px; color: var(--ink-faint); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lang-item .tick { flex: none; color: var(--brand-mid); font-weight: 700; opacity: 0; }
 .lang-item.on { border-color: var(--brand); background: color-mix(in srgb, var(--brand) 8%, var(--surface)); }
 .lang-item.on .tick { opacity: 1; }
+
+/* 字較長的語言（德/荷/俄/波蘭/葡）微調：底部分頁與分段控制縮一點字，避免擠壓爆版 */
+html[lang="de"] .tab, html[lang="nl"] .tab, html[lang="ru"] .tab,
+html[lang="pl"] .tab, html[lang="pt"] .tab, html[lang="vi"] .tab, html[lang="fr"] .tab {
+  font-size: 9.5px; letter-spacing: -.2px; }
+html[lang="de"] .seg-btn, html[lang="nl"] .seg-btn, html[lang="ru"] .seg-btn, html[lang="pl"] .seg-btn {
+  font-size: 12px; padding-left: 9px; padding-right: 9px; }
+html[lang="de"] .chip, html[lang="nl"] .chip, html[lang="ru"] .chip, html[lang="pl"] .chip { font-size: 12.5px; }
 
 /* 首次語言選擇覆蓋層 */
 .lang-gate { position: fixed; inset: 0; z-index: 9000; background: var(--bg, #f4f1e8);
