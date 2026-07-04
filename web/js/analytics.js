@@ -94,13 +94,17 @@ function openYearReview() {
   const sh = ov.querySelector("#yrShare");
   if (sh) sh.addEventListener("click", () => {
     const _L = (typeof I18n !== "undefined") ? I18n.lang() : "zh";
-    const text = _L === "en"
-      ? `My ${year} on the trails: ${recs.length} trips, ${km.toFixed(0)} km, ↑${Math.round(asc)} m ascent (≈ ${(asc / 3952).toFixed(1)}× Yushan) — Gather the Trail`
-      : _L === "es"
-        ? `Mi ${year} en los senderos: ${recs.length} salidas, ${km.toFixed(0)} km, ↑${Math.round(asc)} m (≈ ${(asc / 3952).toFixed(1)}× Yushan) — Gather the Trail`
-        : _L === "ja"
-          ? `わたしの${year}年の山あるき：${recs.length}回、${km.toFixed(0)} km、累積上昇 ↑${Math.round(asc)} m（玉山 約${(asc / 3952).toFixed(1)}個分）— Gather the Trail`
-          : `我的 ${year} 山行回顧：${recs.length} 趟、${km.toFixed(0)} km、累積爬升 ↑${Math.round(asc)} m（約 ${(asc / 3952).toFixed(1)} 座玉山）— 循徑拾光`;
+    const _n = recs.length, _km = km.toFixed(0), _a = Math.round(asc), _y = (asc / 3952).toFixed(1);
+    const _share = {
+      en: `My ${year} on the trails: ${_n} trips, ${_km} km, ↑${_a} m ascent (≈ ${_y}× Yushan) — Gather the Trail`,
+      es: `Mi ${year} en los senderos: ${_n} salidas, ${_km} km, ↑${_a} m (≈ ${_y}× Yushan) — Gather the Trail`,
+      ja: `わたしの${year}年の山あるき：${_n}回、${_km} km、累積上昇 ↑${_a} m（玉山 約${_y}個分）— Gather the Trail`,
+      ko: `나의 ${year}년 산행: ${_n}회, ${_km} km, 누적 상승 ↑${_a} m (위산 약 ${_y}개) — Gather the Trail`,
+      fr: `Mon année ${year} sur les sentiers : ${_n} sorties, ${_km} km, ↑${_a} m (≈ ${_y}× Yushan) — Gather the Trail`,
+      de: `Mein Wanderjahr ${year}: ${_n} Touren, ${_km} km, ↑${_a} m (≈ ${_y}× Yushan) — Gather the Trail`,
+      cn: `我的 ${year} 山行回顾：${_n} 趟、${_km} km、累积爬升 ↑${_a} m（约 ${_y} 座玉山）— 循径拾光`,
+    };
+    const text = _share[_L] || `我的 ${year} 山行回顧：${_n} 趟、${_km} km、累積爬升 ↑${_a} m（約 ${_y} 座玉山）— 循徑拾光`;
     if (navigator.share) navigator.share({ title: ttT("我的山行回顧"), text }).catch(() => { });
     else if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast("已複製回顧文字"));
     else toast(text);

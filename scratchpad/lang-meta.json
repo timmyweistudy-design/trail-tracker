@@ -1,0 +1,14 @@
+{
+ "LOCALE": {
+  "ko": "ko-KR",
+  "fr": "fr-FR",
+  "de": "de-DE",
+  "cn": "zh-CN"
+ },
+ "TRTGT": {
+  "ko": "ko",
+  "fr": "fr",
+  "de": "de",
+  "cn": "zh-CN"
+ }
+}

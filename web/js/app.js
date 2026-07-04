@@ -1751,13 +1751,17 @@ function openTrackReview(rec) {
   $("#trackGpx").addEventListener("click", () => { GPX.exportRecord(rec); toast("已下載路線檔"); });
   $("#trackShare").addEventListener("click", () => {
     const _L = (typeof I18n !== "undefined") ? I18n.lang() : "zh";
-    const text = _L === "en"
-      ? `I hiked ${rec.trailName || ttT("自由路線")}: ${km.toFixed(2)} km, ↑${rec.ascent || 0} m, ${rec.kcal} kcal, ${fmtTime(rec.elapsedMs)} ⛰️ — Gather the Trail`
-      : _L === "es"
-        ? `Caminé ${rec.trailName || ttT("自由路線")}: ${km.toFixed(2)} km, ↑${rec.ascent || 0} m, ${rec.kcal} kcal, ${fmtTime(rec.elapsedMs)} ⛰️ — Gather the Trail`
-        : _L === "ja"
-          ? `${rec.trailName || ttT("自由路線")}を歩きました：${km.toFixed(2)} km、↑${rec.ascent || 0} m、${rec.kcal} kcal、${fmtTime(rec.elapsedMs)} ⛰️ — Gather the Trail`
-          : `我走了 ${rec.trailName || "自由路線"}：${km.toFixed(2)} km、爬升 ↑${rec.ascent || 0}m、${rec.kcal} 大卡、${fmtTime(rec.elapsedMs)} ⛰️ — 循徑拾光`;
+    const _tn = rec.trailName || ttT("自由路線"), _a = rec.ascent || 0, _km = km.toFixed(2), _t = fmtTime(rec.elapsedMs);
+    const _share = {
+      en: `I hiked ${_tn}: ${_km} km, ↑${_a} m, ${rec.kcal} kcal, ${_t} ⛰️ — Gather the Trail`,
+      es: `Caminé ${_tn}: ${_km} km, ↑${_a} m, ${rec.kcal} kcal, ${_t} ⛰️ — Gather the Trail`,
+      ja: `${_tn}を歩きました：${_km} km、↑${_a} m、${rec.kcal} kcal、${_t} ⛰️ — Gather the Trail`,
+      ko: `${_tn} 하이킹: ${_km} km, ↑${_a} m, ${rec.kcal} kcal, ${_t} ⛰️ — Gather the Trail`,
+      fr: `J'ai marché ${_tn} : ${_km} km, ↑${_a} m, ${rec.kcal} kcal, ${_t} ⛰️ — Gather the Trail`,
+      de: `Ich bin ${_tn} gewandert: ${_km} km, ↑${_a} m, ${rec.kcal} kcal, ${_t} ⛰️ — Gather the Trail`,
+      cn: `我走了 ${_tn}：${_km} km、爬升 ↑${_a}m、${rec.kcal} 大卡、${_t} ⛰️ — 循径拾光`,
+    };
+    const text = _share[_L] || `我走了 ${rec.trailName || "自由路線"}：${_km} km、爬升 ↑${_a}m、${rec.kcal} 大卡、${_t} ⛰️ — 循徑拾光`;
     if (navigator.share) navigator.share({ title: ttT("我的健行紀錄"), text }).catch(() => {});
     else if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast("已複製,可貼給朋友"));
     else toast(text);

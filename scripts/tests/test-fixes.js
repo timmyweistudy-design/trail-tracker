@@ -72,6 +72,20 @@ ok("i18n(ja) 字典：翻譯年糕→ほんやくコンニャク", I18n.tx("翻�
 ok("i18n(ja) 規則：X 分鐘前", I18n.tx("5 分鐘前") === "5分前");
 ok("i18n(ja) 規則：通知含名字", I18n.tx("花子 開始追蹤你") === "花子 さんがフォローしました");
 localStorage.removeItem("tt_lang");
+localStorage.setItem("tt_lang", "ko");
+ok("i18n(ko) 字典：記錄→기록", I18n.tx("記錄") === "기록");
+ok("i18n(ko) 字典：儲存→저장（非救援）", I18n.tx("儲存") === "저장");
+ok("i18n(ko) 規則：X 分鐘前", I18n.tx("5 分鐘前") === "5분 전");
+localStorage.setItem("tt_lang", "fr");
+ok("i18n(fr) 字典：記錄→Suivi", I18n.tx("記錄") === "Suivi");
+ok("i18n(fr) 規則：X 分鐘前", I18n.tx("5 分鐘前") === "il y a 5 min");
+localStorage.setItem("tt_lang", "de");
+ok("i18n(de) 字典：儲存→Speichern", I18n.tx("儲存") === "Speichern");
+ok("i18n(de) 規則：通知含名字", I18n.tx("小明 讚了你的貼文") === "小明 gefällt dein Beitrag");
+localStorage.setItem("tt_lang", "cn");
+ok("i18n(cn) 繁→簡：記錄→记录", I18n.tx("記錄") === "记录");
+ok("i18n(cn) 規則：貼文→帖子", I18n.tx("小明 讚了你的貼文") === "小明 赞了你的帖子");
+localStorage.removeItem("tt_lang");
 // 地名字典後備（i18n-names.js）
 global.window = global.window || {};
 eval(fs.readFileSync(web("i18n-names.js"), "utf8"));

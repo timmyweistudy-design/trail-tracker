@@ -68,7 +68,7 @@ const PORT = 8899;
     if (ttErrs.length) ttErrs.slice(0, 5).forEach(e => console.log("  ttError:", e.m));
 
     // 四語言凍結回歸（v241 日文同形詞條無限迴圈事故）：每個語言載入後主執行緒必須 3 秒內有回應
-    for (const lng of ["es", "ja", "zh"]) {
+    for (const lng of ["es", "ja", "ko", "fr", "de", "cn", "zh"]) {
       await page.evaluate(l => localStorage.setItem("tt_lang", l), lng).catch(() => {});
       await page.reload({ waitUntil: "domcontentloaded" });
       await page.waitForTimeout(2500);
