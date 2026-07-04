@@ -304,22 +304,35 @@ async function openCompare() {
   if (!u || !u.user) { toast("請先到社群分頁登入"); return; }
   const ov = document.createElement("div"); ov.className = "pet-modal";
   ov.dataset.ov = "cmpfriends";
-  ov.innerHTML = `<div class="pet-modal-card"><button class="sheet-close" id="cmpX">${ic("x")}</button><h2>${ic("users")} 好友里程比較</h2><div id="cmpBody"><div class="feed-loading"><span class="spin"></span></div></div></div>`;
+  ov.innerHTML = `<div class="pet-modal-card"><button class="sheet-close" id="cmpX">${ic("x")}</button><div class="cmp-head"><h2>${ic("users")} 好友里程比較</h2><button class="cmp-refresh" id="cmpRefresh" title="重新整理">${ic("refresh")}</button></div><div id="cmpBody"><div class="feed-loading"><span class="spin"></span></div></div></div>`;
   document.body.appendChild(ov);
   ov.querySelector("#cmpX").addEventListener("click", () => ov.remove());
   ov.addEventListener("click", e => { if (e.target === ov) ov.remove(); });
-  try {
-    // 先把自己最新的里程同步到雲端 profile，避免自己那列顯示過時數字
-    if (typeof Profiles !== "undefined" && Profiles.syncMyStats) { try { await Profiles.syncMyStats(u.user.id); } catch (e) { /* */ } }
-    const { data: fol } = await c.from("follows").select("following_id").eq("follower_id", u.user.id);
-    const ids = [u.user.id, ...((fol || []).map(r => r.following_id))];
-    const { data: profs } = await c.from("profiles").select("id, handle, display_name, total_km, pet_level").in("id", ids);
-    const list = (profs || []).map(p => ({ ...p, km: +(p.total_km || 0) })).sort((a, b) => b.km - a.km);
+  // 依寵物等級對應成長階段 emoji（PET_STAGES 由 pet.js 提供）
+  const petEmoji = lv => { try { const s = (typeof PET_STAGES !== "undefined" && PET_STAGES) || []; return s.length ? s[Math.min(Math.max((+lv || 1) - 1, 0), s.length - 1)].e : "🐾"; } catch (e) { return "🐾"; } };
+  const RANK_MEDAL = ["🥇", "🥈", "🥉"];
+  const refreshBtn = ov.querySelector("#cmpRefresh");
+  async function loadCmp() {
     const body = ov.querySelector("#cmpBody"); if (!body) return;
-    if (list.length < 2) { body.innerHTML = `<div class="social-empty"><span class="ee">${ic("users")}</span>追蹤更多山友，就能一起比里程！</div>`; return; }
-    const max = Math.max(1, ...list.map(p => p.km));
-    body.innerHTML = `<div class="cmp-list">${list.map((p, i) => `<div class="cmp-row${p.id === u.user.id ? " me" : ""}"><span class="cmp-rank">${i + 1}</span><span class="cmp-name">${(p.display_name || p.handle || "山友")}${p.id === u.user.id ? "（我）" : ""}</span><div class="cmp-bar"><i style="width:${Math.round(p.km / max * 100)}%"></i></div><b class="cmp-km">${p.km.toFixed(0)}</b></div>`).join("")}</div>`;
-  } catch (e) { const b = ov.querySelector("#cmpBody"); if (b) b.innerHTML = `<div class="social-empty">載入失敗</div>`; }
+    if (refreshBtn) refreshBtn.classList.add("spinning");
+    try {
+      // 先把自己最新的里程同步到雲端 profile，避免自己那列顯示過時數字
+      if (typeof Profiles !== "undefined" && Profiles.syncMyStats) { try { await Profiles.syncMyStats(u.user.id); } catch (e) { /* */ } }
+      const { data: fol } = await c.from("follows").select("following_id").eq("follower_id", u.user.id);
+      const ids = [u.user.id, ...((fol || []).map(r => r.following_id))];
+      const { data: profs } = await c.from("profiles").select("id, handle, display_name, total_km, pet_level").in("id", ids);
+      const list = (profs || []).map(p => ({ ...p, km: +(p.total_km || 0) })).sort((a, b) => b.km - a.km);
+      if (!ov.querySelector("#cmpBody")) return;
+      if (list.length < 2) { body.innerHTML = `<div class="social-empty"><span class="ee">${ic("users")}</span>追蹤更多山友，就能一起比里程！</div>`; return; }
+      const max = Math.max(1, ...list.map(p => p.km));
+      const myRank = list.findIndex(p => p.id === u.user.id) + 1;
+      const rankHint = myRank > 0 ? `<div class="cmp-myrank">${myRank === 1 ? ttT("🏆 你目前排第一，繼續領跑！") : `${ttT("我的排名")} <b>${myRank}</b> / ${list.length}`}</div>` : "";
+      body.innerHTML = rankHint + `<div class="cmp-list">${list.map((p, i) => `<div class="cmp-row${p.id === u.user.id ? " me" : ""}"><span class="cmp-rank">${RANK_MEDAL[i] || (i + 1)}</span><span class="cmp-pet">${petEmoji(p.pet_level)}<i>Lv.${+p.pet_level || 1}</i></span><span class="cmp-name">${(p.display_name || p.handle || "山友")}${p.id === u.user.id ? "（我）" : ""}</span><div class="cmp-bar"><i style="width:${Math.round(p.km / max * 100)}%"></i></div><b class="cmp-km">${p.km.toFixed(0)}</b></div>`).join("")}</div>`;
+    } catch (e) { const b = ov.querySelector("#cmpBody"); if (b) b.innerHTML = `<div class="social-empty">載入失敗</div>`; }
+    finally { if (refreshBtn) refreshBtn.classList.remove("spinning"); }
+  }
+  if (refreshBtn) refreshBtn.addEventListener("click", () => loadCmp());
+  loadCmp();
 }
 function exportRecordsCsv(recs) {
   const head = "日期,步道,公里,累積爬升m,下降m,大卡,時間分鐘\n";

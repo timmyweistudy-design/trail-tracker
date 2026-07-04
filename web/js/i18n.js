@@ -334,6 +334,7 @@ const I18n = (() => {
     "每月里程（單位：km": "Monthly distance (km", "各星期的出行次數（單位：次": "Trips per weekday (count",
     "總出行": "Trips", "總步數": "Steps", "探索步道": "Trails explored",
     "好友里程比較": "Friend distance compare", "追蹤更多山友，就能一起比里程！": "Follow more hikers to compare distance!",
+    "🏆 你目前排第一，繼續領跑！": "🏆 You're #1 — keep leading!", "我的排名": "My rank",
     "尚無對應到分級步道的紀錄": "No records matched to graded trails yet",
     "還沒有行程可分析，先去走一條吧": "No trips to analyze — go hike one!",
     "無可匯出的軌跡": "No tracks to export", "已匯出 CSV": "CSV exported", "已匯出 KML": "KML exported",
