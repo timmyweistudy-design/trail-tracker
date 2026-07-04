@@ -512,6 +512,16 @@ body[data-view]:not([data-view="explore"]) .app-header::before { opacity: .5; }
 /* 詳情頁各區塊加細分隔線，層次更清楚 */
 .sheet-body .section-title { border-top: 1px solid var(--line-soft); padding-top: 17px; margin-top: 18px; }
 .sheet-body .section-title:first-child { border-top: none; padding-top: 0; }
+/* 附近其他步道：橫向滑卡 */
+.nearby-strip { display: flex; gap: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 2px 4px 8px; margin: 0 -4px; scroll-snap-type: x proximity; }
+.nearby-strip::-webkit-scrollbar { display: none; }
+.nearby-card { flex: 0 0 auto; width: 150px; position: relative; text-align: left; background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 12px 12px 12px 15px; box-shadow: var(--sh-sm); scroll-snap-align: start; cursor: pointer; overflow: hidden; }
+.nearby-card:active { transform: scale(0.97); }
+.nearby-card .nb-bar { position: absolute; left: 0; top: 0; bottom: 0; width: 5px; }
+.nearby-card .nb-name { display: block; font-weight: 700; font-size: calc(13.5px * var(--fs, 1)); color: var(--ink); line-height: 1.3; margin-bottom: 5px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; min-height: calc(2 * 1.3 * 13.5px * var(--fs, 1)); }
+.nearby-card .nb-meta { display: block; font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-soft); }
+.nearby-card .nb-dist { display: inline-flex; align-items: center; gap: 2px; margin-top: 6px; font-family: var(--num); font-size: calc(11px * var(--fs, 1)); font-weight: 700; color: var(--accent); }
+.nearby-card .nb-dist .ic { width: 12px; height: 12px; }
 .section-title.collapsible { cursor: pointer; display: flex; align-items: center; }
 .section-title.collapsible::after { content: "▾"; margin-left: auto; font-size: calc(11px * var(--fs, 1)); color: var(--ink-faint); transition: transform .2s; }
 .section-title.collapsible.collapsed::after { transform: rotate(-90deg); }

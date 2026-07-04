@@ -740,6 +740,33 @@ function trailCard(t) {
   </div>`;
 }
 
+// 詳情頁「附近其他步道」：優先用座標找最近的，否則同縣市
+function nearbyTrails(t, n = 8) {
+  const pool = TRAILS.filter(x => x.id !== t.id);
+  if (t.lat && t.lon) {
+    const near = pool.filter(x => x.lat && x.lon)
+      .map(x => ({ x, d: haversine({ lat: t.lat, lon: t.lon }, { lat: x.lat, lon: x.lon }) }))
+      .filter(o => o.d <= 80000)
+      .sort((a, b) => a.d - b.d)
+      .slice(0, n)
+      .map(o => Object.assign({ _distKm: o.d / 1000 }, o.x));
+    if (near.length) return near;
+  }
+  return pool.filter(x => x.region && x.region === t.region).slice(0, n);
+}
+function nearbyStripHtml(t) {
+  const list = nearbyTrails(t);
+  if (!list.length) return "";
+  const cards = list.map(x => {
+    const d = x.difficulty || 0;
+    const bits = [x.difficulty_label];
+    if (x.length_km != null) bits.push(`${x.length_km}km`);
+    const dist = x._distKm != null ? `<span class="nb-dist">${ic("compass")}${x._distKm.toFixed(x._distKm < 10 ? 1 : 0)}km</span>` : "";
+    return `<button class="nearby-card" data-id="${x.id}"><span class="nb-bar d${d}"></span><span class="nb-name">${x.name}</span><span class="nb-meta">${bits.join(" · ")}</span>${dist}</button>`;
+  }).join("");
+  return `<div class="section-title" id="secNearby">${ic("compass")}${ttT("附近其他步道")}</div><div class="nearby-strip" id="nearbyBox">${cards}</div>`;
+}
+
 function render() {
   refreshCardCache();
   curList = TRAILS.filter(matches);
@@ -1129,6 +1156,7 @@ async function openDetail(id) {
     <div id="foodBox">${skelCards(3)}</div>
     <div id="trailFeedBox"></div>
     <button class="btn primary" id="btnGoRecord">${ic("pin")}在此步道開始記錄</button>
+    ${nearbyStripHtml(t)}
     <div style="font-size:11px;color:var(--ink-soft);text-align:center;margin-top:14px">${credit}</div>
   `;
   // 路況公告翻譯年糕（非中文介面）：官方公告原文翻成介面語言
@@ -1182,6 +1210,10 @@ async function openDetail(id) {
     const collapsed = hd.classList.toggle("collapsed");
     const box = hd.nextElementSibling;
     if (box) box.style.display = collapsed ? "none" : "";
+  }));
+  // 附近其他步道：點卡片切換到該步道詳情
+  $("#detailBody").querySelectorAll(".nearby-card").forEach(el => el.addEventListener("click", () => {
+    const nid = el.dataset.id; if (nid) openDetail(nid);
   }));
   loadPhoto(t);
   loadWeather(t);
