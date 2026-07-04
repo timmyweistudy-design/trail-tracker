@@ -2362,6 +2362,15 @@ async function refreshOfflineStatus() {
     if (typeof Premium !== "undefined" && Premium.isOn()) q.innerHTML = `<span class="oq-pro">${ic("sparkle")} Premium：無限下載</span>`;
     else { const left = Math.max(0, OFFLINE_FREE_MB - offlineMbUsed()); q.innerHTML = `免費額度：剩 <b>${left.toFixed(1)}</b> / ${OFFLINE_FREE_MB} MB（含記錄時預載）<div class="oq-up-line"><a class="oq-up" id="oqUp">升級 Premium 無限下載</a></div>`; const up = $("#oqUp"); if (up) up.addEventListener("click", () => { if (typeof Premium !== "undefined") Premium.openUpgrade(); }); }
   }
+  // #9 收藏一鍵預載：按鈕即時顯示可下載的收藏數（（N）為語言中性），沒有收藏就淡化提示
+  const fb = $("#btnFavOffline");
+  if (fb && !fb.disabled) {
+    const favN = TRAILS.filter(t => Store.isFav(t.id) && t.lat).length;
+    let sp = fb.querySelector(".fav-n");
+    if (!sp) { sp = document.createElement("span"); sp.className = "fav-n"; fb.appendChild(sp); }
+    sp.textContent = favN ? `（${favN}）` : "";
+    fb.classList.toggle("op-btn-dim", favN === 0);
+  }
 }
 $("#btnDiag").addEventListener("click", () => {
   const errs = (window.ttErrors ? window.ttErrors() : []);

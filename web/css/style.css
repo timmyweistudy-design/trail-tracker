@@ -613,6 +613,8 @@ body[data-view]:not([data-view="explore"]) .app-header::before { opacity: .5; }
 .op-sec { font-size: calc(11px * var(--fs, 1)); font-weight: 700; letter-spacing: 1.5px; color: var(--ink-faint);
   margin: 14px 0 2px; padding-top: 12px; border-top: 1px dashed var(--line-soft); }
 .offline-panel .op-btn { margin-top: 8px; padding: 12px; font-size: calc(14px * var(--fs, 1)); }
+.op-btn .fav-n { font-family: var(--num); font-weight: 700; color: var(--accent); }
+.op-btn.op-btn-dim { opacity: 0.55; }
 .op-io { display: flex; gap: 8px; margin-top: 8px; }
 .op-io .btn { width: auto; flex: 1; margin-top: 0; padding: 11px 8px; font-size: calc(13.5px * var(--fs, 1)); letter-spacing: 0; }
 .op-hint { font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-faint); line-height: 1.55; margin-top: 7px; }
