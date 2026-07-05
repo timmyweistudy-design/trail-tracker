@@ -1796,13 +1796,34 @@ async function loadTrailFeed(t) {
     }));
   } catch (e) { box.innerHTML = ""; }
 }
-function openTrackReview(rec) {
+// #1 個人紀錄突破：把這趟和過往的健行紀錄（排除自己）比，回傳打破的項目
+function personalBestBreaks(rec) {
+  const km = rec.distanceKm || 0;
+  const out = [];
+  if (km < 0.3) return out;                         // 太短不列入
+  const others = Store.getRecords().filter(r => isFootRec(r) && r.id !== rec.id);
+  if (!others.length) { out.push({ e: "🌱", label: "首次健行紀錄！" }); return out; }
+  const maxKm = Math.max(...others.map(r => r.distanceKm || 0));
+  const maxAsc = Math.max(...others.map(r => r.ascent || 0));
+  const maxMs = Math.max(...others.map(r => r.elapsedMs || 0));
+  if (km > maxKm) out.push({ e: "📏", label: "最長距離" });
+  if ((rec.ascent || 0) > maxAsc && (rec.ascent || 0) > 0) out.push({ e: "⛰️", label: "最多爬升" });
+  if ((rec.elapsedMs || 0) > maxMs) out.push({ e: "⏱️", label: "最久時間" });
+  if (km >= 1 && rec.elapsedMs > 0) {               // 配速越小越快，需 ≥1km 才有意義
+    const pace = (rec.elapsedMs / 1000) / km;
+    const op = others.filter(r => (r.distanceKm || 0) >= 1 && r.elapsedMs > 0).map(r => (r.elapsedMs / 1000) / r.distanceKm);
+    if (op.length && pace < Math.min(...op)) out.push({ e: "⚡", label: "最快配速" });
+  }
+  return out;
+}
+function openTrackReview(rec, isNew) {
   if (!rec) return;
   _shotUrls.forEach(u => URL.revokeObjectURL(u)); _shotUrls = [];   // 回收上一份結算的照片 URL
   const km = rec.distanceKm || 0, t3 = rec.distance3DKm;
   $("#trackBody").innerHTML = `
     <h2>${rec.trailName || "自由路線"}</h2>
     <div class="track-date">${new Date(rec.date).toLocaleString(ttLocale())}</div>
+    ${(() => { const bk = (isNew && isFootRec(rec)) ? personalBestBreaks(rec) : []; return bk.length ? `<div class="pb-burst">${bk.map(b => `<span class="pb-badge">${b.e} <b>${b.label === "首次健行紀錄！" ? ttT(b.label) : `${ttT("破紀錄")}·${ttT(b.label)}`}</b></span>`).join("")}</div>` : ""; })()}
     <div class="kv">
       <div class="item"><div class="l">距離</div><div class="v">${km.toFixed(2)} km</div></div>
       <div class="item"><div class="l">時間</div><div class="v">${fmtTime(rec.elapsedMs)}</div></div>
@@ -2310,7 +2331,7 @@ async function finishRecording(autoVehicle) {
     if (isFootRec(rec)) { bumpAffinity(8); autoCloudBackup(); syncMyStatsToCloud(); }   // 走路/跑步：加深羈絆 + 自動雲端備份 + 同步里程給好友比較
     checkPetEvolve();
     $("#recStatus").textContent = autoVehicle ? "偵測到車輛速度，已自動結束" : "準備就緒，按「開始」記錄路徑";
-    openTrackReview(rec);              // 結束後顯示總結頁
+    openTrackReview(rec, true);        // 結束後顯示總結頁（isNew=true → 可慶祝破紀錄）
     if (isFootRec(rec)) confetti();
     renderRecIdle();
   } else {
