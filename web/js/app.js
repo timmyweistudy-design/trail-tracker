@@ -993,7 +993,7 @@ function flyAlong() {
     const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
     bearing = _lerpAngle(bearing, target, 1 - Math.pow(0.02, dt));   // 每秒約收斂 98%
     const src = _map3d.getSource("me3d"); if (src) src.setData({ type: "Feature", geometry: { type: "Point", coordinates: pos } });
-    _map3d.jumpTo({ center: pos, bearing, pitch: 64, zoom: 15.6 });
+    _map3d.jumpTo({ center: pos, bearing, pitch: 60, zoom: 15.2 });
     if (p < 1) _flyRAF = requestAnimationFrame(step); else _flyRAF = null;
   };
   _flyRAF = requestAnimationFrame(step);
@@ -1031,7 +1031,8 @@ async function _open3D(name, geom, opts) {
         me3d: { type: "geojson", data: { type: "FeatureCollection", features: [] } },
       },
       layers: [
-        { id: "sat", type: "raster", source: "sat" },
+        { id: "bg", type: "background", paint: { "background-color": "#cfe2f5" } },   // 底色天空藍：圖磚還沒載到的破洞就是柔和天色，不會閃黑
+        { id: "sat", type: "raster", source: "sat", paint: { "raster-fade-duration": 0 } },
         { id: "route-casing", type: "line", source: "route", layout: { "line-join": "round", "line-cap": "round" }, paint: { "line-color": "#ffffff", "line-width": 7, "line-opacity": 0.65 } },
         { id: "route", type: "line", source: "route", layout: { "line-join": "round", "line-cap": "round" }, paint: { "line-color": "#ff5a2c", "line-width": 4 } },
         { id: "pts", type: "circle", source: "pts", paint: { "circle-radius": 6, "circle-color": ["match", ["get", "k"], "s", "#2f7d4f", "#d2542e"], "circle-stroke-color": "#fff", "circle-stroke-width": 2 } },
@@ -1058,6 +1059,7 @@ async function _open3D(name, geom, opts) {
       _map3d.jumpTo({ center: [start[1], start[0]], zoom: 14.8, pitch: 64, bearing: br });
     }
     if (opts.fly) {   // 等圖磚載完(idle)再飛，較順也較清楚；4 秒沒 idle 就先飛
+      preload3DBox({ n: maxLat, s: minLat, e: maxLng, w: minLng });   // 背景把整條走廊圖磚抓起來，減少飛行破洞
       let started = false; const go = () => { if (started) return; started = true; toast(ttT("🚶 帶你走一遍…")); flyAlong(); };
       _map3d.once("idle", go); setTimeout(go, 4000);
     }
@@ -2531,6 +2533,13 @@ function preload3D(lat, lon) {
   const m = 0.02, bbox = { n: lat + m, s: lat - m, e: lon + m, w: lon - m };
   const tiles = [...Offline.tileListUrl(bbox, 14, 16, _SAT_URL), ...Offline.tileListUrl(bbox, 12, 15, _TERR_URL)];
   Offline.download(tiles, () => {}).catch(() => {});   // 靜默預載，存進 tt-tiles，3D 開啟時由 SW 快取直接取用
+}
+// 飛行前把整條路線走廊的 3D 圖磚先抓進快取，飛過去時就不會露破洞閃黑（背景+邊飛邊載兜底）
+function preload3DBox(bbox) {
+  if (typeof Offline === "undefined" || !navigator.onLine) return;
+  const tiles = [...Offline.tileListUrl(bbox, 14, 15, _SAT_URL), ...Offline.tileListUrl(bbox, 12, 14, _TERR_URL)];
+  if (tiles.length > 1000) return;   // 走廊太大就不整片預載，交給背景色＋串流
+  Offline.download(tiles, () => {}).catch(() => {});
 }
 async function preloadAround(lat, lon) {
   const pro = typeof Premium !== "undefined" && Premium.isOn();
