@@ -647,6 +647,16 @@ body[data-view]:not([data-view="explore"]) .app-header::before { opacity: .5; }
 .detail-jump.up .ic { transform: rotate(180deg); }
 
 /* 我的足跡統計 */
+/* #5 本月摘要條 */
+.mo-summary { background: linear-gradient(135deg, var(--accent-soft), var(--surface)); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 12px 14px; margin-bottom: 11px; box-shadow: var(--sh-sm); }
+.mo-head { font-size: calc(12.5px * var(--fs, 1)); color: var(--ink-soft); display: flex; align-items: center; gap: 5px; margin-bottom: 9px; }
+.mo-head b { color: var(--ink); font-weight: 700; }
+.mo-head .ic { width: 14px; height: 14px; }
+.mo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.mo-cell { text-align: center; }
+.mo-cell .mo-v { font-family: var(--num); font-size: calc(19px * var(--fs, 1)); font-weight: 700; color: var(--brand-deep); line-height: 1; font-variant-numeric: tabular-nums; }
+.mo-cell.hot .mo-v { color: #e8632a; }
+.mo-cell .mo-l { font-size: calc(10px * var(--fs, 1)); color: var(--ink-soft); margin-top: 5px; }
 .mstat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; }
 .mstat { background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 12px 6px; text-align: center; box-shadow: var(--sh-sm); }
 .mstat .mv { font-family: var(--num); font-size: calc(20px * var(--fs, 1)); font-weight: 600; color: var(--brand-deep); line-height: 1; font-variant-numeric: tabular-nums; }

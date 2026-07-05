@@ -533,6 +533,14 @@ $("#fsReset").addEventListener("click", () => {
   updateFilterDot(); render();
 });
 $("#btnFilter").addEventListener("click", () => { updateFilterDot(); $("#filterMask").classList.add("show"); $("#filterSheet").classList.add("show"); $("#closeFilterBtn").focus({ preventScroll: true }); });
+// #6 驚喜推薦：依目前篩選結果隨機挑一條步道開詳情，解決選擇困難
+$("#btnSurprise").addEventListener("click", () => {
+  const pool = (curList && curList.length) ? curList : TRAILS;
+  if (!pool.length) { toast(ttT("找不到符合的步道")); return; }
+  const t = pool[Math.floor(Math.random() * pool.length)];
+  toast(`🎲 ${ttT("為你抽到")}：${t.name}`);
+  openDetail(t.id);
+});
 
 // 篩選預設組（口袋路線）
 function getPresets() { try { return JSON.parse(localStorage.getItem("tt_presets")) || []; } catch { return []; } }
@@ -2687,8 +2695,31 @@ function openCompareSheet() {
   ov.querySelector("#cmpClose").onclick = close;
   ov.addEventListener("click", e => { if (e.target === ov) close(); });
 }
+// #5 本月摘要：一眼看到本月里程／次數／連續天數／最長單次，日常回訪動機（免費，進階分析仍為 PRO）
+function renderMonthSummary() {
+  const box = $("#meMonth"); if (!box) return;
+  const recs = realRecords();
+  const now = new Date();
+  const mo = recs.filter(r => { const d = new Date(r.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); });
+  const moKm = mo.reduce((s, r) => s + (r.distanceKm || 0), 0);
+  const moTrips = mo.length;
+  const streak = (typeof daysStreak === "function") ? daysStreak() : 0;
+  const longest = recs.reduce((m, r) => Math.max(m, r.distanceKm || 0), 0);
+  const moName = now.toLocaleDateString(ttLocale(), { month: "short" });
+  const cell = (v, l, hot) => `<div class="mo-cell${hot ? " hot" : ""}"><div class="mo-v">${v}</div><div class="mo-l">${l}</div></div>`;
+  box.innerHTML = `<div class="mo-summary">
+    <div class="mo-head">${ic("calendar")} <b>${moName}</b> ${ttT("本月摘要")}</div>
+    <div class="mo-grid">
+      ${cell(moKm.toFixed(1), ttT("本月里程") + " km")}
+      ${cell(moTrips, ttT("本月次數"))}
+      ${cell(streak >= 1 ? `${streak}` : "0", ttT("連續天數"), streak >= 2)}
+      ${cell(longest.toFixed(1), ttT("最長單次") + " km")}
+    </div>
+  </div>`;
+}
 function renderStats() {
   const box = $("#meStats");
+  renderMonthSummary();
   if (!box) return;
   const recs = realRecords();   // 成就統計不計入模擬
   const favs = TRAILS.filter(t => Store.isFav(t.id)).length;
