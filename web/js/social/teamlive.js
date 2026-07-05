@@ -12,7 +12,7 @@ const TeamLive = (() => {
   let myStartSim = false;      // 隊長開始時是否用模擬模式：跟著訊號送，全隊一致才能一起動
   let lastHandledAt = 0;       // 已處理過的開始訊號時間戳：同一次開始只觸發一次，但「新的一次開始」永遠會觸發
   let joinedAt = 0;            // 我開啟同行的時間：比這更早太多的舊訊號不理（別人上一趟的殘留）
-  let pollTimer = null, curTeamId = null;
+  let pollTimer = null, renderPoll = null, curTeamId = null;
   let lastTrackAt = 0;         // presence 位置更新節流（避免每秒打 realtime）
 
   function isOn() { return !!channel; }
@@ -290,6 +290,9 @@ const TeamLive = (() => {
     channel.subscribe(st => { if (st === "SUBSCRIBED") channel.track(payload()); });
     if (pollTimer) clearInterval(pollTimer);
     pollTimer = setInterval(pollDbStart, 5000);   // 輪詢補收：任何漏接 5 秒內追回
+    // 定時重繪：即使漏接 presence 事件，也保證 2.5 秒內更新隊友位置（修：看不到隊友在走路）
+    if (renderPoll) clearInterval(renderPoll);
+    renderPoll = setInterval(() => { try { render(); } catch (e) { /* */ } }, 2500);
     if (navigator.geolocation) {
       // 立刻要一次粗略定位（可用快取）當種子——室內測試也能盡快讓隊友看到你；失敗就用地圖中心兜底
       navigator.geolocation.getCurrentPosition(broadcast, () => {
@@ -311,6 +314,7 @@ const TeamLive = (() => {
     markers = {}; trails = {}; map = null; lastPos = null; leaderId = null; myReady = false;
     myStartAt = null; myStopAt = null; lastHandledAt = 0; lastStopHandled = 0; curTeamId = null;
     if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    if (renderPoll) { clearInterval(renderPoll); renderPoll = null; }
     const el = document.getElementById("teamReadyBar"); if (el) el.remove();
   }
 

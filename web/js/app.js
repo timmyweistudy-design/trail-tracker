@@ -359,7 +359,9 @@ document.querySelectorAll(".tab").forEach(btn => {
       ensureMeAvatar();                  // 預取頭像供「我」的地圖標記
       setTimeout(initRecMap, 60);
       // 與小隊同行預設開啟：有目前小隊＋已登入就自動連上（地圖建好後）
-      setTimeout(() => { if (typeof Team !== "undefined" && Team.autoLive && typeof recMap !== "undefined" && recMap) Team.autoLive(recMap); }, 200);
+      // 修：社群模組是延遲載入的，若太早進記錄頁 Team 還沒載好會直接放棄→以前要重開 app。改成先確保社群載入再連。
+      const _tryAutoLive = () => { if (typeof Team !== "undefined" && Team.autoLive && typeof recMap !== "undefined" && recMap) Team.autoLive(recMap); };
+      setTimeout(() => { if (typeof Team !== "undefined") _tryAutoLive(); else if (window.loadSocial) window.loadSocial().then(() => setTimeout(_tryAutoLive, 300)); }, 300);
       renderRecIdle();
     }
     if (view === "pet") {
@@ -984,7 +986,7 @@ function flyAlong() {
   let bearing = _flyBearing(posAt(0), posAhead(Math.min(LOOK, total)));   // 起始就朝前，不會突兀
   let t0 = performance.now(), lastT = t0;
   // 電影運鏡參數：巡航 / 開場俯瞰俯衝 / 結尾拉高
-  const CR_Z = 15.2, CR_P = 60, IN_Z = 13.7, IN_P = 71, OUT_Z = 14.2, OUT_P = 66;
+  const CR_Z = 15.2, CR_P = 60, IN_Z = 14.4, IN_P = 64, OUT_Z = 14.6, OUT_P = 63;   // 開場俯角/廣角收斂一點，減少露出還沒載到的遠處地形（閃色）
   const lerp = (a, b, t) => a + (b - a) * t;
   const smooth = x => x <= 0 ? 0 : x >= 1 ? 1 : x * x * x * (x * (x * 6 - 15) + 10);   // smootherstep 緩入緩出
   const step = now => {
@@ -1007,7 +1009,7 @@ function flyAlong() {
       try {   // 地形反應：前方在爬升就把鏡頭拉遠一點，揭露前方稜線（一起飛上山的感覺）
         const eN = _map3d.queryTerrainElevation ? _map3d.queryTerrainElevation(pos) : null;
         const eA = _map3d.queryTerrainElevation ? _map3d.queryTerrainElevation(ahead) : null;
-        if (eN != null && eA != null) zoom -= Math.max(-0.35, Math.min(0.6, (eA - eN) / 90));
+        if (eN != null && eA != null) zoom -= Math.max(-0.3, Math.min(0.35, (eA - eN) / 130));   // 揭露稜線幅度收斂，避免拉太遠露破洞
       } catch (e) { /* 地形尚未載入 */ }
     }
     const src = _map3d.getSource("me3d"); if (src) src.setData({ type: "Feature", geometry: { type: "Point", coordinates: pos } });
@@ -1049,7 +1051,7 @@ async function _open3D(name, geom, opts) {
         me3d: { type: "geojson", data: { type: "FeatureCollection", features: [] } },
       },
       layers: [
-        { id: "bg", type: "background", paint: { "background-color": "#cfe2f5" } },   // 底色天空藍：圖磚還沒載到的破洞就是柔和天色，不會閃黑
+        { id: "bg", type: "background", paint: { "background-color": "#8b9179" } },   // 底色改中性地形綠灰：圖磚還沒載到的破洞會融入地面色，不再閃黑或閃藍（天空由 sky 圖層負責）
         { id: "sat", type: "raster", source: "sat", paint: { "raster-fade-duration": 0 } },
         { id: "route-casing", type: "line", source: "route", layout: { "line-join": "round", "line-cap": "round" }, paint: { "line-color": "#ffffff", "line-width": 7, "line-opacity": 0.65 } },
         { id: "route", type: "line", source: "route", layout: { "line-join": "round", "line-cap": "round" }, paint: { "line-color": "#ff5a2c", "line-width": 4 } },
