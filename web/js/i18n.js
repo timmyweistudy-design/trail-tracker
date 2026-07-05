@@ -348,6 +348,7 @@ const I18n = (() => {
     "本月摘要": "this month", "本月里程": "Distance", "本月次數": "Trips", "連續天數": "Day streak", "最長單次": "Longest",
     "🎲 驚喜": "🎲 Surprise", "為你抽到": "Picked for you", "找不到符合的步道": "No matching trails",
     "回到我的位置": "Recenter on me",
+    "各縣市踏遍進度": "Counties explored",
     "尚無對應到分級步道的紀錄": "No records matched to graded trails yet",
     "還沒有行程可分析，先去走一條吧": "No trips to analyze — go hike one!",
     "無可匯出的軌跡": "No tracks to export", "已匯出 CSV": "CSV exported", "已匯出 KML": "KML exported",

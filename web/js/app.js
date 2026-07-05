@@ -2742,9 +2742,24 @@ function renderMonthSummary() {
     </div>
   </div>`;
 }
+// #8 各縣市踏遍進度：走過的縣市各完成幾條，鼓勵蒐集探索（免費，足跡地圖仍為 PRO）
+function renderRegionProgress() {
+  const box = $("#meRegions"); if (!box) return;
+  const doneIds = new Set(TRAILS.filter(t => Store.trailLog(t.id).done).map(t => t.id));
+  const m = {};
+  for (const t of TRAILS) { const r = t.region; if (!r) continue; (m[r] = m[r] || { done: 0, total: 0 }).total++; if (doneIds.has(t.id)) m[r].done++; }
+  const rows = Object.entries(m).filter(([, v]) => v.done > 0)
+    .sort((a, b) => b[1].done - a[1].done || (b[1].done / b[1].total) - (a[1].done / a[1].total));
+  if (!rows.length) { box.hidden = true; box.innerHTML = ""; return; }   // 還沒完成任何步道→不顯示
+  const totalRegions = Object.keys(m).length, explored = rows.length;
+  box.hidden = false;
+  box.innerHTML = `<div class="section-title">${ic("map")}${ttT("各縣市踏遍進度")} <span class="rp-count">${explored}/${totalRegions}</span></div>
+    <div class="rp-list">${rows.slice(0, 10).map(([r, v]) => `<div class="rp-row"><span class="rp-name">${r}</span><div class="rp-bar"><i style="width:${Math.round(v.done / v.total * 100)}%"></i></div><b class="rp-num">${v.done}/${v.total}</b></div>`).join("")}</div>`;
+}
 function renderStats() {
   const box = $("#meStats");
   renderMonthSummary();
+  renderRegionProgress();
   if (!box) return;
   const recs = realRecords();   // 成就統計不計入模擬
   const favs = TRAILS.filter(t => Store.isFav(t.id)).length;
