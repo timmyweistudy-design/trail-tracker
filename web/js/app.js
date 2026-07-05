@@ -885,6 +885,19 @@ const DIFF_COLOR = { 0: "#3aa3a0", 1: "#46a24f", 2: "#6aa83e", 3: "#d8a127", 4: 
 const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services";
 function baseTopo() { return L.tileLayer(`${ESRI}/World_Topo_Map/MapServer/tile/{z}/{y}/{x}`, { attribution: "© Esri 地形", maxZoom: 18, maxNativeZoom: 18 }); }
 function baseSat() { return L.tileLayer(`${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}`, { attribution: "© Esri、Maxar 衛星影像", maxZoom: 18, maxNativeZoom: 18 }); }
+// 2.5D 地形陰影（hillshade）：疊在底圖上、以 multiply 混色壓暗坡面陰影→山勢立體。
+// 同 Esri 來源、免金鑰，SW 一樣快取得到（離線可用）。專屬 pane 放在底圖之上、路線/標記之下。
+const ESRI_HILLSHADE = `${ESRI}/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}`;
+function hillshadeLayer(map) {
+  if (!map.getPane("hillshade")) {
+    const p = map.createPane("hillshade");
+    p.style.zIndex = 250;                 // 底圖(tilePane=200) 之上、overlay(400)/marker 之下
+    p.style.mixBlendMode = "multiply";
+    p.style.pointerEvents = "none";
+    p.style.opacity = "0.5";
+  }
+  return L.tileLayer(ESRI_HILLSHADE, { pane: "hillshade", maxZoom: 18, maxNativeZoom: 16, attribution: "" });
+}
 // 指北針：讀裝置方位，轉動手機時指針跟著轉、指向實際北方
 let _compassOn = false, _heading = 0, _gpsHeading = null;
 function rotateCompasses() { document.querySelectorAll(".compass-rose").forEach(r => r.style.transform = `rotate(${-_heading}deg)`); }
@@ -990,7 +1003,7 @@ function addRecenter(map) {
   c.addTo(map);
 }
 function addBaseWithToggle(map) {   // 加地形(預設)+衛星，明顯的分段切換鈕
-  const topo = baseTopo().addTo(map), sat = baseSat();
+  const topo = baseTopo().addTo(map), sat = baseSat(), hs = hillshadeLayer(map).addTo(map);   // 地形模式預設疊地形陰影
   const ctrl = L.control({ position: "bottomleft" });
   ctrl.onAdd = () => {
     const d = L.DomUtil.create("div", "basemap-toggle");
@@ -998,8 +1011,9 @@ function addBaseWithToggle(map) {   // 加地形(預設)+衛星，明顯的分�
     L.DomEvent.disableClickPropagation(d);
     d.addEventListener("click", e => {
       const b = e.target.closest(".bm"); if (!b) return;
-      if (b.dataset.l === "sat") { map.removeLayer(topo); sat.addTo(map); }
-      else { map.removeLayer(sat); topo.addTo(map); }
+      // 衛星影像本身已有立體感 → 收起陰影避免過暗；地形模式才疊陰影
+      if (b.dataset.l === "sat") { map.removeLayer(topo); map.removeLayer(hs); sat.addTo(map); }
+      else { map.removeLayer(sat); topo.addTo(map); hs.addTo(map); }
       d.querySelectorAll(".bm").forEach(x => x.classList.toggle("on", x === b));
     });
     return d;
@@ -1895,7 +1909,7 @@ function openTrackReview(rec, isNew) {
   setTimeout(() => {
     if (!trackMap) {
       trackMap = L.map("trackMap", { zoomControl: false });
-      baseTopo().addTo(trackMap);
+      baseTopo().addTo(trackMap); hillshadeLayer(trackMap).addTo(trackMap);
     }
     if (trackLayer) trackMap.removeLayer(trackLayer);
     trackLayer = L.layerGroup().addTo(trackMap);
@@ -2086,7 +2100,7 @@ function distToRoute(lat, lon) {
 function initRecMap() {
   if (!recMap) {
     recMap = L.map("recMap", { zoomControl: false }).setView([25.033, 121.564], 15);
-    baseTopo().addTo(recMap); addCompass(recMap); addRecenter(recMap); addFullscreen(recMap);
+    baseTopo().addTo(recMap); hillshadeLayer(recMap).addTo(recMap); addCompass(recMap); addRecenter(recMap); addFullscreen(recMap);
     recLine = L.polyline([], { color: "#2f7d4f", weight: 5 }).addTo(recMap);
   }
   recMap.invalidateSize();
