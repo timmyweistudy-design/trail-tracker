@@ -305,6 +305,16 @@ body[data-view]:not([data-view="explore"]) .app-header::before { opacity: .5; }
 .split-bar i.best { background: linear-gradient(90deg, #22b473, #17a06a); }
 .split-pace { font-family: var(--num); font-size: calc(12.5px * var(--fs, 1)); color: var(--ink); text-align: right; }
 .split-row.partial .split-km, .split-row.partial .split-pace { color: var(--ink-faint); }
+/* #2 速度：這次 vs 平常 直觀對比 */
+.spd-cmp { display: flex; flex-direction: column; gap: 9px; }
+.spd-row { display: grid; grid-template-columns: 3em 1fr 3em; gap: 9px; align-items: center; }
+.spd-lbl { font-size: calc(12px * var(--fs, 1)); color: var(--ink-soft); }
+.spd-row b { font-family: var(--num); font-size: calc(15px * var(--fs, 1)); font-weight: 700; text-align: right; color: var(--ink); }
+.spd-bar { height: 14px; background: var(--line-soft); border-radius: var(--r-pill); overflow: hidden; }
+.spd-bar i { display: block; height: 100%; border-radius: var(--r-pill); background: linear-gradient(90deg, var(--brand-mid), var(--accent)); }
+.spd-row.usual .spd-bar i { background: var(--ink-faint); }
+.spd-row.usual b, .spd-row.usual .spd-lbl { color: var(--ink-soft); }
+.spd-line { text-align: center; font-size: calc(13px * var(--fs, 1)); font-weight: 700; color: var(--brand-mid); margin-top: 10px; }
 #detailMap { border-bottom: 1px solid var(--line); }
 .sheet-body { padding: 16px 19px; }
 /* 詳情頁子頁籤（黏頂） */
@@ -1316,10 +1326,8 @@ html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
 .fc-rate { color: #e8a127; font-size: calc(13px * var(--fs, 1)); letter-spacing: 1px; white-space: nowrap; }
 
 /* 步道圖卡：標記完成勾勾（在收藏星左側） */
-.done-check { position: absolute; top: 13px; right: 44px; background: none; border: none; font-size: calc(19px * var(--fs, 1)); line-height: 1; color: #c7c2b2; cursor: pointer; padding: 2px 4px; font-weight: 700; transition: transform .15s; }
-.done-check.on { color: var(--brand); }
-.done-check:active { transform: scale(1.25); }
-.done-check.pop { animation: heartPop .45s cubic-bezier(.2,.8,.2,1); }
+/* 已完成徽章（自動判定，不可點）：綠底白勾，明確表示這條走過了 */
+.done-badge { position: absolute; top: 12px; right: 42px; width: calc(20px * var(--fs, 1)); height: calc(20px * var(--fs, 1)); display: grid; place-items: center; border-radius: 50%; background: var(--brand); color: #fff; font-size: calc(12px * var(--fs, 1)); font-weight: 800; line-height: 1; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
 
 /* 夥伴手冊：進化圖鑑（詳細） */
 .dex-intro { font-size: calc(13px * var(--fs, 1)); color: var(--ink-soft); line-height: 1.7; margin: 4px 0 10px; }
@@ -1396,7 +1404,7 @@ html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
 button, a, .btn, .chip, .tab, .seg-btn, .link-btn, .icon-btn, [role="button"],
 .fc-like, .fc-comment, .sub-tab, .comp-x, .pv-react-b, .cm-like, .cm-reply, .disc-follow,
 .feed-card, .disc-row, .notif, .hist-view, .hist-gpx, .feed-refresh, .map-fs-btn,
-.theme-opt, .ach, .pet-btn, .quest, .fav-star, .done-check, .food-item, .poi-item,
+.theme-opt, .ach, .pet-btn, .quest, .fav-star, .food-item, .poi-item,
 .coll-card, .info-link, .detail-nav button, .cnt-link, .fc-traillink, .ht, .mention {
   touch-action: manipulation;
 }

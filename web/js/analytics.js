@@ -219,12 +219,9 @@ function openAnalytics() {
   // 速度趨勢（近 10 趟，由舊到新）
   const paced = recs.filter(r => (r.elapsedMs || 0) > 6e4 && (r.distanceKm || 0) > 0)
     .slice(0, 10).reverse().map(r => r.distanceKm / (r.elapsedMs / 3.6e6));
-  // 各縣市踏遍：真實紀錄走過的（recs 已排除模擬）或手動標記完成的步道才算；模擬不計
+  // 各縣市踏遍：完成判定已改為「真實走過＋沒偏離步道 1km」自動標記（見 maybeMarkTrailDone），這裡直接用 done
   const doneSet = new Set();
-  if (typeof TRAILS !== "undefined") {
-    TRAILS.forEach(t => { if (Store.trailLog(t.id).done) doneSet.add(String(t.id)); });
-    recs.forEach(r => { if (r.trailId != null) doneSet.add(String(r.trailId)); });
-  }
+  if (typeof TRAILS !== "undefined") TRAILS.forEach(t => { if (Store.trailLog(t.id).done) doneSet.add(String(t.id)); });
   const regionMap = {};
   if (typeof TRAILS !== "undefined") TRAILS.forEach(t => { const rg = t.region; if (!rg) return; (regionMap[rg] = regionMap[rg] || { done: 0, total: 0 }).total++; if (doneSet.has(String(t.id))) regionMap[rg].done++; });
   const regionRows = Object.entries(regionMap).filter(([, v]) => v.done > 0).sort((a, b) => b[1].done - a[1].done || (b[1].done / b[1].total) - (a[1].done / a[1].total));

@@ -733,7 +733,7 @@ function trailCard(t) {
   return `<div class="card jcard" data-id="${t.id}">
     <span class="jbar d${d}"></span>
     <button class="fav-star${fav ? " on" : ""}" data-fav="${t.id}" aria-label="收藏 ${t.name}">${fav ? "★" : "☆"}</button>
-    <button class="done-check${done ? " on" : ""}" data-done="${t.id}" aria-label="標記完成 ${t.name}" title="標記完成">✓</button>
+    ${done ? `<span class="done-badge" title="${ttT("已完成")}">✓</span>` : ""}
     <h3>${t.name}</h3>
     <div class="jloc">${ic("pin")}<span>${t.position || "—"}</span>${locExtra}</div>
     <div class="jstats">${stats.join('<span class="jstats-div"></span>')}</div>
@@ -852,7 +852,7 @@ function bindCards() {
   $("#trailList").querySelectorAll(".card:not([data-bound])").forEach(c => {
     c.setAttribute("data-bound", "1");
     c.addEventListener("click", e => {
-      if (e.target.closest(".fav-star") || e.target.closest(".done-check")) return;
+      if (e.target.closest(".fav-star")) return;
       openDetail(c.dataset.id);
     });
     const star = c.querySelector(".fav-star");
@@ -862,14 +862,6 @@ function bindCards() {
       star.classList.toggle("on", added); star.textContent = added ? "★" : "☆";
       if (added) { star.classList.remove("pop"); void star.offsetWidth; star.classList.add("pop"); }
       toast(added ? "已加入收藏" : "已移除收藏");
-    });
-    const chk = c.querySelector(".done-check");
-    if (chk) chk.addEventListener("click", () => {
-      const done = !Store.trailLog(chk.dataset.done).done;
-      Store.setTrailLog(chk.dataset.done, { done });
-      chk.classList.toggle("on", done);
-      if (done) { chk.classList.remove("pop"); void chk.offsetWidth; chk.classList.add("pop"); }
-      toast(done ? "已標記完成 ✓" : "已取消完成");
     });
   });
 }
@@ -1850,40 +1842,23 @@ function personalBestBreaks(rec) {
   }
   return out;
 }
-// #2 每公里分段配速：走軌跡累加距離與「移動時間」（跳過暫停/gap 段），每滿 1km 記一段
-function computeSplits(rec) {
-  const tr = rec.track; if (!tr || tr.length < 2) return [];
-  const splits = [];
-  let cumDist = 0, cumMove = 0, lastKm = 0, lastKmMove = 0;
-  for (let i = 1; i < tr.length; i++) {
-    const a = tr[i - 1], b = tr[i];
-    if (b.gap) continue;                                  // 暫停後的接續段不計
-    const d = haversine(a, b) / 1000;                     // km
-    let dt = (b.t - a.t) / 1000;                          // 秒
-    if (!(dt > 0) || dt > 300) dt = 0;                    // 異常/長暫停不計時間
-    cumDist += d; cumMove += dt;
-    while (cumDist >= lastKm + 1) {                       // 跨過整數公里 → 收一段
-      lastKm += 1;
-      splits.push({ km: lastKm, sec: cumMove - lastKmMove });
-      lastKmMove = cumMove;
-    }
+// #2 速度：直觀呈現「這次 vs 你平常」，一句話講清楚快多少慢多少
+function speedHtml(rec) {
+  const km = rec.distanceKm || 0;
+  if (!(rec.elapsedMs > 0) || km < 0.1) return "";
+  const cur = km / (rec.elapsedMs / 3.6e6);
+  const past = Store.getRecords().filter(r => isFootRec(r) && r.id !== rec.id && r.elapsedMs > 0 && (r.distanceKm || 0) > 0);
+  const usual = past.length ? past.reduce((s, r) => s + r.distanceKm, 0) / (past.reduce((s, r) => s + r.elapsedMs, 0) / 3.6e6) : 0;
+  const max = Math.max(cur, usual, 0.1);
+  const bar = (v, cls) => `<div class="spd-row ${cls}"><span class="spd-lbl">${cls === "cur" ? ttT("這次") : ttT("平常")}</span><div class="spd-bar"><i style="width:${Math.round(v / max * 100)}%"></i></div><b>${v.toFixed(1)}</b></div>`;
+  let line = "";
+  if (usual > 0) {
+    const d = (cur - usual) / usual * 100;
+    line = Math.abs(d) < 5 ? ttT("和你平常差不多") : (d > 0 ? `${ttT("比平常快")} ${Math.round(d)}%` : `${ttT("比平常慢")} ${Math.round(-d)}%`);
   }
-  const tailKm = cumDist - lastKm;                        // 最後不滿 1km 的尾段
-  if (tailKm >= 0.15) splits.push({ km: +(lastKm + tailKm).toFixed(2), sec: cumMove - lastKmMove, partial: tailKm });
-  return splits;
-}
-function splitsHtml(rec) {
-  const sp = computeSplits(rec);
-  if (sp.length < 2) return "";
-  const spd = s => { const hr = s.sec / 3600; return hr > 0 ? (s.partial || 1) / hr : 0; };   // 速度 km/h（越快越大）
-  const vals = sp.map(spd).filter(v => v > 0 && isFinite(v));
-  const fast = Math.max(...vals), slow = Math.min(...vals);
-  const rows = sp.map(s => {
-    const v = spd(s), w = fast > slow ? 30 + 70 * ((v - slow) / (fast - slow)) : 100;   // 越快越長
-    const isFast = Math.abs(v - fast) < 0.05;
-    return `<div class="split-row${s.partial ? " partial" : ""}"><span class="split-km">${s.partial ? "+" + s.partial.toFixed(1) : s.km}</span><div class="split-bar"><i class="${isFast ? "best" : ""}" style="width:${w.toFixed(0)}%"></i></div><b class="split-pace">${v.toFixed(1)}</b></div>`;
-  }).join("");
-  return `<div class="section-title">${ic("clock")}${ttT("分段速度")}<span class="split-unit">km/h</span></div><div class="split-list">${rows}</div><div class="ana-spark-cap">${ttT("每列＝該公里的速度 km/h，條越長走越快，綠色最快")}</div>`;
+  return `<div class="section-title">${ic("clock")}${ttT("速度")}<span class="split-unit">km/h</span></div>
+    <div class="spd-cmp">${bar(cur, "cur")}${usual > 0 ? bar(usual, "usual") : ""}</div>
+    ${line ? `<div class="spd-line">${line}</div>` : ""}`;
 }
 function openTrackReview(rec, isNew) {
   if (!rec) return;
@@ -1900,9 +1875,10 @@ function openTrackReview(rec, isNew) {
       <div class="item"><div class="l">總下降</div><div class="v">↓${rec.descent || 0} m</div></div>
       <div class="item"><div class="l">卡路里</div><div class="v">${rec.kcal} 大卡</div></div>
       <div class="item"><div class="l">步數</div><div class="v">${(rec.steps || 0).toLocaleString()}</div></div>
+      ${rec.elapsedMs > 0 && km > 0.05 ? `<div class="item"><div class="l">平均速度</div><div class="v">${(km / (rec.elapsedMs / 3.6e6)).toFixed(1)} km/h</div></div>` : ""}
       ${t3 && t3 > km + 0.05 ? `<div class="item"><div class="l">含坡度距離</div><div class="v">${t3.toFixed(2)} km</div></div>` : ""}
     </div>
-    ${splitsHtml(rec)}
+    ${speedHtml(rec)}
     ${(rec.id === hikePhotosRecId && hikePhotos.length) ? `<div class="section-title">${ic("camera")}隨手拍（${hikePhotos.length}）<span class="shot-hint">點照片存到相簿</span></div>
       <div class="hike-shots">${hikePhotos.map((p, i) => `<figure class="shot" data-i="${i}"><img src="${(u => { _shotUrls.push(u); return u; })(URL.createObjectURL(p.file))}" alt=""><figcaption>${new Date(p.t).toLocaleTimeString(ttLocale(), { hour: "2-digit", minute: "2-digit" })} · ${p.km.toFixed(2)}km</figcaption></figure>`).join("")}</div>` : ""}
     <div class="link-row flow">
@@ -2077,6 +2053,25 @@ function drawSelectedRoute() {
   if (b.isValid()) recMap.fitBounds(b, { padding: [20, 20] });
 }
 // 點到步道路線的最短距離（公尺）
+// 完成判定：只有「真實走過」（非模擬/非車速）且連回某條步道、
+// 全程都沒有偏離該步道路線超過 1km，才自動標記完成。手動勾選已移除。
+const OFF_ROUTE_MAX = 1000;   // 公尺
+function maybeMarkTrailDone(rec) {
+  if (!isFootRec(rec) || !rec.trailId || !rec.track || rec.track.length < 2) return;
+  if (!selectedTrailGeo || !selectedTrailGeo.length) return;   // 沒有路線資料無法判定偏離 → 不自動完成
+  const tr = rec.track, step = Math.max(1, Math.floor(tr.length / 250));   // 取樣，避免點太多算太慢
+  let maxDev = 0;
+  for (let i = 0; i < tr.length; i += step) {
+    const d = distToRoute(tr[i].lat, tr[i].lon);
+    if (d != null && d > maxDev) { maxDev = d; if (maxDev > OFF_ROUTE_MAX) break; }
+  }
+  if (maxDev > OFF_ROUTE_MAX) return;   // 偏離超過 1km → 這趟不算完成
+  if (!Store.trailLog(rec.trailId).done) {
+    Store.setTrailLog(rec.trailId, { done: true });
+    toast(`🎉 ${ttT("完成了步道")}：${rec.trailName || ""}`);
+    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+  }
+}
 function distToRoute(lat, lon) {
   if (!selectedTrailGeo) return null;
   let min = Infinity;
@@ -2433,6 +2428,7 @@ async function finishRecording(autoVehicle) {
     }
     Store.addRecord(rec);
     if (isFootRec(rec)) { bumpAffinity(8); autoCloudBackup(); syncMyStatsToCloud(); }   // 走路/跑步：加深羈絆 + 自動雲端備份 + 同步里程給好友比較
+    maybeMarkTrailDone(rec);           // 完成判定：真實走過＋全程沒偏離步道超過 1km 才算完成
     checkPetEvolve();
     $("#recStatus").textContent = autoVehicle ? "偵測到車輛速度，已自動結束" : "準備就緒，按「開始」記錄路徑";
     openTrackReview(rec, true);        // 結束後顯示總結頁（isNew=true → 可慶祝破紀錄）
