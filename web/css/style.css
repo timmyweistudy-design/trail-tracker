@@ -738,6 +738,7 @@ html[data-theme="dark"] .map-legend { background: rgba(27,32,23,.94); }
 .map3d-close { pointer-events: auto; flex: none; width: 38px; height: 38px; border-radius: 50%; border: none; background: rgba(0,0,0,.5); color: #fff; font-size: 18px; cursor: pointer; display: grid; place-items: center; }
 .map3d-replay { pointer-events: auto; flex: none; border: none; border-radius: var(--r-pill); background: rgba(0,0,0,.5); color: #fff; font-size: calc(12.5px * var(--fs, 1)); font-weight: 700; padding: 8px 13px; cursor: pointer; }
 .map3d-replay[hidden] { display: none; }
+.tm3d { filter: drop-shadow(0 2px 3px rgba(0,0,0,.4)); cursor: default; }
 .map-fs { position: fixed !important; top: 0 !important; left: 0 !important; right: auto !important; bottom: auto !important;
   width: 100vw !important; height: 100vh !important; height: 100dvh !important;
   min-height: 0 !important; max-height: none !important; margin: 0 !important; z-index: 95 !important; border-radius: 0 !important; }

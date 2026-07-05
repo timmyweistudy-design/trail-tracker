@@ -24,6 +24,18 @@ const Offline = (() => {
     return tiles;
   }
 
+  // 通用版：可指定圖磚 URL 產生器（供 3D 預載衛星＋地形圖磚用）
+  function tileListUrl(bbox, zmin, zmax, urlFn) {
+    const tiles = [];
+    for (let z = zmin; z <= zmax; z++) {
+      const xs = [lon2x(bbox.w, z), lon2x(bbox.e, z)];
+      const ys = [lat2y(bbox.n, z), lat2y(bbox.s, z)];
+      for (let x = Math.min(...xs); x <= Math.max(...xs); x++)
+        for (let y = Math.min(...ys); y <= Math.max(...ys); y++)
+          tiles.push(urlFn(z, x, y));
+    }
+    return tiles;
+  }
   // 自動選擇縮放範圍，讓總圖磚數不過大
   function planZoom(bbox) {
     let zmax = 16;
@@ -129,5 +141,5 @@ const Offline = (() => {
     return done;
   }
 
-  return { tileList, planZoom, bboxFor, download, cachedCount, clear, enforceCap, exportPack, importPack };
+  return { tileList, tileListUrl, planZoom, bboxFor, download, cachedCount, clear, enforceCap, exportPack, importPack };
 })();

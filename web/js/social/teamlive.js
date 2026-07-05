@@ -41,6 +41,18 @@ const TeamLive = (() => {
     }
     return out.sort((a, b) => (b.leader - a.leader) || (b.me - a.me));
   }
+  // 隊友目前位置（含頭像/寵物），供 3D 地圖顯示。排除自己、取每人最新有座標的一筆
+  function teammates() {
+    if (!channel) return [];
+    const state = channel.presenceState(); const out = [];
+    for (const key in state) {
+      if (key === me) continue;
+      const metas = state[key] || [];
+      const meta = metas.reduce((best, mm) => (mm && mm.lat != null && (!best || (mm.at || 0) > (best.at || 0))) ? mm : best, null);
+      if (meta) out.push({ id: key, name: meta.name, lat: meta.lat, lon: meta.lon, avatar: meta.avatar || null, pet: meta.pet || null });
+    }
+    return out;
+  }
   function allReady() { const r = roster(); return r.length > 0 && r.every(m => m.ready); }
   function notReadyNames() { return roster().filter(m => !m.ready).map(m => m.name); }
 
@@ -315,5 +327,5 @@ const TeamLive = (() => {
     });
   }
 
-  return { start, stop, isOn, isLeader, setReady, allReady, roster, notReadyNames, sendStart, onStart, sendStop, onStop, updatePos };
+  return { start, stop, isOn, isLeader, setReady, allReady, roster, teammates, notReadyNames, sendStart, onStart, sendStop, onStop, updatePos };
 })();

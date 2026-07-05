@@ -913,17 +913,58 @@ function loadMapLibre() {
 function close3D() {
   const ov = $("#map3d"); if (ov) ov.hidden = true;
   if (_flyRAF) { cancelAnimationFrame(_flyRAF); _flyRAF = null; }
+  _stop3dLive();
   if (_map3d) { try { _map3d.remove(); } catch (e) { /* */ } _map3d = null; }   // 釋放 GPU/記憶體
 }
-let _flyRAF = null, _flyPath = null;
+let _flyRAF = null, _flyPath = null, _live3dTimer = null, _me3dMarker = null, _team3dMarkers = {};
 function open3D(t) { if (t) _open3D(t.name, geoOf(t), { fly: false }); }              // 步道詳情：靜態探索
 function open3DTrack(name, segsLL) { _open3D(name, segsLL, { fly: true }); }           // 結算頁回放：帶著走
-// 記錄中：把目前為止的實走軌跡（沒有就用選定步道）拿去 3D
+// 記錄中：即時 3D——顯示自己(頭貼+寵物)、隊友、目前軌跡，跟著更新
 function open3DRecording() {
   const s = (typeof recSnap !== "undefined") ? recSnap : null;
-  if (s && s.track && s.track.length > 1) { _open3D(Recorder._trailName || ttT("記錄中"), trackSegments(s.track).map(seg => seg.map(p => [p.lat, p.lon])), { fly: false }); return; }
+  const seg = (s && s.track && s.track.length > 1) ? trackSegments(s.track).map(g => g.map(p => [p.lat, p.lon]))
+    : (s && s.track && s.track.length === 1) ? [[[s.track[0].lat, s.track[0].lon]]]
+      : (typeof myLoc !== "undefined" && myLoc) ? [[[myLoc.lat, myLoc.lon]]] : null;
+  if (seg) { _open3D(Recorder._trailName || ttT("記錄中"), seg, { live: true }); return; }
   if (typeof selectedTrailId !== "undefined" && selectedTrailId) { const t = TRAILS.find(x => x.id === selectedTrailId); if (t) return open3D(t); }
   toast(ttT("開始記錄後就能看 3D"));
+}
+// 3D 人物標記：頭貼＋寵物（MapLibre HTML Marker）
+function person3dEl(avatar, pet, isMe) {
+  const d = document.createElement("div");
+  d.className = "tm3d team-marker" + (isMe ? " me-marker" : "");
+  d.innerHTML = `<div class="tm-av">${avatar ? `<img src="${avatar}" alt="">` : `<span class="tm-ph">${isMe ? (typeof ttT === "function" ? ttT("我") : "我") : "?"}</span>`}${pet ? `<span class="tm-pet">${pet}</span>` : ""}</div>`;
+  return d;
+}
+function _stop3dLive() {
+  if (_live3dTimer) { clearInterval(_live3dTimer); _live3dTimer = null; }
+  if (_me3dMarker) { try { _me3dMarker.remove(); } catch (e) { /* */ } _me3dMarker = null; }
+  for (const k in _team3dMarkers) { try { _team3dMarkers[k].remove(); } catch (e) { /* */ } } _team3dMarkers = {};
+}
+function _start3dLive() {
+  const upd = () => {
+    if (!_map3d || typeof maplibregl === "undefined") return;
+    const s = (typeof recSnap !== "undefined") ? recSnap : null;
+    const last = (s && s.track && s.track.length) ? s.track[s.track.length - 1] : (typeof myLoc !== "undefined" && myLoc ? myLoc : null);
+    if (last && last.lat != null) {
+      const ll = [last.lon, last.lat];
+      if (!_me3dMarker) _me3dMarker = new maplibregl.Marker({ element: person3dEl(window.__meAvatar, (typeof petEmojiNow === "function" ? petEmojiNow() : ""), true), anchor: "bottom" }).setLngLat(ll).addTo(_map3d);
+      else _me3dMarker.setLngLat(ll);
+      const src = _map3d.getSource("route");
+      if (src && s && s.track && s.track.length > 1) src.setData({ type: "Feature", geometry: { type: "MultiLineString", coordinates: trackSegments(s.track).map(g => g.map(p => [p.lon, p.lat])) } });
+    }
+    if (typeof TeamLive !== "undefined" && TeamLive.isOn && TeamLive.isOn() && TeamLive.teammates) {
+      const seen = {};
+      for (const t of TeamLive.teammates()) {
+        if (t.lat == null) continue; seen[t.id] = true;
+        if (!_team3dMarkers[t.id]) _team3dMarkers[t.id] = new maplibregl.Marker({ element: person3dEl(t.avatar, t.pet, false), anchor: "bottom" }).setLngLat([t.lon, t.lat]).addTo(_map3d);
+        else _team3dMarkers[t.id].setLngLat([t.lon, t.lat]);
+      }
+      for (const id in _team3dMarkers) if (!seen[id]) { try { _team3dMarkers[id].remove(); } catch (e) { /* */ } delete _team3dMarkers[id]; }
+    }
+  };
+  upd();
+  _live3dTimer = setInterval(upd, 1500);
 }
 function _flyBearing(a, b) { const y = Math.sin((b[0] - a[0]) * Math.PI / 180) * Math.cos(b[1] * Math.PI / 180); const x = Math.cos(a[1] * Math.PI / 180) * Math.sin(b[1] * Math.PI / 180) - Math.sin(a[1] * Math.PI / 180) * Math.cos(b[1] * Math.PI / 180) * Math.cos((b[0] - a[0]) * Math.PI / 180); return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360; }
 // 沿路線飛行：鏡頭跟著一個移動點前進、面朝行進方向、微傾，像帶著你走一遍
@@ -971,7 +1012,7 @@ async function _open3D(name, geom, opts) {
   _map3d = new maplibregl.Map({
     container: "map3dCanvas",
     center: [(minLng + maxLng) / 2, (minLat + maxLat) / 2], zoom: 12, pitch: 62, bearing: 18, maxPitch: 80,
-    attributionControl: { compact: true },
+    attributionControl: { compact: true }, fadeDuration: 0,
     style: {
       version: 8,
       sources: {
@@ -994,8 +1035,18 @@ async function _open3D(name, geom, opts) {
   });
   _map3d.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "bottom-right");   // 移離右上角，不擋關閉 ✕
   _map3d.on("load", () => {
+    _map3d.resize();   // 確保用滿容器解析度（避免初次建立時尺寸不對→模糊）
+    if (opts.live) {
+      const l = (typeof recSnap !== "undefined" && recSnap && recSnap.track && recSnap.track.length) ? recSnap.track[recSnap.track.length - 1] : (typeof myLoc !== "undefined" ? myLoc : null);
+      if (l && l.lat != null) _map3d.jumpTo({ center: [l.lon, l.lat], zoom: 15.5, pitch: 60, bearing: 0 });
+      _start3dLive();
+      return;
+    }
     try { _map3d.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 55, pitch: 62, bearing: 18, duration: 0 }); } catch (e) { /* */ }
-    if (opts.fly) setTimeout(() => { toast(ttT("🚶 帶你走一遍…")); flyAlong(); }, 900);   // 等地形圖磚進來再飛
+    if (opts.fly) {   // 等圖磚載完(idle)再飛，較順也較清楚；4 秒沒 idle 就先飛
+      let started = false; const go = () => { if (started) return; started = true; toast(ttT("🚶 帶你走一遍…")); flyAlong(); };
+      _map3d.once("idle", go); setTimeout(go, 4000);
+    }
   });
 }
 if (typeof document !== "undefined") {
@@ -2353,7 +2404,10 @@ Recorder.onUpdate(s => {
   if (s.state === "running" && s.track.length && !recPreloaded) {
     recPreloaded = true;                       // 只在首個定位點觸發一次
     preloadAround(s.track[0].lat, s.track[0].lon);
+    preload3D(s.track[0].lat, s.track[0].lon);   // #1 順手預載 3D 地形（PRO）
   }
+  // 記錄中持續往前預載 3D 地形（每分鐘一次，跟著目前位置）
+  if (s.state === "running" && s.track.length) { const l = s.track[s.track.length - 1]; preload3D(l.lat, l.lon); }
   if (recLine && s.track.length) {
     const pts = s.track.map(p => [p.lat, p.lon]);
     recLine.setLatLngs(trackSegments(s.track).map(seg => seg.map(p => [p.lat, p.lon])));   // 依 gap 分段畫線
@@ -2452,6 +2506,18 @@ $("#btnShareLoc").addEventListener("click", () => {
 // 開始記錄時，背景預載當前位置周邊圖磚（保險，避免途中失去訊號）。
 // 這也是離線地圖：非會員縮小範圍（±1km、縮放 14–15）並計入 MB 額度；額度不足只跳過預載、不影響記錄。Premium 完整預載（±2km、14–16）。
 let recPreloaded = false;
+// #1 記錄時預載 3D 地形圖磚（衛星＋terrarium 高程），讓 3D 開起來即時又清晰。3D 屬 PRO → 只對會員預載
+const _SAT_URL = (z, x, y) => `${ESRI}/World_Imagery/MapServer/tile/${z}/${y}/${x}`;
+const _TERR_URL = (z, x, y) => `https://elevation-tiles-prod.s3.amazonaws.com/terrarium/${z}/${x}/${y}.png`;
+let _pre3dAt = 0;
+function preload3D(lat, lon) {
+  if (!(typeof Premium !== "undefined" && Premium.isOn())) return;   // 3D 是 PRO 功能
+  if (typeof Offline === "undefined" || !navigator.onLine) return;
+  const now = Date.now(); if (now - _pre3dAt < 60000) return; _pre3dAt = now;   // 每分鐘最多一次
+  const m = 0.02, bbox = { n: lat + m, s: lat - m, e: lon + m, w: lon - m };
+  const tiles = [...Offline.tileListUrl(bbox, 14, 16, _SAT_URL), ...Offline.tileListUrl(bbox, 12, 15, _TERR_URL)];
+  Offline.download(tiles, () => {}).catch(() => {});   // 靜默預載，存進 tt-tiles，3D 開啟時由 SW 快取直接取用
+}
 async function preloadAround(lat, lon) {
   const pro = typeof Premium !== "undefined" && Premium.isOn();
   const m = pro ? 0.018 : 0.009;
