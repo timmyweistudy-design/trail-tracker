@@ -1136,7 +1136,8 @@ async function openDetail(id) {
   if (t.alt_high != null || t.alt_low != null) kv.push(["海拔範圍", `${t.alt_low ?? "?"}–${t.alt_high ?? "?"} m`]);
   const ascCached = (typeof Profile !== "undefined" && Profile.cachedGain) ? Profile.cachedGain(t.id) : null;
   const ascInit = ascCached != null ? ascCached : (t.ascent != null ? Math.round(t.ascent) : null);
-  if (ascInit != null || geoOf(t)) kv.push(["累積爬升", `<span id="kvAscent">${ascInit != null ? ascInit + " m" : "計算中…"}</span>`]);
+  const ascEst = (t.source === "osm" && ascCached == null) ? "（估）" : "";   // OSM 沿線推估、非實走→標示估算
+  if (ascInit != null || geoOf(t)) kv.push(["累積爬升", `<span id="kvAscent">${ascInit != null ? ascInit + " m" + ascEst : "計算中…"}</span>`]);
   if (t.tour) kv.push(["預估時間", t.tour]);
   const kvHtml = kv.length
     ? `<div class="kv">${kv.map(([l, v]) => `<div class="item"><div class="l">${l}</div><div class="v">${v}</div></div>`).join("")}</div>`
