@@ -898,6 +898,76 @@ function hillshadeLayer(map) {
   }
   return L.tileLayer(ESRI_HILLSHADE, { pane: "hillshade", maxZoom: 18, maxNativeZoom: 16, attribution: "" });
 }
+
+// ── 3D 地形（MapLibre GL）：延遲載入，只在使用者按「3D」時才載 ~800KB 引擎 ──
+let _mlPromise = null, _map3d = null;
+function loadMapLibre() {
+  if (window.maplibregl) return Promise.resolve();
+  if (_mlPromise) return _mlPromise;
+  _mlPromise = new Promise((res, rej) => {
+    const css = document.createElement("link"); css.rel = "stylesheet"; css.href = "vendor/maplibre/maplibre-gl.css"; document.head.appendChild(css);
+    const sc = document.createElement("script"); sc.src = "vendor/maplibre/maplibre-gl.js"; sc.onload = res; sc.onerror = rej; document.body.appendChild(sc);
+  });
+  return _mlPromise;
+}
+function close3D() {
+  const ov = $("#map3d"); if (ov) ov.hidden = true;
+  if (_map3d) { try { _map3d.remove(); } catch (e) { /* */ } _map3d = null; }   // 釋放 GPU/記憶體
+}
+async function open3D(t) {
+  if (!t) return;
+  const geom = geoOf(t);
+  if (!geom || !geom.length) { toast(ttT("此步道沒有路線資料，無法 3D 顯示")); return; }
+  const ov = $("#map3d"); if (!ov) return;
+  if (!navigator.onLine) { toast(ttT("3D 地形需要網路")); return; }
+  ov.hidden = false;
+  const title = $("#map3dTitle"); if (title) title.textContent = t.name || "";
+  toast(ttT("載入 3D 地形中…"));
+  try { await loadMapLibre(); } catch (e) { close3D(); toast(ttT("3D 載入失敗")); return; }
+  const coords = geom.map(seg => seg.map(p => [p[1], p[0]]));   // GeoJSON 用 [lon,lat]
+  let minLng = 180, minLat = 90, maxLng = -180, maxLat = -90;
+  for (const seg of geom) for (const p of seg) { minLat = Math.min(minLat, p[0]); maxLat = Math.max(maxLat, p[0]); minLng = Math.min(minLng, p[1]); maxLng = Math.max(maxLng, p[1]); }
+  const main = geom.reduce((a, b) => (b.length > a.length ? b : a), geom[0]);
+  const start = main[0], end = main[main.length - 1];
+  if (_map3d) { try { _map3d.remove(); } catch (e) { /* */ } _map3d = null; }
+  _map3d = new maplibregl.Map({
+    container: "map3dCanvas",
+    center: [(minLng + maxLng) / 2, (minLat + maxLat) / 2], zoom: 12, pitch: 62, bearing: 18, maxPitch: 80,
+    attributionControl: { compact: true },
+    style: {
+      version: 8,
+      sources: {
+        sat: { type: "raster", tiles: [`${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}`], tileSize: 256, maxzoom: 18, attribution: "© Esri, Maxar" },
+        terrain: { type: "raster-dem", tiles: ["https://elevation-tiles-prod.s3.amazonaws.com/terrarium/{z}/{x}/{y}.png"], tileSize: 256, encoding: "terrarium", maxzoom: 15, attribution: "Terrain: AWS/Mapzen" },
+        route: { type: "geojson", data: { type: "Feature", properties: {}, geometry: { type: "MultiLineString", coordinates: coords } } },
+        pts: { type: "geojson", data: { type: "FeatureCollection", features: [{ type: "Feature", properties: { k: "s" }, geometry: { type: "Point", coordinates: [start[1], start[0]] } }, { type: "Feature", properties: { k: "e" }, geometry: { type: "Point", coordinates: [end[1], end[0]] } }] } },
+      },
+      layers: [
+        { id: "sat", type: "raster", source: "sat" },
+        { id: "route-casing", type: "line", source: "route", layout: { "line-join": "round", "line-cap": "round" }, paint: { "line-color": "#ffffff", "line-width": 7, "line-opacity": 0.65 } },
+        { id: "route", type: "line", source: "route", layout: { "line-join": "round", "line-cap": "round" }, paint: { "line-color": "#ff5a2c", "line-width": 4 } },
+        { id: "pts", type: "circle", source: "pts", paint: { "circle-radius": 6, "circle-color": ["match", ["get", "k"], "s", "#2f7d4f", "#d2542e"], "circle-stroke-color": "#fff", "circle-stroke-width": 2 } },
+      ],
+      terrain: { source: "terrain", exaggeration: 1.4 },
+      sky: { "sky-color": "#9ecbff", "horizon-color": "#dcecff", "fog-color": "#ffffff", "sky-horizon-blend": 0.6, "horizon-fog-blend": 0.5, "fog-ground-blend": 0.4 },
+    },
+  });
+  _map3d.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
+  _map3d.on("load", () => { try { _map3d.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 55, pitch: 62, bearing: 18, duration: 0 }); } catch (e) { /* */ } });
+}
+if (typeof document !== "undefined") { const _c3 = () => { const b = document.getElementById("map3dClose"); if (b) b.addEventListener("click", close3D); }; if (document.readyState !== "loading") _c3(); else document.addEventListener("DOMContentLoaded", _c3); }
+// 詳情地圖上的「3D」鈕
+function addThreeD(map, getTrail) {
+  const c = L.control({ position: "topright" });
+  c.onAdd = () => {
+    const d = L.DomUtil.create("div", "map-fs-btn map-3d-btn");
+    d.innerHTML = "3D"; d.title = ttT("3D 地形");
+    L.DomEvent.disableClickPropagation(d);
+    d.addEventListener("click", () => open3D(getTrail && getTrail()));
+    return d;
+  };
+  c.addTo(map);
+}
 // 指北針：讀裝置方位，轉動手機時指針跟著轉、指向實際北方
 let _compassOn = false, _heading = 0, _gpsHeading = null;
 function rotateCompasses() { document.querySelectorAll(".compass-rose").forEach(r => r.style.transform = `rotate(${-_heading}deg)`); }
@@ -1294,6 +1364,7 @@ async function openDetail(id) {
     if (!detailMap) {
       detailMap = L.map("detailMap", { zoomControl: false });
       addBaseWithToggle(detailMap);
+      addThreeD(detailMap, currentDetailTrail);   // 「3D」鈕：開 MapLibre 3D 地形
       detailOverlay = L.layerGroup().addTo(detailMap);
       detailPoiLayer = L.layerGroup().addTo(detailMap);
     }
