@@ -345,6 +345,7 @@ const I18n = (() => {
     "隊長": "Leader", "還沒看到隊友？請隊友也在記錄頁開啟「與小隊同行」": "Don't see teammates? Ask them to also turn on “Hike with team” on the Record tab",
     "破紀錄": "New record", "最長距離": "Longest distance", "最多爬升": "Most ascent", "最久時間": "Longest time", "最快配速": "Fastest pace", "首次健行紀錄！": "Your first hike!",
     "每公里配速": "Pace per km", "分": "min", "分段速度": "Segment speed",
+    "每列＝該公里的速度 km/h，條越長走越快，綠色最快": "Each row = that km's speed (km/h); longer bar = faster, green is fastest.",
     "建議裝備": "Suggested gear", "今日日落": "Sunset today", "天已黑": "It's dark now", "剩不到 3 小時天黑": "Under 3h to dark",
     "本月摘要": "this month", "本月里程": "Distance", "本月次數": "Trips", "連續天數": "Day streak", "最長單次": "Longest",
     "🎲 驚喜": "🎲 Surprise", "為你抽到": "Picked for you", "找不到符合的步道": "No matching trails",

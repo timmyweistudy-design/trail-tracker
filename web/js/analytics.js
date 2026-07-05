@@ -219,6 +219,20 @@ function openAnalytics() {
   // 速度趨勢（近 10 趟，由舊到新）
   const paced = recs.filter(r => (r.elapsedMs || 0) > 6e4 && (r.distanceKm || 0) > 0)
     .slice(0, 10).reverse().map(r => r.distanceKm / (r.elapsedMs / 3.6e6));
+  // 各縣市踏遍：真實紀錄走過的（recs 已排除模擬）或手動標記完成的步道才算；模擬不計
+  const doneSet = new Set();
+  if (typeof TRAILS !== "undefined") {
+    TRAILS.forEach(t => { if (Store.trailLog(t.id).done) doneSet.add(String(t.id)); });
+    recs.forEach(r => { if (r.trailId != null) doneSet.add(String(r.trailId)); });
+  }
+  const regionMap = {};
+  if (typeof TRAILS !== "undefined") TRAILS.forEach(t => { const rg = t.region; if (!rg) return; (regionMap[rg] = regionMap[rg] || { done: 0, total: 0 }).total++; if (doneSet.has(String(t.id))) regionMap[rg].done++; });
+  const regionRows = Object.entries(regionMap).filter(([, v]) => v.done > 0).sort((a, b) => b[1].done - a[1].done || (b[1].done / b[1].total) - (a[1].done / a[1].total));
+  const totalRegions = Object.keys(regionMap).length;
+  const regionHtml = regionRows.length
+    ? `<div class="ana-sec">${ttT("各縣市踏遍進度")} <span class="rp-count">${regionRows.length}/${totalRegions}</span></div>
+       <div class="rp-list">${regionRows.slice(0, 12).map(([r, v]) => `<div class="rp-row"><span class="rp-name">${r}</span><div class="rp-bar"><i style="width:${Math.round(v.done / v.total * 100)}%"></i></div><b class="rp-num">${v.done}/${v.total}</b></div>`).join("")}</div>`
+    : "";
 
   const proInner = `
     <div class="ana-sec">個人紀錄</div>
@@ -242,6 +256,7 @@ function openAnalytics() {
     <div class="ana-sec">一週節律</div>
     <div class="ana-week">${wd.map((c, i) => `<div class="aw"><div class="aw-v">${c}</div><div class="aw-bar" style="height:${Math.round(c / maxW * 46) + 4}px"></div><div class="aw-l">${WLBL[i]}</div></div>`).join("")}</div>
     <div class="ana-spark-cap">各星期的出行次數（單位：次）</div>
+    ${regionHtml}
     <button class="btn ghost" id="anaCompare" style="margin-top:10px">${ic("users")} 好友里程比較</button>
     <div class="ana-exp">
       <button class="btn ghost" id="anaCsv">${ic("download")} CSV</button>
