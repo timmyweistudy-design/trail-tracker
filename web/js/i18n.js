@@ -349,6 +349,7 @@ const I18n = (() => {
     "速度": "Speed", "這次": "This time", "平常": "Usual", "平均速度": "Avg speed", "完成了步道": "Trail completed", "已完成": "Completed",
     "3D 地形": "3D terrain", "載入 3D 地形中…": "Loading 3D terrain…", "3D 載入失敗": "3D failed to load", "3D 地形需要網路": "3D terrain needs internet",
     "此步道沒有路線資料，無法 3D 顯示": "No route data for this trail — 3D unavailable", "🖐 雙指拖曳可旋轉／傾斜": "🖐 Two-finger drag to rotate / tilt",
+    "3D 地形地圖": "3D terrain map", "3D 回放": "3D replay", "衛星影像貼在真實地形上、可旋轉傾斜；步道詳情與行程回放都能看": "Satellite draped on real terrain, rotate & tilt — in trail details and hike replay",
     "和你平常差不多": "About the same as usual", "比平常快": "Faster than usual", "比平常慢": "Slower than usual",
     "建議裝備": "Suggested gear", "今日日落": "Sunset today", "天已黑": "It's dark now", "剩不到 3 小時天黑": "Under 3h to dark",
     "本月摘要": "this month", "本月里程": "Distance", "本月次數": "Trips", "連續天數": "Day streak", "最長單次": "Longest",

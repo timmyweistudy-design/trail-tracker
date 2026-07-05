@@ -914,14 +914,16 @@ function close3D() {
   const ov = $("#map3d"); if (ov) ov.hidden = true;
   if (_map3d) { try { _map3d.remove(); } catch (e) { /* */ } _map3d = null; }   // 釋放 GPU/記憶體
 }
-async function open3D(t) {
-  if (!t) return;
-  const geom = geoOf(t);
+function open3D(t) { if (t) _open3D(t.name, geoOf(t)); }
+// 結算頁：把「這趟的實走軌跡」用 3D 顯示
+function open3DTrack(name, segsLL) { _open3D(name, segsLL); }
+async function _open3D(name, geom) {
+  if (typeof Premium !== "undefined" && !Premium.gate()) return;   // 3D 為 PRO 功能，非會員→開升級面板
   if (!geom || !geom.length) { toast(ttT("此步道沒有路線資料，無法 3D 顯示")); return; }
   const ov = $("#map3d"); if (!ov) return;
   if (!navigator.onLine) { toast(ttT("3D 地形需要網路")); return; }
   ov.hidden = false;
-  const title = $("#map3dTitle"); if (title) title.textContent = t.name || "";
+  const title = $("#map3dTitle"); if (title) title.textContent = name || "";
   toast(ttT("載入 3D 地形中…"));
   try { await loadMapLibre(); } catch (e) { close3D(); toast(ttT("3D 載入失敗")); return; }
   const coords = geom.map(seg => seg.map(p => [p[1], p[0]]));   // GeoJSON 用 [lon,lat]
@@ -952,7 +954,7 @@ async function open3D(t) {
       sky: { "sky-color": "#9ecbff", "horizon-color": "#dcecff", "fog-color": "#ffffff", "sky-horizon-blend": 0.6, "horizon-fog-blend": 0.5, "fog-ground-blend": 0.4 },
     },
   });
-  _map3d.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
+  _map3d.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "bottom-right");   // 移離右上角，不擋關閉 ✕
   _map3d.on("load", () => { try { _map3d.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 55, pitch: 62, bearing: 18, duration: 0 }); } catch (e) { /* */ } });
 }
 if (typeof document !== "undefined") { const _c3 = () => { const b = document.getElementById("map3dClose"); if (b) b.addEventListener("click", close3D); }; if (document.readyState !== "loading") _c3(); else document.addEventListener("DOMContentLoaded", _c3); }
@@ -1969,6 +1971,7 @@ function openTrackReview(rec, isNew) {
       <div class="hike-shots">${hikePhotos.map((p, i) => `<figure class="shot" data-i="${i}"><img src="${(u => { _shotUrls.push(u); return u; })(URL.createObjectURL(p.file))}" alt=""><figcaption>${new Date(p.t).toLocaleTimeString(ttLocale(), { hour: "2-digit", minute: "2-digit" })} · ${p.km.toFixed(2)}km</figcaption></figure>`).join("")}</div>` : ""}
     <div class="link-row flow">
       <button class="link-btn" id="trackReplay">${ic("play")} 重播路徑</button>
+      <button class="link-btn" id="track3d">${ic("mountain")} 3D 回放<span class="pro-tag">PRO</span></button>
       <button class="link-btn" id="trackCard">${ic("camera")} 分享圖卡</button>
       <button class="link-btn" id="trackGpx">${ic("download")} 下載路線檔</button>
       <button class="link-btn" id="trackShare">${ic("share")} 分享行程</button>
@@ -1999,6 +2002,7 @@ function openTrackReview(rec, isNew) {
     } else { trackMap.setView([23.8, 121], 7); }
   }, 120);
   $("#trackReplay").addEventListener("click", () => { if (trackPts && trackPts.length > 1) playTrackReplay(trackPts, trackSegsLL); });
+  $("#track3d").addEventListener("click", () => { if (trackSegsLL && trackSegsLL.length) open3DTrack(rec.trailName || ttT("自由路線"), trackSegsLL); else toast(ttT("此步道沒有路線資料，無法 3D 顯示")); });
   $("#trackCard").addEventListener("click", () => shareHikeCard(rec));
   $("#trackGpx").addEventListener("click", () => { GPX.exportRecord(rec); toast("已下載路線檔"); });
   $("#trackShare").addEventListener("click", () => {
