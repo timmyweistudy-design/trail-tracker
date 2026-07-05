@@ -1816,6 +1816,42 @@ function personalBestBreaks(rec) {
   }
   return out;
 }
+// #2 每公里分段配速：走軌跡累加距離與「移動時間」（跳過暫停/gap 段），每滿 1km 記一段
+function computeSplits(rec) {
+  const tr = rec.track; if (!tr || tr.length < 2) return [];
+  const splits = [];
+  let cumDist = 0, cumMove = 0, lastKm = 0, lastKmMove = 0;
+  for (let i = 1; i < tr.length; i++) {
+    const a = tr[i - 1], b = tr[i];
+    if (b.gap) continue;                                  // 暫停後的接續段不計
+    const d = haversine(a, b) / 1000;                     // km
+    let dt = (b.t - a.t) / 1000;                          // 秒
+    if (!(dt > 0) || dt > 300) dt = 0;                    // 異常/長暫停不計時間
+    cumDist += d; cumMove += dt;
+    while (cumDist >= lastKm + 1) {                       // 跨過整數公里 → 收一段
+      lastKm += 1;
+      splits.push({ km: lastKm, sec: cumMove - lastKmMove });
+      lastKmMove = cumMove;
+    }
+  }
+  const tailKm = cumDist - lastKm;                        // 最後不滿 1km 的尾段
+  if (tailKm >= 0.15) splits.push({ km: +(lastKm + tailKm).toFixed(2), sec: cumMove - lastKmMove, partial: tailKm });
+  return splits;
+}
+function splitsHtml(rec) {
+  const sp = computeSplits(rec);
+  if (sp.length < 2) return "";
+  const pace = s => s.partial ? (s.sec / s.partial) : s.sec;   // 尾段換算成每公里配速比較
+  const paces = sp.map(pace).filter(p => p > 0 && isFinite(p));
+  const fast = Math.min(...paces), slow = Math.max(...paces);
+  const fmtPace = p => `${Math.floor(p / 60)}'${String(Math.round(p % 60)).padStart(2, "0")}`;
+  const rows = sp.map(s => {
+    const p = pace(s), w = slow > fast ? 30 + 70 * (1 - (p - fast) / (slow - fast)) : 100;   // 越快越長
+    const isFast = Math.abs(p - fast) < 0.5;
+    return `<div class="split-row${s.partial ? " partial" : ""}"><span class="split-km">${s.partial ? "+" + s.partial.toFixed(1) : s.km}</span><div class="split-bar"><i class="${isFast ? "best" : ""}" style="width:${w.toFixed(0)}%"></i></div><b class="split-pace">${fmtPace(p)}</b></div>`;
+  }).join("");
+  return `<div class="section-title">${ic("clock")}${ttT("每公里配速")}<span class="split-unit">${ttT("分")}/km</span></div><div class="split-list">${rows}</div>`;
+}
 function openTrackReview(rec, isNew) {
   if (!rec) return;
   _shotUrls.forEach(u => URL.revokeObjectURL(u)); _shotUrls = [];   // 回收上一份結算的照片 URL
@@ -1833,6 +1869,7 @@ function openTrackReview(rec, isNew) {
       <div class="item"><div class="l">步數</div><div class="v">${(rec.steps || 0).toLocaleString()}</div></div>
       ${t3 && t3 > km + 0.05 ? `<div class="item"><div class="l">含坡度距離</div><div class="v">${t3.toFixed(2)} km</div></div>` : ""}
     </div>
+    ${splitsHtml(rec)}
     ${(rec.id === hikePhotosRecId && hikePhotos.length) ? `<div class="section-title">${ic("camera")}隨手拍（${hikePhotos.length}）<span class="shot-hint">點照片存到相簿</span></div>
       <div class="hike-shots">${hikePhotos.map((p, i) => `<figure class="shot" data-i="${i}"><img src="${(u => { _shotUrls.push(u); return u; })(URL.createObjectURL(p.file))}" alt=""><figcaption>${new Date(p.t).toLocaleTimeString(ttLocale(), { hour: "2-digit", minute: "2-digit" })} · ${p.km.toFixed(2)}km</figcaption></figure>`).join("")}</div>` : ""}
     <div class="link-row flow">
