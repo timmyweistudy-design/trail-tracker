@@ -978,42 +978,33 @@ function flyAlong() {
   const segM = (a, b) => haversine({ lat: a[1], lon: a[0] }, { lat: b[1], lon: b[0] });   // 公尺
   const cum = [0]; for (let i = 1; i < path.length; i++) cum[i] = cum[i - 1] + segM(path[i - 1], path[i]);
   const total = cum[cum.length - 1] || 1;
-  const DUR = Math.min(45000, Math.max(16000, total * 7));      // 依實際距離估時長（越長越久，約 1km≈7 秒）
+  const DUR = Math.min(55000, Math.max(18000, total * 9));      // 放慢：圖磚有時間載到相機前方，較不閃（約 1km≈9 秒）
   const LOOK = Math.min(120, Math.max(35, total * 0.03));       // 看向前方多少公尺（決定轉彎前傾/預判）
   let ix = 1;
   const posAt = d => { while (ix < cum.length - 1 && cum[ix] < d) ix++; while (ix > 1 && cum[ix - 1] > d) ix--; const a = path[ix - 1], b = path[ix], f = (d - cum[ix - 1]) / ((cum[ix] - cum[ix - 1]) || 1); return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]; };
   const posAhead = d => { let j = ix; while (j < cum.length - 1 && cum[j] < d) j++; const a = path[j - 1], b = path[j], f = (d - cum[j - 1]) / ((cum[j] - cum[j - 1]) || 1); return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]; };
   let bearing = _flyBearing(posAt(0), posAhead(Math.min(LOOK, total)));   // 起始就朝前，不會突兀
   let t0 = performance.now(), lastT = t0;
-  // 電影運鏡參數：巡航 / 開場俯瞰俯衝 / 結尾拉高
-  const CR_Z = 15.2, CR_P = 60, IN_Z = 14.4, IN_P = 64, OUT_Z = 14.6, OUT_P = 63;   // 開場俯角/廣角收斂一點，減少露出還沒載到的遠處地形（閃色）
+  // 電影運鏡：zoom 全程「固定」→ 圖磚不換級、不再週期性閃。運鏡改靠俯角(進場/收尾/微呼吸)＋轉向側傾＋緩入緩出節奏
+  const FLY_Z = 15.0, IN_P = 67, CR_P = 60, OUT_P = 64;
   const lerp = (a, b, t) => a + (b - a) * t;
   const smooth = x => x <= 0 ? 0 : x >= 1 ? 1 : x * x * x * (x * (x * 6 - 15) + 10);   // smootherstep 緩入緩出
   const step = now => {
     if (!_map3d) return;
     const pRaw = Math.min(1, (now - t0) / DUR);
-    const p = smooth(pRaw);                 // 位置也緩入緩出＝電影節奏（起步慢、中段順、收尾慢）
+    const p = smooth(pRaw);                 // 位置緩入緩出＝電影節奏（起步慢、中段順、收尾慢）
     const d = p * total;
     const pos = posAt(d);
     const ahead = posAhead(Math.min(d + LOOK, total));
     const target = _flyBearing(pos, ahead);
     const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
     bearing = _lerpAngle(bearing, target, 1 - Math.pow(0.02, dt));   // 轉向平滑（banking）
-    // 分段運鏡
-    let zoom, pitch;
-    if (p < 0.16) { const q = smooth(p / 0.16); zoom = lerp(IN_Z, CR_Z, q); pitch = lerp(IN_P, CR_P, q); }        // 開場：高處俯瞰→俯衝進場
-    else if (p > 0.86) { const q = smooth((p - 0.86) / 0.14); zoom = lerp(CR_Z, OUT_Z, q); pitch = lerp(CR_P, OUT_P, q); }  // 結尾：拉高收尾
-    else {
-      zoom = CR_Z + 0.16 * Math.sin((now - t0) / 3300);           // 巡航：鏡頭微「呼吸」起伏
-      pitch = CR_P + 2.4 * Math.sin((now - t0) / 4500);
-      try {   // 地形反應：前方在爬升就把鏡頭拉遠一點，揭露前方稜線（一起飛上山的感覺）
-        const eN = _map3d.queryTerrainElevation ? _map3d.queryTerrainElevation(pos) : null;
-        const eA = _map3d.queryTerrainElevation ? _map3d.queryTerrainElevation(ahead) : null;
-        if (eN != null && eA != null) zoom -= Math.max(-0.3, Math.min(0.35, (eA - eN) / 130));   // 揭露稜線幅度收斂，避免拉太遠露破洞
-      } catch (e) { /* 地形尚未載入 */ }
-    }
+    let pitch;
+    if (p < 0.16) pitch = lerp(IN_P, CR_P, smooth(p / 0.16));                    // 開場：俯角略高→壓下滑入
+    else if (p > 0.86) pitch = lerp(CR_P, OUT_P, smooth((p - 0.86) / 0.14));     // 結尾：俯角略抬收尾
+    else pitch = CR_P + 2.4 * Math.sin((now - t0) / 4500);                        // 巡航：只讓俯角微呼吸（不動 zoom→不換圖磚）
     const src = _map3d.getSource("me3d"); if (src) src.setData({ type: "Feature", geometry: { type: "Point", coordinates: pos } });
-    _map3d.jumpTo({ center: pos, bearing, pitch, zoom });
+    _map3d.jumpTo({ center: pos, bearing, pitch, zoom: FLY_Z });
     if (pRaw < 1) _flyRAF = requestAnimationFrame(step); else _flyRAF = null;
   };
   _flyRAF = requestAnimationFrame(step);
@@ -1078,10 +1069,10 @@ async function _open3D(name, geom, opts) {
       const br = _flyBearing([start[1], start[0]], [ahead[1], ahead[0]]);
       _map3d.jumpTo({ center: [start[1], start[0]], zoom: 14.8, pitch: 64, bearing: br });
     }
-    if (opts.fly) {   // 等圖磚載完(idle)再飛，較順也較清楚；4 秒沒 idle 就先飛
-      preload3DBox({ n: maxLat, s: minLat, e: maxLng, w: minLng });   // 背景把整條走廊圖磚抓起來，減少飛行破洞
-      let started = false; const go = () => { if (started) return; started = true; toast(ttT("🚶 帶你走一遍…")); flyAlong(); };
-      _map3d.once("idle", go); setTimeout(go, 4000);
+    if (opts.fly) {   // 先把整條走廊圖磚抓進快取（最多 6 秒）＋等地圖 idle 再飛，飛行中就不用臨時串流→不閃
+      let started = false; const go = () => { if (started || !_map3d) return; started = true; toast(ttT("🚶 帶你走一遍…")); flyAlong(); };
+      Promise.race([preload3DBox({ n: maxLat, s: minLat, e: maxLng, w: minLng }), new Promise(r => setTimeout(r, 6000))])
+        .then(() => { if (!_map3d) return; _map3d.once("idle", go); setTimeout(go, 2000); });
     }
   });
 }
@@ -2556,10 +2547,10 @@ function preload3D(lat, lon) {
 }
 // 飛行前把整條路線走廊的 3D 圖磚先抓進快取，飛過去時就不會露破洞閃黑（背景+邊飛邊載兜底）
 function preload3DBox(bbox) {
-  if (typeof Offline === "undefined" || !navigator.onLine) return;
-  const tiles = [...Offline.tileListUrl(bbox, 14, 15, _SAT_URL), ...Offline.tileListUrl(bbox, 12, 14, _TERR_URL)];
-  if (tiles.length > 1000) return;   // 走廊太大就不整片預載，交給背景色＋串流
-  Offline.download(tiles, () => {}).catch(() => {});
+  if (typeof Offline === "undefined" || !navigator.onLine) return Promise.resolve();
+  const tiles = [...Offline.tileListUrl(bbox, 15, 15, _SAT_URL), ...Offline.tileListUrl(bbox, 12, 14, _TERR_URL)];   // 衛星只抓飛行用的 z15、地形 z12-14
+  if (tiles.length > 1200) return Promise.resolve();   // 走廊太大就不整片預載，交給背景色＋串流
+  return Offline.download(tiles, () => {}).catch(() => {});
 }
 async function preloadAround(lat, lon) {
   const pro = typeof Premium !== "undefined" && Premium.isOn();
