@@ -437,7 +437,7 @@ window.loadSocial = (function () {
     return p;
   };
 })();
-window.addEventListener("load", () => setTimeout(() => window.loadSocial(), 2000));
+window.addEventListener("load", () => setTimeout(() => window.loadSocial().then(() => { if (window.wireTeamLive) window.wireTeamLive(); }), 2000));
 </script>
 <script src="js/premium.js"></script>
 <script src="js/pet.js"></script>

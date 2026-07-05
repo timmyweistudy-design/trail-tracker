@@ -101,25 +101,41 @@ const TeamLive = (() => {
     checkPresenceStart();
     if (!map || typeof L === "undefined") return;
     const state = channel.presenceState();
-    const seen = {};
+    // 先收集所有有座標的隊友，依 key 排序取穩定索引（散開角度每次一致、不會抖）
+    const others = [];
     for (const key in state) {
       if (key === me) continue;                       // 不畫自己
       const metas = state[key] || [];
       const meta = metas.reduce((best, m) => (m && m.lat != null && (!best || (m.at || 0) > (best.at || 0))) ? m : best, null);
-      if (!meta) continue;
+      if (meta) others.push({ key, meta });
+    }
+    others.sort((a, b) => (a.key < b.key ? -1 : 1));
+    // 散開的參考中心：優先用我的定位；我 GPS 還沒鎖定時改用隊友座標的中心，
+    // 這樣「自己還沒定位」的隊員也能把擠在一起的隊友散開看到（修：只有隊長看得到所有人）
+    let ref = lastPos;
+    if (!ref && others.length) {
+      ref = { lat: others.reduce((s, o) => s + o.meta.lat, 0) / others.length,
+              lon: others.reduce((s, o) => s + o.meta.lon, 0) / others.length };
+    }
+    const metersFrom = (la, lo) => ref ? Math.hypot((la - ref.lat) * 111320, (lo - ref.lon) * 111320 * Math.cos(la * Math.PI / 180)) : 9e9;
+    const near = ref ? others.filter(o => metersFrom(o.meta.lat, o.meta.lon) < 20) : [];
+    const ringN = Math.max(near.length + (lastPos ? 1 : 0), 3);   // 圈上人數（含我）
+    const seen = {};
+    let ni = 0;
+    for (const o of others) {
+      const key = o.key, meta = o.meta;
       seen[key] = true;
       let ll = [meta.lat, meta.lon];
-      // 在家測試/集合點：大家座標幾乎重疊會蓋在一起看不到 → 距我 15m 內的隊友沿小圈散開
-      if (lastPos) {
-        const dLat = (meta.lat - lastPos.lat) * 111320, dLon = (meta.lon - lastPos.lon) * 111320 * Math.cos(meta.lat * Math.PI / 180);
-        if (Math.hypot(dLat, dLon) < 15) {
-          const a = (Object.keys(seen).length + 1) * 2.1;
-          ll = [meta.lat + 0.00012 * Math.sin(a), meta.lon + 0.00012 * Math.cos(a)];
-        }
+      // 集合點/室內：多位隊友幾乎重疊 → 以參考中心為圓心，沿小圈均分散開，才不會疊成一顆
+      if (near.length >= 2 && metersFrom(meta.lat, meta.lon) < 20) {
+        ni++;
+        const a = (ni / ringN) * 2 * Math.PI;
+        ll = [ref.lat + 0.00018 * Math.sin(a), ref.lon + 0.00018 * Math.cos(a)];   // 半徑約 20m
       }
-      if (markers[key]) { markers[key].setLatLng(ll); markers[key].setIcon(icon(meta)); markers[key].setTooltipContent(meta.name || (typeof ttT === "function" ? ttT("隊友") : "隊友")); }
+      const nm = meta.name || (typeof ttT === "function" ? ttT("隊友") : "隊友");
+      if (markers[key]) { markers[key].setLatLng(ll); markers[key].setIcon(icon(meta)); markers[key].setTooltipContent(nm); }
       else markers[key] = L.marker(ll, { icon: icon(meta), zIndexOffset: 900 }).addTo(map)
-        .bindTooltip(meta.name || (typeof ttT === "function" ? ttT("隊友") : "隊友"), { permanent: true, direction: "bottom", className: "team-tip", offset: [0, 14] });   // 名字放下方，不擋寵物
+        .bindTooltip(nm, { permanent: true, direction: "bottom", className: "team-tip", offset: [0, 14] });   // 名字放下方，不擋寵物
     }
     for (const key in markers) if (!seen[key]) { try { map.removeLayer(markers[key]); } catch (e) { } delete markers[key]; }
   }

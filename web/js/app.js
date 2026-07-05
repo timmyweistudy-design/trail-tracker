@@ -372,7 +372,7 @@ document.querySelectorAll(".tab").forEach(btn => {
     if (view === "me") { renderHistory(); refreshOfflineStatus(); renderAccent(); renderProColor(); renderMeProfileCard(); if (typeof Premium !== "undefined") Premium.refresh().then(() => { Premium.renderBox($("#premiumBox")); renderAccent(); renderProColor(); renderMeProfileCard(); applySeason(); }); }
     if (view === "social") {
       // 社群模組延遲載入：還沒載就先載完再進（開機後 2 秒會自動載，多數時候已就緒）
-      if (typeof SocialUI === "undefined" && window.loadSocial) window.loadSocial().then(() => { if (typeof SocialUI !== "undefined") SocialUI.onShow(); });
+      if (typeof SocialUI === "undefined" && window.loadSocial) window.loadSocial().then(() => { if (window.wireTeamLive) window.wireTeamLive(); if (typeof SocialUI !== "undefined") SocialUI.onShow(); });
       else if (typeof SocialUI !== "undefined") SocialUI.onShow();
     }
   });
@@ -2267,7 +2267,7 @@ $("#btnStart").addEventListener("click", () => {
   startRecordingUI();
 });
 // 收到隊長的開始廣播 → 已按準備的隊員自動一起開始記錄
-if (typeof TeamLive !== "undefined" && TeamLive.onStart) TeamLive.onStart((simFlag) => {
+function _teamOnStartCb(simFlag) {
   if (Recorder.getState() === "running") return;
   const tab = document.querySelector('.tab[data-view="record"]'); if (tab) tab.click();
   // 跟隨隊長的模擬模式：隊長模擬全隊模擬（在家測試才動得了）、隊長真走全隊真走
@@ -2276,7 +2276,7 @@ if (typeof TeamLive !== "undefined" && TeamLive.onStart) TeamLive.onStart((simFl
   toast(simFlag ? "👑 隊長開始了（模擬模式）！小隊一起記錄" : "👑 隊長開始了！小隊一起記錄");
   if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
   startRecordingUI();
-});
+}
 $("#btnPause").addEventListener("click", () => {
   Recorder.pause();
   $("#btnStart").textContent = "▶ 繼續";
@@ -2327,12 +2327,22 @@ $("#btnStop").addEventListener("click", () => {
   finishRecording(false);
 });
 // 隊長按結束 → 隊員收到訊號各自進結算（與開始同款三路遞送）
-if (typeof TeamLive !== "undefined" && TeamLive.onStop) TeamLive.onStop(() => {
+function _teamOnStopCb() {
   if (Recorder.getState() === "idle") return;
   toast("👑 隊長結束了小隊記錄，一起看結算");
   if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
   finishRecording(false);
-});
+}
+// TeamLive 屬延遲載入的社群模組，onStart/onStop 一定要等它載入後才註冊，
+// 否則 app.js 頂層跑到這裡時 TeamLive 還不存在 → 回呼永遠掛不上 → 隊員收到開始/結束訊號也不會動（修：沒有同時開始）
+window.wireTeamLive = function wireTeamLive() {
+  if (typeof TeamLive === "undefined") return false;
+  if (TeamLive.onStart) TeamLive.onStart(_teamOnStartCb);
+  if (TeamLive.onStop) TeamLive.onStop(_teamOnStopCb);
+  return true;
+};
+// 立刻試一次（多半失敗，因社群模組還沒載）；正式註冊由 index.html 的社群延遲載入完成後回呼，維持延遲載入不提早
+window.wireTeamLive();
 // 偵測到車輛速度(>20km/h)→記錄器自動斷掉→跑與按「結束」相同的收尾流程
 Recorder.onAutoStop(() => finishRecording(true));
 
