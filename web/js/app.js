@@ -1875,16 +1875,15 @@ function computeSplits(rec) {
 function splitsHtml(rec) {
   const sp = computeSplits(rec);
   if (sp.length < 2) return "";
-  const pace = s => s.partial ? (s.sec / s.partial) : s.sec;   // 尾段換算成每公里配速比較
-  const paces = sp.map(pace).filter(p => p > 0 && isFinite(p));
-  const fast = Math.min(...paces), slow = Math.max(...paces);
-  const fmtPace = p => `${Math.floor(p / 60)}'${String(Math.round(p % 60)).padStart(2, "0")}`;
+  const spd = s => { const hr = s.sec / 3600; return hr > 0 ? (s.partial || 1) / hr : 0; };   // 速度 km/h（越快越大）
+  const vals = sp.map(spd).filter(v => v > 0 && isFinite(v));
+  const fast = Math.max(...vals), slow = Math.min(...vals);
   const rows = sp.map(s => {
-    const p = pace(s), w = slow > fast ? 30 + 70 * (1 - (p - fast) / (slow - fast)) : 100;   // 越快越長
-    const isFast = Math.abs(p - fast) < 0.5;
-    return `<div class="split-row${s.partial ? " partial" : ""}"><span class="split-km">${s.partial ? "+" + s.partial.toFixed(1) : s.km}</span><div class="split-bar"><i class="${isFast ? "best" : ""}" style="width:${w.toFixed(0)}%"></i></div><b class="split-pace">${fmtPace(p)}</b></div>`;
+    const v = spd(s), w = fast > slow ? 30 + 70 * ((v - slow) / (fast - slow)) : 100;   // 越快越長
+    const isFast = Math.abs(v - fast) < 0.05;
+    return `<div class="split-row${s.partial ? " partial" : ""}"><span class="split-km">${s.partial ? "+" + s.partial.toFixed(1) : s.km}</span><div class="split-bar"><i class="${isFast ? "best" : ""}" style="width:${w.toFixed(0)}%"></i></div><b class="split-pace">${v.toFixed(1)}</b></div>`;
   }).join("");
-  return `<div class="section-title">${ic("clock")}${ttT("每公里配速")}<span class="split-unit">${ttT("分")}/km</span></div><div class="split-list">${rows}</div>`;
+  return `<div class="section-title">${ic("clock")}${ttT("分段速度")}<span class="split-unit">km/h</span></div><div class="split-list">${rows}</div>`;
 }
 function openTrackReview(rec, isNew) {
   if (!rec) return;
