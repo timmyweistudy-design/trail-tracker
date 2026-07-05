@@ -912,25 +912,61 @@ function loadMapLibre() {
 }
 function close3D() {
   const ov = $("#map3d"); if (ov) ov.hidden = true;
+  if (_flyRAF) { cancelAnimationFrame(_flyRAF); _flyRAF = null; }
   if (_map3d) { try { _map3d.remove(); } catch (e) { /* */ } _map3d = null; }   // 釋放 GPU/記憶體
 }
-function open3D(t) { if (t) _open3D(t.name, geoOf(t)); }
-// 結算頁：把「這趟的實走軌跡」用 3D 顯示
-function open3DTrack(name, segsLL) { _open3D(name, segsLL); }
-async function _open3D(name, geom) {
+let _flyRAF = null, _flyPath = null;
+function open3D(t) { if (t) _open3D(t.name, geoOf(t), { fly: false }); }              // 步道詳情：靜態探索
+function open3DTrack(name, segsLL) { _open3D(name, segsLL, { fly: true }); }           // 結算頁回放：帶著走
+// 記錄中：把目前為止的實走軌跡（沒有就用選定步道）拿去 3D
+function open3DRecording() {
+  const s = (typeof recSnap !== "undefined") ? recSnap : null;
+  if (s && s.track && s.track.length > 1) { _open3D(Recorder._trailName || ttT("記錄中"), trackSegments(s.track).map(seg => seg.map(p => [p.lat, p.lon])), { fly: false }); return; }
+  if (typeof selectedTrailId !== "undefined" && selectedTrailId) { const t = TRAILS.find(x => x.id === selectedTrailId); if (t) return open3D(t); }
+  toast(ttT("開始記錄後就能看 3D"));
+}
+function _flyBearing(a, b) { const y = Math.sin((b[0] - a[0]) * Math.PI / 180) * Math.cos(b[1] * Math.PI / 180); const x = Math.cos(a[1] * Math.PI / 180) * Math.sin(b[1] * Math.PI / 180) - Math.sin(a[1] * Math.PI / 180) * Math.cos(b[1] * Math.PI / 180) * Math.cos((b[0] - a[0]) * Math.PI / 180); return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360; }
+// 沿路線飛行：鏡頭跟著一個移動點前進、面朝行進方向、微傾，像帶著你走一遍
+function flyAlong() {
+  if (!_map3d || !_flyPath || _flyPath.length < 2) return;
+  if (_flyRAF) { cancelAnimationFrame(_flyRAF); _flyRAF = null; }
+  const path = _flyPath;
+  const seg = (a, b) => Math.hypot((b[0] - a[0]) * Math.cos(a[1] * Math.PI / 180), b[1] - a[1]);
+  const cum = [0]; for (let i = 1; i < path.length; i++) cum[i] = cum[i - 1] + seg(path[i - 1], path[i]);
+  const total = cum[cum.length - 1] || 1;
+  const DUR = Math.min(35000, Math.max(14000, path.length * 90));   // 依點數估時長 14–35 秒
+  const t0 = performance.now();
+  const step = now => {
+    if (!_map3d) return;
+    const p = Math.min(1, (now - t0) / DUR);
+    const d = p * total;
+    let i = 1; while (i < cum.length - 1 && cum[i] < d) i++;
+    const a = path[i - 1], b = path[i], f = (d - cum[i - 1]) / ((cum[i] - cum[i - 1]) || 1);
+    const lng = a[0] + (b[0] - a[0]) * f, lat = a[1] + (b[1] - a[1]) * f;
+    const src = _map3d.getSource("me3d"); if (src) src.setData({ type: "Feature", geometry: { type: "Point", coordinates: [lng, lat] } });
+    _map3d.jumpTo({ center: [lng, lat], bearing: _flyBearing(a, b), pitch: 66, zoom: 15.6 });
+    if (p < 1) _flyRAF = requestAnimationFrame(step); else _flyRAF = null;
+  };
+  _flyRAF = requestAnimationFrame(step);
+}
+async function _open3D(name, geom, opts) {
+  opts = opts || {};
   if (typeof Premium !== "undefined" && !Premium.gate()) return;   // 3D 為 PRO 功能，非會員→開升級面板
   if (!geom || !geom.length) { toast(ttT("此步道沒有路線資料，無法 3D 顯示")); return; }
   const ov = $("#map3d"); if (!ov) return;
   if (!navigator.onLine) { toast(ttT("3D 地形需要網路")); return; }
   ov.hidden = false;
   const title = $("#map3dTitle"); if (title) title.textContent = name || "";
+  const rp = $("#map3dReplay"); if (rp) rp.hidden = !opts.fly;
   toast(ttT("載入 3D 地形中…"));
   try { await loadMapLibre(); } catch (e) { close3D(); toast(ttT("3D 載入失敗")); return; }
   const coords = geom.map(seg => seg.map(p => [p[1], p[0]]));   // GeoJSON 用 [lon,lat]
+  _flyPath = [].concat(...coords);   // 攤平成單一路徑供飛行
   let minLng = 180, minLat = 90, maxLng = -180, maxLat = -90;
   for (const seg of geom) for (const p of seg) { minLat = Math.min(minLat, p[0]); maxLat = Math.max(maxLat, p[0]); minLng = Math.min(minLng, p[1]); maxLng = Math.max(maxLng, p[1]); }
   const main = geom.reduce((a, b) => (b.length > a.length ? b : a), geom[0]);
   const start = main[0], end = main[main.length - 1];
+  if (_flyRAF) { cancelAnimationFrame(_flyRAF); _flyRAF = null; }
   if (_map3d) { try { _map3d.remove(); } catch (e) { /* */ } _map3d = null; }
   _map3d = new maplibregl.Map({
     container: "map3dCanvas",
@@ -943,29 +979,40 @@ async function _open3D(name, geom) {
         terrain: { type: "raster-dem", tiles: ["https://elevation-tiles-prod.s3.amazonaws.com/terrarium/{z}/{x}/{y}.png"], tileSize: 256, encoding: "terrarium", maxzoom: 15, attribution: "Terrain: AWS/Mapzen" },
         route: { type: "geojson", data: { type: "Feature", properties: {}, geometry: { type: "MultiLineString", coordinates: coords } } },
         pts: { type: "geojson", data: { type: "FeatureCollection", features: [{ type: "Feature", properties: { k: "s" }, geometry: { type: "Point", coordinates: [start[1], start[0]] } }, { type: "Feature", properties: { k: "e" }, geometry: { type: "Point", coordinates: [end[1], end[0]] } }] } },
+        me3d: { type: "geojson", data: { type: "FeatureCollection", features: [] } },
       },
       layers: [
         { id: "sat", type: "raster", source: "sat" },
         { id: "route-casing", type: "line", source: "route", layout: { "line-join": "round", "line-cap": "round" }, paint: { "line-color": "#ffffff", "line-width": 7, "line-opacity": 0.65 } },
         { id: "route", type: "line", source: "route", layout: { "line-join": "round", "line-cap": "round" }, paint: { "line-color": "#ff5a2c", "line-width": 4 } },
         { id: "pts", type: "circle", source: "pts", paint: { "circle-radius": 6, "circle-color": ["match", ["get", "k"], "s", "#2f7d4f", "#d2542e"], "circle-stroke-color": "#fff", "circle-stroke-width": 2 } },
+        { id: "me3d", type: "circle", source: "me3d", paint: { "circle-radius": 8, "circle-color": "#2f7dff", "circle-stroke-color": "#fff", "circle-stroke-width": 3 } },
       ],
       terrain: { source: "terrain", exaggeration: 1.4 },
       sky: { "sky-color": "#9ecbff", "horizon-color": "#dcecff", "fog-color": "#ffffff", "sky-horizon-blend": 0.6, "horizon-fog-blend": 0.5, "fog-ground-blend": 0.4 },
     },
   });
   _map3d.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "bottom-right");   // 移離右上角，不擋關閉 ✕
-  _map3d.on("load", () => { try { _map3d.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 55, pitch: 62, bearing: 18, duration: 0 }); } catch (e) { /* */ } });
+  _map3d.on("load", () => {
+    try { _map3d.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 55, pitch: 62, bearing: 18, duration: 0 }); } catch (e) { /* */ }
+    if (opts.fly) setTimeout(() => { toast(ttT("🚶 帶你走一遍…")); flyAlong(); }, 900);   // 等地形圖磚進來再飛
+  });
 }
-if (typeof document !== "undefined") { const _c3 = () => { const b = document.getElementById("map3dClose"); if (b) b.addEventListener("click", close3D); }; if (document.readyState !== "loading") _c3(); else document.addEventListener("DOMContentLoaded", _c3); }
-// 詳情地圖上的「3D」鈕
-function addThreeD(map, getTrail) {
+if (typeof document !== "undefined") {
+  const _c3 = () => {
+    const b = document.getElementById("map3dClose"); if (b) b.addEventListener("click", close3D);
+    const r = document.getElementById("map3dReplay"); if (r) r.addEventListener("click", flyAlong);
+  };
+  if (document.readyState !== "loading") _c3(); else document.addEventListener("DOMContentLoaded", _c3);
+}
+// 地圖上的「3D」鈕（onClick 自訂：詳情=開步道 3D、記錄=開軌跡 3D）
+function addThreeD(map, onClick) {
   const c = L.control({ position: "topright" });
   c.onAdd = () => {
     const d = L.DomUtil.create("div", "map-fs-btn map-3d-btn");
     d.innerHTML = "3D"; d.title = ttT("3D 地形");
     L.DomEvent.disableClickPropagation(d);
-    d.addEventListener("click", () => open3D(getTrail && getTrail()));
+    d.addEventListener("click", onClick);
     return d;
   };
   c.addTo(map);
@@ -1366,7 +1413,7 @@ async function openDetail(id) {
     if (!detailMap) {
       detailMap = L.map("detailMap", { zoomControl: false });
       addBaseWithToggle(detailMap);
-      addThreeD(detailMap, currentDetailTrail);   // 「3D」鈕：開 MapLibre 3D 地形
+      addThreeD(detailMap, () => open3D(currentDetailTrail()));   // 「3D」鈕：開 MapLibre 3D 地形
       detailOverlay = L.layerGroup().addTo(detailMap);
       detailPoiLayer = L.layerGroup().addTo(detailMap);
     }
@@ -1932,6 +1979,7 @@ function personalBestBreaks(rec) {
 }
 // #2 速度：直觀呈現「這次 vs 你平常」，一句話講清楚快多少慢多少
 function speedHtml(rec) {
+  if (rec.sim) return "";   // 模擬時間是壓縮的，速度無意義 → 不顯示
   const km = rec.distanceKm || 0;
   if (!(rec.elapsedMs > 0) || km < 0.1) return "";
   const cur = km / (rec.elapsedMs / 3.6e6);
@@ -1963,7 +2011,7 @@ function openTrackReview(rec, isNew) {
       <div class="item"><div class="l">總下降</div><div class="v">↓${rec.descent || 0} m</div></div>
       <div class="item"><div class="l">卡路里</div><div class="v">${rec.kcal} 大卡</div></div>
       <div class="item"><div class="l">步數</div><div class="v">${(rec.steps || 0).toLocaleString()}</div></div>
-      ${rec.elapsedMs > 0 && km > 0.05 ? `<div class="item"><div class="l">平均速度</div><div class="v">${(km / (rec.elapsedMs / 3.6e6)).toFixed(1)} km/h</div></div>` : ""}
+      ${!rec.sim && rec.elapsedMs > 0 && km > 0.05 ? `<div class="item"><div class="l">平均速度</div><div class="v">${(km / (rec.elapsedMs / 3.6e6)).toFixed(1)} km/h</div></div>` : ""}
       ${t3 && t3 > km + 0.05 ? `<div class="item"><div class="l">含坡度距離</div><div class="v">${t3.toFixed(2)} km</div></div>` : ""}
     </div>
     ${speedHtml(rec)}
@@ -2175,7 +2223,7 @@ function distToRoute(lat, lon) {
 function initRecMap() {
   if (!recMap) {
     recMap = L.map("recMap", { zoomControl: false }).setView([25.033, 121.564], 15);
-    baseTopo().addTo(recMap); hillshadeLayer(recMap).addTo(recMap); addCompass(recMap); addRecenter(recMap); addFullscreen(recMap);
+    baseTopo().addTo(recMap); hillshadeLayer(recMap).addTo(recMap); addCompass(recMap); addRecenter(recMap); addThreeD(recMap, open3DRecording); addFullscreen(recMap);
     recLine = L.polyline([], { color: "#2f7d4f", weight: 5 }).addTo(recMap);
   }
   recMap.invalidateSize();
