@@ -972,6 +972,31 @@ function addFullscreen(map) {
   };
   c.addTo(map);
 }
+// #7 記錄地圖「回到我的位置」定位鈕：記錄中用最後軌跡點，否則向系統要一次定位
+function addRecenter(map) {
+  const SVG = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="8"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3"/></svg>';
+  const c = L.control({ position: "topright" });
+  c.onAdd = () => {
+    const d = L.DomUtil.create("div", "map-fs-btn");
+    d.innerHTML = SVG; d.title = ttT("回到我的位置");
+    L.DomEvent.disableClickPropagation(d);
+    d.addEventListener("click", () => {
+      let ll = null;
+      if (recMarker) ll = recMarker.getLatLng();
+      else if (recSnap && recSnap.track && recSnap.track.length) { const p = recSnap.track[recSnap.track.length - 1]; ll = L.latLng(p.lat, p.lon); }
+      else if (myLoc) ll = L.latLng(myLoc.lat, myLoc.lon);
+      if (ll) { map.setView(ll, Math.max(map.getZoom(), 16), { animate: true }); return; }
+      if (navigator.geolocation) {
+        toast(ttT("定位中…"));
+        navigator.geolocation.getCurrentPosition(
+          p => { myLoc = { lat: p.coords.latitude, lon: p.coords.longitude }; map.setView([p.coords.latitude, p.coords.longitude], 16, { animate: true }); },
+          () => toast(ttT("定位失敗，請允許定位權限")), { enableHighAccuracy: true, timeout: 8000 });
+      }
+    });
+    return d;
+  };
+  c.addTo(map);
+}
 function addBaseWithToggle(map) {   // 加地形(預設)+衛星，明顯的分段切換鈕
   const topo = baseTopo().addTo(map), sat = baseSat();
   const ctrl = L.control({ position: "bottomleft" });
@@ -2066,7 +2091,7 @@ function distToRoute(lat, lon) {
 function initRecMap() {
   if (!recMap) {
     recMap = L.map("recMap", { zoomControl: false }).setView([25.033, 121.564], 15);
-    baseTopo().addTo(recMap); addCompass(recMap); addFullscreen(recMap);
+    baseTopo().addTo(recMap); addCompass(recMap); addRecenter(recMap); addFullscreen(recMap);
     recLine = L.polyline([], { color: "#2f7d4f", weight: 5 }).addTo(recMap);
   }
   recMap.invalidateSize();
