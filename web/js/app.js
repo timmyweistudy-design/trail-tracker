@@ -983,18 +983,36 @@ function flyAlong() {
   const posAhead = d => { let j = ix; while (j < cum.length - 1 && cum[j] < d) j++; const a = path[j - 1], b = path[j], f = (d - cum[j - 1]) / ((cum[j] - cum[j - 1]) || 1); return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]; };
   let bearing = _flyBearing(posAt(0), posAhead(Math.min(LOOK, total)));   // 起始就朝前，不會突兀
   let t0 = performance.now(), lastT = t0;
+  // 電影運鏡參數：巡航 / 開場俯瞰俯衝 / 結尾拉高
+  const CR_Z = 15.2, CR_P = 60, IN_Z = 13.7, IN_P = 71, OUT_Z = 14.2, OUT_P = 66;
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const smooth = x => x <= 0 ? 0 : x >= 1 ? 1 : x * x * x * (x * (x * 6 - 15) + 10);   // smootherstep 緩入緩出
   const step = now => {
     if (!_map3d) return;
-    const p = Math.min(1, (now - t0) / DUR);
+    const pRaw = Math.min(1, (now - t0) / DUR);
+    const p = smooth(pRaw);                 // 位置也緩入緩出＝電影節奏（起步慢、中段順、收尾慢）
     const d = p * total;
     const pos = posAt(d);
-    const target = _flyBearing(pos, posAhead(Math.min(d + LOOK, total)));
-    // 與幀率無關的平滑：dt 越大補得越多，避免掉幀時轉向忽快忽慢
+    const ahead = posAhead(Math.min(d + LOOK, total));
+    const target = _flyBearing(pos, ahead);
     const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
-    bearing = _lerpAngle(bearing, target, 1 - Math.pow(0.02, dt));   // 每秒約收斂 98%
+    bearing = _lerpAngle(bearing, target, 1 - Math.pow(0.02, dt));   // 轉向平滑（banking）
+    // 分段運鏡
+    let zoom, pitch;
+    if (p < 0.16) { const q = smooth(p / 0.16); zoom = lerp(IN_Z, CR_Z, q); pitch = lerp(IN_P, CR_P, q); }        // 開場：高處俯瞰→俯衝進場
+    else if (p > 0.86) { const q = smooth((p - 0.86) / 0.14); zoom = lerp(CR_Z, OUT_Z, q); pitch = lerp(CR_P, OUT_P, q); }  // 結尾：拉高收尾
+    else {
+      zoom = CR_Z + 0.16 * Math.sin((now - t0) / 3300);           // 巡航：鏡頭微「呼吸」起伏
+      pitch = CR_P + 2.4 * Math.sin((now - t0) / 4500);
+      try {   // 地形反應：前方在爬升就把鏡頭拉遠一點，揭露前方稜線（一起飛上山的感覺）
+        const eN = _map3d.queryTerrainElevation ? _map3d.queryTerrainElevation(pos) : null;
+        const eA = _map3d.queryTerrainElevation ? _map3d.queryTerrainElevation(ahead) : null;
+        if (eN != null && eA != null) zoom -= Math.max(-0.35, Math.min(0.6, (eA - eN) / 90));
+      } catch (e) { /* 地形尚未載入 */ }
+    }
     const src = _map3d.getSource("me3d"); if (src) src.setData({ type: "Feature", geometry: { type: "Point", coordinates: pos } });
-    _map3d.jumpTo({ center: pos, bearing, pitch: 60, zoom: 15.2 });
-    if (p < 1) _flyRAF = requestAnimationFrame(step); else _flyRAF = null;
+    _map3d.jumpTo({ center: pos, bearing, pitch, zoom });
+    if (pRaw < 1) _flyRAF = requestAnimationFrame(step); else _flyRAF = null;
   };
   _flyRAF = requestAnimationFrame(step);
 }
