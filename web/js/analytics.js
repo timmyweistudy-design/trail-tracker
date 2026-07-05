@@ -14,6 +14,17 @@ function sparkLine(vals) {
   const dots = xy.map(p => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="2.2" fill="var(--accent)"/>`).join("");
   return `<svg class="ana-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><path d="${area}" fill="rgba(194,104,61,.16)"/><path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>${dots}</svg>`;
 }
+// 速度趨勢：有數字標示的長條圖（比裸折線好懂）——每根一趟平均速度，越高越快，最快標綠、最近一趟框起來
+function paceBars(vals) {
+  if (!vals || vals.length < 2) return "";
+  const mn = Math.min(...vals), mx = Math.max(...vals), sp = (mx - mn) || 1;
+  const cols = vals.map((v, i) => {
+    const h = 26 + 74 * ((v - mn) / sp);   // 最矮也保留 26% 高度，看得到
+    const cls = (v === mx ? " fast" : "") + (i === vals.length - 1 ? " last" : "");
+    return `<div class="pace-col${cls}"><span class="pace-v">${v.toFixed(1)}</span><div class="pace-track"><i style="height:${h.toFixed(0)}%"></i></div></div>`;
+  }).join("");
+  return `<div class="pace-bars">${cols}</div>`;
+}
 // 難度雷達圖（6 軸）
 function diffRadar(vals, labels) {
   const cx = 100, cy = 100, R = 64, N = vals.length, max = Math.max(1, ...vals);
@@ -205,9 +216,9 @@ function openAnalytics() {
   // 一週節律
   const wd = [0, 0, 0, 0, 0, 0, 0]; recs.forEach(r => { const d = new Date(r.date); if (!isNaN(d)) wd[d.getDay()]++; });
   const WLBL = ["日", "一", "二", "三", "四", "五", "六"]; const maxW = Math.max(1, ...wd);
-  // 配速趨勢（近 14 趟，由舊到新）
+  // 速度趨勢（近 10 趟，由舊到新）
   const paced = recs.filter(r => (r.elapsedMs || 0) > 6e4 && (r.distanceKm || 0) > 0)
-    .slice(0, 14).reverse().map(r => r.distanceKm / (r.elapsedMs / 3.6e6));
+    .slice(0, 10).reverse().map(r => r.distanceKm / (r.elapsedMs / 3.6e6));
 
   const proInner = `
     <div class="ana-sec">個人紀錄</div>
@@ -218,7 +229,7 @@ function openAnalytics() {
       ${pb("整體平均配速", avgPace.toFixed(1) + " km/h")}
       ${pb("最常走", favTrail ? favTrail + "（" + tc[favTrail] + " 次）" : "—")}
     </div>
-    ${paced.length >= 2 ? `<div class="ana-sec">配速趨勢</div>${sparkLine(paced)}<div class="ana-spark-cap">近 ${paced.length} 趟平均配速（km/h，由舊到新）</div>` : ""}
+    ${paced.length >= 2 ? `<div class="ana-sec">速度趨勢</div>${paceBars(paced)}<div class="ana-spark-cap">${ttT("每根＝一趟平均速度 km/h，越高越快；最右是最近、綠色最快")}</div>` : ""}
     <div class="ana-sec">難度分布</div>
     ${diffN.slice(1).some(c => c > 0) ? diffRadar(diffN.slice(1), DLBL.slice(1)) : `<div class="ana-empty-note">尚無對應到分級步道的紀錄</div>`}
     <div class="ana-sec">年度里程</div>

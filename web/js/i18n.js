@@ -330,6 +330,7 @@ const I18n = (() => {
     "日": "S", "一": "M", "二": "T", "三": "W", "四": "T", "五": "F", "六": "S", "單次最長": "Longest hike", "單次最大爬升": "Biggest ascent",
     "最快平均配速": "Fastest pace", "整體平均配速": "Average pace", "最常走": "Most walked",
     "配速趨勢": "Pace trend", "難度分布": "Difficulty spread", "年度里程": "Yearly distance", "一週節律": "Weekly rhythm",
+    "速度趨勢": "Speed trend", "每根＝一趟平均速度 km/h，越高越快；最右是最近、綠色最快": "Each bar = a trip's avg speed (km/h); taller is faster. Rightmost is latest, green is fastest.",
     "每月里程": "Monthly distance", "每月卡路里消耗": "Monthly calories",
     "每月里程（單位：km": "Monthly distance (km", "各星期的出行次數（單位：次": "Trips per weekday (count",
     "總出行": "Trips", "總步數": "Steps", "探索步道": "Trails explored",

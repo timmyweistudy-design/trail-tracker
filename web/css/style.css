@@ -1787,7 +1787,17 @@ html[data-theme="dark"] body::after { opacity: .05; }
 .yr-route-l { font-size: calc(12px * var(--fs, 1)); opacity: .85; margin-bottom: 4px; }
 .yr-route-svg { width: 70%; max-width: 220px; height: 56px; color: #e0b15a; }
 .ana-spark { width: 100%; height: 72px; display: block; }
-.ana-spark-cap { font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-faint); text-align: center; margin-top: 4px; }
+.ana-spark-cap { font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-faint); text-align: center; margin-top: 4px; line-height: 1.4; }
+/* 速度趨勢長條圖（有數字，好懂） */
+.pace-bars { display: flex; align-items: flex-end; gap: 5px; height: 96px; padding-top: 4px; }
+.pace-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+.pace-col .pace-v { font-family: var(--num); font-size: calc(9.5px * var(--fs, 1)); font-weight: 700; color: var(--ink-soft); margin-bottom: 3px; }
+.pace-col .pace-track { width: 100%; max-width: 22px; height: 100%; display: flex; align-items: flex-end; }
+.pace-col .pace-track i { width: 100%; background: var(--brand-mid); border-radius: 4px 4px 0 0; }
+.pace-col.fast .pace-track i { background: #22b473; }
+.pace-col.fast .pace-v { color: #17a06a; }
+.pace-col.last .pace-track i { outline: 2px solid var(--accent); outline-offset: 1px; }
+.pace-col.last .pace-v { color: var(--accent); }
 
 /* 自製對話框（取代原生 confirm/prompt/alert，可翻譯、樣式一致） */
 .ttdlg-ov { position: fixed; inset: 0; z-index: 9500; background: rgba(15,20,12,.45);
