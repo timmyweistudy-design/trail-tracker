@@ -25,7 +25,7 @@ const Weather = (() => {
     if (mem && Date.now() - mem.ts < TTL) return mem.data;
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
       `&current=temperature_2m,weather_code,wind_speed_10m,precipitation,relative_humidity_2m` +
-      `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max` +
+      `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset` +
       `&timezone=Asia%2FTaipei&forecast_days=7`;
     const res = await fetch(url);
     if (!res.ok) throw new Error("weather");

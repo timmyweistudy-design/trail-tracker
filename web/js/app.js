@@ -353,7 +353,7 @@ document.querySelectorAll(".tab").forEach(btn => {
     if (view === "record") {
       requestEntryPerms();   // 首次進記錄頁＝這一下點擊就是手勢，一次問完定位+方位權限
       // 從底部分頁進入＝自由記錄，清掉先前選定步道的路線疊圖
-      selectedTrailGeo = null; selectedTrailId = null;
+      selectedTrailGeo = null; selectedTrailId = null; clearPreHike();
       if (routeRefLayer && recMap) { recMap.removeLayer(routeRefLayer); routeRefLayer = null; }
       ensureGeo();                       // 預載幾何，供模擬挑步道/疊圖用
       ensureMeAvatar();                  // 預取頭像供「我」的地圖標記
@@ -1290,6 +1290,7 @@ async function openDetail(id) {
     selectedTrailId = t.id;                  // 記住步道 id，發文時連回該步道
     Recorder._trailName = nm;
     $("#recStatus").textContent = `已選擇「${nm}」，按開始記錄`;
+    renderPreHike(t);                        // #3 行前小卡：天氣＋日落＋建議裝備
     setTimeout(() => { initRecMap(); drawSelectedRoute(); }, 80);
   });
   const lnk = $("#lnkGradeAll");
@@ -2001,6 +2002,39 @@ $("#trackMask").addEventListener("click", closeTrackReview);
 $("#closeTrackBtn").addEventListener("click", closeTrackReview);
 
 let guideLine = null, selectedTrailGeo = null, routeRefLayer = null, selectedTrailId = null;
+// #3 行前小卡：選好步道、開始前顯示今日天氣＋日落時間（避免摸黑）＋該難度建議裝備
+function clearPreHike() { const el = $("#preHike"); if (el) { el.hidden = true; el.innerHTML = ""; } }
+function sunsetWarn(hm) {
+  const p = hm.split(":"); const ss = new Date(); ss.setHours(+p[0], +p[1], 0, 0);
+  const hrs = (ss - Date.now()) / 3600000;
+  if (hrs < 0) return ` ⚠️ ${ttT("天已黑")}`;
+  if (hrs < 3) return ` ⚠️ ${ttT("剩不到 3 小時天黑")}`;
+  return "";
+}
+async function renderPreHike(t) {
+  const el = $("#preHike"); if (!el) return;
+  if (!t || !t.lat) { clearPreHike(); return; }
+  const g = GRADES[t.difficulty] || null, gear = g ? g.gear : "";
+  const gearRow = `<div class="ph-row"><span class="ph-ic">🎒</span><span>${ttT("建議裝備")}：${gear ? ttT(gear) : "—"}</span></div>`;
+  el.hidden = false; el.innerHTML = gearRow;
+  if (!navigator.onLine || typeof Weather === "undefined") return;
+  try {
+    const w = await Weather.get(t.lat, t.lon);
+    if ($("#preHike") !== el || el.hidden || selectedTrailId !== t.id) return;   // 期間已切換步道/開始
+    const d = w.daily || {}, cur = w.current || {};
+    const code = cur.weather_code != null ? cur.weather_code : (d.weather_code && d.weather_code[0]);
+    const [emo, txt] = Weather.desc(code);
+    const tmax = d.temperature_2m_max ? Math.round(d.temperature_2m_max[0]) : null;
+    const tmin = d.temperature_2m_min ? Math.round(d.temperature_2m_min[0]) : null;
+    const pop = d.precipitation_probability_max ? d.precipitation_probability_max[0] : null;
+    const sunHM = (d.sunset && d.sunset[0]) ? d.sunset[0].slice(11, 16) : null;
+    const wline = `${emo} ${ttT(txt)}${tmin != null ? ` ${tmin}–${tmax}°` : ""}${pop != null ? ` · ☔${pop}%` : ""}`;
+    el.innerHTML =
+      `<div class="ph-row"><span class="ph-ic">🌤</span><span>${wline}</span></div>` +
+      (sunHM ? `<div class="ph-row"><span class="ph-ic">🌇</span><span>${ttT("今日日落")} ${sunHM}${sunsetWarn(sunHM)}</span></div>` : "") +
+      gearRow;
+  } catch (e) { /* 天氣查詢失敗：保留裝備列 */ }
+}
 function drawSelectedRoute() {
   if (!recMap) return;
   if (routeRefLayer) { recMap.removeLayer(routeRefLayer); routeRefLayer = null; }
@@ -2280,6 +2314,7 @@ function pickSimTrail() {
 function startRecordingUI() {
   initRecMap();
   ensureMeAvatar();
+  clearPreHike();                     // #3 開始記錄後收起行前小卡
   const ri = $("#recIdle"); if (ri) ri.style.display = "none";
   // 模擬模式：沿步道真實路線行走（有動畫感）。沒選步道就自動挑一條真實步道。
   if (sim() && Recorder.getState() !== "paused") {

@@ -344,6 +344,7 @@ const I18n = (() => {
     "隊長": "Leader", "還沒看到隊友？請隊友也在記錄頁開啟「與小隊同行」": "Don't see teammates? Ask them to also turn on “Hike with team” on the Record tab",
     "破紀錄": "New record", "最長距離": "Longest distance", "最多爬升": "Most ascent", "最久時間": "Longest time", "最快配速": "Fastest pace", "首次健行紀錄！": "Your first hike!",
     "每公里配速": "Pace per km", "分": "min",
+    "建議裝備": "Suggested gear", "今日日落": "Sunset today", "天已黑": "It's dark now", "剩不到 3 小時天黑": "Under 3h to dark",
     "尚無對應到分級步道的紀錄": "No records matched to graded trails yet",
     "還沒有行程可分析，先去走一條吧": "No trips to analyze — go hike one!",
     "無可匯出的軌跡": "No tracks to export", "已匯出 CSV": "CSV exported", "已匯出 KML": "KML exported",
