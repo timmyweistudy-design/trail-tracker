@@ -967,25 +967,33 @@ function _start3dLive() {
   _live3dTimer = setInterval(upd, 1500);
 }
 function _flyBearing(a, b) { const y = Math.sin((b[0] - a[0]) * Math.PI / 180) * Math.cos(b[1] * Math.PI / 180); const x = Math.cos(a[1] * Math.PI / 180) * Math.sin(b[1] * Math.PI / 180) - Math.sin(a[1] * Math.PI / 180) * Math.cos(b[1] * Math.PI / 180) * Math.cos((b[0] - a[0]) * Math.PI / 180); return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360; }
-// 沿路線飛行：鏡頭跟著一個移動點前進、面朝行進方向、微傾，像帶著你走一遍
+function _lerpAngle(a, b, t) { const d = ((b - a + 540) % 360) - 180; return (a + d * t + 360) % 360; }   // 取最短弧插值
+// 沿路線飛行：等速前進＋「看向前方」的目標方位再逐幀平滑補間(banking)，轉彎絲滑像空拍機
 function flyAlong() {
   if (!_map3d || !_flyPath || _flyPath.length < 2) return;
   if (_flyRAF) { cancelAnimationFrame(_flyRAF); _flyRAF = null; }
   const path = _flyPath;
-  const seg = (a, b) => Math.hypot((b[0] - a[0]) * Math.cos(a[1] * Math.PI / 180), b[1] - a[1]);
-  const cum = [0]; for (let i = 1; i < path.length; i++) cum[i] = cum[i - 1] + seg(path[i - 1], path[i]);
+  const segM = (a, b) => haversine({ lat: a[1], lon: a[0] }, { lat: b[1], lon: b[0] });   // 公尺
+  const cum = [0]; for (let i = 1; i < path.length; i++) cum[i] = cum[i - 1] + segM(path[i - 1], path[i]);
   const total = cum[cum.length - 1] || 1;
-  const DUR = Math.min(35000, Math.max(14000, path.length * 90));   // 依點數估時長 14–35 秒
-  const t0 = performance.now();
+  const DUR = Math.min(45000, Math.max(16000, total * 7));      // 依實際距離估時長（越長越久，約 1km≈7 秒）
+  const LOOK = Math.min(120, Math.max(35, total * 0.03));       // 看向前方多少公尺（決定轉彎前傾/預判）
+  let ix = 1;
+  const posAt = d => { while (ix < cum.length - 1 && cum[ix] < d) ix++; while (ix > 1 && cum[ix - 1] > d) ix--; const a = path[ix - 1], b = path[ix], f = (d - cum[ix - 1]) / ((cum[ix] - cum[ix - 1]) || 1); return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]; };
+  const posAhead = d => { let j = ix; while (j < cum.length - 1 && cum[j] < d) j++; const a = path[j - 1], b = path[j], f = (d - cum[j - 1]) / ((cum[j] - cum[j - 1]) || 1); return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]; };
+  let bearing = _flyBearing(posAt(0), posAhead(Math.min(LOOK, total)));   // 起始就朝前，不會突兀
+  let t0 = performance.now(), lastT = t0;
   const step = now => {
     if (!_map3d) return;
     const p = Math.min(1, (now - t0) / DUR);
     const d = p * total;
-    let i = 1; while (i < cum.length - 1 && cum[i] < d) i++;
-    const a = path[i - 1], b = path[i], f = (d - cum[i - 1]) / ((cum[i] - cum[i - 1]) || 1);
-    const lng = a[0] + (b[0] - a[0]) * f, lat = a[1] + (b[1] - a[1]) * f;
-    const src = _map3d.getSource("me3d"); if (src) src.setData({ type: "Feature", geometry: { type: "Point", coordinates: [lng, lat] } });
-    _map3d.jumpTo({ center: [lng, lat], bearing: _flyBearing(a, b), pitch: 66, zoom: 15.6 });
+    const pos = posAt(d);
+    const target = _flyBearing(pos, posAhead(Math.min(d + LOOK, total)));
+    // 與幀率無關的平滑：dt 越大補得越多，避免掉幀時轉向忽快忽慢
+    const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
+    bearing = _lerpAngle(bearing, target, 1 - Math.pow(0.02, dt));   // 每秒約收斂 98%
+    const src = _map3d.getSource("me3d"); if (src) src.setData({ type: "Feature", geometry: { type: "Point", coordinates: pos } });
+    _map3d.jumpTo({ center: pos, bearing, pitch: 64, zoom: 15.6 });
     if (p < 1) _flyRAF = requestAnimationFrame(step); else _flyRAF = null;
   };
   _flyRAF = requestAnimationFrame(step);
