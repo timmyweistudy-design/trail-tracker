@@ -3,6 +3,10 @@
 // 廣播 start 事件讓所有隊員同時開始記錄。每位隊員都能在記錄地圖上看到彼此定位。
 const TeamLive = (() => {
   let channel = null, watchId = null, map = null, markers = {}, me = null, myInfo = {}, lastPos = null;
+  let trails = {};   // 每位隊友的足跡：key → { pts:[[lat,lon]...], line:L.polyline }
+  const TRAIL_COLORS = ["#2f7d4f", "#2b6cb0", "#b7791f", "#805ad5", "#c05621", "#c53030", "#0d9488", "#6b46c1"];
+  function colorFor(key) { let h = 0; for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0; return TRAIL_COLORS[h % TRAIL_COLORS.length]; }
+  function metersBetween(la1, lo1, la2, lo2) { return Math.hypot((la1 - la2) * 111320, (lo1 - lo2) * 111320 * Math.cos(la1 * Math.PI / 180)); }
   let leaderId = null, leaderName = null, myReady = false, onStartCb = null;
   let myStartAt = null, myStopAt = null, lastStopHandled = 0, onStopCb = null;        // 隊長按下開始的時間（跟著 presence 傳，凍結分頁回前景也能補收到）
   let myStartSim = false;      // 隊長開始時是否用模擬模式：跟著訊號送，全隊一致才能一起動
@@ -110,35 +114,45 @@ const TeamLive = (() => {
       if (meta) others.push({ key, meta });
     }
     others.sort((a, b) => (a.key < b.key ? -1 : 1));
-    // 散開的參考中心：優先用我的定位；我 GPS 還沒鎖定時改用隊友座標的中心，
-    // 這樣「自己還沒定位」的隊員也能把擠在一起的隊友散開看到（修：只有隊長看得到所有人）
-    let ref = lastPos;
-    if (!ref && others.length) {
-      ref = { lat: others.reduce((s, o) => s + o.meta.lat, 0) / others.length,
-              lon: others.reduce((s, o) => s + o.meta.lon, 0) / others.length };
-    }
-    const metersFrom = (la, lo) => ref ? Math.hypot((la - ref.lat) * 111320, (lo - ref.lon) * 111320 * Math.cos(la * Math.PI / 180)) : 9e9;
-    const near = ref ? others.filter(o => metersFrom(o.meta.lat, o.meta.lon) < 20) : [];
-    const ringN = Math.max(near.length + (lastPos ? 1 : 0), 3);   // 圈上人數（含我）
     const seen = {};
-    let ni = 0;
+    // 已放置的位置（含我自己），用來把「幾乎完全重疊」的標記輕輕推開，但不影響真實移動呈現
+    const placed = lastPos ? [{ lat: lastPos.lat, lon: lastPos.lon }] : [];
     for (const o of others) {
       const key = o.key, meta = o.meta;
       seen[key] = true;
-      let ll = [meta.lat, meta.lon];
-      // 集合點/室內：多位隊友幾乎重疊 → 以參考中心為圓心，沿小圈均分散開，才不會疊成一顆
-      if (near.length >= 2 && metersFrom(meta.lat, meta.lon) < 20) {
-        ni++;
-        const a = (ni / ringN) * 2 * Math.PI;
-        ll = [ref.lat + 0.00018 * Math.sin(a), ref.lon + 0.00018 * Math.cos(a)];   // 半徑約 20m
+      // 足跡：累積隊友的「真實」位置（移動超過 6m 才記一點），畫成線
+      pushTrail(key, meta.lat, meta.lon);
+      // 標記畫在真實位置；只有跟已放置標記幾乎疊在一起(<8m)時才用黃金角微推開(約 7m)，讓人看得到彼此又不失真
+      let lat = meta.lat, lon = meta.lon, bump = 0;
+      while (bump < 8 && placed.some(p => metersBetween(p.lat, p.lon, lat, lon) < 8)) {
+        bump++; const a = bump * 2.399963;
+        lat = meta.lat + 0.000065 * Math.sin(a); lon = meta.lon + 0.000065 * Math.cos(a);
       }
+      placed.push({ lat, lon });
       const nm = meta.name || (typeof ttT === "function" ? ttT("隊友") : "隊友");
-      if (markers[key]) { markers[key].setLatLng(ll); markers[key].setIcon(icon(meta)); markers[key].setTooltipContent(nm); }
-      else markers[key] = L.marker(ll, { icon: icon(meta), zIndexOffset: 900 }).addTo(map)
+      if (markers[key]) { markers[key].setLatLng([lat, lon]); markers[key].setIcon(icon(meta)); markers[key].setTooltipContent(nm); }
+      else markers[key] = L.marker([lat, lon], { icon: icon(meta), zIndexOffset: 900 }).addTo(map)
         .bindTooltip(nm, { permanent: true, direction: "bottom", className: "team-tip", offset: [0, 14] });   // 名字放下方，不擋寵物
     }
     for (const key in markers) if (!seen[key]) { try { map.removeLayer(markers[key]); } catch (e) { } delete markers[key]; }
+    for (const key in trails) if (!seen[key]) removeTrail(key);   // 離線的隊友移除足跡線
   }
+  // 累積某位隊友的足跡點並更新線
+  function pushTrail(key, lat, lon) {
+    if (!map || typeof L === "undefined" || lat == null) return;
+    let t = trails[key];
+    if (!t) { t = trails[key] = { pts: [], line: null }; }
+    const last = t.pts[t.pts.length - 1];
+    if (!last || metersBetween(last[0], last[1], lat, lon) > 6) {
+      t.pts.push([lat, lon]);
+      if (t.pts.length > 400) t.pts.shift();   // 上限，避免長時間記憶體膨脹
+    }
+    if (t.pts.length >= 2) {
+      if (!t.line) t.line = L.polyline(t.pts, { color: colorFor(key), weight: 3, opacity: 0.7, dashArray: "1 6", lineCap: "round" }).addTo(map);
+      else t.line.setLatLngs(t.pts);
+    }
+  }
+  function removeTrail(key) { const t = trails[key]; if (t && t.line) { try { map.removeLayer(t.line); } catch (e) { } } delete trails[key]; }
 
   // lastPos 還沒定位到也要能回報準備狀態，座標先給 null
   function payload() {
@@ -281,7 +295,8 @@ const TeamLive = (() => {
     if (watchId != null && navigator.geolocation) { navigator.geolocation.clearWatch(watchId); watchId = null; }
     if (channel) { try { Supa.client().removeChannel(channel); } catch (e) { } channel = null; }
     for (const k in markers) { try { map.removeLayer(markers[k]); } catch (e) { } }
-    markers = {}; map = null; lastPos = null; leaderId = null; myReady = false;
+    for (const k in trails) { try { if (trails[k].line) map.removeLayer(trails[k].line); } catch (e) { } }
+    markers = {}; trails = {}; map = null; lastPos = null; leaderId = null; myReady = false;
     myStartAt = null; myStopAt = null; lastHandledAt = 0; lastStopHandled = 0; curTeamId = null;
     if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
     const el = document.getElementById("teamReadyBar"); if (el) el.remove();

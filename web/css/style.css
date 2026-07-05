@@ -1327,7 +1327,7 @@ html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
 
 /* 步道圖卡：標記完成勾勾（在收藏星左側） */
 /* 已完成徽章（自動判定，不可點）：綠底白勾，明確表示這條走過了 */
-.done-badge { position: absolute; top: 12px; right: 42px; width: calc(20px * var(--fs, 1)); height: calc(20px * var(--fs, 1)); display: grid; place-items: center; border-radius: 50%; background: var(--brand); color: #fff; font-size: calc(12px * var(--fs, 1)); font-weight: 800; line-height: 1; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+.done-badge { position: absolute; top: 13px; right: 44px; background: none; border: none; font-size: calc(19px * var(--fs, 1)); line-height: 1; color: var(--brand); padding: 2px 4px; font-weight: 700; }
 
 /* 夥伴手冊：進化圖鑑（詳細） */
 .dex-intro { font-size: calc(13px * var(--fs, 1)); color: var(--ink-soft); line-height: 1.7; margin: 4px 0 10px; }
