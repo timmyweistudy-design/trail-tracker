@@ -2423,7 +2423,8 @@ async function finishRecording(autoVehicle) {
     // 模擬也校正：沿真實步道座標查地形，原路折返自然會有對應的下降（不再只計爬升）
     if (!rec.vehicle && rec.track && rec.track.length > 1 && navigator.onLine && typeof Elevation !== "undefined") {
       $("#recStatus").textContent = "海拔校正中…";
-      const corr = await Promise.race([Elevation.correct(rec.track), new Promise(r => setTimeout(() => r(null), 6000))]);
+      // 放寬逾時到 15 秒：長程健行的 DEM 校正要多打幾次 API，逾時太短會退回很雜的 GPS 高度→數字不準
+      const corr = await Promise.race([Elevation.correct(rec.track), new Promise(r => setTimeout(() => r(null), 15000))]);
       if (corr) { rec.ascent = corr.ascent; rec.descent = corr.descent; rec.altHigh = corr.altHigh; rec.altLow = corr.altLow; rec.altCorrected = true; }
     }
     Store.addRecord(rec);

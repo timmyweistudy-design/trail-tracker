@@ -29,14 +29,16 @@ const Elevation = (() => {
     return out;
   }
 
-  // 從 DEM 高度序列重算。先做 3 點滑動中值壓掉 DEM 量化毛刺，再用小門檻累積，更貼近真實爬升。
+  // 從 DEM 高度序列重算。先 3 點中值壓量化毛刺，再 3 點移動平均進一步去噪，
+  // 最後用「遲滯門檻(3m)」累積——只有離開參考點超過 3m 才計，避免 DEM 量化雜訊灌爆爬升，更接近實際。
   function recompute(elevs) {
     const v = (elevs || []).filter(e => typeof e === "number");
     if (v.length < 2) return null;
     const med3 = (a, b, c) => Math.max(Math.min(a, b), Math.min(Math.max(a, b), c));
-    const s = v.map((e, i) => (i > 0 && i < v.length - 1) ? med3(v[i - 1], e, v[i + 1]) : e);
+    let s = v.map((e, i) => (i > 0 && i < v.length - 1) ? med3(v[i - 1], e, v[i + 1]) : e);
+    s = s.map((e, i) => (i > 0 && i < s.length - 1) ? (s[i - 1] + e + s[i + 1]) / 3 : e);   // 再平滑一次
     let ascent = 0, descent = 0, ref = s[0], high = s[0], low = s[0];
-    const DB = 2;
+    const DB = 3;   // 遲滯門檻（公尺）
     for (const e of s) {
       if (e > high) high = e; if (e < low) low = e;
       const dz = e - ref;
@@ -62,9 +64,9 @@ const Elevation = (() => {
     try {
       const segs = segsOf(track).filter(s => s && s.length > 1);
       if (!segs.length) return null;
-      // 取樣密度依總長度調整：約每 25 m 一點，上限 400 點（長程更準、短程不浪費）
+      // 取樣密度依總長度調整：約每 20 m 一點，上限 500 點（長程更準、短程不浪費）
       const totalLen = segs.reduce((s, seg) => s + lengthOf(seg), 0);
-      const budget = Math.max(100, Math.min(400, Math.round(totalLen / 25) || 200));
+      const budget = Math.max(100, Math.min(500, Math.round(totalLen / 20) || 200));
       let ascent = 0, descent = 0, high = -Infinity, low = Infinity, any = false;
       for (const seg of segs) {
         const share = Math.max(8, Math.round(budget * (lengthOf(seg) / (totalLen || 1))) || budget);
