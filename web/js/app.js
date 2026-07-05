@@ -1043,6 +1043,12 @@ async function _open3D(name, geom, opts) {
       return;
     }
     try { _map3d.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 55, pitch: 62, bearing: 18, duration: 0 }); } catch (e) { /* */ }
+    // 太長的步道 fitBounds 會縮太遠→衛星變糊。靜態檢視設縮放下限：改成站在起點、面朝路線的近景，較清楚
+    if (!opts.fly && _map3d.getZoom() < 14) {
+      const ahead = main[Math.min(main.length - 1, 12)] || end;
+      const br = _flyBearing([start[1], start[0]], [ahead[1], ahead[0]]);
+      _map3d.jumpTo({ center: [start[1], start[0]], zoom: 14.8, pitch: 64, bearing: br });
+    }
     if (opts.fly) {   // 等圖磚載完(idle)再飛，較順也較清楚；4 秒沒 idle 就先飛
       let started = false; const go = () => { if (started) return; started = true; toast(ttT("🚶 帶你走一遍…")); flyAlong(); };
       _map3d.once("idle", go); setTimeout(go, 4000);
