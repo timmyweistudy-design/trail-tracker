@@ -445,7 +445,11 @@ window.loadSocial = (function () {
     return p;
   };
 })();
-window.addEventListener("load", () => setTimeout(() => window.loadSocial().then(() => { if (window.wireTeamLive) window.wireTeamLive(); }), 2000));
+// App 一互動就搶第一個空檔背景載社群（原本延遲 2 秒→點社群會轉圈）：最多 600ms 內開始，不擋開機
+window.addEventListener("load", () => {
+  const go = () => window.loadSocial().then(() => { if (window.wireTeamLive) window.wireTeamLive(); });
+  if (window.requestIdleCallback) requestIdleCallback(go, { timeout: 600 }); else setTimeout(go, 250);
+});
 </script>
 <script src="js/premium.js"></script>
 <script src="js/pet.js"></script>
