@@ -2791,11 +2791,37 @@ async function refreshOfflineStatus() {
 }
 // 「我的」設定區：點分類標題展開/收合
 document.querySelectorAll("#view-me .set-head").forEach(h => h.addEventListener("click", () => h.parentElement.classList.toggle("open")));
-$("#btnDiag").addEventListener("click", () => {
+$("#btnDiag").addEventListener("click", async () => {
   const errs = (window.ttErrors ? window.ttErrors() : []);
-  const info = `循徑拾光診斷\n版本SW:${"v34"}\n螢幕:${innerWidth}x${innerHeight}\n步道資料:${TRAILS.length}條\n近期錯誤(${errs.length}):\n` +
-    (errs.slice(0, 8).map(e => `· ${e.t.slice(5, 16)} ${e.m}`).join("\n") || "（無）");
-  if (navigator.clipboard) navigator.clipboard.writeText(info).then(() => toast(errs.length ? `已複製診斷(${errs.length}筆錯誤)，可貼給開發者` : "已複製診斷，目前無錯誤"));
+  const g = fn => { try { const v = fn(); return (v == null ? "?" : v); } catch (e) { return "?"; } };
+  let sw = "?"; try { const t = await (await fetch("./sw.js", { cache: "no-store" })).text(); sw = (t.match(/trail-tracker-v\d+/) || ["?"])[0]; } catch (e) { /* */ }
+  let tiles = "?"; try { if (typeof Offline !== "undefined" && Offline.cachedCount) tiles = await Offline.cachedCount(); } catch (e) { /* */ }
+  let login = "未登入"; try { if (typeof Supa !== "undefined" && Supa.ready && Supa.ready()) { const { data } = await Supa.client().auth.getUser(); if (data && data.user) login = "已登入"; } } catch (e) { /* */ }
+  const pro = g(() => (typeof Premium !== "undefined" && Premium.isOn()) ? "PRO" : "免費");
+  const recN = g(() => Store.getRecords().length);
+  const doneN = g(() => (Store.doneCount ? Store.doneCount() : "?"));
+  const favN = g(() => TRAILS.filter(t => Store.isFav(t.id)).length);
+  const lang = g(() => (typeof I18n !== "undefined" ? I18n.lang() : "zh"));
+  const theme = g(() => localStorage.getItem("tt_theme") || "light");
+  const fs = g(() => localStorage.getItem("tt_fs") || "1");
+  const lsKB = g(() => Math.round(Object.keys(localStorage).reduce((s, k) => s + ((localStorage.getItem(k) || "").length + k.length), 0) / 1024));
+  const os = g(() => (navigator.userAgent.match(/iPhone|iPad|Android|Windows|Macintosh|Linux/) || ["?"])[0]);
+  const swState = g(() => (navigator.serviceWorker && navigator.serviceWorker.controller) ? "已控制" : "未控制");
+  const L = [
+    "循徑拾光 診斷報告",
+    "時間 " + new Date().toLocaleString(),
+    "SW版本 " + sw + " " + swState,
+    "裝置 " + innerWidth + "x" + innerHeight + " @" + (window.devicePixelRatio || 1) + "x " + (navigator.onLine ? "線上" : "離線"),
+    "系統 " + os,
+    "語言 " + lang + " 主題 " + theme + " 字級 " + fs,
+    "帳號 " + login + " " + pro,
+    "步道 " + TRAILS.length + " 紀錄 " + recN + " 完成 " + doneN + " 收藏 " + favN,
+    "離線圖磚 " + tiles + " 本機資料 " + lsKB + "KB",
+    "近期錯誤 " + errs.length,
+    (errs.slice(0, 10).map(e => "· " + ((e.t || "") + "").slice(5, 16) + " " + e.m).join("\n") || "（無）"),
+  ];
+  const info = L.join("\n");
+  if (navigator.clipboard) navigator.clipboard.writeText(info).then(() => toast(errs.length ? `已複製診斷(${errs.length}筆錯誤)，可貼給開發者` : "已複製診斷，目前無錯誤")).catch(() => ttAlertBox(info));
   else ttAlertBox(info);
 });
 $("#btnFootMap").addEventListener("click", () => { if (typeof Premium !== "undefined" && !Premium.gate()) return; openFootprintMap(); });
