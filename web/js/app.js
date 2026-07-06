@@ -918,7 +918,7 @@ function close3D() {
   _stop3dLive();
   if (_map3d) { try { _map3d.remove(); } catch (e) { /* */ } _map3d = null; }   // 釋放 GPU/記憶體
 }
-let _flyRAF = null, _flyPath = null, _live3dTimer = null, _me3dMarker = null, _team3dMarkers = {};
+let _flyRAF = null, _flyPath = null, _live3dTimer = null, _me3dMarker = null, _team3dMarkers = {}, _live3dInteractAt = 0;
 function open3D(t) { if (t) _open3D(t.name, geoOf(t), { fly: false }); }              // 步道詳情：靜態探索
 function open3DTrack(name, segsLL) { _open3D(name, segsLL, { fly: true }); }           // 結算頁回放：帶著走
 // 記錄中：即時 3D——顯示自己(頭貼+寵物)、隊友、目前軌跡，跟著更新
@@ -954,6 +954,8 @@ function _start3dLive() {
       else _me3dMarker.setLngLat(ll);
       const src = _map3d.getSource("route");
       if (src && s && s.track && s.track.length > 1) src.setData({ type: "Feature", geometry: { type: "MultiLineString", coordinates: trackSegments(s.track).map(g => g.map(p => [p.lon, p.lat])) } });
+      // 停手 4 秒後平滑跟隨（只平移、不改縮放/俯角/方位→不閃）；使用者拖動期間不搶鏡頭
+      if (Date.now() - _live3dInteractAt > 4000) { try { _map3d.panTo(ll, { duration: 1100, essential: true }); } catch (e) { /* */ } }
     }
     if (typeof TeamLive !== "undefined" && TeamLive.isOn && TeamLive.isOn() && TeamLive.teammates) {
       const seen = {};
@@ -1041,8 +1043,14 @@ async function _open3D(name, geom, opts) {
   _map3d.on("load", () => {
     _map3d.resize();   // 確保用滿容器解析度（避免初次建立時尺寸不對→模糊）
     if (opts.live) {
-      const l = (typeof recSnap !== "undefined" && recSnap && recSnap.track && recSnap.track.length) ? recSnap.track[recSnap.track.length - 1] : (typeof myLoc !== "undefined" ? myLoc : null);
-      if (l && l.lat != null) _map3d.jumpTo({ center: [l.lon, l.lat], zoom: 15.5, pitch: 60, bearing: 0 });
+      // 記錄中 3D＝俯瞰＋可自由滑動；相機不強制運鏡(不閃/不被擋)，停手 4 秒後平滑跟隨你，避免走出畫面
+      const l0 = (typeof recSnap !== "undefined" && recSnap && recSnap.track && recSnap.track.length) ? recSnap.track[recSnap.track.length - 1] : (typeof myLoc !== "undefined" ? myLoc : null);
+      const c = l0 && l0.lat != null ? [l0.lon, l0.lat] : [(minLng + maxLng) / 2, (minLat + maxLat) / 2];
+      _map3d.jumpTo({ center: c, zoom: 15, pitch: 45, bearing: 0 });
+      preload3DFull({ n: c[1] + 0.02, s: c[1] - 0.02, e: c[0] + 0.02, w: c[0] - 0.02 }, () => {});   // 預載周邊，走動/拖曳都順
+      _live3dInteractAt = 0;
+      _map3d.on("dragstart zoomstart rotatestart pitchstart", () => { _live3dInteractAt = Date.now(); });   // 使用者操作時暫停自動跟隨
+      toast(ttT("🗺 記錄中 3D：可自由滑動、縮放、傾斜地圖"));
       _start3dLive();
       return;
     }
