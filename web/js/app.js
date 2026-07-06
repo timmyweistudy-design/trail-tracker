@@ -885,8 +885,9 @@ let browseMap = null, browseLayer = null, mapOn = false;
 const DIFF_COLOR = { 0: "#3aa3a0", 1: "#46a24f", 2: "#6aa83e", 3: "#d8a127", 4: "#e07a2c", 5: "#d2542e", 6: "#b3322a" };
 // 底圖：Esri 地形(含立體陰影) / 衛星影像 — 比 OpenTopoMap 精緻
 const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services";
-function baseTopo() { return L.tileLayer(`${ESRI}/World_Topo_Map/MapServer/tile/{z}/{y}/{x}`, { attribution: "© Esri 地形", maxZoom: 18, maxNativeZoom: 18 }); }
-function baseSat() { return L.tileLayer(`${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}`, { attribution: "© Esri、Maxar 衛星影像", maxZoom: 18, maxNativeZoom: 18 }); }
+// detectRetina：高 DPR 手機（如 iPhone 3x）改抓深一階圖磚縮小顯示→更清晰不糊
+function baseTopo() { return L.tileLayer(`${ESRI}/World_Topo_Map/MapServer/tile/{z}/{y}/{x}`, { attribution: "© Esri 地形", maxZoom: 19, maxNativeZoom: 18, detectRetina: true }); }
+function baseSat() { return L.tileLayer(`${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}`, { attribution: "© Esri、Maxar 衛星影像", maxZoom: 19, maxNativeZoom: 18, detectRetina: true }); }
 // 2.5D 地形陰影（hillshade）：疊在底圖上、以 multiply 混色壓暗坡面陰影→山勢立體。
 // 同 Esri 來源、免金鑰，SW 一樣快取得到（離線可用）。專屬 pane 放在底圖之上、路線/標記之下。
 const ESRI_HILLSHADE = `${ESRI}/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}`;
@@ -1096,6 +1097,18 @@ function rotateCompasses() { document.querySelectorAll(".compass-rose").forEach(
 // 導航模式（heading-up）：只旋轉「地圖圖層面板」(tiles/markers)，控制鈕在外層不轉→四顆鈕固定、縮放正常、小隊照常。
 const NAV_SCALE = 1.8;   // 放大面板以蓋住旋轉後的角落空缺（縮放仍可用，只是視覺基準放大）
 function navHeading() { const h = (_compassOn && _heading != null) ? _heading : _gpsHeading; return (h != null && isFinite(h)) ? h : 0; }
+// 平滑後的導航方位＋每幀緩動：GPS/羅盤方位有雜訊，直接用會讓地圖轉動時抖動；用低通濾波順順跟隨
+let _navHeadingSm = 0, _navRAF = null, _navLastT = 0;
+function _navTick(now) {
+  if (!_navUp) { _navRAF = null; return; }
+  const dt = Math.min(0.05, (now - _navLastT) / 1000) || 0.016; _navLastT = now;
+  const target = navHeading();
+  const d = ((target - _navHeadingSm + 540) % 360) - 180;   // 最短弧
+  if (Math.abs(d) < 0.4) _navHeadingSm = target;            // 死區：極小抖動直接忽略
+  else _navHeadingSm = (_navHeadingSm + d * (1 - Math.pow(0.006, dt)) + 360) % 360;   // 與幀率無關的平滑追隨
+  applyPaneRotation();
+  _navRAF = requestAnimationFrame(_navTick);
+}
 function applyPaneRotation() {
   if (!recMap) return;
   const pane = recMap.getContainer().querySelector(".leaflet-map-pane"); if (!pane) return;
@@ -1105,7 +1118,7 @@ function applyPaneRotation() {
   if (!_navUp) { pane.style.transform = base; pane.style.transformOrigin = ""; return; }
   const size = recMap.getSize();
   pane.style.transformOrigin = `${size.x / 2}px ${size.y / 2}px`;   // 繞畫面中心旋轉
-  pane.style.transform = `rotate(${-navHeading()}deg) scale(${NAV_SCALE}) ${base}`;
+  pane.style.transform = `rotate(${-_navHeadingSm}deg) scale(${NAV_SCALE}) ${base}`;   // 用平滑方位→不抖
 }
 let _navPaneHooked = false;
 function applyNavUp() {
@@ -1113,10 +1126,13 @@ function applyNavUp() {
   if (_navUp) {
     document.body.classList.add("navup-on");
     if (!_navPaneHooked) { recMap.on("move zoom viewreset moveend zoomend", applyPaneRotation); _navPaneHooked = true; }
+    _navHeadingSm = navHeading();   // 開啟時直接對齊，不從 0 掃過去
+    if (!_navRAF) { _navLastT = performance.now(); _navRAF = requestAnimationFrame(_navTick); }   // 啟動平滑緩動迴圈
     applyPaneRotation();
   } else {
     document.body.classList.remove("navup-on");
     if (_navPaneHooked) { recMap.off("move zoom viewreset moveend zoomend", applyPaneRotation); _navPaneHooked = false; }
+    if (_navRAF) { cancelAnimationFrame(_navRAF); _navRAF = null; }
     applyPaneRotation();   // 清掉旋轉，只留 Leaflet 平移
   }
 }
