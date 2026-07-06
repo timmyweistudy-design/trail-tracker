@@ -287,12 +287,23 @@ const TeamLive = (() => {
     // DB 即時訂閱：隊長寫入 team_starts 就開始（需 phase20；沒跑也有輪詢與 presence 兜底）
     channel.on("postgres_changes", { event: "*", schema: "public", table: "team_starts", filter: "team_id=eq." + teamId },
       p => { const row = p && p.new; if (row) { if (row.started_at) handleStart(Date.parse(row.started_at), row.sim); if (row.stopped_at) handleStop(Date.parse(row.stopped_at)); } });
-    channel.subscribe(st => { if (st === "SUBSCRIBED") channel.track(payload()); });
+    channel.subscribe(st => {
+      if (st === "SUBSCRIBED") {
+        try { channel.track(payload()); } catch (e) { /* */ }
+        // 第一次 track 可能與 subscribe 競態沒送成→隔一下再補送幾次，確保別人一定看得到我
+        setTimeout(() => { try { channel.track(payload()); } catch (e) { /* */ } }, 1200);
+        setTimeout(() => { try { channel.track(payload()); } catch (e) { /* */ } }, 3500);
+      }
+    });
     if (pollTimer) clearInterval(pollTimer);
     pollTimer = setInterval(pollDbStart, 5000);   // 輪詢補收：任何漏接 5 秒內追回
-    // 定時重繪：即使漏接 presence 事件，也保證 2.5 秒內更新隊友位置（修：看不到隊友在走路）
+    // 定時重繪 + presence 自癒：每 2.5 秒重繪，並「重新 track 自己」——若曾被斷線/漏送而從別人清單消失，
+    // 這裡會把自己補回去，解決「隊長看不到隊員/單向看不到」的連線不對稱問題。
     if (renderPoll) clearInterval(renderPoll);
-    renderPoll = setInterval(() => { try { render(); } catch (e) { /* */ } }, 2500);
+    renderPoll = setInterval(() => {
+      try { render(); } catch (e) { /* */ }
+      try { const st = channel && channel.presenceState ? channel.presenceState() : null; if (st && !st[me]) channel.track(payload()); } catch (e) { /* */ }
+    }, 2500);
     if (navigator.geolocation) {
       // 立刻要一次粗略定位（可用快取）當種子——室內測試也能盡快讓隊友看到你；失敗就用地圖中心兜底
       navigator.geolocation.getCurrentPosition(broadcast, () => {

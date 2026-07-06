@@ -209,7 +209,7 @@ const Store = (() => {
     _lifeReconcile();   // 終身統計取較大值，還原絕不倒退
   }
 
-  return { getProfile, saveProfile, weight, height, getRecords, addRecord, deleteRecord, clearRecords,
+  return { getProfile, saveProfile, weight, height, getRecords, setRecords: _saveRecords, addRecord, deleteRecord, clearRecords,
            getFavs, isFav, toggleFav, trailLog, setTrailLog, doneCount, exportAll, importAll, clearSimRecords, packWeight, setRecordNote,
            life, fullRecord, allFull, recoverFromArchive };
 })();

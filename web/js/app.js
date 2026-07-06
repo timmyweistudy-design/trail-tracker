@@ -2837,9 +2837,19 @@ async function cloudClient() {
 }
 async function cloudBackupNow(silent) {
   const x = await cloudClient(); if (!x) return false;
+  // 同一支手機切換多個帳號時：localStorage 是共用的，但雲端備份是「每個帳號一列」。
+  // 若本機資料屬於「別的帳號」（tt_data_uid≠目前登入），直接備份會用 A 的資料蓋掉 B 的雲端備份。
+  // 自動備份→直接跳過保護；手動備份→先警告確認。
+  const owner = (() => { try { return localStorage.getItem("tt_data_uid"); } catch (e) { return null; } })();
+  if (owner && owner !== x.uid) {
+    if (silent) return false;   // 自動：絕不覆蓋別的帳號的雲端
+    const go = await ttConfirm("這台裝置目前的資料是「另一個帳號」的。備份會用這份資料覆蓋『目前登入帳號』的雲端備份，確定要繼續？");
+    if (!go) return false;
+  }
   try {
     if (!silent) toast("備份到雲端中…");
     const { error } = await x.c.from("backups").upsert({ user_id: x.uid, data: Store.exportAll(), updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+    if (!error) { try { localStorage.setItem("tt_data_uid", x.uid); } catch (e) { /* */ } }   // 本機資料歸屬＝目前帳號
     if (!silent) toast(error ? "備份失敗：" + error.message : "已備份到雲端 ✓");
     return !error;
   } catch (e) { if (!silent) toast("備份失敗：" + (e && e.message || e)); return false; }
@@ -2880,6 +2890,7 @@ if (_crs) _crs.addEventListener("click", async () => {
     ]);
     if (!mode) return;
     Store.importAll(data.data, mode);
+    try { localStorage.setItem("tt_data_uid", x.uid); } catch (e) { /* */ }   // 本機資料歸屬＝還原來源帳號
     renderHistory(); render();
     // 主題/外觀與寵物、任務、成就一併還原後重繪
     try { initTheme(); renderPet(); renderQuests(); renderBadges(); renderStats(); loadProfile(); } catch (e) { /* 個別區塊未載入時忽略 */ }
@@ -3387,46 +3398,53 @@ window.ttDebug = (() => {
       });
       bumpAffinity(8); checkPetEvolve(); refresh(); return api.state();
     },
-    clearHikes() { const kept = Store.getRecords().filter(r => !r.dbg); localStorage.setItem("tt_records", JSON.stringify(kept)); refresh(); return "已清除測試行程"; },
-    // 一鍵解鎖全部成就：灌入足以滿足所有徽章條件的測試資料
+    clearHikes() { const kept = Store.getRecords().filter(r => !r.dbg); Store.setRecords(kept); refresh(); return "已清除測試行程"; },
+    // 一鍵解鎖全部成就：灌入足以滿足成就樹全部 30 個徽章的測試資料
     unlockAch() {
       const recs = [];
-      for (let i = 0; i < 100; i++) {                       // 100 筆 → 出行次數成就
-        const d = new Date(); d.setDate(d.getDate() - i);   // 連續 100 天 → 連續天數/週數成就
+      for (let i = 0; i < 200; i++) {                       // 200 筆連續天 → 出行次數(至200)/連續天數(至30)/週數
+        const d = new Date(); d.setDate(d.getDate() - i);
         if (i === 1) d.setHours(6, 0, 0, 0);                // 清晨 → 早起鳥
         else if (i === 2) d.setHours(20, 0, 0, 0);          // 夜間 → 夜行者
         else d.setHours(12, 0, 0, 0);
-        const km = i === 0 ? 22 : 5;                        // 一筆 22km → 半馬/馬拉松；總里程 ≈ 517km
+        const km = i === 0 ? 42 : 6;                        // 一筆 42km → 超馬/半馬/馬拉松；總里程 ≈ 1236km → 千里健行
         recs.push({
           id: "dbg-ach-" + i, date: d.toISOString(), dbg: true, note: "成就測試",
           distanceKm: km, distance3DKm: km, steps: Math.round(km * 1350), kcal: Math.round(km * 60),
-          elapsedMs: Math.round(km * 12 * 60000), ascent: 95, descent: 80,   // 總爬升 9500m → 聖母峰
+          elapsedMs: Math.round(km * 12 * 60000), ascent: 60, descent: 50,   // 總爬升 200*60=12000m → 萬米爬升/聖母峰
           track: [{ lat: 24, lon: 121, t: d.getTime() }],
         });
       }
       const kept = Store.getRecords().filter(r => !String(r.id).startsWith("dbg-ach-"));
-      localStorage.setItem("tt_records", JSON.stringify(recs.concat(kept)));
-      const ids = (typeof TRAILS !== "undefined" ? TRAILS : []).map(t => t.id).filter(Boolean);
-      localStorage.setItem("tt_favs", JSON.stringify(ids.slice(0, 12)));      // 收藏 12 條 → 收藏迷
-      ids.slice(0, 25).forEach(id => Store.setTrailLog(id, { done: true }));  // 完成 25 條 → 踏遍五徑/收藏家
+      Store.setRecords(recs.concat(kept));
+      // 縣市探索：每個縣市各挑一條完成 → counties 拉到 20+（環島達人）
+      const all = (typeof TRAILS !== "undefined" ? TRAILS : []);
+      const byRegion = {};
+      for (const t of all) { if (t.region && !byRegion[t.region]) byRegion[t.region] = t.id; }
+      Object.values(byRegion).forEach(id => Store.setTrailLog(id, { done: true }));
+      // 難度征服：完成 6 條挑戰級以上（difficulty≥4）→ 挑戰征服
+      all.filter(t => (t.difficulty || 0) >= 4).slice(0, 6).forEach(t => Store.setTrailLog(t.id, { done: true }));
+      // 補足完成 20 條（步道收藏家）：不足就再補一般步道
+      let doneN = all.filter(t => Store.trailLog(t.id).done).length;
+      for (const t of all) { if (doneN >= 22) break; if (!Store.trailLog(t.id).done) { Store.setTrailLog(t.id, { done: true }); doneN++; } }
       checkPetEvolve(); refresh(); try { renderBadges(); } catch (e) { /* */ }
       return "已解鎖全部成就 🏅";
     },
-    // 重置成就：清掉解鎖用的測試行程、收藏、完成步道紀錄（保留你真實的行程）
+    // 重置成就：清掉解鎖用的測試行程/完成紀錄，並清空永久解鎖名單(tt_badges_got)→ 徽章真的會重新上鎖
     resetAch() {
       const kept = Store.getRecords().filter(r => !String(r.id).startsWith("dbg-ach-"));
-      localStorage.setItem("tt_records", JSON.stringify(kept));
-      localStorage.removeItem("tt_favs");
+      Store.setRecords(kept);
       localStorage.removeItem("tt_log");
+      localStorage.removeItem("tt_badges_got");   // 關鍵：不清這個，永久解鎖名單會讓徽章一直亮著
       checkPetEvolve(); refresh(); try { renderBadges(); } catch (e) { /* */ }
-      return "已重置成就（收藏/完成/測試行程已清空）";
+      return "已重置成就（完成/測試行程/永久解鎖名單已清空）";
     },
     // 重置每日任務：清掉今日領獎旗標 + 移除今天的行程，讓三項任務進度歸零可重測
     resetQuests() {
       localStorage.removeItem("tt_quest_claim");
       const ds = todayStr();
       const kept = Store.getRecords().filter(r => (r.date || "").slice(0, 10) !== ds);
-      localStorage.setItem("tt_records", JSON.stringify(kept));
+      Store.setRecords(kept);
       checkPetEvolve(); refresh(); try { renderQuests(); } catch (e) { /* */ }
       return "已重置今日任務";
     },

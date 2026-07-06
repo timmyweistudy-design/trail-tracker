@@ -81,8 +81,15 @@ const Team = (() => {
       const prof = await Auth.myProfile().catch(() => null); if (!prof) return;
       const info = { name: prof.display_name || prof.handle || "我", avatar: prof.avatar_url || null, pet: (typeof petStats === "function" ? petStats().emoji : null) };
       const teams = await myTeams();
-      const t = teams.find(x => x.id === aId);
-      if (!t) return;   // 已退出小隊 → 不自動連
+      let t = teams.find(x => x.id === aId);
+      if (!t) {
+        // 隊長不在 team_members / RLS 讀不到時，直接查 teams 表，避免隊長 autoLive 提早 return
+        // →連不上自己的小隊（症狀：隊長看不到隊員、隊員只看到隊長的離線名字）
+        const c = Supa.client();
+        const { data: row } = await c.from("teams").select("id,name,owner").eq("id", aId).maybeSingle();
+        if (!row) return;   // 真的查不到（已被刪）→ 不連
+        t = row;
+      }
       await TeamLive.start(aId, map, info, { leader: t.owner || null });
       if (typeof toast === "function") toast(`已自動開啟小隊同行（${t.name}）`);
     } catch (e) { /* 自動開啟失敗不影響記錄 */ }
