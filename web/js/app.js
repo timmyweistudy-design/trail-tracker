@@ -1069,10 +1069,15 @@ async function _open3D(name, geom, opts) {
       const br = _flyBearing([start[1], start[0]], [ahead[1], ahead[0]]);
       _map3d.jumpTo({ center: [start[1], start[0]], zoom: 14.8, pitch: 64, bearing: br });
     }
-    if (opts.fly) {   // 先把整條走廊圖磚抓進快取（最多 6 秒）＋等地圖 idle 再飛，飛行中就不用臨時串流→不閃
-      let started = false; const go = () => { if (started || !_map3d) return; started = true; toast(ttT("🚶 帶你走一遍…")); flyAlong(); };
-      Promise.race([preload3DBox({ n: maxLat, s: minLat, e: maxLng, w: minLng }), new Promise(r => setTimeout(r, 6000))])
-        .then(() => { if (!_map3d) return; _map3d.once("idle", go); setTimeout(go, 2000); });
+    if (opts.fly) {   // 起飛前把整條走廊需要的圖磚「全部」下載完成（顯示進度），100% 才飛→飛行中零串流、不閃
+      const box = { n: maxLat + 0.004, s: minLat - 0.004, e: maxLng + 0.004, w: minLng - 0.004 };
+      const prep = $("#map3dPrep"), ptxt = $("#map3dPrepTxt");
+      const showPct = pct => { if (prep) prep.hidden = false; if (ptxt) ptxt.textContent = `${ttT("準備 3D 地形…")} ${pct}%`; };
+      showPct(0);
+      let started = false;
+      const go = () => { if (started || !_map3d) return; started = true; if (prep) prep.hidden = true; toast(ttT("🚶 帶你走一遍…")); flyAlong(); };
+      Promise.race([preload3DFull(box, showPct), new Promise(r => setTimeout(r, 45000))])   // 45 秒保險上限，避免極端路線卡住
+        .then(() => { if (!_map3d) return; _map3d.once("idle", go); setTimeout(go, 1800); });   // 全載完後再等目前視野 idle 才飛
     }
   });
 }
@@ -2545,12 +2550,15 @@ function preload3D(lat, lon) {
   const tiles = [...Offline.tileListUrl(bbox, 14, 16, _SAT_URL), ...Offline.tileListUrl(bbox, 12, 15, _TERR_URL)];
   Offline.download(tiles, () => {}).catch(() => {});   // 靜默預載，存進 tt-tiles，3D 開啟時由 SW 快取直接取用
 }
-// 飛行前把整條路線走廊的 3D 圖磚先抓進快取，飛過去時就不會露破洞閃黑（背景+邊飛邊載兜底）
-function preload3DBox(bbox) {
+// 飛行前把整條路線走廊需要的 3D 圖磚「全部」抓進快取（含近景 z16 與地形），並回報進度。全載完再飛＝飛行中零串流、不閃
+function preload3DFull(bbox, onProgress) {
   if (typeof Offline === "undefined" || !navigator.onLine) return Promise.resolve();
-  const tiles = [...Offline.tileListUrl(bbox, 15, 15, _SAT_URL), ...Offline.tileListUrl(bbox, 12, 14, _TERR_URL)];   // 衛星只抓飛行用的 z15、地形 z12-14
-  if (tiles.length > 1200) return Promise.resolve();   // 走廊太大就不整片預載，交給背景色＋串流
-  return Offline.download(tiles, () => {}).catch(() => {});
+  let sat = Offline.tileListUrl(bbox, 15, 16, _SAT_URL);          // 衛星 z15＋近景 z16
+  const terr = Offline.tileListUrl(bbox, 12, 15, _TERR_URL);      // 地形 z12-15
+  if (sat.length + terr.length > 2600) sat = Offline.tileListUrl(bbox, 15, 15, _SAT_URL);   // 路線太大→退回只 z15，避免等太久
+  const tiles = [...sat, ...terr];
+  if (!tiles.length) return Promise.resolve();
+  return Offline.download(tiles, (done, total) => { if (onProgress) onProgress(Math.round(done / total * 100)); }).catch(() => {});
 }
 async function preloadAround(lat, lon) {
   const pro = typeof Premium !== "undefined" && Premium.isOn();
