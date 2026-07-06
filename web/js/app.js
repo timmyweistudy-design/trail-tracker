@@ -978,50 +978,30 @@ function flyAlong() {
   const segM = (a, b) => haversine({ lat: a[1], lon: a[0] }, { lat: b[1], lon: b[0] });   // 公尺
   const cum = [0]; for (let i = 1; i < path.length; i++) cum[i] = cum[i - 1] + segM(path[i - 1], path[i]);
   const total = cum[cum.length - 1] || 1;
-  const DUR = Math.min(55000, Math.max(18000, total * 9));      // 放慢：圖磚有時間載到相機前方，較不閃（約 1km≈9 秒）
-  const LOOK = Math.min(120, Math.max(35, total * 0.03));       // 看向前方多少公尺（決定轉彎前傾/預判）
+  const DUR = Math.min(55000, Math.max(18000, total * 9));      // 放慢：圖磚有時間載到，較不閃（約 1km≈9 秒）
   let ix = 1;
   const posAt = d => { while (ix < cum.length - 1 && cum[ix] < d) ix++; while (ix > 1 && cum[ix - 1] > d) ix--; const a = path[ix - 1], b = path[ix], f = (d - cum[ix - 1]) / ((cum[ix] - cum[ix - 1]) || 1); return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]; };
-  const posAhead = d => { let j = ix; while (j < cum.length - 1 && cum[j] < d) j++; const a = path[j - 1], b = path[j], f = (d - cum[j - 1]) / ((cum[j] - cum[j - 1]) || 1); return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]; };
   const smooth = x => x <= 0 ? 0 : x >= 1 ? 1 : x * x * x * (x * (x * 6 - 15) + 10);   // smootherstep 緩入緩出
-  // 用 FreeCamera 把相機直接放在 3D 空間（追焦式），不再每幀 jumpTo 讓相機重新貼合地形→消除「地形跳一下」的閃
-  const useFree = !!(typeof maplibregl !== "undefined" && maplibregl.MercatorCoordinate && _map3d.getFreeCameraOptions);
-  const AGL = 620, BACK = 260;   // 相機離地高度、退後距離（公尺）——恆定離地高＝像空拍機貼著地形飛
-  // 查地面高度：查不到(圖磚未載)就回 null，不用固定值 → 由平滑器沿用上一格，絕不瞬跳
-  const terrRaw = ll => { try { const e = _map3d.queryTerrainElevation ? _map3d.queryTerrainElevation(ll) : null; return (e == null || !isFinite(e)) ? null : e; } catch (e) { return null; } };
-  let groundSm = terrRaw(posAt(0)); if (groundSm == null) groundSm = 300;   // 起始地面高度（之後只平滑不瞬跳）
-  let camAlt = groundSm + AGL;                                            // 相機絕對高度（平滑，永不瞬跳＝不閃）
-  let look = posAhead(Math.min(LOOK, total));            // 平滑後的觀看目標
-  let bearing = _flyBearing(posAt(0), look);
+  // 固定側面運鏡：方位/俯角/縮放全程「完全不變」，鏡頭只沿走廊「平移」把主角框在畫面裡。
+  // 因為不旋轉、不縮放，terrain 不會轉、圖磚不用重載（走廊已預載）→ 徹底不閃。
+  const FIX_BEARING = (_flyBearing(path[0], path[path.length - 1]) + 32) % 360;   // 固定方位＝整體走向偏 32°→3/4 側視
+  const FIX_PITCH = 56, FIX_Z = 15;
+  let center = posAt(0);
   let t0 = performance.now(), lastT = t0;
   const step = now => {
     if (!_map3d) return;
     const pRaw = Math.min(1, (now - t0) / DUR);
-    const p = smooth(pRaw);                 // 緩入緩出＝電影節奏
-    const d = p * total;
-    const pos = posAt(d);
-    const aheadT = posAhead(Math.min(d + LOOK, total));
+    const p = smooth(pRaw);                 // 緩入緩出＝電影節奏（起步慢、收尾慢）
+    const pos = posAt(p * total);
     const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
-    const k = 1 - Math.pow(0.02, dt);       // 觀看目標平滑補間→過彎絲滑
-    look = [look[0] + (aheadT[0] - look[0]) * k, look[1] + (aheadT[1] - look[1]) * k];
+    const k = 1 - Math.pow(0.06, dt);       // 鏡頭略慢跟隨主角＝跟拍感（不追視角旋轉）
+    center = [center[0] + (pos[0] - center[0]) * k, center[1] + (pos[1] - center[1]) * k];
     const src = _map3d.getSource("me3d"); if (src) src.setData({ type: "Feature", geometry: { type: "Point", coordinates: pos } });
-    if (useFree) {
-      const camLL = posAt(Math.max(0, d - BACK));        // 相機在行進方向後方
-      const g = terrRaw(camLL);                          // 查不到就不更新 groundSm（沿用上一格）
-      if (g != null) groundSm += (g - groundSm) * Math.min(1, k * 0.5);   // 地面高度緩慢跟隨（低通濾波）→ 山勢起伏但不彈跳
-      const breath = 1 + 0.04 * Math.sin((now - t0) / 5200);
-      const targetAlt = groundSm + AGL * breath;
-      camAlt += (targetAlt - camAlt) * Math.min(1, k * 0.6);             // 相機高度再平滑一層，絕不瞬跳
-      const cam = _map3d.getFreeCameraOptions();
-      cam.position = maplibregl.MercatorCoordinate.fromLngLat(camLL, camAlt);
-      cam.lookAtPoint(look);
-      _map3d.setFreeCameraOptions(cam);
-    } else {   // 舊版瀏覽器 fallback：固定縮放 jumpTo
-      bearing = _lerpAngle(bearing, _flyBearing(pos, look), k);
-      _map3d.jumpTo({ center: pos, bearing, pitch: 50, zoom: 15.2 });
-    }
+    _map3d.jumpTo({ center, bearing: FIX_BEARING, pitch: FIX_PITCH, zoom: FIX_Z });   // 方位/俯角/縮放固定→不重載圖磚
     if (pRaw < 1) _flyRAF = requestAnimationFrame(step); else _flyRAF = null;
   };
+  // 起飛前先把相機一次到位到固定運鏡（避免飛行第一幀從 fitBounds 大跳一次）
+  _map3d.jumpTo({ center: posAt(0), bearing: FIX_BEARING, pitch: FIX_PITCH, zoom: FIX_Z });
   _flyRAF = requestAnimationFrame(step);
 }
 async function _open3D(name, geom, opts) {
