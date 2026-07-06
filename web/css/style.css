@@ -545,6 +545,16 @@ body.navup-on #recMap .leaflet-map-pane { transition: transform .12s linear; }
 
 /* ---------- 通用 ---------- */
 .section-title { font-family: var(--serif); font-size: calc(14px * var(--fs, 1)); color: var(--brand-deep); font-weight: 700; margin: 20px 4px 9px; letter-spacing: 1px; }
+/* 「我的」設定區：可折疊分類群組（收掉一長串雜項） */
+.set-zone-title { margin-top: 28px; }
+.set-group { border: 1px solid var(--line-soft); border-radius: var(--r-sm); margin-bottom: 8px; overflow: hidden; background: var(--surface); box-shadow: var(--sh-sm); }
+.set-head { width: 100%; display: flex; align-items: center; gap: 8px; padding: 14px; background: none; border: none; font-size: calc(14.5px * var(--fs, 1)); font-weight: 700; color: var(--ink); cursor: pointer; text-align: left; }
+.set-head .pro-tag, .set-head .set-tag { margin-left: 2px; }
+.set-head .set-chev { width: 18px; height: 18px; margin-left: auto; color: var(--ink-soft); transition: transform .2s; flex: none; }
+.set-group.open .set-head .set-chev { transform: rotate(180deg); }
+.set-body { display: none; padding: 2px 14px 16px; }
+.set-group.open .set-body { display: block; }
+.set-tag { font-size: calc(11px * var(--fs, 1)); font-weight: 700; color: var(--accent); }
 /* 詳情頁各區塊加細分隔線，層次更清楚 */
 .sheet-body .section-title { border-top: 1px solid var(--line-soft); padding-top: 17px; margin-top: 18px; }
 .sheet-body .section-title:first-child { border-top: none; padding-top: 0; }

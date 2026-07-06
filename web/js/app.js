@@ -2789,6 +2789,8 @@ async function refreshOfflineStatus() {
     fb.classList.toggle("op-btn-dim", favN === 0);
   }
 }
+// 「我的」設定區：點分類標題展開/收合
+document.querySelectorAll("#view-me .set-head").forEach(h => h.addEventListener("click", () => h.parentElement.classList.toggle("open")));
 $("#btnDiag").addEventListener("click", () => {
   const errs = (window.ttErrors ? window.ttErrors() : []);
   const info = `循徑拾光診斷\n版本SW:${"v34"}\n螢幕:${innerWidth}x${innerHeight}\n步道資料:${TRAILS.length}條\n近期錯誤(${errs.length}):\n` +

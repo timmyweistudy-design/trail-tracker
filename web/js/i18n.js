@@ -352,6 +352,7 @@ const I18n = (() => {
     "3D 地形地圖": "3D terrain map", "3D 回放": "3D replay", "衛星影像貼在真實地形上、可旋轉傾斜；步道詳情與行程回放都能看": "Satellite draped on real terrain, rotate & tilt — in trail details and hike replay",
     "↻ 重播": "↻ Replay", "🚶 帶你走一遍…": "🚶 Flying you along the route…", "記錄中": "Recording", "開始記錄後就能看 3D": "Start recording to view in 3D", "準備 3D 地形…": "Preparing 3D terrain…", "🗺 俯瞰模式：可自由滑動、縮放、傾斜地圖": "🗺 Bird's-eye: drag, zoom & tilt freely",
     "導航模式": "Navigation mode", "導航模式：地圖跟著方向轉": "Navigation: map turns with your heading", "🗺 記錄中 3D：可自由滑動、縮放、傾斜地圖": "🗺 Live 3D: drag, zoom & tilt freely",
+    "外觀": "Appearance", "語言": "Language", "個人資料": "Profile", "用於估算步數與卡路里": "Used to estimate steps & calories",
     "和你平常差不多": "About the same as usual", "比平常快": "Faster than usual", "比平常慢": "Slower than usual",
     "建議裝備": "Suggested gear", "今日日落": "Sunset today", "天已黑": "It's dark now", "剩不到 3 小時天黑": "Under 3h to dark",
     "本月摘要": "this month", "本月里程": "Distance", "本月次數": "Trips", "連續天數": "Day streak", "最長單次": "Longest",

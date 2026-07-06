@@ -127,13 +127,17 @@ const PORT = 8899;
     ok("結束後結算頁開啟", await page.locator("#trackSheet.show").count() === 1);
     await page.click("#trackSheet .sheet-close").catch(() => {});
     await page.waitForTimeout(500);
-    // 關鍵流程②：匯出備份檔會觸發下載
+    // 關鍵流程②：匯出備份檔會觸發下載（設定分類已收合→先展開「資料備份」群組）
     await page.click('.tab[data-view="me"]');
     await page.waitForTimeout(600);
+    await page.evaluate(() => { const h = [...document.querySelectorAll("#view-me .set-head")].find(x => x.textContent.includes("資料備份")); if (h) h.click(); });
+    await page.waitForTimeout(300);
     const dl = page.waitForEvent("download", { timeout: 5000 }).catch(() => null);
     await page.click("#btnFileBackup");
     ok("匯出備份檔觸發下載", !!(await dl));
     // 關鍵流程③：自製對話框（取代原生 confirm）——清除離線地圖 → 對話框出現 → 取消
+    await page.evaluate(() => { const h = [...document.querySelectorAll("#view-me .set-head")].find(x => x.textContent.includes("離線地圖")); if (h && !h.parentElement.classList.contains("open")) h.click(); });   // 展開「離線地圖」群組
+    await page.waitForTimeout(300);
     await page.evaluate(() => document.getElementById("btnClearTiles")?.scrollIntoView());
     await page.click("#btnClearTiles");
     await page.waitForTimeout(500);

@@ -176,78 +176,15 @@
 
   <section id="view-me" class="view">
     <div id="meProfileCard"></div>
-    <div class="section-title">個人資料（用於估算步數與卡路里）</div>
-    <div class="field"><label>體重（公斤）</label><input id="pfWeight" type="number" inputmode="decimal" min="20" max="200" placeholder="60"></div>
-    <div class="field"><label>身高（公分）</label><input id="pfHeight" type="number" inputmode="numeric" min="100" max="220" placeholder="170"></div>
-    <div class="field"><label>背包負重（公斤，選填，納入卡路里）</label><input id="pfPack" type="number" inputmode="decimal" min="0" max="40" placeholder="0"></div>
-    <button class="btn primary" id="btnSaveProfile">儲存</button>
 
-    <div class="section-title">外觀主題</div>
-    <div class="theme-row" id="themeRow">
-      <button class="theme-opt" data-theme-opt="light">
-        <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19"/></svg>淺色
-      </button>
-      <button class="theme-opt" data-theme-opt="dark">
-        <svg class="ic" viewBox="0 0 24 24"><path d="M21 13A8.5 8.5 0 0 1 11 3a7 7 0 1 0 10 10Z"/></svg>深色
-      </button>
-    </div>
-    <div class="accent-head">字體大小</div>
-    <div class="theme-row" id="fontRow">
-      <button class="theme-opt fs-opt" data-fs="1" aria-label="標準"><span style="font-size:15px">A</span></button>
-      <button class="theme-opt fs-opt" data-fs="1.15" aria-label="大"><span style="font-size:19px">A</span></button>
-      <button class="theme-opt fs-opt" data-fs="1.3" aria-label="特大"><span style="font-size:24px">A</span></button>
-    </div>
-
-    <div class="accent-head">語言 Language</div>
-    <div class="lang-list" id="langRow"></div>
-    <div class="accent-head">主題色<span class="pro-tag">PRO</span></div>
-    <div class="accent-row" id="accentRow"></div>
-
-    <div class="section-title">會員</div>
-    <div id="premiumBox"></div>
-    <div id="proColorWrap"></div>
-
+    <!-- 內容區：一眼看到自己的足跡與紀錄 -->
     <div class="section-title">我的足跡</div>
     <div id="meMonth"></div>
     <div id="meStats"></div>
-    <button class="btn ghost" id="btnAnalytics" style="margin-top:11px"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".6" fill="currentColor" stroke="none"/></svg> 進階分析<span class="pro-tag">PRO</span></button>
-    <button class="btn ghost" id="btnYearReview" style="margin-top:10px"><svg class="ic" viewBox="0 0 24 24"><path d="M7 4h10v4a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M10 14h4l-.5 4h-3L10 14ZM8 21h8"/></svg> 年度回顧<span class="pro-tag">PRO</span></button>
-    <button class="btn ghost" id="btnFootMap" style="margin-top:10px"><svg class="ic" viewBox="0 0 24 24"><path d="m9 4-6 2v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/></svg> 足跡地圖<span class="pro-tag">PRO</span></button>
-
-    <div class="section-title">資料備份</div>
-    <div class="link-row two">
-      <button class="link-btn" id="btnCloudBackup"><svg class="ic" viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1 0-8 5 5 0 0 1 9.6-1.5A3.5 3.5 0 0 1 18 18Z"/><path d="M12 16v-5m0 0-2 2m2-2 2 2"/></svg>雲端備份</button>
-      <button class="link-btn" id="btnCloudRestore"><svg class="ic" viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1 0-8 5 5 0 0 1 9.6-1.5A3.5 3.5 0 0 1 18 18Z"/><path d="M12 11v5m0 0-2-2m2 2 2-2"/></svg>雲端還原</button>
-      <button class="link-btn" id="btnFileBackup"><svg class="ic" viewBox="0 0 24 24"><path d="M12 14V4m0 10 4-4m-4 4-4-4"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></svg>匯出備份檔</button>
-      <button class="link-btn" id="btnFileRestore"><svg class="ic" viewBox="0 0 24 24"><path d="M12 10v10m0-10 4 4m-4-4-4 4"/><path d="M4 9V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v4"/></svg>匯入備份檔</button>
-    </div>
-    <input type="file" id="fileRestoreInput" accept=".json,application/json" style="display:none">
-    <div class="offline-hint" style="margin-top:6px">登入後每趟走完會自動雲端備份，換手機或資料遺失都救得回。也可匯出備份檔自己保管。</div>
-
-    <div class="section-title">離線地圖<span class="pro-tag">PRO</span></div>
-    <div class="offline-panel">
-      <div class="op-status">
-        <svg class="ic op-ic" viewBox="0 0 24 24"><path d="m9 4-6 2v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/></svg>
-        <div class="op-status-txt">
-          <div id="offlineStatus" class="offline-status">已快取地圖圖磚：計算中…</div>
-          <div id="offlineQuota" class="offline-quota"></div>
-        </div>
-      </div>
-      <div class="op-sec">下載</div>
-      <button class="btn ghost op-btn" id="btnAllOffline"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18"/></svg> 一鍵下載全台離線地圖（概覽）</button>
-      <div id="allOfflineBox" class="offline-box" style="display:none"></div>
-      <button class="btn ghost op-btn" id="btnFavOffline"><svg class="ic" viewBox="0 0 24 24"><path d="M12 4v10m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/></svg> 預載所有收藏步道的離線地圖</button>
-      <div id="favOfflineBox" class="offline-box" style="display:none"></div>
-      <div class="op-hint">在步道詳情頁按「預載離線地圖」可下載該步道範圍，山區無網路也能看地圖。</div>
-      <div class="op-sec">備份與分享<span class="pro-tag">PRO</span></div>
-      <div class="op-io">
-        <button class="btn ghost" id="btnPackExport"><svg class="ic" viewBox="0 0 24 24"><path d="M12 14V4m0 10 4-4m-4 4-4-4"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></svg> 匯出地圖包</button>
-        <button class="btn ghost" id="btnPackImport"><svg class="ic" viewBox="0 0 24 24"><path d="M12 10v10m0-10 4 4m-4-4-4 4"/><path d="M4 9V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v4"/></svg> 匯入地圖包</button>
-      </div>
-      <div class="op-hint">把下載好的地圖打包成檔案備份，或傳到另一台裝置匯入，不必重新下載。</div>
-      <input type="file" id="packFile" style="display:none">
-      <div id="packBox" class="offline-box" style="display:none"></div>
-      <div class="op-foot"><button class="btn-clear-all" id="btnClearTiles">清除離線地圖</button></div>
+    <div class="link-row flow" style="margin-top:11px">
+      <button class="link-btn" id="btnAnalytics"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".6" fill="currentColor" stroke="none"/></svg> 進階分析<span class="pro-tag">PRO</span></button>
+      <button class="link-btn" id="btnYearReview"><svg class="ic" viewBox="0 0 24 24"><path d="M7 4h10v4a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M10 14h4l-.5 4h-3L10 14ZM8 21h8"/></svg> 年度回顧<span class="pro-tag">PRO</span></button>
+      <button class="link-btn" id="btnFootMap"><svg class="ic" viewBox="0 0 24 24"><path d="m9 4-6 2v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/></svg> 足跡地圖<span class="pro-tag">PRO</span></button>
     </div>
 
     <div class="hist-head">
@@ -258,7 +195,99 @@
     </div>
     <div id="historyList"></div>
 
-    <div style="text-align:center;margin-top:24px">
+    <!-- 設定區：全部收進可折疊分類，畫面不再一長串 -->
+    <div class="section-title set-zone-title">設定</div>
+
+    <div class="set-group">
+      <button class="set-head" type="button">會員<span id="setMemberTag" class="set-tag"></span><svg class="set-chev ic" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="set-body">
+        <div id="premiumBox"></div>
+        <div id="proColorWrap"></div>
+      </div>
+    </div>
+
+    <div class="set-group">
+      <button class="set-head" type="button">外觀<svg class="set-chev ic" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="set-body">
+        <div class="accent-head" style="margin-top:0">外觀主題</div>
+        <div class="theme-row" id="themeRow">
+          <button class="theme-opt" data-theme-opt="light"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19"/></svg>淺色</button>
+          <button class="theme-opt" data-theme-opt="dark"><svg class="ic" viewBox="0 0 24 24"><path d="M21 13A8.5 8.5 0 0 1 11 3a7 7 0 1 0 10 10Z"/></svg>深色</button>
+        </div>
+        <div class="accent-head">字體大小</div>
+        <div class="theme-row" id="fontRow">
+          <button class="theme-opt fs-opt" data-fs="1" aria-label="標準"><span style="font-size:15px">A</span></button>
+          <button class="theme-opt fs-opt" data-fs="1.15" aria-label="大"><span style="font-size:19px">A</span></button>
+          <button class="theme-opt fs-opt" data-fs="1.3" aria-label="特大"><span style="font-size:24px">A</span></button>
+        </div>
+        <div class="accent-head">主題色<span class="pro-tag">PRO</span></div>
+        <div class="accent-row" id="accentRow"></div>
+      </div>
+    </div>
+
+    <div class="set-group">
+      <button class="set-head" type="button">語言<svg class="set-chev ic" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="set-body">
+        <div class="lang-list" id="langRow"></div>
+      </div>
+    </div>
+
+    <div class="set-group">
+      <button class="set-head" type="button">個人資料<svg class="set-chev ic" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="set-body">
+        <div class="offline-hint" style="margin:0 0 8px">用於估算步數與卡路里</div>
+        <div class="field"><label>體重（公斤）</label><input id="pfWeight" type="number" inputmode="decimal" min="20" max="200" placeholder="60"></div>
+        <div class="field"><label>身高（公分）</label><input id="pfHeight" type="number" inputmode="numeric" min="100" max="220" placeholder="170"></div>
+        <div class="field"><label>背包負重（公斤，選填，納入卡路里）</label><input id="pfPack" type="number" inputmode="decimal" min="0" max="40" placeholder="0"></div>
+        <button class="btn primary" id="btnSaveProfile">儲存</button>
+      </div>
+    </div>
+
+    <div class="set-group">
+      <button class="set-head" type="button">資料備份<svg class="set-chev ic" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="set-body">
+        <div class="link-row two">
+          <button class="link-btn" id="btnCloudBackup"><svg class="ic" viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1 0-8 5 5 0 0 1 9.6-1.5A3.5 3.5 0 0 1 18 18Z"/><path d="M12 16v-5m0 0-2 2m2-2 2 2"/></svg>雲端備份</button>
+          <button class="link-btn" id="btnCloudRestore"><svg class="ic" viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1 0-8 5 5 0 0 1 9.6-1.5A3.5 3.5 0 0 1 18 18Z"/><path d="M12 11v5m0 0-2-2m2 2 2-2"/></svg>雲端還原</button>
+          <button class="link-btn" id="btnFileBackup"><svg class="ic" viewBox="0 0 24 24"><path d="M12 14V4m0 10 4-4m-4 4-4-4"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></svg>匯出備份檔</button>
+          <button class="link-btn" id="btnFileRestore"><svg class="ic" viewBox="0 0 24 24"><path d="M12 10v10m0-10 4 4m-4-4-4 4"/><path d="M4 9V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v4"/></svg>匯入備份檔</button>
+        </div>
+        <input type="file" id="fileRestoreInput" accept=".json,application/json" style="display:none">
+        <div class="offline-hint" style="margin-top:6px">登入後每趟走完會自動雲端備份，換手機或資料遺失都救得回。也可匯出備份檔自己保管。</div>
+      </div>
+    </div>
+
+    <div class="set-group">
+      <button class="set-head" type="button">離線地圖<span class="pro-tag">PRO</span><svg class="set-chev ic" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="set-body">
+        <div class="offline-panel">
+          <div class="op-status">
+            <svg class="ic op-ic" viewBox="0 0 24 24"><path d="m9 4-6 2v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/></svg>
+            <div class="op-status-txt">
+              <div id="offlineStatus" class="offline-status">已快取地圖圖磚：計算中…</div>
+              <div id="offlineQuota" class="offline-quota"></div>
+            </div>
+          </div>
+          <div class="op-sec">下載</div>
+          <button class="btn ghost op-btn" id="btnAllOffline"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18"/></svg> 一鍵下載全台離線地圖（概覽）</button>
+          <div id="allOfflineBox" class="offline-box" style="display:none"></div>
+          <button class="btn ghost op-btn" id="btnFavOffline"><svg class="ic" viewBox="0 0 24 24"><path d="M12 4v10m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/></svg> 預載所有收藏步道的離線地圖</button>
+          <div id="favOfflineBox" class="offline-box" style="display:none"></div>
+          <div class="op-hint">在步道詳情頁按「預載離線地圖」可下載該步道範圍，山區無網路也能看地圖。</div>
+          <div class="op-sec">備份與分享<span class="pro-tag">PRO</span></div>
+          <div class="op-io">
+            <button class="btn ghost" id="btnPackExport"><svg class="ic" viewBox="0 0 24 24"><path d="M12 14V4m0 10 4-4m-4 4-4-4"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></svg> 匯出地圖包</button>
+            <button class="btn ghost" id="btnPackImport"><svg class="ic" viewBox="0 0 24 24"><path d="M12 10v10m0-10 4 4m-4-4-4 4"/><path d="M4 9V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v4"/></svg> 匯入地圖包</button>
+          </div>
+          <div class="op-hint">把下載好的地圖打包成檔案備份，或傳到另一台裝置匯入，不必重新下載。</div>
+          <input type="file" id="packFile" style="display:none">
+          <div id="packBox" class="offline-box" style="display:none"></div>
+          <div class="op-foot"><button class="btn-clear-all" id="btnClearTiles">清除離線地圖</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin:18px 0 4px">
       <button class="info-link" id="btnDiag">🐞 診斷／回報問題</button>
     </div>
   </section>
