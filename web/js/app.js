@@ -986,7 +986,7 @@ function flyAlong() {
   let bearing = _flyBearing(posAt(0), posAhead(Math.min(LOOK, total)));   // 起始就朝前，不會突兀
   let t0 = performance.now(), lastT = t0;
   // 電影運鏡：zoom 全程「固定」→ 圖磚不換級、不再週期性閃。運鏡改靠俯角(進場/收尾/微呼吸)＋轉向側傾＋緩入緩出節奏
-  const FLY_Z = 15.0, IN_P = 67, CR_P = 60, OUT_P = 64;
+  const FLY_Z = 15.2, IN_P = 54, CR_P = 48, OUT_P = 52;   // 俯角壓低（較俯視）→ 近景不需要更高倍圖磚，避免近處露出模糊大色塊「閃」
   const lerp = (a, b, t) => a + (b - a) * t;
   const smooth = x => x <= 0 ? 0 : x >= 1 ? 1 : x * x * x * (x * (x * 6 - 15) + 10);   // smootherstep 緩入緩出
   const step = now => {
