@@ -986,8 +986,11 @@ function flyAlong() {
   const smooth = x => x <= 0 ? 0 : x >= 1 ? 1 : x * x * x * (x * (x * 6 - 15) + 10);   // smootherstep 緩入緩出
   // 用 FreeCamera 把相機直接放在 3D 空間（追焦式），不再每幀 jumpTo 讓相機重新貼合地形→消除「地形跳一下」的閃
   const useFree = !!(typeof maplibregl !== "undefined" && maplibregl.MercatorCoordinate && _map3d.getFreeCameraOptions);
-  const AGL = 600, BACK = 240;   // 相機離地高度、退後距離（公尺）——恆定離地高＝像空拍機貼著地形飛
-  const terr = ll => { try { const e = _map3d.queryTerrainElevation ? _map3d.queryTerrainElevation(ll) : null; return (e == null || !isFinite(e)) ? 350 : e; } catch (e) { return 350; } };
+  const AGL = 620, BACK = 260;   // 相機離地高度、退後距離（公尺）——恆定離地高＝像空拍機貼著地形飛
+  // 查地面高度：查不到(圖磚未載)就回 null，不用固定值 → 由平滑器沿用上一格，絕不瞬跳
+  const terrRaw = ll => { try { const e = _map3d.queryTerrainElevation ? _map3d.queryTerrainElevation(ll) : null; return (e == null || !isFinite(e)) ? null : e; } catch (e) { return null; } };
+  let groundSm = terrRaw(posAt(0)); if (groundSm == null) groundSm = 300;   // 起始地面高度（之後只平滑不瞬跳）
+  let camAlt = groundSm + AGL;                                            // 相機絕對高度（平滑，永不瞬跳＝不閃）
   let look = posAhead(Math.min(LOOK, total));            // 平滑後的觀看目標
   let bearing = _flyBearing(posAt(0), look);
   let t0 = performance.now(), lastT = t0;
@@ -1004,9 +1007,13 @@ function flyAlong() {
     const src = _map3d.getSource("me3d"); if (src) src.setData({ type: "Feature", geometry: { type: "Point", coordinates: pos } });
     if (useFree) {
       const camLL = posAt(Math.max(0, d - BACK));        // 相機在行進方向後方
-      const agl = AGL * (1 + 0.05 * Math.sin((now - t0) / 5200));   // 高度微呼吸(不換圖磚)
+      const g = terrRaw(camLL);                          // 查不到就不更新 groundSm（沿用上一格）
+      if (g != null) groundSm += (g - groundSm) * Math.min(1, k * 0.5);   // 地面高度緩慢跟隨（低通濾波）→ 山勢起伏但不彈跳
+      const breath = 1 + 0.04 * Math.sin((now - t0) / 5200);
+      const targetAlt = groundSm + AGL * breath;
+      camAlt += (targetAlt - camAlt) * Math.min(1, k * 0.6);             // 相機高度再平滑一層，絕不瞬跳
       const cam = _map3d.getFreeCameraOptions();
-      cam.position = maplibregl.MercatorCoordinate.fromLngLat(camLL, terr(camLL) + agl);
+      cam.position = maplibregl.MercatorCoordinate.fromLngLat(camLL, camAlt);
       cam.lookAtPoint(look);
       _map3d.setFreeCameraOptions(cam);
     } else {   // 舊版瀏覽器 fallback：固定縮放 jumpTo
@@ -1039,7 +1046,7 @@ async function _open3D(name, geom, opts) {
   _map3d = new maplibregl.Map({
     container: "map3dCanvas",
     center: [(minLng + maxLng) / 2, (minLat + maxLat) / 2], zoom: 12, pitch: 62, bearing: 18, maxPitch: 80,
-    attributionControl: { compact: true }, fadeDuration: 0, maxTileCacheSize: 1024, refreshExpiredTiles: false,   // 大量保留圖磚在 GPU→平移時不卸載重載(閃)；不因過期重抓
+    attributionControl: { compact: true }, fadeDuration: 250, maxTileCacheSize: 1024, refreshExpiredTiles: false,   // 圖磚淡入(不硬切pop)；大量保留圖磚在 GPU→平移時不卸載重載；不因過期重抓
     style: {
       version: 8,
       sources: {
