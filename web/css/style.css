@@ -283,6 +283,18 @@ body[data-view]:not([data-view="explore"]) .app-header::before { opacity: .5; }
 #detailMap, #recMap, #trackMap { height: 210px; width: 100%; background: var(--surface-2); }
 #trackMap { border-bottom: 1px solid var(--line); }
 #recMap { height: 240px; border-radius: var(--r-sm); }
+/* 導航模式（heading-up）：地圖旋轉、中心固定三角形永遠朝上（前方） */
+.recmap-wrap { position: relative; }
+.recmap-wrap #recMap { transition: transform .12s linear; }
+.navup-arrow { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -55%); width: 30px; height: 30px; z-index: 500; pointer-events: none; color: #2f7dff; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
+.navup-arrow[hidden] { display: none; }
+.navup-arrow svg { width: 100%; height: 100%; }
+.navup-arrow svg path { stroke: #fff; stroke-width: 1.5; }
+.navup-exit { position: absolute; top: 8px; right: 8px; z-index: 501; width: 32px; height: 32px; border-radius: 50%; border: none; background: rgba(0,0,0,.55); color: #fff; font-size: 15px; cursor: pointer; }
+.navup-exit[hidden] { display: none; }
+/* 導航中：藏掉會跟著旋轉而歪掉的地圖控制鈕，並裁掉放大後溢出的邊 */
+body.navup-on .recmap-wrap { overflow: hidden; border-radius: var(--r-sm); }
+body.navup-on #recMap .leaflet-control-container { display: none; }
 .replay-live {
   position: absolute; top: 12px; left: 12px; z-index: 600; pointer-events: none;
   background: rgba(22, 48, 31, .9); color: #f3efe4; backdrop-filter: blur(4px);

@@ -1083,12 +1083,51 @@ function addThreeD(map, onClick) {
   c.addTo(map);
 }
 // 指北針：讀裝置方位，轉動手機時指針跟著轉、指向實際北方
-let _compassOn = false, _heading = 0, _gpsHeading = null;
+let _compassOn = false, _heading = 0, _gpsHeading = null, _navUp = false;
 function rotateCompasses() { document.querySelectorAll(".compass-rose").forEach(r => r.style.transform = `rotate(${-_heading}deg)`); }
+// 導航模式（heading-up）：地圖跟著行進方向旋轉、中心固定的三角形永遠朝上（前方），像一般導航。
+function navHeading() { const h = (_compassOn && _heading != null) ? _heading : _gpsHeading; return (h != null && isFinite(h)) ? h : 0; }
+function applyNavUp() {
+  if (!recMap) return;
+  const el = recMap.getContainer();
+  if (_navUp) {
+    // 先置中在使用者，再旋轉整張地圖（-heading→行進方向朝上），放大蓋住旋轉後的角落空缺
+    const last = (recSnap && recSnap.track && recSnap.track.length) ? recSnap.track[recSnap.track.length - 1] : null;
+    if (last) recMap.setView([last.lat, last.lon], Math.max(recMap.getZoom(), 16), { animate: false });
+    el.style.transform = `rotate(${-navHeading()}deg) scale(1.8)`;
+    el.style.transformOrigin = "50% 50%";
+    document.body.classList.add("navup-on");
+  } else {
+    el.style.transform = ""; document.body.classList.remove("navup-on");
+  }
+}
+function toggleNavUp() {
+  _navUp = !_navUp;
+  const a = document.getElementById("navUpArrow"); if (a) a.hidden = !_navUp;
+  const x = document.getElementById("navUpExit"); if (x) x.hidden = !_navUp;
+  document.querySelectorAll(".map-navup-btn").forEach(b => b.classList.toggle("on", _navUp));
+  applyNavUp();
+  if (_navUp) { try { enableCompass(); } catch (e) { /* */ } toast(ttT("導航模式：地圖跟著方向轉")); }
+  else { if (recMap) setTimeout(() => recMap.invalidateSize(), 60); }
+}
+if (typeof document !== "undefined") { const _nx = () => { const x = document.getElementById("navUpExit"); if (x) x.addEventListener("click", () => { if (_navUp) toggleNavUp(); }); }; if (document.readyState !== "loading") _nx(); else document.addEventListener("DOMContentLoaded", _nx); }
+function addNavUp(map) {
+  const c = L.control({ position: "topright" });
+  c.onAdd = () => {
+    const d = L.DomUtil.create("div", "map-fs-btn map-navup-btn" + (_navUp ? " on" : ""));
+    d.innerHTML = '<svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><path d="M12 3l7 16-7-4-7 4 7-16Z"/></svg>'; d.title = ttT("導航模式");
+    L.DomEvent.disableClickPropagation(d);
+    d.addEventListener("click", toggleNavUp);
+    return d;
+  };
+  c.addTo(map);
+}
 // 更新記錄地圖「我」的面朝錐：優先用手機羅盤(站著轉身也動)，沒有才用 GPS 行進方向
 function updateMeCone() {
+  if (_navUp) applyNavUp();   // 導航模式：地圖跟著轉，地圖上的方向錐就不需要再轉（中心固定三角形代表前方）
   if (!recMarker || !recMarker._av || !recMarker.getElement) return;
   const el = recMarker.getElement(); const dir = el && el.querySelector(".tm-dir"); if (!dir) return;
+  if (_navUp) { dir.style.display = "none"; return; }   // 導航模式隱藏地圖上的錐，避免與中心三角形重複
   const head = (_compassOn && _heading != null) ? _heading : _gpsHeading;
   if (head != null) { dir.style.transform = `rotate(${head}deg)`; dir.style.display = "block"; } else dir.style.display = "none";
 }
@@ -2288,7 +2327,7 @@ function distToRoute(lat, lon) {
 function initRecMap() {
   if (!recMap) {
     recMap = L.map("recMap", { zoomControl: false }).setView([25.033, 121.564], 15);
-    baseTopo().addTo(recMap); hillshadeLayer(recMap).addTo(recMap); addCompass(recMap); addRecenter(recMap); addThreeD(recMap, open3DRecording); addFullscreen(recMap);
+    baseTopo().addTo(recMap); hillshadeLayer(recMap).addTo(recMap); addCompass(recMap); addNavUp(recMap); addRecenter(recMap); addThreeD(recMap, open3DRecording); addFullscreen(recMap);
     recLine = L.polyline([], { color: "#2f7d4f", weight: 5 }).addTo(recMap);
   }
   recMap.invalidateSize();
