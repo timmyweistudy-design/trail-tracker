@@ -1101,15 +1101,16 @@ function applyNavUp() {
     el.style.transform = ""; document.body.classList.remove("navup-on");
   }
 }
-function toggleNavUp() {
-  _navUp = !_navUp;
-  const a = document.getElementById("navUpArrow"); if (a) a.hidden = !_navUp;
+function setNavUp(on, silent) {
+  if (_navUp === on) return;
+  _navUp = on;
   const x = document.getElementById("navUpExit"); if (x) x.hidden = !_navUp;
   document.querySelectorAll(".map-navup-btn").forEach(b => b.classList.toggle("on", _navUp));
   applyNavUp();
-  if (_navUp) { try { enableCompass(); } catch (e) { /* */ } toast(ttT("導航模式：地圖跟著方向轉")); }
-  else { if (recMap) setTimeout(() => recMap.invalidateSize(), 60); }
+  if (_navUp) { try { enableCompass(); } catch (e) { /* */ } if (!silent) toast(ttT("導航模式：地圖跟著方向轉")); updateMeCone(); }
+  else { document.querySelectorAll("#recMap .tm-av, #recMap .pm-e").forEach(e => e.style.transform = ""); updateMeCone(); if (recMap) setTimeout(() => recMap.invalidateSize(), 60); }
 }
+function toggleNavUp() { setNavUp(!_navUp); }
 if (typeof document !== "undefined") { const _nx = () => { const x = document.getElementById("navUpExit"); if (x) x.addEventListener("click", () => { if (_navUp) toggleNavUp(); }); }; if (document.readyState !== "loading") _nx(); else document.addEventListener("DOMContentLoaded", _nx); }
 function addNavUp(map) {
   const c = L.control({ position: "topright" });
@@ -1124,10 +1125,16 @@ function addNavUp(map) {
 }
 // 更新記錄地圖「我」的面朝錐：優先用手機羅盤(站著轉身也動)，沒有才用 GPS 行進方向
 function updateMeCone() {
-  if (_navUp) applyNavUp();   // 導航模式：地圖跟著轉，地圖上的方向錐就不需要再轉（中心固定三角形代表前方）
+  if (_navUp) {
+    applyNavUp();   // 地圖跟著行進方向轉
+    const h = navHeading();
+    // 頭像框＋寵物保持「正的」：反向抵銷地圖旋轉（地圖轉 -h → 內容轉 +h → 螢幕上直立）
+    document.querySelectorAll("#recMap .tm-av, #recMap .pm-e").forEach(e => e.style.transform = `rotate(${h}deg)`);
+  }
   if (!recMarker || !recMarker._av || !recMarker.getElement) return;
   const el = recMarker.getElement(); const dir = el && el.querySelector(".tm-dir"); if (!dir) return;
-  if (_navUp) { dir.style.display = "none"; return; }   // 導航模式隱藏地圖上的錐，避免與中心三角形重複
+  // 導航：頭像框已直立，方向角(tm-dir)設 0°→在螢幕上朝正上方(前方)＝原本相框的角就是指標
+  if (_navUp) { dir.style.transform = "rotate(0deg)"; dir.style.display = "block"; return; }
   const head = (_compassOn && _heading != null) ? _heading : _gpsHeading;
   if (head != null) { dir.style.transform = `rotate(${head}deg)`; dir.style.display = "block"; } else dir.style.display = "none";
 }
@@ -2494,7 +2501,7 @@ Recorder.onUpdate(s => {
       petMarker.setLatLng(last);
     }
     // 模擬高幀率：用 animate:false 讓地圖即時跟隨，路線從腳下滑過＝滑行感；真實 GPS 維持平滑動畫
-    if (s.state === "running") recMap.panTo(last, sim() ? { animate: false } : undefined);
+    if (s.state === "running") recMap.panTo(last, (sim() || _navUp) ? { animate: false } : undefined);
   }
 });
 
@@ -2613,6 +2620,7 @@ function startRecordingUI() {
   initRecMap();
   ensureMeAvatar();
   clearPreHike();                     // #3 開始記錄後收起行前小卡
+  setTimeout(() => setNavUp(true, true), 300);   // 導航模式預設開（開始記錄就進導航視角）
   const ri = $("#recIdle"); if (ri) ri.style.display = "none";
   // 模擬模式：沿步道真實路線行走（有動畫感）。沒選步道就自動挑一條真實步道。
   if (sim() && Recorder.getState() !== "paused") {
@@ -2676,6 +2684,7 @@ $("#btnPause").addEventListener("click", () => {
 });
 async function finishRecording(autoVehicle) {
   const rec = Recorder.stop();
+  setNavUp(false, true);   // 結束記錄→退出導航視角，地圖轉正
   recPreloaded = false; lastKmMilestone = 0;   // 下次記錄重新預載/里程碑
   $("#btnStart").textContent = "▶ 開始";
   $("#btnStart").style.display = "block";
