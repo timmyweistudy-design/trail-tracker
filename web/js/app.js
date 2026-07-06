@@ -971,38 +971,26 @@ function _start3dLive() {
 function _flyBearing(a, b) { const y = Math.sin((b[0] - a[0]) * Math.PI / 180) * Math.cos(b[1] * Math.PI / 180); const x = Math.cos(a[1] * Math.PI / 180) * Math.sin(b[1] * Math.PI / 180) - Math.sin(a[1] * Math.PI / 180) * Math.cos(b[1] * Math.PI / 180) * Math.cos((b[0] - a[0]) * Math.PI / 180); return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360; }
 function _lerpAngle(a, b, t) { const d = ((b - a + 540) % 360) - 180; return (a + d * t + 360) % 360; }   // 取最短弧插值
 // 沿路線飛行：等速前進＋「看向前方」的目標方位再逐幀平滑補間(banking)，轉彎絲滑像空拍機
+// 回放＝俯瞰整條路線＋可自由滑動地圖；相機完全不自己動（交給使用者拖曳/縮放/傾斜）→
+// 不會被山擋、也不會因相機移動而閃。只讓小藍點沿路線走，顯示行進進度。
 function flyAlong() {
   if (!_map3d || !_flyPath || _flyPath.length < 2) return;
   if (_flyRAF) { cancelAnimationFrame(_flyRAF); _flyRAF = null; }
   const path = _flyPath;
-  const segM = (a, b) => haversine({ lat: a[1], lon: a[0] }, { lat: b[1], lon: b[0] });   // 公尺
+  const segM = (a, b) => haversine({ lat: a[1], lon: a[0] }, { lat: b[1], lon: b[0] });
   const cum = [0]; for (let i = 1; i < path.length; i++) cum[i] = cum[i - 1] + segM(path[i - 1], path[i]);
   const total = cum[cum.length - 1] || 1;
-  const DUR = Math.min(55000, Math.max(18000, total * 9));      // 放慢：圖磚有時間載到，較不閃（約 1km≈9 秒）
+  const DUR = Math.min(45000, Math.max(14000, total * 7));
   let ix = 1;
   const posAt = d => { while (ix < cum.length - 1 && cum[ix] < d) ix++; while (ix > 1 && cum[ix - 1] > d) ix--; const a = path[ix - 1], b = path[ix], f = (d - cum[ix - 1]) / ((cum[ix] - cum[ix - 1]) || 1); return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]; };
-  const smooth = x => x <= 0 ? 0 : x >= 1 ? 1 : x * x * x * (x * (x * 6 - 15) + 10);   // smootherstep 緩入緩出
-  // 固定側面運鏡：方位/俯角/縮放全程「完全不變」，鏡頭只沿走廊「平移」把主角框在畫面裡。
-  // 因為不旋轉、不縮放，terrain 不會轉、圖磚不用重載（走廊已預載）→ 徹底不閃。
-  // 固定方位偏「順著路線」12°（不是正側面）→ 路線往畫面深處延伸、稜線不易擋住它；俯角 58°→看得到地面又較不被山擋
-  const FIX_BEARING = (_flyBearing(path[0], path[path.length - 1]) + 12) % 360;
-  const FIX_PITCH = 58, FIX_Z = 15.3;
-  let center = posAt(0);
-  let t0 = performance.now(), lastT = t0;
+  ix = 1;
+  const t0 = performance.now();
   const step = now => {
     if (!_map3d) return;
-    const pRaw = Math.min(1, (now - t0) / DUR);
-    const p = smooth(pRaw);                 // 緩入緩出＝電影節奏（起步慢、收尾慢）
-    const pos = posAt(p * total);
-    const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
-    const k = 1 - Math.pow(0.06, dt);       // 鏡頭略慢跟隨主角＝跟拍感（不追視角旋轉）
-    center = [center[0] + (pos[0] - center[0]) * k, center[1] + (pos[1] - center[1]) * k];
-    const src = _map3d.getSource("me3d"); if (src) src.setData({ type: "Feature", geometry: { type: "Point", coordinates: pos } });
-    _map3d.jumpTo({ center, bearing: FIX_BEARING, pitch: FIX_PITCH, zoom: FIX_Z });   // 方位/俯角/縮放固定→不重載圖磚
-    if (pRaw < 1) _flyRAF = requestAnimationFrame(step); else _flyRAF = null;
+    const p = Math.min(1, (now - t0) / DUR);
+    const src = _map3d.getSource("me3d"); if (src) src.setData({ type: "Feature", geometry: { type: "Point", coordinates: posAt(p * total) } });   // 只動小藍點，不碰相機
+    if (p < 1) _flyRAF = requestAnimationFrame(step); else _flyRAF = null;
   };
-  // 起飛前先把相機一次到位到固定運鏡（避免飛行第一幀從 fitBounds 大跳一次）
-  _map3d.jumpTo({ center: posAt(0), bearing: FIX_BEARING, pitch: FIX_PITCH, zoom: FIX_Z });
   _flyRAF = requestAnimationFrame(step);
 }
 async function _open3D(name, geom, opts) {
@@ -1058,22 +1046,20 @@ async function _open3D(name, geom, opts) {
       _start3dLive();
       return;
     }
-    try { _map3d.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 55, pitch: 62, bearing: 18, duration: 0 }); } catch (e) { /* */ }
-    // 太長的步道 fitBounds 會縮太遠→衛星變糊。靜態檢視設縮放下限：改成站在起點、面朝路線的近景，較清楚
-    if (!opts.fly && _map3d.getZoom() < 14) {
-      const ahead = main[Math.min(main.length - 1, 12)] || end;
-      const br = _flyBearing([start[1], start[0]], [ahead[1], ahead[0]]);
-      _map3d.jumpTo({ center: [start[1], start[0]], zoom: 14.8, pitch: 64, bearing: br });
-    }
-    if (opts.fly) {   // 起飛前把整條走廊需要的圖磚「全部」下載完成（顯示進度），100% 才飛→飛行中零串流、不閃
-      const box = { n: maxLat + 0.004, s: minLat - 0.004, e: maxLng + 0.004, w: minLng - 0.004 };
-      const prep = $("#map3dPrep"), ptxt = $("#map3dPrepTxt");
-      const showPct = pct => { if (prep) prep.hidden = false; if (ptxt) ptxt.textContent = `${ttT("準備 3D 地形…")} ${pct}%`; };
-      showPct(0);
-      let started = false;
-      const go = () => { if (started || !_map3d) return; started = true; if (prep) prep.hidden = true; toast(ttT("🚶 帶你走一遍…")); flyAlong(); };
-      Promise.race([preload3DFull(box, showPct), new Promise(r => setTimeout(r, 45000))])   // 45 秒保險上限，避免極端路線卡住
-        .then(() => { if (!_map3d) return; _map3d.once("idle", go); setTimeout(go, 1800); });   // 全載完後再等目前視野 idle 才飛
+    if (opts.fly) {
+      // 回放＝俯瞰整條路線、可自由滑動地圖。相機不自己動→不會被山擋、不閃；只讓小藍點沿路線走
+      try { _map3d.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 60, pitch: 38, bearing: 0, duration: 0 }); } catch (e) { /* */ }
+      preload3DFull({ n: maxLat + 0.01, s: minLat - 0.01, e: maxLng + 0.01, w: minLng - 0.01 }, () => {});   // 背景預載，拖到別處也順
+      toast(ttT("🗺 俯瞰模式：可自由滑動、縮放、傾斜地圖"));
+      setTimeout(() => { if (_map3d) flyAlong(); }, 300);   // 小藍點開始走（相機交給使用者）
+    } else {
+      try { _map3d.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 55, pitch: 62, bearing: 18, duration: 0 }); } catch (e) { /* */ }
+      // 太長的步道 fitBounds 會縮太遠→衛星變糊。靜態檢視設縮放下限：改成站在起點、面朝路線的近景，較清楚
+      if (_map3d.getZoom() < 14) {
+        const ahead = main[Math.min(main.length - 1, 12)] || end;
+        const br = _flyBearing([start[1], start[0]], [ahead[1], ahead[0]]);
+        _map3d.jumpTo({ center: [start[1], start[0]], zoom: 14.8, pitch: 64, bearing: br });
+      }
     }
   });
 }
