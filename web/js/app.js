@@ -1101,27 +1101,13 @@ function applyNavUp() {
     el.style.transform = ""; document.body.classList.remove("navup-on");
   }
 }
-function setNavUp(on, silent) {
+// 導航模式＝記錄時的固定預設（無按鈕）：開始記錄自動開、結束自動關
+function setNavUp(on) {
   if (_navUp === on) return;
   _navUp = on;
-  const x = document.getElementById("navUpExit"); if (x) x.hidden = !_navUp;
-  document.querySelectorAll(".map-navup-btn").forEach(b => b.classList.toggle("on", _navUp));
   applyNavUp();
-  if (_navUp) { try { enableCompass(); } catch (e) { /* */ } if (!silent) toast(ttT("導航模式：地圖跟著方向轉")); updateMeCone(); }
+  if (_navUp) { try { enableCompass(); } catch (e) { /* */ } updateMeCone(); }
   else { document.querySelectorAll("#recMap .tm-av, #recMap .pm-e").forEach(e => e.style.transform = ""); updateMeCone(); if (recMap) setTimeout(() => recMap.invalidateSize(), 60); }
-}
-function toggleNavUp() { setNavUp(!_navUp); }
-if (typeof document !== "undefined") { const _nx = () => { const x = document.getElementById("navUpExit"); if (x) x.addEventListener("click", () => { if (_navUp) toggleNavUp(); }); }; if (document.readyState !== "loading") _nx(); else document.addEventListener("DOMContentLoaded", _nx); }
-function addNavUp(map) {
-  const c = L.control({ position: "topright" });
-  c.onAdd = () => {
-    const d = L.DomUtil.create("div", "map-fs-btn map-navup-btn" + (_navUp ? " on" : ""));
-    d.innerHTML = '<svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><path d="M12 3l7 16-7-4-7 4 7-16Z"/></svg>'; d.title = ttT("導航模式");
-    L.DomEvent.disableClickPropagation(d);
-    d.addEventListener("click", toggleNavUp);
-    return d;
-  };
-  c.addTo(map);
 }
 // 更新記錄地圖「我」的面朝錐：優先用手機羅盤(站著轉身也動)，沒有才用 GPS 行進方向
 function updateMeCone() {
@@ -2334,7 +2320,7 @@ function distToRoute(lat, lon) {
 function initRecMap() {
   if (!recMap) {
     recMap = L.map("recMap", { zoomControl: false }).setView([25.033, 121.564], 15);
-    baseTopo().addTo(recMap); hillshadeLayer(recMap).addTo(recMap); addCompass(recMap); addNavUp(recMap); addRecenter(recMap); addThreeD(recMap, open3DRecording); addFullscreen(recMap);
+    baseTopo().addTo(recMap); hillshadeLayer(recMap).addTo(recMap); addCompass(recMap); addRecenter(recMap); addThreeD(recMap, open3DRecording); addFullscreen(recMap);
     recLine = L.polyline([], { color: "#2f7d4f", weight: 5 }).addTo(recMap);
   }
   recMap.invalidateSize();
@@ -2480,7 +2466,7 @@ Recorder.onUpdate(s => {
       if (!recMarker || !recMarker._av) {
         if (recMarker) recMap.removeLayer(recMarker);
         const mePro = (typeof Premium !== "undefined" && Premium.isOn()) ? " pro" : "";
-        recMarker = L.marker(last, { icon: L.divIcon({ className: "team-marker me-marker" + mePro, html: `<div class="tm-av"><div class="tm-dir"><span class="tm-cone"></span></div><img src="${meAv}" alt=""><span class="tm-pet">${petEmojiNow()}</span></div>`, iconSize: [32, 32], iconAnchor: [16, 16] }), zIndexOffset: 1100 }).addTo(recMap);
+        recMarker = L.marker(last, { icon: L.divIcon({ className: "team-marker me-marker" + mePro, html: `<div class="tm-av"><div class="tm-dir"><span class="tm-cone"></span></div><img src="${meAv}" alt=""><span class="tm-pet">${petEmojiNow()}</span></div>`, iconSize: [24, 24], iconAnchor: [12, 12] }), zIndexOffset: 1100 }).addTo(recMap);
         recMarker._av = true;
       }
       recMarker.setLatLng(last);
@@ -2620,7 +2606,7 @@ function startRecordingUI() {
   initRecMap();
   ensureMeAvatar();
   clearPreHike();                     // #3 開始記錄後收起行前小卡
-  setTimeout(() => setNavUp(true, true), 300);   // 導航模式預設開（開始記錄就進導航視角）
+  setTimeout(() => setNavUp(true), 300);   // 導航模式預設開（開始記錄就進導航視角）
   const ri = $("#recIdle"); if (ri) ri.style.display = "none";
   // 模擬模式：沿步道真實路線行走（有動畫感）。沒選步道就自動挑一條真實步道。
   if (sim() && Recorder.getState() !== "paused") {
@@ -2684,7 +2670,7 @@ $("#btnPause").addEventListener("click", () => {
 });
 async function finishRecording(autoVehicle) {
   const rec = Recorder.stop();
-  setNavUp(false, true);   // 結束記錄→退出導航視角，地圖轉正
+  setNavUp(false);   // 結束記錄→退出導航視角，地圖轉正
   recPreloaded = false; lastKmMilestone = 0;   // 下次記錄重新預載/里程碑
   $("#btnStart").textContent = "▶ 開始";
   $("#btnStart").style.display = "block";

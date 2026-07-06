@@ -287,11 +287,14 @@ body[data-view]:not([data-view="explore"]) .app-header::before { opacity: .5; }
 .recmap-wrap { position: relative; }
 .recmap-wrap #recMap { transition: transform .12s linear; }
 #recMap .tm-av, #recMap .pm-e { transform-origin: center; }
-.navup-exit { position: absolute; top: 8px; right: 8px; z-index: 501; width: 32px; height: 32px; border-radius: 50%; border: none; background: rgba(0,0,0,.55); color: #fff; font-size: 15px; cursor: pointer; }
-.navup-exit[hidden] { display: none; }
 /* 導航中：藏掉會跟著旋轉而歪掉的地圖控制鈕，並裁掉放大後溢出的邊 */
 body.navup-on .recmap-wrap { overflow: hidden; border-radius: var(--r-sm); }
 body.navup-on #recMap .leaflet-control-container { display: none; }
+/* 記錄地圖「我」的頭像標記做小一點 */
+#recMap .team-marker.me-marker .tm-av { width: 24px; height: 24px; }
+#recMap .team-marker.me-marker .tm-av img, #recMap .team-marker.me-marker .tm-av .tm-ph { width: 24px; height: 24px; }
+#recMap .team-marker.me-marker .tm-pet { font-size: calc(18px * var(--fs, 1)); top: -17px; }
+#recMap .team-marker.me-marker .tm-cone { top: -6px; margin-left: -5px; border-left-width: 5px; border-right-width: 5px; border-bottom-width: 8px; }
 .replay-live {
   position: absolute; top: 12px; left: 12px; z-index: 600; pointer-events: none;
   background: rgba(22, 48, 31, .9); color: #f3efe4; backdrop-filter: blur(4px);
