@@ -222,7 +222,9 @@ function petRecommend() {
   syncFilterUI(); syncRegionUI(); updateFilterDot(); render();
   toast(`夥伴想去走「${label}」！`);
 }
-// 成就徽章
+// 成就樹階層（基本→困難）
+const ACH_TIERS = ["啟程", "入山", "登高", "縱走", "攻頂", "傳說"];
+// 成就徽章：成就樹，強調長期累積（拿掉一鍵可解的收藏類）
 function petBadges() {
   const recs = realRecords();
   const n = recs.length;
@@ -232,31 +234,49 @@ function petBadges() {
   const hrs = recs.map(r => new Date(r.date).getHours());
   const early = hrs.some(h => h < 7), night = hrs.some(h => h >= 19);
   const done = (typeof Store.doneCount === "function") ? Store.doneCount() : 0;
-  const favCount = TRAILS.filter(t => Store.isFav(t.id)).length;
   const wk = weeksStreak(), dstreak = (typeof daysStreak === "function") ? daysStreak() : 0;
-  // p: [目前值, 門檻, 單位] —— 供「下一個成就」進度提示；布林型（早起/夜行）不設 p
+  // 縣市探索＋難度征服：只算「真實走過/手動完成」的步道（done），非一鍵收藏
+  const doneTrails = (typeof TRAILS !== "undefined") ? TRAILS.filter(t => Store.trailLog(t.id).done) : [];
+  const counties = new Set(doneTrails.map(t => t.region).filter(Boolean)).size;
+  const hardDone = doneTrails.filter(t => (t.difficulty || 0) >= 4).length;
+  // t: 階層(1–6)；p: [目前值, 門檻, 單位] 供進度提示；布林型（早起/夜行）不設 p
   const list = [
-    { e: "👣", n: "初心者", got: n >= 1, d: "完成第一次記錄", p: [n, 1, "次"] },
-    { e: "🥾", n: "常客", got: n >= 10, d: "累積 10 次出行", p: [n, 10, "次"] },
-    { e: "🎒", n: "老山友", got: n >= 30, d: "累積 30 次出行", p: [n, 30, "次"] },
-    { e: "🧗", n: "山痴", got: n >= 100, d: "累積 100 次出行", p: [n, 100, "次"] },
-    { e: "📏", n: "50K", got: km >= 50, d: "總里程 50 km", p: [km, 50, "km"] },
-    { e: "💯", n: "百K俱樂部", got: km >= 100, d: "總里程 100 km", p: [km, 100, "km"] },
-    { e: "🚀", n: "300K", got: km >= 300, d: "總里程 300 km", p: [km, 300, "km"] },
-    { e: "🏆", n: "縱橫五百", got: km >= 500, d: "總里程 500 km", p: [km, 500, "km"] },
-    { e: "⛰️", n: "爬升新手", got: asc >= 1000, d: "總爬升 1000 m", p: [asc, 1000, "m"] },
-    { e: "🦅", n: "爬升大師", got: asc >= 3000, d: "總爬升 3000 m", p: [asc, 3000, "m"] },
-    { e: "🗻", n: "玉山高度", got: asc >= 3952, d: "總爬升 3952 m（一座玉山）", p: [asc, 3952, "m"] },
-    { e: "🏔️", n: "聖母峰高度", got: asc >= 8848, d: "總爬升 8848 m（一座聖母峰）", p: [asc, 8848, "m"] },
-    { e: "🏃", n: "健行馬拉松", got: maxOne >= 10, d: "單次步行 ≥ 10 km", p: [maxOne, 10, "km"] },
-    { e: "🥇", n: "半馬腳力", got: maxOne >= 21, d: "單次步行 ≥ 21 km", p: [maxOne, 21, "km"] },
-    { e: "✅", n: "踏遍五徑", got: done >= 5, d: "完成 5 條步道", p: [done, 5, "條"] },
-    { e: "🗺️", n: "步道收藏家", got: done >= 20, d: "完成 20 條步道", p: [done, 20, "條"] },
-    { e: "⭐", n: "收藏迷", got: favCount >= 10, d: "收藏 10 條步道", p: [favCount, 10, "條"] },
-    { e: "🌅", n: "早起鳥", got: early, d: "清晨 7 點前出發" },
-    { e: "🌙", n: "夜行者", got: night, d: "晚間 7 點後出發" },
-    { e: "📅", n: "連續一週", got: dstreak >= 7, d: "連續 7 天健行", p: [dstreak, 7, "天"] },
-    { e: "🔥", n: "四週堅持", got: wk >= 4, d: "連續 4 週都有走", p: [wk, 4, "週"] },
+    // 啟程
+    { e: "👣", n: "初心者", got: n >= 1, d: "完成第一次記錄", p: [n, 1, "次"], t: 1 },
+    { e: "🥾", n: "週末山友", got: n >= 3, d: "累積 3 次出行", p: [n, 3, "次"], t: 1 },
+    { e: "🌅", n: "早起鳥", got: early, d: "清晨 7 點前出發", t: 1 },
+    { e: "🌙", n: "夜行者", got: night, d: "晚間 7 點後出發", t: 1 },
+    // 入山
+    { e: "🎒", n: "常客", got: n >= 10, d: "累積 10 次出行", p: [n, 10, "次"], t: 2 },
+    { e: "📏", n: "50K", got: km >= 50, d: "總里程 50 km", p: [km, 50, "km"], t: 2 },
+    { e: "⛰️", n: "爬升新手", got: asc >= 1000, d: "總爬升 1000 m", p: [asc, 1000, "m"], t: 2 },
+    { e: "🔥", n: "週週不斷", got: wk >= 2, d: "連續 2 週都有走", p: [wk, 2, "週"], t: 2 },
+    // 登高
+    { e: "🏕️", n: "老山友", got: n >= 30, d: "累積 30 次出行", p: [n, 30, "次"], t: 3 },
+    { e: "💯", n: "百K俱樂部", got: km >= 100, d: "總里程 100 km", p: [km, 100, "km"], t: 3 },
+    { e: "🦅", n: "爬升大師", got: asc >= 3000, d: "總爬升 3000 m", p: [asc, 3000, "m"], t: 3 },
+    { e: "📅", n: "連續一週", got: dstreak >= 7, d: "連續 7 天健行", p: [dstreak, 7, "天"], t: 3 },
+    { e: "🏃", n: "健行馬拉松", got: maxOne >= 10, d: "單次步行 ≥ 10 km", p: [maxOne, 10, "km"], t: 3 },
+    { e: "🧭", n: "走遍三縣", got: counties >= 3, d: "完成 3 個縣市的步道", p: [counties, 3, "縣"], t: 3 },
+    // 縱走
+    { e: "🧗", n: "山痴", got: n >= 100, d: "累積 100 次出行", p: [n, 100, "次"], t: 4 },
+    { e: "🚀", n: "300K", got: km >= 300, d: "總里程 300 km", p: [km, 300, "km"], t: 4 },
+    { e: "🗻", n: "玉山高度", got: asc >= 3952, d: "總爬升 3952 m（一座玉山）", p: [asc, 3952, "m"], t: 4 },
+    { e: "🥇", n: "半馬腳力", got: maxOne >= 21, d: "單次步行 ≥ 21 km", p: [maxOne, 21, "km"], t: 4 },
+    { e: "⚔️", n: "挑戰征服", got: hardDone >= 5, d: "完成 5 條挑戰級以上步道", p: [hardDone, 5, "條"], t: 4 },
+    { e: "🗓️", n: "四週堅持", got: wk >= 4, d: "連續 4 週都有走", p: [wk, 4, "週"], t: 4 },
+    // 攻頂
+    { e: "🏆", n: "縱橫五百", got: km >= 500, d: "總里程 500 km", p: [km, 500, "km"], t: 5 },
+    { e: "🏔️", n: "聖母峰高度", got: asc >= 8848, d: "總爬升 8848 m（一座聖母峰）", p: [asc, 8848, "m"], t: 5 },
+    { e: "🌏", n: "走遍十縣", got: counties >= 10, d: "完成 10 個縣市", p: [counties, 10, "縣"], t: 5 },
+    { e: "🎯", n: "步道收藏家", got: done >= 20, d: "完成 20 條步道", p: [done, 20, "條"], t: 5 },
+    { e: "❄️", n: "月月不休", got: dstreak >= 30, d: "連續 30 天健行", p: [dstreak, 30, "天"], t: 5 },
+    // 傳說
+    { e: "👑", n: "千里健行", got: km >= 1000, d: "總里程 1000 km", p: [km, 1000, "km"], t: 6 },
+    { e: "🌋", n: "萬米爬升", got: asc >= 10000, d: "總爬升 10000 m", p: [asc, 10000, "m"], t: 6 },
+    { e: "🗺️", n: "環島達人", got: counties >= 20, d: "完成 20 個縣市", p: [counties, 20, "縣"], t: 6 },
+    { e: "🦿", n: "超馬腳力", got: maxOne >= 42, d: "單次步行 ≥ 42 km", p: [maxOne, 42, "km"], t: 6 },
+    { e: "⭐", n: "兩百次山旅", got: n >= 200, d: "累積 200 次出行", p: [n, 200, "次"], t: 6 },
   ];
   // 成就一旦解鎖就永久保留：舊紀錄被容量保護裁掉（最多存 100 筆）時，重算會低於門檻，
   // 所以把解鎖過的名字存進 tt_badges_got，顯示時取聯集。
@@ -285,9 +305,21 @@ function renderBadges() {
     const [cur, goal, unit] = b.p;
     return `<div class="anx"><span class="anx-e">${b.e}</span><div class="anx-body"><div class="anx-top"><b>${b.n}</b><span class="anx-remain">${fmt(cur, unit)} / ${goal} ${ttT(unit)}</span></div><div class="anx-bar"><i style="width:${(ratio * 100).toFixed(0)}%"></i></div></div></div>`;
   }).join("")}</div>` : "";
-  box.innerHTML = `<div class="section-title">${ic("medal")}成就勳章 <span class="badge-count">${got} / ${list.length}</span></div>
+  // 成就樹：依階層（啟程→傳說）由基本到困難分段呈現
+  const tiers = ACH_TIERS.map((name, i) => {
+    const bs = list.filter(b => b.t === i + 1);
+    const g = bs.filter(b => b.got).length;
+    const prevCleared = i === 0 || list.filter(b => b.t === i).every(b => b.got);   // 上一階全解→本階解鎖
+    return { name, i, bs, g, prevCleared };
+  });
+  const treeHtml = tiers.map(tr => `
+    <div class="ach-tier${tr.g === tr.bs.length ? " cleared" : ""}${tr.prevCleared ? "" : " tier-locked"}">
+      <div class="ach-tier-head"><span class="ach-tier-rank">${tr.i + 1}</span><b>${tr.name}</b><span class="ach-tier-count">${tr.g}/${tr.bs.length}</span></div>
+      <div class="ach-grid">${tr.bs.map(b => `<div class="ach${b.got ? "" : " locked"}"><div class="ach-e">${b.got ? b.e : "🔒"}</div><div class="ach-n">${b.n}</div><div class="ach-d">${b.d}</div></div>`).join("")}</div>
+    </div>`).join("");
+  box.innerHTML = `<div class="section-title">${ic("medal")}成就樹 <span class="badge-count">${got} / ${list.length}</span></div>
     ${nextHtml}
-    <div class="ach-grid">${list.map(b => `<div class="ach${b.got ? "" : " locked"}"><div class="ach-e">${b.got ? b.e : "🔒"}</div><div class="ach-n">${b.n}</div><div class="ach-d">${b.d}</div></div>`).join("")}</div>`;
+    <div class="ach-tree">${treeHtml}</div>`;
 }
 // 夥伴手冊：進化圖鑑 + 成就徽章
 function openPetDex() {

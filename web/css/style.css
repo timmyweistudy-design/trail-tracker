@@ -1394,6 +1394,19 @@ html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
 .anx-remain { font-family: var(--num); font-size: calc(11.5px * var(--fs, 1)); font-weight: 700; color: var(--accent); flex: none; }
 .anx-bar { height: 6px; background: var(--line-soft); border-radius: 4px; overflow: hidden; }
 .anx-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--brand-mid), var(--accent)); border-radius: 4px; }
+/* 成就樹：階層分段（基本→困難） */
+.ach-tree { display: flex; flex-direction: column; gap: 16px; }
+.ach-tier { position: relative; padding-left: 14px; }
+.ach-tier::before { content: ""; position: absolute; left: 4px; top: 6px; bottom: 6px; width: 3px; border-radius: 3px; background: linear-gradient(180deg, var(--brand-mid), var(--accent)); opacity: .55; }
+.ach-tier.cleared::before { opacity: 1; }
+.ach-tier.tier-locked::before { background: var(--line); opacity: .5; }
+.ach-tier-head { display: flex; align-items: center; gap: 8px; margin: 0 2px 8px; }
+.ach-tier-rank { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-family: var(--num); font-weight: 800; font-size: calc(12px * var(--fs, 1)); color: #fff; background: var(--brand-mid); }
+.ach-tier.cleared .ach-tier-rank { background: var(--accent); }
+.ach-tier.tier-locked .ach-tier-rank { background: var(--ink-faint); }
+.ach-tier-head b { font-family: var(--serif); font-size: calc(15px * var(--fs, 1)); color: var(--brand-deep); letter-spacing: 1px; }
+.ach-tier-count { margin-left: auto; font-family: var(--num); font-size: calc(12px * var(--fs, 1)); font-weight: 700; color: var(--ink-soft); }
+.ach-tier.cleared .ach-tier-count { color: var(--accent); }
 .ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(98px, 1fr)); gap: 9px; }
 .ach { background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 12px 8px; text-align: center; }
 .ach.locked { opacity: .5; filter: grayscale(.6); }
