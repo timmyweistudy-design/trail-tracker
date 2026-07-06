@@ -983,28 +983,36 @@ function flyAlong() {
   let ix = 1;
   const posAt = d => { while (ix < cum.length - 1 && cum[ix] < d) ix++; while (ix > 1 && cum[ix - 1] > d) ix--; const a = path[ix - 1], b = path[ix], f = (d - cum[ix - 1]) / ((cum[ix] - cum[ix - 1]) || 1); return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]; };
   const posAhead = d => { let j = ix; while (j < cum.length - 1 && cum[j] < d) j++; const a = path[j - 1], b = path[j], f = (d - cum[j - 1]) / ((cum[j] - cum[j - 1]) || 1); return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]; };
-  let bearing = _flyBearing(posAt(0), posAhead(Math.min(LOOK, total)));   // 起始就朝前，不會突兀
-  let t0 = performance.now(), lastT = t0;
-  // 電影運鏡：zoom 全程「固定」→ 圖磚不換級、不再週期性閃。運鏡改靠俯角(進場/收尾/微呼吸)＋轉向側傾＋緩入緩出節奏
-  const FLY_Z = 15.2, IN_P = 54, CR_P = 48, OUT_P = 52;   // 俯角壓低（較俯視）→ 近景不需要更高倍圖磚，避免近處露出模糊大色塊「閃」
-  const lerp = (a, b, t) => a + (b - a) * t;
   const smooth = x => x <= 0 ? 0 : x >= 1 ? 1 : x * x * x * (x * (x * 6 - 15) + 10);   // smootherstep 緩入緩出
+  // 用 FreeCamera 把相機直接放在 3D 空間（追焦式），不再每幀 jumpTo 讓相機重新貼合地形→消除「地形跳一下」的閃
+  const useFree = !!(typeof maplibregl !== "undefined" && maplibregl.MercatorCoordinate && _map3d.getFreeCameraOptions);
+  const AGL = 600, BACK = 240;   // 相機離地高度、退後距離（公尺）——恆定離地高＝像空拍機貼著地形飛
+  const terr = ll => { try { const e = _map3d.queryTerrainElevation ? _map3d.queryTerrainElevation(ll) : null; return (e == null || !isFinite(e)) ? 350 : e; } catch (e) { return 350; } };
+  let look = posAhead(Math.min(LOOK, total));            // 平滑後的觀看目標
+  let bearing = _flyBearing(posAt(0), look);
+  let t0 = performance.now(), lastT = t0;
   const step = now => {
     if (!_map3d) return;
     const pRaw = Math.min(1, (now - t0) / DUR);
-    const p = smooth(pRaw);                 // 位置緩入緩出＝電影節奏（起步慢、中段順、收尾慢）
+    const p = smooth(pRaw);                 // 緩入緩出＝電影節奏
     const d = p * total;
     const pos = posAt(d);
-    const ahead = posAhead(Math.min(d + LOOK, total));
-    const target = _flyBearing(pos, ahead);
+    const aheadT = posAhead(Math.min(d + LOOK, total));
     const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
-    bearing = _lerpAngle(bearing, target, 1 - Math.pow(0.02, dt));   // 轉向平滑（banking）
-    let pitch;
-    if (p < 0.16) pitch = lerp(IN_P, CR_P, smooth(p / 0.16));                    // 開場：俯角略高→壓下滑入
-    else if (p > 0.86) pitch = lerp(CR_P, OUT_P, smooth((p - 0.86) / 0.14));     // 結尾：俯角略抬收尾
-    else pitch = CR_P + 2.4 * Math.sin((now - t0) / 4500);                        // 巡航：只讓俯角微呼吸（不動 zoom→不換圖磚）
+    const k = 1 - Math.pow(0.02, dt);       // 觀看目標平滑補間→過彎絲滑
+    look = [look[0] + (aheadT[0] - look[0]) * k, look[1] + (aheadT[1] - look[1]) * k];
     const src = _map3d.getSource("me3d"); if (src) src.setData({ type: "Feature", geometry: { type: "Point", coordinates: pos } });
-    _map3d.jumpTo({ center: pos, bearing, pitch, zoom: FLY_Z });
+    if (useFree) {
+      const camLL = posAt(Math.max(0, d - BACK));        // 相機在行進方向後方
+      const agl = AGL * (1 + 0.05 * Math.sin((now - t0) / 5200));   // 高度微呼吸(不換圖磚)
+      const cam = _map3d.getFreeCameraOptions();
+      cam.position = maplibregl.MercatorCoordinate.fromLngLat(camLL, terr(camLL) + agl);
+      cam.lookAtPoint(look);
+      _map3d.setFreeCameraOptions(cam);
+    } else {   // 舊版瀏覽器 fallback：固定縮放 jumpTo
+      bearing = _lerpAngle(bearing, _flyBearing(pos, look), k);
+      _map3d.jumpTo({ center: pos, bearing, pitch: 50, zoom: 15.2 });
+    }
     if (pRaw < 1) _flyRAF = requestAnimationFrame(step); else _flyRAF = null;
   };
   _flyRAF = requestAnimationFrame(step);
@@ -1031,7 +1039,7 @@ async function _open3D(name, geom, opts) {
   _map3d = new maplibregl.Map({
     container: "map3dCanvas",
     center: [(minLng + maxLng) / 2, (minLat + maxLat) / 2], zoom: 12, pitch: 62, bearing: 18, maxPitch: 80,
-    attributionControl: { compact: true }, fadeDuration: 0,
+    attributionControl: { compact: true }, fadeDuration: 0, maxTileCacheSize: 1024, refreshExpiredTiles: false,   // 大量保留圖磚在 GPU→平移時不卸載重載(閃)；不因過期重抓
     style: {
       version: 8,
       sources: {
@@ -1049,7 +1057,7 @@ async function _open3D(name, geom, opts) {
         { id: "pts", type: "circle", source: "pts", paint: { "circle-radius": 6, "circle-color": ["match", ["get", "k"], "s", "#2f7d4f", "#d2542e"], "circle-stroke-color": "#fff", "circle-stroke-width": 2 } },
         { id: "me3d", type: "circle", source: "me3d", paint: { "circle-radius": 8, "circle-color": "#2f7dff", "circle-stroke-color": "#fff", "circle-stroke-width": 3 } },
       ],
-      terrain: { source: "terrain", exaggeration: 1.4 },
+      terrain: { source: "terrain", exaggeration: 1.2 },   // 誇張倍率降一點→地形網格較平順、LOD 變動較少、較不閃
       sky: { "sky-color": "#9ecbff", "horizon-color": "#dcecff", "fog-color": "#ffffff", "sky-horizon-blend": 0.6, "horizon-fog-blend": 0.5, "fog-ground-blend": 0.4 },
     },
   });

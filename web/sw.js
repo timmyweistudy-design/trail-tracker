@@ -1,5 +1,5 @@
 // 離線快取：app shell + 地圖圖磚
-const CACHE = "trail-tracker-v308";
+const CACHE = "trail-tracker-v309";
 const TILE_CACHE = "tt-tiles";   // 地圖圖磚（不隨版本清除，保留離線地圖）
 const ASSETS = [
   "./", "./index.html",
@@ -34,7 +34,7 @@ self.addEventListener("fetch", e => {
   // 地圖圖磚：cache 優先，順手存入圖磚快取 → 看過/預載過的離線可用
   if (url.includes("server.arcgisonline.com") || url.includes("tile.opentopomap.org") || url.includes("tile.openstreetmap") || url.includes("elevation-tiles-prod")) {
     e.respondWith(
-      caches.open(TILE_CACHE).then(c => c.match(e.request).then(hit => {
+      caches.open(TILE_CACHE).then(c => c.match(e.request, { ignoreVary: true }).then(hit => {
         // 近似 LRU：命中時 2% 抽樣重新寫入（移到快取尾端），常看的圖磚不會被上限清掉
         if (hit && Math.random() < 0.02) { c.delete(e.request).then(() => c.put(e.request, hit.clone())).catch(() => {}); }
         return hit || fetch(e.request).then(res => {
