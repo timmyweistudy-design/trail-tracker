@@ -1057,7 +1057,7 @@ async function _open3D(name, geom, opts) {
         me3d: { type: "geojson", data: { type: "FeatureCollection", features: [] } },
       },
       layers: [
-        { id: "bg", type: "background", paint: { "background-color": "#8b9179" } },   // 底色改中性地形綠灰：圖磚還沒載到的破洞會融入地面色，不再閃黑或閃藍（天空由 sky 圖層負責）
+        { id: "bg", type: "background", paint: { "background-color": "#3d4a3a" } },   // 底色暗森林色：萬一有瞬間縫隙也不明顯（正常情況由父層衛星墊底，不會看到此色）
         { id: "sat", type: "raster", source: "sat", paint: { "raster-fade-duration": 0 } },
         { id: "route-casing", type: "line", source: "route", layout: { "line-join": "round", "line-cap": "round" }, paint: { "line-color": "#ffffff", "line-width": 7, "line-opacity": 0.65 } },
         { id: "route", type: "line", source: "route", layout: { "line-join": "round", "line-cap": "round" }, paint: { "line-color": "#ff5a2c", "line-width": 4 } },
@@ -2568,10 +2568,14 @@ function preload3D(lat, lon) {
 // 飛行前把整條路線走廊需要的 3D 圖磚「全部」抓進快取（含近景 z16 與地形），並回報進度。全載完再飛＝飛行中零串流、不閃
 function preload3DFull(bbox, onProgress) {
   if (typeof Offline === "undefined" || !navigator.onLine) return Promise.resolve();
-  let sat = Offline.tileListUrl(bbox, 15, 16, _SAT_URL);          // 衛星 z15＋近景 z16
-  const terr = Offline.tileListUrl(bbox, 12, 15, _TERR_URL);      // 地形 z12-15
-  if (sat.length + terr.length > 2600) sat = Offline.tileListUrl(bbox, 15, 15, _SAT_URL);   // 路線太大→退回只 z15，避免等太久
-  const tiles = [...sat, ...terr];
+  // 稍微放大範圍，連「低倍父層金字塔」(z7-14) 一起抓——這樣任何地方永遠至少有一張模糊衛星父層墊底，
+  // 相機移到還沒貼好近景的地方時，露出的是模糊衛星而不是綠色背景 → 不再閃綠。
+  const wide = { n: bbox.n + 0.02, s: bbox.s - 0.02, e: bbox.e + 0.02, w: bbox.w - 0.02 };
+  let sat = [...Offline.tileListUrl(wide, 7, 14, _SAT_URL), ...Offline.tileListUrl(bbox, 15, 16, _SAT_URL)];   // 父層金字塔 z7-14 ＋ 走廊 z15-16
+  const terr = [...Offline.tileListUrl(wide, 7, 11, _TERR_URL), ...Offline.tileListUrl(bbox, 12, 15, _TERR_URL)];
+  if (sat.length + terr.length > 2800) sat = [...Offline.tileListUrl(wide, 7, 14, _SAT_URL), ...Offline.tileListUrl(bbox, 15, 15, _SAT_URL)];   // 路線太大→近景只 z15
+  // 去重（父層與走廊可能重疊）
+  const tiles = [...new Set([...sat, ...terr])];
   if (!tiles.length) return Promise.resolve();
   return Offline.download(tiles, (done, total) => { if (onProgress) onProgress(Math.round(done / total * 100)); }).catch(() => {});
 }
