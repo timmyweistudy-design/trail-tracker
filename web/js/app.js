@@ -1085,20 +1085,31 @@ function addThreeD(map, onClick) {
 // 指北針：讀裝置方位，轉動手機時指針跟著轉、指向實際北方
 let _compassOn = false, _heading = 0, _gpsHeading = null, _navUp = false;
 function rotateCompasses() { document.querySelectorAll(".compass-rose").forEach(r => r.style.transform = `rotate(${-_heading}deg)`); }
-// 導航模式（heading-up）：地圖跟著行進方向旋轉、中心固定的三角形永遠朝上（前方），像一般導航。
+// 導航模式（heading-up）：只旋轉「地圖圖層面板」(tiles/markers)，控制鈕在外層不轉→四顆鈕固定、縮放正常、小隊照常。
+const NAV_SCALE = 1.8;   // 放大面板以蓋住旋轉後的角落空缺（縮放仍可用，只是視覺基準放大）
 function navHeading() { const h = (_compassOn && _heading != null) ? _heading : _gpsHeading; return (h != null && isFinite(h)) ? h : 0; }
+function applyPaneRotation() {
+  if (!recMap) return;
+  const pane = recMap.getContainer().querySelector(".leaflet-map-pane"); if (!pane) return;
+  const t = pane.style.transform || "";
+  const m = t.match(/translate3d\([^)]*\)|translate\([^)]*\)/);   // Leaflet 平移(縮放/拖曳都會重設它)
+  const base = m ? m[0] : "";
+  if (!_navUp) { pane.style.transform = base; pane.style.transformOrigin = ""; return; }
+  const size = recMap.getSize();
+  pane.style.transformOrigin = `${size.x / 2}px ${size.y / 2}px`;   // 繞畫面中心旋轉
+  pane.style.transform = `rotate(${-navHeading()}deg) scale(${NAV_SCALE}) ${base}`;
+}
+let _navPaneHooked = false;
 function applyNavUp() {
   if (!recMap) return;
-  const el = recMap.getContainer();
   if (_navUp) {
-    // 先置中在使用者，再旋轉整張地圖（-heading→行進方向朝上），放大蓋住旋轉後的角落空缺
-    const last = (recSnap && recSnap.track && recSnap.track.length) ? recSnap.track[recSnap.track.length - 1] : null;
-    if (last) recMap.setView([last.lat, last.lon], Math.max(recMap.getZoom(), 16), { animate: false });
-    el.style.transform = `rotate(${-navHeading()}deg) scale(1.8)`;
-    el.style.transformOrigin = "50% 50%";
     document.body.classList.add("navup-on");
+    if (!_navPaneHooked) { recMap.on("move zoom viewreset moveend zoomend", applyPaneRotation); _navPaneHooked = true; }
+    applyPaneRotation();
   } else {
-    el.style.transform = ""; document.body.classList.remove("navup-on");
+    document.body.classList.remove("navup-on");
+    if (_navPaneHooked) { recMap.off("move zoom viewreset moveend zoomend", applyPaneRotation); _navPaneHooked = false; }
+    applyPaneRotation();   // 清掉旋轉，只留 Leaflet 平移
   }
 }
 // 導航模式＝記錄時的固定預設（無按鈕）：開始記錄自動開、結束自動關
@@ -1112,10 +1123,10 @@ function setNavUp(on) {
 // 更新記錄地圖「我」的面朝錐：優先用手機羅盤(站著轉身也動)，沒有才用 GPS 行進方向
 function updateMeCone() {
   if (_navUp) {
-    applyNavUp();   // 地圖跟著行進方向轉
+    applyPaneRotation();   // 地圖圖層跟著行進方向轉（不動控制鈕）
     const h = navHeading();
-    // 頭像框＋寵物保持「正的」：反向抵銷地圖旋轉（地圖轉 -h → 內容轉 +h → 螢幕上直立）
-    document.querySelectorAll("#recMap .tm-av, #recMap .pm-e").forEach(e => e.style.transform = `rotate(${h}deg)`);
+    // 頭像框＋寵物保持「正的」＋抵銷面板放大：反向旋轉 +h、反向縮放 1/NAV_SCALE
+    document.querySelectorAll("#recMap .tm-av, #recMap .pm-e").forEach(e => e.style.transform = `rotate(${h}deg) scale(${1 / NAV_SCALE})`);
   }
   if (!recMarker || !recMarker._av || !recMarker.getElement) return;
   const el = recMarker.getElement(); const dir = el && el.querySelector(".tm-dir"); if (!dir) return;

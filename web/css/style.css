@@ -287,9 +287,10 @@ body[data-view]:not([data-view="explore"]) .app-header::before { opacity: .5; }
 .recmap-wrap { position: relative; }
 .recmap-wrap #recMap { transition: transform .12s linear; }
 #recMap .tm-av, #recMap .pm-e { transform-origin: center; }
-/* 導航中：藏掉會跟著旋轉而歪掉的地圖控制鈕，並裁掉放大後溢出的邊 */
+/* 導航中：只旋轉地圖圖層面板（控制鈕不轉、保持固定可按）；裁掉旋轉後溢出的邊 */
 body.navup-on .recmap-wrap { overflow: hidden; border-radius: var(--r-sm); }
-body.navup-on #recMap .leaflet-control-container { display: none; }
+body.navup-on #recMap { background: #3d4a3a; }
+body.navup-on #recMap .leaflet-map-pane { transition: transform .12s linear; }
 /* 記錄地圖「我」的頭像標記做小一點 */
 #recMap .team-marker.me-marker .tm-av { width: 24px; height: 24px; }
 #recMap .team-marker.me-marker .tm-av img, #recMap .team-marker.me-marker .tm-av .tm-ph { width: 24px; height: 24px; }
