@@ -984,8 +984,9 @@ function flyAlong() {
   const smooth = x => x <= 0 ? 0 : x >= 1 ? 1 : x * x * x * (x * (x * 6 - 15) + 10);   // smootherstep 緩入緩出
   // 固定側面運鏡：方位/俯角/縮放全程「完全不變」，鏡頭只沿走廊「平移」把主角框在畫面裡。
   // 因為不旋轉、不縮放，terrain 不會轉、圖磚不用重載（走廊已預載）→ 徹底不閃。
-  const FIX_BEARING = (_flyBearing(path[0], path[path.length - 1]) + 32) % 360;   // 固定方位＝整體走向偏 32°→3/4 側視
-  const FIX_PITCH = 68, FIX_Z = 15.6;   // 俯角更斜(貼近地面看清細節)＋拉近；68°仍避免露出地平線天空破洞
+  // 固定方位偏「順著路線」12°（不是正側面）→ 路線往畫面深處延伸、稜線不易擋住它；俯角 58°→看得到地面又較不被山擋
+  const FIX_BEARING = (_flyBearing(path[0], path[path.length - 1]) + 12) % 360;
+  const FIX_PITCH = 58, FIX_Z = 15.3;
   let center = posAt(0);
   let t0 = performance.now(), lastT = t0;
   const step = now => {
