@@ -2477,7 +2477,7 @@ Recorder.onUpdate(s => {
       if (!recMarker || !recMarker._av) {
         if (recMarker) recMap.removeLayer(recMarker);
         const mePro = (typeof Premium !== "undefined" && Premium.isOn()) ? " pro" : "";
-        recMarker = L.marker(last, { icon: L.divIcon({ className: "team-marker me-marker" + mePro, html: `<div class="tm-av"><div class="tm-dir"><span class="tm-cone"></span></div><img src="${meAv}" alt=""><span class="tm-pet">${petEmojiNow()}</span></div>`, iconSize: [24, 24], iconAnchor: [12, 12] }), zIndexOffset: 1100 }).addTo(recMap);
+        recMarker = L.marker(last, { icon: L.divIcon({ className: "team-marker me-marker" + mePro, html: `<div class="tm-av"><div class="tm-dir"><span class="tm-cone"></span></div><img src="${meAv}" alt=""><span class="tm-pet">${petEmojiNow()}</span></div>`, iconSize: [32, 32], iconAnchor: [16, 16] }), zIndexOffset: 1100 }).addTo(recMap);
         recMarker._av = true;
       }
       recMarker.setLatLng(last);

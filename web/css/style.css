@@ -291,11 +291,6 @@ body[data-view]:not([data-view="explore"]) .app-header::before { opacity: .5; }
 body.navup-on .recmap-wrap { overflow: hidden; border-radius: var(--r-sm); }
 body.navup-on #recMap { background: #3d4a3a; }
 body.navup-on #recMap .leaflet-map-pane { transition: transform .12s linear; }
-/* 記錄地圖「我」的頭像標記做小一點 */
-#recMap .team-marker.me-marker .tm-av { width: 24px; height: 24px; }
-#recMap .team-marker.me-marker .tm-av img, #recMap .team-marker.me-marker .tm-av .tm-ph { width: 24px; height: 24px; }
-#recMap .team-marker.me-marker .tm-pet { font-size: calc(18px * var(--fs, 1)); top: -17px; }
-#recMap .team-marker.me-marker .tm-cone { top: -6px; margin-left: -5px; border-left-width: 5px; border-right-width: 5px; border-bottom-width: 8px; }
 .replay-live {
   position: absolute; top: 12px; left: 12px; z-index: 600; pointer-events: none;
   background: rgba(22, 48, 31, .9); color: #f3efe4; backdrop-filter: blur(4px);
