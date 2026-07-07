@@ -1,0 +1,81 @@
+# Codemagic 雲端建置設定（不用自己有 Mac 就能出 iOS；也能雲端出 Android APK）
+# 用法：到 https://codemagic.io → 用 GitHub 登入 → 選這個 repo → 它會自動讀這個檔。
+# 需要在 Codemagic 後台先設定的東西見每個 workflow 的註解。
+#
+# 兩個工作流程：
+#   ios-capacitor      → 出 iOS，上傳 TestFlight/App Store（需 Apple Developer 帳號）
+#   android-capacitor  → 出 Android APK，可直接下載安裝（不需任何帳號、不需 Android Studio）
+
+workflows:
+
+  # ── iOS ──────────────────────────────────────────────
+  ios-capacitor:
+    name: 循徑拾光 iOS
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      # 在 Codemagic：Teams ▸ Integrations ▸ App Store Connect 加一把 API Key，
+      # 名稱填在下面（例如 "TrailTracker ASC"）。需要 Apple Developer Program（US$99/年）。
+      app_store_connect: TrailTracker ASC
+    environment:
+      node: 20
+      xcode: latest
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store           # 自動用上面的 ASC key 管理簽章/描述檔
+        bundle_identifier: com.timmyweistudy.trailtracker
+      vars:
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+    scripts:
+      - name: 安裝 npm 依賴
+        script: npm install
+      - name: Capacitor 同步 iOS（複製最新 web/ + 外掛）
+        script: npx cap sync ios
+      - name: pod install
+        script: |
+          cd ios/App
+          pod install
+      - name: 套用簽章描述檔
+        script: xcode-project use-profiles
+      - name: 編譯 IPA
+        script: |
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      # 編好自動上傳 TestFlight（你手機就能裝來測）；要正式上架再從 App Store Connect 送審
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+      email:
+        recipients:
+          - phome0425@gmail.com
+
+  # ── Android（免帳號，出可直接安裝的 APK）────────────────
+  android-capacitor:
+    name: 循徑拾光 Android APK
+    instance_type: linux_x2
+    max_build_duration: 45
+    environment:
+      node: 20
+      java: 17
+    scripts:
+      - name: 安裝 npm 依賴
+        script: npm install
+      - name: Capacitor 同步 Android
+        script: npx cap sync android
+      - name: 編譯 Debug APK（可直接裝）
+        script: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+    artifacts:
+      - android/app/build/outputs/**/*.apk
+    publishing:
+      email:
+        recipients:
+          - phome0425@gmail.com   # 建置完成把 APK 寄到信箱，下載裝到手機即可
