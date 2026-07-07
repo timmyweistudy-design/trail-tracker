@@ -2892,6 +2892,7 @@ $("#btnDiag").addEventListener("click", async () => {
     "系統 " + os,
     "語言 " + lang + " 主題 " + theme + " 字級 " + fs,
     "帳號 " + login + " " + pro,
+    "小隊 " + g(() => { if (typeof TeamLive === "undefined" || !TeamLive.status) return "模組未載"; const s = TeamLive.status(); return s.on ? ("連線 " + (s.sub || "?") + " · presence " + s.presence + " · 隊長" + (s.leader ? "有" : "無")) : "未連線"; }),
     "步道 " + TRAILS.length + " 紀錄 " + recN + " 完成 " + doneN + " 收藏 " + favN,
     "離線圖磚 " + tiles + " 本機資料 " + lsKB + "KB",
     "近期錯誤 " + errs.length,

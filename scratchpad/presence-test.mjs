@@ -1,0 +1,21 @@
+import { createClient } from "@supabase/supabase-js";
+const URL = "https://bkbkamvbczqdejrlpiqo.supabase.co";
+const KEY = "sb_publishable_3VM6B_9iEw1vt3BTZpTo3w_-r3wkimi";
+const TEAM = "team:probe-" + Math.floor(Date.now()/1000);
+function mk(uid){ const c = createClient(URL, KEY); const ch = c.channel(TEAM, { config:{ presence:{ key: uid } } }); return {c,ch,uid}; }
+const A = mk("userA"), B = mk("userB");
+let aSeesB=false, bSeesA=false, aStatus="", bStatus="";
+A.ch.on("presence",{event:"sync"},()=>{ const s=A.ch.presenceState(); if(s["userB"]) aSeesB=true; });
+B.ch.on("presence",{event:"sync"},()=>{ const s=B.ch.presenceState(); if(s["userA"]) bSeesA=true; });
+await new Promise(res=>{ let n=0; const done=()=>{ if(++n>=2) res(); };
+  A.ch.subscribe(st=>{ aStatus=st; if(st==="SUBSCRIBED"){ A.ch.track({name:"A"}); done(); } if(/ERROR|TIMED_OUT|CLOSED/.test(st)) done(); });
+  B.ch.subscribe(st=>{ bStatus=st; if(st==="SUBSCRIBED"){ B.ch.track({name:"B"}); done(); } if(/ERROR|TIMED_OUT|CLOSED/.test(st)) done(); });
+  setTimeout(res, 12000);
+});
+await new Promise(r=>setTimeout(r,4000));
+console.log("A subscribe status:", aStatus, "| B subscribe status:", bStatus);
+console.log("A 的 presenceState keys:", JSON.stringify(Object.keys(A.ch.presenceState())));
+console.log("B 的 presenceState keys:", JSON.stringify(Object.keys(B.ch.presenceState())));
+console.log("A 看得到 B ?", aSeesB, "| B 看得到 A ?", bSeesA);
+console.log(aSeesB && bSeesA ? "\n==> RESULT: Realtime presence 正常同步（基礎設施 OK，問題在 App 層）" : "\n==> RESULT: Realtime presence 沒有同步（基礎設施/設定問題）");
+process.exit(0);
