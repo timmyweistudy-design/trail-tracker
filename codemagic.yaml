@@ -53,7 +53,7 @@ workflows:
         submit_to_testflight: true
       email:
         recipients:
-          - phome0425@gmail.com
+          - gatherthetrail@gmail.com
 
   # ── Android（免帳號，出可直接安裝的 APK）────────────────
   android-capacitor:
@@ -78,4 +78,4 @@ workflows:
     publishing:
       email:
         recipients:
-          - phome0425@gmail.com   # 建置完成把 APK 寄到信箱，下載裝到手機即可
+          - gatherthetrail@gmail.com   # 建置完成把 APK 寄到信箱，下載裝到手機即可

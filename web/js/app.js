@@ -3487,7 +3487,7 @@ window.ttDebug = (() => {
   return api;
 })();
 // DEBUG 測試面板只開放給開發者本人（以登入 Email 驗證）
-const TT_OWNER_EMAIL = "phome0425@gmail.com";
+const TT_OWNER_EMAIL = "gatherthetrail@gmail.com";
 async function ttIsOwner() {
   try {
     const c = (typeof Supa !== "undefined" && Supa.client) ? Supa.client() : null;
