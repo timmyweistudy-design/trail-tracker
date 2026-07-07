@@ -2457,7 +2457,7 @@ Recorder.onUpdate(s => {
   if ($("#stDescent")) $("#stDescent").textContent = `↓${Math.round(ad.descent || 0)}`;
   drawRecSpark(s.altSeries);
   // 果實隨機撿拾：每走 10m 有 5% 機率撿到一顆 🍓，撿到就提示（模擬不算）
-  if (s.state === "running" && !s.autoPaused && !sim()) {
+  if (s.state === "running" && !s.resting && !sim()) {
     if (_berryLastKm == null || _berryLastKm > s.distanceKm) _berryLastKm = s.distanceKm;
     let dM = (s.distanceKm - _berryLastKm) * 1000;
     let picked = 0;
@@ -2470,14 +2470,14 @@ Recorder.onUpdate(s => {
     }
   }
   // 每公里震動里程提示（不再和果實綁定）
-  if (s.state === "running" && !s.autoPaused && !sim()) {
+  if (s.state === "running" && !s.resting && !sim()) {
     const kmDone = Math.floor(s.distanceKm);
     if (kmDone > lastKmMilestone) { lastKmMilestone = kmDone; if (navigator.vibrate) navigator.vibrate([120, 60, 120]); }
   }
   if (s.simDone && !window.__simDoneToasted) { window.__simDoneToasted = true; toast("模擬已走完整條路線，按「⏹ 結束」看結算"); if (navigator.vibrate) navigator.vibrate([60, 40, 60]); }
   if (s.state === "idle") window.__simDoneToasted = false;
   if (s.error) $("#recStatus").innerHTML = `⚠️ ${s.error}（可改用模擬模式）`;
-  else if (s.state === "running" && s.autoPaused) $("#recStatus").innerHTML = `<span class="autopause">⏸ 自動暫停（偵測到靜止，移動即恢復）</span>`;
+  else if (s.state === "running" && s.resting) $("#recStatus").innerHTML = `<span class="resting">🌿 休息中</span>`;
   else if (s.state === "running") {
     // #9 偏離步道路線提醒
     let off = null;

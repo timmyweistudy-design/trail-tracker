@@ -511,6 +511,7 @@ body.navup-on #recMap .leaflet-map-pane { transition: transform .12s linear; }
 .rec-status .live::before { content: "●"; margin-right: 5px; animation: blink 1.3s infinite; }
 .rec-status .offroute { color: var(--danger); font-weight: 700; }
 .rec-status .autopause { color: #d98a1e; font-weight: 700; }
+.rec-status .resting { color: var(--brand); font-weight: 700; }
 .gps-sig { display: flex; align-items: center; justify-content: center; gap: 6px; margin: -6px 0 10px; font-family: var(--num); font-size: calc(11.5px * var(--fs, 1)); font-weight: 700; color: var(--ink-soft); }
 .gps-sig .gs-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--ink-faint); box-shadow: 0 0 0 3px rgba(0,0,0,.05); }
 .gps-sig.good .gs-dot { background: #22b473; box-shadow: 0 0 0 3px rgba(34,180,115,.18); }

@@ -6,8 +6,14 @@ App Store 螢幕截圖，已是 **6.7 吋 iPhone 需求尺寸 1290×2796**，可
 - `02-detail.png` — 步道詳情＋地形地圖
 - `03-me-stats.png` — 我的足跡數據
 - `04-achievements.png` — 成就樹
+- `05-recording.png` — 記錄中：即時里程/爬升/海拔曲線＋軌跡地圖
+- `06-summary.png` — 結算頁：距離/時間/爬升/卡路里/步數＋軌跡
+- `07-3d-terrain.png` — 3D 地形：步道路線疊在真實山勢＋衛星影像上
 
-重新產生：`node`（在 repo 根目錄跑產生腳本，見對話紀錄）。想加「標語文字框」行銷版可再處理。
+重新產生：用 Playwright（viewport 430×932、deviceScaleFactor 3 → 1290×2796）實開 App 截圖。
+> ⚠️ 無頭 Chromium 沒有彩色 emoji 字型，少數 emoji（頭像🧑、🎲、⏸/⏹、🖐）會顯示成方框「□」。
+> 全套 01–07 皆如此、風格一致；要完全乾淨版可在實機或裝了 `fonts-noto-color-emoji` 的環境重截。
+> 想加「標語文字框」行銷版可再處理。
 
 ## 其他上架文件（在 docs/）
 - `docs/build-app.md` — 建置與雲端出 App

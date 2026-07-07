@@ -52,7 +52,34 @@
 
 開始你的第一條步道吧。
 ```
-（英文版可依此翻譯；App 內已內建英文介面。）
+**Description（English）**
+```
+Gather the Trail is a hiking companion built for Taiwan's mountains.
+
+Find trails
+・Hiking and family-friendly trails across Taiwan, filtered by difficulty, theme and region
+・Trail details: distance, ascent, path conditions, nearby amenities and transport
+・3D terrain maps, so you can read the landscape before you set out
+
+Track every step
+・GPS route recording with live distance, ascent, steps and calories
+・Navigation mode (the map turns with your heading)
+・Background recording — keeps going with the screen off
+・Offline maps for areas with no signal
+
+Trail buddy & community
+・Raise a buddy that hikes with you and evolves the more you walk
+・Achievement tree: unlock your way from beginner to legend, step by step
+・Team live-tracking — see your teammates' positions while recording
+・Share your hikes
+
+Your data, safe
+・Cloud backup, so a new phone won't lose your trails
+・Export your records any time
+
+Set out on your first trail today.
+```
+（App 內已內建英文介面，App Store 英文語系可直接用上面這份。）
 
 **關鍵字（Keywords，100 字內，逗號分隔）**
 ```

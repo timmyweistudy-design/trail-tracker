@@ -38,8 +38,8 @@ const Recorder = (() => {
   let smLat = null, smLon = null;   // EMA 平滑後座標
   let elapsedMs = 0, lastResume = 0;   // 總計時（碼表）
   let movingMs = 0;            // 實際移動時間（卡路里用）
-  const AUTO_PAUSE_MS = 90000; // 靜止超過此時間→自動暫停計時
-  let autoPaused = false, lastMoveAt = 0, lowPower = false;
+  const REST_AFTER_MS = 20000; // 靜止超過此時間→標記「休息中」（僅供顯示提示；總時間照走，不凍結碼表）
+  let resting = false, lastMoveAt = 0, lowPower = false;
   let lastFix = null;          // 上一個被接受的定位點
   let lastPersist = 0;         // 上次存檔時間（節流）
   let simPos = null;
@@ -64,14 +64,13 @@ const Recorder = (() => {
   // 合理步行/跑步上限：超過(像騎車/開車)的移動段不計入，避免灌水
   const MAX_FOOT_MS = 5.6;   // 公尺/秒 ≈ 20 km/h
 
-  function elapsed() { return elapsedMs + ((state === "running" && !autoPaused) ? Date.now() - lastResume : 0); }
+  // 總時間＝碼表（含休息），休息不凍結；配速/卡路里另用 movingMs（只算移動時），休息自然凍結
+  function elapsed() { return elapsedMs + (state === "running" ? Date.now() - lastResume : 0); }
 
-  // 自動暫停：靜止過久凍結計時（由 ticker 每秒檢查）
-  function checkAutoPause() {
-    if (state === "running" && !autoPaused && lastMoveAt && Date.now() - lastMoveAt > AUTO_PAUSE_MS) {
-      elapsedMs += Date.now() - lastResume;   // 結算到此刻，凍結時鐘
-      autoPaused = true;
-    }
+  // 休息偵測：靜止超過門檻→標記「休息中」（由 ticker 每秒檢查）。純顯示，不動時鐘：
+  // 里程有漂移過濾、movingMs 只在真移動時累加，故配速/卡路里本就凍結；使用者不必手動按暫停。
+  function checkRest() {
+    resting = (state === "running" && !!lastMoveAt && Date.now() - lastMoveAt > REST_AFTER_MS);
   }
 
   // 高度去抖動：累積爬升/下降只計顯著變化，過濾 GPS 高度雜訊
@@ -107,8 +106,8 @@ const Recorder = (() => {
     // 配速用移動時間（實際走路快慢，不含休息）
     const paceSec = (km > 0.01 && movingMs > 0) ? (movingMs / 1000) / km : 0;
     return {
-      state, autoPaused, track, altSeries, distanceKm: km, distance3DKm: dist3D / 1000, steps: steps(), kcal: calories(),
-      elapsedMs: ms, movingMs, ascent, descent, speedKmh: kmh, instKmh: (state === "running" && !autoPaused) ? curSpeed * 3.6 : 0, heading: curHeading,
+      state, resting, track, altSeries, distanceKm: km, distance3DKm: dist3D / 1000, steps: steps(), kcal: calories(),
+      elapsedMs: ms, movingMs, ascent, descent, speedKmh: kmh, instKmh: (state === "running" && !resting) ? curSpeed * 3.6 : 0, heading: curHeading,
       pace: paceSec ? `${Math.floor(paceSec / 60)}'${String(Math.round(paceSec % 60)).padStart(2, "0")}` : "--",
       acc: curAcc,
     };
@@ -166,7 +165,7 @@ const Recorder = (() => {
     if (clean || d <= MAX_JUMP) {                    // 視為真實移動
       lastAcceptT = now;
       stillHits = 0;   // 真實移動→靜止計數歸零
-      if (autoPaused) { lastResume = Date.now(); autoPaused = false; }   // 移動→自動恢復計時
+      resting = false;   // 真實移動→立即離開「休息中」
       lastMoveAt = Date.now();
       distance += d;
       // #10 3D 距離：加垂直分量，坡度限 100% 以抑制 GPS 高度雜訊
@@ -317,18 +316,18 @@ const Recorder = (() => {
     if (state === "idle") { track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; smAlt = null; lastFixAlt = null; smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; lastAcceptT = 0; curSpeed = 0; simMode = !!sim; overSpeedHits = 0; stillHits = 0; autoStopping = false; }
     lastResume = Date.now();
     state = "running";
-    autoPaused = false; lastMoveAt = Date.now();   // 開始/繼續都重設靜止計時
+    resting = false; lastMoveAt = Date.now();   // 開始/繼續都重設休息計時
     if (sim) startSim(); else if (!startGPS()) { state = "idle"; return; }
     acquireWake();   // 記錄中保持螢幕喚醒（若已勾選）
-    ticker = setInterval(() => { checkAutoPause(); cb(snapshot()); }, 1000);
+    ticker = setInterval(() => { checkRest(); cb(snapshot()); }, 1000);
     persist();
     cb(snapshot());
   }
 
   function pause() {
     if (state !== "running") return;
-    elapsedMs += autoPaused ? 0 : Date.now() - lastResume;   // 已自動暫停則不重複結算
-    autoPaused = false;
+    elapsedMs += Date.now() - lastResume;   // 結算本段運行時間
+    resting = false;
     state = "paused"; curSpeed = 0;
     releaseWake();           // 暫停時放開喚醒鎖
     lastFix = null;          // 恢復後重新設錨點，避免把暫停期間算成移動
@@ -349,8 +348,8 @@ const Recorder = (() => {
   }
 
   function stop() {
-    if (state === "running" && !autoPaused) elapsedMs += Date.now() - lastResume;
-    autoPaused = false;
+    if (state === "running") elapsedMs += Date.now() - lastResume;
+    resting = false;
     releaseWake();           // 結束記錄放開喚醒鎖
     stopSources();
     const snap = snapshot();
