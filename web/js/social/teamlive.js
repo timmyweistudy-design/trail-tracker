@@ -256,7 +256,11 @@ const TeamLive = (() => {
     let guide = "";
     if (r.length <= 1) {
       const connOk = subState === "SUBSCRIBED";
-      const tip = typeof ttT === "function" ? ttT("還沒看到隊友？請隊友也在記錄頁開啟「與小隊同行」") : "還沒看到隊友？請隊友也在記錄頁開啟「與小隊同行」";
+      const connBad = subState && subState !== "SUBSCRIBED";   // CLOSED/CHANNEL_ERROR/TIMED_OUT＝即時連線被擋
+      const T = s => (typeof ttT === "function" ? ttT(s) : s);
+      const tip = connBad
+        ? T("即時連線被擋，請關 VPN／私人DNS 或改用行動網路")   // 真因：WebSocket 連不上→隊友定位無法同步
+        : T("還沒看到隊友？請隊友也在記錄頁開啟「與小隊同行」");
       const diag = `<div class="trb-diag">${connOk ? "🟢" : "🔴"} Realtime: ${esc(subState || "…")} · online ${r.length}</div>`;
       guide = `<div class="trb-guide">${tip}${diag}</div>`;
     }
