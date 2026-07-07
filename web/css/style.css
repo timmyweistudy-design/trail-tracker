@@ -70,7 +70,7 @@ body {
     repeating-radial-gradient(ellipse 150% 110% at 20% 90%, transparent 0 26px, rgba(220,232,210,.045) 26px 27.5px);
   pointer-events: none;
 }
-.app-header-inner { position: relative; padding: 20px 20px 16px; }
+.app-header-inner { position: relative; padding: calc(20px + env(safe-area-inset-top, 0px)) 20px 16px; }   /* iPhone 瀏海/狀態列不擋住標題 */
 .brand { display: flex; align-items: center; gap: 12px; }
 .brand-mark {
   font-size: calc(26px * var(--fs, 1)); width: 44px; height: 44px; flex: 0 0 auto;
@@ -92,7 +92,7 @@ body {
 }
 
 /* 內頁（記錄/夥伴/我的/社群）：縮小頂部 Banner，把空間留給內容——探索頁維持完整品牌感 */
-body[data-view]:not([data-view="explore"]) .app-header-inner { padding: 11px 20px 11px; }
+body[data-view]:not([data-view="explore"]) .app-header-inner { padding: calc(11px + env(safe-area-inset-top, 0px)) 20px 11px; }
 body[data-view]:not([data-view="explore"]) .app-header .sub { display: none; }
 body[data-view]:not([data-view="explore"]) .app-header h1 { font-size: calc(20px * var(--fs, 1)); letter-spacing: 2px; }
 body[data-view]:not([data-view="explore"]) .brand-en { font-size: calc(8.5px * var(--fs, 1)); letter-spacing: 3px; margin-top: 3px; }

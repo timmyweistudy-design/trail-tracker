@@ -42,7 +42,10 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
-	<true/>
+	<false/>
+	<!-- 深綠頂欄→狀態列用白色文字/圖示 -->
+	<key>UIStatusBarStyle</key>
+	<string>UIStatusBarStyleLightContent</string>
 	<!-- 定位權限說明（App Store 審核必填，會顯示給使用者看） -->
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>循徑拾光需要定位來記錄你的登山路徑、里程與爬升。</string>
