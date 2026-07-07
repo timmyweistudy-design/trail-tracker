@@ -34,17 +34,19 @@ npm run open:android # 用 Android Studio 開啟專案
 
 ## iOS（需要 Mac 或雲端建置）
 
-iOS **一定要 macOS + Xcode** 才能編譯。你在 Windows，兩條路：
+iOS 專案 `ios/` **已經建好並設定完成**（Info.plist 定位權限說明、背景定位模式、Google 登入 URL scheme、App 圖示、直向鎖定都配好了）。
+但 iOS **一定要 macOS + Xcode** 才能編譯。你在 Windows，兩條路：
+
 1. **借/租一台 Mac**（或 Mac in the cloud）：
    ```bash
    npm install
-   npm i @capacitor/ios
-   npx cap add ios
-   npm run sync
-   npx cap open ios      # 用 Xcode 開啟，Archive 後上傳 App Store
+   npm run sync            # 複製最新 web/ 進 ios/
+   cd ios/App && pod install && cd ../..   # 只有 Mac 能跑（裝原生依賴）
+   npx cap open ios        # 用 Xcode 開啟 → 選簽章團隊 → ▶ Run 或 Archive 上傳 App Store
    ```
-2. **雲端建置服務**（不用自己有 Mac）：如 [Codemagic](https://codemagic.io/) 或 [Ionic Appflow](https://ionic.io/appflow)，接上這個 Git repo 就能雲端編譯 iOS。
+2. **雲端建置服務**（不用自己有 Mac）：如 [Codemagic](https://codemagic.io/) 或 [Ionic Appflow](https://ionic.io/appflow)，接上這個 Git repo，設定會自動跑 `pod install` 並編譯 iOS。
 - 上架 App Store 需要 [Apple Developer Program](https://developer.apple.com/programs/)（US$99/年）。
+- iOS 已內建：定位/背景定位權限說明字串、背景定位模式、Google 登入 deep link scheme。**Supabase 後台的 Redirect URLs 一樣要有** `com.timmyweistudy.trailtracker://login-callback`（與 Android 共用）。
 
 ---
 

@@ -16,9 +16,8 @@ Thumbs.db
 # Capacitor / Node（原生 App 打包用）
 node_modules/
 package-lock.json
-# 原生專案原始碼進版控（分支/圖示/權限/設定要保留、可重現）；
-# 建置產生物由 android/.gitignore 排除（build/、.gradle/、local.properties、複製進去的 web 資產）
-/ios/
+# 原生專案(android/、ios/)原始碼進版控（分支/圖示/權限/設定要保留、可重現）；
+# 建置產生物由各自的 .gitignore 排除（build/、.gradle/、Pods/、DerivedData、複製進去的 web 資產）
 
 # Python
 __pycache__/
