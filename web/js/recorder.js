@@ -189,7 +189,13 @@ const Recorder = (() => {
   }
 
   // --- 真實 GPS ---
-  function startGPS() {
+  // 原生 App 若裝了背景定位外掛 → 用它（前景服務，螢幕關掉/App 進背景仍持續記錄）；否則用瀏覽器 geolocation
+  function _bgPlugin() {
+    return (typeof window !== "undefined" && window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()
+      && window.Capacitor.Plugins && window.Capacitor.Plugins.BackgroundGeolocation) || null;
+  }
+  let _bgWatcherId = null;
+  function _startWebGPS() {
     if (!navigator.geolocation) { if (typeof ttAlertBox === "function") ttAlertBox("此裝置不支援定位，請改用模擬模式"); return false; }
     watchId = navigator.geolocation.watchPosition(
       pos => push(pos.coords.latitude, pos.coords.longitude, pos.coords.altitude, pos.coords.accuracy, false, pos.coords.speed, pos.coords.altitudeAccuracy, pos.coords.heading),
@@ -199,6 +205,27 @@ const Recorder = (() => {
                : { enableHighAccuracy: true, maximumAge: 1000, timeout: 15000 }
     );
     return true;
+  }
+  function startGPS() {
+    const bg = _bgPlugin();
+    if (bg) {
+      bg.addWatcher({
+        backgroundMessage: "記錄路徑中（可鎖螢幕）",
+        backgroundTitle: "循徑拾光 · 記錄中",
+        requestPermissions: true,
+        stale: false,
+        distanceFilter: lowPower ? 12 : 4,   // 移動幾公尺才回報一點
+      }, (location, error) => {
+        if (error) { cb({ ...snapshot(), error: (error && error.message) || String(error) }); return; }
+        if (!location) return;
+        push(location.latitude, location.longitude, location.altitude, location.accuracy, false, location.speed, location.altitudeAccuracy, location.bearing);
+      }).then(id => { _bgWatcherId = id; }).catch(() => { _startWebGPS(); });   // 外掛失敗→退回一般定位
+      return true;
+    }
+    return _startWebGPS();
+  }
+  function _stopBg() {
+    if (_bgWatcherId != null) { const bg = _bgPlugin(); if (bg && bg.removeWatcher) bg.removeWatcher({ id: _bgWatcherId }).catch(() => {}); _bgWatcherId = null; }
   }
   function setLowPower(on) { lowPower = !!on; }
 
@@ -316,6 +343,7 @@ const Recorder = (() => {
 
   function stopSources() {
     if (watchId != null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+    _stopBg();   // 停背景定位外掛（前景服務）
     if (simTimer) { clearInterval(simTimer); simTimer = null; }
     if (ticker) { clearInterval(ticker); ticker = null; }
   }

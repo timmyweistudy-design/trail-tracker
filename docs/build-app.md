@@ -50,10 +50,17 @@ iOS **一定要 macOS + Xcode** 才能編譯。你在 Windows，兩條路：
 
 ## 已處理
 - App 圖示、啟動畫面（深綠底 #16301f）— 由 `assets/icon.png`＋`assets/splash.png` 產生，指令：`npm run assets`。
-- 定位權限（記錄路徑用）已加進 `AndroidManifest.xml`。
 - App 名稱、appId、直向鎖定、主題色已設定。
+- 定位權限、背景定位、前景服務權限、Google 登入 deep link 都已寫進 `AndroidManifest.xml`。
+- **Google 登入（原生可用）**：偵測到在原生 App 時，改用系統瀏覽器（Chrome Custom Tab）開 Google 登入，登完用 deep link `com.timmyweistudy.trailtracker://login-callback` 帶授權碼回來、以 PKCE 換 session。網頁版行為不變。
+  - ⚠️ **要在 Supabase 後台設定**：Authentication ▸ URL Configuration ▸ Redirect URLs 加入 `com.timmyweistudy.trailtracker://login-callback`，否則登入回來會被擋。
+- **背景定位（原生可用）**：裝了 `@capacitor-community/background-geolocation`，記錄時改用前景服務定位，**螢幕關掉/App 進背景仍持續記錄軌跡**。網頁版仍用瀏覽器定位（不變）。
+  - ⚠️ 首次記錄時，Android 會請求定位權限，請選「**一律允許 / Allow all the time**」背景定位才會運作。
 
-## 上架前還要處理（需在實機測試）
-- **Google 登入**：Google 擋 WebView 內的 OAuth，原生 App 的 Google 登入要改用 `@capacitor/browser`＋深層連結（deep link）流程。**Email 驗證碼登入在原生 App 可正常用**，先用 Email 登入即可。
-- **背景定位**：若要「螢幕關閉時仍持續記錄軌跡」，需加原生背景定位外掛並設定前景服務通知（Android）。目前是前景記錄。
+## 用外掛（改動後要 sync）
+每次 `npm install` 或改了外掛，要 `npm run sync` 才會套進 `android/`。已裝：`@capacitor/browser`、`@capacitor/app`、`@capacitor-community/background-geolocation`。
+
+## 上架前還要處理
+- Supabase Redirect URL（如上）。
 - 隱私權政策網址、商店文案、螢幕截圖。
+- iOS 若要背景定位/Google 登入，Info.plist 要加對應說明字串與 URL scheme（`npx cap add ios` 後在 Xcode 設定）。

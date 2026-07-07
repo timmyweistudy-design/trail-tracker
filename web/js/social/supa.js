@@ -8,6 +8,7 @@ const Supa = (() => {
     client = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY, {
       auth: {
         persistSession: true, autoRefreshToken: true, detectSessionInUrl: true,
+        flowType: "pkce",   // PKCE：網頁自動處理，原生 App 也能用 exchangeCodeForSession 交換 deep link 的 code
         // 繞過 navigator.locks：iOS 主畫面 PWA / webview 裡它常卡死，導致 getSession() 不回來
         lock: (_name, _timeout, fn) => fn(),
       },

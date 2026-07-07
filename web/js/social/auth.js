@@ -2,10 +2,33 @@
 const Auth = (() => {
   let onChange = () => {};
 
+  // 原生 App 偵測 + 深層連結回呼位址（Supabase 後台的 Redirect URLs 要加這條）
+  const NATIVE = !!(typeof window !== "undefined" && window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  const REDIRECT = "com.timmyweistudy.trailtracker://login-callback";
+  function _cap(name) { return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins[name]) || null; }
+
   function init(cb) {
     onChange = cb || (() => {});
     const c = Supa.client(); if (!c) return;
     c.auth.onAuthStateChange(() => onChange());   // 登入/登出/回呼後重新路由
+    initNativeAuth();
+  }
+  // 原生 App：Google 登入是用系統瀏覽器開，登完會用 deep link 帶 code 回來→這裡攔截並換 session
+  let _nativeAuthHooked = false;
+  function initNativeAuth() {
+    if (!NATIVE || _nativeAuthHooked) return;
+    const App = _cap("App"); if (!App) return;
+    _nativeAuthHooked = true;
+    App.addListener("appUrlOpen", async ev => {
+      try {
+        const url = ev && ev.url; if (!url || url.indexOf("login-callback") < 0) return;
+        const q = url.split("?")[1] || ""; const code = new URLSearchParams(q).get("code");
+        const c = Supa.client();
+        if (code && c) await c.auth.exchangeCodeForSession(code);   // PKCE：用 code 換到 session
+        const Browser = _cap("Browser"); if (Browser && Browser.close) { try { await Browser.close(); } catch (e) { /* */ } }
+        onChange();
+      } catch (e) { /* 交換失敗不影響 App */ }
+    });
   }
 
   async function session() {
@@ -16,6 +39,15 @@ const Auth = (() => {
 
   async function signInGoogle() {
     const c = Supa.client(); if (!c) return;
+    if (NATIVE) {
+      // 原生：Google 擋 WebView 內登入，改用系統瀏覽器(Chrome Custom Tab)開，登完 deep link 回來
+      const { data, error } = await c.auth.signInWithOAuth({ provider: "google", options: { redirectTo: REDIRECT, skipBrowserRedirect: true } });
+      if (error || !data || !data.url) { if (typeof toast === "function") toast("Google 登入啟動失敗"); return; }
+      const Browser = _cap("Browser");
+      if (Browser) await Browser.open({ url: data.url, presentationStyle: "popover" });
+      else window.open(data.url, "_system");
+      return;
+    }
     await c.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + location.pathname } });
   }
 
