@@ -27,9 +27,15 @@ function realTotalKm() { return Math.max(realRecords().reduce((s, r) => s + (r.d
 function petBase() { return +(localStorage.getItem("tt_pet_base") || 0); }
 function feedBonusKm() { return +(localStorage.getItem("tt_pet_feedkm") || 0); }
 function totalKm() { return Math.max(0, realTotalKm() - petBase()) + feedBonusKm(); }   // 成長里程＝走路 + 照顧獎勵
-// 🍓 果實：每走 1 km 得 1 顆，餵食消耗
-function berriesEarned() { return Math.floor(realTotalKm()); }
-function berryBonus() { return +(localStorage.getItem("tt_pet_berry_bonus") || 0); }   // 每日任務等額外果實
+// 🍓 果實：走路時「隨機撿拾」（每 10m 有 5% 機率撿到一顆），餵食消耗
+// 舊版是每 km 固定 1 顆；改成撿拾累計。首次遷移：把既有里程換算的果實搬進來，使用者不會損失。
+function berriesEarned() {
+  let p = localStorage.getItem("tt_pet_berry_picked");
+  if (p == null) { p = String(Math.floor(realTotalKm())); localStorage.setItem("tt_pet_berry_picked", p); }
+  return +p || 0;
+}
+function addBerryPicked(n) { localStorage.setItem("tt_pet_berry_picked", String(berriesEarned() + n)); }
+function berryBonus() { return +(localStorage.getItem("tt_pet_berry_bonus") || 0); }   // 每日任務、好友致贈等額外果實
 function addBerryBonus(n) { localStorage.setItem("tt_pet_berry_bonus", String(berryBonus() + n)); }
 function berriesBalance() { return Math.max(0, berriesEarned() + berryBonus() - (+(localStorage.getItem("tt_pet_berry_spent") || 0))); }
 // ❤️ 親密度 0–100（久未互動緩降，永不影響等級）

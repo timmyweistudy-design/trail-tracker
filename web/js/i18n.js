@@ -388,6 +388,7 @@ const I18n = (() => {
     "已達最終型態！與你一同騰雲駕霧": "Final form! Soaring the clouds with you",
     "幫你的山林夥伴取個名字": "Name your trail buddy",
     "果實不足，多走幾步 🍓": "Not enough berries — walk more 🍓",
+    "🍓 撿到一顆果實！": "🍓 Found a berry!", "撿到果實": "Found berries",
     "果實不足，多走幾步才有果實 🍓": "Not enough berries — walk to earn more 🍓",
     "餵食成功！🍓 親密度上升、照顧 +": "Fed! 🍓 Bond up, care bonus +",
     "神秘之卵": "Mystery Egg", "草叢幼蟲": "Grass Larva", "翩翩彩蝶": "Flutter Butterfly",

@@ -2456,15 +2456,23 @@ Recorder.onUpdate(s => {
   if ($("#stAscent")) $("#stAscent").textContent = `↑${Math.round(ad.ascent || 0)}`;
   if ($("#stDescent")) $("#stDescent").textContent = `↓${Math.round(ad.descent || 0)}`;
   drawRecSpark(s.altSeries);
-  // #11 每公里震動提示 + 果實收集提示（每走 1 km 得 1 顆 🍓）
-  if (s.state === "running" && !s.autoPaused) {
-    const kmDone = Math.floor(s.distanceKm);
-    if (kmDone > lastKmMilestone) {
-      const gained = kmDone - lastKmMilestone;
-      lastKmMilestone = kmDone;
-      if (navigator.vibrate) navigator.vibrate([120, 60, 120]);
-      if (!sim()) toast(`🍓 收集到果實 +${gained}！已走 ${kmDone} km，繼續加油`);
+  // 果實隨機撿拾：每走 10m 有 5% 機率撿到一顆 🍓，撿到就提示（模擬不算）
+  if (s.state === "running" && !s.autoPaused && !sim()) {
+    if (_berryLastKm == null || _berryLastKm > s.distanceKm) _berryLastKm = s.distanceKm;
+    let dM = (s.distanceKm - _berryLastKm) * 1000;
+    let picked = 0;
+    while (dM >= 10) { dM -= 10; _berryLastKm += 0.01; if (Math.random() < 0.05) picked++; }
+    if (picked > 0 && typeof addBerryPicked === "function") {
+      addBerryPicked(picked);
+      if (navigator.vibrate) navigator.vibrate([90, 40, 90]);
+      toast(picked === 1 ? ttT("🍓 撿到一顆果實！") : `🍓 ${ttT("撿到果實")} +${picked}！`);
+      try { renderPet(); } catch (e) { /* */ }
     }
+  }
+  // 每公里震動里程提示（不再和果實綁定）
+  if (s.state === "running" && !s.autoPaused && !sim()) {
+    const kmDone = Math.floor(s.distanceKm);
+    if (kmDone > lastKmMilestone) { lastKmMilestone = kmDone; if (navigator.vibrate) navigator.vibrate([120, 60, 120]); }
   }
   if (s.simDone && !window.__simDoneToasted) { window.__simDoneToasted = true; toast("模擬已走完整條路線，按「⏹ 結束」看結算"); if (navigator.vibrate) navigator.vibrate([60, 40, 60]); }
   if (s.state === "idle") window.__simDoneToasted = false;
@@ -2527,7 +2535,7 @@ Recorder.onUpdate(s => {
 });
 
 // 省電模式 + 分享即時位置 + 公里里程碑
-let lastKmMilestone = 0;
+let lastKmMilestone = 0, _berryLastKm = null;
 $("#lowPowerToggle").addEventListener("change", e => {
   Recorder.setLowPower(e.target.checked);
   toast(e.target.checked ? "已開省電模式（下次定位生效）" : "已關省電模式");
@@ -2706,7 +2714,7 @@ $("#btnPause").addEventListener("click", () => {
 async function finishRecording(autoVehicle) {
   const rec = Recorder.stop();
   setNavUp(false);   // 結束記錄→退出導航視角，地圖轉正
-  recPreloaded = false; lastKmMilestone = 0;   // 下次記錄重新預載/里程碑
+  recPreloaded = false; lastKmMilestone = 0; _berryLastKm = null;   // 下次記錄重新預載/里程碑/果實錨點
   $("#btnStart").textContent = "▶ 開始";
   $("#btnStart").style.display = "block";
   $("#btnPause").style.display = "none";
