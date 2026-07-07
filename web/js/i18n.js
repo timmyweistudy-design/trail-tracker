@@ -213,6 +213,7 @@ const I18n = (() => {
     "記錄中": "Recording", "海拔校正中…": "Correcting elevation…", "即時海拔": "Live elevation",
     "在路線上": "on route", "⏸ 自動暫停（偵測到靜止，移動即恢復": "⏸ Auto-paused (stationary — move to resume",
     "🌿 休息中": "🌿 Resting",
+    "鎖定畫面": "Lock screen", "長按解鎖": "Hold to unlock",
     "上次": "Last", "自由路線": "Free route",
     "已開省電模式（下次定位生效": "Battery saver on (next GPS fix",
     "已關省電模式": "Battery saver off",

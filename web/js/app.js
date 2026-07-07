@@ -2229,24 +2229,32 @@ function openTrackReview(rec, isNew) {
 }
 function closeTrackReview() { if (trackAnim) { clearInterval(trackAnim); trackAnim = null; } const lv = document.getElementById("replayLive"); if (lv) lv.style.display = "none"; const bb = document.getElementById("replayBar"); if (bb) bb.remove(); _shotUrls.forEach(u => URL.revokeObjectURL(u)); _shotUrls = []; $("#trackMask").classList.remove("show"); $("#trackSheet").classList.remove("show"); }
 
+// 分享圖卡配色版型（每按一次「分享圖卡」換下一個風格：森林／暮色／晨霧）
+const CARD_THEMES = [
+  { bg: ["#1f4730", "#16301f", "#102217"], brand: "rgba(220,232,210,.7)", ink: "#fbf8ee", sub: "rgba(231,237,222,.6)", route: "rgba(232,137,59,.95)", unit: "rgba(231,237,222,.7)", line: "rgba(220,232,210,.14)", statV: "#9fe0b0", statL: "rgba(231,237,222,.55)" },
+  { bg: ["#43301f", "#2a1c14", "#17100b"], brand: "rgba(245,222,190,.7)", ink: "#fdf3e6", sub: "rgba(245,230,214,.6)", route: "rgba(255,179,71,.98)", unit: "rgba(245,230,214,.7)", line: "rgba(245,222,190,.16)", statV: "#ffce85", statL: "rgba(245,230,214,.55)" },
+  { bg: ["#f6f2e8", "#ece5d4", "#e0d8c4"], brand: "rgba(60,80,58,.65)", ink: "#1c2a1e", sub: "rgba(60,72,58,.6)", route: "rgba(194,104,61,.98)", unit: "rgba(60,72,58,.75)", line: "rgba(40,50,35,.14)", statV: "#2c5d3f", statL: "rgba(60,72,58,.6)" },
+];
+let _cardTheme = 0;
 // 成果分享圖卡：把這趟健行畫成一張可分享/下載的圖
 async function shareHikeCard(rec) {
   try {
+    const T = CARD_THEMES[_cardTheme % CARD_THEMES.length];
     const S = 1080, c = document.createElement("canvas");
     c.width = S; c.height = S;
     const x = c.getContext("2d");
-    // 背景：深林漸層
+    // 背景漸層（依版型）
     const g = x.createLinearGradient(0, 0, S, S);
-    g.addColorStop(0, "#1f4730"); g.addColorStop(.55, "#16301f"); g.addColorStop(1, "#102217");
+    g.addColorStop(0, T.bg[0]); g.addColorStop(.55, T.bg[1]); g.addColorStop(1, T.bg[2]);
     x.fillStyle = g; x.fillRect(0, 0, S, S);
     // 品牌
-    x.fillStyle = "rgba(220,232,210,.7)"; x.font = "600 30px serif";
+    x.fillStyle = T.brand; x.font = "600 30px serif";
     x.fillText(ttT("循徑拾光 · GATHER THE TRAIL"), 70, 96);
     // 步道名
-    x.fillStyle = "#fbf8ee"; x.font = "700 64px 'Noto Serif TC', serif";
+    x.fillStyle = T.ink; x.font = "700 64px 'Noto Serif TC', serif";
     const name = (rec.trailName || "自由路線").slice(0, 12);
     x.fillText(name, 70, 188);
-    x.fillStyle = "rgba(231,237,222,.6)"; x.font = "400 28px serif";
+    x.fillStyle = T.sub; x.font = "400 28px serif";
     x.fillText(new Date(rec.date).toLocaleDateString(ttLocale()), 70, 234);
     // 路線縮圖
     const pts = (rec.track || []).map(p => [p.lat, p.lon]);
@@ -2257,7 +2265,7 @@ async function shareHikeCard(rec) {
       const spanLa = (maxLa - minLa) || 1e-6, spanLo = (maxLo - minLo) || 1e-6;
       const sc = Math.min((bw - 2 * pad) / spanLo, (bh - 2 * pad) / spanLa);
       const ox = bx + (bw - spanLo * sc) / 2, oy = by + (bh - spanLa * sc) / 2;
-      x.strokeStyle = "rgba(232,137,59,.95)"; x.lineWidth = 7; x.lineJoin = "round"; x.lineCap = "round";
+      x.strokeStyle = T.route; x.lineWidth = 7; x.lineJoin = "round"; x.lineCap = "round";
       x.beginPath();
       (rec.track || []).forEach((p, i) => {
         const px = ox + (p.lon - minLo) * sc, py = oy + (maxLa - p.lat) * sc;
@@ -2266,20 +2274,21 @@ async function shareHikeCard(rec) {
       x.stroke();
     }
     // 大數字：距離（整體上移，底部留足白）
-    x.fillStyle = "#fbf8ee"; x.font = "600 132px 'Fraunces', serif";
+    x.fillStyle = T.ink; x.font = "600 132px 'Fraunces', serif";
     x.fillText((rec.distanceKm || 0).toFixed(2), 70, 846);
-    x.fillStyle = "rgba(231,237,222,.7)"; x.font = "500 40px serif"; x.fillText(ttT("公里"), 72, 896);
+    x.fillStyle = T.unit; x.font = "500 40px serif"; x.fillText(ttT("公里"), 72, 896);
     // 分隔細線
-    x.strokeStyle = "rgba(220,232,210,.14)"; x.lineWidth = 2;
+    x.strokeStyle = T.line; x.lineWidth = 2;
     x.beginPath(); x.moveTo(70, 940); x.lineTo(S - 70, 940); x.stroke();
     // 統計列
     const stats = [[ttT("時間"), fmtTime(rec.elapsedMs)], [ttT("爬升"), "↑" + (rec.ascent || 0) + "m"], [ttT("大卡"), String(rec.kcal || 0)], [ttT("步數"), (rec.steps || 0).toLocaleString()]];
     const cw = (S - 140) / stats.length;
     stats.forEach(([l, v], i) => {
       const cx = 70 + cw * i;
-      x.fillStyle = "#9fe0b0"; x.font = "600 46px 'Fraunces', serif"; x.fillText(v, cx, 1000);
-      x.fillStyle = "rgba(231,237,222,.55)"; x.font = "400 26px serif"; x.fillText(l, cx, 1038);
+      x.fillStyle = T.statV; x.font = "600 46px 'Fraunces', serif"; x.fillText(v, cx, 1000);
+      x.fillStyle = T.statL; x.font = "400 26px serif"; x.fillText(l, cx, 1038);
     });
+    _cardTheme++;   // 下次按分享圖卡換下一個版型
     const blob = await new Promise(r => c.toBlob(r, "image/png"));
     const file = new File([blob], (typeof I18n !== "undefined" && I18n.lang() !== "zh") ? "gather-the-trail-card.png" : "循徑拾光.png", { type: "image/png" });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -2695,7 +2704,35 @@ function startRecordingUI() {
   $("#btnStop").style.display = teamMember ? "none" : "block";
   if (teamMember) $("#btnPause").style.display = "none";
   if (!sim()) $("#btnSnap").style.display = "block";   // 模擬不拍照
+  if (!teamMember) $("#btnLock").style.display = "block";   // 口袋模式：鎖定畫面防誤觸
 }
+// ── 口袋模式：記錄中鎖定畫面，避免放口袋誤觸暫停/結束；長按解鎖鈕才解鎖 ──
+let _recLocked = false, _lockTimer = null, _lockSuppressClick = false;
+function setRecLock(on) {
+  _recLocked = on;
+  const view = document.getElementById("view-record");
+  if (view) view.classList.toggle("rec-locked", on);
+  const btn = $("#btnLock");
+  if (btn) {
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+    const lbl = btn.querySelector(".lock-label");
+    if (lbl) lbl.textContent = on ? ttT("長按解鎖") : ttT("鎖定畫面");
+  }
+}
+(function () {
+  const btn = document.getElementById("btnLock");
+  if (!btn) return;
+  btn.addEventListener("click", () => {
+    if (_lockSuppressClick) { _lockSuppressClick = false; return; }
+    if (!_recLocked) { setRecLock(true); toast(ttT("長按解鎖")); if (navigator.vibrate) navigator.vibrate(20); }
+  });
+  btn.addEventListener("pointerdown", () => {
+    if (!_recLocked) return;
+    _lockTimer = setTimeout(() => { setRecLock(false); _lockSuppressClick = true; if (navigator.vibrate) navigator.vibrate(30); }, 700);
+  });
+  const clr = () => clearTimeout(_lockTimer);
+  ["pointerup", "pointerleave", "pointercancel"].forEach(ev => btn.addEventListener(ev, clr));
+})();
 $("#btnStart").addEventListener("click", () => {
   // 小隊同行中：只有隊長能開始，且需全員（含隊長）已按「準備」；隊長開始時廣播全隊一起開始
   if (typeof TeamLive !== "undefined" && TeamLive.isOn() && Recorder.getState() === "idle") {
@@ -2735,6 +2772,7 @@ async function finishRecording(autoVehicle) {
   $("#btnPause").style.display = "none";
   $("#btnStop").style.display = "none";
   $("#btnSnap").style.display = "none";
+  $("#btnLock").style.display = "none"; setRecLock(false);   // 結束記錄→解除口袋鎖定
   if (rec) hikePhotosRecId = rec.id;   // 隨手拍歸屬這趟，結算頁才顯示
   if (recMarker) { recMap.removeLayer(recMarker); recMarker = null; }
   if (petMarker) { recMap.removeLayer(petMarker); petMarker = null; }

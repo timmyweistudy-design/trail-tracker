@@ -522,6 +522,9 @@ body.navup-on #recMap .leaflet-map-pane { transition: transform .12s linear; }
 .rec-status .offroute { color: var(--danger); font-weight: 700; }
 .rec-status .autopause { color: #d98a1e; font-weight: 700; }
 .rec-status .resting { color: var(--brand); font-weight: 700; }
+/* 口袋模式：鎖定時暫停/結束鈕變灰且不可點（防誤觸），長按鎖定鈕才解鎖 */
+.rec-locked #btnPause, .rec-locked #btnStop { opacity: .35; pointer-events: none; }
+#btnLock[aria-pressed="true"] { border-color: var(--brand-mid); color: var(--brand); font-weight: 700; }
 .gps-sig { display: flex; align-items: center; justify-content: center; gap: 6px; margin: -6px 0 10px; font-family: var(--num); font-size: calc(11.5px * var(--fs, 1)); font-weight: 700; color: var(--ink-soft); }
 .gps-sig .gs-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--ink-faint); box-shadow: 0 0 0 3px rgba(0,0,0,.05); }
 .gps-sig.good .gs-dot { background: #22b473; box-shadow: 0 0 0 3px rgba(34,180,115,.18); }
@@ -873,6 +876,13 @@ body.map-fs-open { overflow: hidden; }
 /* ===================================================================
    桌機 / 平板：加寬版面、清單雙欄、面板改置中浮動視窗
    =================================================================== */
+/* 平板直向（如 iPad ~768pt）：加寬置中欄＋步道清單雙欄，善用螢幕（不影響 900px 桌機版面） */
+@media (min-width: 700px) and (max-width: 899px) {
+  #app, .tabbar { max-width: 680px; }
+  #trailList { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; align-items: start; }
+  #trailList .card { margin-bottom: 0; }
+  #trailList .empty, #listSentinel { grid-column: 1 / -1; }
+}
 @media (min-width: 900px) {
   #app { max-width: 1000px; }
   #trailList { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; align-items: start; }
