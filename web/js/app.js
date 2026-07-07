@@ -329,6 +329,21 @@ function confetti() {
   setTimeout(() => c.remove(), 2400);
 }
 
+// 「回到頂部」浮鈕：主視圖（探索/夥伴/我的/社群）捲動夠深才顯示。詳情/結算頁用各自 sheet 的跳頂鈕。
+(function () {
+  const btn = document.getElementById("backTop");
+  if (!btn) return;
+  let ticking = false;
+  function update() {
+    ticking = false;
+    const show = window.scrollY > 600;
+    btn.hidden = !show;
+    btn.classList.toggle("show", show);
+  }
+  window.addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
+  btn.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+})();
+
 // ---------- 分頁切換 ----------
 let detailMap, detailOverlay, detailPoiLayer, recMap, recLine, recMarker, petMarker, _detailScroll = null;
 function petEmojiNow() { return PET_STAGES[petStageIndex(totalKm())].e; }
@@ -1665,7 +1680,7 @@ function openLightbox(urls, start) {
   const ov = document.createElement("div");
   ov.className = "lightbox"; ov.dataset.ov = "lightbox";
   ov.innerHTML = `<button class="lb-close" aria-label="關閉">✕</button>
-    <div class="lb-track">${urls.map(u => `<div class="lb-slide"><img src="${u}" alt=""></div>`).join("")}</div>`;
+    <div class="lb-track">${urls.map(u => `<div class="lb-slide"><img loading="lazy" src="${u}" alt=""></div>`).join("")}</div>`;
   document.body.appendChild(ov);
   const track = ov.querySelector(".lb-track");
   track.scrollLeft = (start || 0) * track.clientWidth;
@@ -2148,7 +2163,7 @@ function openTrackReview(rec, isNew) {
     </div>
     ${speedHtml(rec)}
     ${(rec.id === hikePhotosRecId && hikePhotos.length) ? `<div class="section-title">${ic("camera")}隨手拍（${hikePhotos.length}）<span class="shot-hint">點照片存到相簿</span></div>
-      <div class="hike-shots">${hikePhotos.map((p, i) => `<figure class="shot" data-i="${i}"><img src="${(u => { _shotUrls.push(u); return u; })(URL.createObjectURL(p.file))}" alt=""><figcaption>${new Date(p.t).toLocaleTimeString(ttLocale(), { hour: "2-digit", minute: "2-digit" })} · ${p.km.toFixed(2)}km</figcaption></figure>`).join("")}</div>` : ""}
+      <div class="hike-shots">${hikePhotos.map((p, i) => `<figure class="shot" data-i="${i}"><img loading="lazy" src="${(u => { _shotUrls.push(u); return u; })(URL.createObjectURL(p.file))}" alt=""><figcaption>${new Date(p.t).toLocaleTimeString(ttLocale(), { hour: "2-digit", minute: "2-digit" })} · ${p.km.toFixed(2)}km</figcaption></figure>`).join("")}</div>` : ""}
     <div class="link-row flow">
       <button class="link-btn" id="trackReplay">${ic("play")} 重播路徑</button>
       <button class="link-btn" id="track3d">${ic("mountain")} 3D 回放<span class="pro-tag">PRO</span></button>

@@ -303,6 +303,16 @@ body.navup-on #recMap .leaflet-map-pane { transition: transform .12s linear; }
 .pb-burst { display: flex; flex-wrap: wrap; gap: 7px; margin: 4px 0 12px; }
 .pb-badge { display: inline-flex; align-items: center; gap: 5px; font-size: calc(12.5px * var(--fs, 1)); font-weight: 700; color: #8a5a00; background: linear-gradient(135deg, #ffe9a8, #ffd25e); border: 1px solid #f0bf4a; border-radius: var(--r-pill); padding: 5px 12px; box-shadow: var(--sh-sm); }
 .pb-badge b { font-weight: 800; }
+/* 破紀錄徽章彈出動畫（逐個彈入；prefers-reduced-motion 由全域規則關閉） */
+.pb-badge { animation: pbPop .5s cubic-bezier(.2, .9, .3, 1.5) backwards; }
+.pb-burst .pb-badge:nth-child(2) { animation-delay: .09s; }
+.pb-burst .pb-badge:nth-child(3) { animation-delay: .18s; }
+.pb-burst .pb-badge:nth-child(n+4) { animation-delay: .27s; }
+@keyframes pbPop { from { opacity: 0; transform: scale(.5) translateY(8px); } to { opacity: 1; transform: none; } }
+/* 列表/長頁「回到頂部」浮鈕（捲動夠深才顯示；避開底部分頁列） */
+.back-top { position: fixed; right: 14px; bottom: calc(84px + var(--safe-b)); z-index: 35; width: 44px; height: 44px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: var(--num); font-size: calc(20px * var(--fs, 1)); font-weight: 800; box-shadow: var(--sh-md); cursor: pointer; display: grid; place-items: center; opacity: 0; transform: translateY(8px); transition: opacity .2s ease, transform .2s ease; }
+.back-top.show { opacity: .95; transform: none; }
+.back-top[hidden] { display: none; }
 /* #2 每公里分段配速 */
 .split-unit { font-family: var(--num); font-size: calc(11px * var(--fs, 1)); font-weight: 600; color: var(--ink-soft); margin-left: 6px; }
 .split-list { display: flex; flex-direction: column; gap: 6px; }

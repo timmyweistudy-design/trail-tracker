@@ -139,7 +139,7 @@
         <div class="rc"><div class="rc-v" id="stDescent">↓0</div><div class="rc-l">下降 m</div></div>
       </div>
     </div>
-    <div class="rec-status" id="recStatus">準備就緒，按「開始」記錄路徑</div>
+    <div class="rec-status" id="recStatus" role="status" aria-live="polite">準備就緒，按「開始」記錄路徑</div>
     <div class="gps-sig" id="gpsSig" hidden><i class="gs-dot"></i><span class="gs-txt"></span></div>
     <div class="pre-hike" id="preHike" hidden></div>
     <div id="recElevSpark" style="display:none"></div>
@@ -429,7 +429,8 @@
     <div class="map3d-bar"><b id="map3dTitle"></b><span class="map3d-hint">🖐 雙指拖曳可旋轉／傾斜</span><button class="map3d-replay" id="map3dReplay" hidden>↻ 重播</button><button class="map3d-close" id="map3dClose" aria-label="關閉">✕</button></div>
     <div class="map3d-prep" id="map3dPrep" hidden><span class="spin"></span><span id="map3dPrepTxt"></span></div>
   </div>
-  <div class="toast" id="toast"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+  <button class="back-top" id="backTop" aria-label="回到頂部" hidden>↑</button>
   <button class="update-banner" id="updateBanner" style="display:none">🔄 有新版本，點此更新</button>
   <div class="net-banner" id="netBanner" style="display:none">📴 離線模式（地圖與已快取內容仍可用）</div>
 </div>
