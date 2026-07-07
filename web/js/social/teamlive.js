@@ -15,6 +15,7 @@ const TeamLive = (() => {
   let pollTimer = null, renderPoll = null, curTeamId = null;
   let lastTrackAt = 0;         // presence 位置更新節流（避免每秒打 realtime）
   let subState = "";           // 頻道訂閱狀態（SUBSCRIBED / CHANNEL_ERROR / TIMED_OUT / CLOSED）供診斷「看不到隊友」的真因
+  let subCount = 0, dropCount = 0;   // 連上/斷線次數：診斷「頻頻斷線」——conn 多且 drop 多＝連線被網路一直砍
 
   function isOn() { return !!channel; }
   function isLeader() { return !!me && me === leaderId; }
@@ -261,7 +262,7 @@ const TeamLive = (() => {
       const tip = connBad
         ? T("即時連線被擋，請關 VPN／私人DNS 或改用行動網路")   // 真因：WebSocket 連不上→隊友定位無法同步
         : T("還沒看到隊友？請隊友也在記錄頁開啟「與小隊同行」");
-      const diag = `<div class="trb-diag">${connOk ? "🟢" : "🔴"} Realtime: ${esc(subState || "…")} · online ${r.length}</div>`;
+      const diag = `<div class="trb-diag">${connOk ? "🟢" : "🔴"} Realtime: ${esc(subState || "…")} · online ${r.length} · conn ${subCount}/drop ${dropCount}</div>`;
       guide = `<div class="trb-guide">${tip}${diag}</div>`;
     }
     el.innerHTML = `<div class="trb-top"><b>${icn("users")} 小隊同行${isLeader() ? `・我是隊長 ${icn("crown")}` : ""}</b><button class="trb-ready ${myReady ? "on" : ""}" id="trbReady">${myReady ? "✓ 已準備" : `${icn("hand")} 準備`}</button></div>
@@ -289,7 +290,7 @@ const TeamLive = (() => {
       catch (e) { /* 查不到名字不影響功能 */ }
     }
     channel = c.channel("team:" + teamId, { config: { presence: { key: me } } });
-    curTeamId = teamId; myStartAt = null; myStopAt = null; lastHandledAt = 0; lastStopHandled = 0; joinedAt = Date.now();
+    curTeamId = teamId; myStartAt = null; myStopAt = null; lastHandledAt = 0; lastStopHandled = 0; joinedAt = Date.now(); subCount = 0; dropCount = 0;
     channel.on("presence", { event: "sync" }, render);
     channel.on("presence", { event: "join" }, render);
     channel.on("presence", { event: "leave" }, render);
@@ -299,7 +300,8 @@ const TeamLive = (() => {
     channel.on("postgres_changes", { event: "*", schema: "public", table: "team_starts", filter: "team_id=eq." + teamId },
       p => { const row = p && p.new; if (row) { if (row.started_at) handleStart(Date.parse(row.started_at), row.sim); if (row.stopped_at) handleStop(Date.parse(row.stopped_at)); } });
     channel.subscribe(st => {
-      subState = st;   // 記錄訂閱狀態供診斷：非 SUBSCRIBED（CHANNEL_ERROR/TIMED_OUT）＝即時連線被擋，presence 無法同步
+      subState = st;   // 記錄訂閱狀態供診斷：非 SUBSCRIBED（CHANNEL_ERROR/TIMED_OUT/CLOSED）＝即時連線被擋/一直斷，presence 無法同步
+      if (st === "SUBSCRIBED") subCount++; else if (/CLOSED|CHANNEL_ERROR|TIMED_OUT/.test(st)) dropCount++;
       if (st === "SUBSCRIBED") {
         try { channel.track(payload()); } catch (e) { /* */ }
         // 第一次 track 可能與 subscribe 競態沒送成→隔一下再補送幾次，確保別人一定看得到我
@@ -354,6 +356,6 @@ const TeamLive = (() => {
     });
   }
 
-  function status() { return { on: !!channel, sub: subState, presence: channel ? Object.keys(channel.presenceState()).length : 0, me, team: curTeamId, leader: leaderId }; }
+  function status() { return { on: !!channel, sub: subState, conn: subCount, drop: dropCount, presence: channel ? Object.keys(channel.presenceState()).length : 0, me, team: curTeamId, leader: leaderId }; }
   return { start, stop, isOn, isLeader, setReady, allReady, roster, teammates, notReadyNames, sendStart, onStart, sendStop, onStop, updatePos, status };
 })();
