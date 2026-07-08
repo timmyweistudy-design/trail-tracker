@@ -1266,6 +1266,17 @@ html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
 .team-rule { font-size: calc(12px * var(--fs, 1)); color: var(--ink-soft); background: var(--surface-2); border-radius: var(--r-xs); padding: 8px 10px; margin: 6px 0; line-height: 1.5; }
 /* 記錄頁小隊準備列 */
 .team-ready-bar { background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 10px 12px; margin: 8px 0; }
+/* 記錄時全螢幕地圖也保留小隊面板：浮在地圖上方左側，右側留給地圖控制鈕（3D/全螢幕/回中/指北針） */
+body.map-fs-open #teamReadyBar {
+  position: fixed; z-index: 96;
+  top: calc(8px + env(safe-area-inset-top, 0px));
+  left: calc(8px + env(safe-area-inset-left, 0px));
+  right: calc(52px + env(safe-area-inset-right, 0px));
+  max-height: 42vh; overflow-y: auto; margin: 0;
+  box-shadow: var(--sh-lg); backdrop-filter: blur(8px) saturate(1.1);
+  background: rgba(255, 253, 248, .92);
+}
+html[data-theme="dark"] body.map-fs-open #teamReadyBar { background: rgba(20, 24, 15, .9); }
 .trb-top { display: flex; align-items: center; justify-content: space-between; gap: 8px 10px; flex-wrap: wrap; font-size: calc(13.5px * var(--fs, 1)); }
 .trb-top > b { flex: 1 1 auto; min-width: 0; display: inline-flex; align-items: center; gap: 4px; }
 .trb-top > .trb-chip, .trb-top > .trb-ready { flex: 0 0 auto; }

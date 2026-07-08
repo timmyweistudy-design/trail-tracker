@@ -149,7 +149,7 @@ const TeamLive = (() => {
     renderReadyBar();
   }
 
-  // 點隊友名字：即時抓一次他的位置，在地圖上顯示 5 秒（他記錄中才有）
+  // 點隊友名字：即時抓一次他的位置，在地圖上顯示 10 秒（他記錄中才有）
   async function peek(uid) {
     if (!uid || uid === me) return;
     const c = Supa.client(); if (!c || !curTeamId) return;
@@ -165,7 +165,7 @@ const TeamLive = (() => {
       .bindTooltip(`${esc(nm)}${ageS > 12 ? ` · ${ageS}s` : ""}`, { permanent: true, direction: "bottom", className: "team-tip", offset: [0, 14] }).openTooltip();
     peekMarkers[key] = mk;
     try { map.panTo([row.lat, row.lon]); } catch (e) { }
-    mk._t = setTimeout(() => { try { map.removeLayer(mk); } catch (e) { } delete peekMarkers[key]; }, 5000);   // 顯示 5 秒後移除
+    mk._t = setTimeout(() => { try { map.removeLayer(mk); } catch (e) { } delete peekMarkers[key]; }, 10000);   // 顯示 10 秒後移除
   }
 
   function setReady(v) { myReady = !!v; pushPresence(); renderReadyBar(); }
