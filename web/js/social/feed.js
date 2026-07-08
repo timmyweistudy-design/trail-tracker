@@ -40,8 +40,8 @@ const Feed = (() => {
       ? `<div class="fc-media fc-media-${Math.min(media.length, 4)}">${shown.map((m, idx) => {
           const more = (idx === 3 && extra > 0) ? `<span class="fc-more">+${extra}</span>` : "";
           return m.kind === "video"
-            ? `<div class="fc-vid" data-vsrc="${esc(Media.publicUrl(m.path))}"><img loading="lazy" src="${esc(Media.publicUrl(m.thumb_path || ""))}" alt=""><span class="fc-play">▶</span>${more}</div>`
-            : `<div class="fc-shot"><img loading="lazy" src="${esc(Media.publicUrl(m.thumb_path || m.path))}" alt="">${m.km != null ? `<span class="fc-shot-km">${(+m.km).toFixed(1)}km</span>` : ""}${more}</div>`;
+            ? `<div class="fc-vid" data-vsrc="${esc(Media.publicUrl(m.path))}"><img loading="lazy" decoding="async" src="${esc(Media.publicUrl(m.thumb_path || ""))}" alt=""><span class="fc-play">▶</span>${more}</div>`
+            : `<div class="fc-shot"><img loading="lazy" decoding="async" src="${esc(Media.publicUrl(m.thumb_path || m.path))}" alt="">${m.km != null ? `<span class="fc-shot-km">${(+m.km).toFixed(1)}km</span>` : ""}${more}</div>`;
         }).join("")}</div>` : "";
     const stats = `${(post.distance_km != null ? post.distance_km.toFixed(2) + "km" : "")}${post.ascent != null ? "　↑" + post.ascent + "m" : ""}`;
     const trailName = post.trail_id

@@ -585,8 +585,8 @@ body.navup-on #recMap .leaflet-map-pane { transition: transform .12s linear; }
 .section-title.collapsible { cursor: pointer; display: flex; align-items: center; }
 .section-title.collapsible::after { content: "▾"; margin-left: auto; font-size: calc(11px * var(--fs, 1)); color: var(--ink-faint); transition: transform .2s; }
 .section-title.collapsible.collapsed::after { transform: rotate(-90deg); }
-.empty { text-align: center; color: var(--ink-soft); padding: 48px 20px; font-size: calc(14px * var(--fs, 1)); line-height: 1.7; }
-.empty .big { font-size: calc(44px * var(--fs, 1)); display: block; margin-bottom: 12px; opacity: .8; }
+.empty { text-align: center; color: var(--ink-faint); padding: 46px 24px; font-size: calc(14px * var(--fs, 1)); line-height: 1.7; }
+.empty .big { font-size: calc(42px * var(--fs, 1)); display: block; margin-bottom: 10px; opacity: .9; }
 .empty-art { width: 116px; height: auto; display: block; margin: 0 auto 16px; }
 
 /* 山林夥伴 */

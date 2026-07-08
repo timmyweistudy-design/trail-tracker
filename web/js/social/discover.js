@@ -177,7 +177,7 @@ const Discover = (() => {
         body.className = "";
         if (!photos.length) { body.innerHTML = `<div class="social-empty"><span class="ee">📷</span>還沒有相片。</div>`; return; }
         const urls = photos.map(m => Media.publicUrl(m.path));
-        body.innerHTML = `<div class="pf-photos">${photos.map((m, idx) => `<div class="pf-ph" data-idx="${idx}"><img loading="lazy" src="${esc(Media.publicUrl(m.thumb_path || m.path))}" alt=""></div>`).join("")}</div>`;
+        body.innerHTML = `<div class="pf-photos">${photos.map((m, idx) => `<div class="pf-ph" data-idx="${idx}"><img loading="lazy" decoding="async" src="${esc(Media.publicUrl(m.thumb_path || m.path))}" alt=""></div>`).join("")}</div>`;
         body.querySelectorAll(".pf-ph").forEach(el => el.addEventListener("click", () => { if (typeof Lightbox !== "undefined") Lightbox.openGallery(urls, +el.dataset.idx); }));
       } else {
         body.className = "";

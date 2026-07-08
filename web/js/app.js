@@ -1655,7 +1655,7 @@ async function loadPhoto(t) {
     hero.classList.remove("noimg");
     const car = document.createElement("div");
     car.className = "hero-carousel";
-    car.innerHTML = urls.map(u => `<img alt="${t.name}" src="${u}" loading="lazy">`).join("")
+    car.innerHTML = urls.map(u => `<img alt="${t.name}" src="${u}" loading="lazy" decoding="async">`).join("")
       + (urls.length > 1 ? `<div class="hero-dots">${urls.map((_, i) => `<span class="${i ? "" : "on"}"></span>`).join("")}</div>` : "");
     hero.insertBefore(car, hero.firstChild);
     hero.insertAdjacentHTML("afterbegin", `<div class="hero-credit">Wikimedia Commons${urls.length > 1 ? " · 左右滑看更多" : ""}</div>`);
@@ -1680,7 +1680,7 @@ function openLightbox(urls, start) {
   const ov = document.createElement("div");
   ov.className = "lightbox"; ov.dataset.ov = "lightbox";
   ov.innerHTML = `<button class="lb-close" aria-label="關閉">✕</button>
-    <div class="lb-track">${urls.map(u => `<div class="lb-slide"><img loading="lazy" src="${u}" alt=""></div>`).join("")}</div>`;
+    <div class="lb-track">${urls.map(u => `<div class="lb-slide"><img loading="lazy" decoding="async" src="${u}" alt=""></div>`).join("")}</div>`;
   document.body.appendChild(ov);
   const track = ov.querySelector(".lb-track");
   track.scrollLeft = (start || 0) * track.clientWidth;
@@ -2163,7 +2163,7 @@ function openTrackReview(rec, isNew) {
     </div>
     ${speedHtml(rec)}
     ${(rec.id === hikePhotosRecId && hikePhotos.length) ? `<div class="section-title">${ic("camera")}隨手拍（${hikePhotos.length}）<span class="shot-hint">點照片存到相簿</span></div>
-      <div class="hike-shots">${hikePhotos.map((p, i) => `<figure class="shot" data-i="${i}"><img loading="lazy" src="${(u => { _shotUrls.push(u); return u; })(URL.createObjectURL(p.file))}" alt=""><figcaption>${new Date(p.t).toLocaleTimeString(ttLocale(), { hour: "2-digit", minute: "2-digit" })} · ${p.km.toFixed(2)}km</figcaption></figure>`).join("")}</div>` : ""}
+      <div class="hike-shots">${hikePhotos.map((p, i) => `<figure class="shot" data-i="${i}"><img loading="lazy" decoding="async" src="${(u => { _shotUrls.push(u); return u; })(URL.createObjectURL(p.file))}" alt=""><figcaption>${new Date(p.t).toLocaleTimeString(ttLocale(), { hour: "2-digit", minute: "2-digit" })} · ${p.km.toFixed(2)}km</figcaption></figure>`).join("")}</div>` : ""}
     <div class="link-row flow">
       <button class="link-btn" id="trackReplay">${ic("play")} 重播路徑</button>
       <button class="link-btn" id="track3d">${ic("mountain")} 3D 回放<span class="pro-tag">PRO</span></button>
