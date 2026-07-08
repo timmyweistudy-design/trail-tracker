@@ -2971,9 +2971,15 @@ async function autoCloudBackup() {
     if (typeof Supa === "undefined" || !Supa.ready()) return;
     const c = Supa.client(); const { data: u } = await c.auth.getUser();
     if (!u || !u.user) return;   // 沒登入就沒雲端備份（改用匯出備份檔）
-    if (await cloudBackupNow(true)) toast("已自動備份到雲端 ☁️");
-  } catch (e) { /* 靜默 */ }
+    // 離線送出佇列：離線或失敗→標記待備份，回線自動補送（資料安全不因當下沒網路而漏）
+    if (typeof navigator !== "undefined" && navigator.onLine === false) { try { localStorage.setItem("tt_backup_pending", "1"); } catch (e) { } return; }
+    if (await cloudBackupNow(true)) { try { localStorage.removeItem("tt_backup_pending"); } catch (e) { } toast("已自動備份到雲端 ☁️"); }
+    else { try { localStorage.setItem("tt_backup_pending", "1"); } catch (e) { } }
+  } catch (e) { try { localStorage.setItem("tt_backup_pending", "1"); } catch (_) { } }
 }
+// 回線自動補送待備份（離線時走完的行程，恢復連線就補傳雲端）
+function _retryPendingBackup() { try { if (localStorage.getItem("tt_backup_pending") === "1" && navigator.onLine) setTimeout(autoCloudBackup, 1500); } catch (e) { } }
+if (typeof window !== "undefined") { window.addEventListener("online", _retryPendingBackup); setTimeout(_retryPendingBackup, 4000); }   // 回線時＋開機後各試一次
 // 同步累積里程/寵物到雲端 profile：好友比較讀 profiles.total_km，走完就更新才不會過時
 async function syncMyStatsToCloud() {
   try {
