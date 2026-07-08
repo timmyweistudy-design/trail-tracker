@@ -1274,6 +1274,8 @@ html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
 .trb-hint { font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-faint); margin-top: 7px; }
 .trb-guide { font-size: calc(11.5px * var(--fs, 1)); color: var(--brand-mid); background: rgba(47,125,79,.10); border-radius: var(--r-xs); padding: 7px 10px; margin-top: 7px; line-height: 1.45; }
 .trb-diag { margin-top: 5px; font-family: var(--num); font-size: calc(10.5px * var(--fs, 1)); color: var(--ink-faint); letter-spacing: .2px; }
+.trb-chip.tappable { cursor: pointer; border: 1px solid var(--brand-mid); background: var(--brand-soft); color: var(--brand); }
+.trb-chip.tappable:active { transform: scale(.96); }
 .trb-chip.leader-off { background: var(--surface-2); color: var(--ink-soft); font-weight: 700; }
 .trb-chip.leader-off .ic { width: 12px; height: 12px; vertical-align: -2px; }
 .team-chip.leader { background: rgba(240,169,30,.16); font-weight: 700; }
