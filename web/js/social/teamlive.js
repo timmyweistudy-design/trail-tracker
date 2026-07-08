@@ -118,6 +118,12 @@ const TeamLive = (() => {
     } catch (e) { pushOk = false; }
   }
   function pushThrottled() { if (Date.now() - lastPushAt < 7000) return; pushPresence(); }
+  // 自適應頻率：有人記錄中才勤（輪詢 4s／回報 8s），否則放慢（10s／15s）省電省流量。
+  // 用自我重排的 setTimeout（非固定 setInterval），回前景時可即時重排。
+  function nextPollDelay() { return members.some(m => m.recording) ? 4000 : 10000; }
+  function nextPushDelay() { return recordingNow() ? 8000 : 15000; }
+  function loopPoll() { if (pollTimer) clearTimeout(pollTimer); if (!active) return; pollTimer = setTimeout(async () => { if (!active) return; try { await poll(); } catch (e) { /* */ } loopPoll(); }, nextPollDelay()); }
+  function loopPush() { if (pushTimer) clearTimeout(pushTimer); if (!active) return; pushTimer = setTimeout(async () => { if (!active) return; try { await pushPresence(); } catch (e) { /* */ } loopPush(); }, nextPushDelay()); }
 
   async function poll() {
     const c = Supa.client(); if (!c || !curTeamId) return;
@@ -234,10 +240,7 @@ const TeamLive = (() => {
     curTeamId = teamId; active = true; members = []; myStartAt = null; myStopAt = null; lastHandledAt = 0; lastStopHandled = 0; lastPauseSyncAt = 0; joinedAt = Date.now();
     await pushPresence();       // 立刻讓隊友看到我在線
     poll();                     // 立刻拉一次
-    if (pollTimer) clearInterval(pollTimer);
-    pollTimer = setInterval(poll, 4000);        // 每 4 秒輪詢：誰在線/準備/一起開始
-    if (pushTimer) clearInterval(pushTimer);
-    pushTimer = setInterval(pushPresence, 8000); // 每 8 秒回報自己（記錄中含位置）
+    loopPoll(); loopPush();     // 自適應輪詢/回報（有人記錄較勤、否則放慢，省電省流量）
     renderReadyBar();
   }
 
@@ -247,8 +250,8 @@ const TeamLive = (() => {
     for (const k in peekMarkers) { try { map && map.removeLayer(peekMarkers[k]); } catch (e) { } }
     peekMarkers = {}; members = []; map = null; lastPos = null; leaderId = null; myReady = false;
     myStartAt = null; myStopAt = null; lastHandledAt = 0; lastStopHandled = 0; curTeamId = null; pollOk = false; pushOk = false;
-    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-    if (pushTimer) { clearInterval(pushTimer); pushTimer = null; }
+    if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
+    if (pushTimer) { clearTimeout(pushTimer); pushTimer = null; }
     const el = document.getElementById("teamReadyBar"); if (el) el.remove();
   }
 
@@ -258,7 +261,7 @@ const TeamLive = (() => {
   if (typeof document !== "undefined" && document.addEventListener) {
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState !== "visible" || !active) return;
-      setTimeout(() => { if (!active) return; pushPresence(); poll(); }, 400);
+      setTimeout(() => { if (!active) return; pushPresence(); poll(); loopPoll(); loopPush(); }, 400);   // 回前景：立即刷新＋重排節奏
     });
   }
 

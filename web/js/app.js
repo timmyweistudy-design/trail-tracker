@@ -2779,6 +2779,7 @@ function _teamOnPauseCb() {
   if (Recorder.getState() !== "running") return;
   Recorder.pause();
   $("#btnStart").style.display = "none"; $("#btnPause").style.display = "none";   // 隊員無控制鈕，等隊長繼續
+  $("#recStatus").innerHTML = `<span class="autopause">⏸ ${ttT("隊長已暫停，等隊長繼續")}</span>`;   // 明確狀態，不只 toast
   toast("👑 隊長暫停了記錄");
   if (navigator.vibrate) navigator.vibrate(60);
 }

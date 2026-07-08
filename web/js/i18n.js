@@ -219,6 +219,7 @@ const I18n = (() => {
     "隊友未在記錄中，暫時看不到位置": "Teammate isn't recording — location unavailable",
     "點隊友名字看他目前位置（記錄中才有）": "Tap a teammate's name to see their location (only while recording)",
     "👑 隊長暫停了記錄": "👑 Leader paused the recording", "👑 隊長繼續記錄": "👑 Leader resumed recording",
+    "隊長已暫停，等隊長繼續": "Leader paused — waiting for leader to resume",
     "上次": "Last", "自由路線": "Free route",
     "已開省電模式（下次定位生效": "Battery saver on (next GPS fix",
     "已關省電模式": "Battery saver off",
