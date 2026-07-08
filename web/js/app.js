@@ -1095,6 +1095,13 @@ if (typeof document !== "undefined") {
   if (document.readyState !== "loading") _c3(); else document.addEventListener("DOMContentLoaded", _c3);
 }
 // 地圖上的「3D」鈕（onClick 自訂：詳情=開步道 3D、記錄=開軌跡 3D）
+// 自訂地圖控制鈕（Leaflet 用 div）→ 補鍵盤/報讀無障礙：可 Tab 聚焦、Enter/空白鍵觸發、aria-label（取 title）
+function _a11yCtrl(d) {
+  d.setAttribute("role", "button");
+  d.setAttribute("tabindex", "0");
+  if (d.title && !d.getAttribute("aria-label")) d.setAttribute("aria-label", d.title);
+  d.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); d.click(); } });
+}
 function addThreeD(map, onClick) {
   const c = L.control({ position: "topright" });
   c.onAdd = () => {
@@ -1102,6 +1109,7 @@ function addThreeD(map, onClick) {
     d.innerHTML = "3D"; d.title = ttT("3D 地形");
     L.DomEvent.disableClickPropagation(d);
     d.addEventListener("click", onClick);
+    _a11yCtrl(d);
     return d;
   };
   c.addTo(map);
@@ -1207,6 +1215,7 @@ function addCompass(map) {
     d.innerHTML = `<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="18.5" fill="rgba(255,253,248,.94)" stroke="rgba(0,0,0,.15)"/><g class="compass-rose" style="transform-origin:20px 20px;transform:rotate(${-_heading}deg)"><polygon points="20,4 24.5,21 15.5,21" fill="#c0392b"/><polygon points="20,36 24.5,19 15.5,19" fill="#9aa0a6"/><text x="20" y="13.5" text-anchor="middle" font-size="8" font-weight="700" fill="#fff">N</text></g></svg>`;
     L.DomEvent.disableClickPropagation(d);
     d.addEventListener("click", enableCompass);
+    _a11yCtrl(d);
     return d;
   };
   c.addTo(map);
@@ -1239,6 +1248,7 @@ function addFullscreen(map) {
       requestAnimationFrame(() => requestAnimationFrame(fix));
       setTimeout(fix, 150); setTimeout(fix, 400);
     });
+    _a11yCtrl(d);
     return d;
   };
   c.addTo(map);
@@ -1264,6 +1274,7 @@ function addRecenter(map) {
           () => toast(ttT("定位失敗，請允許定位權限")), { enableHighAccuracy: true, timeout: 8000 });
       }
     });
+    _a11yCtrl(d);
     return d;
   };
   c.addTo(map);
