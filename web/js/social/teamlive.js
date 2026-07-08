@@ -20,11 +20,12 @@ const TeamLive = (() => {
   function isLeader() { return !!me && me === leaderId; }
   function recordingNow() { return typeof Recorder !== "undefined" && Recorder.getState && Recorder.getState() === "running"; }
 
-  function icon(meta) {
+  function icon(meta, opts) {
     const av = meta.avatar ? `<img src="${esc(meta.avatar)}" alt="">` : `<span class="tm-ph">${esc((meta.name || "?").slice(0, 1))}</span>`;
     const pet = meta.pet ? `<span class="tm-pet">${esc(meta.pet)}</span>` : "";
     const dir = (meta.heading != null) ? `<div class="tm-dir" style="transform:rotate(${(+meta.heading).toFixed(0)}deg)"><span class="tm-cone"></span></div>` : "";
-    return L.divIcon({ className: "team-marker", html: `<div class="tm-av">${dir}${av}${pet}</div>`, iconSize: [32, 32], iconAnchor: [16, 16] });
+    const pulse = (opts && opts.pulse) ? `<span class="tm-pulse"></span>` : "";   // 點名字看定位→脈動光圈標示
+    return L.divIcon({ className: "team-marker" + ((opts && opts.pulse) ? " peek" : ""), html: `<div class="tm-av">${pulse}${dir}${av}${pet}</div>`, iconSize: [32, 32], iconAnchor: [16, 16] });
   }
 
   // 目前在線名單（含準備狀態）：自己以本地 myReady 為準（輪詢有延遲，別把自己誤判成未準備）
@@ -160,7 +161,7 @@ const TeamLive = (() => {
     const ageS = Math.max(0, Math.round((Date.now() - Date.parse(row.updated_at)) / 1000));
     const key = "peek_" + uid;
     if (peekMarkers[key]) { try { clearTimeout(peekMarkers[key]._t); map.removeLayer(peekMarkers[key]); } catch (e) { } }
-    const mk = L.marker([row.lat, row.lon], { icon: icon({ name: nm, avatar: row.avatar, pet: row.pet, heading: row.heading }), zIndexOffset: 1000 }).addTo(map)
+    const mk = L.marker([row.lat, row.lon], { icon: icon({ name: nm, avatar: row.avatar, pet: row.pet, heading: row.heading }, { pulse: true }), zIndexOffset: 1000 }).addTo(map)
       .bindTooltip(`${esc(nm)}${ageS > 12 ? ` · ${ageS}s` : ""}`, { permanent: true, direction: "bottom", className: "team-tip", offset: [0, 14] }).openTooltip();
     peekMarkers[key] = mk;
     try { map.panTo([row.lat, row.lon]); } catch (e) { }

@@ -2288,6 +2288,10 @@ async function shareHikeCard(rec) {
       x.fillStyle = T.statV; x.font = "600 46px 'Fraunces', serif"; x.fillText(v, cx, 1000);
       x.fillStyle = T.statL; x.font = "400 26px serif"; x.fillText(l, cx, 1038);
     });
+    // 季節貼紙：依這趟月份放一個節氣小圖示（右上角，與左上品牌對稱）
+    const _mon = new Date(rec.date).getMonth() + 1;
+    const _season = (_mon >= 3 && _mon <= 5) ? "🌸" : (_mon >= 6 && _mon <= 8) ? "☀️" : (_mon >= 9 && _mon <= 11) ? "🍁" : "❄️";
+    x.save(); x.globalAlpha = 0.95; x.font = "76px serif"; x.textAlign = "right"; x.fillText(_season, S - 56, 120); x.restore();
     _cardTheme++;   // 下次按分享圖卡換下一個版型
     const blob = await new Promise(r => c.toBlob(r, "image/png"));
     const file = new File([blob], (typeof I18n !== "undefined" && I18n.lang() !== "zh") ? "gather-the-trail-card.png" : "循徑拾光.png", { type: "image/png" });

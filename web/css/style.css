@@ -76,7 +76,10 @@ body {
   font-size: calc(26px * var(--fs, 1)); width: 44px; height: 44px; flex: 0 0 auto;
   display: grid; place-items: center; border-radius: 13px;
   background: rgba(244,239,226,.12); border: 1px solid rgba(244,239,226,.18);
+  animation: brandIn .7s cubic-bezier(.2,.8,.2,1) both;   /* 啟動：品牌標記淡入＋微放大 */
 }
+.brand-text { animation: brandIn .7s cubic-bezier(.2,.8,.2,1) .08s both; }
+@keyframes brandIn { from { opacity: 0; transform: translateY(-4px) scale(.9); } to { opacity: 1; transform: none; } }
 .brand-text { display: flex; flex-direction: column; line-height: 1; }
 .app-header h1 {
   font-family: var(--serif); font-weight: 900; font-size: calc(27px * var(--fs, 1)); margin: 0;
@@ -1297,6 +1300,9 @@ html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
 /* 寵物：在頭頂置中浮動、較小 */
 .team-marker .tm-pet { position: absolute; top: -25px; left: 50%; font-size: calc(27px * var(--fs, 1)); line-height: 1; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); animation: tmFloat 2.2s ease-in-out infinite; }
 @keyframes tmFloat { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-3px); } }
+/* 點名字看定位：脈動光圈標示（顯示 5 秒）；reduced-motion 由全域規則關成靜態環 */
+.team-marker.peek .tm-pulse { position: absolute; top: 50%; left: 50%; width: 32px; height: 32px; border-radius: 50%; border: 3px solid var(--accent); transform: translate(-50%, -50%); animation: tmPulse 1.35s ease-out infinite; pointer-events: none; }
+@keyframes tmPulse { 0% { opacity: .85; transform: translate(-50%, -50%) scale(.9); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(2.6); } }
 
 /* 記錄地圖「我」的頭像標記：赤陶外環區隔隊友(白環) */
 .team-marker.me-marker .tm-av img, .team-marker.me-marker .tm-av .tm-ph { border-color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,.45); }
@@ -1428,6 +1434,10 @@ html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
 .ach-tier-rank { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-family: var(--num); font-weight: 800; font-size: calc(12px * var(--fs, 1)); color: #fff; background: var(--brand-mid); }
 .ach-tier.cleared .ach-tier-rank { background: var(--accent); }
 .ach-tier.tier-locked .ach-tier-rank { background: var(--ink-faint); }
+/* 成就點亮：解鎖節點發光、打通的階層徽章加脈動光暈（reduced-motion 由全域規則轉靜態） */
+.ach:not(.locked) .ach-e { filter: drop-shadow(0 0 6px rgba(194, 104, 61, .45)); }
+.ach-tier.cleared .ach-tier-rank { box-shadow: 0 0 0 3px var(--accent-soft), 0 0 10px rgba(194, 104, 61, .5); animation: achGlow 2.4s ease-in-out infinite; }
+@keyframes achGlow { 0%, 100% { box-shadow: 0 0 0 3px var(--accent-soft), 0 0 8px rgba(194, 104, 61, .4); } 50% { box-shadow: 0 0 0 4px var(--accent-soft), 0 0 16px rgba(194, 104, 61, .72); } }
 .ach-tier-head b { font-family: var(--serif); font-size: calc(15px * var(--fs, 1)); color: var(--brand-deep); letter-spacing: 1px; }
 .ach-tier-count { margin-left: auto; font-family: var(--num); font-size: calc(12px * var(--fs, 1)); font-weight: 700; color: var(--ink-soft); }
 .ach-tier.cleared .ach-tier-count { color: var(--accent); }
