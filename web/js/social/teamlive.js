@@ -12,6 +12,7 @@ const TeamLive = (() => {
   let pollOk = false, pushOk = false;
   // 一起開始：時間戳去重（同一次只觸發一次，新的一次必觸發）
   let onStartCb = null, onStopCb = null, lastHandledAt = 0, lastStopHandled = 0, joinedAt = 0, myStartAt = null, myStopAt = null, myStartSim = false;
+  let onPauseCb = null, onResumeCb = null, lastPauseSyncAt = 0;   // 隊長控制暫停/繼續：全隊跟隨
 
   const ttx = s => (typeof ttT === "function" ? ttT(s) : s);
   function esc(s) { return (s || "").replace(/[<>&"]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c])); }
@@ -70,13 +71,28 @@ const TeamLive = (() => {
     try { const c = Supa.client(); if (c && curTeamId) c.rpc("team_stop", { p_team: curTeamId }).then(() => {}, () => {}); } catch (e) { /* */ }
     pushPresence();
   }
+  // 隊長暫停/繼續：全隊跟隨（隊員收到訊號各自暫停/繼續自己的記錄器）
+  function onPause(cb) { onPauseCb = cb; }
+  function onResume(cb) { onResumeCb = cb; }
+  function sendPause() { lastPauseSyncAt = Date.now(); try { const c = Supa.client(); if (c && curTeamId) c.rpc("team_pause", { p_team: curTeamId }).then(() => {}, () => {}); } catch (e) { /* */ } }
+  function sendResume() { lastPauseSyncAt = Date.now(); try { const c = Supa.client(); if (c && curTeamId) c.rpc("team_resume", { p_team: curTeamId }).then(() => {}, () => {}); } catch (e) { /* */ } }
+  function handlePauseState(pausedAt, resumedAt) {
+    if (isLeader()) return;
+    const pa = pausedAt ? Date.parse(pausedAt) : 0, ra = resumedAt ? Date.parse(resumedAt) : 0;
+    const latest = Math.max(pa, ra);
+    if (!latest || latest <= lastPauseSyncAt) return;
+    if (Date.now() - latest > 10 * 60e3 || latest < joinedAt - 60e3) { lastPauseSyncAt = latest; return; }   // 太舊/我加入前→標記已處理不觸發
+    lastPauseSyncAt = latest;
+    if (pa >= ra) { if (onPauseCb) onPauseCb(); } else { if (onResumeCb) onResumeCb(); }
+  }
   async function pollStarts() {
     if (!curTeamId || isLeader() || !myReady) return;
     try {
       const c = Supa.client(); if (!c) return;
-      const { data } = await c.from("team_starts").select("started_at, sim, stopped_at").eq("team_id", curTeamId).maybeSingle();
+      const { data } = await c.from("team_starts").select("started_at, sim, stopped_at, paused_at, resumed_at").eq("team_id", curTeamId).maybeSingle();
       if (data && data.started_at) handleStart(Date.parse(data.started_at), data.sim);
       if (data && data.stopped_at) handleStop(Date.parse(data.stopped_at));
+      if (data) handlePauseState(data.paused_at, data.resumed_at);
     } catch (e) { /* phase20 未跑或離線 → 準備列會顯示 */ }
   }
 
@@ -169,6 +185,7 @@ const TeamLive = (() => {
     return `<span class="${cls}"${attr}>${crown}${esc(m.name)}${meTag} ${m.ready ? "✓" : "…"}${pin}</span>`;
   }
   function renderReadyBar() {
+    if (typeof window !== "undefined" && typeof window.syncTeamRecBtns === "function") window.syncTeamRecBtns();   // 隊員隱藏開始鈕
     const el = readyBarEl(); if (!el) return;
     if (!active) { el.remove(); return; }
     const r = roster();
@@ -214,7 +231,7 @@ const TeamLive = (() => {
     if (leaderId) {
       try { const { data: lp } = await c.from("profiles").select("display_name,handle").eq("id", leaderId).maybeSingle(); leaderName = lp ? (lp.display_name || lp.handle) : null; } catch (e) { /* */ }
     }
-    curTeamId = teamId; active = true; members = []; myStartAt = null; myStopAt = null; lastHandledAt = 0; lastStopHandled = 0; joinedAt = Date.now();
+    curTeamId = teamId; active = true; members = []; myStartAt = null; myStopAt = null; lastHandledAt = 0; lastStopHandled = 0; lastPauseSyncAt = 0; joinedAt = Date.now();
     await pushPresence();       // 立刻讓隊友看到我在線
     poll();                     // 立刻拉一次
     if (pollTimer) clearInterval(pollTimer);
@@ -245,5 +262,5 @@ const TeamLive = (() => {
     });
   }
 
-  return { start, stop, isOn, isLeader, setReady, allReady, roster, teammates, notReadyNames, sendStart, onStart, sendStop, onStop, updatePos, peek, status };
+  return { start, stop, isOn, isLeader, setReady, allReady, roster, teammates, notReadyNames, sendStart, onStart, sendStop, onStop, sendPause, sendResume, onPause, onResume, updatePos, peek, status };
 })();

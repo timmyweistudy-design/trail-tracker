@@ -56,3 +56,39 @@ begin
   delete from team_presence where team_id = p_team and user_id = auth.uid();
 end $$;
 grant execute on function public.clear_team_presence(uuid) to authenticated;
+
+-- ── 隊長控制「暫停/繼續」：全隊跟著暫停/繼續（沿用 phase20 的 team_starts，加時間戳欄位）──
+alter table public.team_starts add column if not exists paused_at  timestamptz;
+alter table public.team_starts add column if not exists resumed_at timestamptz;
+
+-- 新開始時清掉上一趟殘留的暫停/繼續時間戳（覆蓋 phase20 版本）
+create or replace function public.team_start(p_team uuid, p_sim boolean default false) returns timestamptz
+language plpgsql security definer set search_path = public as $$
+declare t timestamptz;
+begin
+  if not exists (select 1 from teams where id = p_team and owner = auth.uid()) then raise exception 'not team owner'; end if;
+  insert into team_starts(team_id, started_by, started_at, sim) values (p_team, auth.uid(), now(), coalesce(p_sim, false))
+    on conflict (team_id) do update set started_by = auth.uid(), started_at = now(), sim = coalesce(p_sim, false), stopped_at = null, paused_at = null, resumed_at = null;
+  select started_at into t from team_starts where team_id = p_team; return t;
+end $$;
+grant execute on function public.team_start(uuid, boolean) to authenticated;
+
+create or replace function public.team_pause(p_team uuid) returns timestamptz
+language plpgsql security definer set search_path = public as $$
+declare t timestamptz;
+begin
+  if not exists (select 1 from teams where id = p_team and owner = auth.uid()) then raise exception 'not team owner'; end if;
+  update team_starts set paused_at = now() where team_id = p_team;
+  select paused_at into t from team_starts where team_id = p_team; return t;
+end $$;
+grant execute on function public.team_pause(uuid) to authenticated;
+
+create or replace function public.team_resume(p_team uuid) returns timestamptz
+language plpgsql security definer set search_path = public as $$
+declare t timestamptz;
+begin
+  if not exists (select 1 from teams where id = p_team and owner = auth.uid()) then raise exception 'not team owner'; end if;
+  update team_starts set resumed_at = now() where team_id = p_team;
+  select resumed_at into t from team_starts where team_id = p_team; return t;
+end $$;
+grant execute on function public.team_resume(uuid) to authenticated;

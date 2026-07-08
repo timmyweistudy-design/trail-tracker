@@ -167,7 +167,7 @@ const Team = (() => {
           if (!m) { if (typeof toast === "function") toast("請先到記錄頁開啟地圖"); e.target.checked = false; return; }
           TeamLive.start(aId, m, info, { leader: activeTeam ? activeTeam.owner : null });
           if (typeof toast === "function") toast("已開啟小隊同行，回記錄頁按「準備」等隊長開始");
-        } else { localStorage.setItem("tt_team_live", "0"); TeamLive.stop(); }
+        } else { localStorage.setItem("tt_team_live", "0"); TeamLive.stop(); if (window.syncTeamRecBtns) window.syncTeamRecBtns(); }
       });
     }
 

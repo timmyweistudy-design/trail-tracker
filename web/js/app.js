@@ -2734,6 +2734,7 @@ function setRecLock(on) {
   ["pointerup", "pointerleave", "pointercancel"].forEach(ev => btn.addEventListener(ev, clr));
 })();
 $("#btnStart").addEventListener("click", () => {
+  const wasPaused = Recorder.getState() === "paused";
   // 小隊同行中：只有隊長能開始，且需全員（含隊長）已按「準備」；隊長開始時廣播全隊一起開始
   if (typeof TeamLive !== "undefined" && TeamLive.isOn() && Recorder.getState() === "idle") {
     if (!TeamLive.isLeader()) { toast("小隊記錄由隊長開始：請先按「✋ 準備」，等隊長按開始"); return; }
@@ -2745,7 +2746,15 @@ $("#btnStart").addEventListener("click", () => {
     TeamLive.sendStart({ sim: sim() });   // 把隊長的模擬模式帶給全隊
   }
   startRecordingUI();
+  // 隊長按「繼續」→ 全隊一起繼續
+  if (wasPaused && typeof TeamLive !== "undefined" && TeamLive.isOn() && TeamLive.isLeader() && TeamLive.sendResume) TeamLive.sendResume();
 });
+// 小隊記錄的開始鈕：隊員不能自己開始（只能隊長）→ 閒置時隱藏開始鈕，改用準備列的「準備」
+window.syncTeamRecBtns = function syncTeamRecBtns() {
+  const on = typeof TeamLive !== "undefined" && TeamLive.isOn && TeamLive.isOn();
+  const isMember = on && !TeamLive.isLeader();
+  if (Recorder.getState() === "idle") $("#btnStart").style.display = isMember ? "none" : "block";
+};
 // 收到隊長的開始廣播 → 已按準備的隊員自動一起開始記錄
 function _teamOnStartCb(simFlag) {
   if (Recorder.getState() === "running") return;
@@ -2762,7 +2771,24 @@ $("#btnPause").addEventListener("click", () => {
   $("#btnStart").textContent = "▶ 繼續";
   $("#btnStart").style.display = "block";
   $("#btnPause").style.display = "none";
+  // 隊長按暫停 → 全隊一起暫停
+  if (typeof TeamLive !== "undefined" && TeamLive.isOn() && TeamLive.isLeader() && TeamLive.sendPause) TeamLive.sendPause();
 });
+// 隊員收到隊長「暫停 / 繼續」訊號 → 各自暫停 / 繼續自己的記錄（隊員本就沒有控制鈕）
+function _teamOnPauseCb() {
+  if (Recorder.getState() !== "running") return;
+  Recorder.pause();
+  $("#btnStart").style.display = "none"; $("#btnPause").style.display = "none";   // 隊員無控制鈕，等隊長繼續
+  toast("👑 隊長暫停了記錄");
+  if (navigator.vibrate) navigator.vibrate(60);
+}
+function _teamOnResumeCb() {
+  if (Recorder.getState() !== "paused") return;
+  Recorder.resume(sim());
+  $("#btnStart").style.display = "none"; $("#btnPause").style.display = "none";
+  toast("👑 隊長繼續記錄");
+  if (navigator.vibrate) navigator.vibrate(60);
+}
 async function finishRecording(autoVehicle) {
   const rec = Recorder.stop();
   setNavUp(false);   // 結束記錄→退出導航視角，地圖轉正
@@ -2823,6 +2849,8 @@ window.wireTeamLive = function wireTeamLive() {
   if (typeof TeamLive === "undefined") return false;
   if (TeamLive.onStart) TeamLive.onStart(_teamOnStartCb);
   if (TeamLive.onStop) TeamLive.onStop(_teamOnStopCb);
+  if (TeamLive.onPause) TeamLive.onPause(_teamOnPauseCb);
+  if (TeamLive.onResume) TeamLive.onResume(_teamOnResumeCb);
   return true;
 };
 // 立刻試一次（多半失敗，因社群模組還沒載）；正式註冊由 index.html 的社群延遲載入完成後回呼，維持延遲載入不提早
