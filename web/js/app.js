@@ -2250,7 +2250,7 @@ let _cardTheme = 0;
 // 成果分享圖卡：把這趟健行畫成一張可分享/下載的圖
 async function shareHikeCard(rec) {
   try {
-    try { await document.fonts.ready; } catch (e) { /* 確保自帶字型已載入，canvas 才畫得出 Fraunces/Hanken */ }
+    try { await document.fonts.ready; } catch (e) { /* 確保自帶字型已載入，canvas 才畫得出 TaipeiSans */ }
     const T = CARD_THEMES[_cardTheme % CARD_THEMES.length];
     const S = 1080, c = document.createElement("canvas");
     c.width = S; c.height = S;
@@ -2260,13 +2260,13 @@ async function shareHikeCard(rec) {
     g.addColorStop(0, T.bg[0]); g.addColorStop(.55, T.bg[1]); g.addColorStop(1, T.bg[2]);
     x.fillStyle = g; x.fillRect(0, 0, S, S);
     // 品牌
-    x.fillStyle = T.brand; x.font = "600 30px 'Fraunces', serif";
+    x.fillStyle = T.brand; x.font = "600 30px 'TaipeiSans', sans-serif";
     x.fillText(ttT("循徑拾光 · GATHER THE TRAIL"), 70, 96);
     // 步道名
-    x.fillStyle = T.ink; x.font = "700 64px 'Fraunces', 'Noto Serif TC', serif";
+    x.fillStyle = T.ink; x.font = "700 64px 'TaipeiSans', sans-serif";
     const name = (rec.trailName || "自由路線").slice(0, 12);
     x.fillText(name, 70, 188);
-    x.fillStyle = T.sub; x.font = "400 28px serif";
+    x.fillStyle = T.sub; x.font = "400 28px 'TaipeiSans', sans-serif";
     x.fillText(new Date(rec.date).toLocaleDateString(ttLocale()), 70, 234);
     // 路線縮圖
     const pts = (rec.track || []).map(p => [p.lat, p.lon]);
@@ -2286,9 +2286,9 @@ async function shareHikeCard(rec) {
       x.stroke();
     }
     // 大數字：距離（整體上移，底部留足白）
-    x.fillStyle = T.ink; x.font = "700 132px 'Hanken Grotesk', sans-serif";
+    x.fillStyle = T.ink; x.font = "700 132px 'TaipeiSans', sans-serif";
     x.fillText((rec.distanceKm || 0).toFixed(2), 70, 846);
-    x.fillStyle = T.unit; x.font = "500 40px serif"; x.fillText(ttT("公里"), 72, 896);
+    x.fillStyle = T.unit; x.font = "500 40px 'TaipeiSans', sans-serif"; x.fillText(ttT("公里"), 72, 896);
     // 分隔細線
     x.strokeStyle = T.line; x.lineWidth = 2;
     x.beginPath(); x.moveTo(70, 940); x.lineTo(S - 70, 940); x.stroke();
@@ -2297,8 +2297,8 @@ async function shareHikeCard(rec) {
     const cw = (S - 140) / stats.length;
     stats.forEach(([l, v], i) => {
       const cx = 70 + cw * i;
-      x.fillStyle = T.statV; x.font = "600 46px 'Hanken Grotesk', sans-serif"; x.fillText(v, cx, 1000);
-      x.fillStyle = T.statL; x.font = "400 26px serif"; x.fillText(l, cx, 1038);
+      x.fillStyle = T.statV; x.font = "600 46px 'TaipeiSans', sans-serif"; x.fillText(v, cx, 1000);
+      x.fillStyle = T.statL; x.font = "400 26px 'TaipeiSans', sans-serif"; x.fillText(l, cx, 1038);
     });
     // 季節貼紙：依這趟月份放一個節氣小圖示（右上角，與左上品牌對稱）
     const _mon = new Date(rec.date).getMonth() + 1;

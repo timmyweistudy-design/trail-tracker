@@ -144,13 +144,13 @@ function drawYearImage(d) {
     x.beginPath(); x.arc(acx, acy, r, 0, 7); x.lineWidth = 3; x.strokeStyle = "#e0b15a"; x.stroke();
   }
   if (d.pet) { x.font = "30px sans-serif"; x.fillText(d.pet.emoji || "🐾", avImg ? acx + r - 4 : acx, avImg ? acy + r - 2 : acy + 12); }
-  x.fillStyle = "#e0b15a"; x.font = "700 76px 'Noto Serif TC', serif"; x.fillText(String(d.year), W / 2, 200);
-  x.fillStyle = "#f3efe4"; x.font = "600 21px 'Noto Serif TC', serif"; x.fillText(ttT("我的山行回顧"), W / 2, 234);
+  x.fillStyle = "#e0b15a"; x.font = "700 76px 'TaipeiSans', sans-serif"; x.fillText(String(d.year), W / 2, 200);
+  x.fillStyle = "#f3efe4"; x.font = "600 21px 'TaipeiSans', sans-serif"; x.fillText(ttT("我的山行回顧"), W / 2, 234);
   const stats = [[d.n, ttT("趟旅程")], [Math.round(d.km), ttT("公里")], ["↑" + Math.round(d.asc), ttT("公尺爬升")], [Math.round(d.hrs), ttT("小時")]];
   stats.forEach((s, i) => {
     const cx = W / 2 + (i % 2 ? 120 : -120), cy = 310 + Math.floor(i / 2) * 124;
     x.fillStyle = "rgba(255,255,255,.07)"; roundRect(x, cx - 110, cy - 46, 220, 104, 14); x.fill();
-    x.fillStyle = "#fff"; x.font = "700 38px 'Fraunces', serif"; x.fillText(String(s[0]), cx, cy + 4);
+    x.fillStyle = "#fff"; x.font = "700 38px 'TaipeiSans', sans-serif"; x.fillText(String(s[0]), cx, cy + 4);
     x.fillStyle = "rgba(243,239,228,.75)"; x.font = "400 15px sans-serif"; x.fillText(s[1], cx, cy + 32);
   });
   x.fillStyle = "rgba(243,239,228,.9)"; x.font = "400 16px sans-serif"; x.textAlign = "center";
@@ -159,7 +159,7 @@ function drawYearImage(d) {
   if (d.longest) { x.fillText(ttT("單次最長") + " " + d.longest.toFixed(1) + " km", W / 2, ly); ly += 30; }
   if (d.pet) { x.fillText(ttT("夥伴") + " " + (d.pet.name || "") + " Lv." + d.pet.level, W / 2, ly); ly += 30; }
   x.fillText(ttT("探索") + " " + d.distinct + " " + ttT("條步道") + " ‧ ≈ " + (d.asc / 3952).toFixed(1) + "× " + ttT("玉山"), W / 2, ly);
-  x.fillStyle = "#e0b15a"; x.font = "700 19px 'Noto Serif TC', serif"; x.fillText(ttT("循徑拾光 · Gather the Trail"), W / 2, H - 32);
+  x.fillStyle = "#e0b15a"; x.font = "700 19px 'TaipeiSans', sans-serif"; x.fillText(ttT("循徑拾光 · Gather the Trail"), W / 2, H - 32);
   try { exportCanvas(c, d, avImg); } catch (e) { if (avImg) build(null); else toast("產生圖片失敗"); }
   }
 }

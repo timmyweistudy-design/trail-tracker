@@ -30,3 +30,6 @@ data/tw_counties.geojson
 /task_plan.md
 /findings.md
 /progress.md
+
+# 字型來源素材（21MB 原始 ttf）：網站只用裁切後的 web/vendor/fonts/taipei-sans.woff2
+/TaipeiSans.ttf
