@@ -1,9 +1,10 @@
 // 離線快取：app shell + 地圖圖磚
-const CACHE = "trail-tracker-v347";
+const CACHE = "trail-tracker-v348";
 const TILE_CACHE = "tt-tiles";   // 地圖圖磚（不隨版本清除，保留離線地圖）
 const ASSETS = [
   "./", "./index.html",
   "./css/style.css",
+  "./vendor/fonts/hanken-grotesk.woff2", "./vendor/fonts/fraunces-600.woff2", "./vendor/fonts/fraunces-700.woff2",
   "./js/trails-data.js", "./js/trails-detail.js", "./js/geo-manifest.js", "./js/geo/geo-0.js", "./js/geo/geo-1.js", "./js/geo/geo-10.js", "./js/geo/geo-11.js", "./js/geo/geo-12.js", "./js/geo/geo-13.js", "./js/geo/geo-14.js", "./js/geo/geo-15.js", "./js/geo/geo-16.js", "./js/geo/geo-17.js", "./js/geo/geo-18.js", "./js/geo/geo-19.js", "./js/geo/geo-2.js", "./js/geo/geo-20.js", "./js/geo/geo-21.js", "./js/geo/geo-3.js", "./js/geo/geo-4.js", "./js/geo/geo-5.js", "./js/geo/geo-6.js", "./js/geo/geo-7.js", "./js/geo/geo-8.js", "./js/geo/geo-9.js", "./js/storage.js", "./js/dialog.js", "./js/i18n.js", "./js/i18n-names.js", "./js/grades.js", "./js/config.js", "./js/conditions.js",
   "./js/photos.js", "./js/amenities.js", "./js/food.js", "./js/attractions.js", "./js/weather.js", "./js/profile.js", "./js/recorder.js", "./js/elevation.js", "./js/offline.js", "./js/gpx.js", "./js/premium.js", "./js/pet.js", "./js/analytics.js", "./js/app.js",
   "./vendor/supabase/supabase.js",

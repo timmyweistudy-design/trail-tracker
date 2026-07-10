@@ -1,7 +1,12 @@
 /* ===================================================================
    步道誌 Trail Tracker — 「山林誌」編輯風設計系統
-   深松林綠 × 暖紙石中性 × 赤陶點綴 / Noto Serif TC 襯線標題
+   深松林綠 × 暖紙石中性 × 赤陶點綴
+   數字＝Hanken Grotesk（清晰）／品牌＋標題 Latin＝Fraunces（文青）／中文＝系統字
+   字型 self-host 於 vendor/fonts（woff2、latin 子集，離線可用、進 SW 快取）
    =================================================================== */
+@font-face { font-family: "Hanken Grotesk"; font-style: normal; font-weight: 300 800; font-display: swap; src: url("../vendor/fonts/hanken-grotesk.woff2") format("woff2"); }
+@font-face { font-family: "Fraunces"; font-style: normal; font-weight: 600; font-display: swap; src: url("../vendor/fonts/fraunces-600.woff2") format("woff2"); }
+@font-face { font-family: "Fraunces"; font-style: normal; font-weight: 700; font-display: swap; src: url("../vendor/fonts/fraunces-700.woff2") format("woff2"); }
 :root {
   --fs: 1;   /* 字體大小倍率（我的頁可調：標準/大/特大）*/
   /* 暖紙石中性 */
@@ -31,8 +36,8 @@
   --sh-lg: 0 8px 40px rgba(22,48,31,.16);
   --sh-md: 0 4px 14px rgba(22,48,31,.14);
   --r: 18px; --r-sm: 13px; --r-xs: 9px; --r-lg: 22px; --r-pill: 999px;
-  --serif: "Noto Serif TC", "Songti TC", serif;
-  --num: "Fraunces", "Noto Serif TC", serif;
+  --serif: "Fraunces", "Noto Serif TC", "Songti TC", serif;   /* 標題/品牌：Latin=Fraunces，中文回退 CJK 襯線 */
+  --num: "Hanken Grotesk", "Noto Sans TC", system-ui, sans-serif;   /* 數字/統計：清晰無襯線＋等寬數字 */
   --sans: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
   --safe-b: env(safe-area-inset-bottom, 0px);
 }
@@ -86,7 +91,8 @@ body {
   letter-spacing: 3px; color: #fbf8ee;
 }
 .brand-en {
-  font-family: var(--num); font-size: calc(10.5px * var(--fs, 1)); font-weight: 600;
+  font-family: var(--serif); font-weight: 600;   /* GATHER THE TRAIL：品牌英文用 Fraunces */
+  font-size: calc(10.5px * var(--fs, 1));
   letter-spacing: 4px; color: rgba(220,232,210,.66); margin-top: 5px;
 }
 .app-header .sub {
