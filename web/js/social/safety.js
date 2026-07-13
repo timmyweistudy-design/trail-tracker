@@ -56,5 +56,32 @@ const Safety = (() => {
     const { error } = await c.from("reports").insert({ reporter_id: m, reported_user: uid, reason: reason || null });
     return { error: error && error.message };
   }
-  return { isBlocked, blockedIds, blockedProfiles, block, unblock, reportPost, reportUser, pickReason };
+  // 我送出的檢舉（含被檢舉貼文的摘要／被檢舉者的名字，供「我的檢舉」清單顯示）
+  async function myReports() {
+    const c = Supa.client(), m = await me();
+    if (!c || !m) return [];
+    const { data, error } = await c.from("reports").select("id, post_id, reported_user, reason, created_at")
+      .eq("reporter_id", m).order("created_at", { ascending: false }).limit(50);
+    if (error || !data) return [];
+    const postIds = data.filter(r => r.post_id).map(r => r.post_id);
+    const userIds = data.filter(r => r.reported_user).map(r => r.reported_user);
+    const posts = {}, users = {};
+    if (postIds.length) {
+      const { data: ps } = await c.from("posts").select("id, text").in("id", postIds);
+      (ps || []).forEach(p => { posts[p.id] = p.text || ""; });
+    }
+    if (userIds.length) {
+      const { data: us } = await c.from("profiles").select("id, display_name, handle").in("id", userIds);
+      (us || []).forEach(u => { users[u.id] = u.display_name || u.handle || ""; });
+    }
+    return data.map(r => ({ ...r, postText: r.post_id ? (posts[r.post_id] ?? null) : null, userName: r.reported_user ? (users[r.reported_user] || "") : null }));
+  }
+  // 撤回檢舉（誤按可以收回；只刪得掉自己送出的，RLS 擋住別人的）
+  async function unreport(id) {
+    const c = Supa.client(); if (!c || !id) return false;
+    const { error } = await c.from("reports").delete().eq("id", id);
+    return !error;
+  }
+
+  return { isBlocked, blockedIds, blockedProfiles, block, unblock, reportPost, reportUser, pickReason, myReports, unreport };
 })();

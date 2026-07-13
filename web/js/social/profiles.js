@@ -106,6 +106,7 @@ const Profiles = (() => {
         <label class="set-row"><span>公開</span><input type="radio" name="dvis" value="public" ${defVis === "public" ? "checked" : ""}></label>
       </div>
       <div class="set-group"><div class="set-label">封鎖名單</div><div id="stBlocks"><div class="feed-loading"><span class="spin"></span></div></div></div>
+      <div class="set-group"><div class="set-label">我的檢舉</div><div id="stReports"><div class="feed-loading"><span class="spin"></span></div></div></div>
       </div>`);
     document.getElementById("stBack").addEventListener("click", () => renderMe(render, prof));
     const ap = document.getElementById("stApprove");
@@ -121,14 +122,42 @@ const Profiles = (() => {
     }));
     const bb = document.getElementById("stBlocks");
     const people = (typeof Safety !== "undefined") ? await Safety.blockedProfiles() : [];
-    if (!bb) return;
-    if (!people.length) { bb.innerHTML = `<div class="set-empty">沒有封鎖任何人。</div>`; return; }
-    bb.innerHTML = people.map(p => `<div class="set-block-row" data-id="${p.id}">
-      ${p.avatar_url ? `<img class="fc-av" src="${esc(p.avatar_url)}">` : `<div class="fc-av fc-av-ph">${esc((p.display_name || p.handle).slice(0, 1))}</div>`}
-      <div class="disc-id"><b>${esc(p.display_name || p.handle)}</b><span>@${esc(p.handle)}</span></div>
-      <button class="btn ghost st-unblock" data-id="${p.id}">解除</button></div>`).join("");
-    bb.querySelectorAll(".st-unblock").forEach(b => b.addEventListener("click", async () => {
-      await Safety.unblock(b.dataset.id); if (typeof toast === "function") toast("已解除封鎖"); renderSettings(render, prof);
+    if (bb) {
+      if (!people.length) bb.innerHTML = `<div class="set-empty">沒有封鎖任何人。</div>`;
+      else {
+        bb.innerHTML = people.map(p => `<div class="set-block-row" data-id="${p.id}">
+          ${p.avatar_url ? `<img class="fc-av" src="${esc(p.avatar_url)}">` : `<div class="fc-av fc-av-ph">${esc((p.display_name || p.handle).slice(0, 1))}</div>`}
+          <div class="disc-id"><b>${esc(p.display_name || p.handle)}</b><span>@${esc(p.handle)}</span></div>
+          <button class="btn ghost st-unblock" data-id="${p.id}">解除</button></div>`).join("");
+        bb.querySelectorAll(".st-unblock").forEach(b => b.addEventListener("click", async () => {
+          await Safety.unblock(b.dataset.id); if (typeof toast === "function") toast("已解除封鎖"); renderSettings(render, prof);
+        }));
+      }
+    }
+    renderMyReports(render, prof);
+  }
+
+  // 我送出的檢舉：可以看、可以撤回（誤按不用認了）
+  async function renderMyReports(render, prof) {
+    const rb = document.getElementById("stReports");
+    if (!rb || typeof Safety === "undefined" || !Safety.myReports) return;
+    const rows = await Safety.myReports();
+    if (!rows.length) { rb.innerHTML = `<div class="set-empty">沒有檢舉任何內容。</div>`; return; }
+    rb.innerHTML = rows.map(r => {
+      // 貼文可能已被刪除（post_id 會被設成 null 或查不到內容）→ 據實說明，不要顯示空白
+      const what = r.post_id
+        ? (r.postText == null ? "（貼文已刪除）" : `「${esc(String(r.postText).slice(0, 40))}${String(r.postText).length > 40 ? "…" : ""}」`)
+        : (r.userName ? `@${esc(r.userName)}` : "（對象已不存在）");
+      const when = new Date(r.created_at).toLocaleDateString(typeof ttLocale === "function" ? ttLocale() : "zh-TW");
+      return `<div class="set-block-row rp-row" data-id="${r.id}">
+        <div class="rp-what"><b>${what}</b><span>${esc(r.reason || "")} · ${when}</span></div>
+        <button class="btn ghost rp-undo" data-id="${r.id}">撤回</button></div>`;
+    }).join("");
+    rb.querySelectorAll(".rp-undo").forEach(b => b.addEventListener("click", async () => {
+      b.disabled = true;
+      const ok = await Safety.unreport(b.dataset.id);
+      if (typeof toast === "function") toast(ok ? "已撤回檢舉" : "撤回失敗，請先更新資料庫（phase23）");
+      if (ok) renderMyReports(render, prof); else b.disabled = false;
     }));
   }
 

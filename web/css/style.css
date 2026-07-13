@@ -1632,6 +1632,10 @@ html[data-theme="dark"] .disc-sec, html[data-theme="dark"] .feed-trending-h { co
 .set-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 13px; background: var(--surface-2); border-radius: var(--r-sm); margin-bottom: 7px; font-size: calc(14.5px * var(--fs, 1)); }
 .set-empty { color: var(--ink-faint); font-size: calc(13.5px * var(--fs, 1)); padding: 8px 2px; }
 .set-block-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line-soft); }
+/* 我的檢舉：左側是被檢舉的內容摘要（可長，需截斷），右側是撤回鈕（不縮） */
+.rp-row .rp-what { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.rp-row .rp-what b { font-size: calc(13px * var(--fs, 1)); color: var(--ink); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rp-row .rp-what span { font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-faint); }
 .set-block-row .btn { width: auto; flex: 0 0 auto; padding: 6px 14px; margin: 0; font-size: calc(13px * var(--fs, 1)); }
 
 /* 探索難度過濾 */

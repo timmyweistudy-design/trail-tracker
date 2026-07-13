@@ -2121,6 +2121,9 @@ function addSlopeLegend(map) {
 }
 
 function playTrackReplay(pts, segLL) {
+  // 換一筆行程/重播 → 先清掉上一次的坡度圖層與縮放監聽，否則舊行程的彩色軌跡會留在地圖上
+  if (slopeLayer && trackMap) { trackMap.removeLayer(slopeLayer); slopeLayer = null; }
+  if (slopeZoomHandler && trackMap) { trackMap.off("zoomend", slopeZoomHandler); slopeZoomHandler = null; }
   if (trackAnim) { clearInterval(trackAnim); trackAnim = null; }
   if (!trackMap || !pts || pts.length < 2) return;
   if (trackReplayLayer) trackMap.removeLayer(trackReplayLayer);
@@ -2800,7 +2803,10 @@ function startRecordingUI() {
   initRecMap();
   ensureMeAvatar();
   clearPreHike();                     // #3 開始記錄後收起行前小卡
-  setTimeout(() => setNavUp(true), 300);   // 導航模式預設開（開始記錄就進導航視角）
+  // 導航模式（地圖跟著方向轉）預設開；但模擬時不開——模擬每一步都在換方位，
+  // 地圖會跟著不停轉動，看起來就是一直抖。模擬維持傳統的北方朝上。
+  if (!sim()) setTimeout(() => setNavUp(true), 300);
+  else setNavUp(false);
   const ri = $("#recIdle"); if (ri) ri.style.display = "none";
   // 模擬模式：沿步道真實路線行走（有動畫感）。沒選步道就自動挑一條真實步道。
   if (sim() && Recorder.getState() !== "paused") {

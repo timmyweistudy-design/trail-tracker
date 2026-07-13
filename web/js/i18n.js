@@ -323,6 +323,7 @@ const I18n = (() => {
     "回復購買": "Restore purchase", "回復購買中…": "Restoring…", "找不到可回復的購買": "No purchase to restore", "款項處理中，稍後自動生效": "Payment processing — it will activate shortly", "購買失敗，請稍後再試": "Purchase failed, please try again",
     "坡度": "Grade",
     "爬升速率": "Ascent rate",
+    "我的檢舉": "My reports", "撤回": "Undo", "已撤回檢舉": "Report withdrawn", "沒有檢舉任何內容": "You haven't reported anything.", "（貼文已刪除）": "(post deleted)", "（對象已不存在）": "(target no longer exists)", "撤回失敗，請先更新資料庫（phase23）": "Undo failed — update the database first (phase23)",
     "隱私權政策": "Privacy Policy", "使用條款": "Terms of Use",
     "開啟訂閱管理…": "Opening subscription portal…", "前往結帳…": "Going to checkout…",
     "付款完成，歡迎加入 Premium！": "Payment complete — welcome to Premium!",
