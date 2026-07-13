@@ -102,6 +102,31 @@ Set out on your first trail today.
 
 ---
 
+## 訂閱產品文案（App Store Connect 建 IAP 時每個訂閱都要填）
+
+在 App Store Connect 建 `tt_premium_month` / `tt_premium_year` 時，**每個訂閱、每個語系**都要填 Display Name 與 Description，漏填會卡在「缺少中繼資料」送不出審核。設定步驟見 `docs/iap-setup.md`。
+
+**tt_premium_month（月訂閱）**
+- Display Name 中：`Premium 月訂閱` ／ 英：`Premium Monthly`
+- Description 中：`解鎖無限離線地圖、3D 地形、進階分析與年度回顧、無限收藏、足跡熱力圖與專屬外觀。按月自動續訂，可隨時取消。`
+- Description 英：`Unlock unlimited offline maps, 3D terrain, advanced stats and yearly review, unlimited saves, heatmaps and exclusive looks. Auto-renews monthly, cancel anytime.`
+
+**tt_premium_year（年訂閱）**
+- Display Name 中：`Premium 年訂閱` ／ 英：`Premium Yearly`
+- Description 中：`與月訂閱相同的完整功能，年繳更划算。按年自動續訂，可隨時取消。`
+- Description 英：`Everything in Premium, billed yearly at a discount. Auto-renews yearly, cancel anytime.`
+
+**Review Notes（審核備註，兩個訂閱都填）**
+```
+Premium 解鎖 App 內的進階功能：無限離線地圖、3D 地形地圖、進階分析與年度回顧、無限收藏、
+足跡熱力圖、專屬外觀。訂閱畫面可在「我的」分頁點「升級 Premium」進入，
+審核截圖即為該畫面。附 7 天免費試用。
+```
+
+**訂閱審核截圖**：上傳 App 內的升級彈窗畫面（顯示方案、價格、自動續訂說明與隱私權政策/使用條款連結）。這張截圖 Apple 必看——畫面上沒有那兩個連結會被以 Guideline 3.1.2 退件（程式碼已補，見 `web/js/premium.js` 的 `.pm-legal`）。
+
+---
+
 ## 上架素材檢查清單
 - [ ] App 圖示（已生成，1024×1024 來源在 `assets/icon.png`）
 - [ ] 手機截圖：探索、步道詳情、記錄中地圖、結算、3D 地形、成就樹（各 2–8 張）
