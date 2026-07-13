@@ -11,8 +11,11 @@
     (function () {
       try {
         if (localStorage.getItem("tt_theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");
+        // 字級三檔改為 1.15/1.3/1.45（整體放大一級）。舊的「1」已下架 → 併進新的最小檔，
+        // 否則舊使用者會停在已不存在的字級、設定頁三顆都不亮。
         var fs = localStorage.getItem("tt_fontscale");
-        if (fs) document.documentElement.style.setProperty("--fs", fs);
+        if (!fs || fs === "1") { fs = "1.15"; localStorage.setItem("tt_fontscale", fs); }
+        document.documentElement.style.setProperty("--fs", fs);
       } catch (e) { /* */ }
     })();
   </script>
@@ -214,9 +217,9 @@
         </div>
         <div class="accent-head">字體大小</div>
         <div class="theme-row" id="fontRow">
-          <button class="theme-opt fs-opt" data-fs="1" aria-label="標準"><span style="font-size:15px">A</span></button>
-          <button class="theme-opt fs-opt" data-fs="1.15" aria-label="大"><span style="font-size:19px">A</span></button>
-          <button class="theme-opt fs-opt" data-fs="1.3" aria-label="特大"><span style="font-size:24px">A</span></button>
+          <button class="theme-opt fs-opt" data-fs="1.15" aria-label="標準"><span style="font-size:17px">A</span></button>
+          <button class="theme-opt fs-opt" data-fs="1.3" aria-label="大"><span style="font-size:21px">A</span></button>
+          <button class="theme-opt fs-opt" data-fs="1.45" aria-label="特大"><span style="font-size:26px">A</span></button>
         </div>
         <div class="accent-head">主題色<span class="pro-tag">PRO</span></div>
         <div class="accent-row" id="accentRow"></div>

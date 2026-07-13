@@ -2927,7 +2927,7 @@ $("#btnDiag").addEventListener("click", async () => {
   const favN = g(() => TRAILS.filter(t => Store.isFav(t.id)).length);
   const lang = g(() => (typeof I18n !== "undefined" ? I18n.lang() : "zh"));
   const theme = g(() => localStorage.getItem("tt_theme") || "light");
-  const fs = g(() => localStorage.getItem("tt_fs") || "1");
+  const fs = g(() => localStorage.getItem("tt_fontscale") || "1.15");
   const lsKB = g(() => Math.round(Object.keys(localStorage).reduce((s, k) => s + ((localStorage.getItem(k) || "").length + k.length), 0) / 1024));
   const os = g(() => (navigator.userAgent.match(/iPhone|iPad|Android|Windows|Macintosh|Linux/) || ["?"])[0]);
   const swState = g(() => (navigator.serviceWorker && navigator.serviceWorker.controller) ? "已控制" : "未控制");
@@ -3376,8 +3376,9 @@ function initTheme() {
       document.querySelectorAll("[data-theme-opt]").forEach(x => x.classList.toggle("on", x === b));
     });
   });
-  // 字體大小（無障礙）：標準/大/特大 → 設 --fs 倍率，只放大文字不動地圖版面
-  const curFs = (() => { try { return localStorage.getItem("tt_fontscale") || "1"; } catch (e) { return "1"; } })();
+  // 字體大小（無障礙）：標準/大/特大 = 1.15/1.3/1.45 → 設 --fs 倍率，只放大文字不動地圖版面
+  // （舊的 1 已下架，index.html 的開機腳本會把它遷移成 1.15）
+  const curFs = (() => { try { return localStorage.getItem("tt_fontscale") || "1.15"; } catch (e) { return "1.15"; } })();
   document.querySelectorAll(".fs-opt").forEach(b => {
     b.classList.toggle("on", b.dataset.fs === curFs);
     b.addEventListener("click", () => {
