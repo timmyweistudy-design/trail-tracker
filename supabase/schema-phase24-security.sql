@@ -4,8 +4,9 @@
 -- ── 1. 被檢舉自動隱藏的貼文，作者可以自己改回顯示 ─────────────────────
 -- posts_update 只檢查 author_id、沒限制欄位 → 作者可 update({hidden:false})，
 -- phase11 的「3 人檢舉自動隱藏」機制形同虛設。hidden 改成一般使用者不可寫（trigger/service_role 仍可）。
-revoke update (hidden) on public.posts from authenticated;
-revoke update (hidden) on public.posts from anon;
+-- ⚠️ 這兩行無效（欄位層級 revoke 對已持有整表 UPDATE 權限的角色不起作用）→ 改用 schema-phase25 的 trigger。
+-- revoke update (hidden) on public.posts from authenticated;
+-- revoke update (hidden) on public.posts from anon;
 
 -- ── 2. 知道 team_id 就能直接加入小隊（繞過加入碼）→ 看得到隊員即時 GPS ──
 -- tm_insert 只檢查 user_id = auth.uid()，沒驗加入碼。改成一般人不能直接 insert：
