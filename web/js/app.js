@@ -2034,6 +2034,73 @@ document.addEventListener("keydown", e => {
 let trackMap = null, trackLayer = null, trackAnim = null, trackReplayLayer = null, trackPts = null, trackSegsLL = null, trackStats = null;
 const _hav = (a, b) => haversine({ lat: a[0], lon: a[1] }, { lat: b[0], lon: b[1] });
 // 結算頁滑行重播：marker 沿軌跡滑行、路線同步畫出（約8秒）
+// ── 軌跡坡度著色 ──
+// 用 DEM 地形（與爬升校正同一份資料）算每段坡度，依級距上色：緩坡→綠，陡坡→磚紅。
+// 色階刻意跟品牌同調（森綠→琥珀→磚紅），並與難度分級的語彙一致：越紅越硬。
+const SLOPE_STEPS = [
+  { max: 5, color: "#3f7d52", label: "0–5%" },      // 平緩
+  { max: 12, color: "#8aa63c", label: "5–12%" },    // 微上坡
+  { max: 20, color: "#e0a92a", label: "12–20%" },   // 有感
+  { max: 30, color: "#e07b39", label: "20–30%" },   // 陡
+  { max: Infinity, color: "#c0472b", label: "30%+" },   // 很陡
+];
+const slopeColor = g => (SLOPE_STEPS.find(s => Math.abs(g) < s.max) || SLOPE_STEPS[4]).color;
+
+// 取每段軌跡的地形剖面（DEM），並壓掉量化毛刺——顏色才不會一格一格亂跳
+async function slopeProfiles(segs) {
+  const out = [];
+  for (const seg of segs) {
+    if (!seg || seg.length < 3) continue;
+    const raw = await Elevation.profile(seg.map(p => ({ lat: p[0], lon: p[1] })));
+    if (!raw) continue;
+    const med3 = (x, y, z) => Math.max(Math.min(x, y), Math.min(Math.max(x, y), z));
+    let elev = raw.map((e, i) => (i > 0 && i < raw.length - 1) ? med3(raw[i - 1], e, raw[i + 1]) : e);
+    elev = elev.map((e, i) => (i > 0 && i < elev.length - 1) ? (elev[i - 1] + e + elev[i + 1]) / 3 : e);
+    out.push({ seg, elev });
+  }
+  return out;
+}
+// 把剖面畫成坡度色帶。色帶長度依縮放調整：縮小看趨勢（長色帶）、放大看細節（短色帶）——
+// 固定長度的話，之字坡在縮小時每個色帶只剩幾像素，整條路線會讀成一串碎珠。
+function renderSlope(map, layer, profiles) {
+  layer.clearLayers();
+  const lat = map.getCenter().lat;
+  const mpp = 40075016.686 * Math.cos(lat * Math.PI / 180) / Math.pow(2, map.getZoom() + 8);   // 每像素幾公尺
+  const minRun = Math.max(60, mpp * 22);   // 每個色帶至少約 22 px 才看得出是色帶
+  for (const { seg, elev } of profiles) {
+    const chunks = [];
+    let a = 0, accum = 0;
+    for (let i = 1; i < seg.length; i++) {
+      accum += _hav(seg[i - 1], seg[i]);
+      if (accum < minRun && i < seg.length - 1) continue;
+      const grade = accum >= 1 ? ((elev[i] - elev[a]) / accum) * 100 : 0;
+      chunks.push({ a, b: i, color: slopeColor(grade) });
+      a = i; accum = 0;
+    }
+    // 白色外框線（製圖慣例的 casing）：彩色段疊在上面，整體讀起來是一條連續路線
+    L.polyline(seg, { color: "#fffdf8", weight: 8, opacity: .8, lineCap: "round", lineJoin: "round" }).addTo(layer);
+    for (let i = 0; i < chunks.length; i++) {
+      const c = chunks[i];
+      while (i + 1 < chunks.length && chunks[i + 1].color === c.color) { c.b = chunks[++i].b; }
+      // 端點用平角：圓端點在縮小檢視時會鼓成一顆顆
+      L.polyline(seg.slice(c.a, c.b + 1), { color: c.color, weight: 6, opacity: 1, lineCap: "butt", lineJoin: "round" }).addTo(layer);
+    }
+  }
+}
+// 地圖左下角的坡度圖例（只在真的畫出著色軌跡時顯示）
+function addSlopeLegend(map) {
+  if (map._slopeLegend) return;
+  const c = L.control({ position: "bottomleft" });
+  c.onAdd = () => {
+    const d = L.DomUtil.create("div", "slope-legend");
+    d.innerHTML = `<b>${ttT("坡度")}</b>` + SLOPE_STEPS.map(s => `<span><i style="background:${s.color}"></i>${s.label}</span>`).join("");
+    L.DomEvent.disableClickPropagation(d);
+    return d;
+  };
+  c.addTo(map);
+  map._slopeLegend = c;
+}
+
 function playTrackReplay(pts, segLL) {
   if (trackAnim) { clearInterval(trackAnim); trackAnim = null; }
   if (!trackMap || !pts || pts.length < 2) return;
@@ -2051,6 +2118,7 @@ function playTrackReplay(pts, segLL) {
     grow.setLatLngs(finalLL);
     L.circleMarker(pts[pts.length - 1], { radius: 6, color: "#fff", weight: 2, fillColor: "#d2542e", fillOpacity: 1 }).addTo(trackReplayLayer);
     trackMap.fitBounds(fullBounds, { padding: [24, 24] });
+    paintSlope(finalLL, grow);
     return;
   }
   trackMap.setView(pts[0], 16);                  // 鏡頭拉近到起點，跟著走
@@ -2087,8 +2155,26 @@ function playTrackReplay(pts, segLL) {
       L.circleMarker(pts[pts.length - 1], { radius: 6, color: "#fff", weight: 2, fillColor: "#d2542e", fillOpacity: 1 }).addTo(trackReplayLayer);
       live.innerHTML = `<b>${(trackStats ? trackStats.km : d / 1000).toFixed(2)}</b> km　·　${fmtTime(totMs)}　🏁`;
       trackMap.flyToBounds(fullBounds, { padding: [24, 24], duration: 0.8 });   // 走完拉遠看全程
+      paintSlope(finalLL, grow);   // 走完才上色：重播中維持單色綠線，看得清楚走到哪
     }
   }, interval);
+}
+// 重播結束 → 把單色綠線換成依坡度上色的軌跡（DEM 拿不到就維持綠線，不影響任何既有行為）
+let slopeLayer = null, slopeZoomHandler = null;
+async function paintSlope(segs, plainLine) {
+  if (typeof Elevation === "undefined" || !Elevation.profile || !trackMap || !Array.isArray(segs) || !segs.length) return;
+  const owner = trackReplayLayer;
+  const profiles = await slopeProfiles(Array.isArray(segs[0][0]) ? segs : [segs]);
+  if (!profiles.length || owner !== trackReplayLayer) return;   // 拿不到地形，或期間使用者切了別的行程 → 放棄
+  if (plainLine) plainLine.remove();
+  if (slopeLayer) trackMap.removeLayer(slopeLayer);
+  slopeLayer = L.layerGroup().addTo(trackMap);
+  const draw = () => renderSlope(trackMap, slopeLayer, profiles);
+  draw();
+  if (slopeZoomHandler) trackMap.off("zoomend", slopeZoomHandler);
+  slopeZoomHandler = draw;
+  trackMap.on("zoomend", slopeZoomHandler);   // 縮放後重畫：色帶長度跟著縮放走
+  addSlopeLegend(trackMap);
 }
 // 存照片到相簿：優先系統分享單（iOS/Android 可「儲存影像」），否則下載
 async function saveImageFile(file) {
@@ -2828,7 +2914,9 @@ async function finishRecording(autoVehicle) {
     if (selectedTrailId) rec.trailId = selectedTrailId;   // 連回步道，供社群貼文點擊開啟
     // 地形海拔校正(DEM)：自動內建，用準確的水平軌跡查真實地面高度重算爬升/下降（GPS 高度太雜）
     // 模擬也校正：沿真實步道座標查地形，原路折返自然會有對應的下降（不再只計爬升）
-    if (!rec.vehicle && rec.track && rec.track.length > 1 && navigator.onLine && typeof Elevation !== "undefined") {
+    // 不再要求 navigator.onLine：高程圖磚可能已在快取（記錄中預載/看過地圖）→ 離線也校正得出來，
+    // 真的拿不到資料時 Elevation.correct 會回 null，維持 GPS 數字，不會壞。
+    if (!rec.vehicle && rec.track && rec.track.length > 1 && typeof Elevation !== "undefined") {
       $("#recStatus").textContent = "海拔校正中…";
       // 放寬逾時到 15 秒：長程健行的 DEM 校正要多打幾次 API，逾時太短會退回很雜的 GPS 高度→數字不準
       const corr = await Promise.race([Elevation.correct(rec.track), new Promise(r => setTimeout(() => r(null), 15000))]);

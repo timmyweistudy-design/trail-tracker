@@ -166,6 +166,16 @@ const Elevation = (() => {
     } catch (e) { if (typeof console !== "undefined") console.warn("elev correct failed", e && e.message); return null; }
   }
 
-  return { correct, downsample, recompute, decode, tileXY, sample };
+  // 整條軌跡的地形高度（給坡度著色用）：一次抓齊圖磚，回傳與輸入等長的高度陣列（失敗回 null）
+  async function profile(pts) {
+    const p = (pts || []).filter(x => x && x.lat != null && x.lon != null);
+    if (p.length < 2) return null;
+    try {
+      const e = await lookup(p);
+      return (e && e.length === p.length && e.some(v => isFinite(v))) ? e : null;
+    } catch (err) { return null; }
+  }
+
+  return { correct, downsample, recompute, decode, tileXY, sample, profile };
 })();
 if (typeof module !== "undefined") module.exports = Elevation;

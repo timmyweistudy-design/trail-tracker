@@ -321,6 +321,7 @@ const I18n = (() => {
     "Premium 會員": "Premium member", "進階功能已全部解鎖": "All premium features unlocked",
     "續訂日": "Renews", "管理訂閱": "Manage subscription", "升級 Premium": "Upgrade to Premium",
     "回復購買": "Restore purchase", "回復購買中…": "Restoring…", "找不到可回復的購買": "No purchase to restore", "款項處理中，稍後自動生效": "Payment processing — it will activate shortly", "購買失敗，請稍後再試": "Purchase failed, please try again",
+    "坡度": "Grade",
     "隱私權政策": "Privacy Policy", "使用條款": "Terms of Use",
     "開啟訂閱管理…": "Opening subscription portal…", "前往結帳…": "Going to checkout…",
     "付款完成，歡迎加入 Premium！": "Payment complete — welcome to Premium!",

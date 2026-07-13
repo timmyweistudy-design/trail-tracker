@@ -1101,6 +1101,19 @@ html[lang="de"] .chip, html[lang="nl"] .chip, html[lang="ru"] .chip, html[lang="
 .slope-bar i { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--d1), var(--d3), var(--d5)); }
 
 /* ---------- 重播進度條 ---------- */
+/* 軌跡坡度圖例（地圖左下）：緊湊、半透明玻璃感，深色模式自動翻面 */
+.slope-legend {
+  display: flex; align-items: center; gap: 7px; flex-wrap: wrap; max-width: 62vw;
+  padding: 6px 9px; border-radius: var(--r-xs);
+  background: rgba(255, 253, 248, .92); backdrop-filter: blur(6px) saturate(1.1);
+  box-shadow: var(--sh-sm); border: 1px solid var(--line-soft);
+  font-size: calc(10px * var(--fs, 1)); color: var(--ink-soft); line-height: 1;
+}
+.slope-legend b { font-size: calc(10.5px * var(--fs, 1)); color: var(--ink); font-weight: 700; }
+.slope-legend span { display: inline-flex; align-items: center; gap: 3px; font-family: var(--num); white-space: nowrap; }
+.slope-legend i { width: 10px; height: 4px; border-radius: 2px; display: inline-block; }
+html[data-theme="dark"] .slope-legend { background: rgba(20, 24, 15, .9); }
+
 .replay-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(0,0,0,.15); z-index: 600; pointer-events: none; }
 .replay-bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .08s linear; }
 
