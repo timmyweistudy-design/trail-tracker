@@ -6,8 +6,9 @@
 // 且修掉了 90 m DEM 的爆表案例（知本越嶺古道官方 250 m，Open-Meteo 算出 549 m，terrarium 295 m）。
 const Elevation = (() => {
   const API = "https://api.open-meteo.com/v1/elevation";
-  const TILE = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium";
-  const Z = 14;
+  // URL 形式必須與 app.js 的 _TERR_URL 一致，否則快取鍵不同 → 吃不到記錄時預載的那批圖磚（會重抓）
+  const TILE = "https://elevation-tiles-prod.s3.amazonaws.com/terrarium";
+  const Z = 14;   // 落在預載的 z12–15 範圍內
 
   // 降取樣到 ≤max 點（保留首尾），減少請求數
   function downsample(track, max) {
@@ -51,29 +52,36 @@ const Elevation = (() => {
   async function tile(x, y) {
     const k = x + "/" + y;
     if (_tiles.has(k)) return _tiles.get(k);
-    if (_tiles.size > 40) _tiles.clear();   // 每張解碼後約 256KB，別讓它無限長大
+    if (_tiles.size > 24) _tiles.clear();   // 每張解碼後 128 KB（Int16），別讓它無限長大
     const p = (async () => {
-      const r = await fetch(`${TILE}/${Z}/${x}/${y}.png`);   // SW 會走圖磚快取 → 離線也可能命中
+      const r = await fetch(`${TILE}/${Z}/${x}/${y}.png`);   // SW 走圖磚快取 → 預載過/看過的路段離線也命中
       if (!r.ok) throw new Error("tile " + r.status);
       const bmp = await createImageBitmap(await r.blob());
       const cv = document.createElement("canvas");
       cv.width = bmp.width; cv.height = bmp.height;
       const cx = cv.getContext("2d", { willReadFrequently: true });
       cx.drawImage(bmp, 0, 0);
-      return { d: cx.getImageData(0, 0, bmp.width, bmp.height).data, w: bmp.width };
+      const d = cx.getImageData(0, 0, bmp.width, bmp.height).data;
+      // 解碼後只留高度（Int16 公尺）：RGBA 一張 256 KB → 這樣 128 KB，查值也不用每次算
+      const e = new Int16Array(bmp.width * bmp.height);
+      for (let i = 0; i < e.length; i++) e[i] = Math.round(decode(d[i * 4], d[i * 4 + 1], d[i * 4 + 2]));
+      return { e, w: bmp.width };
     })();
     _tiles.set(k, p);
     return p;
   }
   async function lookupTiles(pts) {
-    const out = [];
-    for (const p of pts) {
+    const at = pts.map(p => {
       const { fx, fy } = tileXY(p.lat, p.lon);
-      const t = await tile(Math.floor(fx), Math.floor(fy));
-      const px = Math.min(255, Math.floor((fx % 1) * 256));
-      const py = Math.min(255, Math.floor((fy % 1) * 256));
-      const i = (py * t.w + px) * 4;
-      out.push(decode(t.d[i], t.d[i + 1], t.d[i + 2]));
+      return { tx: Math.floor(fx), ty: Math.floor(fy), px: Math.min(255, Math.floor((fx % 1) * 256)), py: Math.min(255, Math.floor((fy % 1) * 256)) };
+    });
+    // 先平行抓齊所有「不重複」的圖磚（逐點循序等待會把延遲乘上點數）
+    const need = [...new Set(at.map(a => a.tx + "/" + a.ty))];
+    await Promise.all(need.map(k => { const [x, y] = k.split("/"); return tile(+x, +y); }));
+    const out = [];
+    for (const a of at) {
+      const t = await tile(a.tx, a.ty);
+      out.push(t.e[a.py * t.w + a.px]);
     }
     return out;
   }
