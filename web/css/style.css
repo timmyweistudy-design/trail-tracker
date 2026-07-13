@@ -5,6 +5,9 @@
    字型 self-host 於 vendor/fonts（woff2、依實際使用中文字子集裁切，離線可用、進 SW 快取）
    =================================================================== */
 @font-face { font-family: "TaipeiSans"; font-style: normal; font-weight: 400 700; font-display: swap; src: url("../vendor/fonts/taipei-sans.woff2") format("woff2"); }
+/* 品牌四字專用明體（思源宋體 Noto Serif TC 900，SIL OFL）。
+   只子集了「循徑拾光」四個字元（1.8 KB）——除了 .app-header h1 不要用在別處，其他字會 fallback。 */
+@font-face { font-family: "BrandSerif"; font-style: normal; font-weight: 900; font-display: swap; src: url("../vendor/fonts/brand-serif.woff2") format("woff2"); unicode-range: U+5149, U+5F91, U+5FAA, U+62FE; }
 :root {
   --fs: 1;   /* 字體大小倍率（我的頁可調：標準/大/特大）*/
   /* 暖紙石中性 */
@@ -85,7 +88,7 @@ body {
 @keyframes brandIn { from { opacity: 0; transform: translateY(-4px) scale(.9); } to { opacity: 1; transform: none; } }
 .brand-text { display: flex; flex-direction: column; line-height: 1; }
 .app-header h1 {
-  font-family: var(--serif); font-weight: 900; font-size: calc(27px * var(--fs, 1)); margin: 0;
+  font-family: "BrandSerif", var(--serif); font-weight: 900; font-size: calc(27px * var(--fs, 1)); margin: 0;
   letter-spacing: 3px; color: #fbf8ee;
 }
 .brand-en {
