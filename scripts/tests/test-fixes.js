@@ -120,5 +120,18 @@ function localDayOf(d) { const t = new Date(d); return `${t.getFullYear()}-${Str
 const noon = new Date(); noon.setHours(12, 0, 0, 0);
 ok("localDay 與本地日期一致", localDayOf(noon) === `${noon.getFullYear()}-${String(noon.getMonth() + 1).padStart(2, "0")}-${String(noon.getDate()).padStart(2, "0")}`);
 
+// 12) RevenueCat webhook：事件 → 訂閱狀態對應
+const rcSrc = fs.readFileSync(path.join(ROOT, "supabase", "functions", "revenuecat-webhook", "index.ts"), "utf8");
+const rcMap = eval("(" + rcSrc.match(/const EVENT_STATUS[^=]*=\s*(\{[\s\S]*?\})\s*;/)[1] + ")");
+ok("RC 續訂→active", rcMap.RENEWAL === "active");
+ok("RC 首購→active", rcMap.INITIAL_PURCHASE === "active");
+ok("RC 取消→仍 active（期末前有權益）", rcMap.CANCELLATION === "active");
+ok("RC 到期→canceled", rcMap.EXPIRATION === "canceled");
+ok("RC 退款→canceled", rcMap.REFUND === "canceled");
+ok("RC 扣款失敗→past_due", rcMap.BILLING_ISSUE === "past_due");
+const rcStore = eval("(" + rcSrc.match(/const STORE_SOURCE[^=]*=\s*(\{[\s\S]*?\})\s*;/)[1] + ")");
+ok("RC APP_STORE→app_store", rcStore.APP_STORE === "app_store");
+ok("RC PLAY_STORE→play_store", rcStore.PLAY_STORE === "play_store");
+
 console.log(fails ? `✗ ${fails} 個測試失敗` : "✓ 單元測試全部通過");
 process.exit(fails ? 1 : 0);
