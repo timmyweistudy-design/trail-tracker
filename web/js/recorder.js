@@ -187,7 +187,9 @@ const Recorder = (() => {
       }
       dist3D += seg3;
       if (alt != null) lastFixAlt = alt;
-      movingMs += now - lastFix.t;
+      // 移動時間上限裁切：GPS 在密林/隧道斷訊數分鐘後，第一個新點會把整段空窗算成「移動」，
+      // 配速被拉爆、卡路里失真。單一間隔超過 30 秒視為斷訊，只採計 30 秒。
+      movingMs += Math.min(now - lastFix.t, 30000);
       const dem = groundAlt(lat, lon);               // DEM 地形高度（圖磚在手才有）
       updateElevation(dem != null ? dem : alt, altAcc, dem != null ? "dem" : "gps");   // 平滑+去抖動後累積爬升/下降
       track.push(p);

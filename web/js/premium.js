@@ -2,18 +2,24 @@
 const Premium = (() => {
   let _on = false, _loaded = false, _periodEnd = null;
 
+  // 查雲端訂閱狀態。⚠️ 查不到 ≠ 沒訂閱：離線、逾時、Supabase 暫時掛掉都會走到 catch，
+  // 這時必須沿用上次的快取結果，否則付費會員在山上（沒訊號）開 App 就會被降級成免費版、PRO 全鎖。
   async function refresh() {
+    const cached = localStorage.getItem("tt_premium") === "1";
     try {
       const c = (typeof Supa !== "undefined" && Supa.ready && Supa.ready()) ? Supa.client() : null;
-      if (!c) { _on = false; _loaded = true; return false; }
+      if (!c) { _on = cached; _loaded = true; return _on; }        // 未登入/未設定：維持快取，不主動降級
       const { data: u } = await c.auth.getUser();
-      if (!u || !u.user) { _on = false; _loaded = true; sync(); return false; }
-      const { data } = await c.from("subscriptions").select("status, current_period_end").eq("user_id", u.user.id).maybeSingle();
+      if (!u || !u.user) { _on = false; _loaded = true; sync(); return false; }   // 確定沒登入 → 才是真的非會員
+      const { data, error } = await c.from("subscriptions").select("status, current_period_end").eq("user_id", u.user.id).maybeSingle();
+      if (error) { _on = cached; _loaded = true; return _on; }     // 查詢失敗 → 沿用快取，不覆寫
       _periodEnd = data && data.current_period_end ? data.current_period_end : null;
       _on = !!(data && ["active", "trialing"].includes(data.status) && (!_periodEnd || new Date(_periodEnd) > new Date()));
       if (_on && !localStorage.getItem("tt_premium_since")) localStorage.setItem("tt_premium_since", new Date().toISOString());
-    } catch (e) { _on = false; }
-    _loaded = true; sync(); return _on;
+    } catch (e) {
+      _on = cached; _loaded = true; return _on;                    // 離線/逾時 → 沿用快取
+    }
+    _loaded = true; sync(); return _on;   // 只有真的查到結果才寫回快取
   }
   function sync() { try { localStorage.setItem("tt_premium", _on ? "1" : "0"); } catch (e) { } }
   function isOn() { return _loaded ? _on : (localStorage.getItem("tt_premium") === "1"); }

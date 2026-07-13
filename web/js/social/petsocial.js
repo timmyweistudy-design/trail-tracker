@@ -20,7 +20,13 @@ const Pets = (() => {
   }
 
   // 領取別人送來的果實 → 加進本機 berryBonus
+  let _claiming = false;   // 快速切換「夥伴」分頁會重入：兩次 SELECT 都讀到同一批未領取禮物 → 果實重複入帳
   async function claimGifts() {
+    if (_claiming) return 0;
+    _claiming = true;
+    try { return await _claimGifts(); } finally { _claiming = false; }
+  }
+  async function _claimGifts() {
     const c = Supa.client(); const uid = await me(); if (!uid) return 0;
     const { data } = await c.from("pet_gifts").select("id,berries").eq("to_user", uid).eq("claimed", false).limit(200);
     if (!data || !data.length) return 0;

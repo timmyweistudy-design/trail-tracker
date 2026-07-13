@@ -67,8 +67,8 @@ const Safety = (() => {
     const userIds = data.filter(r => r.reported_user).map(r => r.reported_user);
     const posts = {}, users = {};
     if (postIds.length) {
-      const { data: ps } = await c.from("posts").select("id, text").in("id", postIds);
-      (ps || []).forEach(p => { posts[p.id] = p.text || ""; });
+      const { data: ps } = await c.from("posts").select("id, caption").in("id", postIds);   // 貼文內文欄位是 caption
+      (ps || []).forEach(p => { posts[p.id] = p.caption || ""; });
     }
     if (userIds.length) {
       const { data: us } = await c.from("profiles").select("id, display_name, handle").in("id", userIds);

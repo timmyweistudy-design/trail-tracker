@@ -73,6 +73,9 @@ const Auth = (() => {
   // 本機登出：只清本地 session，不等伺服器撤銷回應（避免網路慢/卡住，登出才會絲滑即時）
   async function signOut() {
     const c = Supa.client(); if (!c) return;
+    // 先撤銷推播：push_subscriptions 以瀏覽器 endpoint 為鍵，不解除的話共用裝置上
+    // 下一位使用者仍會收到前一位的社群通知
+    try { if (typeof Push !== "undefined" && Push.isOn && await Push.isOn()) await Push.disable(); } catch (e) { /* 不擋登出 */ }
     try { await c.auth.signOut({ scope: "local" }); } catch (e) { /* 仍視為已登出 */ }
   }
 

@@ -324,6 +324,7 @@ const I18n = (() => {
     "坡度": "Grade",
     "爬升速率": "Ascent rate",
     "我的檢舉": "My reports", "撤回": "Undo", "已撤回檢舉": "Report withdrawn", "沒有檢舉任何內容": "You haven't reported anything.", "（貼文已刪除）": "(post deleted)", "（對象已不存在）": "(target no longer exists)", "撤回失敗，請先更新資料庫（phase23）": "Undo failed — update the database first (phase23)",
+    "無法追蹤：你們之間有封鎖": "Can't follow — one of you has blocked the other",
     "隱私權政策": "Privacy Policy", "使用條款": "Terms of Use",
     "開啟訂閱管理…": "Opening subscription portal…", "前往結帳…": "Going to checkout…",
     "付款完成，歡迎加入 Premium！": "Payment complete — welcome to Premium!",

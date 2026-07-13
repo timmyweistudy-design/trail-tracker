@@ -70,6 +70,9 @@ const Elevation = (() => {
       _ready.set(k, t);
       return t;
     })();
+    // 失敗的 Promise 不可以留在快取：訊號不穩時抓失敗一次，之後同一塊區域就永遠拿不到地形
+    // （使用者本來就一直走在那張圖磚裡）→ 即時爬升退回雜訊大的 GPS、結算校正整批退回 API。
+    p.catch(() => { if (_tiles.get(k) === p) _tiles.delete(k); });
     _tiles.set(k, p);
     return p;
   }

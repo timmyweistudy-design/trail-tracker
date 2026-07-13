@@ -37,6 +37,7 @@ const Discover = (() => {
       b.disabled = false;
       paintFollowBtn(b, r === "requested" ? "requested" : r === "followed" ? "following" : "no");
       if (r === "requested" && typeof toast === "function") toast("已送出追蹤請求，等對方同意");
+      if (r === "blocked" && typeof toast === "function") toast("無法追蹤：你們之間有封鎖");
     }));
   }
 
@@ -87,6 +88,7 @@ const Discover = (() => {
         await c.from("follows").insert({ follower_id: u.user.id, following_id: targetId });
         return "followed";
       }
+      if (data === "blocked") return "blocked";   // 任一方封鎖 → 後端不建立追蹤也不發通知
       return data === "requested" ? "requested" : "followed";
     }
     await c.from("follows").delete().eq("follower_id", u.user.id).eq("following_id", targetId);

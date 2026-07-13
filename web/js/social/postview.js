@@ -158,13 +158,16 @@ const PostView = (() => {
 
   function bindLike(wrap, postId) {
     const b = wrap.querySelector("#pvLike"); if (!b) return;
+    let busy = false;
     b.addEventListener("click", async () => {
+      if (busy) return;                       // 連點會送出多個 insert/delete，回應順序不保證→最後狀態可能與畫面相反
+      busy = true;
       const on = !b.classList.contains("on");
       b.classList.toggle("on", on);
       const span = b.querySelector("span"); span.textContent = Math.max(0, +span.textContent + (on ? 1 : -1));
       b.firstChild.textContent = on ? "❤️ " : "🤍 ";
       if (on && window.ttFloat) window.ttFloat(b, "❤️");
-      await Posts.toggleLike(postId, on);
+      try { await Posts.toggleLike(postId, on); } finally { busy = false; }
     });
   }
 

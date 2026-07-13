@@ -120,9 +120,10 @@ const Store = (() => {
       const arch = await Archive.all();
       if (!arch || !arch.length) return 0;                   // 封存也空 → 無法救（需雲端）
       arch.sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")) || (b.id || 0) - (a.id || 0));
-      _saveRecords(arch.slice(0, 100).map((r, i) => i < 20 ? r : _stripTrack(r)));
+      const restored = arch.slice(0, 100);
+      _saveRecords(restored.map((r, i) => i < 20 ? r : _stripTrack(r)));
       if (!_lifeRead()) _lifeSave(_lifeFrom(arch));           // 終身統計若也遺失 → 從封存重建
-      return arch.length;
+      return restored.length;                                 // 回實際寫回的筆數（清單上限 100，回封存總數會對不上）
     } catch (e) { return 0; }
   }
   function setRecordNote(id, note) {

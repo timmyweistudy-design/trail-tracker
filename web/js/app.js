@@ -369,7 +369,9 @@ document.querySelectorAll(".tab").forEach(btn => {
       requestEntryPerms();   // 首次進記錄頁＝這一下點擊就是手勢，一次問完定位+方位權限
       // 從底部分頁進入＝自由記錄，清掉先前選定步道的路線疊圖
       selectedTrailGeo = null; selectedTrailId = null; clearPreHike();
+      if (Recorder.getState() === "idle") Recorder._trailName = null;   // 沒清的話這趟自由記錄會被冠上上一趟的步道名
       if (routeRefLayer && recMap) { recMap.removeLayer(routeRefLayer); routeRefLayer = null; }
+      if (guideLine && recMap) { recMap.removeLayer(guideLine); guideLine = null; }   // GPX/貼文帶進來的參考線也要清
       ensureGeo();                       // 預載幾何，供模擬挑步道/疊圖用
       ensureMeAvatar();                  // 預取頭像供「我」的地圖標記
       setTimeout(initRecMap, 60);
@@ -2571,7 +2573,7 @@ function drawRecSpark(series) {
 }
 // 隨拍隨傳：記錄中拍照，存當下時間與里程；結算頁顯示、可選擇分享
 let hikePhotos = [], hikePhotosRecId = null, recSnap = null, _shotUrls = [];
-let _liveElev = null, _liveElevAt = 0, _liveElevLen = 0, _liveElevBusy = false;
+let _liveElev = null, _liveElevAt = 0, _liveElevLen = 0, _liveElevBusy = false, _recSeq = 0;
 let _gpsWeakHits = 0, _gpsWarnAt = 0;
 // 依定位精度更新「GPS 訊號」小燈號（綠=好 / 黃=普通 / 紅=弱），並在持續弱訊號時提醒一次
 function updateGpsSig(s) {
@@ -2597,13 +2599,17 @@ Recorder.onUpdate(s => {
   $("#stKcal").textContent = s.kcal;
   $("#stTime").textContent = fmtTime(s.elapsedMs);
   $("#stPace").textContent = (s.state === "running" && s.instKmh != null) ? s.instKmh.toFixed(1) : "--";
-  if (s.state === "idle") { _liveElev = null; _liveElevAt = 0; _liveElevLen = 0; }   // 新記錄重置
+  // 新記錄重置（含 busy 旗標：否則上一趟卡住的校正會讓這趟一直送不出）
+  if (s.state === "idle") { _liveElev = null; _liveElevAt = 0; _liveElevLen = 0; _liveElevBusy = false; _recSeq++; }
   // GPS 高度常為 null → 即時爬升會卡在 0；用地形 DEM 節流校正，讓即時值接近結算值
-  if (s.state === "running" && navigator.onLine && typeof Elevation !== "undefined" && s.track && s.track.length >= 8) {
+  if (s.state === "running" && typeof Elevation !== "undefined" && s.track && s.track.length >= 8) {
     const now = Date.now();
     if (!_liveElevBusy && now - _liveElevAt > 30000 && s.track.length - _liveElevLen >= 8) {
       _liveElevBusy = true; _liveElevAt = now; _liveElevLen = s.track.length;
-      Elevation.correct(s.track.slice()).then(c => { if (c) _liveElev = c; _liveElevBusy = false; }).catch(() => { _liveElevBusy = false; });
+      const seq = _recSeq;   // 這次校正屬於哪一趟：遲到的結果不可以蓋到下一趟的畫面
+      Elevation.correct(s.track.slice())
+        .then(c => { if (seq !== _recSeq) return; if (c) _liveElev = c; _liveElevBusy = false; })
+        .catch(() => { if (seq === _recSeq) _liveElevBusy = false; });
     }
   }
   const ad = (_liveElev && (s.ascent || 0) < _liveElev.ascent) ? _liveElev : s;   // 取較準（GPS 為 0 時用 DEM）

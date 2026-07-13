@@ -20,7 +20,7 @@ const Lightbox = (() => {
     const count = m.querySelector(".lb-count");
     const prev = m.querySelector(".lb-prev");
     const next = m.querySelector(".lb-next");
-    const close = () => m.remove();
+    const close = () => { m.dispatchEvent(new Event("tt-closed")); m.remove(); };   // 發事件讓 keydown 監聽即時拆掉
 
     function resetZoom() { zoom = 1; tx = 0; ty = 0; apply(); }
     function apply() { img.style.transform = `translate(${tx}px,${ty}px) scale(${zoom})`; img.style.cursor = zoom > 1 ? "grab" : ""; }
@@ -37,10 +37,13 @@ const Lightbox = (() => {
     m.addEventListener("click", e => { if (e.target === m) close(); });
     prev.addEventListener("click", e => { e.stopPropagation(); show(i - 1); });
     next.addEventListener("click", e => { e.stopPropagation(); show(i + 1); });
-    document.addEventListener("keydown", function onKey(e) {
+    // 關閉時就拆掉監聽：原本只在「下次有人按鍵」時才自我移除，純用觸控關閉的話會一直留著（每開一次相片累積一個）
+    function onKey(e) {
       if (!document.body.contains(m)) { document.removeEventListener("keydown", onKey); return; }
       if (e.key === "Escape") close(); else if (e.key === "ArrowLeft") show(i - 1); else if (e.key === "ArrowRight") show(i + 1);
-    });
+    }
+    document.addEventListener("keydown", onKey);
+    m.addEventListener("tt-closed", () => document.removeEventListener("keydown", onKey));
 
     // 雙擊放大/還原
     let lastTap = 0;
