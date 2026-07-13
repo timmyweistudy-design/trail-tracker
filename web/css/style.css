@@ -1786,6 +1786,9 @@ html[data-theme="dark"] body::after { opacity: .05; }
 .pm-plan.on { border-color: var(--accent); background: var(--accent-soft); }
 .pm-save { position: absolute; top: -9px; right: -6px; font-size: calc(9.5px * var(--fs, 1)); font-weight: 800; color: #5a3a00; background: linear-gradient(135deg, #ffe07a, #f0a91e); border-radius: 5px; padding: 1px 6px; font-style: normal; }
 .pm-fine { font-size: calc(11px * var(--fs, 1)); color: var(--ink-faint); margin-top: 8px; line-height: 1.5; }
+/* 訂閱購買頁的法定連結（Apple 3.1.2 要求：隱私權政策＋使用條款） */
+.pm-legal { margin-top: 6px; font-size: calc(11px * var(--fs, 1)); color: var(--ink-faint); }
+.pm-legal a { color: var(--ink-soft); text-decoration: underline; }
 .pm-manage { width: 100%; }
 .pm-manage .ic { width: 15px; height: 15px; vertical-align: -3px; margin-right: 5px; }
 

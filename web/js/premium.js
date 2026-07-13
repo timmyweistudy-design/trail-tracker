@@ -62,6 +62,7 @@ const Premium = (() => {
       </div>
       <button class="btn primary" id="pmGo">免費試用 7 天</button>
       <div class="pm-fine">試用期免費，之後依方案自動續訂，可隨時取消</div>
+      <div class="pm-legal"><a href="#" data-legal="privacy">隱私權政策</a> · <a href="#" data-legal="terms">使用條款</a></div>
       <button class="link-btn pm-later" id="pmLater">以後再說</button>
     </div>`;
     document.body.appendChild(ov);
@@ -73,7 +74,21 @@ const Premium = (() => {
       plan = b.dataset.plan; ov.querySelectorAll(".pm-plan").forEach(x => x.classList.toggle("on", x === b));
     }));
     ov.querySelector("#pmGo").addEventListener("click", () => startCheckout(plan));
+    ov.querySelectorAll("[data-legal]").forEach(a => a.addEventListener("click", e => {
+      e.preventDefault(); openLegal(a.getAttribute("data-legal"));
+    }));
     applyNative(ov);   // 原生：價格改用商店回傳值、補上「回復購買」
+  }
+
+  // Apple 3.1.2：訂閱購買畫面必須有隱私權政策與使用條款連結（缺了是常見退件原因）。
+  // 使用條款用 Apple 的標準 EULA（沒自訂 EULA 時 Apple 指定用這份）。
+  const SITE = "https://trail-tracker-0ma5.onrender.com";
+  const EULA = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
+  function openLegal(which) {
+    const url = which === "terms" ? EULA : SITE + "/privacy.html";
+    const B = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser;
+    if (B) { B.open({ url }).catch(() => window.open(url, "_blank")); return; }   // 原生：開系統瀏覽器，不要在 App 內導航離開
+    window.open(url, "_blank", "noopener");
   }
 
   // 原生 App 專用調整。Apple 要求：價格須與商店一致（不能寫死 NT$60）、必須能回復購買。

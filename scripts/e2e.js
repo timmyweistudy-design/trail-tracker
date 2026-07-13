@@ -178,6 +178,10 @@ const PORT = 8899;
       if (await p2.locator("#pmRestore").count() === 0) errors.push("IAP: 原生升級彈窗缺「回復購買」按鈕（Apple 常見退件原因）");
       else console.log("✓ 原生：有回復購買按鈕");
 
+      // Apple 3.1.2：購買畫面必須有隱私權政策與使用條款連結
+      if (await p2.locator(".pm-legal [data-legal]").count() < 2) errors.push("IAP: 購買畫面缺隱私權政策/使用條款連結（Apple 3.1.2）");
+      else console.log("✓ 原生：購買畫面有隱私權政策與使用條款連結");
+
       await p2.click("#pmGo");
       await p2.waitForTimeout(1500);
       if (stripeHit) errors.push("IAP: 原生環境竟打了 Stripe create-checkout（會被 Apple 拒審）");
