@@ -63,6 +63,10 @@ iOS 專案 `ios/` **已經建好並設定完成**（Info.plist 定位權限說�
 每次 `npm install` 或改了外掛，要 `npm run sync` 才會套進 `android/`。已裝：`@capacitor/browser`、`@capacitor/app`、`@capacitor-community/background-geolocation`。
 
 ## 上架前還要處理
-- Supabase Redirect URL（如上）。
 - 隱私權政策網址、商店文案、螢幕截圖。
-- iOS 若要背景定位/Google 登入，Info.plist 要加對應說明字串與 URL scheme（`npx cap add ios` 後在 Xcode 設定）。
+- App 內數位付費一律要走 IAP（外部 Stripe 會被 Apple 拒審，見 `optimization-backlog.md`）。
+- 背景定位、Google deep link 兩項在 Android/iOS 都已完整（見「已處理」），但**只在網頁測過**，TestFlight/實機要各跑一次。
+
+## 已完成（別再重做）
+- Supabase Redirect URLs 已加 `com.timmyweistudy.trailtracker://login-callback`（2026-07 使用者確認）。
+- iOS 的定位權限說明字串、`UIBackgroundModes: location`、`CFBundleURLTypes` scheme 都已寫在 `ios/App/App/Info.plist`（不必再進 Xcode 補）；`AppDelegate.swift` 也已把 `open url` 轉給 `ApplicationDelegateProxy`（少了它 iOS 的 `appUrlOpen` 不會觸發）。
