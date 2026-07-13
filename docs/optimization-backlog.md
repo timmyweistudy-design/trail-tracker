@@ -4,8 +4,8 @@
 
 ## 🔴 上架前再做（需決策或 Mac，現在先掛著）
 
-- [ ] **#1 iOS 付費合規 → 改用 Apple IAP（StoreKit）** — 選定做法 **(a)**：iOS 版把 Premium 從 Stripe web checkout 改接 StoreKit/IAP 外掛。
-  - 現況：`web/js/config.js` `STRIPE_ENABLED=true`、`web/js/premium.js` 走 Stripe。
+- [ ] **#1 iOS 付費合規 → 改用 Apple IAP（StoreKit）** — 程式碼已完成（RevenueCat，原生走 IAP、網頁維持 Stripe），剩商店/RevenueCat 後台設定與沙盒實測，步驟見 `docs/iap-setup.md`。
+  - 現況：`web/js/iap.js`（IAP 模組）、`supabase/functions/revenuecat-webhook`、`supabase/schema-phase22-iap.sql` 都已就緒，`web/js/config.js` `IAP_ENABLED=false` 待後台設好後開啟。
   - 為何：Apple 規定 App 內數位功能一律走 IAP，用外部 Stripe 會審核被拒。
   - 何時：**正式送 App Store 審核前**做（TestFlight 階段不擋）。
 - [ ] **#21 HealthKit 整合** — 健行寫入 Apple「健康」（距離/步數/卡路里/爬升）。需 Capacitor health 外掛＋Swift＋Mac 建置測試。
