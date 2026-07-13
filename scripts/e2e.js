@@ -145,6 +145,45 @@ const PORT = 8899;
     await page.click(".ttdlg .btn.ghost");
     await page.waitForTimeout(400);
     ok("取消後對話框關閉", await page.locator(".ttdlg").count() === 0);
+
+    // IAP：模擬原生 App（假 Capacitor + 假 Purchases 外掛）→ 升級彈窗不得出現 Stripe 入口、要有回復購買
+    {
+      const p2 = await browser.newPage({ viewport: { width: 390, height: 844 } });
+      await p2.addInitScript(() => {
+        try { localStorage.setItem("tt_onboarded_v2", "1"); } catch (e) { }
+        window.Capacitor = {
+          isNativePlatform: () => true, getPlatform: () => "ios",
+          Plugins: { Purchases: {
+            configure: async () => {}, logIn: async () => {},
+            getOfferings: async () => ({ offerings: { current: { availablePackages: [
+              { packageType: "MONTHLY", product: { priceString: "US$1.99" } },
+              { packageType: "ANNUAL", product: { priceString: "US$19.99" } },
+            ] } } }),
+            purchasePackage: async () => ({ customerInfo: { entitlements: { active: { premium: {} } } } }),
+            restorePurchases: async () => ({ customerInfo: { entitlements: { active: {} } } }),
+          } },
+        };
+      });
+      let stripeHit = false;
+      p2.on("request", r => { if (r.url().includes("create-checkout")) stripeHit = true; });
+      await p2.goto(`http://localhost:${PORT}/index.html`);
+      await p2.waitForTimeout(2500);
+      await p2.evaluate(() => { window.IAP_ENABLED = true; Premium.openUpgrade(); });
+      await p2.waitForTimeout(1200);
+
+      const priceM = await p2.locator('.pm-plan[data-plan="month"] span').innerText();
+      if (!priceM.includes("US$1.99")) errors.push(`IAP: 原生價格未用商店回傳值（看到「${priceM}」）`);
+      else console.log("✓ 原生：價格用商店回傳的當地價格");
+
+      if (await p2.locator("#pmRestore").count() === 0) errors.push("IAP: 原生升級彈窗缺「回復購買」按鈕（Apple 常見退件原因）");
+      else console.log("✓ 原生：有回復購買按鈕");
+
+      await p2.click("#pmGo");
+      await p2.waitForTimeout(1500);
+      if (stripeHit) errors.push("IAP: 原生環境竟打了 Stripe create-checkout（會被 Apple 拒審）");
+      else console.log("✓ 原生：購買未觸發 Stripe");
+      await p2.close();
+    }
   } catch (e) {
     errors.push("fatal: " + e.message);
   } finally {
