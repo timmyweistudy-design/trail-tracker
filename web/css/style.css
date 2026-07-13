@@ -1270,17 +1270,23 @@ html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
 .team-rule { font-size: calc(12px * var(--fs, 1)); color: var(--ink-soft); background: var(--surface-2); border-radius: var(--r-xs); padding: 8px 10px; margin: 6px 0; line-height: 1.5; }
 /* 記錄頁小隊準備列 */
 .team-ready-bar { background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 10px 12px; margin: 8px 0; }
-/* 記錄時全螢幕地圖也保留小隊面板：浮在地圖上方左側，右側留給地圖控制鈕（3D/全螢幕/回中/指北針） */
+/* 記錄時放大地圖也保留小隊面板：浮在地圖左上，右側 52px 留給地圖控制鈕（指北針/回中/3D/全螢幕，直向排一列） */
 body.map-fs-open #teamReadyBar {
   position: fixed; z-index: 96;
   top: calc(8px + env(safe-area-inset-top, 0px));
   left: calc(8px + env(safe-area-inset-left, 0px));
   right: calc(52px + env(safe-area-inset-right, 0px));
-  max-height: 42vh; overflow-y: auto; margin: 0;
+  width: auto; max-width: 340px;            /* 平板/桌機不要橫拉成一整條 */
+  max-height: 40vh; overflow-y: auto; margin: 0;
+  padding: 8px 10px;                        /* 比頁面版緊，少擋地圖 */
   box-shadow: var(--sh-lg); backdrop-filter: blur(8px) saturate(1.1);
   background: rgba(255, 253, 248, .92);
 }
 html[data-theme="dark"] body.map-fs-open #teamReadyBar { background: rgba(20, 24, 15, .9); }
+/* 放大時只留「隊伍狀態＋隊友名字」，說明/診斷收掉，避免蓋住半張地圖 */
+body.map-fs-open #teamReadyBar .trb-hint,
+body.map-fs-open #teamReadyBar .trb-guide { display: none; }
+body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 .trb-top { display: flex; align-items: center; justify-content: space-between; gap: 8px 10px; flex-wrap: wrap; font-size: calc(13.5px * var(--fs, 1)); }
 .trb-top > b { flex: 1 1 auto; min-width: 0; display: inline-flex; align-items: center; gap: 4px; }
 .trb-top > .trb-chip, .trb-top > .trb-ready { flex: 0 0 auto; }
@@ -1294,6 +1300,7 @@ html[data-theme="dark"] body.map-fs-open #teamReadyBar { background: rgba(20, 24
 .trb-diag { margin-top: 5px; font-family: var(--num); font-size: calc(10.5px * var(--fs, 1)); color: var(--ink-faint); letter-spacing: .2px; }
 .trb-chip.tappable { cursor: pointer; border: 1px solid var(--brand-mid); background: var(--brand-soft); color: var(--brand); }
 .trb-chip.tappable:active { transform: scale(.96); }
+.trb-chip.pinned { background: var(--brand-mid); border-color: var(--brand-mid); color: #f6f3ea; font-weight: 700; }   /* 已定位在地圖上：再點一次收起 */
 .trb-chip.leader-off { background: var(--surface-2); color: var(--ink-soft); font-weight: 700; }
 .trb-chip.leader-off .ic { width: 12px; height: 12px; vertical-align: -2px; }
 .team-chip.leader { background: rgba(240,169,30,.16); font-weight: 700; }

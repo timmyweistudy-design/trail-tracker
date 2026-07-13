@@ -2,7 +2,7 @@
 // 改成純 HTTPS 輪詢資料庫（和登入/發文同一條路，已證實可靠）：
 //   - 每位隊員每 ~8 秒把自己的狀態（準備/記錄中/位置）upsert 進 team_presence（phase21）。
 //   - 全員每 ~4 秒輪詢 team_presence 看誰在線/誰準備好。
-//   - 不畫連續軌跡：點隊友名字才即時抓一次他的位置、在地圖上顯示 5 秒（他記錄中才有）。
+//   - 不畫連續軌跡：點隊友名字才即時抓一次他的位置釘在地圖上（他記錄中才有），再點一次收起。
 //   - 「一起開始」保留：隊長寫 team_starts（phase20），隊員輪詢到就一起開始。
 const TeamLive = (() => {
   let map = null, me = null, myInfo = {}, lastPos = null;
@@ -146,50 +146,89 @@ const TeamLive = (() => {
       }
     } catch (e) { pollOk = false; }
     await pollStarts();
+    refreshPins();      // 釘著的隊友位置跟著輪詢更新
     renderReadyBar();
   }
 
-  // 點隊友名字：即時抓一次他的位置，在地圖上顯示 10 秒（他記錄中才有）
+  // 點隊友名字：抓一次他的位置釘在地圖上（他記錄中才有），釘著的位置每次輪詢跟著更新；再點同一位隊友就收起。
   async function peek(uid) {
     if (!uid || uid === me) return;
+    if (peekMarkers[uid]) { unpin(uid); renderReadyBar(); return; }   // 第二次點：收起
     const c = Supa.client(); if (!c || !curTeamId) return;
     let row = null;
     try { const { data } = await c.from("team_presence").select("*").eq("team_id", curTeamId).eq("user_id", uid).maybeSingle(); row = data; } catch (e) { /* */ }
     const nm = (row && row.name) || (members.find(m => m.id === uid) || {}).name || ttx("隊友");
     if (!row || !row.recording || row.lat == null) { if (typeof toast === "function") toast(ttx("隊友未在記錄中，暫時看不到位置")); return; }
     if (!map || typeof L === "undefined") return;
-    const ageS = Math.max(0, Math.round((Date.now() - Date.parse(row.updated_at)) / 1000));
-    const key = "peek_" + uid;
-    if (peekMarkers[key]) { try { clearTimeout(peekMarkers[key]._t); map.removeLayer(peekMarkers[key]); } catch (e) { } }
-    const mk = L.marker([row.lat, row.lon], { icon: icon({ name: nm, avatar: row.avatar, pet: row.pet, heading: row.heading }, { pulse: true }), zIndexOffset: 1000 }).addTo(map)
-      .bindTooltip(`${esc(nm)}${ageS > 12 ? ` · ${ageS}s` : ""}`, { permanent: true, direction: "bottom", className: "team-tip", offset: [0, 14] }).openTooltip();
-    peekMarkers[key] = mk;
+    pin(uid, { name: nm, lat: row.lat, lon: row.lon, heading: row.heading, avatar: row.avatar, pet: row.pet,
+      ageMs: Math.max(0, Date.now() - Date.parse(row.updated_at)) });
     try { map.panTo([row.lat, row.lon]); } catch (e) { }
-    mk._t = setTimeout(() => { try { map.removeLayer(mk); } catch (e) { } delete peekMarkers[key]; }, 10000);   // 顯示 10 秒後移除
+    renderReadyBar();
+  }
+  // 釘上/更新一位隊友的位置標記（同一位重複呼叫＝就地更新，不重畫）
+  function pin(uid, m) {
+    if (!map || typeof L === "undefined") return;
+    const ageS = Math.max(0, Math.round((m.ageMs || 0) / 1000));
+    const tip = `${esc(m.name)}${ageS > 12 ? ` · ${ageS}s` : ""}`;
+    const ico = icon({ name: m.name, avatar: m.avatar, pet: m.pet, heading: m.heading }, { pulse: true });
+    const cur = peekMarkers[uid];
+    if (cur) { try { cur.setLatLng([m.lat, m.lon]); cur.setIcon(ico); cur.setTooltipContent(tip); } catch (e) { /* */ } return; }
+    peekMarkers[uid] = L.marker([m.lat, m.lon], { icon: ico, zIndexOffset: 1000 }).addTo(map)
+      .bindTooltip(tip, { permanent: true, direction: "bottom", className: "team-tip", offset: [0, 14] }).openTooltip();
+  }
+  function unpin(uid) {
+    const mk = peekMarkers[uid]; if (!mk) return;
+    try { map && map.removeLayer(mk); } catch (e) { /* */ }
+    delete peekMarkers[uid];
+  }
+  function isPinned(uid) { return !!peekMarkers[uid]; }
+  // 每次輪詢：釘著的隊友位置跟著更新；他停止記錄/離線就自動收起（不必使用者再點一次）
+  function refreshPins() {
+    for (const uid of Object.keys(peekMarkers)) {
+      const m = members.find(x => x.id === uid);
+      if (!m || !m.online || !m.recording || m.lat == null) { unpin(uid); continue; }
+      pin(uid, m);
+    }
   }
 
   function setReady(v) { myReady = !!v; pushPresence(); renderReadyBar(); }
 
   // ── 準備列 UI ──
+  // 放大地圖時把面板搬到 body：#view-record 有 animation(fill both) → computed transform 是單位矩陣，
+  // 會成為 fixed 的包含塊兼堆疊脈絡，面板留在裡面會被全螢幕地圖蓋掉。搬到 body 才浮得上去。
+  function placeBar(el) {
+    const fs = document.body.classList.contains("map-fs-open");
+    const anchor = document.getElementById("recStatus");
+    if (fs) { if (el.parentNode !== document.body) document.body.appendChild(el); }
+    else if (anchor && anchor.parentNode && el.nextSibling !== anchor) anchor.parentNode.insertBefore(el, anchor);
+  }
+  function syncFs() { const el = document.getElementById("teamReadyBar"); if (el) placeBar(el); }
   function readyBarEl() {
     let el = document.getElementById("teamReadyBar");
-    if (!el) {
-      const anchor = document.getElementById("recStatus");
-      if (!anchor || !anchor.parentNode) return null;
-      el = document.createElement("div");
-      el.id = "teamReadyBar"; el.className = "team-ready-bar";
-      anchor.parentNode.insertBefore(el, anchor);
-      el.addEventListener("click", e => { const t = e.target.closest("[data-peek]"); if (t) peek(t.getAttribute("data-peek")); });
-    }
+    if (el) { placeBar(el); return el; }
+    const anchor = document.getElementById("recStatus");
+    if (!anchor || !anchor.parentNode) return null;
+    el = document.createElement("div");
+    el.id = "teamReadyBar"; el.className = "team-ready-bar";
+    anchor.parentNode.insertBefore(el, anchor);
+    placeBar(el);   // 小隊是在放大狀態下開的 → 直接放到 body
+    el.addEventListener("click", e => { const t = e.target.closest("[data-peek]"); if (t) peek(t.getAttribute("data-peek")); });
+    el.addEventListener("keydown", e => {   // 鍵盤可用：Enter/空白鍵＝點一下
+      if (e.key !== "Enter" && e.key !== " ") return;
+      const t = e.target.closest("[data-peek]"); if (!t) return;
+      e.preventDefault(); peek(t.getAttribute("data-peek"));
+    });
     return el;
   }
   function chipHtml(m, tappable) {
     const crown = m.leader ? `${typeof ic === "function" ? ic("crown") : ""} ` : "";
     const meTag = m.me ? ttx("（我）") : "";
-    const pin = (tappable && !m.me) ? " 📍" : "";
-    const attr = (!m.me) ? ` data-peek="${esc(m.id)}"` : "";
-    const cls = `trb-chip ${m.ready ? "ok" : ""}${(tappable && !m.me) ? " tappable" : ""}`;
-    return `<span class="${cls}"${attr}>${crown}${esc(m.name)}${meTag} ${m.ready ? "✓" : "…"}${pin}</span>`;
+    const tap = tappable && !m.me;
+    const on = tap && isPinned(m.id);
+    const mark = tap ? (on ? " ✕" : " 📍") : "";           // 已定位→再點一次收起
+    const attr = (!m.me) ? ` data-peek="${esc(m.id)}"${tap ? ` role="button" tabindex="0" aria-pressed="${on}"` : ""}` : "";
+    const cls = `trb-chip ${m.ready ? "ok" : ""}${tap ? " tappable" : ""}${on ? " pinned" : ""}`;
+    return `<span class="${cls}"${attr}>${crown}${esc(m.name)}${meTag} ${m.ready ? "✓" : "…"}${mark}</span>`;
   }
   function renderReadyBar() {
     if (typeof window !== "undefined" && typeof window.syncTeamRecBtns === "function") window.syncTeamRecBtns();   // 隊員隱藏開始鈕
@@ -202,7 +241,7 @@ const TeamLive = (() => {
       const chips = r.map(m => chipHtml(m, true)).join("");
       el.innerHTML = `<div class="trb-top"><b>${typeof ic === "function" ? ic("users") : ""} ${ttx("小隊記錄中")}</b><span class="trb-chip ok">${ttx("在線")} ${onlineN}</span></div>
         <div class="trb-chips">${chips}</div>
-        <div class="trb-hint">${ttx("點隊友名字看他目前位置（記錄中才有）")}</div>`;
+        <div class="trb-hint">${ttx("點隊友名字看他位置，再點一次收起（記錄中才有）")}</div>`;
       return;
     }
     // 準備階段
@@ -266,5 +305,5 @@ const TeamLive = (() => {
     });
   }
 
-  return { start, stop, isOn, isLeader, setReady, allReady, roster, teammates, notReadyNames, sendStart, onStart, sendStop, onStop, sendPause, sendResume, onPause, onResume, updatePos, peek, status };
+  return { start, stop, isOn, isLeader, setReady, allReady, roster, teammates, notReadyNames, sendStart, onStart, sendStop, onStop, sendPause, sendResume, onPause, onResume, updatePos, peek, syncFs, status };
 })();

@@ -1244,6 +1244,8 @@ function addFullscreen(map) {
         if (el._fsHolder) { el._fsHolder.parentNode.insertBefore(el, el._fsHolder); el._fsHolder.remove(); el._fsHolder = null; }
         d.innerHTML = SVG_EXPAND;
       }
+      // 記錄地圖放大：小隊面板跟著搬到 body，才不會被全螢幕地圖蓋住（見 teamlive.placeBar）
+      if (el.id === "recMap" && typeof TeamLive !== "undefined" && TeamLive.syncFs) TeamLive.syncFs();
       const fix = () => map.invalidateSize({ animate: false });
       requestAnimationFrame(() => requestAnimationFrame(fix));
       setTimeout(fix, 150); setTimeout(fix, 400);

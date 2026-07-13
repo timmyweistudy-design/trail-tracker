@@ -217,7 +217,7 @@ const I18n = (() => {
     "即時連線被擋，請關 VPN／私人DNS 或改用行動網路": "Realtime connection blocked — turn off VPN/Private DNS or switch network",
     "我是隊長": "I'm the leader", "等待按準備": "Waiting for ready",
     "隊友未在記錄中，暫時看不到位置": "Teammate isn't recording — location unavailable",
-    "點隊友名字看他目前位置（記錄中才有）": "Tap a teammate's name to see their location (only while recording)",
+    "點隊友名字看他位置，再點一次收起（記錄中才有）": "Tap a teammate's name to pin their location, tap again to hide (only while recording)",
     "👑 隊長暫停了記錄": "👑 Leader paused the recording", "👑 隊長繼續記錄": "👑 Leader resumed recording",
     "隊長已暫停，等隊長繼續": "Leader paused — waiting for leader to resume",
     "上次": "Last", "自由路線": "Free route",
