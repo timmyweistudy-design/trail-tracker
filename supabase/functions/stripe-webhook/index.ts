@@ -9,13 +9,16 @@ const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE
 
 async function setStatus(userId: string, status: string, periodEnd: number | null, customer: string | null, sub: string | null) {
   if (!userId) return;
-  const active = ["active", "trialing"].includes(status);
-  await admin.from("subscriptions").upsert({
-    user_id: userId, status,
-    current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
-    stripe_customer_id: customer, stripe_subscription_id: sub, updated_at: new Date().toISOString(),
-  }, { onConflict: "user_id" });
-  await admin.from("profiles").update({ is_premium: active }).eq("id", userId);
+  // 統一走 upsert_subscription：內含「IAP 訂閱仍有效就不覆蓋」規則（見 schema-phase22-iap.sql）
+  const { error } = await admin.rpc("upsert_subscription", {
+    p_user: userId,
+    p_source: "stripe",
+    p_status: status,
+    p_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
+    p_stripe_customer: customer,
+    p_stripe_sub: sub,
+  });
+  if (error) console.error("upsert_subscription failed", error);
 }
 
 Deno.serve(async (req) => {
