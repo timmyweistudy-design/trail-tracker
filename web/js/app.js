@@ -1962,7 +1962,9 @@ async function downloadOffline(t, btn) {
   const box = $("#offlineBox");
   const bbox = Offline.bboxFor(t);
   const { zmin, zmax } = Offline.planZoom(bbox);
-  const tiles = Offline.tileList(bbox, zmin, zmax);
+  // 底圖 + 高程圖磚（z13–14）：高程一起抓，山上沒訊號時爬升/下降校正與坡度著色才算得出來。
+  // 高程圖磚數量比底圖少一個數量級（同範圍只需低倍），對額度影響很小。
+  const tiles = [...Offline.tileList(bbox, zmin, zmax), ...Offline.tileListUrl(bbox, 13, 14, _TERR_URL)];
   if (!offlineAllow(tiles)) return;   // 非會員：MB 額度制
   box.style.display = "block";
   box.innerHTML = `準備下載約 ${tiles.length} 張圖磚（約 ${(tiles.length * 0.02).toFixed(1)} MB）…`;
@@ -2087,6 +2089,23 @@ function renderSlope(map, layer, profiles) {
     }
   }
 }
+// 公里標記樁：沿軌跡每整公里插一個小圓標。縮太小就不畫（會擠成一團看不清）。
+function renderKmMarks(map, layer, segs) {
+  if (map.getZoom() < 13) return;
+  let acc = 0, next = 1000;
+  for (const seg of segs) {
+    for (let i = 1; i < seg.length; i++) {
+      const d = _hav(seg[i - 1], seg[i]);
+      while (acc + d >= next) {                       // 這一小段內跨過整公里 → 內插出位置
+        const r = (next - acc) / (d || 1);
+        const ll = [seg[i - 1][0] + (seg[i][0] - seg[i - 1][0]) * r, seg[i - 1][1] + (seg[i][1] - seg[i - 1][1]) * r];
+        L.marker(ll, { icon: L.divIcon({ className: "km-mark", html: `<b>${next / 1000}</b>`, iconSize: [20, 20], iconAnchor: [10, 10] }), interactive: false }).addTo(layer);
+        next += 1000;
+      }
+      acc += d;
+    }
+  }
+}
 // 地圖左下角的坡度圖例（只在真的畫出著色軌跡時顯示）
 function addSlopeLegend(map) {
   if (map._slopeLegend) return;
@@ -2169,7 +2188,10 @@ async function paintSlope(segs, plainLine) {
   if (plainLine) plainLine.remove();
   if (slopeLayer) trackMap.removeLayer(slopeLayer);
   slopeLayer = L.layerGroup().addTo(trackMap);
-  const draw = () => renderSlope(trackMap, slopeLayer, profiles);
+  const draw = () => {
+    renderSlope(trackMap, slopeLayer, profiles);
+    renderKmMarks(trackMap, slopeLayer, profiles.map(p => p.seg));   // 公里樁疊在色帶上
+  };
   draw();
   if (slopeZoomHandler) trackMap.off("zoomend", slopeZoomHandler);
   slopeZoomHandler = draw;
@@ -2258,6 +2280,7 @@ function openTrackReview(rec, isNew) {
       <div class="item"><div class="l">卡路里</div><div class="v">${rec.kcal} 大卡</div></div>
       <div class="item"><div class="l">步數</div><div class="v">${(rec.steps || 0).toLocaleString()}</div></div>
       ${!rec.sim && rec.elapsedMs > 0 && km > 0.05 ? `<div class="item"><div class="l">平均速度</div><div class="v">${(km / (rec.elapsedMs / 3.6e6)).toFixed(1)} km/h</div></div>` : ""}
+      ${!rec.sim && rec.elapsedMs > 6e5 && (rec.ascent || 0) >= 100 ? `<div class="item"><div class="l">爬升速率</div><div class="v">${Math.round(rec.ascent / (rec.elapsedMs / 3.6e6))} m/hr</div></div>` : ""}
       ${t3 && t3 > km + 0.05 ? `<div class="item"><div class="l">含坡度距離</div><div class="v">${t3.toFixed(2)} km</div></div>` : ""}
     </div>
     ${speedHtml(rec)}
