@@ -133,5 +133,19 @@ const rcStore = eval("(" + rcSrc.match(/const STORE_SOURCE[^=]*=\s*(\{[\s\S]*?\}
 ok("RC APP_STORE→app_store", rcStore.APP_STORE === "app_store");
 ok("RC PLAY_STORE→play_store", rcStore.PLAY_STORE === "play_store");
 
+// 13) IAP：非原生 / SDK 不存在 / 未啟用 → available() 為假且不拋錯（安全降級，網頁不受影響）
+global.window = global.window || {};
+delete global.window.Capacitor;
+global.window.IAP_ENABLED = true;
+eval(fs.readFileSync(web("iap.js"), "utf8") + "\n;globalThis.IAP = IAP;");
+ok("IAP 非原生時 available() 為假", IAP.available() === false);
+global.window.Capacitor = { isNativePlatform: () => true, Plugins: {} };          // 原生但沒有 Purchases 外掛
+ok("IAP 原生但無 SDK → available() 為假", IAP.available() === false);
+global.window.Capacitor = { isNativePlatform: () => true, Plugins: { Purchases: {} } };
+global.window.IAP_ENABLED = false;                                                // 開關關閉
+ok("IAP 未啟用 → available() 為假", IAP.available() === false);
+global.window.IAP_ENABLED = true;
+ok("IAP 原生＋有 SDK＋已啟用 → available() 為真", IAP.available() === true);
+
 console.log(fails ? `✗ ${fails} 個測試失敗` : "✓ 單元測試全部通過");
 process.exit(fails ? 1 : 0);

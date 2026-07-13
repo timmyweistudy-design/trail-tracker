@@ -19,3 +19,9 @@ window.VAPID_PUBLIC_KEY = "BBBNERSxfrE0JZbrqZVWKt1agmGjCWC6SG16JoLYdxORGm7v6gXW4
 // 部署好 create-checkout / stripe-webhook 後把 STRIPE_ENABLED 設 true，「升級」才會去結帳。
 window.FUNCTIONS_URL = "https://bkbkamvbczqdejrlpiqo.supabase.co/functions/v1";
 window.STRIPE_ENABLED = true;
+// 原生 App 內購（RevenueCat）。網頁版不受影響（付費仍走 Stripe）。
+// 商店產品與 RevenueCat 後台設好後把 IAP_ENABLED 設 true——設定步驟見 docs/iap-setup.md。
+// 這兩把是「public SDK key」，可以放前端（不是密鑰）。
+window.IAP_ENABLED = false;
+window.REVENUECAT_IOS_KEY = "";
+window.REVENUECAT_ANDROID_KEY = "";
