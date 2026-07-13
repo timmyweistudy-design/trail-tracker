@@ -48,15 +48,16 @@ Deno.serve(async (req) => {
   const isTrial = String(ev.period_type || "") === "TRIAL";
   const finalStatus = (status === "active" && isTrial) ? "trialing" : status;
 
-  // 退款：立即失效（不留到期末）
+  // 退款：期末設成過去，立即失效（其餘事件用商店給的到期時間；取消的權益就留到那一刻為止）
   const expMs = Number(ev.expiration_at_ms || 0);
-  const periodEnd = (type === "REFUND" || !expMs) ? null : new Date(expMs).toISOString();
+  const periodEnd = type === "REFUND" ? new Date(0).toISOString()
+    : (expMs ? new Date(expMs).toISOString() : null);
 
   const { error } = await admin.rpc("upsert_subscription", {
     p_user: userId,
     p_source: STORE_SOURCE[String(ev.store || "")] || "app_store",
     p_status: finalStatus,
-    p_period_end: type === "REFUND" ? new Date(0).toISOString() : periodEnd,
+    p_period_end: periodEnd,
     p_entitlement: Array.isArray(ev.entitlement_ids) ? String((ev.entitlement_ids as string[])[0] || "premium") : "premium",
     p_tx: ev.transaction_id ? String(ev.transaction_id) : null,
   });
