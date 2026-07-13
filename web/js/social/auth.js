@@ -10,7 +10,12 @@ const Auth = (() => {
   function init(cb) {
     onChange = cb || (() => {});
     const c = Supa.client(); if (!c) return;
-    c.auth.onAuthStateChange(() => onChange());   // 登入/登出/回呼後重新路由
+    c.auth.onAuthStateChange((_e, s) => {
+      onChange();                                 // 登入/登出/回呼後重新路由
+      // 原生 IAP：把 RevenueCat 的 app_user_id 綁成 Supabase user id，webhook 才對得回同一個人
+      const uid = s && s.user ? s.user.id : null;
+      if (uid && typeof IAP !== "undefined" && IAP.available()) { IAP.init(uid).catch(() => {}); }
+    });
     initNativeAuth();
   }
   // 原生 App：Google 登入是用系統瀏覽器開，登完會用 deep link 帶 code 回來→這裡攔截並換 session

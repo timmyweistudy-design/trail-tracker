@@ -73,6 +73,35 @@ const Premium = (() => {
       plan = b.dataset.plan; ov.querySelectorAll(".pm-plan").forEach(x => x.classList.toggle("on", x === b));
     }));
     ov.querySelector("#pmGo").addEventListener("click", () => startCheckout(plan));
+    applyNative(ov);   // 原生：價格改用商店回傳值、補上「回復購買」
+  }
+
+  // 原生 App 專用調整。Apple 要求：價格須與商店一致（不能寫死 NT$60）、必須能回復購買。
+  async function applyNative(ov) {
+    if (typeof IAP === "undefined" || !IAP.native()) return;
+    const go = ov.querySelector("#pmGo");
+    if (!IAP.available()) {   // 原生但 IAP 未設定 → 不顯示任何付費入口（更不能退回 Stripe，那是拒審理由）
+      ov.querySelector(".pm-plans")?.remove();
+      ov.querySelector(".pm-fine")?.remove();
+      if (go) { go.disabled = true; go.textContent = ttT("付費功能即將開放，敬請期待"); }
+      return;
+    }
+    const ps = await IAP.plans();
+    if (ps) {
+      const m = ov.querySelector('.pm-plan[data-plan="month"] span');
+      const y = ov.querySelector('.pm-plan[data-plan="year"] span');
+      if (m && ps.month) m.textContent = ps.month.price;
+      if (y && ps.year) y.textContent = ps.year.price;
+    }
+    const r = document.createElement("button");
+    r.className = "link-btn pm-restore"; r.id = "pmRestore"; r.textContent = ttT("回復購買");
+    ov.querySelector(".premium-card").insertBefore(r, ov.querySelector("#pmLater"));
+    r.addEventListener("click", async () => {
+      if (typeof toast === "function") toast(ttT("回復購買中…"));
+      const on = await IAP.restore();
+      if (on) { ov.remove(); pollUnlock(); }
+      else if (typeof toast === "function") toast(ttT("找不到可回復的購買"));
+    });
   }
 
   async function authToken() {
@@ -82,6 +111,17 @@ const Premium = (() => {
   }
 
   async function startCheckout(plan) {
+    // 原生 App 一律走 IAP：Apple/Google 規定 App 內數位功能不得用外部金流，走 Stripe 會被拒審
+    if (typeof IAP !== "undefined" && IAP.native()) {
+      if (!IAP.available()) { if (typeof toast === "function") toast("付費功能即將開放，敬請期待"); return; }
+      const r = await IAP.purchase(plan);
+      if (r === "cancel") return;                    // 使用者自己取消：安靜收工
+      if (r !== "ok") { if (typeof toast === "function") toast("購買失敗，請稍後再試"); return; }
+      if (typeof toast === "function") toast("付款完成，歡迎加入 Premium！");
+      document.querySelector(".premium-mask")?.remove();
+      pollUnlock();                                  // webhook 寫入有延遲 → 輪詢到解鎖為止
+      return;
+    }
     if (!window.STRIPE_ENABLED || !window.FUNCTIONS_URL) { if (typeof toast === "function") toast("付費功能即將開放，敬請期待"); return; }
     const token = await authToken();
     if (!token) { if (typeof toast === "function") toast("請先到社群分頁登入再升級"); return; }
@@ -98,8 +138,15 @@ const Premium = (() => {
     } catch (e) { if (typeof toast === "function") toast("結帳失敗：" + (e && e.message || e)); }
   }
 
-  // 管理訂閱（Stripe Customer Portal）
+  // 管理訂閱：原生開系統的訂閱設定頁，網頁開 Stripe Customer Portal
   async function openPortal() {
+    if (typeof IAP !== "undefined" && IAP.native()) {
+      const url = IAP.manageUrl();
+      const B = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser;
+      if (B) { try { await B.open({ url }); return; } catch (e) { /* 落到 window.open */ } }
+      window.open(url, "_system");
+      return;
+    }
     if (!window.FUNCTIONS_URL) return;
     const token = await authToken(); if (!token) return;
     try {
@@ -131,6 +178,16 @@ const Premium = (() => {
     }
   }
 
+  // 付款完成 → webhook 寫入可能略有延遲：輪詢到解鎖為止（Stripe 與 IAP 共用）
+  function pollUnlock(tries) {
+    tries = tries || 0;
+    refresh().then(on => {
+      if (on) { try { document.querySelector('.tab[data-view="me"]')?.click(); } catch (e) { } return; }
+      if (tries < 6) setTimeout(() => pollUnlock(tries + 1), 2500);
+      else if (typeof toast === "function") toast("款項處理中，稍後自動生效");
+    });
+  }
+
   // 從 Stripe 結帳返回：?premium=success → 提示並更新狀態
   function handleReturn() {
     try {
@@ -139,9 +196,7 @@ const Premium = (() => {
       history.replaceState(null, "", location.pathname);
       if (p === "success") {
         if (typeof toast === "function") toast("付款完成，歡迎加入 Premium！");
-        let tries = 0;
-        const poll = () => { refresh().then(on => { if (on) { try { document.querySelector('.tab[data-view="me"]')?.click(); } catch (e) { } } else if (++tries < 6) setTimeout(poll, 2500); }); };
-        poll();   // webhook 寫入可能略有延遲，重試幾次
+        pollUnlock();
       } else if (p === "cancel") {
         if (typeof toast === "function") toast("已取消結帳");
       }
