@@ -147,5 +147,16 @@ ok("IAP 未啟用 → available() 為假", IAP.available() === false);
 global.window.IAP_ENABLED = true;
 ok("IAP 原生＋有 SDK＋已啟用 → available() 為真", IAP.available() === true);
 
+// 14) 海拔校正改用 terrarium 高程圖磚（z14）：解碼公式與圖磚座標換算
+ok("terrarium 解碼：海平面", Elevation.decode(128, 0, 0) === 0);
+ok("terrarium 解碼：玉山約 3952m", Math.abs(Elevation.decode(143, 112, 0) - 3952) < 1);
+ok("terrarium 解碼：負高度（死海）", Elevation.decode(126, 40, 0) < 0);
+{
+  const t = Elevation.tileXY(25.033, 121.564);   // 台北 101 一帶，z14
+  ok("tileXY：台北落在 z14 的 (13724, 7014) 圖磚", Math.floor(t.fx) === 13724 && Math.floor(t.fy) === 7014);
+  const north = Elevation.tileXY(25.5, 121.564);
+  ok("tileXY：緯度越高 → 圖磚 y 越小（北在上）", north.fy < t.fy);
+}
+
 console.log(fails ? `✗ ${fails} 個測試失敗` : "✓ 單元測試全部通過");
 process.exit(fails ? 1 : 0);
