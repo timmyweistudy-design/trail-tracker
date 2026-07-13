@@ -49,10 +49,11 @@ const Elevation = (() => {
     };
   }
   const _tiles = new Map();   // 跨次校正共用（圖磚是靜態的）；一條軌跡通常只跨幾張
+  const _ready = new Map();   // 已解碼完成的圖磚（供記錄中同步取樣，不能等 await）
   async function tile(x, y) {
     const k = x + "/" + y;
     if (_tiles.has(k)) return _tiles.get(k);
-    if (_tiles.size > 24) _tiles.clear();   // 每張解碼後 128 KB（Int16），別讓它無限長大
+    if (_tiles.size > 24) { _tiles.clear(); _ready.clear(); }   // 每張解碼後 128 KB（Int16），別讓它無限長大
     const p = (async () => {
       const r = await fetch(`${TILE}/${Z}/${x}/${y}.png`);   // SW 走圖磚快取 → 預載過/看過的路段離線也命中
       if (!r.ok) throw new Error("tile " + r.status);
@@ -65,10 +66,25 @@ const Elevation = (() => {
       // 解碼後只留高度（Int16 公尺）：RGBA 一張 256 KB → 這樣 128 KB，查值也不用每次算
       const e = new Int16Array(bmp.width * bmp.height);
       for (let i = 0; i < e.length; i++) e[i] = Math.round(decode(d[i * 4], d[i * 4 + 1], d[i * 4 + 2]));
-      return { e, w: bmp.width };
+      const t = { e, w: bmp.width };
+      _ready.set(k, t);
+      return t;
     })();
     _tiles.set(k, p);
     return p;
+  }
+
+  // 記錄中即時取樣：圖磚已在記憶體→同步回傳地面高度；否則背景抓、這次先回 null（呼叫端退回 GPS 高度）。
+  // 目的：記錄中的即時爬升與結算的 DEM 校正用同一份資料，數字不會前後打架。
+  function sample(lat, lon) {
+    if (lat == null || lon == null || typeof createImageBitmap !== "function" || typeof document === "undefined") return null;
+    const { fx, fy } = tileXY(lat, lon);
+    const tx = Math.floor(fx), ty = Math.floor(fy), k = tx + "/" + ty;
+    const t = _ready.get(k);
+    if (!t) { tile(tx, ty).catch(() => {}); return null; }   // 首次進入這張圖磚 → 背景抓，不擋記錄
+    const px = Math.min(255, Math.floor((fx % 1) * 256));
+    const py = Math.min(255, Math.floor((fy % 1) * 256));
+    return t.e[py * t.w + px];
   }
   async function lookupTiles(pts) {
     const at = pts.map(p => {
@@ -150,6 +166,6 @@ const Elevation = (() => {
     } catch (e) { if (typeof console !== "undefined") console.warn("elev correct failed", e && e.message); return null; }
   }
 
-  return { correct, downsample, recompute, decode, tileXY };
+  return { correct, downsample, recompute, decode, tileXY, sample };
 })();
 if (typeof module !== "undefined") module.exports = Elevation;

@@ -73,18 +73,29 @@ const Recorder = (() => {
     resting = (state === "running" && !!lastMoveAt && Date.now() - lastMoveAt > REST_AFTER_MS);
   }
 
-  // 高度去抖動：累積爬升/下降只計顯著變化，過濾 GPS 高度雜訊
-  function updateElevation(alt, altAcc) {
+  // 高度去抖動：累積爬升/下降只計顯著變化，過濾高度雜訊。
+  // 高度優先用 DEM 地形（與結算的校正同一份資料 → 記錄中的數字不會跟結算打架），
+  // 圖磚還沒到手才退回 GPS 高度。來源切換時重設基準，避免兩者的系統性落差被算成一次假爬升。
+  let altSrc = null;
+  function updateElevation(alt, altAcc, src) {
     if (alt == null) return;
-    if (altAcc != null && altAcc > MAX_ALT_ACC) return;   // 垂直精度太差→不採計，避免雜訊灌爬升
+    if (src === "gps" && altAcc != null && altAcc > MAX_ALT_ACC) return;   // 垂直精度太差→不採計，避免雜訊灌爬升
+    if (src !== altSrc) { altSrc = src; smAlt = alt; refAlt = alt; return; }   // 換來源：重新起算
     // 先 EMA 平滑高度，壓掉手機晃動/GPS 雜訊；再用較大門檻去抖動累積
     smAlt = (smAlt == null) ? alt : ALT_SMOOTH * alt + (1 - ALT_SMOOTH) * smAlt;
     if (refAlt == null) { refAlt = smAlt; return; }
     const dz = smAlt - refAlt;
-    if (Math.abs(dz) >= ELEV_DEADBAND) {
+    // DEM 沒有 GPS 的垂直雜訊 → 用與結算校正同一個門檻(3m)，即時與結算的數字才不會差一截
+    const band = (src === "dem") ? 3 : ELEV_DEADBAND;
+    if (Math.abs(dz) >= band) {
       if (dz > 0) ascent += dz; else descent += -dz;
       refAlt = smAlt;
     }
+  }
+  // 這個點的地面高度：有 DEM 用 DEM（同步、圖磚在記憶體時才回值），否則 GPS
+  function groundAlt(lat, lon) {
+    const d = (typeof Elevation !== "undefined" && Elevation.sample) ? Elevation.sample(lat, lon) : null;
+    return (d != null && isFinite(d)) ? d : null;
   }
 
   // 卡路里 = 平路移動(依時間) + 上坡爬升 + 下坡下降，三者相加；靜止時不增加
@@ -177,9 +188,11 @@ const Recorder = (() => {
       dist3D += seg3;
       if (alt != null) lastFixAlt = alt;
       movingMs += now - lastFix.t;
-      updateElevation(alt, altAcc);                  // 平滑+去抖動後累積爬升/下降
+      const dem = groundAlt(lat, lon);               // DEM 地形高度（圖磚在手才有）
+      updateElevation(dem != null ? dem : alt, altAcc, dem != null ? "dem" : "gps");   // 平滑+去抖動後累積爬升/下降
       track.push(p);
-      if (alt != null) altSeries.push({ x: distance, e: alt });   // 即時海拔曲線
+      const showAlt = dem != null ? dem : alt;
+      if (showAlt != null) altSeries.push({ x: distance, e: showAlt });   // 即時海拔曲線（與爬升同一份高度）
       if (now - lastPersist > 4000) { lastPersist = now; persist(); }   // 節流即時存檔
     }
     // d > MAX_JUMP：GPS 跳點，不累積，但更新錨點避免下次又算成大跳
@@ -313,7 +326,7 @@ const Recorder = (() => {
 
   function start(sim) {
     if (state === "running") return;
-    if (state === "idle") { track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; smAlt = null; lastFixAlt = null; smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; lastAcceptT = 0; curSpeed = 0; simMode = !!sim; overSpeedHits = 0; stillHits = 0; autoStopping = false; }
+    if (state === "idle") { track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; smAlt = null; altSrc = null; lastFixAlt = null; smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; lastAcceptT = 0; curSpeed = 0; simMode = !!sim; overSpeedHits = 0; stillHits = 0; autoStopping = false; }
     lastResume = Date.now();
     state = "running";
     resting = false; lastMoveAt = Date.now();   // 開始/繼續都重設休息計時
@@ -331,7 +344,7 @@ const Recorder = (() => {
     state = "paused"; curSpeed = 0;
     releaseWake();           // 暫停時放開喚醒鎖
     lastFix = null;          // 恢復後重新設錨點，避免把暫停期間算成移動
-    refAlt = null; smAlt = null;   // 高度也重新設基準
+    refAlt = null; smAlt = null; altSrc = null;   // 高度也重新設基準
     lastFixAlt = null; smLat = null; smLon = null;
     stopSources();
     persist();
@@ -361,7 +374,7 @@ const Recorder = (() => {
       sim: simMode || undefined,
       vehicle: autoStopping || undefined,   // 因車速(>20km/h)自動斷掉→整趟不計里程
     } : null;
-    state = "idle"; track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; smAlt = null; lastFixAlt = null;
+    state = "idle"; track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; smAlt = null; altSrc = null; lastFixAlt = null;
     smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; lastAcceptT = 0; curSpeed = 0; simPos = null; overSpeedHits = 0; stillHits = 0; autoStopping = false;
     simRoute = null; simDist = 0;   // 清除殘留路線，避免下次記錄誤跑舊模擬路線
     persist();
@@ -390,7 +403,7 @@ const Recorder = (() => {
     if (!d || !d.track) return null;
     track = d.track; distance = d.distance || 0; dist3D = d.dist3D || 0;
     ascent = d.ascent || 0; descent = d.descent || 0; movingMs = d.movingMs || 0; elapsedMs = d.elapsedMs || 0;
-    refAlt = null; smAlt = null; lastFixAlt = null; smLat = null; smLon = null; lastFix = null;
+    refAlt = null; smAlt = null; altSrc = null; lastFixAlt = null; smLat = null; smLon = null; lastFix = null;
     state = "paused"; Recorder._trailName = d.trailName || null;
     cb(snapshot());
     return snapshot();
