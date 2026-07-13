@@ -1,12 +1,12 @@
 // 離線快取：app shell + 地圖圖磚
-const CACHE = "trail-tracker-v357";
+const CACHE = "trail-tracker-v358";
 const TILE_CACHE = "tt-tiles";   // 地圖圖磚（不隨版本清除，保留離線地圖）
 const ASSETS = [
   "./", "./index.html",
   "./css/style.css",
   "./vendor/fonts/taipei-sans.woff2",
   "./vendor/fonts/brand-serif.woff2",
-  "./js/trails-data.js", "./js/trails-detail.js", "./js/geo-manifest.js", "./js/geo/geo-0.js", "./js/geo/geo-1.js", "./js/geo/geo-10.js", "./js/geo/geo-11.js", "./js/geo/geo-12.js", "./js/geo/geo-13.js", "./js/geo/geo-14.js", "./js/geo/geo-15.js", "./js/geo/geo-16.js", "./js/geo/geo-17.js", "./js/geo/geo-18.js", "./js/geo/geo-19.js", "./js/geo/geo-2.js", "./js/geo/geo-20.js", "./js/geo/geo-21.js", "./js/geo/geo-3.js", "./js/geo/geo-4.js", "./js/geo/geo-5.js", "./js/geo/geo-6.js", "./js/geo/geo-7.js", "./js/geo/geo-8.js", "./js/geo/geo-9.js", "./js/storage.js", "./js/dialog.js", "./js/i18n.js", "./js/i18n-names.js", "./js/grades.js", "./js/config.js", "./js/conditions.js",
+  "./js/trails-data.js", "./js/geo-manifest.js", "./js/storage.js", "./js/dialog.js", "./js/i18n.js", "./js/i18n-names.js", "./js/grades.js", "./js/config.js", "./js/conditions.js",
   "./js/photos.js", "./js/amenities.js", "./js/food.js", "./js/attractions.js", "./js/weather.js", "./js/profile.js", "./js/recorder.js", "./js/elevation.js", "./js/offline.js", "./js/gpx.js", "./js/iap.js", "./js/premium.js", "./js/pet.js", "./js/analytics.js", "./js/app.js",
   "./vendor/supabase/supabase.js",
   "./js/social/supa.js", "./js/social/handle.js", "./js/social/media.js", "./js/social/posts.js", "./js/social/composer.js", "./js/social/safety.js", "./js/social/feed.js", "./js/social/postview.js", "./js/social/discover.js", "./js/social/petsocial.js", "./js/social/teamlive.js", "./js/social/teams.js", "./js/social/notifications.js", "./js/social/push.js", "./js/social/autocomplete.js", "./js/social/events.js", "./js/social/lightbox.js", "./js/social/auth.js", "./js/social/profiles.js", "./js/social/social-ui.js",
@@ -17,6 +17,14 @@ const ASSETS = [
   "./vendor/leaflet/images/marker-icon.png",
   "./vendor/leaflet/images/marker-icon-2x.png",
   "./vendor/leaflet/images/marker-shadow.png",
+];
+
+// 第二波（安裝後在背景暖機，不擋 install）：這些檔案 App 都是「用到才動態載入」的——
+// 路線幾何分片（1.4 MB）只在開步道詳情/篩選「有路線」時載、trails-detail.js（633 KB）只在開詳情時載。
+// 放進 install 會讓首訪先扛 4.3 MB 才裝得起來；改成背景暖機：首訪只裝核心，離線能力照舊。
+const ASSETS_LAZY = [
+  "./js/trails-detail.js",
+  ...Array.from({ length: 22 }, (_, i) => `./js/geo/geo-${i}.js`),
 ];
 
 self.addEventListener("install", e => {
@@ -30,6 +38,8 @@ self.addEventListener("activate", e => {
   e.waitUntil(caches.keys().then(keys =>
     Promise.all(keys.filter(k => k !== CACHE && k !== TILE_CACHE).map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
+  // 背景暖機：不掛 waitUntil，抓失敗也不影響（真的用到時 fetch handler 會再快取一次）
+  caches.open(CACHE).then(c => Promise.allSettled(ASSETS_LAZY.map(a => c.add(a)))).catch(() => {});
 });
 self.addEventListener("fetch", e => {
   const url = e.request.url;

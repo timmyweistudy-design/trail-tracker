@@ -436,26 +436,26 @@
   <div class="net-banner" id="netBanner" style="display:none">📴 離線模式（地圖與已快取內容仍可用）</div>
 </div>
 
-<script src="vendor/leaflet/leaflet.js"></script>
-<script src="vendor/markercluster/markercluster.js"></script>
-<script src="js/trails-data.js"></script>
-<script src="js/geo-manifest.js"></script>
-<script src="js/storage.js"></script>
-<script src="js/dialog.js"></script>
-<script src="js/i18n.js"></script>
-<script src="js/grades.js"></script>
-<script src="js/config.js"></script>
-<script src="js/conditions.js"></script>
-<script src="js/photos.js"></script>
-<script src="js/amenities.js"></script>
-<script src="js/food.js"></script>
-<script src="js/attractions.js"></script>
-<script src="js/weather.js"></script>
-<script src="js/profile.js"></script>
-<script src="js/offline.js"></script>
-<script src="js/gpx.js"></script>
-<script src="js/recorder.js"></script>
-<script src="js/elevation.js"></script>
+<script defer src="vendor/leaflet/leaflet.js"></script>
+<script defer src="vendor/markercluster/markercluster.js"></script>
+<script defer src="js/trails-data.js"></script>
+<script defer src="js/geo-manifest.js"></script>
+<script defer src="js/storage.js"></script>
+<script defer src="js/dialog.js"></script>
+<script defer src="js/i18n.js"></script>
+<script defer src="js/grades.js"></script>
+<script defer src="js/config.js"></script>
+<script defer src="js/conditions.js"></script>
+<script defer src="js/photos.js"></script>
+<script defer src="js/amenities.js"></script>
+<script defer src="js/food.js"></script>
+<script defer src="js/attractions.js"></script>
+<script defer src="js/weather.js"></script>
+<script defer src="js/profile.js"></script>
+<script defer src="js/offline.js"></script>
+<script defer src="js/gpx.js"></script>
+<script defer src="js/recorder.js"></script>
+<script defer src="js/elevation.js"></script>
 <script>
 // 社群模組延遲載入：378KB（supabase+20 支 social）不佔開機。順序注入（彼此有依賴），
 // 只跑一次；切到社群分頁時等它載完，其餘時間開機後閒置 2 秒自動載（紅點/自動登入照常）。
@@ -482,11 +482,11 @@ window.addEventListener("load", () => {
   if (window.requestIdleCallback) requestIdleCallback(go, { timeout: 600 }); else setTimeout(go, 250);
 });
 </script>
-<script src="js/iap.js"></script>
-<script src="js/premium.js"></script>
-<script src="js/pet.js"></script>
-<script src="js/analytics.js"></script>
-<script src="js/app.js"></script>
+<script defer src="js/iap.js"></script>
+<script defer src="js/premium.js"></script>
+<script defer src="js/pet.js"></script>
+<script defer src="js/analytics.js"></script>
+<script defer src="js/app.js"></script>
 <script>
   // Service Worker：偵測新版本 → 顯示更新橫幅；點擊後讓新版接手並重載
   if ("serviceWorker" in navigator) {
