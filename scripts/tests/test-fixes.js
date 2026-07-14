@@ -158,5 +158,25 @@ ok("terrarium 解碼：負高度（死海）", Elevation.decode(126, 40, 0) < 0)
   ok("tileXY：緯度越高 → 圖磚 y 越小（北在上）", north.fy < t.fy);
 }
 
+// 15) 點到路線距離：必須算「到線段」而非「到頂點」
+// （官方路線頂點間距常 100–200m，只比頂點的話，走在兩點正中間的人會被誤判成偏離數十公尺）
+{
+  const src = fs.readFileSync(web("app.js"), "utf8");
+  const m = src.match(/function distToSegment[\s\S]*?\n}/);
+  ok("app.js 有 distToSegment（點到線段）", !!m);
+  if (m) {
+    // eslint-disable-next-line no-new-func
+    const distToSegment = new Function("return " + m[0])();
+    const a = [25.0000, 121.5000], b = [25.0000, 121.5020];   // 東西向線段，長約 200m
+    const mid = [25.0000, 121.5010];                           // 正中間，離線 0
+    ok("線段中點距離 ≈ 0", distToSegment(mid[0], mid[1], a, b) < 1);
+    const off = [25.0009, 121.5010];                           // 垂直偏離約 100m
+    const d = distToSegment(off[0], off[1], a, b);
+    ok("垂直偏離 100m 算得出來", Math.abs(d - 100) < 6);
+    const beyond = [25.0000, 121.5040];                        // 線段外延伸 → 夾到端點
+    ok("投影落在線段外→夾到端點", Math.abs(distToSegment(beyond[0], beyond[1], a, b) - 202) < 12);
+  }
+}
+
 console.log(fails ? `✗ ${fails} 個測試失敗` : "✓ 單元測試全部通過");
 process.exit(fails ? 1 : 0);

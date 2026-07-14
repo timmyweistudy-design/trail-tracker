@@ -1109,6 +1109,19 @@ html[lang="de"] .chip, html[lang="nl"] .chip, html[lang="ru"] .chip, html[lang="
 .slope-bar i { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--d1), var(--d3), var(--d5)); }
 
 /* ---------- 重播進度條 ---------- */
+/* 偏離路線警告：紅底、脈動邊框，拿出手機一眼就看到（震動負責口袋裡的提醒） */
+.off-route {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  background: rgba(192,71,43,.12); border: 1.5px solid var(--danger, #c0472b); border-radius: var(--r-sm);
+  padding: 11px 13px; margin: 8px 0; color: var(--danger, #c0472b);
+  animation: offPulse 1.6s ease-in-out infinite;
+}
+.off-route b { display: inline-flex; align-items: center; gap: 6px; font-size: calc(14px * var(--fs, 1)); font-weight: 800; }
+.off-route b .ic { width: 17px; height: 17px; }
+.off-route span { font-family: var(--num); font-size: calc(13px * var(--fs, 1)); font-weight: 700; }
+@keyframes offPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(192,71,43,.32); } 50% { box-shadow: 0 0 0 5px rgba(192,71,43,0); } }
+html[data-theme="dark"] .off-route { background: rgba(192,71,43,.2); }
+
 /* 公里標記樁：小而清楚，白框讓它在任何底圖上都讀得出來 */
 .km-mark b {
   display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%;

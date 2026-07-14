@@ -2512,15 +2512,77 @@ function maybeMarkTrailDone(rec) {
     if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
   }
 }
+// 點到路線的距離。⚠️ 必須算「到線段」而不是「到頂點」：官方路線的頂點間距常有 100–200 m，
+// 只比對頂點的話，走在兩個頂點正中間的人明明在路上，卻會被算成離線好幾十公尺（會誤報偏離、也會誤判未完成）。
 function distToRoute(lat, lon) {
-  if (!selectedTrailGeo) return null;
+  const segs = routeSegs();
+  if (!segs) return null;
   let min = Infinity;
-  for (const seg of selectedTrailGeo)
-    for (const p of seg) {
-      const d = haversine({ lat, lon }, { lat: p[0], lon: p[1] });
+  for (const seg of segs)
+    for (let i = 1; i < seg.length; i++) {
+      const d = distToSegment(lat, lon, seg[i - 1], seg[i]);
       if (d < min) min = d;
     }
-  return min;
+  return min === Infinity ? null : min;
+}
+// 點到線段的最短距離（公尺）。小範圍內用等距投影近似（緯度換算固定、經度乘 cos(lat)），誤差可忽略。
+function distToSegment(lat, lon, a, b) {
+  const R = 111320, cos = Math.cos(lat * Math.PI / 180);
+  const px = (lon - a[1]) * R * cos, py = (lat - a[0]) * R;
+  const bx = (b[1] - a[1]) * R * cos, by = (b[0] - a[0]) * R;
+  const len2 = bx * bx + by * by;
+  let t = len2 > 0 ? (px * bx + py * by) / len2 : 0;
+  t = Math.max(0, Math.min(1, t));                    // 投影落在線段外 → 夾到端點
+  const dx = px - bx * t, dy = py - by * t;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+// 目前可用來比對的路線：選定步道的官方路線，或使用者匯入/跟走的 GPX 參考線
+function routeSegs() {
+  if (selectedTrailGeo && selectedTrailGeo.length) return selectedTrailGeo;
+  if (guideLine) {
+    const ll = guideLine.getLatLngs();
+    if (ll && ll.length) return [ll.map(p => [p.lat, p.lon])];
+  }
+  return null;
+}
+
+// ── 偏離路線警告 ──
+// 走錯岔路是山難的常見起因。有路線可比對時，離線 50 m 且持續 30 秒才示警
+// （GPS 本身有 5–10 m 誤差，短暫繞路上廁所/拍照不該一直叫）。
+const OFF_ROUTE_DIST = 50;      // 公尺
+const OFF_ROUTE_HOLD = 30000;   // 毫秒：要「持續」這麼久才算真的走偏
+const OFF_ROUTE_REPEAT = 120000;   // 仍在偏離中 → 每 2 分鐘再震一次（不要一直吵）
+let _offSince = 0, _offAlerted = 0;
+function checkOffRoute(s) {
+  const banner = $("#offRoute");
+  if (!banner) return;
+  const last = s.track && s.track.length ? s.track[s.track.length - 1] : null;
+  if (s.state !== "running" || !last || !routeSegs()) { hideOffRoute(); return; }
+
+  const d = distToRoute(last.lat, last.lon);
+  if (d == null) { hideOffRoute(); return; }
+
+  if (d <= OFF_ROUTE_DIST) {   // 回到路線上
+    if (_offAlerted) toast(ttT("已回到路線"));
+    _offSince = 0; _offAlerted = 0;
+    banner.hidden = true;
+    return;
+  }
+  const now = Date.now();
+  if (!_offSince) { _offSince = now; return; }              // 剛離線 → 先觀察，別急著叫
+  if (now - _offSince < OFF_ROUTE_HOLD) return;             // 還沒持續夠久（短暫繞路不算）
+
+  banner.hidden = false;
+  banner.innerHTML = `<b>${ic("alert")} ${ttT("已偏離路線")}</b><span>${ttT("距路線")} ${Math.round(d)} m</span>`;
+  if (!_offAlerted || now - _offAlerted > OFF_ROUTE_REPEAT) {
+    _offAlerted = now;
+    if (navigator.vibrate) navigator.vibrate([180, 90, 180, 90, 180]);   // 手機在口袋裡時，震動是唯一感受得到的
+  }
+}
+function hideOffRoute() {
+  const b = $("#offRoute");
+  if (b) b.hidden = true;
+  _offSince = 0; _offAlerted = 0;
 }
 function initRecMap() {
   if (!recMap) {
@@ -2613,6 +2675,7 @@ Recorder.onUpdate(s => {
   $("#stKcal").textContent = s.kcal;
   $("#stTime").textContent = fmtTime(s.elapsedMs);
   $("#stPace").textContent = (s.state === "running" && s.instKmh != null) ? s.instKmh.toFixed(1) : "--";
+  checkOffRoute(s);   // 偏離路線警告（有路線可比對時）
   // 新記錄重置（含 busy 旗標：否則上一趟卡住的校正會讓這趟一直送不出）
   if (s.state === "idle") { _liveElev = null; _liveElevAt = 0; _liveElevLen = 0; _liveElevBusy = false; _recSeq++; }
   // GPS 高度常為 null → 即時爬升會卡在 0；用地形 DEM 節流校正，讓即時值接近結算值
@@ -2659,9 +2722,10 @@ Recorder.onUpdate(s => {
       const last = s.track[s.track.length - 1];
       off = distToRoute(last.lat, last.lon);
     }
-    $("#recStatus").innerHTML = (off != null && off > 60)
-      ? `<span class="offroute">⚠️ 偏離步道約 ${Math.round(off)}m，請確認方向</span>`
-      : `<span class="live">記錄中${off != null ? "・在路線上" : ""}</span>`;
+    // 偏離的警告交給 #offRoute 橫幅（同一套門檻＋持續判定＋震動）；這裡只做「在路線上」的正向回饋，
+    // 否則兩套門檻不同會互相打架（橫幅說偏離、狀態列同時說在路線上）。
+    const onRoute = off != null && off <= OFF_ROUTE_DIST;
+    $("#recStatus").innerHTML = `<span class="live">記錄中${onRoute ? "・在路線上" : ""}</span>`;
   } else if (s.state === "paused") $("#recStatus").textContent = "已暫停";
 
   if (s.state === "running" && s.track.length && !recPreloaded) {
