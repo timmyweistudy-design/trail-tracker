@@ -151,11 +151,11 @@ const Profiles = (() => {
       const when = new Date(r.created_at).toLocaleDateString(typeof ttLocale === "function" ? ttLocale() : "zh-TW");
       return `<div class="set-block-row rp-row" data-id="${r.id}">
         <div class="rp-what"><b>${what}</b><span>${esc(r.reason || "")} · ${when}</span></div>
-        <button class="btn ghost rp-undo" data-id="${r.id}">撤回</button></div>`;
+        <button class="btn ghost rp-undo" data-id="${r.id}" data-post="${esc(r.post_id || "")}">撤回</button></div>`;
     }).join("");
     rb.querySelectorAll(".rp-undo").forEach(b => b.addEventListener("click", async () => {
       b.disabled = true;
-      const ok = await Safety.unreport(b.dataset.id);
+      const ok = await Safety.unreport(b.dataset.id, b.dataset.post || null);
       if (typeof toast === "function") toast(ok ? "已撤回檢舉" : "撤回失敗，請先更新資料庫（phase23）");
       if (ok) renderMyReports(render, prof); else b.disabled = false;
     }));

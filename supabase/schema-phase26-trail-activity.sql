@@ -20,7 +20,7 @@ language sql stable security definer set search_path = public as $$
     select count(distinct author_id)::int as hikers, count(*)::int as hikes,
            percentile_cont(0.5) within group (order by duration_ms) filter (where duration_ms > 0) as ms,
            percentile_cont(0.5) within group (order by distance_km) filter (where distance_km > 0) as km,
-           percentile_cont(0.5) within group (order by ascent) filter (where ascent > 0) as asc
+           percentile_cont(0.5) within group (order by ascent) filter (where ascent > 0) as asc_m   -- ⚠️ 不可叫 asc：PostgreSQL 保留字
     from pool
   )
   -- k-匿名：少於 3 人時「連人數都不回」（回 0）。
@@ -30,7 +30,7 @@ language sql stable security definer set search_path = public as $$
          case when hikers >= 3 then hikes else 0 end,
          case when hikers >= 3 then ms::bigint end,
          case when hikers >= 3 then round(km::numeric, 1) end,
-         case when hikers >= 3 then asc::int end
+         case when hikers >= 3 then asc_m::int end
   from agg;
 $$;
 

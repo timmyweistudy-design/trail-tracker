@@ -220,7 +220,9 @@ body[data-view]:not([data-view="explore"]) .app-header::before { opacity: .5; }
 .card .meta span { display: inline-flex; align-items: center; gap: 3px; }
 .card .meta b { color: var(--ink); font-weight: 600; font-family: var(--num); }
 
-.badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 11px; padding-left: 6px; }
+/* align-items: center 是必要的：同一列裡的收藏鈕有 44px 觸控區（無障礙），
+   flex 預設 stretch 會把難度/親子友善那些徽章一起撐成 44px 高的胖橢圓 */
+.badges { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 11px; padding-left: 6px; }
 .badge { font-size: calc(11px * var(--fs, 1)); padding: 4px 10px; border-radius: var(--r-pill); font-weight: 600; letter-spacing: .3px; }
 .badge.diff { color: #fff; box-shadow: inset 0 -1px 0 rgba(0,0,0,.12); }
 .d1{background:var(--d1)} .d2{background:var(--d2)} .d3{background:var(--d3)}
@@ -1664,7 +1666,15 @@ html[data-theme="dark"] .disc-sec, html[data-theme="dark"] .feed-trending-h { co
 .pf-sub-head b .ic { width: 16px; height: 16px; vertical-align: -2px; margin-right: 5px; }
 .set-group { margin: 14px 0; }
 .set-label { font-weight: 700; font-size: calc(13.5px * var(--fs, 1)); color: var(--ink-soft); margin-bottom: 8px; }
-.set-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 13px; background: var(--surface-2); border-radius: var(--r-sm); margin-bottom: 7px; font-size: calc(14.5px * var(--fs, 1)); }
+/* 設定列：長說明文字（例如「別人追蹤我需要我同意（關閉＝任何人可直接追蹤）」）原本沒有 gap，
+   會整個塞滿框、緊貼勾選框。給文字留換行空間、勾選框不被壓縮，並把字級降到與其他設定一致。 */
+.set-row {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding: 12px 13px; background: var(--surface-2); border-radius: var(--r-sm); margin-bottom: 7px;
+  font-size: calc(13.5px * var(--fs, 1)); line-height: 1.45; cursor: pointer;
+}
+.set-row > span { flex: 1 1 auto; min-width: 0; }                      /* 文字可換行、不擠壓右側 */
+.set-row input { flex: 0 0 auto; width: 20px; height: 20px; accent-color: var(--brand-mid); }
 .set-empty { color: var(--ink-faint); font-size: calc(13.5px * var(--fs, 1)); padding: 8px 2px; }
 .set-block-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line-soft); }
 /* 我的檢舉：左側是被檢舉的內容摘要（可長，需截斷），右側是撤回鈕（不縮） */

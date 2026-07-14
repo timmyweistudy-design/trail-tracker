@@ -76,12 +76,23 @@ const Safety = (() => {
     }
     return data.map(r => ({ ...r, postText: r.post_id ? (posts[r.post_id] ?? null) : null, userName: r.reported_user ? (users[r.reported_user] || "") : null }));
   }
-  // 撤回檢舉（誤按可以收回；只刪得掉自己送出的，RLS 擋住別人的）
-  async function unreport(id) {
+  // 撤回檢舉（誤按可以收回；只刪得掉自己送出的，RLS 擋住別人的）。
+  // ⚠️ 檢舉時同時把貼文 id 存進本機的 tt_reported（feed.js 據此把它從動態牆濾掉），
+  //    所以撤回時「一定要」把它從本機清單移除，否則資料庫刪了、貼文還是永遠看不到。
+  async function unreport(id, postId) {
     const c = Supa.client(); if (!c || !id) return false;
     const { error } = await c.from("reports").delete().eq("id", id);
-    return !error;
+    if (error) return false;
+    if (postId) unhideLocally(postId);
+    return true;
+  }
+  function unhideLocally(postId) {
+    try {
+      const k = "tt_reported";
+      const s = new Set(JSON.parse(localStorage.getItem(k) || "[]"));
+      if (s.delete(postId)) localStorage.setItem(k, JSON.stringify([...s]));
+    } catch (e) { /* */ }
   }
 
-  return { isBlocked, blockedIds, blockedProfiles, block, unblock, reportPost, reportUser, pickReason, myReports, unreport };
+  return { isBlocked, blockedIds, blockedProfiles, block, unblock, reportPost, reportUser, pickReason, myReports, unreport, unhideLocally };
 })();
