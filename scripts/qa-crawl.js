@@ -51,6 +51,17 @@ const EXT = /net::|favicon|404 \(|Failed to load resource|CORS|opentopodata|tran
   await step("_clean1", closeAny);
   await step("記錄:分頁", async () => { await click('.tab[data-view="record"]'); await p.waitForTimeout(700); });
   await step("記錄:模擬走一小段", async () => {
+    // 模擬模式是 PRO 功能 → 巡檢時先取得會員身分（假造 Supabase 訂閱查詢），
+    // 否則點模擬會彈出升級面板，遮罩會擋掉後面所有點擊，整輪巡檢失效
+    await p.evaluate(async () => {
+      Supa.ready = () => true;
+      Supa.client = () => ({
+        auth: { getUser: async () => ({ data: { user: { id: "qa" } } }) },
+        from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { status: "active", current_period_end: null }, error: null }) }) }) }),
+      });
+      await Premium.refresh();
+    });
+    await p.waitForTimeout(300);
     await p.evaluate(() => { const t = document.getElementById("simToggle"); if (t && !t.checked) t.click(); });
     await click("#btnStart"); await p.waitForTimeout(4000); await click("#btnStop"); await p.waitForTimeout(2000);
     await click("#trackSheet .sheet-close");

@@ -156,12 +156,12 @@
     <div class="rec-opts">
       <label class="sim-toggle"><input type="checkbox" id="lowPowerToggle"> <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="8" width="15" height="8" rx="2"/><path d="M21 11v2"/><path d="M6 11v2M9 11v2"/></svg> 省電模式</label>
       <label class="sim-toggle" id="wakeLockOpt"><input type="checkbox" id="wakeLockToggle"> <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.4 1.4M17.6 17.6 19 19M19 5l-1.4 1.4M6.4 17.6 5 19"/></svg> 螢幕保持喚醒</label>
-      <label class="sim-toggle"><input type="checkbox" id="simToggle"> 模擬（無 GPS 預覽）</label>
+      <label class="sim-toggle"><input type="checkbox" id="simToggle"> 模擬（無 GPS 預覽）<span class="pro-tag">PRO</span></label>
     </div>
     <div class="link-row" style="margin-top:12px">
       <button class="link-btn" id="btnTeam"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 5.2A3 3 0 0 1 16 11M21 20a6 6 0 0 0-4-5.7"/></svg>隊友同行</button>
       <button class="link-btn" id="btnShareLoc"><svg class="ic" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>分享位置</button>
-      <button class="link-btn" id="btnImportGpx"><svg class="ic" viewBox="0 0 24 24"><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="5" r="2.2"/><path d="M8 19h6a4 4 0 0 0 0-8H10a4 4 0 0 1 0-8h6"/></svg>跟著路線走</button>
+      <button class="link-btn" id="btnImportGpx"><svg class="ic" viewBox="0 0 24 24"><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="5" r="2.2"/><path d="M8 19h6a4 4 0 0 0 0-8H10a4 4 0 0 1 0-8h6"/></svg>跟著路線走<span class="pro-tag">PRO</span></button>
     </div>
     <input type="file" id="gpxFile" accept=".gpx,application/gpx+xml" style="display:none">
     <div id="recIdle"></div>
@@ -192,7 +192,7 @@
     <div class="hist-head">
       <span class="section-title" style="margin:0">行程紀錄</span>
       <span style="display:flex;gap:8px">
-        <button class="btn-clear-all" id="btnExportGpxAll" style="display:none;color:var(--brand-deep)"><svg class="ic" viewBox="0 0 24 24"><path d="M12 4v10m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/></svg> 全部路線檔</button>
+        <button class="btn-clear-all" id="btnExportGpxAll" style="display:none;color:var(--brand-deep)"><svg class="ic" viewBox="0 0 24 24"><path d="M12 4v10m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/></svg> 全部路線檔<span class="pro-tag">PRO</span></button>
       </span>
     </div>
     <div id="historyList"></div>

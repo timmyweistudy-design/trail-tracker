@@ -1124,6 +1124,7 @@ html[lang="de"] .chip, html[lang="nl"] .chip, html[lang="ru"] .chip, html[lang="
 html[data-theme="dark"] .act-row b { color: var(--brand-mid); }
 
 /* 偏離路線警告：紅底、脈動邊框，拿出手機一眼就看到（震動負責口袋裡的提醒） */
+.off-route[hidden] { display: none; }   /* ⚠️ display:flex 會蓋掉 HTML 的 hidden 屬性 → 紅框會一直掛在記錄頁上 */
 .off-route {
   display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
   background: rgba(192,71,43,.12); border: 1.5px solid var(--danger, #c0472b); border-radius: var(--r-sm);

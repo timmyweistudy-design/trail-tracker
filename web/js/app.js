@@ -2202,6 +2202,7 @@ function playTrackReplay(pts, segLL) {
 // 重播結束 → 把單色綠線換成依坡度上色的軌跡（DEM 拿不到就維持綠線，不影響任何既有行為）
 let slopeLayer = null, slopeZoomHandler = null;
 async function paintSlope(segs, plainLine) {
+  if (typeof Premium !== "undefined" && !Premium.isOn()) return;   // PRO：坡度著色＋公里樁；非會員維持單色綠線
   if (typeof Elevation === "undefined" || !Elevation.profile || !trackMap || !Array.isArray(segs) || !segs.length) return;
   const owner = trackReplayLayer;
   const profiles = await slopeProfiles(Array.isArray(segs[0][0]) ? segs : [segs]);
@@ -2289,8 +2290,11 @@ function personalBestBreaks(rec) {
   return out;
 }
 // #2 速度：直觀呈現「這次 vs 你平常」，一句話講清楚快多少慢多少
+// PRO 判定（多處共用）：未載入 Premium 模組時當作非會員，避免免費版意外看到 PRO 內容
+function _pro() { return typeof Premium !== "undefined" && Premium.isOn(); }
 function speedHtml(rec) {
   if (rec.sim) return "";   // 模擬時間是壓縮的，速度無意義 → 不顯示
+  if (!_pro()) return "";   // 分段速度／速度趨勢：PRO
   const km = rec.distanceKm || 0;
   if (!(rec.elapsedMs > 0) || km < 0.1) return "";
   const cur = km / (rec.elapsedMs / 3.6e6);
@@ -2323,7 +2327,7 @@ function openTrackReview(rec, isNew) {
       <div class="item"><div class="l">卡路里</div><div class="v">${rec.kcal} 大卡</div></div>
       <div class="item"><div class="l">步數</div><div class="v">${(rec.steps || 0).toLocaleString()}</div></div>
       ${!rec.sim && rec.elapsedMs > 0 && km > 0.05 ? `<div class="item"><div class="l">平均速度</div><div class="v">${(km / (rec.elapsedMs / 3.6e6)).toFixed(1)} km/h</div></div>` : ""}
-      ${!rec.sim && rec.elapsedMs > 6e5 && (rec.ascent || 0) >= 100 ? `<div class="item"><div class="l">爬升速率</div><div class="v">${Math.round(rec.ascent / (rec.elapsedMs / 3.6e6))} m/hr</div></div>` : ""}
+      ${!rec.sim && rec.elapsedMs > 6e5 && (rec.ascent || 0) >= 100 && _pro() ? `<div class="item"><div class="l">爬升速率</div><div class="v">${Math.round(rec.ascent / (rec.elapsedMs / 3.6e6))} m/hr</div></div>` : ""}
       ${t3 && t3 > km + 0.05 ? `<div class="item"><div class="l">含坡度距離</div><div class="v">${t3.toFixed(2)} km</div></div>` : ""}
     </div>
     ${speedHtml(rec)}
@@ -2333,7 +2337,7 @@ function openTrackReview(rec, isNew) {
       <button class="link-btn" id="trackReplay">${ic("play")} 重播路徑</button>
       <button class="link-btn" id="track3d">${ic("mountain")} 3D 回放<span class="pro-tag">PRO</span></button>
       <button class="link-btn" id="trackCard">${ic("camera")} 分享圖卡</button>
-      <button class="link-btn" id="trackGpx">${ic("download")} 下載路線檔</button>
+      <button class="link-btn" id="trackGpx">${ic("download")} 下載路線檔<span class="pro-tag">PRO</span></button>
       <button class="link-btn" id="trackShare">${ic("share")} 分享行程</button>
       ${rec.sim ? "" : `<button class="link-btn" id="trackSocial">${ic("megaphone")} 分享到社群</button>`}
     </div>`;
@@ -2364,7 +2368,10 @@ function openTrackReview(rec, isNew) {
   $("#trackReplay").addEventListener("click", () => { if (trackPts && trackPts.length > 1) playTrackReplay(trackPts, trackSegsLL); });
   $("#track3d").addEventListener("click", () => { if (trackSegsLL && trackSegsLL.length) open3DTrack(rec.trailName || ttT("自由路線"), trackSegsLL); else toast(ttT("此步道沒有路線資料，無法 3D 顯示")); });
   $("#trackCard").addEventListener("click", () => shareHikeCard(rec));
-  $("#trackGpx").addEventListener("click", () => { GPX.exportRecord(rec); toast("已下載路線檔"); });
+  $("#trackGpx").addEventListener("click", () => {
+    if (typeof Premium !== "undefined" && !Premium.gate()) return;   // PRO：匯出路線檔
+    GPX.exportRecord(rec); toast("已下載路線檔");
+  });
   $("#trackShare").addEventListener("click", () => {
     const _L = (typeof I18n !== "undefined") ? I18n.lang() : "zh";
     const _tn = rec.trailName || ttT("自由路線"), _a = rec.ascent || 0, _km = km.toFixed(2), _t = fmtTime(rec.elapsedMs);
@@ -2624,7 +2631,10 @@ function initRecMap() {
 }
 
 // 匯入 GPX 路線當參考線
-$("#btnImportGpx").addEventListener("click", () => $("#gpxFile").click());
+$("#btnImportGpx").addEventListener("click", () => {
+  if (typeof Premium !== "undefined" && !Premium.gate()) return;   // PRO：跟著路線走（匯入 GPX）
+  $("#gpxFile").click();
+});
 $("#gpxFile").addEventListener("change", e => {
   const file = e.target.files[0];
   if (!file) return;
@@ -2816,6 +2826,10 @@ $("#lowPowerToggle").addEventListener("change", e => {
   });
 })();
 $("#simToggle").addEventListener("change", e => {
+  if (e.target.checked && typeof Premium !== "undefined" && !Premium.gate()) {   // PRO 限定 → 開升級面板並復原
+    e.target.checked = false;
+    return;
+  }
   toast(e.target.checked ? "已開模擬模式（無 GPS，沿步道路線預覽）" : "已關模擬模式");
 });
 // 取自己的社群頭像供記錄地圖的「我」標記用（未登入則維持 null＝橘點）
@@ -3114,6 +3128,7 @@ $("#btnSaveProfile").addEventListener("click", () => {
   toast("已儲存個人資料");
 });
 $("#btnExportGpxAll").addEventListener("click", async () => {
+  if (typeof Premium !== "undefined" && !Premium.gate()) return;   // PRO：批次匯出全部路線檔
   GPX.exportAll(await Store.allFull()) ? toast("已下載全部行程路線檔") : toast("尚無行程可下載");
 });
 

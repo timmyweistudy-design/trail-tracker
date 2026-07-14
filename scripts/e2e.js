@@ -117,6 +117,22 @@ const PORT = 8899;
     await page.waitForTimeout(2000);
     await page.click('.tab[data-view="record"]');
     await page.waitForTimeout(800);
+    // 偏離路線的紅色警告框：沒在記錄時絕不該出現（CSS 的 display 規則會蓋掉 hidden 屬性，踩過一次）
+    ok("記錄頁閒置時沒有偏離警告紅框", !(await page.locator("#offRoute").isVisible()));
+    // 模擬模式是 PRO 功能 → 先讓測試身分成為有效會員（假造 Supabase 的訂閱查詢）
+    await page.evaluate(async () => {
+      Supa.ready = () => true;
+      Supa.client = () => ({
+        auth: { getUser: async () => ({ data: { user: { id: "e2e" } } }) },
+        from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { status: "active", current_period_end: null }, error: null }) }) }) }),
+      });
+      await Premium.refresh();
+    });
+    await page.waitForTimeout(300);
+    ok("非會員模擬模式被鎖住（PRO）", await page.evaluate(() => {
+      const t = document.getElementById("simToggle");
+      return !!document.querySelector('.sim-toggle .pro-tag') && !t.checked;
+    }));
     await page.evaluate(() => { const t = document.getElementById("simToggle"); if (t && !t.checked) t.click(); });
     await page.click("#btnStart");
     await page.waitForTimeout(12000);   // 模擬 10 秒走完整條路線
