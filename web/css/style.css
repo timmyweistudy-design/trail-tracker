@@ -1126,6 +1126,25 @@ html[lang="de"] .chip, html[lang="nl"] .chip, html[lang="ru"] .chip, html[lang="
 html[data-theme="dark"] .act-row b { color: var(--brand-mid); }
 
 /* 偏離路線警告：紅底、脈動邊框，拿出手機一眼就看到（震動負責口袋裡的提醒） */
+/* 記錄頁「已選擇的步道」列：右側 ✕ 可退回自由路線 */
+.sel-trail[hidden] { display: none; }
+.sel-trail {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  background: var(--brand-soft); border: 1px solid var(--line-soft); border-radius: var(--r-sm);
+  padding: 6px 6px 6px 12px; margin: 8px 0;
+}
+.sel-trail .st-what { display: inline-flex; align-items: center; gap: 6px; min-width: 0;
+  font-size: calc(13px * var(--fs, 1)); color: var(--ink-soft); }
+.sel-trail .st-what b { color: var(--brand-deep); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sel-trail .st-what .ic { width: 15px; height: 15px; flex: 0 0 auto; }
+.sel-trail .st-x {
+  flex: 0 0 auto; background: none; border: none; color: var(--ink-soft); cursor: pointer;
+  min-width: 44px; min-height: 44px; display: inline-grid; place-items: center; border-radius: 50%;   /* 觸控區 44px */
+}
+.sel-trail .st-x .ic { width: 17px; height: 17px; }
+.sel-trail .st-x:active { background: rgba(0,0,0,.06); }
+html[data-theme="dark"] .sel-trail .st-x:active { background: rgba(255,255,255,.1); }
+
 .off-route[hidden] { display: none; }   /* ⚠️ display:flex 會蓋掉 HTML 的 hidden 屬性 → 紅框會一直掛在記錄頁上 */
 .off-route {
   display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;

@@ -380,6 +380,7 @@ document.querySelectorAll(".tab").forEach(btn => {
       //    而且走完全程也不會被判定「完成步道」（maybeMarkTrailDone 需要它）。
       if (Recorder.getState() === "idle") {
         selectedTrailGeo = null; selectedTrailId = null; clearPreHike();
+        hideSelectedTrail();
         Recorder._trailName = null;   // 沒清的話這趟自由記錄會被冠上上一趟的步道名
         if (routeRefLayer && recMap) { recMap.removeLayer(routeRefLayer); routeRefLayer = null; }
         if (guideLine && recMap) { recMap.removeLayer(guideLine); guideLine = null; }   // GPX/貼文帶進來的參考線也要清
@@ -1631,7 +1632,7 @@ async function openDetail(id) {
     selectedTrailGeo = g;                    // #9 再設定本步道路線（供疊圖與偏離判斷）
     selectedTrailId = t.id;                  // 記住步道 id，發文時連回該步道
     Recorder._trailName = nm;
-    $("#recStatus").textContent = `已選擇「${nm}」，按開始記錄`;
+    showSelectedTrail(nm);                   // 可取消的選定列（選錯了不必切分頁繞一圈）
     renderPreHike(t);                        // #3 行前小卡：天氣＋日落＋建議裝備
     setTimeout(() => { initRecMap(); drawSelectedRoute(); }, 80);
   });
@@ -2633,6 +2634,33 @@ function hideOffRoute() {
   if (b) b.hidden = true;
   _offSince = 0; _offAlerted = 0;
 }
+// 記錄頁「已選擇的步道」列：按 ✕ 可退回自由路線（開始記錄後就不給取消——中途換成自由路線
+// 會讓偏離警告與完成判定的依據在半路消失，數字對不上）。
+function showSelectedTrail(name) {
+  const el = $("#selTrail");
+  if (!el) return;
+  el.hidden = false;
+  el.innerHTML = `<span class="st-what">${ic("pin")} ${ttT("已選擇")}<b>${escHtml(name)}</b></span>
+    <button class="st-x" id="selTrailX" aria-label="${ttT("取消選擇，改為自由路線")}" title="${ttT("取消選擇，改為自由路線")}">${ic("x")}</button>`;
+  const x = $("#selTrailX");
+  if (x) x.addEventListener("click", clearSelectedTrail);
+  $("#recStatus").textContent = "按「開始」記錄這條步道";
+}
+function clearSelectedTrail() {
+  selectedTrailGeo = null; selectedTrailId = null;
+  Recorder._trailName = null;
+  if (routeRefLayer && recMap) { recMap.removeLayer(routeRefLayer); routeRefLayer = null; }
+  if (guideLine && recMap) { recMap.removeLayer(guideLine); guideLine = null; }
+  clearPreHike();
+  hideSelectedTrail();
+  $("#recStatus").textContent = "自由路線，按「開始」記錄路徑";
+  toast(ttT("已改為自由路線"));
+}
+function hideSelectedTrail() {
+  const el = $("#selTrail");
+  if (el) { el.hidden = true; el.innerHTML = ""; }
+}
+
 function initRecMap() {
   if (!recMap) {
     recMap = L.map("recMap", { zoomControl: false }).setView([25.033, 121.564], 15);
@@ -2941,6 +2969,7 @@ function pickSimTrail() {
 // 開始記錄（本人按鈕 / 小隊隊長廣播都走這裡）
 function startRecordingUI() {
   initRecMap();
+  hideSelectedTrail();   // 開始後不給取消：中途改自由路線會讓偏離警告/完成判定的依據在半路消失
   ensureMeAvatar();
   clearPreHike();                     // #3 開始記錄後收起行前小卡
   // 導航模式（地圖跟著方向轉）預設開；但模擬時不開——模擬每一步都在換方位，
