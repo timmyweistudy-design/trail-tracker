@@ -53,7 +53,14 @@ const Elevation = (() => {
   async function tile(x, y) {
     const k = x + "/" + y;
     if (_tiles.has(k)) return _tiles.get(k);
-    if (_tiles.size > 24) { _tiles.clear(); _ready.clear(); }   // 每張解碼後 128 KB（Int16），別讓它無限長大
+    // LRU 淘汰最舊的幾張（每張解碼後 128 KB）。
+    // ⚠️ 不可以整包 clear()：記錄中背景持續取樣（recorder 的 groundAlt）與行程回顧的坡度著色共用這份快取，
+    //    使用者一邊記錄一邊看舊行程時，整包清空會把「記錄中正在用的那張圖磚」也砍掉 → 即時爬升瞬間掉回 GPS。
+    const CAP = 48;
+    if (_tiles.size > CAP) {
+      const drop = [..._tiles.keys()].slice(0, _tiles.size - CAP + 8);   // Map 依插入序 → 前面的最舊
+      for (const k of drop) { _tiles.delete(k); _ready.delete(k); }
+    }
     const p = (async () => {
       const r = await fetch(`${TILE}/${Z}/${x}/${y}.png`);   // SW 走圖磚快取 → 預載過/看過的路段離線也命中
       if (!r.ok) throw new Error("tile " + r.status);

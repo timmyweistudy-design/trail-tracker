@@ -23,8 +23,12 @@ language sql stable security definer set search_path = public as $$
            percentile_cont(0.5) within group (order by ascent) filter (where ascent > 0) as asc
     from pool
   )
-  select hikers, hikes,
-         case when hikers >= 3 then ms::bigint end,          -- 少於 3 人 → 不回細節（k-匿名）
+  -- k-匿名：少於 3 人時「連人數都不回」（回 0）。
+  -- ⚠️ 第一版只擋了中位數、照樣回傳 hikers → 直接呼叫 RPC 就能看到「這條步道 1 人走過」，
+  --    等於公開某個人的行蹤，正是這份檔案開頭說要避免的事。前端的 hikers < 3 判斷只是 UI 遮蔽，擋不住直接呼叫。
+  select case when hikers >= 3 then hikers else 0 end,
+         case when hikers >= 3 then hikes else 0 end,
+         case when hikers >= 3 then ms::bigint end,
          case when hikers >= 3 then round(km::numeric, 1) end,
          case when hikers >= 3 then asc::int end
   from agg;

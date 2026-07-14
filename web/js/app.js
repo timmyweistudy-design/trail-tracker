@@ -348,13 +348,20 @@ function confetti() {
 let detailMap, detailOverlay, detailPoiLayer, recMap, recLine, recMarker, petMarker, _detailScroll = null;
 function petEmojiNow() { return PET_STAGES[petStageIndex(totalKm())].e; }
 // 把美食/景點標在詳情地圖（不改視角，可縮放查看周邊）
-function plotPoi(items, color) {
+// 同一批（美食／景點）重畫前先移除自己上一批的標記：
+// 快速關掉再點開同一條步道時，前一次還在飛的 Places 查詢回來會再疊一層（守衛擋不住「同一條步道」）。
+const _poiMarks = { food: [], poi: [] };
+function plotPoi(items, color, kind) {
   if (!detailMap || !detailPoiLayer || !items) return;
+  const bucket = _poiMarks[kind] || (_poiMarks[kind] = []);
+  bucket.forEach(m => { try { detailPoiLayer.removeLayer(m); } catch (e) { /* */ } });
+  bucket.length = 0;
   items.forEach(p => {
     if (p.lat == null) return;
-    L.circleMarker([p.lat, p.lon], { radius: 5, color: "#fff", weight: 1.5, fillColor: color, fillOpacity: .95 })
+    const m = L.circleMarker([p.lat, p.lon], { radius: 5, color: "#fff", weight: 1.5, fillColor: color, fillOpacity: .95 })
       .addTo(detailPoiLayer)
-      .bindPopup(`<b>${(p.name || "").replace(/[<>&]/g, "")}</b><br>${p.kind}${p.rating ? " · ★" + p.rating.toFixed(1) : ""}`);
+      .bindPopup(`<b>${escHtml(p.name)}</b><br>${escHtml(p.kind)}${p.rating ? " · ★" + p.rating.toFixed(1) : ""}`);
+    bucket.push(m);
   });
 }
 document.querySelectorAll(".tab").forEach(btn => {
@@ -1810,7 +1817,7 @@ async function loadFood(t) {
     const items = await Food.nearby(t);
     if (_detailTrail !== t) return;                    // 已切換步道 → 舊步道的美食不可以蓋到新面板
     _foodItems = items;
-    plotPoi(_foodItems, "#c2683d");
+    plotPoi(_foodItems, "#c2683d", "food");
     renderFood();
   } catch (err) {
     box.innerHTML = err && err.nokey
@@ -1854,7 +1861,7 @@ async function loadAttractions(t) {
     const pois = await Attractions.nearby(t);
     if (_detailTrail !== t) return;                    // 已切換步道
     _poiItems = pois;
-    plotPoi(_poiItems, "#3b6ea5");
+    plotPoi(_poiItems, "#3b6ea5", "poi");
     renderAttractions();
   } catch (err) {
     box.innerHTML = err && err.nokey
@@ -2202,7 +2209,7 @@ function playTrackReplay(pts, segLL) {
 // 重播結束 → 把單色綠線換成依坡度上色的軌跡（DEM 拿不到就維持綠線，不影響任何既有行為）
 let slopeLayer = null, slopeZoomHandler = null;
 async function paintSlope(segs, plainLine) {
-  if (typeof Premium !== "undefined" && !Premium.isOn()) return;   // PRO：坡度著色＋公里樁；非會員維持單色綠線
+  if (!_pro()) return;   // PRO：坡度著色＋公里樁；非會員維持單色綠線
   if (typeof Elevation === "undefined" || !Elevation.profile || !trackMap || !Array.isArray(segs) || !segs.length) return;
   const owner = trackReplayLayer;
   const profiles = await slopeProfiles(Array.isArray(segs[0][0]) ? segs : [segs]);
@@ -2292,6 +2299,12 @@ function personalBestBreaks(rec) {
 // #2 速度：直觀呈現「這次 vs 你平常」，一句話講清楚快多少慢多少
 // PRO 判定（多處共用）：未載入 Premium 模組時當作非會員，避免免費版意外看到 PRO 內容
 function _pro() { return typeof Premium !== "undefined" && Premium.isOn(); }
+// PRO 閘門：非會員→開升級面板並回 false。Premium 模組沒載入時同樣擋住（fail-closed），
+// 不可以寫成 `typeof Premium !== "undefined" && !Premium.gate()`——那在模組載入失敗時會短路成放行。
+function _proGate() {
+  if (typeof Premium === "undefined") return false;
+  return Premium.gate();
+}
 function speedHtml(rec) {
   if (rec.sim) return "";   // 模擬時間是壓縮的，速度無意義 → 不顯示
   if (!_pro()) return "";   // 分段速度／速度趨勢：PRO
@@ -2369,7 +2382,7 @@ function openTrackReview(rec, isNew) {
   $("#track3d").addEventListener("click", () => { if (trackSegsLL && trackSegsLL.length) open3DTrack(rec.trailName || ttT("自由路線"), trackSegsLL); else toast(ttT("此步道沒有路線資料，無法 3D 顯示")); });
   $("#trackCard").addEventListener("click", () => shareHikeCard(rec));
   $("#trackGpx").addEventListener("click", () => {
-    if (typeof Premium !== "undefined" && !Premium.gate()) return;   // PRO：匯出路線檔
+    if (!_proGate()) return;   // PRO：匯出路線檔
     GPX.exportRecord(rec); toast("已下載路線檔");
   });
   $("#trackShare").addEventListener("click", () => {
@@ -2632,7 +2645,7 @@ function initRecMap() {
 
 // 匯入 GPX 路線當參考線
 $("#btnImportGpx").addEventListener("click", () => {
-  if (typeof Premium !== "undefined" && !Premium.gate()) return;   // PRO：跟著路線走（匯入 GPX）
+  if (!_proGate()) return;   // PRO：跟著路線走（匯入 GPX）
   $("#gpxFile").click();
 });
 $("#gpxFile").addEventListener("change", e => {
@@ -2826,7 +2839,7 @@ $("#lowPowerToggle").addEventListener("change", e => {
   });
 })();
 $("#simToggle").addEventListener("change", e => {
-  if (e.target.checked && typeof Premium !== "undefined" && !Premium.gate()) {   // PRO 限定 → 開升級面板並復原
+  if (e.target.checked && !_proGate()) {   // PRO 限定 → 開升級面板並復原
     e.target.checked = false;
     return;
   }
@@ -3015,9 +3028,13 @@ function _teamOnStartCb(simFlag) {
   if (Recorder.getState() === "running") return;
   const tab = document.querySelector('.tab[data-view="record"]'); if (tab) tab.click();
   // 跟隨隊長的模擬模式：隊長模擬全隊模擬（在家測試才動得了）、隊長真走全隊真走
+  // 跟隨隊長的模擬模式。⚠️ 直接寫 .checked 不會觸發 change 事件 → 會繞過模擬模式的付費牆
+  // （而且勾選會留著，之後單獨記錄仍是模擬）。非會員一律不跟隨模擬，改用真實記錄。
+  const simOk = !!simFlag && _pro();
   const st = $("#simToggle");
-  if (st && st.checked !== !!simFlag) { st.checked = !!simFlag; }
-  toast(simFlag ? "👑 隊長開始了（模擬模式）！小隊一起記錄" : "👑 隊長開始了！小隊一起記錄");
+  if (st && st.checked !== simOk) { st.checked = simOk; }
+  if (simFlag && !simOk) toast("隊長使用模擬模式（PRO），你將以真實記錄同行");
+  toast(simOk ? "👑 隊長開始了（模擬模式）！小隊一起記錄" : "👑 隊長開始了！小隊一起記錄");
   if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
   startRecordingUI();
 }
@@ -3128,7 +3145,7 @@ $("#btnSaveProfile").addEventListener("click", () => {
   toast("已儲存個人資料");
 });
 $("#btnExportGpxAll").addEventListener("click", async () => {
-  if (typeof Premium !== "undefined" && !Premium.gate()) return;   // PRO：批次匯出全部路線檔
+  if (!_proGate()) return;   // PRO：批次匯出全部路線檔
   GPX.exportAll(await Store.allFull()) ? toast("已下載全部行程路線檔") : toast("尚無行程可下載");
 });
 

@@ -325,6 +325,7 @@ const I18n = (() => {
     "已偏離路線": "Off route", "距路線": "From route", "已回到路線": "Back on route",
     "人走過": "hikers", "平均耗時": "typical time", "平均爬升": "typical ascent", "最近 30 天": "Last 30 days",
     "模擬模式": "Simulation mode",
+    "隊長使用模擬模式（PRO），你將以真實記錄同行": "The leader is using Simulation (PRO) — you'll join with a real recording",
     "沒有 GPS 也能沿真實步道路線預覽整條路線": "Preview a whole trail without GPS",
     "軌跡坡度著色＋公里樁": "Slope-coloured track + km markers",
     "行程回顧地圖依坡度上色（緩坡綠→陡坡紅），每公里一個標記樁": "Track coloured by steepness (green→red) with a marker every kilometre",
