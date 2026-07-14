@@ -22,6 +22,9 @@ window.VAPID_PUBLIC_KEY = "貼上 Public Key";
 ```bash
 supabase functions deploy send-push --no-verify-jwt
 supabase secrets set VAPID_PUBLIC_KEY="..." VAPID_PRIVATE_KEY="..." VAPID_SUBJECT="mailto:你的信箱"
+# 🔐 必要：這支用 --no-verify-jwt 部署（DB webhook 不帶使用者 JWT），所以改用共享密鑰驗身分。
+#    沒有它的話，任何人知道網址就能對任意使用者發推播、還能冒用別人的名字（見 index.ts 開頭註解）。
+supabase secrets set SEND_PUSH_SECRET="$(openssl rand -hex 24)"
 # SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY 通常已自動注入；若無則一併 set
 supabase secrets set APP_ORIGIN="https://trail-tracker-0ma5.onrender.com"
 ```
@@ -30,5 +33,8 @@ supabase secrets set APP_ORIGIN="https://trail-tracker-0ma5.onrender.com"
 Dashboard → Database → Webhooks → Create：
 - Table: `notifications`，Events: `INSERT`
 - Type: `Supabase Edge Functions` → 選 `send-push`
+- **HTTP Headers 加一列**（否則 function 會回 401、推播全部發不出去）：
+  - Header: `Authorization`
+  - Value: 上一步 `openssl rand -hex 24` 產生的那串（與 `SEND_PUSH_SECRET` 一字不差）
 
 之後只要有人追蹤/按讚/留言/提及你、邀你入隊、送果實，DB 會自動建立 notification → webhook 觸發 → 推播送到你所有已訂閱裝置（含安裝到主畫面的 PWA）。

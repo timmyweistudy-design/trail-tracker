@@ -26,10 +26,18 @@ const STORE_SOURCE: Record<string, string> = {
   PLAY_STORE: "play_store",
 };
 
+// 固定時間字串比對（避免 timing side-channel 猜密鑰）
+function safeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
 Deno.serve(async (req) => {
   // 共享密鑰驗證（在 RevenueCat 後台 webhook 設定的 Authorization header 填同一個值）
   const secret = Deno.env.get("REVENUECAT_WEBHOOK_SECRET") || "";
-  if (!secret || req.headers.get("Authorization") !== secret) return new Response("unauthorized", { status: 401 });
+  if (!secret || !safeEqual(req.headers.get("Authorization") || "", secret)) return new Response("unauthorized", { status: 401 });
 
   let ev: Record<string, unknown>;
   try {

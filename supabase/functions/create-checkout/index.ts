@@ -25,15 +25,27 @@ Deno.serve(async (req) => {
     const price = (body.plan === "year" && Deno.env.get("STRIPE_PRICE_ID_YEAR"))
       ? Deno.env.get("STRIPE_PRICE_ID_YEAR")! : Deno.env.get("STRIPE_PRICE_ID")!;
 
+    // 沿用既有的 Stripe Customer，並「只給沒訂過的人」7 天試用。
+    // ⚠️ 原本每次都傳 trial_period_days: 7 且只給 customer_email（Stripe 會每次建新 Customer）
+    //    → 訂閱→試用期內取消→再訂，就能無限重複領 7 天免費，永遠不用付錢。
+    const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { data: sub } = await admin.from("subscriptions")
+      .select("stripe_customer_id, status").eq("user_id", u.user.id).maybeSingle();
+    const customerId = sub && sub.stripe_customer_id ? sub.stripe_customer_id : null;
+    const everSubscribed = !!sub;   // 有這筆 row 就代表訂閱過（webhook 寫入的）→ 不再給試用
+
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       line_items: [{ price, quantity: 1 }],
       success_url: origin + "/?premium=success",
       cancel_url: origin + "/?premium=cancel",
       client_reference_id: u.user.id,                 // 對應到我們的 user
-      customer_email: u.user.email || undefined,
+      ...(customerId ? { customer: customerId } : { customer_email: u.user.email || undefined }),
       metadata: { user_id: u.user.id },
-      subscription_data: { metadata: { user_id: u.user.id }, trial_period_days: 7 },   // 免費試用 7 天
+      subscription_data: {
+        metadata: { user_id: u.user.id },
+        ...(everSubscribed ? {} : { trial_period_days: 7 }),   // 首次訂閱才有 7 天免費試用
+      },
     });
     return new Response(JSON.stringify({ url: session.url }), { headers: { ...cors, "Content-Type": "application/json" } });
   } catch (e) {

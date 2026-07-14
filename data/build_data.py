@@ -268,11 +268,31 @@ def fetch_osm():
 
 
 def _osm_distance_km(tags):
+    """OSM 的 distance 標籤 → 公里。
+
+    ⚠️ 原本是「濾掉所有非數字字元」，等於假設值一定是純數字公里。但 OSM 的 distance 可能寫成
+    "12500 m"、"12,5 km"、"7.5mi"——濾字元後 "12500m" 會變成 12500，被當成 12500 公里（千倍誤差），
+    而且不會有任何警訊。這裡改成正確解析數值與單位。
+    """
     d = tags.get("distance")
     if not d:
         return None
-    m = "".join(c for c in str(d) if (c.isdigit() or c == "."))
-    return to_float(m)
+    raw = str(d).strip().lower().replace(",", ".")   # 歐陸寫法 12,5 → 12.5
+    num = ""
+    for c in raw:
+        if c.isdigit() or c == ".":
+            num += c
+        elif num:                                    # 數字結束（後面是單位）
+            break
+    val = to_float(num)
+    if val is None:
+        return None
+    unit = raw[len(num):].strip()
+    if unit.startswith("mi"):
+        return val * 1.609344                        # 英里
+    if unit.startswith("m") and not unit.startswith("mi"):
+        return val / 1000.0                          # 公尺
+    return val                                       # 預設/km
 
 
 # OSM 步道無官方分級 → 依實際長度估算（對齊林業署標準的「步道長度」因子級距與行程天數）。

@@ -31,10 +31,21 @@ const Events = (() => {
     if (error) { body.innerHTML = `<div class="social-empty">活動功能尚未啟用（請先執行 phase13 SQL）。</div>`; return; }
     if (!data || !data.length) { body.innerHTML = `<div class="social-empty"><span class="ee">📅</span>目前沒有揪團活動，點右上角 ＋ 發起一個！</div>`; return; }
     const ids = data.map(e => e.id);
-    const { data: rsvps } = await c.from("event_rsvps").select("event_id, user_id").in("event_id", ids);
     const myId = await me();
+    // 人數走聚合函式（只回數字）；「我有沒有報名」只查自己的列。
+    // 原本是把所有人的報名紀錄（含 user_id）整批抓到前端再自己數 → 任何登入者都能建出
+    // 「誰、幾號、會出現在哪座山」的名單，對登山 App 是實質的跟蹤風險。
     const counts = {}, mine = new Set();
-    for (const r of (rsvps || [])) { counts[r.event_id] = (counts[r.event_id] || 0) + 1; if (r.user_id === myId) mine.add(r.event_id); }
+    const { data: cs, error: cErr } = await c.rpc("event_rsvp_counts", { p_events: ids });
+    if (!cErr) for (const r of (cs || [])) counts[r.event_id] = r.n;
+    else {   // 資料庫還沒跑 phase27 → 退回舊查法（仍可運作，只是不含隱私修補）
+      const { data: rsvps } = await c.from("event_rsvps").select("event_id, user_id").in("event_id", ids);
+      for (const r of (rsvps || [])) counts[r.event_id] = (counts[r.event_id] || 0) + 1;
+    }
+    if (myId) {
+      const { data: my } = await c.from("event_rsvps").select("event_id").eq("user_id", myId).in("event_id", ids);
+      for (const r of (my || [])) mine.add(r.event_id);
+    }
     body.className = "pv-body";
     body.innerHTML = data.map(e => {
       const going = mine.has(e.id), n = counts[e.id] || 0, isMine = e.creator_id === myId;
