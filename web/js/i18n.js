@@ -813,15 +813,22 @@ I18n.start();
 // 兩層快取：同段文字只翻一次（記憶體 + localStorage 各存 120 筆，免費 API 有每日額度）
 const _trMem = new Map();
 function _trKey(text, target) { let h = 0; for (let i = 0; i < text.length; i++) h = (h * 31 + text.charCodeAt(i)) | 0; return `${target}:${h}:${text.length}`; }
-function _trCacheGet(k) {
-  if (_trMem.has(k)) return _trMem.get(k);
-  try { const c = JSON.parse(localStorage.getItem("tt_tr_cache") || "{}"); return c[k] || null; } catch { return null; }
+// key 是 32-bit 弱雜湊，理論上會碰撞（不同原文拿到別段文字的翻譯，而且不會報錯、看不出來）。
+// 解法：entry 連原文一起存，讀取時比對原文；不符就當快取沒命中，重新翻。
+function _trCacheGet(k, text) {
+  const hit = _trMem.has(k) ? _trMem.get(k) : (() => {
+    try { const c = JSON.parse(localStorage.getItem("tt_tr_cache") || "{}"); return c[k] || null; } catch { return null; }
+  })();
+  if (!hit) return null;
+  if (typeof hit === "string") return text == null ? hit : null;   // 舊格式（沒存原文）→ 只在沒給原文時信任
+  return (text != null && hit.s === text) ? hit.v : null;          // 原文對得上才算命中
 }
-function _trCacheSet(k, v) {
-  _trMem.set(k, v);
+function _trCacheSet(k, v, text) {
+  const entry = { s: text, v };
+  _trMem.set(k, entry);
   try {
     const c = JSON.parse(localStorage.getItem("tt_tr_cache") || "{}");
-    c[k] = v;
+    c[k] = entry;
     const keys = Object.keys(c);
     if (keys.length > 120) for (const old of keys.slice(0, keys.length - 120)) delete c[old];
     localStorage.setItem("tt_tr_cache", JSON.stringify(c));
@@ -829,10 +836,10 @@ function _trCacheSet(k, v) {
 }
 async function ttTranslate(text, target) {
   const ck = _trKey(text, target);
-  const hit = _trCacheGet(ck);
+  const hit = _trCacheGet(ck, text);
   if (hit) return hit;
   const out = await _ttTranslateNet(text, target);
-  if (out) _trCacheSet(ck, out);
+  if (out) _trCacheSet(ck, out, text);
   return out;
 }
 async function _ttTranslateNet(text, target) {

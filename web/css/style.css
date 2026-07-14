@@ -196,6 +196,8 @@ body[data-view]:not([data-view="explore"]) .app-header::before { opacity: .5; }
 .info-link {
   background: none; border: none; color: var(--brand-mid); font-size: calc(12.5px * var(--fs, 1));
   font-weight: 600; cursor: pointer; padding: 5px 6px; border-radius: 8px; transition: .15s;
+  min-height: 44px;   /* 觸控區下限（原本 28px，年長者不好點）；文字大小不變 */
+  display: inline-flex; align-items: center;
 }
 .info-link:active { background: var(--brand-soft); }
 
@@ -240,8 +242,10 @@ body[data-view]:not([data-view="explore"]) .app-header::before { opacity: .5; }
 .log-note:focus { outline: none; border-color: var(--brand-mid); box-shadow: 0 0 0 3px var(--brand-soft); }
 
 /* 收藏星 */
-.fav-star { position: absolute; top: 12px; right: 12px; background: none; border: none;
-  font-size: calc(23px * var(--fs, 1)); line-height: 1; color: #cbb35e; cursor: pointer; padding: 2px 4px; transition: transform .15s; }
+.fav-star { position: absolute; top: 6px; right: 6px; background: none; border: none;
+  font-size: calc(23px * var(--fs, 1)); line-height: 1; color: #cbb35e; cursor: pointer; transition: transform .15s;
+  min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center;   /* 觸控區 44px（原 31×30），星星視覺大小不變 */
+  padding: 0; }
 .fav-star:active { transform: scale(1.25); }
 .fav-star.detail { position: static; font-size: calc(12.5px * var(--fs, 1)); font-weight: 700; color: #9c7d1f;
   border: 1px solid var(--line); border-radius: var(--r-pill); padding: 5px 12px; background: var(--surface); }
@@ -632,7 +636,8 @@ body.navup-on #recMap .leaflet-map-pane { transition: transform .12s linear; }
 .pet-btn.feed:active { background: #e8c87a; }
 .pet-btn.feed:disabled { background: rgba(255,255,255,.1); color: rgba(255,255,255,.55); cursor: default; }
 .pet-btns { display: flex; gap: 8px; margin-top: 8px; }
-.pet-btn { flex: 1; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.18); color: #f3efe4; border-radius: var(--r-pill); padding: 7px 10px; font-size: calc(12px * var(--fs, 1)); font-weight: 600; cursor: pointer; transition: .15s; }
+.pet-btn { flex: 1; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.18); color: #f3efe4; border-radius: var(--r-pill); padding: 11px 10px; font-size: calc(12px * var(--fs, 1)); font-weight: 600; cursor: pointer; transition: .15s;
+  min-height: 44px; display: inline-flex; align-items: center; justify-content: center;   /* 觸控區 44px（原 34px） */ }
 .pet-btn:active { background: rgba(255,255,255,.26); transform: scale(.97); }
 
 /* 夥伴手冊 */
@@ -1009,7 +1014,8 @@ html[lang="de"] .chip, html[lang="nl"] .chip, html[lang="ru"] .chip, html[lang="
 .toolbar { display: flex; align-items: center; gap: 8px; margin: 2px 0 12px; flex-wrap: wrap; }
 .toolbar .seg { display: inline-flex; background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: var(--r-pill); padding: 3px; }
 .seg-btn {
-  border: none; background: none; cursor: pointer; border-radius: var(--r-pill); padding: 6px 13px;
+  border: none; background: none; cursor: pointer; border-radius: var(--r-pill); padding: 9px 13px;   /* 觸控區：原 30px 高 → 約 40px */
+  min-height: 40px;
   font-size: calc(12.5px * var(--fs, 1)); font-weight: 600; color: var(--ink-soft); display: inline-flex; align-items: center; gap: 5px; transition: .15s;
   white-space: nowrap;   /* 字體放大時「篩選/列表/地圖」不被擠成上下兩字 */
 }
@@ -1493,7 +1499,8 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 .ach.locked { opacity: .5; filter: grayscale(.6); }
 .ach-e { font-size: calc(30px * var(--fs, 1)); line-height: 1; }
 .ach-n { font-family: var(--serif); font-weight: 700; font-size: calc(13px * var(--fs, 1)); margin: 6px 0 3px; }
-.ach-d { font-size: calc(10.5px * var(--fs, 1)); color: var(--ink-faint); line-height: 1.4; }
+.ach-d { font-size: calc(10.5px * var(--fs, 1)); color: var(--ink-faint); line-height: 1.4;
+  overflow-wrap: anywhere; text-wrap: balance; }   /* balance：避免「完成第一次記／錄」這種孤字斷行 */
 
 /* 行程記錄分頁顯示按鈕 */
 .hist-more { width: 100%; margin: 4px 0 8px; }

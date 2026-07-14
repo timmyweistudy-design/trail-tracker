@@ -1364,16 +1364,22 @@ function condStamp() {
   if (!u) return "";
   return `　·　即時更新於 ${new Date(u).toLocaleString(ttLocale(), { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}`;
 }
+// 外部來源的字串插進 innerHTML 前一律跳脫：Google Places 的店名/簡介是店家可自訂的欄位、
+// 林業署公告也是外部資料，直接插入會破版（最壞情況是 stored XSS）。
+function escHtml(v) {
+  return String(v == null ? "" : v).replace(/[<>&"']/g, ch =>
+    ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&#39;" }[ch]));
+}
 function conditionBanner(t) {
   const c = t.condition;
   // 有官方公告（落石／坍方／崩塌／封閉等）→ 紅/黃警示橫幅
   if (c && c.status) {
     const closed = /暫停|封閉|關閉/.test(c.status);
     return `<div class="cond-banner ${closed ? "danger" : "warn"}">
-      <div class="cond-h">${closed ? "⛔" : "⚠️"} ${c.status}${c.section ? `（${c.section}）` : ""}</div>
-      ${c.title ? `<div class="cond-body">${c.title}</div>` : ""}
+      <div class="cond-h">${closed ? "⛔" : "⚠️"} ${escHtml(c.status)}${c.section ? `（${escHtml(c.section)}）` : ""}</div>
+      ${c.title ? `<div class="cond-body">${escHtml(c.title)}</div>` : ""}
       ${(c.title && typeof I18n !== "undefined" && I18n.lang() !== "zh") ? `<div class="pv-tr-row"><button class="link-btn" id="condTranslate">${ic("translate")} ${ttT("翻譯年糕")}</button></div><div class="cond-body pv-cap-tr" id="condTr" style="display:none"></div>` : ""}
-      ${c.reopen ? `<div class="cond-meta">預計重新開放：${fmtYmd(c.reopen)}　${c.dep || ""}</div>` : ""}
+      ${c.reopen ? `<div class="cond-meta">預計重新開放：${fmtYmd(c.reopen)}　${escHtml(c.dep || "")}</div>` : ""}
       <div class="cond-meta">資料來源：林業及自然保育署（請以官方公告為準）${condStamp()}</div>
     </div>`;
   }
@@ -1655,6 +1661,7 @@ async function loadAmenities(t) {
   if (!box) return;
   try {
     const items = await Amenities.nearby(t);
+    if (_detailTrail !== t) return;                    // 使用者已切到別條步道 → 這批資料不是他要看的
     if (!items || !items.length) { box.style.display = "none"; return; }
     box.innerHTML = `<div class="amen-row">` + items.map(a =>
       `<span class="amen"><b>${a.label}</b> ${(a.dist / 1000).toFixed(1)}km</span>`).join("") + `</div>`;
@@ -1666,6 +1673,7 @@ async function loadPhoto(t) {
   if (!hero) return;
   try {
     const urls = await Photos.forTrailMulti(t, 5);
+    if (_detailTrail !== t) return;                     // 已切換步道 → 別把舊步道的照片貼到新面板
     if (!urls || !urls.length) return;                  // 無照片：保留漸層等高線底
     hero.classList.remove("noimg");
     const car = document.createElement("div");
@@ -1711,6 +1719,7 @@ async function loadElevation(t) {
   if (!box) return;
   try {
     const p = await Profile.build(t.id, geoOf(t));
+    if (_detailTrail !== t) return;                    // 已切換步道
     if (!p) { box.style.display = "none"; return; }
     if (p.gain != null) {
       const kvA = $("#kvAscent"); if (kvA) kvA.textContent = p.gain + " m";   // 詳情頁即時覆蓋
@@ -1748,6 +1757,7 @@ async function loadWeather(t) {
   if (!t.lat) { box.innerHTML = `<div class="food-empty">無座標，無法查天氣</div>`; return; }
   try {
     const d = await Weather.get(t.lat, t.lon);
+    if (_detailTrail !== t) return;                    // 已切換步道 → 不要把舊步道的天氣寫進新面板
     const c = d.current, dd = d.daily;
     const [emo, txt] = Weather.desc(c.weather_code);
     const days = ["日", "一", "二", "三", "四", "五", "六"];
@@ -1795,7 +1805,9 @@ async function loadFood(t) {
   if (!t.lat) { box.innerHTML = `<div class="food-empty">此步道無座標，無法查詢周邊美食</div>`; return; }
   box.innerHTML = `<div class="food-loading">尋找附近美食中…</div>`;
   try {
-    _foodItems = await Food.nearby(t);
+    const items = await Food.nearby(t);
+    if (_detailTrail !== t) return;                    // 已切換步道 → 舊步道的美食不可以蓋到新面板
+    _foodItems = items;
     plotPoi(_foodItems, "#c2683d");
     renderFood();
   } catch (err) {
@@ -1821,7 +1833,7 @@ function renderFood() {
     <div class="food-list">${items.map(f => `
       <a class="food-item" href="${f.uri || "#"}" target="_blank" rel="noopener">
         <span class="food-kind">${f.kind}</span>
-        <span class="food-name">${f.name}</span>
+        <span class="food-name">${escHtml(f.name)}</span>
         ${foodStars(f)}
         <span class="food-dist">${(f.dist / 1000).toFixed(1)}km</span>
       </a>`).join("")}</div>
@@ -1837,7 +1849,9 @@ async function loadAttractions(t) {
   if (!box) return;
   if (!t.lat) { box.innerHTML = `<div class="food-empty">此步道無座標，無法查詢周邊景點</div>`; return; }
   try {
-    _poiItems = await Attractions.nearby(t);
+    const pois = await Attractions.nearby(t);
+    if (_detailTrail !== t) return;                    // 已切換步道
+    _poiItems = pois;
     plotPoi(_poiItems, "#3b6ea5");
     renderAttractions();
   } catch (err) {
@@ -1860,10 +1874,10 @@ function renderAttractions() {
       <a class="poi-item" href="${p.uri || "#"}" target="_blank" rel="noopener">
         <div class="poi-top">
           <span class="poi-kind">${p.kind}</span>
-          <span class="poi-name">${p.name}</span>
+          <span class="poi-name">${escHtml(p.name)}</span>
           ${p.rating ? `<span class="poi-rating">★ ${p.rating.toFixed(1)}</span>` : ""}
         </div>
-        ${p.summary ? `<div class="poi-sum">${p.summary}</div>` : ""}
+        ${p.summary ? `<div class="poi-sum">${escHtml(p.summary)}</div>` : ""}
         <div class="poi-dist">${(p.dist / 1000).toFixed(1)} km</div>
       </a>`).join("")}</div>
     <div class="food-credit">🔵 已標於上方地圖　·　來源：Google 地圖</div>`;
@@ -3486,6 +3500,8 @@ function renderAccent() {
   }));
   const rst = $("#accReset"); if (rst) rst.addEventListener("click", () => { localStorage.removeItem("tt_accent"); applySeason(); renderAccent(); });
 }
+let _themeBound = false;   // .theme-opt / .fs-opt 是靜態元素：initTheme 在還原備份後會再被呼叫，
+                           // 不擋的話每還原一次就多疊一組 click 監聽器
 function initTheme() {
   applySeason();
   applyProColor();
@@ -3493,7 +3509,7 @@ function initTheme() {
   applyTheme(mode);
   document.querySelectorAll("[data-theme-opt]").forEach(b => {
     b.classList.toggle("on", b.dataset.themeOpt === mode);
-    b.addEventListener("click", () => {
+    if (!_themeBound) b.addEventListener("click", () => {
       localStorage.setItem("tt_theme", b.dataset.themeOpt);
       applyTheme(b.dataset.themeOpt);
       document.querySelectorAll("[data-theme-opt]").forEach(x => x.classList.toggle("on", x === b));
@@ -3504,12 +3520,13 @@ function initTheme() {
   const curFs = (() => { try { return localStorage.getItem("tt_fontscale") || "1.15"; } catch (e) { return "1.15"; } })();
   document.querySelectorAll(".fs-opt").forEach(b => {
     b.classList.toggle("on", b.dataset.fs === curFs);
-    b.addEventListener("click", () => {
+    if (!_themeBound) b.addEventListener("click", () => {
       try { localStorage.setItem("tt_fontscale", b.dataset.fs); } catch (e) { /* */ }
       document.documentElement.style.setProperty("--fs", b.dataset.fs);
       document.querySelectorAll(".fs-opt").forEach(x => x.classList.toggle("on", x === b));
     });
   });
+  _themeBound = true;   // 之後再呼叫（雲端還原/匯入備份）只更新選中狀態，不再重複綁定
   // 語言清單（設定頁）：搜尋框 + 可捲動清單（國旗＋原名＋英文名），高度上限避免頁面過長
   const curLang = (typeof I18n !== "undefined") ? I18n.lang() : "zh";
   const row = document.getElementById("langRow");
