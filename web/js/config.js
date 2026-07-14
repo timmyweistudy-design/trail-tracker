@@ -13,7 +13,7 @@ window.SUPABASE_ANON_KEY = "sb_publishable_3VM6B_9iEw1vt3BTZpTo3w_-r3wkimi";
 window.SOCIAL_GOOGLE = true;
 // Web Push 推播：填入你的 VAPID 公鑰（base64url）。空＝不顯示「開啟推播」。
 // 產生金鑰：npx web-push generate-vapid-keys（公鑰放這、私鑰放 Edge Function 環境變數 VAPID_PRIVATE_KEY）。
-window.VAPID_PUBLIC_KEY = "BBBNERSxfrE0JZbrqZVWKt1agmGjCWC6SG16JoLYdxORGm7v6gXW47Cst2LSrvQBqazbxEvxMriJ3E2y9Fp20Yg";
+window.VAPID_PUBLIC_KEY = "BMYHczEtR9vWkz2gBUuJEpRpJ2APVHRPwNKQL_SZmPJYiu9rQYxSRCHLYR5Y1rhcjG8pi_y0w5qWYGOx2w-5FdA";
 // Premium 付費（Stripe）。FUNCTIONS_URL = Supabase Edge Functions 基底網址
 //   例：https://bkbkamvbczqdejrlpiqo.supabase.co/functions/v1
 // 部署好 create-checkout / stripe-webhook 後把 STRIPE_ENABLED 設 true，「升級」才會去結帳。
