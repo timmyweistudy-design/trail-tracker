@@ -353,7 +353,13 @@ const Recorder = (() => {
     cb(snapshot());
   }
 
-  function resume(sim) { if (state === "paused") start(sim); }
+  function resume(sim) {
+    if (state !== "paused") return;
+    // 繼續時重置車速/靜止的連續計數：暫停前若已累積一次超速讀數，繼續後 GPS 重新鎖定的
+    // 第一個跳點很容易湊成第二次 → 整趟被誤判成「偵測到車輛速度」自動結束（使用者全程只是走路）。
+    overSpeedHits = 0; stillHits = 0;
+    start(sim);
+  }
 
   function stopSources() {
     if (watchId != null) { navigator.geolocation.clearWatch(watchId); watchId = null; }

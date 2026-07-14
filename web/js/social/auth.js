@@ -76,6 +76,7 @@ const Auth = (() => {
     // 先撤銷推播：push_subscriptions 以瀏覽器 endpoint 為鍵，不解除的話共用裝置上
     // 下一位使用者仍會收到前一位的社群通知
     try { if (typeof Push !== "undefined" && Push.isOn && await Push.isOn()) await Push.disable(); } catch (e) { /* 不擋登出 */ }
+    try { if (typeof Premium !== "undefined" && Premium.clearCache) Premium.clearCache(); } catch (e) { /* */ }   // 會員快取不可留給下一個人
     try { await c.auth.signOut({ scope: "local" }); } catch (e) { /* 仍視為已登出 */ }
   }
 

@@ -22,6 +22,12 @@ const Premium = (() => {
     _loaded = true; sync(); return _on;   // 只有真的查到結果才寫回快取
   }
   function sync() { try { localStorage.setItem("tt_premium", _on ? "1" : "0"); } catch (e) { } }
+  // 登出時呼叫：清掉會員快取。不清的話，前一位使用者登出後只要不進「我的」分頁，
+  // PRO 功能會在這個 session 繼續放行（共用裝置上等於把會員身分留給下一個人）。
+  function clearCache() {
+    _on = false; _loaded = true; _periodEnd = null;
+    try { localStorage.removeItem("tt_premium"); localStorage.removeItem("tt_premium_since"); } catch (e) { /* */ }
+  }
   function isOn() { return _loaded ? _on : (localStorage.getItem("tt_premium") === "1"); }
   function gate() { if (isOn()) return true; openUpgrade(); return false; }
 
@@ -232,5 +238,5 @@ const Premium = (() => {
     } catch (e) { /* */ }
   }
 
-  return { refresh, isOn, gate, openUpgrade, openPortal, renderBox, handleReturn };
+  return { refresh, isOn, gate, openUpgrade, openPortal, renderBox, handleReturn, clearCache };
 })();

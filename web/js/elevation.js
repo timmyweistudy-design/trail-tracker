@@ -50,15 +50,22 @@ const Elevation = (() => {
   }
   const _tiles = new Map();   // 跨次校正共用（圖磚是靜態的）；一條軌跡通常只跨幾張
   const _ready = new Map();   // 已解碼完成的圖磚（供記錄中同步取樣，不能等 await）
+  // 真正的 LRU：命中就把它移到 Map 尾端（Map 依插入序，重新 set 等於「最近使用」）。
+  // ⚠️ 只按插入序淘汰是不夠的——記錄中最早抓的那張圖磚（＝使用者正站在上面的那張）排在最前面，
+  //    一邊記錄一邊看舊行程時（坡度著色會一次抓進大量圖磚），它會第一個被踢掉，
+  //    正是這裡想避免的事：即時爬升瞬間掉回雜訊大的 GPS。
+  function touch(k) {
+    if (!_tiles.has(k)) return;
+    const v = _tiles.get(k); _tiles.delete(k); _tiles.set(k, v);
+    if (_ready.has(k)) { const r = _ready.get(k); _ready.delete(k); _ready.set(k, r); }
+  }
   async function tile(x, y) {
     const k = x + "/" + y;
-    if (_tiles.has(k)) return _tiles.get(k);
-    // LRU 淘汰最舊的幾張（每張解碼後 128 KB）。
-    // ⚠️ 不可以整包 clear()：記錄中背景持續取樣（recorder 的 groundAlt）與行程回顧的坡度著色共用這份快取，
-    //    使用者一邊記錄一邊看舊行程時，整包清空會把「記錄中正在用的那張圖磚」也砍掉 → 即時爬升瞬間掉回 GPS。
+    if (_tiles.has(k)) { touch(k); return _tiles.get(k); }
+    // 淘汰最久沒用到的幾張（每張解碼後 128 KB）
     const CAP = 48;
     if (_tiles.size > CAP) {
-      const drop = [..._tiles.keys()].slice(0, _tiles.size - CAP + 8);   // Map 依插入序 → 前面的最舊
+      const drop = [..._tiles.keys()].slice(0, _tiles.size - CAP + 8);   // 前面的＝最久沒用到
       for (const k of drop) { _tiles.delete(k); _ready.delete(k); }
     }
     const p = (async () => {
@@ -92,6 +99,7 @@ const Elevation = (() => {
     const tx = Math.floor(fx), ty = Math.floor(fy), k = tx + "/" + ty;
     const t = _ready.get(k);
     if (!t) { tile(tx, ty).catch(() => {}); return null; }   // 首次進入這張圖磚 → 背景抓，不擋記錄
+    touch(k);   // 記錄中持續讀的這張＝最近使用，不可以被舊行程的坡度著色擠掉
     const px = Math.min(255, Math.floor((fx % 1) * 256));
     const py = Math.min(255, Math.floor((fy % 1) * 256));
     return t.e[py * t.w + px];

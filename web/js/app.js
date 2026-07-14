@@ -374,11 +374,16 @@ document.querySelectorAll(".tab").forEach(btn => {
     $("#view-" + view).classList.add("active");
     if (view === "record") {
       requestEntryPerms();   // 首次進記錄頁＝這一下點擊就是手勢，一次問完定位+方位權限
-      // 從底部分頁進入＝自由記錄，清掉先前選定步道的路線疊圖
-      selectedTrailGeo = null; selectedTrailId = null; clearPreHike();
-      if (Recorder.getState() === "idle") Recorder._trailName = null;   // 沒清的話這趟自由記錄會被冠上上一趟的步道名
-      if (routeRefLayer && recMap) { recMap.removeLayer(routeRefLayer); routeRefLayer = null; }
-      if (guideLine && recMap) { recMap.removeLayer(guideLine); guideLine = null; }   // GPX/貼文帶進來的參考線也要清
+      // 從底部分頁進入＝自由記錄，清掉先前選定步道的路線疊圖。
+      // ⚠️ 只有「沒在記錄」時才清！記錄中切去別的分頁再切回來也會走到這裡——
+      //    清掉 selectedTrailGeo 的話，這趟的偏離路線警告整趟不再觸發，
+      //    而且走完全程也不會被判定「完成步道」（maybeMarkTrailDone 需要它）。
+      if (Recorder.getState() === "idle") {
+        selectedTrailGeo = null; selectedTrailId = null; clearPreHike();
+        Recorder._trailName = null;   // 沒清的話這趟自由記錄會被冠上上一趟的步道名
+        if (routeRefLayer && recMap) { recMap.removeLayer(routeRefLayer); routeRefLayer = null; }
+        if (guideLine && recMap) { recMap.removeLayer(guideLine); guideLine = null; }   // GPX/貼文帶進來的參考線也要清
+      }
       ensureGeo();                       // 預載幾何，供模擬挑步道/疊圖用
       ensureMeAvatar();                  // 預取頭像供「我」的地圖標記
       setTimeout(initRecMap, 60);
