@@ -323,6 +323,7 @@ const I18n = (() => {
     "回復購買": "Restore purchase", "回復購買中…": "Restoring…", "找不到可回復的購買": "No purchase to restore", "款項處理中，稍後自動生效": "Payment processing — it will activate shortly", "購買失敗，請稍後再試": "Purchase failed, please try again",
     "坡度": "Grade",
     "已偏離路線": "Off route", "距路線": "From route", "已回到路線": "Back on route",
+    "人走過": "hikers", "平均耗時": "typical time", "平均爬升": "typical ascent", "最近 30 天": "Last 30 days",
     "爬升速率": "Ascent rate",
     "我的檢舉": "My reports", "撤回": "Undo", "已撤回檢舉": "Report withdrawn", "沒有檢舉任何內容": "You haven't reported anything.", "（貼文已刪除）": "(post deleted)", "（對象已不存在）": "(target no longer exists)", "撤回失敗，請先更新資料庫（phase23）": "Undo failed — update the database first (phase23)",
     "無法追蹤：你們之間有封鎖": "Can't follow — one of you has blocked the other",

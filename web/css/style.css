@@ -1109,6 +1109,20 @@ html[lang="de"] .chip, html[lang="nl"] .chip, html[lang="ru"] .chip, html[lang="
 .slope-bar i { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--d1), var(--d3), var(--d5)); }
 
 /* ---------- 重播進度條 ---------- */
+/* 「最近有人走過」人氣卡：低調但有存在感，放在「開始記錄」按鈕上方（決策位置） */
+.activity-card {
+  background: linear-gradient(135deg, var(--brand-soft), var(--surface));
+  border: 1px solid var(--line-soft); border-radius: var(--r-sm);
+  padding: 11px 13px; margin: 12px 0;
+}
+.act-h { display: flex; align-items: center; gap: 6px; font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-soft); margin-bottom: 6px; }
+.act-h .ic { width: 14px; height: 14px; }
+.act-row { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; font-size: calc(13px * var(--fs, 1)); color: var(--ink); }
+.act-row > span { white-space: nowrap; }   /* 每項統計整組換行，不要「平均爬升／↑480 m」被拆開 */
+.act-row b { font-family: var(--num); font-weight: 700; color: var(--brand-deep); font-size: calc(15px * var(--fs, 1)); }
+.act-dot { color: var(--ink-faint); }
+html[data-theme="dark"] .act-row b { color: var(--brand-mid); }
+
 /* 偏離路線警告：紅底、脈動邊框，拿出手機一眼就看到（震動負責口袋裡的提醒） */
 .off-route {
   display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;

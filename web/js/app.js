@@ -1508,6 +1508,7 @@ async function openDetail(id) {
     <div class="section-title collapsible" id="secFood">${ic("food")}步道周邊美食</div>
     <div id="foodBox">${skelCards(3)}</div>
     <div id="trailFeedBox"></div>
+    <div id="activityBox" hidden></div>
     <button class="btn primary" id="btnGoRecord">${ic("pin")}在此步道開始記錄</button>
     ${nearbyStripHtml(t)}
     <div style="font-size:11px;color:var(--ink-soft);text-align:center;margin-top:14px">${credit}</div>
@@ -1572,6 +1573,7 @@ async function openDetail(id) {
   loadWeather(t);
   loadElevation(t);
   loadTrailFeed(t);
+  loadTrailActivity(t);
   // Places 查詢（設施/美食/景點）較耗額度 → 滑到該區塊才查，省 Google 每日配額
   whenVisible($("#amenBox"), () => loadAmenities(t));
   whenVisible($("#poiBox"), () => loadAttractions(t));
@@ -2229,6 +2231,28 @@ async function saveImageFile(file) {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 // 步道詳情頁：顯示走過這條步道的山友公開貼文
+// 「最近有人走過」：只聚合使用者自己設為公開的貼文，且少於 3 人不顯示任何數字（k-匿名，
+// 否則「近 30 天 1 人走過」等於公開某個人的行蹤）。資料庫端也擋一次（schema-phase26）。
+async function loadTrailActivity(t) {
+  const box = $("#activityBox");
+  if (!box || typeof Supa === "undefined" || !Supa.ready || !Supa.ready()) return;
+  try {
+    const c = Supa.client(); if (!c) return;
+    const { data, error } = await c.rpc("trail_activity", { p_trail: String(t.id), p_days: 30 });
+    if (error || !data || !data.length) return;           // 資料庫還沒跑 phase26 → 靜默不顯示
+    if (_detailTrail !== t) return;                       // 已切換步道
+    const a = data[0];
+    if (!a.hikers || a.hikers < 3) return;                // 人太少 → 不顯示（隱私）
+    const bits = [`<span><b>${a.hikers}</b> ${ttT("人走過")}</span>`];
+    if (a.median_ms) bits.push(`<span>${ttT("平均耗時")} <b>${fmtTime(Number(a.median_ms))}</b></span>`);
+    if (a.median_ascent) bits.push(`<span>${ttT("平均爬升")} <b>↑${a.median_ascent}</b> m</span>`);
+    box.hidden = false;
+    box.className = "activity-card";
+    box.innerHTML = `<div class="act-h">${ic("users")} ${ttT("最近 30 天")}</div>
+      <div class="act-row">${bits.join(`<span class="act-dot">·</span>`)}</div>`;
+  } catch (e) { /* 沒有這個函式/離線 → 不顯示，不影響其他區塊 */ }
+}
+
 async function loadTrailFeed(t) {
   const box = $("#trailFeedBox"); if (!box) return;
   if (typeof Supa === "undefined" || !Supa.ready() || typeof Posts === "undefined" || typeof Feed === "undefined") { box.innerHTML = ""; return; }
