@@ -41,8 +41,12 @@ const SocialUI = (() => {
       <div id="subBody"></div>`);
     document.querySelectorAll(".sub-tab").forEach(b => b.addEventListener("click", () => { sub = b.dataset.sub; shell(); }));
     const into = html => { const e = document.getElementById("subBody"); if (e) e.innerHTML = html; };
-    if (sub === "friends") Feed.render(into, "friends");
-    else if (sub === "explore") Feed.render(into, "explore");
+    // 本機隱藏清單以資料庫的檢舉紀錄為準（跨裝置撤回也會生效）。動態牆要等同步完再抓，
+    // 否則會用舊的隱藏清單先濾一次 → 撤回了還是看不到那篇。
+    const synced = (typeof Safety !== "undefined" && Safety.syncReportedCache)
+      ? Safety.syncReportedCache().catch(() => {}) : Promise.resolve();
+    if (sub === "friends") synced.then(() => Feed.render(into, "friends"));
+    else if (sub === "explore") synced.then(() => Feed.render(into, "explore"));
     else if (sub === "search") Discover.render(into);
     else if (sub === "notif") { if (typeof Notifs !== "undefined") Notifs.render(into).then(updateBadge); }
     else if (sub === "me") Profiles.renderMe(into, myProf);

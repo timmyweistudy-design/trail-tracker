@@ -93,6 +93,16 @@ const Safety = (() => {
       if (s.delete(postId)) localStorage.setItem(k, JSON.stringify([...s]));
     } catch (e) { /* */ }
   }
+  // 以資料庫的檢舉紀錄為準，重建本機的隱藏清單。
+  // 本機清單只在「檢舉當下那台裝置」寫入，所以換裝置、或在別台撤回時，兩邊會對不上
+  // （撤回了卻還是看不到貼文）。開社群時同步一次即可。
+  async function syncReportedCache() {
+    const c = Supa.client(), m = await me();
+    if (!c || !m) return;
+    const { data, error } = await c.from("reports").select("post_id").eq("reporter_id", m).not("post_id", "is", null);
+    if (error || !data) return;   // 查不到（RLS 未更新/離線）→ 保留本機清單，不動它
+    try { localStorage.setItem("tt_reported", JSON.stringify(data.map(r => r.post_id))); } catch (e) { /* */ }
+  }
 
-  return { isBlocked, blockedIds, blockedProfiles, block, unblock, reportPost, reportUser, pickReason, myReports, unreport, unhideLocally };
+  return { isBlocked, blockedIds, blockedProfiles, block, unblock, reportPost, reportUser, pickReason, myReports, unreport, unhideLocally, syncReportedCache };
 })();

@@ -334,6 +334,7 @@ const I18n = (() => {
     "跟著別人的 GPX 路線走、把自己的軌跡匯出成 GPX": "Follow someone else's GPX route, export your own track",
     "爬升速率": "Ascent rate",
     "我的檢舉": "My reports", "撤回": "Undo", "已撤回檢舉": "Report withdrawn", "沒有檢舉任何內容": "You haven't reported anything.", "（貼文已刪除）": "(post deleted)", "（對象已不存在）": "(target no longer exists)", "撤回失敗，請先更新資料庫（phase23）": "Undo failed — update the database first (phase23)",
+    "已撤回檢舉，貼文回到動態牆": "Report withdrawn — the post is back in your feed",
     "無法追蹤：你們之間有封鎖": "Can't follow — one of you has blocked the other",
     "隱私權政策": "Privacy Policy", "使用條款": "Terms of Use",
     "開啟訂閱管理…": "Opening subscription portal…", "前往結帳…": "Going to checkout…",
