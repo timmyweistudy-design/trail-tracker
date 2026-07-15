@@ -39,16 +39,10 @@ workflows:
           pod install
       - name: 初始化 keychain
         script: keychain initialize
-      - name: 建立 distribution 憑證（含私鑰，存到這台建置機）
-        # 全新帳號＋雲端建置：fetch 想下載現有憑證，但私鑰只在最初建立那台電腦上，
-        # 於是報 "Cannot save Signing Certificates without certificate private key"。
-        # 解法：讓 Codemagic 自己 create 一張全新憑證——私鑰就會在這台機器上。
-        # 已存在同型憑證也沒關係，--save 會把新產生的私鑰一起存下來。
-        script: |
-          app-store-connect certificates create \
-            --type IOS_DISTRIBUTION --save || \
-          echo "（憑證可能已達上限，改用既有憑證繼續）"
-      - name: 抓取／自動建立 App Store 描述檔
+      - name: 抓取／自動建立 App Store 憑證＋描述檔
+        # 一行搞定：帳號乾淨時 fetch-signing-files --create 會自己建 distribution 憑證
+        # （私鑰留在本次建置機）＋建描述檔，兩者私鑰路徑內部一致。
+        # 之前多插一步 certificates create 反而讓私鑰接不上，已移除。
         script: |
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE --create
