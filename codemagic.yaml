@@ -18,6 +18,8 @@ workflows:
       # 名稱填在下面（例如 "TrailTracker ASC"）。需要 Apple Developer Program（US$99/年）。
       app_store_connect: TrailTracker ASC
     environment:
+      groups:
+        - signing            # CERTIFICATE_PRIVATE_KEY 存在這個變數群組裡；不引用就不會被注入 build
       node: 20
       xcode: latest
       cocoapods: default
