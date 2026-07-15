@@ -55,6 +55,14 @@ workflows:
         script: keychain add-certificates
       - name: 套用簽章描述檔到 Xcode 專案
         script: xcode-project use-profiles
+      - name: 設定唯一建置號（避免與已上傳版本重號）
+        # 上傳失敗 "attribute value has already been used" = build number 重複（第一版用了寫死的號、這版一樣）。
+        # $BUILD_NUMBER 是 Codemagic 每次建置自動遞增的計數（目前已是個位數以上），拿它當 CFBundleVersion
+        # 保證每次上傳都比前一次大、唯一。agvtool 不適用（非 apple-generic 版控）就退回 PlistBuddy 直接改。
+        script: |
+          cd "$CM_BUILD_DIR/ios/App"
+          agvtool new-version -all "$BUILD_NUMBER" \
+            || /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" App/Info.plist
       - name: 編譯 IPA
         script: |
           xcode-project build-ipa \
