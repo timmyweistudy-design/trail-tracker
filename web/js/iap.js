@@ -55,7 +55,7 @@ const IAP = (() => {
   // 回傳 "ok"（買到）/ "cancel"（使用者取消，呼叫端不要 toast）/ "fail"
   async function purchase(plan) {
     if (!available()) return "fail";
-    const ps = await plans(); if (!ps) return "fail";
+    const ps = await plans(); if (!ps) return "noplans";   // 商店拿不到方案（付費協議未生效/商品未傳播）→ 呼叫端給明確訊息
     const target = (plan === "year" ? ps.year : ps.month) || ps.month || ps.year;
     if (!target) return "fail";
     try {

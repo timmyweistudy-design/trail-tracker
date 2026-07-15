@@ -351,6 +351,7 @@ const I18n = (() => {
     "付款完成，歡迎加入 Premium！": "Payment complete — welcome to Premium!",
     "已取消結帳": "Checkout cancelled", "結帳失敗": "Checkout failed", "結帳建立失敗": "Couldn't create checkout",
     "付費功能即將開放，敬請期待": "Payments coming soon",
+    "付費方案設定中，請稍後再試": "Plans are being set up — please try again shortly",
     "請先到社群分頁登入再升級": "Sign in on the Social tab first",
     "新會員": "New member", "資深": "Senior", "元老": "Founding", "訂閱失敗": "Subscribe failed",
     "升級 Premium 解鎖": "Upgrade to unlock", "進階分析（PRO": "Advanced Analytics (PRO",

@@ -122,12 +122,18 @@ const Premium = (() => {
       return;
     }
     const ps = await IAP.plans();
-    if (ps) {
-      const m = ov.querySelector('.pm-plan[data-plan="month"] span');
-      const y = ov.querySelector('.pm-plan[data-plan="year"] span');
-      if (m && ps.month) m.textContent = ps.month.price;
-      if (y && ps.year) y.textContent = ps.year.price;
+    if (!ps) {
+      // 原生、IAP 已啟用，但商店拿不到方案——最常見是「付費 App 協議尚未生效」或商品剛建好還沒傳播。
+      // 不能顯示寫死的假價格＋可按的購買鈕（點了只會靜默失敗），改成明確告知「設定中」。
+      ov.querySelector(".pm-plans")?.remove();
+      ov.querySelector(".pm-fine")?.remove();
+      if (go) { go.disabled = true; go.textContent = ttT("付費方案設定中，請稍後再試"); }
+      return;
     }
+    const m = ov.querySelector('.pm-plan[data-plan="month"] span');
+    const y = ov.querySelector('.pm-plan[data-plan="year"] span');
+    if (m && ps.month) m.textContent = ps.month.price;
+    if (y && ps.year) y.textContent = ps.year.price;
     const r = document.createElement("button");
     r.className = "link-btn pm-restore"; r.id = "pmRestore"; r.textContent = ttT("回復購買");
     ov.querySelector(".premium-card").insertBefore(r, ov.querySelector("#pmLater"));
@@ -151,6 +157,7 @@ const Premium = (() => {
       if (!IAP.available()) { if (typeof toast === "function") toast("付費功能即將開放，敬請期待"); return; }
       const r = await IAP.purchase(plan);
       if (r === "cancel") return;                    // 使用者自己取消：安靜收工
+      if (r === "noplans") { if (typeof toast === "function") toast("付費方案設定中，請稍後再試"); return; }
       if (r !== "ok") { if (typeof toast === "function") toast("購買失敗，請稍後再試"); return; }
       if (typeof toast === "function") toast("付款完成，歡迎加入 Premium！");
       document.querySelector(".premium-mask")?.remove();
