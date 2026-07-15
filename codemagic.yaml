@@ -21,12 +21,13 @@ workflows:
       node: 20
       xcode: latest
       cocoapods: default
-      ios_signing:
-        distribution_type: app_store           # 自動用上面的 ASC key 管理簽章/描述檔
-        bundle_identifier: com.timmyweistudy.trailtracker
+      # ⚠️ 不用宣告式 ios_signing block：全新帳號什麼憑證/描述檔都沒有，宣告式那套會在
+      #    build 初始化時先 fetch（不會 create）就失敗，也跑不到下面的手動步驟。
+      #    改用 Codemagic 官方對「全新帳號」的完整手動簽章流程（憑證＋描述檔一次全自動建立）。
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
+        BUNDLE_ID: "com.timmyweistudy.trailtracker"
     scripts:
       - name: 安裝 npm 依賴
         script: npm install
@@ -36,13 +37,16 @@ workflows:
         script: |
           cd ios/App
           pod install
-      - name: 抓取（不存在就自動建立）簽章描述檔＋憑證
-        # 全新帳號還沒有任何 App Store 描述檔/憑證 → 加 --create 讓 Codemagic 用 ASC API Key 自動建立，
-        # 否則 use-profiles 找不到現有描述檔會直接失敗（No matching profiles found）。
+      - name: 初始化 keychain
+        script: keychain initialize
+      - name: 抓取／自動建立 App Store 描述檔＋憑證
+        # --create：帳號沒有現成的就用 ASC API Key 自動建立 distribution 憑證與描述檔
         script: |
-          app-store-connect fetch-signing-files "com.timmyweistudy.trailtracker" \
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE --create
-      - name: 套用簽章描述檔
+      - name: 憑證加入 keychain（build-ipa 才簽得了）
+        script: keychain add-certificates
+      - name: 套用簽章描述檔到 Xcode 專案
         script: xcode-project use-profiles
       - name: 編譯 IPA
         script: |
