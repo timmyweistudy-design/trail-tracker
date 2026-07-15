@@ -22,6 +22,6 @@ window.STRIPE_ENABLED = true;
 // 原生 App 內購（RevenueCat）。網頁版不受影響（付費仍走 Stripe）。
 // 商店產品與 RevenueCat 後台設好後把 IAP_ENABLED 設 true——設定步驟見 docs/iap-setup.md。
 // 這兩把是「public SDK key」，可以放前端（不是密鑰）。
-window.IAP_ENABLED = false;
-window.REVENUECAT_IOS_KEY = "";
+window.IAP_ENABLED = false;   // ⚠️ 沙盒實測購買成功後才改 true（見 docs/iap-setup.md 第 8 步）
+window.REVENUECAT_IOS_KEY = "appl_hOuPaGDfqdHXcBZmyBWdxqUBRGyage";
 window.REVENUECAT_ANDROID_KEY = "";
