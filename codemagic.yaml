@@ -36,6 +36,12 @@ workflows:
         script: |
           cd ios/App
           pod install
+      - name: 抓取（不存在就自動建立）簽章描述檔＋憑證
+        # 全新帳號還沒有任何 App Store 描述檔/憑證 → 加 --create 讓 Codemagic 用 ASC API Key 自動建立，
+        # 否則 use-profiles 找不到現有描述檔會直接失敗（No matching profiles found）。
+        script: |
+          app-store-connect fetch-signing-files "com.timmyweistudy.trailtracker" \
+            --type IOS_APP_STORE --create
       - name: 套用簽章描述檔
         script: xcode-project use-profiles
       - name: 編譯 IPA
