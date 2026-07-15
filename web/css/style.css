@@ -778,6 +778,7 @@ html[data-theme="dark"] .map-legend { background: rgba(27,32,23,.94); }
   display: grid; place-items: center; cursor: pointer; font-size: calc(15px * var(--fs, 1)); line-height: 1; color: var(--ink); box-shadow: var(--sh-sm); }
 .map-fs-btn:active { background: var(--brand-soft); }
 .map-3d-btn { font-family: var(--num); font-weight: 800; font-size: calc(12px * var(--fs, 1)); letter-spacing: .5px; color: var(--brand-deep); }
+.map-nav-btn.on { background: var(--brand-mid); color: #fff; }   /* 導航模式開啟時高亮 */
 /* 3D 地形全螢幕 */
 .map3d { position: fixed; inset: 0; z-index: 4000; background: #0b1a26; }
 .map3d[hidden] { display: none; }

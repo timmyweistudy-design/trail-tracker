@@ -1129,8 +1129,30 @@ function addThreeD(map, onClick) {
   };
   c.addTo(map);
 }
+// 導航／自由 切換鈕：導航模式地圖跟著方向轉，但旋轉的圖層會讓雙指縮放算不準；
+// 想仔細看地圖時切到「自由」→ 地圖轉正、縮放/拖曳正常。
+const SVG_NAV = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>';
+function addNavToggle(map) {
+  const c = L.control({ position: "topright" });
+  c.onAdd = () => {
+    const d = L.DomUtil.create("div", "map-fs-btn map-nav-btn");
+    const paint = () => { d.classList.toggle("on", _navUp); d.title = _navUp ? ttT("導航模式（地圖跟著轉）") : ttT("自由操作（可雙指縮放）"); };
+    d.innerHTML = SVG_NAV; paint();
+    L.DomEvent.disableClickPropagation(d);
+    d.addEventListener("click", () => {
+      setNavUp(!_navUp);
+      _navUserOff = !_navUp;   // 使用者手動關 → 別再被自動開回去
+      paint();
+      if (typeof toast === "function") toast(_navUp ? ttT("導航模式") : ttT("自由操作（可雙指縮放）"));
+    });
+    _a11yCtrl(d);
+    map._navBtnPaint = paint;   // navUp 被別處改動時同步鈕的狀態
+    return d;
+  };
+  c.addTo(map);
+}
 // 指北針：讀裝置方位，轉動手機時指針跟著轉、指向實際北方
-let _compassOn = false, _heading = 0, _gpsHeading = null, _navUp = false;
+let _compassOn = false, _heading = 0, _gpsHeading = null, _navUp = false, _navUserOff = false;
 function rotateCompasses() { document.querySelectorAll(".compass-rose").forEach(r => r.style.transform = `rotate(${-_heading}deg)`); }
 // 導航模式（heading-up）：只旋轉「地圖圖層面板」(tiles/markers)，控制鈕在外層不轉→四顆鈕固定、縮放正常、小隊照常。
 const NAV_SCALE = 1.8;   // 放大面板以蓋住旋轉後的角落空缺（縮放仍可用，只是視覺基準放大）
@@ -1179,6 +1201,7 @@ function setNavUp(on) {
   if (_navUp === on) return;
   _navUp = on;
   applyNavUp();
+  if (recMap && recMap._navBtnPaint) recMap._navBtnPaint();   // 切換鈕高亮跟著狀態走
   if (_navUp) { try { enableCompass(); } catch (e) { /* */ } updateMeCone(); }
   else { document.querySelectorAll("#recMap .tm-av, #recMap .pm-e").forEach(e => e.style.transform = ""); updateMeCone(); if (recMap) setTimeout(() => recMap.invalidateSize(), 60); }
 }
@@ -2664,7 +2687,7 @@ function hideSelectedTrail() {
 function initRecMap() {
   if (!recMap) {
     recMap = L.map("recMap", { zoomControl: false }).setView([25.033, 121.564], 15);
-    baseTopo().addTo(recMap); hillshadeLayer(recMap).addTo(recMap); addCompass(recMap); addRecenter(recMap); addThreeD(recMap, open3DRecording); addFullscreen(recMap);
+    baseTopo().addTo(recMap); hillshadeLayer(recMap).addTo(recMap); addCompass(recMap); addNavToggle(recMap); addRecenter(recMap); addThreeD(recMap, open3DRecording); addFullscreen(recMap);
     recLine = L.polyline([], { color: "#2f7d4f", weight: 5 }).addTo(recMap);
   }
   recMap.invalidateSize();
@@ -2749,6 +2772,7 @@ function updateGpsSig(s) {
 }
 Recorder.onUpdate(s => {
   recSnap = s;
+  syncRecButtons(s.state);   // 按鈕依 Recorder 實際狀態校正：startRecordingUI 中途若拋例外，這裡會補上暫停/結束鈕
   updateGpsSig(s);
   $("#stDist").textContent = s.distanceKm.toFixed(2);
   $("#stSteps").textContent = s.steps.toLocaleString();
@@ -2966,6 +2990,31 @@ function pickSimTrail() {
   const pool = nice.length ? nice : cands;
   return pool[Math.floor(Math.random() * pool.length)];
 }
+// 按鈕顯示「依 Recorder 實際狀態」校正——狀態驅動，不靠 handler 手動設。
+// 這是保險：startRecordingUI 中途若有任何一步拋例外（Leaflet 初始化、chainSegments、watchPosition…），
+// 手動設按鈕那幾行就不會執行 → 「開始後暫停/結束鈕沒出來」。改由每個 tick 校正，下一幀就補上。
+function syncRecButtons(state) {
+  const teamMember = typeof TeamLive !== "undefined" && TeamLive.isOn() && !TeamLive.isLeader();
+  const start = $("#btnStart"), pause = $("#btnPause"), stop = $("#btnStop"), snap = $("#btnSnap"), lock = $("#btnLock");
+  if (!start) return;
+  if (state === "running") {
+    start.style.display = "none";
+    pause.style.display = teamMember ? "none" : "block";
+    stop.style.display = teamMember ? "none" : "block";
+    if (!sim() && snap) snap.style.display = "block";
+    if (!teamMember && lock) lock.style.display = "block";
+  } else if (state === "paused") {
+    start.style.display = "block"; start.textContent = "▶ 繼續";
+    pause.style.display = "none";
+    stop.style.display = teamMember ? "none" : "block";
+  } else {   // idle
+    start.style.display = teamMember ? "none" : "block"; start.textContent = "▶ 開始";
+    pause.style.display = "none"; stop.style.display = "none";
+    if (snap) snap.style.display = "none";
+    if (lock) lock.style.display = "none";
+  }
+}
+
 // 開始記錄（本人按鈕 / 小隊隊長廣播都走這裡）
 function startRecordingUI() {
   initRecMap();
@@ -2974,7 +3023,7 @@ function startRecordingUI() {
   clearPreHike();                     // #3 開始記錄後收起行前小卡
   // 導航模式（地圖跟著方向轉）預設開；但模擬時不開——模擬每一步都在換方位，
   // 地圖會跟著不停轉動，看起來就是一直抖。模擬維持傳統的北方朝上。
-  if (!sim()) setTimeout(() => setNavUp(true), 300);
+  if (!sim() && !_navUserOff) setTimeout(() => setNavUp(true), 300);   // 使用者手動切過「自由」就別自動開回導航
   else setNavUp(false);
   const ri = $("#recIdle"); if (ri) ri.style.display = "none";
   // 模擬模式：沿步道真實路線行走（有動畫感）。沒選步道就自動挑一條真實步道。
@@ -2997,16 +3046,16 @@ function startRecordingUI() {
     const route = selectedTrailGeo && selectedTrailGeo.length ? chainSegments(selectedTrailGeo) : null;
     Recorder.setSimRoute(route);
   }
-  if (Recorder.getState() === "paused") Recorder.resume(sim());
-  else { hikePhotos = []; $("#snapCount").textContent = ""; Recorder.start(sim()); }   // 新的一趟：清空隨手拍
-  $("#btnStart").style.display = "none";
-  $("#btnPause").style.display = "block";
-  // 小隊記錄：只有隊長能結束（隊長按結束後全隊一起進結算）；隊員不顯示暫停/結束鈕
-  const teamMember = typeof TeamLive !== "undefined" && TeamLive.isOn() && !TeamLive.isLeader();
-  $("#btnStop").style.display = teamMember ? "none" : "block";
-  if (teamMember) $("#btnPause").style.display = "none";
-  if (!sim()) $("#btnSnap").style.display = "block";   // 模擬不拍照
-  if (!teamMember) $("#btnLock").style.display = "block";   // 口袋模式：鎖定畫面防誤觸
+  try {
+    if (Recorder.getState() === "paused") Recorder.resume(sim());
+    else { hikePhotos = []; $("#snapCount").textContent = ""; Recorder.start(sim()); }   // 新的一趟：清空隨手拍
+  } catch (e) {
+    if (typeof toast === "function") toast("記錄啟動失敗，請再試一次");
+    setNavUp(false);
+    syncRecButtons("idle");   // 啟動失敗 → 按鈕退回可重按「開始」，不要卡在半殘狀態
+    return;
+  }
+  syncRecButtons(Recorder.getState());   // 立即切換按鈕（onUpdate 的 tick 也會再校正一次，雙保險）
 }
 // ── 口袋模式：記錄中鎖定畫面，避免放口袋誤觸暫停/結束；長按解鎖鈕才解鎖 ──
 let _recLocked = false, _lockTimer = null, _lockSuppressClick = false;
@@ -3098,7 +3147,7 @@ function _teamOnResumeCb() {
 }
 async function finishRecording(autoVehicle) {
   const rec = Recorder.stop();
-  setNavUp(false);   // 結束記錄→退出導航視角，地圖轉正
+  setNavUp(false); _navUserOff = false;   // 結束記錄→退出導航視角、下趟恢復預設導航
   recPreloaded = false; lastKmMilestone = 0; _berryLastKm = null;   // 下次記錄重新預載/里程碑/果實錨點
   $("#btnStart").textContent = "▶ 開始";
   $("#btnStart").style.display = "block";
