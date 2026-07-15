@@ -282,6 +282,14 @@ body[data-view]:not([data-view="explore"]) .app-header::before { opacity: .5; }
 }
 .sheet.show { transform: translateY(0); }
 .sheet .grip { width: 42px; height: 4px; background: #d8d0bd; border-radius: 4px; margin: 11px auto 2px; }
+/* ⚠️ .sheet-close 用 fixed，靠「祖先有 transform → 以祖先為定位框」黏在卡片右上角。
+   但置中 modal 的進場動畫（rise）結束後 transform 變回 none → fixed 改以整個螢幕定位，
+   叉叉掉到 top:12（螢幕最頂），在原生 App 被瀏海/狀態列蓋住 → 點不到（網頁沒瀏海測不出來）。
+   給這些置中卡片一個持久 translateZ(0)（視覺中性）建立定位框，叉叉就黏回卡片右上角。
+   ⚠️ 不含 .evolve-card：它的 evolveIn 是 `both` fill 停在 transform:none，會蓋過 translateZ(0)（白加），
+      且進化特效對 transform 敏感、之前出過問題——不要動它。 */
+.pet-modal-card, .premium-card, .input-card { transform: translateZ(0); }
+
 .sheet-close {
   /* 用 fixed（面板有 transform → 以面板為定位框），捲動內容時 ✕ 黏在面板右上角不跑掉 */
   position: fixed; top: 12px; right: 14px; z-index: 1200; width: 34px; height: 34px;
