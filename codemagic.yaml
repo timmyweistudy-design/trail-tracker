@@ -42,14 +42,14 @@ workflows:
       - name: 初始化 keychain
         script: keychain initialize
       - name: 抓取／自動建立 App Store 憑證＋描述檔
-        # --certificate-key：建立 distribution 憑證需要一把 RSA 私鑰來簽發。缺這把就會報
-        # "Cannot save Signing Certificates without certificate private key"（就是先前一直卡的錯）。
-        # 這把 key 存在 Codemagic 環境變數 CERTIFICATE_PRIVATE_KEY（加密）。
-        # 用固定 key → 每次建置都重用同一張憑證，不會累積（Apple distribution 憑證上限 2 張）。
+        # 建立 distribution 憑證需要一把 RSA 私鑰來簽發（缺它就報 Cannot save ... private key）。
+        # 私鑰以「單行 base64」存在環境變數 CERTIFICATE_PRIVATE_KEY_B64（多行 PEM 直接貼會被
+        # 換行破壞 → 之前的 "value is not valid"）。這裡先解碼還原成 .pem 檔再用 @file 傳入。
         script: |
+          echo "$CERTIFICATE_PRIVATE_KEY_B64" | base64 --decode > /tmp/cert_key.pem
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --certificate-key "@env:CERTIFICATE_PRIVATE_KEY" \
+            --certificate-key "@file:/tmp/cert_key.pem" \
             --create
       - name: 憑證加入 keychain（build-ipa 才簽得了）
         script: keychain add-certificates
