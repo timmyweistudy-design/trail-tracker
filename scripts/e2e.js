@@ -181,12 +181,15 @@ const PORT = 8899;
           isNativePlatform: () => true, getPlatform: () => "ios",
           Plugins: { Purchases: {
             configure: async () => { rcConfigured = true; }, logIn: async () => {},
+            // 形狀必須跟真 SDK 一致：PurchasesOfferings = { all, current }，沒有 offerings 包裝層
+            // （見 node_modules/@revenuecat/purchases-typescript-internal-esm/dist/offerings.d.ts:421）
             getOfferings: async () => {
               if (!rcConfigured) throw new Error("There is no singleton instance. Make sure you configure Purchases before trying to get offerings.");
-              return ({ offerings: { current: { availablePackages: [
-                { packageType: "MONTHLY", product: { priceString: "US$1.99" } },
-                { packageType: "ANNUAL", product: { priceString: "US$19.99" } },
-              ] } } });
+              const cur = { identifier: "default", availablePackages: [
+                { identifier: "$rc_monthly", packageType: "MONTHLY", product: { identifier: "tt_premium_month", priceString: "US$1.99" } },
+                { identifier: "$rc_annual", packageType: "ANNUAL", product: { identifier: "tt_premium_year", priceString: "US$19.99" } },
+              ] };
+              return ({ all: { default: cur }, current: cur });
             },
             purchasePackage: async () => ({ customerInfo: { entitlements: { active: { premium: {} } } } }),
             restorePurchases: async () => ({ customerInfo: { entitlements: { active: {} } } }),

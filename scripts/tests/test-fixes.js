@@ -10,6 +10,8 @@ eval(fs.readFileSync(web("storage.js"), "utf8") + "\n;globalThis.Store = Store;"
 const Elevation = require(web("elevation.js"));
 let fails = 0;
 const ok = (name, cond) => { console.log((cond ? "✓" : "✗") + " " + name); if (!cond) fails++; };
+// 非同步斷言要 push 進來，否則結尾的 process.exit() 會在 .then() 跑之前就退出 → 測試靜默不執行、假綠燈
+const pending = [];
 
 // 1) trackSegments：gap 正確切段
 const tr = [{ lat: 25, lon: 121 }, { lat: 25.001, lon: 121 }, { lat: 25.1, lon: 121.1, gap: true }, { lat: 25.101, lon: 121.1 }];
@@ -147,6 +149,30 @@ ok("IAP 未啟用 → available() 為假", IAP.available() === false);
 global.window.IAP_ENABLED = true;
 ok("IAP 原生＋有 SDK＋已啟用 → available() 為真", IAP.available() === true);
 
+// 13b) plans() 必須看得懂「真 SDK 的回傳形狀」：PurchasesOfferings = { all, current }，沒有 offerings 包裝層。
+//   （契約來源：node_modules/@revenuecat/purchases-typescript-internal-esm/dist/offerings.d.ts:421）
+//   曾經誤寫成 r.offerings.current → 永遠 undefined → 實機面板一直顯示「付費方案設定中」；
+//   而假外掛照著同一個錯的形狀寫，測試與程式碼「互相配合的錯」，e2e 全綠卻擋不住。這裡把形狀釘死。
+{
+  const realShape = () => {
+    const cur = { identifier: "default", availablePackages: [
+      { packageType: "MONTHLY", product: { priceString: "NT$60" } },
+      { packageType: "ANNUAL", product: { priceString: "NT$600" } },
+    ] };
+    return Promise.resolve({ all: { default: cur }, current: cur });
+  };
+  global.window.Capacitor = { isNativePlatform: () => true, getPlatform: () => "ios",
+    Plugins: { Purchases: { getOfferings: realShape } } };
+  global.window.REVENUECAT_IOS_KEY = "appl_test";
+  pending.push(IAP.plans().then(ps => {
+    ok("IAP plans() 讀得懂真 SDK 的 { all, current } 形狀", !!ps && ps.month.price === "NT$60" && ps.year.price === "NT$600");
+  }));
+  // 舊的錯形狀（多包一層 offerings）必須抓不到方案——確保測試真的在驗形狀，而不是隨便給什麼都過
+  global.window.Capacitor.Plugins.Purchases.getOfferings = () => Promise.resolve({ offerings: { current: {
+    availablePackages: [{ packageType: "MONTHLY", product: { priceString: "NT$60" } }] } } });
+  pending.push(IAP.plans().then(ps => { ok("IAP plans() 對舊的錯形狀回 null（不會假裝拿到方案）", ps === null); }));
+}
+
 // 14) 海拔校正改用 terrarium 高程圖磚（z14）：解碼公式與圖磚座標換算
 ok("terrarium 解碼：海平面", Elevation.decode(128, 0, 0) === 0);
 ok("terrarium 解碼：玉山約 3952m", Math.abs(Elevation.decode(143, 112, 0) - 3952) < 1);
@@ -178,5 +204,7 @@ ok("terrarium 解碼：負高度（死海）", Elevation.decode(126, 40, 0) < 0)
   }
 }
 
-console.log(fails ? `✗ ${fails} 個測試失敗` : "✓ 單元測試全部通過");
-process.exit(fails ? 1 : 0);
+Promise.all(pending).then(() => {                 // 等非同步斷言跑完再結算，否則它們等於沒執行
+  console.log(fails ? `✗ ${fails} 個測試失敗` : "✓ 單元測試全部通過");
+  process.exit(fails ? 1 : 0);
+});

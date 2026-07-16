@@ -39,8 +39,11 @@ const IAP = (() => {
   async function plans() {
     if (!available()) return null;
     try {
+      // getOfferings() 回的是 PurchasesOfferings = { all, current }——沒有 offerings 這層包裝。
+      // 曾經誤寫成 r.offerings.current（永遠 undefined → 面板一直顯示「設定中」），且假外掛照著錯的
+      // 形狀寫、跟程式碼互相配合，e2e 因此全綠。動這裡前先看 node_modules 的 .d.ts，不要照記憶寫。
       const r = await plugin().getOfferings();
-      const cur = r && r.offerings && r.offerings.current;
+      const cur = r && r.current;
       if (!cur || !Array.isArray(cur.availablePackages)) return null;
       const pick = k => {
         const p = cur.availablePackages.find(x => x.packageType === k);
