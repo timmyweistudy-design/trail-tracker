@@ -167,14 +167,27 @@ const PORT = 8899;
       const p2 = await browser.newPage({ viewport: { width: 390, height: 844 } });
       await p2.addInitScript(() => {
         try { localStorage.setItem("tt_onboarded_v2", "1"); } catch (e) { }
+        // 假的已登入 session：升級面板要拿 Supabase user id 當 RevenueCat 的 app_user_id 才能 configure。
+        // supabase-js 直接讀這個 storage key，expires_at 給未來時間就不會去連網 refresh。
+        try {
+          localStorage.setItem("sb-bkbkamvbczqdejrlpiqo-auth-token", JSON.stringify({
+            access_token: "e2e-fake", refresh_token: "e2e-fake", token_type: "bearer",
+            expires_in: 86400, expires_at: Math.floor(Date.now() / 1000) + 86400,
+            user: { id: "e2e-user-0001", email: "e2e@example.com", user_metadata: {} },
+          }));
+        } catch (e) { }
+        let rcConfigured = false;   // 真 SDK 沒 configure() 過就 getOfferings() 會拋錯，假外掛必須一樣嚴格
         window.Capacitor = {
           isNativePlatform: () => true, getPlatform: () => "ios",
           Plugins: { Purchases: {
-            configure: async () => {}, logIn: async () => {},
-            getOfferings: async () => ({ offerings: { current: { availablePackages: [
-              { packageType: "MONTHLY", product: { priceString: "US$1.99" } },
-              { packageType: "ANNUAL", product: { priceString: "US$19.99" } },
-            ] } } }),
+            configure: async () => { rcConfigured = true; }, logIn: async () => {},
+            getOfferings: async () => {
+              if (!rcConfigured) throw new Error("There is no singleton instance. Make sure you configure Purchases before trying to get offerings.");
+              return ({ offerings: { current: { availablePackages: [
+                { packageType: "MONTHLY", product: { priceString: "US$1.99" } },
+                { packageType: "ANNUAL", product: { priceString: "US$19.99" } },
+              ] } } });
+            },
             purchasePackage: async () => ({ customerInfo: { entitlements: { active: { premium: {} } } } }),
             restorePurchases: async () => ({ customerInfo: { entitlements: { active: {} } } }),
           } },

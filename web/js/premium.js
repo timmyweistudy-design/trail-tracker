@@ -111,6 +111,21 @@ const Premium = (() => {
     window.open(url, "_blank", "noopener");
   }
 
+  // RevenueCat 的 configure() 一定要先跑，getOfferings() 才不會拋錯。原本它只掛在 social/auth.js
+  // 的 onAuthStateChange 裡，而那個 listener 只有切到社群分頁（SocialUI.onShow）才註冊——使用者
+  // 開 App 直接點升級就永遠沒 configure 過，面板會誤報「設定中」。這裡自己補齊整條前置。
+  // 回傳值：uid = 可購買；"nologin" = 尚未登入；"fail" = configure 失敗。
+  async function ensureIapReady() {
+    if (typeof Supa === "undefined" && window.loadSocial) { try { await window.loadSocial(); } catch (e) { /* 載不到就當未登入降級 */ } }
+    if (typeof Supa === "undefined" || !Supa.ready()) return "nologin";
+    const c = Supa.client(); if (!c) return "nologin";
+    let uid = null;
+    try { const { data } = await c.auth.getSession(); uid = (data && data.session && data.session.user) ? data.session.user.id : null; }
+    catch (e) { return "nologin"; }
+    if (!uid) return "nologin";
+    return (await IAP.init(uid)) ? uid : "fail";
+  }
+
   // 原生 App 專用調整。Apple 要求：價格須與商店一致（不能寫死 NT$60）、必須能回復購買。
   async function applyNative(ov) {
     if (typeof IAP === "undefined" || !IAP.native()) return;
@@ -121,7 +136,16 @@ const Premium = (() => {
       if (go) { go.disabled = true; go.textContent = ttT("付費功能即將開放，敬請期待"); }
       return;
     }
-    const ps = await IAP.plans();
+    // 未登入不能買：RevenueCat 的 app_user_id 必須等於 Supabase user id，否則 webhook 寫回來對不到人
+    // （錢收了但功能沒解鎖）。這跟 Stripe 那條路徑的前提一致，只是訊息要講清楚、不能混進「設定中」。
+    const st = await ensureIapReady();
+    if (st === "nologin") {
+      ov.querySelector(".pm-plans")?.remove();
+      ov.querySelector(".pm-fine")?.remove();
+      if (go) { go.disabled = true; go.textContent = ttT("請先到社群分頁登入再升級"); }
+      return;
+    }
+    const ps = st === "fail" ? null : await IAP.plans();
     if (!ps) {
       // 原生、IAP 已啟用，但商店拿不到方案——最常見是「付費 App 協議尚未生效」或商品剛建好還沒傳播。
       // 不能顯示寫死的假價格＋可按的購買鈕（點了只會靜默失敗），改成明確告知「設定中」。
@@ -155,6 +179,8 @@ const Premium = (() => {
     // 原生 App 一律走 IAP：Apple/Google 規定 App 內數位功能不得用外部金流，走 Stripe 會被拒審
     if (typeof IAP !== "undefined" && IAP.native()) {
       if (!IAP.available()) { if (typeof toast === "function") toast("付費功能即將開放，敬請期待"); return; }
+      const st = await ensureIapReady();   // 面板開著時可能才登入/登出，購買當下重新確認一次
+      if (st === "nologin") { if (typeof toast === "function") toast(ttT("請先到社群分頁登入再升級")); return; }
       const r = await IAP.purchase(plan);
       if (r === "cancel") return;                    // 使用者自己取消：安靜收工
       if (r === "noplans") { if (typeof toast === "function") toast("付費方案設定中，請稍後再試"); return; }
