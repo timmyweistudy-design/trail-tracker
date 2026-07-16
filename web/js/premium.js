@@ -152,6 +152,16 @@ const Premium = (() => {
       ov.querySelector(".pm-plans")?.remove();
       ov.querySelector(".pm-fine")?.remove();
       if (go) { go.disabled = true; go.textContent = ttT("付費方案設定中，請稍後再試"); }
+      // 診斷：把商店真正回的原因印在畫面上。「設定中」本身不帶任何資訊，害這個 bug 被誤判了三輪
+      // （先怪後台、再怪 configure 時機，真兇其實是讀錯 getOfferings 形狀）。錯誤同時會進
+      // client_errors 表。TestFlight 期間用，正式上架前可連同 IAP.lastError() 一起移除。
+      const why = (typeof IAP.lastError === "function") ? IAP.lastError() : "";
+      if (why && go && go.parentNode) {
+        const d = document.createElement("div");
+        d.style.cssText = "font-size:calc(11px * var(--fs,1));opacity:.6;margin-top:8px;word-break:break-word;text-align:center;";
+        d.textContent = why;
+        go.parentNode.insertBefore(d, go.nextSibling);
+      }
       return;
     }
     const m = ov.querySelector('.pm-plan[data-plan="month"] span');

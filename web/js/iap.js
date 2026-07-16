@@ -4,6 +4,21 @@
 const IAP = (() => {
   const ENTITLEMENT = "premium";
   let _configured = false;
+  let _lastErr = "";
+
+  // IAP 的失敗一律被 catch 吞掉 → 畫面上全都長成「設定中」，無從分辨是沒 configure、
+  // 抓不到產品、key 錯還是網路斷。這裡把真正的原因留下來：記進 phase19 的錯誤佇列
+  // （app.js 開機 6 秒後批次上傳到 client_errors 表），並供畫面直接顯示。
+  function note(stage, e) {
+    const raw = (e && (e.message || e.code)) || (typeof e === "string" ? e : "") || "unknown";
+    _lastErr = ("IAP " + stage + ": " + raw).slice(0, 300);
+    try {
+      const a = JSON.parse(localStorage.getItem("tt_errors") || "[]");
+      a.unshift({ t: new Date().toISOString(), m: _lastErr });
+      localStorage.setItem("tt_errors", JSON.stringify(a.slice(0, 20)));
+    } catch (_) { /* 無 localStorage 就算了，不能因為記錯誤而再噴一個錯誤 */ }
+  }
+  function lastError() { return _lastErr; }
 
   function plugin() {
     const w = (typeof window !== "undefined") ? window : {};
@@ -26,13 +41,16 @@ const IAP = (() => {
 
   // 登入後呼叫：把 RevenueCat 的 app_user_id 綁成 Supabase user id，webhook 才對得回同一個人
   async function init(uid) {
-    if (!available() || !uid) return false;
+    if (!available()) { note("init", "available() 為假（IAP_ENABLED/原生/外掛 三者有缺）"); return false; }
+    if (!uid) { note("init", "沒有 uid（未登入）"); return false; }
     const P = plugin();
+    const key = apiKey();
+    if (!key) { note("init", "apiKey 是空的（platform=" + ((window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform()) || "?") + "）"); return false; }
     try {
-      if (!_configured) { await P.configure({ apiKey: apiKey(), appUserID: uid }); _configured = true; }
+      if (!_configured) { await P.configure({ apiKey: key, appUserID: uid }); _configured = true; }
       else await P.logIn({ appUserID: uid });
       return true;
-    } catch (e) { return false; }
+    } catch (e) { note(_configured ? "logIn" : "configure", e); return false; }
   }
 
   // 商店回傳的方案（含當地價格字串）：Apple 規定價格必須與商店一致，不能寫死 NT$60
@@ -42,17 +60,23 @@ const IAP = (() => {
       // getOfferings() 回的是 PurchasesOfferings = { all, current }——沒有 offerings 這層包裝。
       // 曾經誤寫成 r.offerings.current（永遠 undefined → 面板一直顯示「設定中」），且假外掛照著錯的
       // 形狀寫、跟程式碼互相配合，e2e 因此全綠。動這裡前先看 node_modules 的 .d.ts，不要照記憶寫。
+      if (!_configured) { note("plans", "還沒 configure() 就要方案"); return null; }
       const r = await plugin().getOfferings();
       const cur = r && r.current;
-      if (!cur || !Array.isArray(cur.availablePackages)) return null;
+      if (!cur) { note("plans", "沒有 current offering（後台 offering 沒設成 current？keys=" + Object.keys((r && r.all) || {}).join(",") + "）"); return null; }
+      if (!Array.isArray(cur.availablePackages)) { note("plans", "current offering 沒有 availablePackages 陣列"); return null; }
       const pick = k => {
         const p = cur.availablePackages.find(x => x.packageType === k);
         return p ? { pkg: p, price: (p.product && p.product.priceString) || "" } : null;
       };
       const month = pick("MONTHLY"), year = pick("ANNUAL");
-      if (!month && !year) return null;
+      if (!month && !year) {
+        note("plans", "offering「" + (cur.identifier || "?") + "」裡沒有 MONTHLY/ANNUAL package（實際有：" +
+          cur.availablePackages.map(x => x.packageType).join(",") + "）");
+        return null;
+      }
       return { month, year };
-    } catch (e) { return null; }
+    } catch (e) { note("getOfferings", e); return null; }
   }
 
   // 回傳 "ok"（買到）/ "cancel"（使用者取消，呼叫端不要 toast）/ "fail"
@@ -67,6 +91,7 @@ const IAP = (() => {
       return (ent && ent[ENTITLEMENT]) ? "ok" : "fail";
     } catch (e) {
       if (e && (e.userCancelled || String(e.code) === "1" || (e.message || "").toLowerCase().includes("cancel"))) return "cancel";
+      note("purchasePackage", e);
       return "fail";
     }
   }
@@ -87,6 +112,6 @@ const IAP = (() => {
                    : "https://play.google.com/store/account/subscriptions";
   }
 
-  return { available, native, init, plans, purchase, restore, manageUrl };
+  return { available, native, init, plans, purchase, restore, manageUrl, lastError };
 })();
 if (typeof module !== "undefined" && module.exports) module.exports = IAP;

@@ -78,6 +78,7 @@ const BACKUP_EXEMPT = new Set([
   "tt_fontscale",                                         // 字體大小：裝置無障礙偏好
   "tt_recent",                                           // 最近搜尋：裝置本機歷史
   "tt_tr_cache", "tt_places_quota", "tt_errors_sent",     // 翻譯快取/用量統計/錯誤上報游標：裝置性
+  "tt_errors",                                            // 錯誤佇列（index.html/iap.js 寫、app.js 上傳到 client_errors）：診斷用，不跨機還原
   "tt_data_uid",                                          // 本機資料歸屬帳號：防多帳號互相覆蓋雲端備份，裝置性不備份
   "tt_backup_pending",                                    // 離線待備份旗標：回線補送用的暫態，裝置性不備份
 ]);

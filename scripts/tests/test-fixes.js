@@ -161,16 +161,23 @@ ok("IAP 原生＋有 SDK＋已啟用 → available() 為真", IAP.available() ==
     ] };
     return Promise.resolve({ all: { default: cur }, current: cur });
   };
-  global.window.Capacitor = { isNativePlatform: () => true, getPlatform: () => "ios",
-    Plugins: { Purchases: { getOfferings: realShape } } };
+  const P = { configure: async () => {}, getOfferings: realShape };
+  global.window.Capacitor = { isNativePlatform: () => true, getPlatform: () => "ios", Plugins: { Purchases: P } };
   global.window.REVENUECAT_IOS_KEY = "appl_test";
-  pending.push(IAP.plans().then(ps => {
-    ok("IAP plans() 讀得懂真 SDK 的 { all, current } 形狀", !!ps && ps.month.price === "NT$60" && ps.year.price === "NT$600");
-  }));
-  // 舊的錯形狀（多包一層 offerings）必須抓不到方案——確保測試真的在驗形狀，而不是隨便給什麼都過
-  global.window.Capacitor.Plugins.Purchases.getOfferings = () => Promise.resolve({ offerings: { current: {
-    availablePackages: [{ packageType: "MONTHLY", product: { priceString: "NT$60" } }] } } });
-  pending.push(IAP.plans().then(ps => { ok("IAP plans() 對舊的錯形狀回 null（不會假裝拿到方案）", ps === null); }));
+  // plans() 需要先 configure()（真 SDK 沒 configure 就 getOfferings 會拋錯），所以先 init 再驗形狀
+  pending.push(IAP.init("uid-test")
+    .then(okInit => { ok("IAP init() 有 key＋有 uid → configure 成功", okInit === true); return IAP.plans(); })
+    .then(ps => {
+      ok("IAP plans() 讀得懂真 SDK 的 { all, current } 形狀", !!ps && ps.month.price === "NT$60" && ps.year.price === "NT$600");
+      // 舊的錯形狀（多包一層 offerings）必須抓不到方案——確保測試真的在驗形狀，而不是隨便給什麼都過
+      P.getOfferings = () => Promise.resolve({ offerings: { current: {
+        availablePackages: [{ packageType: "MONTHLY", product: { priceString: "NT$60" } }] } } });
+      return IAP.plans();
+    })
+    .then(ps => {
+      ok("IAP plans() 對舊的錯形狀回 null（不會假裝拿到方案）", ps === null);
+      ok("IAP 失敗時 lastError() 說得出原因（不再只有「設定中」）", /current offering/.test(IAP.lastError()));
+    }));
 }
 
 // 14) 海拔校正改用 terrarium 高程圖磚（z14）：解碼公式與圖磚座標換算
