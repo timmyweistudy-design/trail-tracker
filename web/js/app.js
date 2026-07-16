@@ -2887,7 +2887,7 @@ $("#lowPowerToggle").addEventListener("change", e => {
   const chk = $("#wakeLockToggle"), opt = $("#wakeLockOpt");
   if (!chk) return;
   if (!("wakeLock" in navigator)) { if (opt) opt.style.display = "none"; return; }
-  chk.checked = localStorage.getItem("tt_wakelock") === "1";
+  chk.checked = localStorage.getItem("tt_wakelock") !== "0";   // 預設開（記錄中螢幕不熄滅較符合登山情境），除非使用者明確關掉
   Recorder.setWake(chk.checked);
   chk.addEventListener("change", e => {
     localStorage.setItem("tt_wakelock", e.target.checked ? "1" : "0");

@@ -153,7 +153,9 @@
     </div>
     <button class="btn ghost" id="btnLock" style="display:none;margin-top:10px" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg> <span class="lock-label">鎖定畫面</span></button>
     <button class="btn ghost" id="btnSnap" style="display:none;margin-top:10px"><svg class="ic" viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4V8Z"/><circle cx="12" cy="13" r="3"/></svg> 隨手拍（記錄當下里程）<span id="snapCount"></span></button>
-    <input type="file" id="snapInput" accept="image/*" capture="environment" style="display:none">
+    <!-- 不用 capture="environment"：該屬性在 Capacitor iOS WKWebView 常讓 file input 點了完全沒反應。
+         拿掉後 WebView 會彈原生選單（拍照／相簿），較可靠，也讓使用者能選已拍好的照片。 -->
+    <input type="file" id="snapInput" accept="image/*" style="display:none">
     <div class="rec-opts">
       <label class="sim-toggle"><input type="checkbox" id="lowPowerToggle"> <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="8" width="15" height="8" rx="2"/><path d="M21 11v2"/><path d="M6 11v2M9 11v2"/></svg> 省電模式</label>
       <label class="sim-toggle" id="wakeLockOpt"><input type="checkbox" id="wakeLockToggle"> <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.4 1.4M17.6 17.6 19 19M19 5l-1.4 1.4M6.4 17.6 5 19"/></svg> 螢幕保持喚醒</label>
