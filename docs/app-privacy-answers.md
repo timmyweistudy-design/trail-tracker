@@ -20,7 +20,10 @@
 | **Health & Fitness ▸ Fitness**（里程/步數/卡路里） | 是 | App Functionality | 是（登入雲端備份時） | 否 |
 
 未登入使用時：位置與健身資料**只存在本機**、不上傳，可勾「用於 App 功能、不連結身分」。
-> 若日後加入自動崩潰/錯誤回報上傳，要另外勾 **Diagnostics ▸ Crash Data**。目前診斷是手動複製，不自動上傳。
+
+| **Diagnostics ▸ Other Diagnostic Data** | 是（登入者） | App Functionality（找 bug／維運） | 是 | 否 |
+
+> ⚠️ **這欄一定要勾**：phase19 起，前端 JS 錯誤（含 IAP 失敗原因）已**自動上傳**到 `client_errors` 表（`app.js` 開機 6 秒批次送、僅已登入者）。這不是「手動複製」了，App Privacy 標籤若沒申報這項＝與實際行為不符，是拒審/下架風險。歸類用 **Other Diagnostic Data**（不是 Crash Data——上傳的是 JS 錯誤訊息字串，不是原生崩潰堆疊）。訊息裡不含定位/健身數值，但含 user_id（Linked=是）。
 
 ## Google Play ▸ Data safety
 - **資料是否加密傳輸**：是（HTTPS）。

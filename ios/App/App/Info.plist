@@ -54,6 +54,12 @@
 	<string>循徑拾光需要定位來記錄你的登山路徑、里程與爬升。</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>允許背景定位，才能在螢幕關閉或切到其他 App 時仍持續記錄你的路徑。</string>
+	<!-- 相機/相簿：發文加照片、隨手拍（web input type=file capture）觸發時系統會用；
+	     缺用途字串在新版 iOS 可能開不了相機或被審核詢問，故補上。 -->
+	<key>NSCameraUsageDescription</key>
+	<string>拍照記錄步道風景，或為你的貼文與夥伴加上照片。</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>從相簿選擇照片，用於貼文、頭像與封面。</string>
 	<!-- 背景定位：螢幕關/App 進背景仍持續記錄軌跡 -->
 	<key>UIBackgroundModes</key>
 	<array>
