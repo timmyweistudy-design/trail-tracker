@@ -23,5 +23,5 @@ window.STRIPE_ENABLED = true;
 // 商店產品與 RevenueCat 後台設好後把 IAP_ENABLED 設 true——設定步驟見 docs/iap-setup.md。
 // 這兩把是「public SDK key」，可以放前端（不是密鑰）。
 window.IAP_ENABLED = true;    // 原生 App 內購已上線（RevenueCat）；網頁版仍走 Stripe，不受影響
-window.REVENUECAT_IOS_KEY = "appl_hOuPaGDfqdHXcBZmyBWdxqUBRGyage";
+window.REVENUECAT_IOS_KEY = "appl_hOuPaGDfqdHXcBZmyBWdxqUBRGy";   // public key 固定 32 字元（appl_ + 27）；曾經尾巴多貼 age 三個字 → 401 Invalid API Key
 window.REVENUECAT_ANDROID_KEY = "";

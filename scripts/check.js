@@ -172,6 +172,21 @@ try {
   }
 } catch (e) { err("[i18n] 覆蓋檢查本身失敗：" + (e && e.message)); }
 
+// J. RevenueCat public SDK key 格式：appl_/goog_ + 27 個英數，固定 32 字元。
+//    金鑰貼錯（尾巴多帶字元）只會在實機拿到 401 Invalid API Key，而畫面上只顯示「設定中」，
+//    要燒掉一整輪 Codemagic build 才發現——實際發生過（多貼了 age 三個字，查了兩天）。靜態就擋掉。
+{
+  const cfg = read(path.join(WEB, "js", "config.js"));
+  for (const [name, prefix] of [["REVENUECAT_IOS_KEY", "appl"], ["REVENUECAT_ANDROID_KEY", "goog"]]) {
+    const m = cfg.match(new RegExp(name + '\\s*=\\s*"([^"]*)"'));
+    const v = m ? m[1] : "";
+    if (!v) continue;                                   // 空＝該平台還沒上內購，正常
+    if (!new RegExp("^" + prefix + "_[A-Za-z0-9]{27}$").test(v))
+      err(`[IAP] ${name} 格式不對（長度 ${v.length}，應為 ${prefix}_ 加 27 個英數共 32 字元）：「${v}」`
+        + `——貼錯只會在實機回 401 Invalid API Key，畫面卻只顯示「設定中」`);
+  }
+}
+
 // G. 跑核心邏輯單元測試
 try { execFileSync(process.execPath, [path.join(__dirname, "tests", "test-fixes.js")], { stdio: "pipe" }); }
 catch (e) { err(`[測試] 單元測試失敗：\n${String(e.stdout || e.message).trim().split("\n").filter(l => l.startsWith("✗")).join("\n")}`); }
