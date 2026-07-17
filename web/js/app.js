@@ -1032,7 +1032,7 @@ function flyAlong() {
 }
 async function _open3D(name, geom, opts) {
   opts = opts || {};
-  if (typeof Premium !== "undefined" && !Premium.gate()) return;   // 3D 為 PRO 功能，非會員→開升級面板
+  if (!_proGate()) return;   // 3D 為 PRO 功能，非會員→開升級面板
   if (!geom || !geom.length) { toast(ttT("此步道沒有路線資料，無法 3D 顯示")); return; }
   const ov = $("#map3d"); if (!ov) return;
   if (!navigator.onLine) { toast(ttT("3D 地形需要網路")); return; }
@@ -1984,7 +1984,7 @@ function renderAttractions() {
 
 // Premium：離線地圖免費 5 次，用完才需升級。回傳是否允許本次下載（允許則計入並提醒剩餘）。
 // 非會員離線地圖：以容量（MB）計額度，一次大量下載也照實際大小扣，會員不限
-const OFFLINE_FREE_MB = 50;
+const OFFLINE_FREE_MB = 10;
 const TILE_EST_MB = 0.02;   // 估每張圖磚約 20 KB（顯示用；實際扣款以下載 bytes 為準）
 function offlineMbUsed() { return +(localStorage.getItem("tt_offline_mb") || 0); }
 function addOfflineMb(mb) { if (mb > 0) localStorage.setItem("tt_offline_mb", String(+(offlineMbUsed() + mb).toFixed(2))); }
@@ -3385,7 +3385,7 @@ $("#btnDiag").addEventListener("click", async () => {
   if (navigator.clipboard) navigator.clipboard.writeText(info).then(() => toast(errs.length ? `已複製診斷(${errs.length}筆錯誤)，可貼給開發者` : "已複製診斷，目前無錯誤")).catch(() => ttAlertBox(info));
   else ttAlertBox(info);
 });
-$("#btnFootMap").addEventListener("click", () => { if (typeof Premium !== "undefined" && !Premium.gate()) return; openFootprintMap(); });
+$("#btnFootMap").addEventListener("click", () => { if (!_proGate()) return; openFootprintMap(); });
 $("#btnAllOffline").addEventListener("click", downloadAllTaiwan);
 $("#btnFavOffline").addEventListener("click", downloadFavOffline);
 
@@ -3523,15 +3523,15 @@ setTimeout(reportClientErrors, 6000);
 
 // 進階分析：整頁 PRO（與年度回顧一致）
 const _aBtn = $("#btnAnalytics");
-if (_aBtn) _aBtn.addEventListener("click", () => { if (typeof Premium !== "undefined" && !Premium.gate()) return; openAnalytics(); });
+if (_aBtn) _aBtn.addEventListener("click", () => { if (!_proGate()) return; openAnalytics(); });
 // 年度回顧（PRO）
 const _yBtn = $("#btnYearReview");
-if (_yBtn) _yBtn.addEventListener("click", () => { if (typeof Premium !== "undefined" && !Premium.gate()) return; openYearReview(); });
+if (_yBtn) _yBtn.addEventListener("click", () => { if (!_proGate()) return; openYearReview(); });
 // 離線地圖包：把快取圖磚打包成單一檔案（備份/給另一台裝置匯入，不必重新下載，也不占下載額度）
 const _pkBox = $("#packBox");
 function _pkMsg(html) { if (_pkBox) { _pkBox.style.display = "block"; _pkBox.innerHTML = html; } }
 $("#btnPackExport").addEventListener("click", async () => {
-  if (typeof Premium !== "undefined" && !Premium.gate()) return;   // PRO 限定
+  if (!_proGate()) return;   // PRO 限定
   if (typeof ttBusy === "function" && ttBusy("packexp", 4000)) return;
   const n = await Offline.cachedCount();
   if (!n) { toast("尚未下載任何離線地圖"); return; }
@@ -3544,7 +3544,7 @@ $("#btnPackExport").addEventListener("click", async () => {
     _pkMsg(`✅ 已匯出離線地圖包（${r.count} 張、${(r.bytes / 1048576).toFixed(1)} MB）`);
   } catch (e) { _pkMsg("匯出失敗，請再試一次"); }
 });
-$("#btnPackImport").addEventListener("click", () => { if (typeof Premium !== "undefined" && !Premium.gate()) return; $("#packFile").click(); });
+$("#btnPackImport").addEventListener("click", () => { if (!_proGate()) return; $("#packFile").click(); });
 $("#packFile").addEventListener("change", async e => {
   const f = e.target.files[0]; e.target.value = "";
   if (!f) return;

@@ -117,6 +117,33 @@ for (const f of files) {
   });
 }
 
+// K. PRO 閘門不可 fail-open：`typeof Premium !== "undefined" && !Premium.gate()` 在 premium.js
+//    載入失敗時會短路成「放行」，3D/熱力圖/進階分析/年度回顧/地圖包全變免費。
+//    一律用 app.js 的 _proGate()（模組沒載入時擋住）。app.js 早就寫了這個 helper 並註解警告，
+//    但仍有 6 處寫成短路版——靜態擋掉，免得再長回來。
+for (const f of files) {
+  read(f).split("\n").forEach((l, i) => {
+    if (/typeof Premium !== "undefined" && !Premium\.gate\(\)/.test(l) && !l.trim().startsWith("//"))
+      err(`[PRO] ${rel(f)}:${i + 1} 的閘門會 fail-open（Premium 沒載入時放行）——請改用 _proGate()`);
+  });
+}
+
+// L. 字典不可有重複 key：JS 物件字面量重複鍵不報錯，後者靜默覆蓋前者——
+//    有人寫的譯文被默默丟掉，而且兩條值不同時（如 導航模式 Nav mode / Navigation mode）
+//    改了前面那條會「怎麼改都沒反應」。只掃字典區，PATTERNS 裡的內嵌對照表不算重複。
+for (const f of [path.join(WEB, "js", "i18n.js"), ...(fs.existsSync(path.join(WEB, "js", "i18n"))
+  ? fs.readdirSync(path.join(WEB, "js", "i18n")).map(x => path.join(WEB, "js", "i18n", x)) : [])]) {
+  const src = read(f);
+  let s = src.indexOf("D: {"); if (s < 0) s = src.indexOf("const DICT = {");
+  if (s < 0) continue;
+  let e = src.indexOf("const PATTERNS", s); if (e < 0) e = src.indexOf("P: [", s); if (e < 0) e = src.length;
+  const seen = new Set(), dup = new Set();
+  for (const m of src.slice(s, e).matchAll(/"((?:[^"\\]|\\.)*)"\s*:\s*"((?:[^"\\]|\\.)*)"/g))
+    (seen.has(m[1]) ? dup : seen).add(m[1]);
+  for (const k of [...dup].slice(0, 5))
+    err(`[i18n] ${rel(f)} 字典有重複 key「${k}」——後者會靜默覆蓋前者，請只留一條`);
+}
+
 // F. web/ 有改動但 sw.js 快取版本沒 bump → 使用者拿不到新版（PWA 用舊快取）
 try {
   const changed = execFileSync("git", ["diff", "--name-only", "HEAD"], { cwd: ROOT, stdio: "pipe" }).toString().trim().split("\n").filter(Boolean);

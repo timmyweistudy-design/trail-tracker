@@ -71,7 +71,6 @@ const I18n = (() => {
     "已依距離排序": "Sorted by distance", "已關閉依距離排序": "Distance sort off",
     "步道分級怎麼看？": "How trail grades work", "看完整分級說明": "See full grade guide",
     "依林業署官方分級標準": "Official Forestry Agency grading",
-    "此步道尚無分級資料": "No grade data for this trail",
     "👨‍👩‍👧 「親子友善」徽章": "👨‍👩‍👧 “Family-friendly” badge",
     "難度低、路程短、路面好走": "easy, short, and well-surfaced",
     // 精選主題輯
@@ -195,7 +194,6 @@ const I18n = (() => {
     "重新整理": "Refresh", "跳到底部": "Jump to bottom",
     "👑 隊長結束了小隊記錄，一起看結算": "👑 The leader ended the team hike — here's your summary",
     "小隊記錄由隊長結束": "The team leader ends the hike",
-    "小隊記錄由隊長開始：請先按「✋ 準備」，等隊長按開始": "The leader starts the team hike — tap “✋ Ready” and wait",
     "模擬已走完整條路線，按「⏹ 結束」看結算": "Simulation finished the route — tap “⏹ Finish” for the summary",
     // 路面/季節（詳細資料）
     "泥土": "Dirt", "未鋪面": "Unpaved", "木棧道": "Boardwalk", "水泥": "Concrete", "碎石": "Gravel",
@@ -234,7 +232,7 @@ const I18n = (() => {
     "省電模式": "Battery saver", "螢幕保持喚醒": "Keep screen on", "模擬（無 GPS 預覽）": "Simulate (no GPS)",
     "隊友同行": "Team up", "分享位置": "Share location", "跟著路線走": "Follow a route",
     "隨手拍（記錄當下里程）": "Snap photo (tags distance)",
-    "記錄中": "Recording", "海拔校正中…": "Correcting elevation…", "即時海拔": "Live elevation",
+    "海拔校正中…": "Correcting elevation…", "即時海拔": "Live elevation",
     "在路線上": "on route", "⏸ 自動暫停（偵測到靜止，移動即恢復": "⏸ Auto-paused (stationary — move to resume",
     "🌿 休息中": "🌿 Resting",
     "鎖定畫面": "Lock screen", "長按解鎖": "Hold to unlock",
@@ -270,7 +268,7 @@ const I18n = (() => {
     "需允許「動作與方向」權限": "Needs “Motion & Orientation” permission",
     "全螢幕": "Fullscreen", "概覽": "Overview", "模擬": "Simulated", "測試行程": "Test trip",
     // 結算/回顧
-    "我的健行紀錄": "My hike", "重播路徑": "Replay route", "分享圖卡": "Share card",
+    "重播路徑": "Replay route", "分享圖卡": "Share card",
     "下載路線檔": "Download GPX", "分享行程": "Share trip", "分享到社群": "Share to Social",
     "已下載路線檔": "GPX downloaded", "已複製,可貼給朋友": "Copied — paste to a friend",
     "圖卡已下載": "Card downloaded", "圖卡產生失敗": "Card generation failed",
@@ -327,8 +325,8 @@ const I18n = (() => {
     "試用期免費，之後依方案自動續訂，可隨時取消": "Free trial, then auto-renews. Cancel anytime.",
     "免費": "Free", "無限": "Unlimited", "完整": "Full", "縮小範圍": "Reduced area",
     "無限離線地圖": "Unlimited offline maps",
-    "免費共 50 MB；會員不限量，一鍵預載全台、收藏與記錄周邊": "Free 50 MB total; members unlimited incl. Taiwan overview & auto-preload",
-    "免費共 50 MB；會員不限量，還能匯出/匯入地圖包跨裝置共用": "Free 50 MB total; members unlimited, plus map pack export/import across devices",
+    "免費共 10 MB；會員不限量，一鍵預載全台、收藏與記錄周邊": "Free 10 MB total; members unlimited incl. Taiwan overview & auto-preload",
+    "免費共 10 MB；會員不限量，還能匯出/匯入地圖包跨裝置共用": "Free 10 MB total; members unlimited, plus map pack export/import across devices",
     "地圖包匯出 / 匯入": "Map pack export / import",
     "進階分析＋年度回顧": "Analytics + Year in Review",
     "個人紀錄、配速趨勢、難度雷達、每月卡路里、年度回顧圖卡、匯出 GPX/CSV/KML": "Personal records, pace trend, radar, monthly calories, year card, GPX/CSV/KML export",
@@ -341,7 +339,7 @@ const I18n = (() => {
     "PRO 徽章、頭像框、名字跟色、專屬主題、夥伴命名、PRO 表情貼": "PRO badge, avatar frame, name color, themes, buddy naming, PRO reactions",
     "記錄時預載周邊地圖": "Auto-preload while recording",
     "PRO 徽章 / 主題 / 表情貼": "PRO badge / themes / reactions", "夥伴命名 / 頭像框": "Buddy naming / avatar frame",
-    "20 條": "20", "50 MB": "50 MB",
+    "20 條": "20", "10 MB": "10 MB",
     "Premium 會員": "Premium member", "進階功能已全部解鎖": "All premium features unlocked",
     "續訂日": "Renews", "管理訂閱": "Manage subscription", "升級 Premium": "Upgrade to Premium",
     "回復購買": "Restore purchase", "回復購買中…": "Restoring…", "找不到可回復的購買": "No purchase to restore", "款項處理中，稍後自動生效": "Payment processing — it will activate shortly", "購買失敗，請稍後再試": "Purchase failed, please try again",
@@ -350,7 +348,6 @@ const I18n = (() => {
     "已選擇": "Selected: ",
     "導航模式（地圖跟著轉）": "Nav mode (map rotates)",
     "自由操作（可雙指縮放）": "Free mode (pinch to zoom)",
-    "導航模式": "Nav mode",
     "記錄啟動失敗，請再試一次": "Couldn't start recording, please try again",
     "自由操作": "Free mode",
     "取消選擇，改為自由路線": "Cancel — record a free route instead",
@@ -784,18 +781,23 @@ const I18n = (() => {
     return null;
   }
 
+  // 翻譯單一文字節點。tx() 查表前會 trim，但節點的前後空白是版面的一部分——
+  // 「免費額度：剩 」後面接 <b>10.0</b>，直接寫入譯文會把那個空格吃掉 → 英文版變成「left:10.0」。
+  // 所以只替換 trim 後的那一段，前後空白原樣留著。
+  // 值沒變絕不寫回：同形詞條（日文漢字）寫回會再觸發 observer → 無限迴圈（v241 白屏事故）。
+  function txNode(n) {
+    if (!n || !n.nodeValue) return;
+    const v = tx(n.nodeValue);
+    if (!v) return;
+    const nv = n.nodeValue.replace(n.nodeValue.trim(), v);
+    if (nv !== n.nodeValue) n.nodeValue = nv;
+  }
   function walk(root) {
     if (!root) return;
     try {
       const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
       let n;
-      while ((n = w.nextNode())) {
-        const v = tx(n.nodeValue);
-        if (v) {
-          const nv = n.nodeValue.replace(n.nodeValue.trim(), v);
-          if (nv !== n.nodeValue) n.nodeValue = nv;   // 值沒變絕不寫回：同形詞條（日文漢字）寫回會再觸發 observer → 無限迴圈
-        }
-      }
+      while ((n = w.nextNode())) txNode(n);
       if (root.querySelectorAll) {
         for (const el of root.querySelectorAll("[placeholder],[title],[aria-label]")) {
           for (const a of ATTRS) { const v = el.getAttribute(a); const t = v && tx(v); if (t && t !== v) el.setAttribute(a, t); }
@@ -818,13 +820,9 @@ const I18n = (() => {
   function startObserver() {
     const obs = new MutationObserver(muts => {
       for (const m of muts) {
-        if (m.type === "characterData") {
-          const v = tx(m.target.nodeValue);
-          if (v && v !== m.target.nodeValue) m.target.nodeValue = v;   // 同值不寫回，防迴圈
-          continue;
-        }
+        if (m.type === "characterData") { txNode(m.target); continue; }
         for (const node of m.addedNodes) {
-          if (node.nodeType === 3) { const v = tx(node.nodeValue); if (v && v !== node.nodeValue) node.nodeValue = v; }
+          if (node.nodeType === 3) txNode(node);      // 對已在 DOM 的元素設 innerHTML → 加進來的是裸文字節點，走這條
           else if (node.nodeType === 1) walk(node);
         }
       }
