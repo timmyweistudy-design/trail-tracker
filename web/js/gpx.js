@@ -12,11 +12,8 @@ ${pts}
  </trkseg></trk>
 </gpx>`;
     const blob = new Blob([xml], { type: "application/gpx+xml" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `${name}_${(rec.date || "").slice(0, 10)}.gpx`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    // 原生 App 用 Web Share（<a download> 在 WKWebView 不作用）；網頁走傳統下載
+    if (typeof window !== "undefined" && window.saveBlob) window.saveBlob(blob, `${name}_${(rec.date || "").slice(0, 10)}.gpx`, name);
   }
 
   // 把所有行程匯成單一 GPX（多個 <trk>）
@@ -34,11 +31,8 @@ ${pts}
 ${trks}
 </gpx>`;
     const blob = new Blob([xml], { type: "application/gpx+xml" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `循徑拾光_全部行程_${(d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`)(new Date())}.gpx`;   // 本地日期
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    const fn = `循徑拾光_全部行程_${(d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`)(new Date())}.gpx`;   // 本地日期
+    if (typeof window !== "undefined" && window.saveBlob) window.saveBlob(blob, fn, "Gather the Trail routes");
     return true;
   }
 

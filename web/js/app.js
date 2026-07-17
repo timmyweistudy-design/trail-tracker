@@ -3145,6 +3145,22 @@ function _teamOnResumeCb() {
   toast("👑 隊長繼續記錄");
   if (navigator.vibrate) navigator.vibrate(60);
 }
+// 檔案匯出的存檔：iOS App 的 WKWebView 不認 <a download>（點了沒下載）→ 匯出的 GPX／備份檔／
+// KML／CSV／離線地圖包在 App 裡會靜默失敗。先試 Web Share（原生開系統分享單，可存到「檔案」App
+// 或傳給別人），不支援才退回傳統下載（網頁版行為完全不變）。圖片分享早就是這個 pattern。
+window.saveBlob = async function saveBlob(blob, filename, title) {
+  try {
+    const file = new File([blob], filename, { type: blob.type || "application/octet-stream" });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: title || filename });
+      return true;
+    }
+  } catch (e) { if (e && e.name === "AbortError") return true; }   // 使用者在分享單按取消→別再彈一次下載
+  const url = URL.createObjectURL(blob), a = document.createElement("a");
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+  return true;
+};
 // 收尾步驟安全執行：吞例外、記進 tt_errors（診斷／自動上傳 client_errors），回成功與否。
 // 記錄結束的收尾是一條 async 鏈（校正→存檔→完成判定→結算頁→成就/寵物/備份）。任一步 throw
 // 不該連坐——尤其不能因某步失敗就開不了結算頁、或整趟沒存到。使用者實測回報「有時候不能
@@ -3394,11 +3410,7 @@ const _fbk = $("#btnFileBackup");
 if (_fbk) _fbk.addEventListener("click", () => {
   try {
     const blob = new Blob([JSON.stringify(Store.exportAll())], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = `循徑拾光備份_${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    saveBlob(blob, `循徑拾光備份_${new Date().toISOString().slice(0, 10)}.json`, "Gather the Trail backup");
     toast("已匯出備份檔，請妥善保存");
   } catch (e) { toast("匯出失敗：" + (e && e.message || e)); }
 });
@@ -3469,10 +3481,7 @@ $("#btnPackExport").addEventListener("click", async () => {
     const r = await Offline.exportPack((done, total) => { if (done % 200 === 0) _pkMsg(`打包離線地圖中… ${done}/${total}`); });
     if (!r) { _pkMsg("尚未下載任何離線地圖"); return; }
     const en = (typeof I18n !== "undefined" && I18n.lang() === "en");
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(r.blob);
-    a.download = (en ? "gather-the-trail-maps" : "循徑拾光離線地圖") + ".ttmap";
-    a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    saveBlob(r.blob, (en ? "gather-the-trail-maps" : "循徑拾光離線地圖") + ".ttmap", "Gather the Trail offline maps");
     _pkMsg(`✅ 已匯出離線地圖包（${r.count} 張、${(r.bytes / 1048576).toFixed(1)} MB）`);
   } catch (e) { _pkMsg("匯出失敗，請再試一次"); }
 });

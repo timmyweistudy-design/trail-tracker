@@ -314,9 +314,8 @@ function exportRecordsKml(recs) {
   }).join("");
   const kml = `<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>循徑拾光 行程</name>${pm}</Document></kml>`;
   const blob = new Blob([kml], { type: "application/vnd.google-earth.kml+xml" });
-  const url = URL.createObjectURL(blob), a = document.createElement("a");
-  a.href = url; a.download = "trail-records.kml"; a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000); toast("已匯出 KML");
+  if (window.saveBlob) window.saveBlob(blob, "trail-records.kml", "Gather the Trail records");   // 原生走 Web Share，網頁走下載
+  toast("已匯出 KML");
 }
 // 好友里程比較：我 + 我追蹤的人，依累積里程排行
 async function openCompare() {
@@ -365,8 +364,6 @@ function exportRecordsCsv(recs) {
     r.kcal || 0, Math.round((r.elapsedMs || 0) / 60000),
   ].join(",")).join("\n");
   const blob = new Blob(["﻿" + head + rows], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob), a = document.createElement("a");
-  a.href = url; a.download = "trail-records.csv"; a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  if (window.saveBlob) window.saveBlob(blob, "trail-records.csv", "Gather the Trail records");   // 原生走 Web Share，網頁走下載
   toast("已匯出 CSV");
 }
