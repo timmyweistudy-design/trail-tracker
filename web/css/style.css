@@ -816,7 +816,8 @@ body.map-fs-open { overflow: hidden; }
 .map-fs .leaflet-right { right: calc(8px + env(safe-area-inset-right, 0px)); }
 /* 地形/衛星 切換鈕 */
 .basemap-toggle { display: flex; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 3px; box-shadow: var(--sh-sm); overflow: hidden; }
-.basemap-toggle .bm { border: none; background: none; cursor: pointer; border-radius: var(--r-pill); padding: 6px 12px; font-size: calc(12px * var(--fs, 1)); font-weight: 700; color: var(--ink-soft); white-space: nowrap; transition: .15s; }
+.basemap-toggle .bm { display: inline-flex; align-items: center; gap: 3px; border: none; background: none; cursor: pointer; border-radius: var(--r-pill); padding: 6px 10px; font-size: calc(12px * var(--fs, 1)); font-weight: 700; color: var(--ink-soft); white-space: nowrap; transition: .15s; }
+.basemap-toggle .bm.on { box-shadow: var(--sh-sm); }
 .basemap-toggle .bm.on { background: var(--brand); color: #f4f1e8; }
 
 /* ---------- 底部分頁列 ---------- */
@@ -1801,7 +1802,7 @@ html[data-theme="dark"] body::after { opacity: .05; }
 .fc-trail .ic, .fc-traillink .ic { width: 14px; height: 14px; vertical-align: -2px; margin-right: 2px; color: var(--brand-mid); }
 .ridle-row .ic { width: 14px; height: 14px; opacity: .8; }
 .dex-tip .ic { width: 13px; height: 13px; }
-.basemap-toggle .bm .ic { width: 13px; height: 13px; vertical-align: -2px; margin-right: 2px; }
+.basemap-toggle .bm .ic { width: 13px; height: 13px; flex-shrink: 0; }
 
 /* ===== Premium 付費 ===== */
 .premium-mask { align-items: center; }

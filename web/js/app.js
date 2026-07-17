@@ -1331,8 +1331,8 @@ function addBaseWithToggle(map) {   // 底圖切換：地形(預設)/衛星/台�
     const d = L.DomUtil.create("div", "basemap-toggle");
     d.innerHTML = `<button class="bm on" data-l="topo">${ic("mountain")} ${ttT("地形")}</button>`
       + `<button class="bm" data-l="sat">${ic("globe")} ${ttT("衛星")}</button>`
-      + `<button class="bm" data-l="nlsc">${ttT("台灣")}</button>`
-      + `<button class="bm" data-l="rudy">${ttT("山徑")}</button>`;
+      + `<button class="bm" data-l="nlsc">${ic("map")} ${ttT("台灣")}</button>`
+      + `<button class="bm" data-l="rudy">${ic("route")} ${ttT("山徑")}</button>`;
     L.DomEvent.disableClickPropagation(d);
     d.addEventListener("click", e => {
       const b = e.target.closest(".bm"); if (!b) return;
