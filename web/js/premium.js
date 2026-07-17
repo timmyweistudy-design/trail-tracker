@@ -77,8 +77,8 @@ const Premium = (() => {
         ${COMPARE.map(([a, b, c]) => `<tr><td>${a}</td><td>${b}</td><td class="pm-pro">${c}</td></tr>`).join("")}
       </tbody></table>
       <div class="pm-plans">
-        <button class="pm-plan on" data-plan="month"><b>月繳</b><span>NT$60 / 月</span></button>
-        <button class="pm-plan" data-plan="year"><b>年繳</b><span>NT$600 / 年</span><i class="pm-save">省 2 個月</i></button>
+        <button class="pm-plan on" data-plan="month"><b>月繳</b><span>NT$100 / 月</span></button>
+        <button class="pm-plan" data-plan="year"><b>年繳</b><span>NT$1000 / 年</span><i class="pm-save">省 2 個月</i></button>
       </div>
       <button class="btn primary" id="pmGo">免費試用 7 天</button>
       <div class="pm-fine">試用期免費，之後依方案自動續訂，可隨時取消</div>
