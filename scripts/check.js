@@ -147,7 +147,7 @@ try {
   const tx = global.__I18n.tx;
   const news = new Set();
   for (const f of files) {
-    if (f.endsWith("i18n.js") || f.endsWith("i18n-names.js") || /[\\/]i18n[\\/]/.test(f) || /geo-manifest\.js$|[\\/]geo[\\/]/.test(f) || /trails-(data|detail|geo)\.js$/.test(f)) continue;
+    if (f.endsWith("i18n.js") || f.endsWith("i18n-names.js") || /[\\/]i18n[\\/]/.test(f) || /geo-manifest\.js$|[\\/]geo[\\/]/.test(f) || /trails-(data|detail|geo)\.js$/.test(f) || f.endsWith("ecology-data.js")) continue;
     const src2 = read(f);
     for (const m of src2.matchAll(/[>"`]([^<>`"$\\{}]*[\u4e00-\u9fff][^<>`"$\\{}]*)[<"`$]/g)) {
       const t = m[1].trim();

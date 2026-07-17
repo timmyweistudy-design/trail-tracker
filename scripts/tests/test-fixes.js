@@ -230,6 +230,24 @@ ok("terrarium 解碼：負高度（死海）", Elevation.decode(126, 40, 0) < 0)
   }
 }
 
+// Ecology：環境帶判定 + 小黑蚊風險（純函式，基於真實生態；資料由 iNaturalist 烘焙）
+eval(fs.readFileSync(web("ecology-data.js"), "utf8"));                       // 設 window.ECO_HABITATS
+eval(fs.readFileSync(web("ecology.js"), "utf8") + "\n;globalThis.Ecology = Ecology;");
+{
+  const D = (y, m, d) => new Date(y, m - 1, d);   // m 用 1–12（月份直覺）
+  ok("小黑蚊：嘉義低海拔夏天→高風險", Ecology.biteRisk(400, "嘉義縣", D(2026, 7, 15), "").level === "high");
+  ok("小黑蚊：高山(>1200m)→無（上不了）", Ecology.biteRisk(2200, "南投縣", D(2026, 7, 15), "").level === "none");
+  ok("小黑蚊：台北低海拔冬天→無（非活躍季）", Ecology.biteRisk(700, "臺北市", D(2026, 1, 15), "").level === "none");
+  ok("小黑蚊：台北低海拔夏天→中", Ecology.biteRisk(700, "臺北市", D(2026, 7, 15), "").level === "mid");
+  ok("小黑蚊：非活躍季 seasonal=false", Ecology.biteRisk(400, "臺南市", D(2026, 1, 15), "").seasonal === false);
+  ok("環境帶：低海拔步道", JSON.stringify(Ecology.habitatsFor({ alt_low: 300, alt_high: 600 })) === JSON.stringify(["低海拔闊葉林"]));
+  ok("環境帶：橫跨中海拔到高山", (() => { const h = Ecology.habitatsFor({ alt_low: 1000, alt_high: 3200 }); return h.includes("中海拔針闊混合林") && h.includes("高山") && !h.includes("低海拔闊葉林"); })());
+  ok("環境帶：名稱含瀑布→加溪流", Ecology.habitatsFor({ name: "銀簾瀑布步道", alt_low: 400, alt_high: 700 }).includes("溪流"));
+  ok("環境帶：無海拔→保守給低海拔", JSON.stringify(Ecology.habitatsFor({})) === JSON.stringify(["低海拔闊葉林"]));
+  ok("物種：低海拔查得到真實物種、分類齊、含青竹絲", (() => { const s = Ecology.speciesFor({ alt_low: 300, alt_high: 600 }).species; return s.bird.length > 0 && s.mammal.length > 0 && s.herp.includes("赤尾青竹絲"); })());
+  ok("毒蛇標記：青竹絲是毒蛇、蟾蜍不是", Ecology.isPoison("赤尾青竹絲") && !Ecology.isPoison("盤古蟾蜍"));
+}
+
 Promise.all(pending).then(() => {                 // 等非同步斷言跑完再結算，否則它們等於沒執行
   console.log(fails ? `✗ ${fails} 個測試失敗` : "✓ 單元測試全部通過");
   process.exit(fails ? 1 : 0);

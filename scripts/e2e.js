@@ -54,6 +54,11 @@ const PORT = 8899;
     await page.click(".card.jcard");
     await page.waitForTimeout(1500);
     ok("步道詳情開啟", await page.locator("#detailSheet.show").count() === 1);
+    // 生態區塊：資料/邏輯有單元測試，這裡守「真的有串進詳情頁」——曾經漏掛 script 導致整區不顯示
+    ok("生態：模組有載入", await page.evaluate(() => typeof Ecology !== "undefined" && !!window.ECO_HABITATS));
+    ok("生態：區塊有渲染", await page.locator("#ecoBox").count() === 1);
+    ok("生態：有蚊蟲風險等級與防護建議", (await page.locator(".eco-lv").innerText()).trim().length > 0 && await page.locator(".eco-tips li").count() > 0);
+    ok("生態：有物種且物種名維持中文", await page.locator(".eco-sp").count() > 0 && /[一-鿿]/.test(await page.locator(".eco-sp").first().innerText()));
     await page.click("#closeDetailBtn");
     await page.waitForTimeout(400);
 

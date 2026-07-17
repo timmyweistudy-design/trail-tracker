@@ -268,6 +268,34 @@ body[data-view]:not([data-view="explore"]) .app-header::before { opacity: .5; }
 .cond-body { font-size: calc(13px * var(--fs, 1)); color: #4a3d36; margin-top: 6px; line-height: 1.6; }
 .cond-meta { font-size: calc(11px * var(--fs, 1)); color: var(--ink-soft); margin-top: 5px; }
 
+/* 生態區塊：蚊蟲警示（沿用 cond-banner 的色系）＋ 環境帶常見物種 ＋ iNaturalist 目擊 */
+.eco-bite { border-radius: var(--r-sm); padding: 11px 13px; margin: 4px 0 14px; border: 1px solid; }
+.eco-bite.eco-hi { background: #f9e7e3; border-color: #efcbc3; }
+.eco-bite.eco-mid { background: #fbf1de; border-color: #f0debb; }
+.eco-bite.eco-lo { background: #e7f3e9; border-color: #cbe5d1; }
+.eco-bite.eco-no { background: #eef1f4; border-color: #d9dfe6; }
+.eco-bite-h { display: flex; align-items: center; gap: 7px; font-family: var(--serif); font-size: calc(14px * var(--fs, 1)); font-weight: 700; color: var(--ink); }
+.eco-emo { flex-shrink: 0; }
+.eco-lv { margin-left: auto; font-family: var(--sans); font-size: calc(11.5px * var(--fs, 1)); font-weight: 700; padding: 3px 10px; border-radius: var(--r-pill); white-space: nowrap; }
+.eco-hi .eco-lv { background: #e2503c; color: #fff; }
+.eco-mid .eco-lv { background: #e0a02a; color: #fff; }
+.eco-lo .eco-lv { background: #4a9a63; color: #fff; }
+.eco-no .eco-lv { background: #8d97a3; color: #fff; }
+.eco-tips { margin: 7px 0 0; padding-left: 18px; }
+.eco-tips li { font-size: calc(12.5px * var(--fs, 1)); color: #4a3d36; line-height: 1.65; }
+.eco-src { font-size: calc(11px * var(--fs, 1)); color: var(--ink-soft); margin: 0 2px 9px; line-height: 1.5; }
+.eco-cat { margin-bottom: 11px; }
+.eco-cat-h { display: flex; align-items: center; gap: 6px; font-size: calc(12.5px * var(--fs, 1)); font-weight: 700; color: var(--brand-deep); margin-bottom: 6px; }
+.eco-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.eco-sp { font-size: calc(12px * var(--fs, 1)); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 4px 10px; color: var(--ink); }
+.eco-sp.eco-poison { background: #f9e7e3; border-color: #efcbc3; color: #a33a28; font-weight: 600; }
+.eco-nearby-btn { margin-top: 2px; }
+.eco-nearby { display: none; margin-top: 9px; }
+.eco-obs { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 9px; }
+.eco-ob { display: flex; flex-direction: column; gap: 4px; font-size: calc(11.5px * var(--fs, 1)); color: var(--ink); text-align: center; }
+.eco-ob img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--r-xs); background: var(--surface-2); }
+.eco-ob-noimg { display: flex; align-items: center; justify-content: center; aspect-ratio: 1; border-radius: var(--r-xs); background: var(--surface-2); font-size: calc(20px * var(--fs, 1)); }
+
 #loadMore { margin-top: 4px; }
 
 /* ---------- Detail sheet ---------- */

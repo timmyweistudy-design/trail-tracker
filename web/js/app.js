@@ -1461,6 +1461,37 @@ function myLogHtml() { return ""; }   // 我的步記已移除（完成→圖卡
 
 // ---------- 詳情面板 ----------
 let _detailTrail = null;
+// 詳情頁「生態」區塊：小黑蚊/蚊蟲警示 + 這個海拔帶常見動植物（離線）+ 選配的 iNaturalist 真實目擊。
+// 介面文案翻 25 語言；物種名維持中文（比照步道資料，收在 i18n-ignore）。
+// 每段可翻文字都獨立成一個文字節點——複合節點（emoji/等級黏在同一節點）字典查不到會漏翻。
+function ecologyHtml(t) {
+  if (typeof Ecology === "undefined") return "";
+  const r = Ecology.speciesFor(t);
+  const alt = t.alt_low != null ? t.alt_low : t.alt_high;   // 小黑蚊在低海拔 → 用步道最低點最保守
+  const env = (t.name || "") + (t.position || "") + tagsOf(t).join("");
+  const risk = Ecology.biteRisk(alt, t.region, new Date(), env);
+  const LV = { high: ["風險高", "eco-hi"], mid: ["風險中", "eco-mid"], low: ["風險低", "eco-lo"], none: ["幾乎無", "eco-no"] };
+  const [lvTxt, lvCls] = LV[risk.level] || LV.none;
+  const CATN = { mammal: ["🦌", "哺乳類"], bird: ["🐦", "鳥類"], insect: ["🦋", "昆蟲"], herp: ["🐸", "兩棲爬蟲"] };
+  const cats = Ecology.CATS.map(k => {
+    const arr = r.species[k] || []; if (!arr.length) return "";
+    const [emo, nm] = CATN[k];
+    const chips = arr.map(sp => `<span class="eco-sp${Ecology.isPoison(sp) ? " eco-poison" : ""}">${Ecology.isPoison(sp) ? "⚠️" : ""}${sp}</span>`).join("");
+    return `<div class="eco-cat"><span class="eco-cat-h"><span class="eco-emo">${emo}</span><span>${nm}</span></span><span class="eco-chips">${chips}</span></div>`;
+  }).join("");
+  return `
+    <div class="section-title collapsible" id="secEco">${ic("leaf")}<span>生態</span></div>
+    <div id="ecoBox" class="eco-box">
+      <div class="eco-bite ${lvCls}">
+        <div class="eco-bite-h"><span class="eco-emo">🦟</span><span>小黑蚊・蚊蟲</span><span class="eco-lv">${lvTxt}</span></div>
+        <ul class="eco-tips">${risk.tips.map(x => `<li>${x}</li>`).join("")}</ul>
+      </div>
+      <div class="eco-src">這個海拔帶常會遇到的（非本步道實際紀錄）</div>
+      ${cats}
+      <button class="link-btn eco-nearby-btn" id="ecoNearbyBtn">${ic("search")}<span>看這附近的真實目擊</span></button>
+      <div id="ecoNearbyBox" class="eco-nearby"></div>
+    </div>`;
+}
 function currentDetailTrail() { return $("#detailSheet").classList.contains("show") ? _detailTrail : null; }
 async function openDetail(id) {
   const t = TRAILS.find(x => x.id === id);
@@ -1525,6 +1556,7 @@ async function openDetail(id) {
       <button data-sec="top">概覽</button>
       <button data-sec="secWx">天氣</button>
       ${hasGeo ? `<button data-sec="secElev">海拔</button>` : ""}
+      <button data-sec="secEco">生態</button>
       <button data-sec="secPoi">景點</button>
       <button data-sec="secFood">美食</button>
     </div>
@@ -1536,6 +1568,7 @@ async function openDetail(id) {
     <div id="weatherBox"><div class="food-loading"><span class="spin"></span>查詢天氣中…</div></div>
     ${metaHtml}
     ${hasGeo ? `<div class="section-title collapsible" id="secElev">${ic("mountain")}海拔剖面</div><div id="profileBox"><div class="food-loading"><span class="spin"></span>計算海拔剖面中…</div></div>` : ""}
+    ${ecologyHtml(t)}
     ${t.guide ? `<div class="guide">${t.guide.replace(/\n/g, "<br>")}</div>${(typeof I18n !== "undefined" && I18n.lang() !== "zh") ? `<div class="pv-tr-row"><button class="link-btn" id="guideTranslate">${ic("translate")} ${ttT("翻譯年糕")}</button></div><div class="guide pv-cap-tr" id="guideTr" style="display:none"></div>` : ""}` : ""}
     <div class="link-row flow">
       ${nav ? `<a class="link-btn" href="${nav}" target="_blank" rel="noopener">${ic("compass")} 導航</a>` : ""}
@@ -1559,6 +1592,22 @@ async function openDetail(id) {
     ${nearbyStripHtml(t)}
     <div style="font-size:11px;color:var(--ink-soft);text-align:center;margin-top:14px">${credit}</div>
   `;
+  // 生態：連網才載 iNaturalist 附近真實目擊；離線/失敗安靜降級（不影響離線的規則式內容）
+  const enb = $("#ecoNearbyBtn");
+  if (enb) enb.addEventListener("click", async () => {
+    const box = $("#ecoNearbyBox"); if (!box) return;
+    if (enb.dataset.done) { box.style.display = box.style.display === "none" ? "block" : "none"; return; }
+    if (!navigator.onLine) { box.innerHTML = `<div class="eco-src">需要網路才能看真實目擊</div>`; box.style.display = "block"; return; }
+    enb.disabled = true; box.style.display = "block";
+    box.innerHTML = `<div class="food-loading"><span class="spin"></span>查詢附近目擊中…</div>`;
+    const obs = (typeof Ecology !== "undefined") ? await Ecology.nearbyObservations(t.lat, t.lon) : null;
+    enb.disabled = false;
+    if (!obs) { box.innerHTML = `<div class="eco-src">這附近暫時沒有可顯示的目擊記錄</div>`; return; }
+    enb.dataset.done = "1";
+    box.innerHTML = `<div class="eco-src">iNaturalist 附近 5 公里的真實觀察</div><div class="eco-obs">`
+      + obs.map(o => `<div class="eco-ob">${o.thumb ? `<img src="${o.thumb}" loading="lazy" alt="">` : `<span class="eco-ob-noimg">🔍</span>`}<span>${o.name}</span></div>`).join("")
+      + `</div>`;
+  });
   // 路況公告翻譯年糕（非中文介面）：官方公告原文翻成介面語言
   const ctr = $("#condTranslate");
   if (ctr) ctr.addEventListener("click", async () => {
