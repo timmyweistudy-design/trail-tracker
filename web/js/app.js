@@ -3145,6 +3145,18 @@ function _teamOnResumeCb() {
   toast("👑 隊長繼續記錄");
   if (navigator.vibrate) navigator.vibrate(60);
 }
+// 收尾步驟安全執行：吞例外、記進 tt_errors（診斷／自動上傳 client_errors），回成功與否。
+// 記錄結束的收尾是一條 async 鏈（校正→存檔→完成判定→結算頁→成就/寵物/備份）。任一步 throw
+// 不該連坐——尤其不能因某步失敗就開不了結算頁、或整趟沒存到。使用者實測回報「有時候不能
+// 正常結束、進不了結算」「自動儲存沒全部存到」，根因就是這條鏈原本無兜底、且失敗靜默。
+async function safeRun(label, fn) {
+  try { await fn(); return true; }
+  catch (e) {
+    try { const a = JSON.parse(localStorage.getItem("tt_errors") || "[]"); a.unshift({ t: new Date().toISOString(), m: ("finishRecording[" + label + "] " + ((e && e.message) || e)).slice(0, 300) }); localStorage.setItem("tt_errors", JSON.stringify(a.slice(0, 20))); } catch (_) { }
+    if (typeof console !== "undefined") console.warn("finishRecording step failed:", label, e);
+    return false;
+  }
+}
 async function finishRecording(autoVehicle) {
   const rec = Recorder.stop();
   setNavUp(false); _navUserOff = false;   // 結束記錄→退出導航視角、下趟恢復預設導航
@@ -3156,9 +3168,7 @@ async function finishRecording(autoVehicle) {
   $("#btnSnap").style.display = "none";
   $("#btnLock").style.display = "none"; setRecLock(false);   // 結束記錄→解除口袋鎖定
   if (rec) hikePhotosRecId = rec.id;   // 隨手拍歸屬這趟，結算頁才顯示
-  if (recMarker) { recMap.removeLayer(recMarker); recMarker = null; }
-  if (petMarker) { recMap.removeLayer(petMarker); petMarker = null; }
-  recLine.setLatLngs([]);
+  safeRun("clear-markers", () => { if (recMarker) { recMap.removeLayer(recMarker); recMarker = null; } if (petMarker) { recMap.removeLayer(petMarker); petMarker = null; } if (recLine) recLine.setLatLngs([]); });
   if (autoVehicle) toast("偵測到車輛速度（>20km/h），已自動結束記錄");
   if (rec) {
     rec.trailName = Recorder._trailName || "自由路線";
@@ -3167,20 +3177,31 @@ async function finishRecording(autoVehicle) {
     // 模擬也校正：沿真實步道座標查地形，原路折返自然會有對應的下降（不再只計爬升）
     // 不再要求 navigator.onLine：高程圖磚可能已在快取（記錄中預載/看過地圖）→ 離線也校正得出來，
     // 真的拿不到資料時 Elevation.correct 會回 null，維持 GPS 數字，不會壞。
-    if (!rec.vehicle && rec.track && rec.track.length > 1 && typeof Elevation !== "undefined") {
-      $("#recStatus").textContent = "海拔校正中…";
-      // 放寬逾時到 15 秒：長程健行的 DEM 校正要多打幾次 API，逾時太短會退回很雜的 GPS 高度→數字不準
-      const corr = await Promise.race([Elevation.correct(rec.track), new Promise(r => setTimeout(() => r(null), 15000))]);
-      if (corr) { rec.ascent = corr.ascent; rec.descent = corr.descent; rec.altHigh = corr.altHigh; rec.altLow = corr.altLow; rec.altCorrected = true; }
-    }
-    Store.addRecord(rec);
-    if (isFootRec(rec)) { bumpAffinity(8); autoCloudBackup(); syncMyStatsToCloud(); }   // 走路/跑步：加深羈絆 + 自動雲端備份 + 同步里程給好友比較
-    maybeMarkTrailDone(rec);           // 完成判定：真實走過＋全程沒偏離步道超過 1km 才算完成
-    checkPetEvolve();
+    // 海拔校正（Elevation.correct 內部已 try/catch 回 null，這裡再包一層兜底；逾時 15 秒）
+    await safeRun("elevation-correct", async () => {
+      if (!rec.vehicle && rec.track && rec.track.length > 1 && typeof Elevation !== "undefined") {
+        $("#recStatus").textContent = "海拔校正中…";
+        const corr = await Promise.race([Elevation.correct(rec.track), new Promise(r => setTimeout(() => r(null), 15000))]);
+        if (corr) { rec.ascent = corr.ascent; rec.descent = corr.descent; rec.altHigh = corr.altHigh; rec.altLow = corr.altLow; rec.altCorrected = true; }
+      }
+    });
+    // 存檔：最優先，先於任何週邊步驟；失敗不能靜默（讓使用者知道去確認，不是整趟消失）
+    const saved = await safeRun("save-record", () => Store.addRecord(rec));
+    if (!saved) toast(ttT("儲存失敗"));   // 極罕見（addRecord 有多層 fallback），但失敗不靜默；詳因記進 tt_errors
+    // 完成判定放在結算前（結算頁可能顯示「已完成」狀態）
+    await safeRun("mark-done", () => maybeMarkTrailDone(rec));   // 真實走過＋全程沒偏離步道超過 1km 才算完成
     $("#recStatus").textContent = autoVehicle ? "偵測到車輛速度，已自動結束" : "準備就緒，按「開始」記錄路徑";
-    openTrackReview(rec, true);        // 結束後顯示總結頁（isNew=true → 可慶祝破紀錄）
-    if (isFootRec(rec)) confetti();
-    renderRecIdle();
+    // 結算頁：一定要開，絕不被下面任何「背景加分」步驟連坐（這是使用者最在意的：走完看得到結算）
+    safeRun("open-summary", () => openTrackReview(rec, true));   // isNew=true → 可慶祝破紀錄
+    // 以下都是背景加分，各自隔離：任一 throw 都不影響已存的紀錄與已開的結算頁
+    if (isFootRec(rec)) {
+      safeRun("affinity", () => bumpAffinity(8));
+      safeRun("cloud-backup", () => autoCloudBackup());
+      safeRun("sync-stats", () => syncMyStatsToCloud());
+      safeRun("confetti", () => confetti());
+    }
+    safeRun("pet-evolve", () => checkPetEvolve());
+    safeRun("render-idle", () => renderRecIdle());
   } else {
     toast(autoVehicle ? "偵測到車輛速度，已停止（路徑太短，未儲存）" : "路徑太短，未儲存");
     $("#recStatus").textContent = "準備就緒，按「開始」記錄路徑";

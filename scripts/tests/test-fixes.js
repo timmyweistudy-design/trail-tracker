@@ -211,6 +211,25 @@ ok("terrarium 解碼：負高度（死海）", Elevation.decode(126, 40, 0) < 0)
   }
 }
 
+// safeRun：記錄收尾每步的錯誤隔離器。一步 throw 不外拋、回 false、記進 tt_errors 供診斷；
+//   正常步驟回 true。這是「有時候不能結束/進結算、自動儲存沒全存到」的根因修復核心。
+{
+  const appSrc = fs.readFileSync(web("app.js"), "utf8");
+  const m = appSrc.match(/async function safeRun\(label, fn\)[\s\S]*?\n\}/);
+  ok("app.js 有 safeRun 收尾隔離器", !!m);
+  if (m) {
+    eval(m[0] + "\n;globalThis.safeRun = safeRun;");
+    localStorage.setItem("tt_errors", "[]");
+    pending.push((async () => {
+      ok("safeRun 正常步驟回 true", await safeRun("ok步驟", () => 1) === true);
+      ok("safeRun throw 的步驟回 false（不外拋、不連坐後續）", await safeRun("壞步驟", () => { throw new Error("boom"); }) === false);
+      ok("safeRun 非同步 throw 也擋得住", await safeRun("壞async", async () => { throw new Error("boom2"); }) === false);
+      const errs = JSON.parse(localStorage.getItem("tt_errors") || "[]");
+      ok("safeRun 把失敗記進 tt_errors（診斷/client_errors 查得到）", errs.some(e => /壞步驟/.test(e.m)));
+    })());
+  }
+}
+
 Promise.all(pending).then(() => {                 // 等非同步斷言跑完再結算，否則它們等於沒執行
   console.log(fails ? `✗ ${fails} 個測試失敗` : "✓ 單元測試全部通過");
   process.exit(fails ? 1 : 0);

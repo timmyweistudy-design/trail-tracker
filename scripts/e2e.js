@@ -138,9 +138,17 @@ const PORT = 8899;
     await page.waitForTimeout(12000);   // 模擬 10 秒走完整條路線
     const dist = await page.evaluate(() => parseFloat(document.getElementById("stDist").textContent));
     ok(`模擬記錄有里程（${dist} km > 0.1）`, dist > 0.1);
+    // 收尾容錯：故意讓一個收尾步驟（寵物進化）throw，模擬實機某步在特定資料/離線環境下失敗。
+    // finishRecording 若無兜底，整條 async 收尾鏈會中斷 → 結算頁開不了、甚至紀錄沒存
+    // （使用者回報「有時候不能正常結束、進不了結算」「自動儲存沒全部存到」）。修好後應各步隔離。
+    const recBefore = await page.evaluate(() => {
+      window.checkPetEvolve = () => { throw new Error("e2e: 故意讓收尾某步失敗"); };
+      return Store.getRecords().length;
+    });
     await page.click("#btnStop");
-    await page.waitForTimeout(2500);
-    ok("結束後結算頁開啟", await page.locator("#trackSheet.show").count() === 1);
+    await page.waitForTimeout(3000);
+    ok("收尾某步 throw 時，結算頁仍開啟（不再全有全無）", await page.locator("#trackSheet.show").count() === 1);
+    ok("收尾某步 throw 時，紀錄仍存進歷史", await page.evaluate(() => Store.getRecords().length) === recBefore + 1);
     await page.click("#trackSheet .sheet-close").catch(() => {});
     await page.waitForTimeout(500);
     // 關鍵流程②：匯出備份檔會觸發下載（設定分類已收合→先展開「資料備份」群組）
