@@ -173,19 +173,28 @@ try {
   }
   const tx = global.__I18n.tx;
   const news = new Set();
+  const half = new Set();   // 半翻：tx 有回傳但英文結果仍殘留中文（如「、」切段只命中一部分）——付費牆踩過
   for (const f of files) {
     if (f.endsWith("i18n.js") || f.endsWith("i18n-names.js") || /[\\/]i18n[\\/]/.test(f) || /geo-manifest\.js$|[\\/]geo[\\/]/.test(f) || /trails-(data|detail|geo)\.js$/.test(f) || f.endsWith("ecology-data.js")) continue;
     const src2 = read(f);
     for (const m of src2.matchAll(/[>"`]([^<>`"$\\{}]*[\u4e00-\u9fff][^<>`"$\\{}]*)[<"`$]/g)) {
       const t = m[1].trim();
       if (!t || t.length < 2 || t.length > 40) continue;
+      if (ignore.has(t)) continue;
+      const r = tx(t);
+      // 半翻先判：tx 翻得出來但結果仍有中文 = 真半翻，幾乎不可能是程式碼片段，
+      // 所以不套用下面的 `/` 濾鏡（付費牆的「m/hr」「匯入 / 匯出」正是卡在那個濾鏡才漏掉的）。
+      if (r && /[一-鿿]/.test(r)) { half.add(`${t} → ${r}`); continue; }
+      // 完全沒翻才收進 news；這裡才套 `/;=` 濾鏡，避免把 regex/路徑/程式碼當漏翻雜訊
+      if (r) continue;
       if (/[/;=]|function|\/\//.test(t)) continue;
-      if (ignore.has(t) || tx(t)) continue;
       news.add(t);
     }
   }
   for (const t of [...news].sort().slice(0, 20))
     err(`[i18n] 新的中文字串沒有翻譯：「${t}」——請補 web/js/i18n.js 詞條/規則，或加進 scripts/i18n-ignore.json`);
+  for (const t of [...half].sort().slice(0, 20))
+    err(`[i18n] 半翻（英文結果仍有中文）：「${t}」——多為「、／」複合字串只命中一段，請補整句 key`);
   // H2. 多語表平行性：en 有的 key 其他語言都要有；規則數要一致（新增詞條/規則記得每個語言都補）
   const tables = global.__I18n.tables();
   const enKeys = Object.keys(tables.en.D);
