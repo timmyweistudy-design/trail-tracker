@@ -2974,14 +2974,22 @@ async function ensureMeAvatar() {
     window.__meAvatar = (p && p.avatar_url) || meta.avatar_url || meta.picture || null;   // 沒設頭像→退而用 Google 大頭照
   } catch (e) { _meAvFetched = false; }
 }
-$("#btnSnap").addEventListener("click", () => $("#snapInput").click());
-$("#snapInput").addEventListener("change", e => {
-  const f = e.target.files[0]; e.target.value = "";
+function addSnapPhoto(f) {
   if (!f) return;
   const km = recSnap ? (recSnap.distanceKm || 0) : 0;
   hikePhotos.push({ file: f, t: Date.now(), km });
   $("#snapCount").textContent = ` (${hikePhotos.length})`;
   toast(`已拍照 · ${km.toFixed(2)}km`);
+}
+// 原生 App 走 Capacitor 相機（WKWebView 的 file input 拍照會黑畫面）；純網頁走 file input。
+$("#btnSnap").addEventListener("click", async () => {
+  const f = (typeof NativeCam !== "undefined") ? await NativeCam.pickImage(typeof I18n !== "undefined" ? I18n.tx : null) : undefined;
+  if (f === undefined) { $("#snapInput").click(); return; }   // 非原生 → file input 後備
+  addSnapPhoto(f);                                            // 原生：File（成功）／null（取消，addSnapPhoto 內會忽略）
+});
+$("#snapInput").addEventListener("change", e => {
+  const f = e.target.files[0]; e.target.value = "";
+  addSnapPhoto(f);
 });
 $("#btnTeam").addEventListener("click", () => { initRecMap(); if (typeof Team !== "undefined") Team.openSheet(); });
 $("#btnShareLoc").addEventListener("click", () => {

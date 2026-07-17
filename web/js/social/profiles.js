@@ -185,17 +185,29 @@ const Profiles = (() => {
         <button class="btn ghost" id="edCancel">取消</button>
         <div class="auth-msg" id="edMsg"></div>
       </div>`);
-    document.getElementById("edAvFile").addEventListener("change", e => {
-      const f = e.target.files[0]; if (!f) return;
+    const setAvatar = f => {
+      if (!f) return;
       avatarFile = f;
       const old = document.getElementById("edAvImg");
       const img = document.createElement("img"); img.className = "pf-av"; img.id = "edAvImg"; img.src = URL.createObjectURL(f);
       old.replaceWith(img);
-    });
-    document.getElementById("edCoverFile").addEventListener("change", e => {
-      const f = e.target.files[0]; if (!f) return;
+    };
+    const setCover = f => {
+      if (!f) return;
       coverFile = f; document.getElementById("edCoverImg").style.backgroundImage = `url('${URL.createObjectURL(f)}')`;
-    });
+    };
+    document.getElementById("edAvFile").addEventListener("change", e => setAvatar(e.target.files[0]));
+    document.getElementById("edCoverFile").addEventListener("change", e => setCover(e.target.files[0]));
+    // 原生 App：頭像／封面改走 Capacitor 相機（WKWebView 的 file input 拍照會黑畫面）；網頁維持 file input。
+    if (typeof NativeCam !== "undefined" && NativeCam.isNative()) {
+      const tx = typeof I18n !== "undefined" ? I18n.tx : null;
+      const bind = (inputId, set) => {
+        const lab = document.getElementById(inputId).closest(".comp-add");
+        if (lab) lab.addEventListener("click", async ev => { ev.preventDefault(); set(await NativeCam.pickImage(tx)); });
+      };
+      bind("edAvFile", setAvatar);
+      bind("edCoverFile", setCover);
+    }
     // handle 即時可用性檢查（與目前相同則略過）
     const hEl = document.getElementById("edHandle"), hMsg = document.getElementById("edHandleMsg");
     let ht = null, hOk = true;

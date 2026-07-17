@@ -50,6 +50,17 @@ const Composer = (() => {
       for (const f of e.target.files) if (files.length < 9) files.push({ file: f });   // 額外加的照片無時間/里程
       renderPhotos(wrap);
     });
+    // 原生 App：攔截「加照片」改走 Capacitor 相機（WKWebView 的 file input 拍照會黑畫面）。
+    // 一次加一張（相機或相簿），網頁維持 file input 的多選。
+    if (typeof NativeCam !== "undefined" && NativeCam.isNative()) {
+      const addLabel = wrap.querySelector("#compFiles").closest(".comp-add");
+      if (addLabel) addLabel.addEventListener("click", async ev => {
+        ev.preventDefault();
+        if (files.length >= 9) return;
+        const f = await NativeCam.pickImage(typeof I18n !== "undefined" ? I18n.tx : null);
+        if (f) { files.push({ file: f }); renderPhotos(wrap); }
+      });
+    }
     wrap.querySelector("#compVideo").addEventListener("change", async e => {
       const f = e.target.files[0]; if (!f) return;
       const msg = wrap.querySelector("#compMsg"); msg.textContent = "檢查影片…";
