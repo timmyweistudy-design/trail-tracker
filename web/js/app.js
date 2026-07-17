@@ -918,6 +918,10 @@ const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services";
 // detectRetina：高 DPR 手機（如 iPhone 3x）改抓深一階圖磚縮小顯示→更清晰不糊
 function baseTopo() { return L.tileLayer(`${ESRI}/World_Topo_Map/MapServer/tile/{z}/{y}/{x}`, { attribution: "© Esri 地形", maxZoom: 19, maxNativeZoom: 18, detectRetina: true }); }
 function baseSat() { return L.tileLayer(`${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}`, { attribution: "© Esri、Maxar 衛星影像", maxZoom: 19, maxNativeZoom: 18, detectRetina: true }); }
+// NLSC 國土測繪中心 通用版電子地圖：台灣官方、比 Esri 全球圖詳細；免金鑰 WMTS（座標順序 z/y/x）
+function baseNlsc() { return L.tileLayer("https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}", { attribution: "© 內政部國土測繪中心", maxZoom: 19, maxNativeZoom: 18, detectRetina: true }); }
+// 魯地圖：台灣山友自製，等高線＋山徑清楚（個人服務，當選配山徑圖層、不開 detectRetina 以省其流量）；標準 XYZ（z/x/y）
+function baseRudy() { return L.tileLayer("https://tile.happyman.idv.tw/map/rudy/{z}/{x}/{y}.png", { attribution: "© 魯地圖 Rudy", maxZoom: 18, maxNativeZoom: 16 }); }
 // 2.5D 地形陰影（hillshade）：疊在底圖上、以 multiply 混色壓暗坡面陰影→山勢立體。
 // 同 Esri 來源、免金鑰，SW 一樣快取得到（離線可用）。專屬 pane 放在底圖之上、路線/標記之下。
 const ESRI_HILLSHADE = `${ESRI}/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}`;
@@ -1319,18 +1323,24 @@ function addRecenter(map) {
   };
   c.addTo(map);
 }
-function addBaseWithToggle(map) {   // 加地形(預設)+衛星，明顯的分段切換鈕
-  const topo = baseTopo().addTo(map), sat = baseSat(), hs = hillshadeLayer(map).addTo(map);   // 地形模式預設疊地形陰影
+function addBaseWithToggle(map) {   // 底圖切換：地形(預設)/衛星/台灣官方圖/登山山徑圖
+  const hs = hillshadeLayer(map).addTo(map);   // 地形模式預設疊地形陰影
+  const layers = { topo: baseTopo().addTo(map), sat: baseSat(), nlsc: baseNlsc(), rudy: baseRudy() };
   const ctrl = L.control({ position: "bottomleft" });
   ctrl.onAdd = () => {
     const d = L.DomUtil.create("div", "basemap-toggle");
-    d.innerHTML = `<button class="bm on" data-l="topo">${ic("mountain")} 地形</button><button class="bm" data-l="sat">${ic("globe")} 衛星</button>`;
+    d.innerHTML = `<button class="bm on" data-l="topo">${ic("mountain")} ${ttT("地形")}</button>`
+      + `<button class="bm" data-l="sat">${ic("globe")} ${ttT("衛星")}</button>`
+      + `<button class="bm" data-l="nlsc">${ttT("台灣")}</button>`
+      + `<button class="bm" data-l="rudy">${ttT("山徑")}</button>`;
     L.DomEvent.disableClickPropagation(d);
     d.addEventListener("click", e => {
       const b = e.target.closest(".bm"); if (!b) return;
-      // 衛星影像本身已有立體感 → 收起陰影避免過暗；地形模式才疊陰影
-      if (b.dataset.l === "sat") { map.removeLayer(topo); map.removeLayer(hs); sat.addTo(map); }
-      else { map.removeLayer(sat); topo.addTo(map); hs.addTo(map); }
+      const l = b.dataset.l;
+      Object.values(layers).forEach(x => map.removeLayer(x)); map.removeLayer(hs);
+      layers[l].addTo(map);
+      // 只有 Esri 地形疊陰影：衛星本身立體、NLSC/魯地圖自帶樣式，疊上去會過暗
+      if (l === "topo") hs.addTo(map);
       d.querySelectorAll(".bm").forEach(x => x.classList.toggle("on", x === b));
     });
     return d;
