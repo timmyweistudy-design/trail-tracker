@@ -60,6 +60,10 @@
 	<string>拍照記錄步道風景，或為你的貼文與夥伴加上照片。</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>從相簿選擇照片，用於貼文、頭像與封面。</string>
+	<!-- Capacitor 相機外掛三個用途字串都要有，缺 Add 這個會直接拋
+	     "You are missing NSPhotoLibraryAddUsageDescription" 而相機開不起來 -->
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>將你拍攝或編輯的步道照片儲存到相簿。</string>
 	<!-- 背景定位：螢幕關/App 進背景仍持續記錄軌跡 -->
 	<key>UIBackgroundModes</key>
 	<array>
