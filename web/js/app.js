@@ -2995,6 +2995,20 @@ $("#snapInput").addEventListener("change", e => {
   const f = e.target.files[0]; e.target.value = "";
   addSnapPhoto(f);
 });
+// 原生 App：外部連結（target=_blank 的 http/https，如導航/查資訊/景點/美食/原始頁）改用
+// Capacitor Browser 開系統瀏覽器；WKWebView 裡直接點 <a target=_blank> 可能整個 App 被導走或沒反應。
+// 用捕獲階段的委派攔截，一次覆蓋所有這類連結（含之後動態產生的）。網頁無 Browser 外掛 → 不介入。
+document.addEventListener("click", e => {
+  const B = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()
+    && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser;
+  if (!B) return;
+  const a = e.target.closest && e.target.closest('a[target="_blank"]');
+  if (!a) return;
+  const href = a.getAttribute("href");
+  if (!href || !/^https?:/i.test(href)) return;
+  e.preventDefault();
+  B.open({ url: href }).catch(() => { try { window.open(href, "_blank"); } catch (_) { /* */ } });
+}, true);
 $("#btnTeam").addEventListener("click", () => { initRecMap(); if (typeof Team !== "undefined") Team.openSheet(); });
 $("#btnShareLoc").addEventListener("click", () => {
   if (!navigator.geolocation) { toast("此裝置不支援定位"); return; }
