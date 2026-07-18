@@ -2,6 +2,9 @@
 // ⚠️ 安全：請在 Google Cloud 設此金鑰的「HTTP 參照網址限制」只允許本站網址、
 //    「API 限制」只允許 Places API，並設預算/配額上限，避免被盜刷。
 window.PLACES_KEY = "AIzaSyBmv_wzflejv2ViaLe0_IXt90McrXCMKik";
+// Esri ArcGIS 底圖 API 金鑰（商用授權）。空＝暫用免費公開端點（開始收費前務必填，見 docs/map-licensing.md）。
+// 到 developer.arcgis.com 建 ArcGIS Location Platform 帳號→API key→填這裡。建議設用量上限/警示。
+window.ARCGIS_API_KEY = "";
 // 即時路況代理（Cloudflare Worker）網址；空＝用烘焙路況。
 window.CONDITIONS_PROXY = "https://trail-tracker.timmyweistudy.workers.dev";
 // Supabase（社群功能）。anon key 放前端是安全的：資料由 RLS 在資料庫層把關。

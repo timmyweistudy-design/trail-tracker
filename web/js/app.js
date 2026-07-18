@@ -914,17 +914,21 @@ function renderMore() {
 let browseMap = null, browseLayer = null, mapOn = false;
 const DIFF_COLOR = { 0: "#3aa3a0", 1: "#46a24f", 2: "#6aa83e", 3: "#d8a127", 4: "#e07a2c", 5: "#d2542e", 6: "#b3322a" };
 // 底圖：Esri 地形(含立體陰影) / 衛星影像 — 比 OpenTopoMap 精緻
-const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services";
+// 商用授權：config.js 設 window.ARCGIS_API_KEY → 走 Esri 授權端點 ibasemaps-api（帶 token）；
+// 沒設 → 暫回免費公開端點（開始收費前務必填金鑰，見 docs/map-licensing.md）。
+const _AGKEY = (typeof window !== "undefined" && window.ARCGIS_API_KEY) || "";
+const ESRI = _AGKEY
+  ? "https://ibasemaps-api.arcgis.com/arcgis/rest/services"
+  : "https://server.arcgisonline.com/ArcGIS/rest/services";
+const AGTOK = _AGKEY ? `?token=${encodeURIComponent(_AGKEY)}` : "";
 // detectRetina：高 DPR 手機（如 iPhone 3x）改抓深一階圖磚縮小顯示→更清晰不糊
-function baseTopo() { return L.tileLayer(`${ESRI}/World_Topo_Map/MapServer/tile/{z}/{y}/{x}`, { attribution: "© Esri 地形", maxZoom: 19, maxNativeZoom: 18, detectRetina: true }); }
-function baseSat() { return L.tileLayer(`${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}`, { attribution: "© Esri、Maxar 衛星影像", maxZoom: 19, maxNativeZoom: 18, detectRetina: true }); }
+function baseTopo() { return L.tileLayer(`${ESRI}/World_Topo_Map/MapServer/tile/{z}/{y}/{x}${AGTOK}`, { attribution: "© Esri 地形", maxZoom: 19, maxNativeZoom: 18, detectRetina: true }); }
+function baseSat() { return L.tileLayer(`${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}${AGTOK}`, { attribution: "© Esri、Maxar 衛星影像", maxZoom: 19, maxNativeZoom: 18, detectRetina: true }); }
 // NLSC 國土測繪中心 通用版電子地圖：台灣官方、比 Esri 全球圖詳細；免金鑰 WMTS（座標順序 z/y/x）
 function baseNlsc() { return L.tileLayer("https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}", { attribution: "© 內政部國土測繪中心", maxZoom: 19, maxNativeZoom: 18, detectRetina: true }); }
-// 魯地圖：台灣山友自製，等高線＋山徑清楚（個人服務，當選配山徑圖層、不開 detectRetina 以省其流量）；標準 XYZ（z/x/y）
-function baseRudy() { return L.tileLayer("https://tile.happyman.idv.tw/map/rudy/{z}/{x}/{y}.png", { attribution: "© 魯地圖 Rudy", maxZoom: 18, maxNativeZoom: 16 }); }
 // 2.5D 地形陰影（hillshade）：疊在底圖上、以 multiply 混色壓暗坡面陰影→山勢立體。
-// 同 Esri 來源、免金鑰，SW 一樣快取得到（離線可用）。專屬 pane 放在底圖之上、路線/標記之下。
-const ESRI_HILLSHADE = `${ESRI}/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}`;
+// 同 Esri 來源，SW 一樣快取得到（離線可用）。專屬 pane 放在底圖之上、路線/標記之下。
+const ESRI_HILLSHADE = `${ESRI}/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}${AGTOK}`;
 function hillshadeLayer(map) {
   if (!map.getPane("hillshade")) {
     const p = map.createPane("hillshade");
@@ -1056,7 +1060,7 @@ async function _open3D(name, geom, opts) {
     style: {
       version: 8,
       sources: {
-        sat: { type: "raster", tiles: [`${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}`], tileSize: 256, maxzoom: 18, attribution: "© Esri, Maxar" },
+        sat: { type: "raster", tiles: [`${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}${AGTOK}`], tileSize: 256, maxzoom: 18, attribution: "© Esri, Maxar" },
         terrain: { type: "raster-dem", tiles: ["https://elevation-tiles-prod.s3.amazonaws.com/terrarium/{z}/{x}/{y}.png"], tileSize: 256, encoding: "terrarium", maxzoom: 15, attribution: "Terrain: AWS/Mapzen" },
         route: { type: "geojson", data: { type: "Feature", properties: {}, geometry: { type: "MultiLineString", coordinates: coords } } },
         pts: { type: "geojson", data: { type: "FeatureCollection", features: [{ type: "Feature", properties: { k: "s" }, geometry: { type: "Point", coordinates: [start[1], start[0]] } }, { type: "Feature", properties: { k: "e" }, geometry: { type: "Point", coordinates: [end[1], end[0]] } }] } },
@@ -1323,23 +1327,22 @@ function addRecenter(map) {
   };
   c.addTo(map);
 }
-function addBaseWithToggle(map) {   // 底圖切換：地形(預設)/衛星/台灣官方圖/登山山徑圖
+function addBaseWithToggle(map) {   // 底圖切換：地形(預設)/衛星/台灣官方圖
   const hs = hillshadeLayer(map).addTo(map);   // 地形模式預設疊地形陰影
-  const layers = { topo: baseTopo().addTo(map), sat: baseSat(), nlsc: baseNlsc(), rudy: baseRudy() };
+  const layers = { topo: baseTopo().addTo(map), sat: baseSat(), nlsc: baseNlsc() };
   const ctrl = L.control({ position: "bottomleft" });
   ctrl.onAdd = () => {
     const d = L.DomUtil.create("div", "basemap-toggle");
     d.innerHTML = `<button class="bm on" data-l="topo">${ic("mountain")} ${ttT("地形")}</button>`
       + `<button class="bm" data-l="sat">${ic("globe")} ${ttT("衛星")}</button>`
-      + `<button class="bm" data-l="nlsc">${ic("map")} ${ttT("台灣")}</button>`
-      + `<button class="bm" data-l="rudy">${ic("route")} ${ttT("山徑")}</button>`;
+      + `<button class="bm" data-l="nlsc">${ic("map")} ${ttT("台灣")}</button>`;
     L.DomEvent.disableClickPropagation(d);
     d.addEventListener("click", e => {
       const b = e.target.closest(".bm"); if (!b) return;
       const l = b.dataset.l;
       Object.values(layers).forEach(x => map.removeLayer(x)); map.removeLayer(hs);
       layers[l].addTo(map);
-      // 只有 Esri 地形疊陰影：衛星本身立體、NLSC/魯地圖自帶樣式，疊上去會過暗
+      // 只有 Esri 地形疊陰影：衛星本身立體、NLSC 自帶樣式，疊上去會過暗
       if (l === "topo") hs.addTo(map);
       d.querySelectorAll(".bm").forEach(x => x.classList.toggle("on", x === b));
     });
@@ -3027,7 +3030,7 @@ $("#btnShareLoc").addEventListener("click", () => {
 // 這也是離線地圖：非會員縮小範圍（±1km、縮放 14–15）並計入 MB 額度；額度不足只跳過預載、不影響記錄。Premium 完整預載（±2km、14–16）。
 let recPreloaded = false;
 // #1 記錄時預載 3D 地形圖磚（衛星＋terrarium 高程），讓 3D 開起來即時又清晰。3D 屬 PRO → 只對會員預載
-const _SAT_URL = (z, x, y) => `${ESRI}/World_Imagery/MapServer/tile/${z}/${y}/${x}`;
+const _SAT_URL = (z, x, y) => `${ESRI}/World_Imagery/MapServer/tile/${z}/${y}/${x}${AGTOK}`;
 const _TERR_URL = (z, x, y) => `https://elevation-tiles-prod.s3.amazonaws.com/terrarium/${z}/${x}/${y}.png`;
 let _pre3dAt = 0;
 function preload3D(lat, lon) {

@@ -2,9 +2,11 @@
 // 圖磚存在 Cache Storage 'tt-tiles'，Service Worker 會優先從此快取取用。
 const Offline = (() => {
   const TILE_CACHE = "tt-tiles";
-  // 與 app.js 的 tileLayer 用同一組 URL（單一網域，確保下載與顯示的快取鍵一致）
-  // OpenTopoMap 戶外地形圖（固定 a 子網域，讓下載與顯示快取鍵一致）
-  const tileUrl = (z, x, y) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/${z}/${y}/${x}`;
+  // 與 app.js 的 tileLayer 用同一組 URL（含 Esri 授權 token；下載與顯示快取鍵必須完全一致）
+  const _AGKEY = (typeof window !== "undefined" && window.ARCGIS_API_KEY) || "";
+  const _ESRI = _AGKEY ? "https://ibasemaps-api.arcgis.com/arcgis/rest/services" : "https://server.arcgisonline.com/ArcGIS/rest/services";
+  const _AGTOK = _AGKEY ? `?token=${encodeURIComponent(_AGKEY)}` : "";
+  const tileUrl = (z, x, y) => `${_ESRI}/World_Topo_Map/MapServer/tile/${z}/${y}/${x}${_AGTOK}`;
 
   const lon2x = (lon, z) => Math.floor((lon + 180) / 360 * 2 ** z);
   const lat2y = (lat, z) => {
