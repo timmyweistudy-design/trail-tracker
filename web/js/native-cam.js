@@ -42,7 +42,16 @@ const NativeCam = (() => {
       const ext = fmt === "jpg" ? "jpg" : fmt;
       return new File([blob], `snap_${Date.now()}.${ext}`, { type: blob.type || "image/jpeg" });
     } catch (e) {
-      // 使用者取消 getPhoto 會 throw；一律當作取消，不打擾使用者
+      const msg = (e && (e.message || e.errorMessage)) || String(e);
+      // 使用者自己取消（"User cancelled photos app" 等）→ 安靜結束，不打擾
+      if (/cancel/i.test(msg)) return null;
+      // 其他錯誤：把原因顯示出來（否則像「按了沒反應」無從除錯）＋記進 tt_errors 自動上傳
+      try { if (typeof window.toast === "function") window.toast("相機開啟失敗：" + msg); } catch (_) { /* */ }
+      try {
+        const a = JSON.parse(localStorage.getItem("tt_errors") || "[]");
+        a.unshift({ t: new Date().toISOString(), stage: "camera.getPhoto", msg: String(msg).slice(0, 300) });
+        localStorage.setItem("tt_errors", JSON.stringify(a.slice(0, 50)));
+      } catch (_) { /* */ }
       return null;
     }
   }

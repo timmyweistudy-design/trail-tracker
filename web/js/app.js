@@ -2982,10 +2982,14 @@ function addSnapPhoto(f) {
   toast(`已拍照 · ${km.toFixed(2)}km`);
 }
 // 原生 App 走 Capacitor 相機（WKWebView 的 file input 拍照會黑畫面）；純網頁走 file input。
-$("#btnSnap").addEventListener("click", async () => {
-  const f = (typeof NativeCam !== "undefined") ? await NativeCam.pickImage(typeof I18n !== "undefined" ? I18n.tx : null) : undefined;
-  if (f === undefined) { $("#snapInput").click(); return; }   // 非原生 → file input 後備
-  addSnapPhoto(f);                                            // 原生：File（成功）／null（取消，addSnapPhoto 內會忽略）
+// ⚠️ 一定要「同步」判斷是不是原生：iOS 規定 file input 的 .click() 必須在使用者手勢的同步當下觸發，
+//    若先 await 再 click()，手勢已失效 → 檔案選擇器被瀏覽器擋掉、按了完全沒反應。
+$("#btnSnap").addEventListener("click", () => {
+  if (typeof NativeCam !== "undefined" && NativeCam.isNative()) {
+    NativeCam.pickImage(typeof I18n !== "undefined" ? I18n.tx : null).then(addSnapPhoto);   // 原生：File/null（null 會被忽略）
+  } else {
+    $("#snapInput").click();   // 非原生：同步觸發，保住使用者手勢
+  }
 });
 $("#snapInput").addEventListener("change", e => {
   const f = e.target.files[0]; e.target.value = "";
