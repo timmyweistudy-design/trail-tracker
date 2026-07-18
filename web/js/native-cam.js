@@ -20,7 +20,12 @@ const NativeCam = (() => {
   async function pickImage(tx) {
     const Cam = cam();
     if (!Cam) return undefined;
-    const t = k => (typeof tx === "function" && tx(k)) || k;
+    // 用 ttT（中文模式回原中文、其他語言才翻）；不要直接用 tx——tx 在中文模式會回英文，
+    // 會讓相機選單標籤/權限提示在中文介面變成英文。
+    const t = k => {
+      try { if (typeof window.ttT === "function") return window.ttT(k); } catch (_) { /* */ }
+      return (typeof tx === "function" && tx(k)) || k;
+    };
     try {
       const photo = await Cam.getPhoto({
         source: "PROMPT",               // 讓使用者選「拍照」或「從相簿選」（原生選單）
@@ -45,7 +50,12 @@ const NativeCam = (() => {
       const msg = (e && (e.message || e.errorMessage)) || String(e);
       // 使用者自己取消（"User cancelled photos app" 等）→ 安靜結束，不打擾
       if (/cancel/i.test(msg)) return null;
-      // 其他錯誤：把原因顯示出來（否則像「按了沒反應」無從除錯）＋記進 tt_errors 自動上傳
+      // 權限被拒（"User denied access to camera/photos"）：iOS 不會再跳詢問，只能去設定開 → 給友善中文引導
+      if (/denied|permission|not authorized|授權|權限/i.test(msg)) {
+        try { if (typeof window.toast === "function") window.toast(t("相機／相簿權限已關閉，請到 iOS「設定」開啟")); } catch (_) { /* */ }
+        return null;
+      }
+      // 其他非預期錯誤：把原因顯示出來（否則像「按了沒反應」無從除錯）＋記進 tt_errors 自動上傳
       try { if (typeof window.toast === "function") window.toast("相機開啟失敗：" + msg); } catch (_) { /* */ }
       try {
         const a = JSON.parse(localStorage.getItem("tt_errors") || "[]");

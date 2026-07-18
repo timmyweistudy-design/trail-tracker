@@ -4,6 +4,7 @@
 // 步道名稱/介紹等資料內容維持中文。要補翻譯：加 DICT 詞條或 PATTERNS 規則即可。
 const I18n = (() => {
   const DICT = {
+    "相機／相簿權限已關閉，請到 iOS「設定」開啟": "Camera/Photos access is off — turn it on in iOS Settings",
     // 原生相機選單標籤
     "選擇照片": "Choose photo",
     "從相簿選": "Choose from library",
