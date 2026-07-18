@@ -21,6 +21,52 @@ function safeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
+// ── 原生推播（iOS APNs）──
+// 用 .p8 金鑰簽 ES256 JWT，走 APNs HTTP/2（Deno fetch 支援）。
+// Secrets：APNS_KEY_P8（.p8 全文含 BEGIN/END）、APNS_KEY_ID、APNS_TEAM_ID、
+//   APNS_BUNDLE_ID（預設 com.timmyweistudy.trailtracker）、APNS_ENV（production/sandbox，預設 production）。
+// 未設 APNS_KEY_P8/KEY_ID/TEAM_ID 三者則整段跳過，不影響 Web Push。
+function b64url(bytes: Uint8Array): string {
+  let s = ""; for (const b of bytes) s += String.fromCharCode(b);
+  return btoa(s).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+}
+async function importP8(pem: string): Promise<CryptoKey> {
+  const b64 = pem.replace(/-----(BEGIN|END) PRIVATE KEY-----/g, "").replace(/\s/g, "");
+  const der = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  return crypto.subtle.importKey("pkcs8", der, { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]);
+}
+async function apnsJwt(key: CryptoKey, kid: string, team: string): Promise<string> {
+  const enc = new TextEncoder();
+  const h = b64url(enc.encode(JSON.stringify({ alg: "ES256", kid })));
+  const p = b64url(enc.encode(JSON.stringify({ iss: team, iat: Math.floor(Date.now() / 1000) })));
+  const data = `${h}.${p}`;
+  const sig = await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, key, enc.encode(data));
+  return `${data}.${b64url(new Uint8Array(sig))}`;
+}
+async function sendNativePush(admin: any, userId: string, msg: { title: string; body: string; url: string }) {
+  const p8 = Deno.env.get("APNS_KEY_P8"), kid = Deno.env.get("APNS_KEY_ID"), team = Deno.env.get("APNS_TEAM_ID");
+  if (!p8 || !kid || !team) return;   // 未設定 APNs → 跳過
+  const { data: toks } = await admin.from("native_push_tokens").select("token, platform").eq("user_id", userId);
+  const ios = (toks || []).filter((t: any) => (t.platform || "ios") === "ios");
+  if (!ios.length) return;
+  const bundle = Deno.env.get("APNS_BUNDLE_ID") || "com.timmyweistudy.trailtracker";
+  const host = (Deno.env.get("APNS_ENV") || "production") === "sandbox" ? "api.sandbox.push.apple.com" : "api.push.apple.com";
+  let jwt: string;
+  try { jwt = await apnsJwt(await importP8(p8), kid, team); } catch (_) { return; }
+  const body = JSON.stringify({ aps: { alert: { title: msg.title, body: msg.body }, sound: "default" }, url: msg.url });
+  await Promise.all(ios.map(async (t: any) => {
+    try {
+      const res = await fetch(`https://${host}/3/device/${t.token}`, {
+        method: "POST",
+        headers: { authorization: `bearer ${jwt}`, "apns-topic": bundle, "apns-push-type": "alert", "apns-priority": "10" },
+        body,
+      });
+      // 410 Unregistered / 400 BadDeviceToken → token 失效，刪掉
+      if (res.status === 410 || res.status === 400) await admin.from("native_push_tokens").delete().eq("token", t.token);
+    } catch (_) { /* 單一裝置失敗不影響其他 */ }
+  }));
+}
+
 Deno.serve(async (req) => {
   try {
     // ⚠️ 這支是用 --no-verify-jwt 部署的（DB webhook 不帶使用者 JWT），所以「一定要」自己驗身分。
@@ -48,24 +94,27 @@ Deno.serve(async (req) => {
       const { data: p } = await admin.from("profiles").select("display_name, handle").eq("id", actor_id).maybeSingle();
       if (p) actorName = p.display_name || p.handle || actorName;
     }
-    const { data: subs } = await admin.from("push_subscriptions").select("*").eq("user_id", user_id);
-    if (!subs || !subs.length) return new Response("no subs", { status: 200 });
-
     const origin = Deno.env.get("APP_ORIGIN") || "https://trail-tracker-0ma5.onrender.com";
-    const payload = JSON.stringify({
-      title: "循徑拾光",
-      body: `${actorName} ${LABEL[type] || "有新動態"}`,
-      url: post_id ? `${origin}/?post=${post_id}` : origin,
-      tag: type + (post_id || ""),
-    });
+    const title = "循徑拾光";
+    const bodyText = `${actorName} ${LABEL[type] || "有新動態"}`;
+    const url = post_id ? `${origin}/?post=${post_id}` : origin;
 
-    await Promise.all(subs.map(async (s: any) => {
-      try {
-        await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload);
-      } catch (err: any) {
-        if (err?.statusCode === 404 || err?.statusCode === 410) await admin.from("push_subscriptions").delete().eq("endpoint", s.endpoint);
-      }
-    }));
+    // Web Push（網頁裝置）
+    const { data: subs } = await admin.from("push_subscriptions").select("*").eq("user_id", user_id);
+    if (subs && subs.length) {
+      const payload = JSON.stringify({ title, body: bodyText, url, tag: type + (post_id || "") });
+      await Promise.all(subs.map(async (s: any) => {
+        try {
+          await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload);
+        } catch (err: any) {
+          if (err?.statusCode === 404 || err?.statusCode === 410) await admin.from("push_subscriptions").delete().eq("endpoint", s.endpoint);
+        }
+      }));
+    }
+
+    // 原生推播（iOS APNs）——未設定 APNs secrets 則自動跳過，不影響 Web Push
+    await sendNativePush(admin, user_id, { title, body: bodyText, url });
+
     return new Response("ok", { status: 200 });
   } catch (e) {
     return new Response("err: " + (e as Error).message, { status: 200 });

@@ -49,13 +49,22 @@ const Notifs = (() => {
   }
 
   async function pushBar() {
-    if (typeof Push === "undefined" || !Push.supported()) return "";
-    const on = await Push.isOn();
-    return `<button class="btn ${on ? "ghost" : "primary"} notif-push" id="notifPush">${ic("bell")} ${on ? "關閉推播通知" : "開啟推播通知"}</button>`;
+    // 網頁走 Web Push；原生 App（WKWebView 無 Web Push）走 Capacitor 原生推播
+    if (typeof Push !== "undefined" && Push.supported()) {
+      const on = await Push.isOn();
+      return `<button class="btn ${on ? "ghost" : "primary"} notif-push" id="notifPush">${ic("bell")} ${on ? "關閉推播通知" : "開啟推播通知"}</button>`;
+    }
+    if (typeof NativePush !== "undefined" && NativePush.available()) {
+      const on = await NativePush.isOn();
+      return `<button class="btn ${on ? "ghost" : "primary"} notif-push" id="notifPushNative">${ic("bell")} ${on ? "關閉推播通知" : "開啟推播通知"}</button>`;
+    }
+    return "";
   }
   function wirePush(into, redraw) {
-    const b = document.getElementById("notifPush"); if (!b) return;
-    b.addEventListener("click", async () => { b.disabled = true; await Push.toggle(); redraw(); });
+    const b = document.getElementById("notifPush");
+    if (b) b.addEventListener("click", async () => { b.disabled = true; await Push.toggle(); redraw(); });
+    const bn = document.getElementById("notifPushNative");
+    if (bn) bn.addEventListener("click", async () => { bn.disabled = true; await NativePush.toggle(); redraw(); });
   }
 
   // 把同型別／同貼文的通知收合成一列（如「小明 讚了你的貼文」＋👥3），減少洗版

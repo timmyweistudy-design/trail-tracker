@@ -69,6 +69,7 @@ for (const f of files) {
 const BACKUP_EXEMPT = new Set([
   "tt_records", "tt_profile", "tt_favs", "tt_log",        // exportAll 另外處理
   "tt_offline_mb", "tt_offline_free",                     // 離線額度：綁裝置，不跨機還原
+  "tt_native_push",                                       // 原生推播開關：綁這台裝置的 APNs token，不跨機還原
   "tt_premium", "tt_premium_since",                       // 訂閱狀態：由 Supabase 決定
   "tt_active_rec",                                        // 記錄中暫存
   "tt_team", "tt_team_name", "tt_team_live",              // 目前小隊/同行開關：裝置選擇
