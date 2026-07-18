@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- 原生推播（APNs）。distribution/TestFlight 建置用 production；Codemagic 簽章的描述檔需含 Push
+	     能力（App ID 已開啟 Push Notifications 時，fetch-signing-files 會自動帶）。 -->
+	<key>aps-environment</key>
+	<string>production</string>
+</dict>
+</plist>
