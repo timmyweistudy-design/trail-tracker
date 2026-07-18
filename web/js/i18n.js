@@ -897,15 +897,14 @@ async function ttTranslate(text, target) {
   return out;
 }
 async function _ttTranslateNet(text, target) {
-  try {
-    const r = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${target}&dt=t&q=${encodeURIComponent(text)}`);
-    if (r.ok) { const j = await r.json(); const out = (j && j[0] ? j[0] : []).map(seg => seg && seg[0]).join(""); if (out) return out; }
-  } catch (e) { /* 換後備 */ }
+  // 只用 MyMemory（合法的免費翻譯 API）。原本還打 translate.googleapis.com 的 gtx 端點——那是
+  // Google 非官方/未公開端點，違反其服務條款且隨時可能失效，已移除。
+  // 加 de=email 參數把匿名每日額度從 ~5k 拉到 ~50k 字（用 App 公用信箱）。
   try {
     const src = /[一-鿿]/.test(text) ? "zh-TW" : "en";
     if (src === target) return text;
-    const r = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text.slice(0, 450))}&langpair=${src}|${target}`);
-    if (r.ok) { const j = await r.json(); const out = j && j.responseData && j.responseData.translatedText; if (out && !/QUERY LENGTH|INVALID/i.test(out)) return out; }
+    const r = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text.slice(0, 450))}&langpair=${src}|${target}&de=gatherthetrail@gmail.com`);
+    if (r.ok) { const j = await r.json(); const out = j && j.responseData && j.responseData.translatedText; if (out && !/QUERY LENGTH|INVALID|MYMEMORY WARNING/i.test(out)) return out; }
   } catch (e) { /* 放棄 */ }
   return null;
 }

@@ -1771,26 +1771,33 @@ async function loadPhoto(t) {
   const hero = $("#heroWrap");
   if (!hero) return;
   try {
-    const urls = await Photos.forTrailMulti(t, 5);
+    const items = await Photos.forTrailMulti(t, 5);     // [{url, credit}]，credit = 作者 · 授權（Wikimedia CC 合規）
     if (_detailTrail !== t) return;                     // 已切換步道 → 別把舊步道的照片貼到新面板
-    if (!urls || !urls.length) return;                  // 無照片：保留漸層等高線底
+    if (!items || !items.length) return;                // 無照片：保留漸層等高線底
+    const urls = items.map(it => it.url);
     hero.classList.remove("noimg");
     const car = document.createElement("div");
     car.className = "hero-carousel";
-    car.innerHTML = urls.map(u => `<img alt="${t.name}" src="${u}" loading="lazy" decoding="async">`).join("")
-      + (urls.length > 1 ? `<div class="hero-dots">${urls.map((_, i) => `<span class="${i ? "" : "on"}"></span>`).join("")}</div>` : "");
+    car.innerHTML = items.map(it => `<img alt="${t.name}" src="${it.url}" loading="lazy" decoding="async">`).join("")
+      + (items.length > 1 ? `<div class="hero-dots">${items.map((_, i) => `<span class="${i ? "" : "on"}"></span>`).join("")}</div>` : "");
     hero.insertBefore(car, hero.firstChild);
-    hero.insertAdjacentHTML("afterbegin", `<div class="hero-credit">Wikimedia Commons${urls.length > 1 ? " · 左右滑看更多" : ""}</div>`);
+    // CC 授權要求標作者＋授權：隨輪播顯示當張照片的 credit
+    const creditEl = document.createElement("div");
+    creditEl.className = "hero-credit";
+    const setCredit = i => { creditEl.textContent = `📷 ${items[i].credit}${items.length > 1 ? " · 左右滑看更多" : ""}`; };
+    setCredit(0);
+    hero.insertBefore(creditEl, hero.firstChild);
     car.querySelectorAll("img").forEach((im, idx) => {
       if (im.complete && im.naturalWidth) im.classList.add("loaded");
       else { im.addEventListener("load", () => im.classList.add("loaded")); im.addEventListener("error", () => im.classList.add("loaded")); }
       im.addEventListener("click", () => openLightbox(urls, idx));   // 點圖放大
     });
-    if (urls.length > 1) {
+    if (items.length > 1) {
       const dots = car.querySelector(".hero-dots");
       car.addEventListener("scroll", () => {
-        const i = Math.round(car.scrollLeft / car.clientWidth);
+        const i = Math.max(0, Math.min(items.length - 1, Math.round(car.scrollLeft / car.clientWidth)));
         dots.querySelectorAll("span").forEach((s, k) => s.classList.toggle("on", k === i));
+        setCredit(i);
       }, { passive: true });
     }
   } catch { /* 無照片就維持漸層底 */ }

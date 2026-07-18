@@ -18,7 +18,7 @@ const Photos = (() => {
     const ks = [];
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k && (k.startsWith("photon_") || k.startsWith("photonm_"))) {
+      if (k && k.startsWith("photon")) {   // photon_ / photonm_ / photonm2_ 都算
         let ts = 0; try { ts = (JSON.parse(localStorage.getItem(k)) || {}).ts || 0; } catch { /* */ }
         ks.push([k, ts]);
       }
@@ -58,16 +58,27 @@ const Photos = (() => {
     return url;
   }
 
-  // 多張照片（給 Hero 輪播）；同一搜尋取多個符合的命中
+  // Wikimedia CC 授權要求標「作者＋授權條款」（不能只寫來源）。從 extmetadata 取作者/授權組 credit。
+  function parseCredit(ii) {
+    const m = (ii && ii.extmetadata) || {};
+    const author = String((m.Artist && m.Artist.value) || "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+    const lic = String((m.LicenseShortName && m.LicenseShortName.value) || "").trim();
+    const parts = [];
+    if (author) parts.push(author.slice(0, 40));
+    if (lic) parts.push(lic);
+    return parts.length ? parts.join(" · ") : "Wikimedia Commons";
+  }
+
+  // 多張照片（給 Hero 輪播）；回傳 [{url, credit}]，credit = 作者 · 授權（CC 合規）
   async function forTrailMulti(trail, n = 5) {
     if (!trail.name) return [];
-    const mk = "photonm_" + trail.id;
-    try { const c = JSON.parse(localStorage.getItem(mk)); if (c && Date.now() - c.ts < TTL) return c.urls; } catch { /* */ }
-    const key = core(trail.name); const urls = [];
+    const mk = "photonm2_" + trail.id;   // 加了 credit → 換快取鍵，不與舊格式(只有 urls)衝突
+    try { const c = JSON.parse(localStorage.getItem(mk)); if (c && Date.now() - c.ts < TTL) return c.items; } catch { /* */ }
+    const key = core(trail.name); const items = [];
     try {
       const api = "https://commons.wikimedia.org/w/api.php?action=query&generator=search" +
         `&gsrsearch=${encodeURIComponent(trail.name)}&gsrnamespace=6&gsrlimit=20` +
-        "&prop=imageinfo&iiprop=url%7Cmime&iiurlwidth=900&format=json&origin=*";
+        "&prop=imageinfo&iiprop=url%7Cmime%7Cextmetadata&iiextmetadatafilter=Artist%7CLicenseShortName&iiurlwidth=900&format=json&origin=*";
       const res = await fetch(api);
       if (res.ok) {
         const pages = ((await res.json()).query || {}).pages || {};
@@ -76,14 +87,14 @@ const Photos = (() => {
           const ii = p.imageinfo && p.imageinfo[0];
           if (ii && ii.mime && ii.mime.startsWith("image/") && !BAD.test(title)
             && (title.includes(trail.name) || (key.length >= 2 && title.includes(key)))) {
-            urls.push(ii.thumburl || ii.url);
-            if (urls.length >= n) break;
+            items.push({ url: ii.thumburl || ii.url, credit: parseCredit(ii) });
+            if (items.length >= n) break;
           }
         }
       }
     } catch { /* */ }
-    safeSet(mk, JSON.stringify({ ts: Date.now(), urls }));
-    return urls;
+    safeSet(mk, JSON.stringify({ ts: Date.now(), items }));
+    return items;
   }
 
   return { forTrail, forTrailMulti };
