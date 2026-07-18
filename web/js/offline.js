@@ -2,11 +2,9 @@
 // 圖磚存在 Cache Storage 'tt-tiles'，Service Worker 會優先從此快取取用。
 const Offline = (() => {
   const TILE_CACHE = "tt-tiles";
-  // 與 app.js 的 tileLayer 用同一組 URL（含 Esri 授權 token；下載與顯示快取鍵必須完全一致）
-  const _AGKEY = (typeof window !== "undefined" && window.ARCGIS_API_KEY) || "";
-  const _ESRI = _AGKEY ? "https://ibasemaps-api.arcgis.com/arcgis/rest/services" : "https://server.arcgisonline.com/ArcGIS/rest/services";
-  const _AGTOK = _AGKEY ? `?token=${encodeURIComponent(_AGKEY)}` : "";
-  const tileUrl = (z, x, y) => `${_ESRI}/World_Topo_Map/MapServer/tile/${z}/${y}/${x}${_AGTOK}`;
+  // 與 app.js baseTopo 用同一組 URL（NLSC 台灣官方電子地圖；下載與顯示快取鍵必須完全一致）。
+  // 免金鑰、座標 z/y/x。（Esri 授權端點無地形 raster，故底圖改 NLSC。）
+  const tileUrl = (z, x, y) => `https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/${z}/${y}/${x}`;
 
   const lon2x = (lon, z) => Math.floor((lon + 180) / 360 * 2 ** z);
   const lat2y = (lat, z) => {

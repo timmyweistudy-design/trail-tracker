@@ -922,10 +922,10 @@ const ESRI = _AGKEY
   : "https://server.arcgisonline.com/ArcGIS/rest/services";
 const AGTOK = _AGKEY ? `?token=${encodeURIComponent(_AGKEY)}` : "";
 // detectRetina：高 DPR 手機（如 iPhone 3x）改抓深一階圖磚縮小顯示→更清晰不糊
-function baseTopo() { return L.tileLayer(`${ESRI}/World_Topo_Map/MapServer/tile/{z}/{y}/{x}${AGTOK}`, { attribution: "© Esri 地形", maxZoom: 19, maxNativeZoom: 18, detectRetina: true }); }
+// 地形底圖：Esri 授權端點(ibasemaps-api)沒有 World_Topo_Map raster（已移到向量圖服務），
+// 改用 NLSC 台灣官方電子地圖（免費政府開放資料、可商用、對台灣更詳細）；立體感靠 Esri hillshade 疊上。座標 z/y/x。
+function baseTopo() { return L.tileLayer("https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}", { attribution: "© 內政部國土測繪中心", maxZoom: 19, maxNativeZoom: 18, detectRetina: true }); }
 function baseSat() { return L.tileLayer(`${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}${AGTOK}`, { attribution: "© Esri、Maxar 衛星影像", maxZoom: 19, maxNativeZoom: 18, detectRetina: true }); }
-// NLSC 國土測繪中心 通用版電子地圖：台灣官方、比 Esri 全球圖詳細；免金鑰 WMTS（座標順序 z/y/x）
-function baseNlsc() { return L.tileLayer("https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}", { attribution: "© 內政部國土測繪中心", maxZoom: 19, maxNativeZoom: 18, detectRetina: true }); }
 // 2.5D 地形陰影（hillshade）：疊在底圖上、以 multiply 混色壓暗坡面陰影→山勢立體。
 // 同 Esri 來源，SW 一樣快取得到（離線可用）。專屬 pane 放在底圖之上、路線/標記之下。
 const ESRI_HILLSHADE = `${ESRI}/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}${AGTOK}`;
@@ -1327,15 +1327,14 @@ function addRecenter(map) {
   };
   c.addTo(map);
 }
-function addBaseWithToggle(map) {   // 底圖切換：地形(預設)/衛星/台灣官方圖
+function addBaseWithToggle(map) {   // 底圖切換：地形(NLSC台灣官方+立體陰影，預設) / 衛星(Esri)
   const hs = hillshadeLayer(map).addTo(map);   // 地形模式預設疊地形陰影
-  const layers = { topo: baseTopo().addTo(map), sat: baseSat(), nlsc: baseNlsc() };
+  const layers = { topo: baseTopo().addTo(map), sat: baseSat() };
   const ctrl = L.control({ position: "bottomleft" });
   ctrl.onAdd = () => {
     const d = L.DomUtil.create("div", "basemap-toggle");
     d.innerHTML = `<button class="bm on" data-l="topo">${ic("mountain")} ${ttT("地形")}</button>`
-      + `<button class="bm" data-l="sat">${ic("globe")} ${ttT("衛星")}</button>`
-      + `<button class="bm" data-l="nlsc">${ic("map")} ${ttT("台灣")}</button>`;
+      + `<button class="bm" data-l="sat">${ic("globe")} ${ttT("衛星")}</button>`;
     L.DomEvent.disableClickPropagation(d);
     d.addEventListener("click", e => {
       const b = e.target.closest(".bm"); if (!b) return;
