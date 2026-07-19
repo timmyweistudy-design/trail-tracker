@@ -3398,7 +3398,7 @@ $("#btnDiag").addEventListener("click", async () => {
   const favN = g(() => TRAILS.filter(t => Store.isFav(t.id)).length);
   const lang = g(() => (typeof I18n !== "undefined" ? I18n.lang() : "zh"));
   const theme = g(() => localStorage.getItem("tt_theme") || "light");
-  const fs = g(() => localStorage.getItem("tt_fontscale") || "1.15");
+  const fs = g(() => localStorage.getItem("tt_fontscale") || "1.2");
   const lsKB = g(() => Math.round(Object.keys(localStorage).reduce((s, k) => s + ((localStorage.getItem(k) || "").length + k.length), 0) / 1024));
   const os = g(() => (navigator.userAgent.match(/iPhone|iPad|Android|Windows|Macintosh|Linux/) || ["?"])[0]);
   const swState = g(() => (navigator.serviceWorker && navigator.serviceWorker.controller) ? "已控制" : "未控制");
@@ -3842,9 +3842,9 @@ function initTheme() {
       document.querySelectorAll("[data-theme-opt]").forEach(x => x.classList.toggle("on", x === b));
     });
   });
-  // 字體大小（無障礙）：標準/大/特大 = 1.15/1.3/1.45 → 設 --fs 倍率，只放大文字不動地圖版面
-  // （舊的 1 已下架，index.html 的開機腳本會把它遷移成 1.15）
-  const curFs = (() => { try { return localStorage.getItem("tt_fontscale") || "1.15"; } catch (e) { return "1.15"; } })();
+  // 字體大小（無障礙）：四檔 1.2/1.35/1.5/1.65 → 設 --fs 倍率，只放大文字不動地圖版面
+  // （舊值由 index.html 開機腳本遷移到最近的新檔）
+  const curFs = (() => { try { return localStorage.getItem("tt_fontscale") || "1.2"; } catch (e) { return "1.2"; } })();
   document.querySelectorAll(".fs-opt").forEach(b => {
     b.classList.toggle("on", b.dataset.fs === curFs);
     if (!_themeBound) b.addEventListener("click", () => {
@@ -4088,6 +4088,8 @@ async function toggleDebugPanel() {
     ["📅重置每日任務", () => ttDebug.resetQuests()],
     ["🗑清所有行程", async () => { if (await ttConfirm("清空全部行程記錄？")) ttDebug.clearAllRecords(); }],
     ["重置🥚", () => ttDebug.resetPet()],
+    ["🌐重看語言選擇", () => { try { localStorage.removeItem("tt_lang"); localStorage.removeItem("tt_onboarded_v2"); } catch (e) { /* */ } const dp = document.getElementById("debugPanel"); if (dp) dp.remove(); langGate(true); }],
+    ["🧭重看導覽", () => { try { localStorage.removeItem("tt_onboarded_v2"); } catch (e) { /* */ } const dp = document.getElementById("debugPanel"); if (dp) dp.remove(); onboarding(true); }],
   ];
   p.innerHTML = `<div class="dbg-h">🛠 測試面板 <span id="dbgState"></span><button id="dbgClose">✕</button></div><div class="dbg-grid"></div>`;
   const grid = p.querySelector(".dbg-grid");
@@ -4105,10 +4107,12 @@ if (new URLSearchParams(location.search).get("debug") === "1") setTimeout(toggle
 })();
 
 // 首次進 App 先問語言（新用戶：尚未選語言且未看過導覽）。每語言用自身名稱顯示，選完 set() 會重載。
-(function langGate() {
+// 具名函式：DEBUG 面板可重新呼叫預覽。force=true 略過「已選過」判斷。
+function langGate(force) {
+  if (document.querySelector(".lang-gate")) return;
   const chosen = (() => { try { return localStorage.getItem("tt_lang"); } catch (e) { return null; } })();
   const onboarded = (() => { try { return localStorage.getItem("tt_onboarded_v2"); } catch (e) { return null; } })();
-  if (chosen || onboarded || new URLSearchParams(location.search).get("trail")) return;
+  if (!force && (chosen || onboarded || new URLSearchParams(location.search).get("trail"))) return;
   const ov = document.createElement("div");
   ov.className = "lang-gate";
   ov.innerHTML = `<div class="lang-gate-card">
@@ -4117,18 +4121,19 @@ if (new URLSearchParams(location.search).get("debug") === "1") setTimeout(toggle
       <h2>選擇語言 · Language</h2>
       <p>循徑拾光 · Gather the Trail</p>
     </div>
+    <div class="lg-fs-label">字體大小 · Text size</div>
     <div class="lg-fs" id="lgFs" aria-label="Text size">
-      <span class="lg-fs-ic">A</span>
-      <button class="lg-fs-opt" data-fs="1.15" aria-label="A"><span style="font-size:16px">A</span></button>
-      <button class="lg-fs-opt" data-fs="1.3" aria-label="A"><span style="font-size:21px">A</span></button>
-      <button class="lg-fs-opt" data-fs="1.45" aria-label="A"><span style="font-size:27px">A</span></button>
+      <button class="lg-fs-opt" data-fs="1.2" aria-label="A"><span style="font-size:15px">A</span></button>
+      <button class="lg-fs-opt" data-fs="1.35" aria-label="A"><span style="font-size:19px">A</span></button>
+      <button class="lg-fs-opt" data-fs="1.5" aria-label="A"><span style="font-size:24px">A</span></button>
+      <button class="lg-fs-opt" data-fs="1.65" aria-label="A"><span style="font-size:29px">A</span></button>
     </div>
     <input type="search" class="lang-search" id="lgSearch" placeholder="Search · 搜尋" autocomplete="off">
     <div class="lang-list" id="lgList">${TT_LANGS.map(([c, f, n, sub]) =>
       `<button class="lang-item" data-lg="${c}" data-search="${(n + " " + sub + " " + c).toLowerCase()}"><span class="flag">${f}</span><span class="names"><span class="native">${n}</span>${n === sub ? "" : ` <span class="sub">${sub}</span>`}</span></button>`).join("")}</div>
   </div>`;
   // 字體大小：第一眼就能調，選了立刻套用（langGate 的字也跟著放大，年長者馬上有回饋）
-  const curFs = (() => { try { return localStorage.getItem("tt_fontscale") || "1.15"; } catch (e) { return "1.15"; } })();
+  const curFs = (() => { try { return localStorage.getItem("tt_fontscale") || "1.2"; } catch (e) { return "1.2"; } })();
   ov.querySelectorAll(".lg-fs-opt").forEach(b => {
     b.classList.toggle("on", b.dataset.fs === curFs);
     b.addEventListener("click", () => {
@@ -4150,13 +4155,14 @@ if (new URLSearchParams(location.search).get("debug") === "1") setTimeout(toggle
     } catch (e) { ov.remove(); onboarding(); }
   }));
   document.body.appendChild(ov);
-})();
+}
+langGate();
 
 // #22 首次使用導覽：聚光燈式，真的帶使用者點過每個分頁、在真的按鈕上跳說明（為年長者設計）。
 // 先引導社群登入（可略過），再逐頁介紹。長句 >40 字會跳過 i18n 檢查（比照舊導覽）。
-function onboarding() {
+function onboarding(force) {
   const KEY = "tt_onboarded_v2";
-  if (localStorage.getItem(KEY) || new URLSearchParams(location.search).get("trail")) return;
+  if (!force && (localStorage.getItem(KEY) || new URLSearchParams(location.search).get("trail"))) return;
   if (!localStorage.getItem("tt_lang")) return;   // 尚未選語言 → 等語言選擇覆蓋層先處理
   if (document.querySelector(".tour")) return;     // 防重複開
 

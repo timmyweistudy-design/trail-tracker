@@ -497,9 +497,9 @@ body.navup-on #recMap .leaflet-map-pane { transition: transform .12s linear; }
 .onboard-dots span.on { background: var(--brand); width: 20px; border-radius: 4px; }
 
 /* langGate 字體大小列（第一眼就能調） */
-.lg-fs { display: flex; gap: 8px; justify-content: center; align-items: center; margin: 2px 0 14px; }
-.lg-fs-ic { font-size: 13px; color: var(--ink-soft); margin-right: 2px; font-weight: 700; }
-.lg-fs-opt { width: 48px; height: 42px; border: 1px solid var(--line); background: var(--surface); border-radius: var(--r-sm); color: var(--ink); cursor: pointer; display: grid; place-items: center; line-height: 1; }
+.lg-fs-label { text-align: center; font-size: 12.5px; color: var(--ink-soft); font-weight: 600; margin: 2px 0 6px; letter-spacing: .3px; }
+.lg-fs { display: flex; gap: 7px; justify-content: center; margin: 0 0 14px; }
+.lg-fs-opt { width: 52px; height: 44px; border: 1px solid var(--line); background: var(--surface); border-radius: var(--r-sm); color: var(--ink); cursor: pointer; display: grid; place-items: center; line-height: 1; padding: 0; }
 .lg-fs-opt.on { border-color: var(--brand); background: var(--brand-soft); color: var(--brand-deep); }
 
 /* 聚光燈導覽（首次使用，帶年長者逐頁認識） */
