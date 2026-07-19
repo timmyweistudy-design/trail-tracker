@@ -4117,10 +4117,26 @@ if (new URLSearchParams(location.search).get("debug") === "1") setTimeout(toggle
       <h2>選擇語言 · Language</h2>
       <p>循徑拾光 · Gather the Trail</p>
     </div>
+    <div class="lg-fs" id="lgFs" aria-label="Text size">
+      <span class="lg-fs-ic">A</span>
+      <button class="lg-fs-opt" data-fs="1.15" aria-label="A"><span style="font-size:16px">A</span></button>
+      <button class="lg-fs-opt" data-fs="1.3" aria-label="A"><span style="font-size:21px">A</span></button>
+      <button class="lg-fs-opt" data-fs="1.45" aria-label="A"><span style="font-size:27px">A</span></button>
+    </div>
     <input type="search" class="lang-search" id="lgSearch" placeholder="Search · 搜尋" autocomplete="off">
     <div class="lang-list" id="lgList">${TT_LANGS.map(([c, f, n, sub]) =>
       `<button class="lang-item" data-lg="${c}" data-search="${(n + " " + sub + " " + c).toLowerCase()}"><span class="flag">${f}</span><span class="names"><span class="native">${n}</span>${n === sub ? "" : ` <span class="sub">${sub}</span>`}</span></button>`).join("")}</div>
   </div>`;
+  // 字體大小：第一眼就能調，選了立刻套用（langGate 的字也跟著放大，年長者馬上有回饋）
+  const curFs = (() => { try { return localStorage.getItem("tt_fontscale") || "1.15"; } catch (e) { return "1.15"; } })();
+  ov.querySelectorAll(".lg-fs-opt").forEach(b => {
+    b.classList.toggle("on", b.dataset.fs === curFs);
+    b.addEventListener("click", () => {
+      try { localStorage.setItem("tt_fontscale", b.dataset.fs); } catch (e) { /* */ }
+      document.documentElement.style.setProperty("--fs", b.dataset.fs);
+      ov.querySelectorAll(".lg-fs-opt").forEach(x => x.classList.toggle("on", x === b));
+    });
+  });
   const lgs = ov.querySelector("#lgSearch");
   if (lgs) lgs.addEventListener("input", () => {
     const q = lgs.value.trim().toLowerCase();
@@ -4136,40 +4152,88 @@ if (new URLSearchParams(location.search).get("debug") === "1") setTimeout(toggle
   document.body.appendChild(ov);
 })();
 
-// #22 首次使用導覽
+// #22 首次使用導覽：聚光燈式，真的帶使用者點過每個分頁、在真的按鈕上跳說明（為年長者設計）。
+// 先引導社群登入（可略過），再逐頁介紹。長句 >40 字會跳過 i18n 檢查（比照舊導覽）。
 function onboarding() {
-  const KEY = "tt_onboarded_v2";   // 改版 → 現有用戶也會再看一次新版導覽
+  const KEY = "tt_onboarded_v2";
   if (localStorage.getItem(KEY) || new URLSearchParams(location.search).get("trail")) return;
   if (!localStorage.getItem("tt_lang")) return;   // 尚未選語言 → 等語言選擇覆蓋層先處理
-  const slides = [
-    { e: "⛰️", h: "歡迎來到循徑拾光", p: "全台 2100+ 條步道一手掌握。搜尋、分級、記錄、養成，一起走進山林。" },
-    { e: "🧭", h: "探索與分級", p: "搜尋步道看官方難度分級、真實路線與海拔剖面；還有天氣、周邊人文景點與美食。用『精選主題輯』快速找古道、瀑布、親子路線。" },
-    { e: "📍", h: "記錄每一步", p: "邊走邊記里程、步數、卡路里、爬升與即時海拔曲線；自動暫停、中斷可復原，離線也能用。" },
-    { e: "🐉", h: "養成山林夥伴", p: "走路就能養寵物！從一顆蛋開始，靠里程進化：🥚→🦊→🐅→🐉。撿果實、每天餵食、提升親密度，走越多牠陪你長越快。" },
-    { e: "🗺️", h: "離線・收藏・備份", p: "出發前可預載離線地圖，山區沒訊號也看得到；收藏步道、行程可一鍵備份，換手機不怕遺失。" },
+  if (document.querySelector(".tour")) return;     // 防重複開
+
+  const steps = [
+    { center: true, e: "⛰️", h: "歡迎來到循徑拾光", p: "第一次來嗎？我帶你走一遍，只要一分鐘 👋" },
+    { view: "social", sel: "#view-social .social-auth, #view-social", e: "👥", h: "先登入吧（可略過）",
+      p: "登入可以把紀錄備份到雲端、換手機也不怕，還能和山友交流。要登入就按「去登入」，想之後再說就按「先略過」。", login: true },
+    { view: "explore", sel: "#searchInput", e: "🔍", h: "搜尋步道",
+      p: "在這裡打步道名、地區或主題，找你想走的路線；下面會列出全台 2100+ 條步道。" },
+    { view: "explore", sel: ".toolbar .seg, .toolbar", e: "🗺️", h: "清單 / 地圖",
+      p: "可以切換用清單看，或用地圖看步道分布。上面還有『精選主題輯』幫你找古道、瀑布、親子路線。" },
+    { view: "record", sel: "#btnStart", e: "📍", h: "記錄健行",
+      p: "要出發時按「開始」，App 就會記錄你的里程、步數、爬升和海拔；鎖螢幕、沒訊號也能記。" },
+    { view: "pet", sel: "#petCard", e: "🐉", h: "山林夥伴",
+      p: "走路就能養一隻夥伴！從一顆蛋開始，越走牠長越快，還能撿果實、每天餵食。" },
+    { view: "me", sel: "#fontRow, #view-me", e: "⚙️", h: "我的足跡・設定",
+      p: "這裡看你的統計數字，也能調整「字體大小」和「語言」，還有雲端備份。" },
+    { center: true, e: "🎉", h: "開始探索吧！", p: "隨時可以再回來走走，祝你在山林裡玩得開心 🏔️", last: true },
   ];
+
   let i = 0;
-  const ov = document.createElement("div");
-  ov.className = "onboard";
-  const render = () => {
-    const s = slides[i], last = i === slides.length - 1;
-    ov.innerHTML = `<div class="onboard-card">
-      <div class="onboard-mark">${s.e}</div>
-      <h2>${s.h}</h2>
-      <p style="background:none;color:var(--ink-soft);text-align:center">${s.p}</p>
-      <div class="onboard-dots">${slides.map((_, k) => `<span class="${k === i ? "on" : ""}"></span>`).join("")}</div>
-      <button class="btn primary" id="onboardNext">${last ? "開始探索" : "下一步"}</button>
-      ${last ? "" : `<button class="info-link" id="onboardSkip" style="display:block;margin:8px auto 0">略過</button>`}
-    </div>`;
-    ov.querySelector("#onboardNext").addEventListener("click", () => {
-      if (last) { localStorage.setItem(KEY, "1"); ov.remove(); }
-      else { i++; render(); }
-    });
-    const sk = ov.querySelector("#onboardSkip");
-    if (sk) sk.addEventListener("click", () => { localStorage.setItem(KEY, "1"); ov.remove(); });
-  };
+  const ov = document.createElement("div"); ov.className = "tour";
+  const spot = document.createElement("div"); spot.className = "tour-spot";
+  const tip = document.createElement("div"); tip.className = "tour-tip";
+  ov.appendChild(spot); ov.appendChild(tip);
   document.body.appendChild(ov);
-  render();
+
+  const done = () => { try { localStorage.setItem(KEY, "1"); } catch (e) { /* */ } ov.remove(); };
+  const findTarget = sel => {
+    for (const s of (sel || "").split(",")) { const el = document.querySelector(s.trim()); if (el && el.offsetParent !== null) return el; }
+    return null;
+  };
+  function placeSpot(target, center) {
+    if (center || !target) {   // 無目標／置中步驟：spot 縮到中央 0 大小 → box-shadow 蓋滿整個畫面（均勻變暗）
+      spot.style.width = spot.style.height = "0px";
+      spot.style.top = "50%"; spot.style.left = "50%";
+      return;
+    }
+    try { target.scrollIntoView({ block: "center" }); } catch (e) { /* */ }
+    const r = target.getBoundingClientRect(), pad = 8;
+    spot.style.top = (r.top - pad) + "px"; spot.style.left = (r.left - pad) + "px";
+    spot.style.width = (r.width + pad * 2) + "px"; spot.style.height = (r.height + pad * 2) + "px";
+  }
+  function placeTip(target, st) {
+    tip.classList.toggle("center", !!st.center);
+    tip.style.top = tip.style.bottom = "";
+    if (st.center || !target) return;   // 置中由 CSS 處理
+    // 說明框貼「螢幕邊緣」而非目標旁：避免大字體時框超出畫面、按鈕點不到。
+    // 目標在上半 → 框貼下緣；目標在下半 → 框貼上緣（避開頂部 header）。永遠完整可見。
+    const r = target.getBoundingClientRect();
+    if (r.top + r.height / 2 < window.innerHeight * 0.5) tip.style.bottom = "calc(24px + var(--safe-b, 0px))";
+    else tip.style.top = "84px";
+  }
+  function renderTip(st, target) {
+    const dots = steps.map((_, k) => `<span class="${k === i ? "on" : ""}"></span>`).join("");
+    const btns = st.login
+      ? `<button class="btn primary" id="tourLogin">去登入</button><button class="info-link" id="tourNext" style="display:block;margin:10px auto 0">先略過，繼續介紹</button>`
+      : `<button class="btn primary" id="tourNext">${st.last ? "開始探索" : "下一步"}</button>`;
+    tip.innerHTML = `${st.last ? "" : `<button class="tour-skip" id="tourSkip" aria-label="略過導覽">✕</button>`}`
+      + `<div class="tour-emoji">${st.e}</div><h3>${st.h}</h3><p>${st.p}</p>`
+      + `<div class="tour-dots">${dots}</div>${btns}`;
+    placeTip(target, st);
+    const nx = tip.querySelector("#tourNext"); if (nx) nx.addEventListener("click", () => { if (st.last) done(); else { i++; show(); } });
+    const sk = tip.querySelector("#tourSkip"); if (sk) sk.addEventListener("click", done);
+    const lg = tip.querySelector("#tourLogin"); if (lg) lg.addEventListener("click", done);   // 結束導覽、留在社群分頁，登入表單就在眼前
+  }
+  async function show() {
+    const st = steps[i];
+    if (st.view) { const tb = document.querySelector(`.tab[data-view="${st.view}"]`); if (tb && !tb.classList.contains("active")) tb.click(); }
+    let target = null;
+    if (st.sel && !st.center) {   // 等目標出現（社群/寵物可能非同步渲染），最多等 ~1.5 秒
+      for (let k = 0; k < 12 && !target; k++) { target = findTarget(st.sel); if (!target) await new Promise(r => setTimeout(r, 130)); }
+    }
+    placeSpot(target, st.center);
+    renderTip(st, target);
+  }
+  show();
 }
 // 已選過語言的用戶（含重載回來的）：直接跑導覽；新用戶則由 langGate 選完語言後再觸發
 onboarding();

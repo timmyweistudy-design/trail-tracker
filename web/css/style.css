@@ -496,6 +496,25 @@ body.navup-on #recMap .leaflet-map-pane { transition: transform .12s linear; }
 .onboard-dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--line); transition: .2s; }
 .onboard-dots span.on { background: var(--brand); width: 20px; border-radius: 4px; }
 
+/* langGate 字體大小列（第一眼就能調） */
+.lg-fs { display: flex; gap: 8px; justify-content: center; align-items: center; margin: 2px 0 14px; }
+.lg-fs-ic { font-size: 13px; color: var(--ink-soft); margin-right: 2px; font-weight: 700; }
+.lg-fs-opt { width: 48px; height: 42px; border: 1px solid var(--line); background: var(--surface); border-radius: var(--r-sm); color: var(--ink); cursor: pointer; display: grid; place-items: center; line-height: 1; }
+.lg-fs-opt.on { border-color: var(--brand); background: var(--brand-soft); color: var(--brand-deep); }
+
+/* 聚光燈導覽（首次使用，帶年長者逐頁認識） */
+.tour { position: fixed; inset: 0; z-index: 9500; pointer-events: auto; animation: fadein .25s; }
+.tour-spot { position: fixed; border-radius: 14px; box-shadow: 0 0 0 9999px rgba(16,28,18,.72); pointer-events: none; transition: top .3s ease, left .3s ease, width .3s ease, height .3s ease; }
+.tour-tip { position: fixed; left: 50%; transform: translateX(-50%); width: min(340px, 88vw); max-height: 78vh; overflow-y: auto; background: var(--surface); border-radius: var(--r-lg); padding: 20px 18px 18px; box-shadow: var(--sh-lg); pointer-events: auto; animation: rise .35s; }
+.tour-tip.center { top: 50%; transform: translate(-50%, -50%); }
+.tour-emoji { font-size: calc(38px * var(--fs, 1)); text-align: center; line-height: 1; }
+.tour-tip h3 { font-family: var(--serif); text-align: center; margin: 8px 0; font-size: calc(19px * var(--fs, 1)); color: var(--brand-deep); }
+.tour-tip p { font-size: calc(14px * var(--fs, 1)); line-height: 1.65; color: var(--ink); text-align: center; margin: 0; }
+.tour-dots { display: flex; gap: 6px; justify-content: center; margin: 14px 0; }
+.tour-dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--line); transition: .2s; }
+.tour-dots span.on { background: var(--brand); width: 18px; border-radius: 3px; }
+.tour-skip { position: absolute; top: 6px; right: 8px; border: none; background: none; font-size: 18px; line-height: 1; color: var(--ink-soft); cursor: pointer; width: 34px; height: 34px; border-radius: 50%; }
+
 /* 天氣 */
 .wx-now { display: flex; align-items: center; gap: 12px; background: linear-gradient(135deg, #eef3ec, var(--surface-2)); border-radius: var(--r-sm); padding: 12px 14px; border: 1px solid var(--line-soft); }
 .wx-now-e { font-size: calc(34px * var(--fs, 1)); }
