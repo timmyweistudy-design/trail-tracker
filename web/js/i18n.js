@@ -4,6 +4,16 @@
 // 步道名稱/介紹等資料內容維持中文。要補翻譯：加 DICT 詞條或 PATTERNS 規則即可。
 const I18n = (() => {
   const DICT = {
+    "社群有：動態看好友、探索找步道旅行、搜尋山友、通知、我的檔案。": "In Community: a feed of friends, explore trail trips, search hikers, notifications and your profile.",
+    "這裡看你的里程、爬升、完成步道等統計。": "See your stats here: distance, ascent, trails completed and more.",
+    // 導覽擴充
+    "點開步道看資訊": "Open a trail for details",
+    "點任一步道卡片，裡面有難度、路況、天氣、海拔、生態、周邊景點美食。": "Tap any trail card for its grade, path conditions, weather, elevation, wildlife and nearby sights & food.",
+    "餵食與果實": "Feeding & berries",
+    "每天餵夥伴補活力；走路和每日任務會賺果實，還能到「好友的夥伴」送果實給山友。": "Feed your buddy daily for energy; walking and daily tasks earn berries, and you can gift berries to hikers via Friends' buddies.",
+    "成就系統": "Achievements",
+    "成就樹：里程、爬升、連續天數等達標就解鎖徽章，永久保留。": "Achievement tree: reach milestones in distance, ascent, streak days and more to unlock badges — kept forever.",
+    "設定都在這：會員、外觀（字體大小／主題）、語言、個人檔案、資料備份、離線地圖。": "All settings are here: membership, appearance (text size/theme), language, profile, data backup and offline maps.",
     // 首次使用導覽
     "先登入吧（可略過）": "Sign in first (optional)",
     "搜尋步道": "Search trails",

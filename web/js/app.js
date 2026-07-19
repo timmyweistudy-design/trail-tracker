@@ -4166,7 +4166,7 @@ function onboarding(force) {
   if (!localStorage.getItem("tt_lang")) return;   // 尚未選語言 → 等語言選擇覆蓋層先處理
   if (document.querySelector(".tour")) return;     // 防重複開
 
-  const T = (typeof I18n !== "undefined" && I18n.tx) ? (s => I18n.tx(s) || s) : (s => s);   // 導覽文字翻 25 語言
+  const T = (typeof ttT === "function") ? ttT : (s => s);   // 導覽文字翻 25 語言（ttT：中文回原文、其他語言才翻）
   const steps = [
     { center: true, e: "⛰️", h: "歡迎來到循徑拾光", p: "第一次來嗎？我帶你走一遍 👋" },
     { view: "social", sel: ".social-auth", e: "👥", h: "先登入吧（可略過）",
@@ -4175,12 +4175,22 @@ function onboarding(force) {
       p: "打步道名、地區或主題，找你想走的路線。" },
     { view: "explore", sel: ".toolbar .seg, .toolbar", e: "🗺️", h: "清單或地圖",
       p: "切換用清單或地圖看步道，上面還有精選主題輯。" },
+    { view: "explore", sel: "#trailList .card", e: "📄", h: "點開步道看資訊",
+      p: "點任一步道卡片，裡面有難度、路況、天氣、海拔、生態、周邊景點美食。" },
     { view: "record", sel: "#btnStart", e: "📍", h: "記錄健行",
       p: "出發時按「開始」，記錄里程、爬升，鎖螢幕、沒訊號也能記。" },
     { view: "pet", sel: "#petCard", e: "🐉", h: "山林夥伴",
       p: "走路就能養夥伴！從一顆蛋開始，越走牠長越快。" },
-    { view: "me", sel: "#meStats", e: "⚙️", h: "我的足跡・設定",
-      p: "看你的統計；往下滑可以調字體大小、換語言、雲端備份。" },
+    { view: "pet", sel: "#petFeed", e: "🍎", h: "餵食與果實",
+      p: "每天餵夥伴補活力；走路和每日任務會賺果實，還能到「好友的夥伴」送果實給山友。" },
+    { view: "pet", sel: "#petBadges .section-title", e: "🏅", h: "成就系統",
+      p: "成就樹：里程、爬升、連續天數等達標就解鎖徽章，永久保留。" },
+    { view: "me", sel: "#meStats", e: "📊", h: "我的足跡",
+      p: "這裡看你的里程、爬升、完成步道等統計。" },
+    { view: "me", sel: ".set-zone-title", e: "⚙️", h: "設定",
+      p: "設定都在這：會員、外觀（字體大小／主題）、語言、個人檔案、資料備份、離線地圖。" },
+    { view: "social", sel: ".social-subnav", e: "💬", h: "社群",
+      p: "社群有：動態看好友、探索找步道旅行、搜尋山友、通知、我的檔案。" },
     { center: true, e: "🎉", h: "開始探索吧！", p: "祝你在山林裡玩得開心 🏔️", last: true },
   ].map(s => ({ ...s, h: T(s.h), p: T(s.p) }));
 
@@ -4226,6 +4236,7 @@ function onboarding(force) {
   async function show() {
     const st = steps[i];
     renderTip(st);                                   // 先把內容畫出來（切分頁/等目標時也看得到）
+    place(null);                                      // 先置中（避免等目標時殘留上一步的聚光燈位置）
     if (st.view) { const tb = document.querySelector(`.tab[data-view="${st.view}"]`); if (tb && !tb.classList.contains("active")) tb.click(); }
     let target = null;
     if (st.sel && !st.center) {                      // 等目標出現（社群/寵物非同步渲染），最多等 ~2 秒
