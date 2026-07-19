@@ -4160,22 +4160,23 @@ function onboarding() {
   if (!localStorage.getItem("tt_lang")) return;   // 尚未選語言 → 等語言選擇覆蓋層先處理
   if (document.querySelector(".tour")) return;     // 防重複開
 
+  const T = (typeof I18n !== "undefined" && I18n.tx) ? (s => I18n.tx(s) || s) : (s => s);   // 導覽文字翻 25 語言
   const steps = [
-    { center: true, e: "⛰️", h: "歡迎來到循徑拾光", p: "第一次來嗎？我帶你走一遍，只要一分鐘 👋" },
-    { view: "social", sel: "#view-social .social-auth, #view-social", e: "👥", h: "先登入吧（可略過）",
-      p: "登入可以把紀錄備份到雲端、換手機也不怕，還能和山友交流。要登入就按「去登入」，想之後再說就按「先略過」。", login: true },
+    { center: true, e: "⛰️", h: "歡迎來到循徑拾光", p: "第一次來嗎？我帶你走一遍 👋" },
+    { view: "social", sel: ".social-auth", e: "👥", h: "先登入吧（可略過）",
+      p: "登入可以雲端備份紀錄、和山友交流。要登入按「去登入」，或按「先略過」。", login: true },
     { view: "explore", sel: "#searchInput", e: "🔍", h: "搜尋步道",
-      p: "在這裡打步道名、地區或主題，找你想走的路線；下面會列出全台 2100+ 條步道。" },
-    { view: "explore", sel: ".toolbar .seg, .toolbar", e: "🗺️", h: "清單 / 地圖",
-      p: "可以切換用清單看，或用地圖看步道分布。上面還有『精選主題輯』幫你找古道、瀑布、親子路線。" },
+      p: "打步道名、地區或主題，找你想走的路線。" },
+    { view: "explore", sel: ".toolbar .seg, .toolbar", e: "🗺️", h: "清單或地圖",
+      p: "切換用清單或地圖看步道，上面還有精選主題輯。" },
     { view: "record", sel: "#btnStart", e: "📍", h: "記錄健行",
-      p: "要出發時按「開始」，App 就會記錄你的里程、步數、爬升和海拔；鎖螢幕、沒訊號也能記。" },
+      p: "出發時按「開始」，記錄里程、爬升，鎖螢幕、沒訊號也能記。" },
     { view: "pet", sel: "#petCard", e: "🐉", h: "山林夥伴",
-      p: "走路就能養一隻夥伴！從一顆蛋開始，越走牠長越快，還能撿果實、每天餵食。" },
-    { view: "me", sel: "#fontRow, #view-me", e: "⚙️", h: "我的足跡・設定",
-      p: "這裡看你的統計數字，也能調整「字體大小」和「語言」，還有雲端備份。" },
-    { center: true, e: "🎉", h: "開始探索吧！", p: "隨時可以再回來走走，祝你在山林裡玩得開心 🏔️", last: true },
-  ];
+      p: "走路就能養夥伴！從一顆蛋開始，越走牠長越快。" },
+    { view: "me", sel: "#meStats", e: "⚙️", h: "我的足跡・設定",
+      p: "看你的統計；往下滑可以調字體大小、換語言、雲端備份。" },
+    { center: true, e: "🎉", h: "開始探索吧！", p: "祝你在山林裡玩得開心 🏔️", last: true },
+  ].map(s => ({ ...s, h: T(s.h), p: T(s.p) }));
 
   let i = 0;
   const ov = document.createElement("div"); ov.className = "tour";
@@ -4189,49 +4190,51 @@ function onboarding() {
     for (const s of (sel || "").split(",")) { const el = document.querySelector(s.trim()); if (el && el.offsetParent !== null) return el; }
     return null;
   };
-  function placeSpot(target, center) {
-    if (center || !target) {   // 無目標／置中步驟：spot 縮到中央 0 大小 → box-shadow 蓋滿整個畫面（均勻變暗）
-      spot.style.width = spot.style.height = "0px";
-      spot.style.top = "50%"; spot.style.left = "50%";
-      return;
+  // 定位聚光燈＋說明框。r=目標矩形；r=null → 整螢幕均勻變暗、說明置中（找不到目標或抓到整頁容器時）。
+  function place(r) {
+    if (!r) { spot.style.width = spot.style.height = "0px"; spot.style.top = "50%"; spot.style.left = "50%"; }
+    else {
+      const pad = 8;
+      spot.style.top = (r.top - pad) + "px"; spot.style.left = (r.left - pad) + "px";
+      spot.style.width = (r.width + pad * 2) + "px"; spot.style.height = (r.height + pad * 2) + "px";
     }
-    try { target.scrollIntoView({ block: "center" }); } catch (e) { /* */ }
-    const r = target.getBoundingClientRect(), pad = 8;
-    spot.style.top = (r.top - pad) + "px"; spot.style.left = (r.left - pad) + "px";
-    spot.style.width = (r.width + pad * 2) + "px"; spot.style.height = (r.height + pad * 2) + "px";
+    // 說明框貼螢幕邊緣（非目標旁）：大字體也不超出、按鈕永遠可點。上半目標→框貼下緣，下半→貼上緣。
+    tip.classList.toggle("center", !r); tip.style.top = tip.style.bottom = "";
+    if (r) {
+      if (r.top + r.height / 2 < window.innerHeight * 0.5) tip.style.bottom = "calc(24px + var(--safe-b, 0px))";
+      else tip.style.top = "84px";
+    }
   }
-  function placeTip(target, st) {
-    tip.classList.toggle("center", !!st.center);
-    tip.style.top = tip.style.bottom = "";
-    if (st.center || !target) return;   // 置中由 CSS 處理
-    // 說明框貼「螢幕邊緣」而非目標旁：避免大字體時框超出畫面、按鈕點不到。
-    // 目標在上半 → 框貼下緣；目標在下半 → 框貼上緣（避開頂部 header）。永遠完整可見。
-    const r = target.getBoundingClientRect();
-    if (r.top + r.height / 2 < window.innerHeight * 0.5) tip.style.bottom = "calc(24px + var(--safe-b, 0px))";
-    else tip.style.top = "84px";
-  }
-  function renderTip(st, target) {
+  function renderTip(st) {
     const dots = steps.map((_, k) => `<span class="${k === i ? "on" : ""}"></span>`).join("");
     const btns = st.login
-      ? `<button class="btn primary" id="tourLogin">去登入</button><button class="info-link" id="tourNext" style="display:block;margin:10px auto 0">先略過，繼續介紹</button>`
-      : `<button class="btn primary" id="tourNext">${st.last ? "開始探索" : "下一步"}</button>`;
-    tip.innerHTML = `${st.last ? "" : `<button class="tour-skip" id="tourSkip" aria-label="略過導覽">✕</button>`}`
+      ? `<button class="btn primary" id="tourLogin">${T("去登入")}</button><button class="info-link" id="tourNext" style="display:block;margin:10px auto 0">${T("先略過，繼續介紹")}</button>`
+      : `<button class="btn primary" id="tourNext">${st.last ? T("開始探索") : T("下一步")}</button>`;
+    tip.innerHTML = `${st.last ? "" : `<button class="tour-skip" id="tourSkip" aria-label="${T("略過導覽")}">✕</button>`}`
       + `<div class="tour-emoji">${st.e}</div><h3>${st.h}</h3><p>${st.p}</p>`
       + `<div class="tour-dots">${dots}</div>${btns}`;
-    placeTip(target, st);
     const nx = tip.querySelector("#tourNext"); if (nx) nx.addEventListener("click", () => { if (st.last) done(); else { i++; show(); } });
     const sk = tip.querySelector("#tourSkip"); if (sk) sk.addEventListener("click", done);
     const lg = tip.querySelector("#tourLogin"); if (lg) lg.addEventListener("click", done);   // 結束導覽、留在社群分頁，登入表單就在眼前
   }
   async function show() {
     const st = steps[i];
+    renderTip(st);                                   // 先把內容畫出來（切分頁/等目標時也看得到）
     if (st.view) { const tb = document.querySelector(`.tab[data-view="${st.view}"]`); if (tb && !tb.classList.contains("active")) tb.click(); }
     let target = null;
-    if (st.sel && !st.center) {   // 等目標出現（社群/寵物可能非同步渲染），最多等 ~1.5 秒
-      for (let k = 0; k < 12 && !target; k++) { target = findTarget(st.sel); if (!target) await new Promise(r => setTimeout(r, 130)); }
+    if (st.sel && !st.center) {                      // 等目標出現（社群/寵物非同步渲染），最多等 ~2 秒
+      for (let k = 0; k < 16 && !target; k++) { target = findTarget(st.sel); if (!target) await new Promise(r => setTimeout(r, 130)); }
     }
-    placeSpot(target, st.center);
-    renderTip(st, target);
+    let r = null;
+    if (target) {
+      try { target.scrollIntoView({ block: "center" }); } catch (e) { /* */ }
+      await new Promise(res => requestAnimationFrame(() => requestAnimationFrame(res)));   // 等捲動＋版面穩定再量，框才準
+      if (steps[i] !== st) return;                   // 使用者已前進 → 別覆蓋新步驟
+      const rr = target.getBoundingClientRect();
+      const huge = rr.width > window.innerWidth * 0.92 && rr.height > window.innerHeight * 0.8;   // 抓到整頁容器 → 不框
+      if (!huge && rr.width > 4 && rr.height > 4) r = rr;
+    }
+    place(r);
   }
   show();
 }

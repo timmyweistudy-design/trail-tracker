@@ -4,6 +4,25 @@
 // 步道名稱/介紹等資料內容維持中文。要補翻譯：加 DICT 詞條或 PATTERNS 規則即可。
 const I18n = (() => {
   const DICT = {
+    // 首次使用導覽
+    "先登入吧（可略過）": "Sign in first (optional)",
+    "搜尋步道": "Search trails",
+    "清單或地圖": "List or map",
+    "記錄健行": "Record a hike",
+    "山林夥伴": "Trail buddy",
+    "我的足跡・設定": "Your trails & settings",
+    "開始探索吧！": "Let's explore!",
+    "第一次來嗎？我帶你走一遍 👋": "First time here? Let me show you around 👋",
+    "登入可以雲端備份紀錄、和山友交流。要登入按「去登入」，或按「先略過」。": "Signing in backs up your records to the cloud and lets you connect with hikers. Tap \"Sign in\", or \"Skip\".",
+    "打步道名、地區或主題，找你想走的路線。": "Type a trail name, area or theme to find your route.",
+    "切換用清單或地圖看步道，上面還有精選主題輯。": "Switch between a list or map of trails; featured themes are up top.",
+    "出發時按「開始」，記錄里程、爬升，鎖螢幕、沒訊號也能記。": "When you set out, tap \"Start\" to record distance and ascent — even screen-off or offline.",
+    "走路就能養夥伴！從一顆蛋開始，越走牠長越快。": "Just by walking, you raise a buddy! Start from an egg — the more you walk, the faster it grows.",
+    "看你的統計；往下滑可以調字體大小、換語言、雲端備份。": "See your stats here; scroll down to change text size, language and back up to the cloud.",
+    "祝你在山林裡玩得開心 🏔️": "Have a great time out on the trails 🏔️",
+    "去登入": "Sign in",
+    "先略過，繼續介紹": "Skip for now, keep the tour",
+    "略過導覽": "Skip tour",
     "相機／相簿權限已關閉，請到 iOS「設定」開啟": "Camera/Photos access is off — turn it on in iOS Settings",
     // 原生相機選單標籤
     "選擇照片": "Choose photo",
