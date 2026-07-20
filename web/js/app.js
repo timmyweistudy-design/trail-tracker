@@ -1247,14 +1247,27 @@ function enableCompass() {
 }
 // 一次問完定位＋方位權限（iOS 方位必須由使用者手勢觸發，故綁在「進 App 的第一次點擊」）
 let _entryPermAsked = false;
-function requestEntryPerms() {
-  if (_entryPermAsked) return; _entryPermAsked = true;
+function _warmUpPerms() {
   try { enableCompass(); } catch (e) { /* */ }
   if (navigator.geolocation) { try { navigator.geolocation.getCurrentPosition(() => {}, () => {}, { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }); } catch (e) { /* */ } }
 }
-// 進 App 第一次互動就問（splash 退場後你碰螢幕的第一下即觸發）
-window.addEventListener("pointerdown", requestEntryPerms, { once: true });
-window.addEventListener("keydown", requestEntryPerms, { once: true });
+// 進記錄頁才要定位權限：首次先用一張說明卡鋪陳「為什麼要定位」，讓年長使用者看得懂再面對系統的允許/拒絕（大幅降低誤拒）。
+// 以前是「進 App 第一下點哪裡都跳系統定位詢問」的反模式——碰個搜尋框就被問定位、沒頭緒就按拒絕。
+async function requestEntryPerms() {
+  if (_entryPermAsked) return;
+  if (document.querySelector(".tour")) return;   // 導覽中程式切到記錄頁時不插入權限卡，等使用者真的進來再問
+  _entryPermAsked = true;
+  let prompted = false;
+  try { prompted = localStorage.getItem("tt_locperm_prompted") === "1"; } catch (e) { /* */ }
+  if (!prompted && typeof ttConfirm === "function") {
+    try { localStorage.setItem("tt_locperm_prompted", "1"); } catch (e) { /* */ }
+    const ok = await ttConfirm(
+      ttT("記錄健行需要「定位」權限，用來即時畫出你走過的路線和里程。接著系統會跳出詢問，請選「允許」。"),
+      ttT("好，開啟定位"), ttT("稍後"));
+    if (!ok) return;   // 稍後：這次不觸發系統詢問；之後按「開始」記錄時會再要
+  }
+  _warmUpPerms();
+}
 function addCompass(map) {
   const c = L.control({ position: "topright" });
   c.onAdd = () => {
@@ -3314,6 +3327,7 @@ async function finishRecording(autoVehicle) {
       safeRun("cloud-backup", () => autoCloudBackup());
       safeRun("sync-stats", () => syncMyStatsToCloud());
       safeRun("confetti", () => confetti());
+      safeRun("review-ask", () => { if (typeof ReviewPrompt !== "undefined") ReviewPrompt.maybeAsk(rec); });   // 走完有意義的一趟＝請評分的好時機
     }
     safeRun("pet-evolve", () => checkPetEvolve());
     safeRun("render-idle", () => renderRecIdle());
@@ -4357,7 +4371,7 @@ window.ttCoach = function (flag, rawSteps, opts) {
   opts = opts || {};
   try { if (flag && localStorage.getItem(flag)) return; } catch (e) { return; }
   if (!localStorage.getItem("tt_lang")) return;      // 還沒選語言 → 等語言選擇覆蓋層
-  if (document.querySelector(".tour")) return;         // 主導覽或別的情境導覽進行中 → 讓路（flag 不設，下次再跳）
+  if (document.querySelector(".tour, .ttdlg-ov")) return;   // 主導覽/情境導覽/對話框(如權限說明卡)進行中 → 讓路（flag 不設，下次再跳）
   const T = (typeof ttT === "function") ? ttT : (s => s);
   const steps = (rawSteps || []).filter(Boolean).map(s => ({ ...s, h: T(s.h), p: T(s.p) }));
   if (!steps.length) return;

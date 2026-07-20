@@ -82,6 +82,8 @@ const BACKUP_EXEMPT = new Set([
   "tt_errors",                                            // 錯誤佇列（index.html/iap.js 寫、app.js 上傳到 client_errors）：診斷用，不跨機還原
   "tt_data_uid",                                          // 本機資料歸屬帳號：防多帳號互相覆蓋雲端備份，裝置性不備份
   "tt_backup_pending",                                    // 離線待備份旗標：回線補送用的暫態，裝置性不備份
+  "tt_locperm_prompted",                                  // 定位權限說明卡是否顯示過：裝置性
+  "tt_review_at", "tt_review_n",                          // 上次請評分時間/次數：裝置性，不跨機還原
 ]);
 const storageSrc = read(path.join(WEB, "js", "storage.js"));
 const bkMatch = storageSrc.match(/BACKUP_KEYS\s*=\s*\[([^\]]*)\]/);
