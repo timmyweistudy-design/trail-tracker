@@ -790,6 +790,11 @@ body.navup-on #recMap .leaflet-map-pane { transition: transform .12s linear; }
 .hm-c.hm-l4 { background: var(--brand); }
 .hm-leg { display: flex; align-items: center; gap: 3px; margin-top: 7px; font-size: calc(10px * var(--fs, 1)); color: var(--ink-faint); }
 .hm-leg i { display: inline-block; }
+/* 記錄頁閒置天氣提示 */
+.rec-wx:empty { display: none; }
+.rec-wx-in { margin-top: 10px; border-radius: var(--r-sm); padding: 10px 14px; font-size: calc(13.5px * var(--fs, 1)); font-weight: 600; text-align: center; }
+.rec-wx-in.good { background: var(--brand-soft); color: var(--brand-deep); }
+.rec-wx-in.warn { background: var(--accent-soft); color: var(--accent); }
 /* #8 各縣市踏遍進度 */
 #meRegions { margin-top: 20px; }
 .rp-count { font-family: var(--num); font-size: calc(12.5px * var(--fs, 1)); font-weight: 700; color: var(--accent); margin-left: 4px; }

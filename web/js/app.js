@@ -393,6 +393,7 @@ document.querySelectorAll(".tab").forEach(btn => {
       const _tryAutoLive = () => { if (typeof Team !== "undefined" && Team.autoLive && typeof recMap !== "undefined" && recMap) Team.autoLive(recMap); };
       setTimeout(() => { if (typeof Team !== "undefined") _tryAutoLive(); else if (window.loadSocial) window.loadSocial().then(() => setTimeout(_tryAutoLive, 300)); }, 300);
       renderRecIdle();
+      if (Recorder.getState() === "idle") setTimeout(() => { try { updateRecWxHint(); } catch (e) { /* */ } }, 400);   // 閒置時給天氣提示
       // 首次進記錄頁（閒置）→ 情境導覽（等地圖建好再跳）
       if (Recorder.getState() === "idle" && typeof window.ttCoachRecord === "function") setTimeout(() => window.ttCoachRecord(), 650);
     }
@@ -2844,6 +2845,32 @@ function drawRecSpark(series) {
 let hikePhotos = [], hikePhotosRecId = null, recSnap = null, _shotUrls = [];
 let _liveElev = null, _liveElevAt = 0, _liveElevLen = 0, _liveElevBusy = false, _recSeq = 0;
 let _gpsWeakHits = 0, _gpsWarnAt = 0;
+// 記錄頁閒置時的天氣提示：好天氣鼓勵出門、可能有雨提醒帶雨具（其餘普通天氣不打擾）。快取 30 分鐘省 API。
+function hikeWxHint(w) {
+  try {
+    const c = (w && w.current) || {}, d = (w && w.daily) || {};
+    const code = c.weather_code, pp = (d.precipitation_probability_max || [])[0];
+    if ((code != null && code >= 51) || (pp != null && pp >= 60)) return { good: false, e: "🌧️", k: "今天可能有雨，出門記得帶雨具" };
+    if (code != null && code <= 3 && (pp == null || pp < 40)) return { good: true, e: "🌤️", k: "今天天氣不錯，適合去走走" };
+    return null;   // 普通天氣 → 不顯示
+  } catch (e) { return null; }
+}
+let _wxHint = null;   // {t, html}
+function updateRecWxHint() {
+  const box = $("#recWxHint"); if (!box) return;
+  if (Recorder.getState && Recorder.getState() !== "idle") { box.innerHTML = ""; return; }   // 記錄中不佔畫面
+  if (_wxHint && Date.now() - _wxHint.t < 1800000) { box.innerHTML = _wxHint.html; return; }
+  if (typeof Weather === "undefined" || !navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(async pos => {
+    try {
+      const w = await Weather.get(pos.coords.latitude, pos.coords.longitude);
+      const h = hikeWxHint(w); if (!h) { _wxHint = { t: Date.now(), html: "" }; return; }
+      const html = `<div class="rec-wx-in ${h.good ? "good" : "warn"}">${h.e} ${ttT(h.k)}</div>`;
+      _wxHint = { t: Date.now(), html };
+      if (Recorder.getState && Recorder.getState() === "idle") box.innerHTML = html;
+    } catch (e) { /* 天氣查不到就不顯示 */ }
+  }, () => { /* 沒定位權限 → 不顯示 */ }, { maximumAge: 1800000, timeout: 6000, enableHighAccuracy: false });
+}
 // 依定位精度更新「GPS 訊號」小燈號（綠=好 / 黃=普通 / 紅=弱），並在持續弱訊號時提醒一次
 function updateGpsSig(s) {
   const gs = $("#gpsSig"); if (!gs) return;
@@ -3134,6 +3161,7 @@ function syncRecButtons(state) {
 // 開始記錄（本人按鈕 / 小隊隊長廣播都走這裡）
 function startRecordingUI() {
   initRecMap();
+  { const wx = $("#recWxHint"); if (wx) wx.innerHTML = ""; }   // 開始記錄→收起天氣提示，不佔畫面
   hideSelectedTrail();   // 開始後不給取消：中途改自由路線會讓偏離警告/完成判定的依據在半路消失
   ensureMeAvatar();
   clearPreHike();                     // #3 開始記錄後收起行前小卡
