@@ -148,7 +148,7 @@ const Elevation = (() => {
     let s = v.map((e, i) => (i > 0 && i < v.length - 1) ? med3(v[i - 1], e, v[i + 1]) : e);
     s = s.map((e, i) => (i > 0 && i < s.length - 1) ? (s[i - 1] + e + s[i + 1]) / 3 : e);   // 再平滑一次
     let ascent = 0, descent = 0, ref = s[0], high = s[0], low = s[0];
-    const DB = 3;   // 遲滯門檻（公尺）
+    const DB = 2;   // 遲滯門檻（公尺）——雙線性內插後量化雜訊小，門檻可降，抓到更多真實小起伏
     for (const e of s) {
       if (e > high) high = e; if (e < low) low = e;
       const dz = e - ref;

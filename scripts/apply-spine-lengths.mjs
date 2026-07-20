@@ -4,16 +4,13 @@
 import fs from "fs";
 
 const trails = JSON.parse(fs.readFileSync("data/trails.json", "utf8"));
+const FIELDS = ["length_km", "ascent", "alt_high", "alt_low", "difficulty", "difficulty_label", "difficulty_estimated", "family_friendly"];
 const fix = new Map();
 for (const t of trails) {
   if (t.source === "osm" && t.id != null && t.length_km != null) {
-    fix.set(String(t.id), {
-      length_km: t.length_km,
-      difficulty: t.difficulty,
-      difficulty_label: t.difficulty_label,
-      difficulty_estimated: t.difficulty_estimated,
-      family_friendly: t.family_friendly,
-    });
+    const o = {};
+    for (const f of FIELDS) o[f] = t[f];
+    fix.set(String(t.id), o);
   }
 }
 
@@ -34,13 +31,9 @@ for (const t of arr) {
   const f = fix.get(String(t.id));
   if (!f) continue;
   matched++;
-  if (t.length_km !== f.length_km) changed++;
-  t.length_km = f.length_km;
-  t.difficulty = f.difficulty;
-  t.difficulty_label = f.difficulty_label;
-  t.difficulty_estimated = f.difficulty_estimated;
-  t.family_friendly = f.family_friendly;
+  if (t.length_km !== f.length_km || t.ascent !== f.ascent) changed++;
+  for (const k of FIELDS) if (f[k] !== undefined) t[k] = f[k];
 }
 // 寫回原始（未打包）格式，交給 pack-trails.mjs 再壓縮
 fs.writeFileSync("web/js/trails-data.js", "window.TRAILS = " + JSON.stringify(arr) + ";\n");
-console.log(`OSM 對到 ${matched} 條、長度實際變更 ${changed} 條 → 已寫回 web/js/trails-data.js（記得再跑 npm run data:pack）`);
+console.log(`OSM 對到 ${matched} 條、長度/爬升變更 ${changed} 條 → 已寫回 web/js/trails-data.js（記得再跑 npm run data:pack）`);

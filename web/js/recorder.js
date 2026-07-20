@@ -85,8 +85,8 @@ const Recorder = (() => {
     smAlt = (smAlt == null) ? alt : ALT_SMOOTH * alt + (1 - ALT_SMOOTH) * smAlt;
     if (refAlt == null) { refAlt = smAlt; return; }
     const dz = smAlt - refAlt;
-    // DEM 沒有 GPS 的垂直雜訊 → 用與結算校正同一個門檻(3m)，即時與結算的數字才不會差一截
-    const band = (src === "dem") ? 3 : ELEV_DEADBAND;
+    // DEM 沒有 GPS 的垂直雜訊；改雙線性內插後量化雜訊更小 → 門檻降到 2m，抓得到更多真實小起伏（GPS 仍用大門檻）
+    const band = (src === "dem") ? 2 : ELEV_DEADBAND;
     if (Math.abs(dz) >= band) {
       if (dz > 0) ascent += dz; else descent += -dz;
       refAlt = smAlt;
