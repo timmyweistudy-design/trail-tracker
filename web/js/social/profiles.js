@@ -35,6 +35,7 @@ const Profiles = (() => {
           <button class="link-btn" id="pfEdit">${ic("pencil")} 編輯</button>
           <button class="link-btn" id="pfSaved">${ic("bookmark")} 收藏</button>
           <button class="link-btn" id="pfEvents">${ic("calendar")} 揪團</button>
+          <button class="link-btn" id="pfInvite">${ic("share")} 邀請好友</button>
           <button class="link-btn" id="pfSettings">${ic("sliders")} 設定</button>
           <button class="link-btn" id="pfSignout">${ic("logout")} 登出</button>
         </div>
@@ -52,6 +53,17 @@ const Profiles = (() => {
     document.getElementById("pfEdit").addEventListener("click", () => renderEdit(render, prof));
     document.getElementById("pfSaved").addEventListener("click", () => renderSaved(render, prof));
     document.getElementById("pfEvents").addEventListener("click", () => { if (typeof Events !== "undefined") Events.open(); });
+    // 邀請好友：分享 App 連結＋自己的帳號，帶動安裝與追蹤（免後端）
+    document.getElementById("pfInvite").addEventListener("click", async () => {
+      const link = location.origin + location.pathname;
+      let text = ttT("一起來用「循徑拾光」記錄爬山、養山林夥伴吧！");
+      if (prof.handle) text += "\n" + ttT("在 App 加我：") + "@" + prof.handle;
+      try {
+        if (navigator.share) await navigator.share({ title: "循徑拾光", text, url: link });
+        else if (navigator.clipboard) { await navigator.clipboard.writeText(text + "\n" + link); if (typeof toast === "function") toast(ttT("已複製邀請")); }
+        else window.open(link, "_blank");
+      } catch (e) { /* 使用者取消分享不算錯 */ }
+    });
     document.getElementById("pfSettings").addEventListener("click", () => renderSettings(render, prof));
     Posts.followCounts(prof.id).then(c => {
       const el = document.getElementById("pfFollowCounts"); if (!el) return;
