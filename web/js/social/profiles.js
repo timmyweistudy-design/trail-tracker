@@ -93,6 +93,29 @@ const Profiles = (() => {
     }));
   }
 
+  // 刪除帳號（App Store 5.1.1(v) 要求）：兩段確認 → 呼叫 delete-account Edge Function（連 storage＋auth＋DB cascade 全清）→ 登出重載
+  async function deleteAccount(render, prof) {
+    if (!(await ttConfirm("確定要刪除帳號嗎？你的個人檔案、貼文、留言、追蹤、小隊與雲端備份都會永久刪除，無法復原。", "繼續刪除", "取消"))) return;
+    if (!(await ttConfirm("最後確認：帳號與所有資料將永久刪除，真的要刪除嗎？", "永久刪除", "取消"))) return;
+    const del = document.getElementById("stDelete");
+    if (del) { del.disabled = true; del.textContent = ttT("刪除中…"); }
+    try {
+      const c = Supa.client();
+      const { data, error } = await c.functions.invoke("delete-account");
+      if (error || (data && data.error)) {
+        if (del) { del.disabled = false; del.textContent = ttT("刪除帳號"); }
+        if (typeof toast === "function") toast("刪除失敗，請稍後再試或聯絡我們");
+        return;
+      }
+      try { ["tt_records", "tt_profile", "tt_favs", "tt_log", "tt_life", "tt_data_uid", "tt_last_sync", "tt_backup_pending"].forEach(k => localStorage.removeItem(k)); } catch (e) { /* */ }
+      try { await Auth.signOut(); } catch (e) { /* */ }
+      if (typeof toast === "function") toast("帳號已刪除");
+      setTimeout(() => location.reload(), 900);
+    } catch (e) {
+      if (del) { del.disabled = false; del.textContent = ttT("刪除帳號"); }
+      if (typeof toast === "function") toast("刪除失敗，請稍後再試或聯絡我們");
+    }
+  }
   // 隱私與設定：預設發文可見度 + 封鎖名單管理
   async function renderSettings(render, prof) {
     const defVis = localStorage.getItem("tt_default_vis") || "friends";
@@ -107,7 +130,13 @@ const Profiles = (() => {
       </div>
       <div class="set-group"><div class="set-label">封鎖名單</div><div id="stBlocks"><div class="feed-loading"><span class="spin"></span></div></div></div>
       <div class="set-group"><div class="set-label">我的檢舉</div><div id="stReports"><div class="feed-loading"><span class="spin"></span></div></div></div>
+      <div class="set-group"><div class="set-label">危險區域</div>
+        <button class="btn ghost st-danger" id="stDelete">刪除帳號</button>
+        <div class="set-empty">永久刪除你的帳號與所有資料（貼文、追蹤、小隊、雲端備份），無法復原。</div>
+      </div>
       </div>`);
+    const del = document.getElementById("stDelete");
+    if (del) del.addEventListener("click", () => deleteAccount(render, prof));
     document.getElementById("stBack").addEventListener("click", () => renderMe(render, prof));
     const ap = document.getElementById("stApprove");
     if (ap) ap.addEventListener("change", async () => {

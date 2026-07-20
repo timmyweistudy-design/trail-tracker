@@ -1781,6 +1781,8 @@ html[data-theme="dark"] .disc-sec, html[data-theme="dark"] .feed-trending-h { co
 .set-row > span { flex: 1 1 auto; min-width: 0; }                      /* 文字可換行、不擠壓右側 */
 .set-row input { flex: 0 0 auto; width: 20px; height: 20px; accent-color: var(--brand-mid); }
 .set-empty { color: var(--ink-faint); font-size: calc(13.5px * var(--fs, 1)); padding: 8px 2px; }
+.btn.st-danger { color: var(--danger); border: 1px solid var(--danger); background: none; width: auto; padding: 10px 16px; }
+.btn.st-danger:active { background: color-mix(in srgb, var(--danger) 12%, transparent); }
 .set-block-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line-soft); }
 /* 我的檢舉：左側是被檢舉的內容摘要（可長，需截斷），右側是撤回鈕（不縮） */
 .rp-row .rp-what { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }

@@ -4,6 +4,17 @@
 // 步道名稱/介紹等資料內容維持中文。要補翻譯：加 DICT 詞條或 PATTERNS 規則即可。
 const I18n = (() => {
   const DICT = {
+    // 刪除帳號
+    "刪除帳號": "Delete account",
+    "危險區域": "Danger zone",
+    "繼續刪除": "Continue",
+    "永久刪除": "Delete permanently",
+    "刪除中…": "Deleting…",
+    "帳號已刪除": "Account deleted",
+    "刪除失敗，請稍後再試或聯絡我們": "Deletion failed. Please try again later or contact us.",
+    "最後確認：帳號與所有資料將永久刪除，真的要刪除嗎？": "Final check: your account and all data will be permanently deleted. Delete for real?",
+    "永久刪除你的帳號與所有資料（貼文、追蹤、小隊、雲端備份），無法復原。": "Permanently deletes your account and all data (posts, follows, teams, cloud backup). Cannot be undone.",
+    "確定要刪除帳號嗎？你的個人檔案、貼文、留言、追蹤、小隊與雲端備份都會永久刪除，無法復原。": "Delete your account? Your profile, posts, comments, follows, teams and cloud backup will be permanently deleted and cannot be recovered.",
     "青碧": "Teal",
     "珊瑚": "Coral",
     // 空狀態(收藏/完成)
