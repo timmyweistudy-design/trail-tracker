@@ -209,9 +209,22 @@ const Store = (() => {
     for (const r of (data.records || [])) if (r && r.id && r.track) Archive.put(r);   // 匯入的完整紀錄也進封存
     _lifeReconcile();   // 終身統計取較大值，還原絕不倒退
   }
+  // 只安全聯集「紀錄／收藏／步道完成」與終身統計（取較大者），不碰寵物與個人檔——
+  // 給「本機已有資料」的自動雲端同步用：跨裝置紀錄會匯流，但絕不倒退寵物進度或蓋掉本機個資。
+  function cloudMergeRecords(data) {
+    if (!data || typeof data !== "object") return;
+    const ids = new Set(getRecords().map(r => r.id));
+    const merged = getRecords().concat((data.records || []).filter(r => r && r.id && !ids.has(r.id)))
+      .sort((a, b) => new Date(b.date) - new Date(a.date));
+    _saveRecords(merged.slice(0, 100));
+    localStorage.setItem(FK, JSON.stringify([...new Set(getFavs().concat(data.favs || []))]));
+    localStorage.setItem(LK, JSON.stringify(Object.assign({}, data.log || {}, getLog())));   // 本機完成狀態優先，補進雲端獨有的
+    for (const r of (data.records || [])) if (r && r.id && r.track) Archive.put(r);
+    _lifeReconcile();
+  }
 
   return { getProfile, saveProfile, weight, height, getRecords, setRecords: _saveRecords, addRecord, deleteRecord, clearRecords,
-           getFavs, isFav, toggleFav, trailLog, setTrailLog, doneCount, exportAll, importAll, clearSimRecords, packWeight, setRecordNote,
+           getFavs, isFav, toggleFav, trailLog, setTrailLog, doneCount, exportAll, importAll, cloudMergeRecords, clearSimRecords, packWeight, setRecordNote,
            life, fullRecord, allFull, recoverFromArchive };
 })();
 

@@ -3479,6 +3479,44 @@ async function syncMyStatsToCloud() {
   } catch (e) { /* 靜默；社群模組未載入或未登入就略過 */ }
 }
 if (typeof window !== "undefined") window.syncMyStatsToCloud = syncMyStatsToCloud;
+// 自動雲端「拉取」：登入後把雲端備份自動同步下來，讓同一帳號換裝置／網頁版就看得到彼此的紀錄。
+// （原本只有自動「上傳」沒有自動「下載」→ 換平台像空的，要手動按還原。）安全策略：
+//   本機沒紀錄(全新裝置/平台) → 完整還原（含寵物/成就/設定）；本機已有紀錄 → 只聯集紀錄/收藏(不倒退寵物)。
+//   本機資料屬別的帳號 → 略過（交手動還原，避免混帳號）。每個 session 只跑一次。
+let _cloudSyncDone = false;
+async function cloudAutoSync() {
+  if (_cloudSyncDone) return;
+  try {
+    if (typeof Supa === "undefined" || !Supa.ready()) return;   // 社群未載入/未設定 → 之後再試
+    const c = Supa.client(); const { data: u } = await c.auth.getUser();
+    if (!u || !u.user) return;                                   // 未登入 → 不標記完成，登入後會再觸發
+    const uid = u.user.id;
+    const owner = (() => { try { return localStorage.getItem("tt_data_uid"); } catch (e) { return null; } })();
+    if (owner && owner !== uid) { _cloudSyncDone = true; return; }   // 本機是別帳號的資料 → 不自動拉
+    const { data, error } = await c.from("backups").select("data, updated_at").eq("user_id", uid).maybeSingle();
+    if (error) return;                                           // 查詢失敗 → 不標記，下次再試
+    _cloudSyncDone = true;
+    const localReal = (Store.getRecords() || []).filter(r => !r.sim).length;
+    if (!data || !data.data) {                                   // 雲端還沒備份 → 本機有資料就上傳當種子
+      if (localReal > 0) autoCloudBackup();
+      return;
+    }
+    const before = (Store.getRecords() || []).length;
+    if (localReal === 0) Store.importAll(data.data, "merge");    // 全新裝置：完整還原
+    else Store.cloudMergeRecords(data.data);                     // 已有資料：只安全聯集紀錄
+    try { localStorage.setItem("tt_data_uid", uid); } catch (e) { /* */ }
+    const added = (Store.getRecords() || []).length - before;
+    try { renderHistory(); render(); initTheme(); renderPet(); renderQuests(); renderBadges(); renderStats(); loadProfile(); } catch (e) { /* 個別區塊未載入時忽略 */ }
+    if (added > 0 && typeof toast === "function") toast(ttT("已從雲端同步紀錄 ☁️"));
+    // 本機有雲端沒有的紀錄 → 反向補上傳，讓另一端也拉得到（雙向匯流）
+    if (localReal > 0) autoCloudBackup();
+  } catch (e) { /* 靜默：同步失敗不影響使用 */ }
+}
+if (typeof window !== "undefined") {
+  window.cloudAutoSync = cloudAutoSync;
+  // 開機：社群載完（含持久化 session）後試一次；未登入則等登入流程再觸發
+  if (window.loadSocial) window.loadSocial().then(() => setTimeout(cloudAutoSync, 1200));
+}
 // 雲端備份/還原：資料安全，任何登入者可用（不鎖 Premium）
 const _cbk = $("#btnCloudBackup");
 if (_cbk) _cbk.addEventListener("click", () => cloudBackupNow(false));
@@ -3695,6 +3733,10 @@ function renderStats() {
 function countUp(el) {
   const to = parseFloat(el.dataset.to) || 0, pre = el.dataset.pre || "", dec = +el.dataset.dec || 0;
   const fmt = v => pre + (dec ? v.toFixed(dec) : Math.round(v).toLocaleString());
+  // 大數字（含千分位/小數/前綴）會擠爆方框 → 依最終字串長度縮小字級
+  const finalLen = fmt(to).length;
+  el.classList.toggle("mv-lg", finalLen >= 7 && finalLen < 9);
+  el.classList.toggle("mv-xl", finalLen >= 9);
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) { el.textContent = fmt(to); return; }
   const dur = 750, t0 = performance.now();
   (function step(t) {

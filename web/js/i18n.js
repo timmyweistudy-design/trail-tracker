@@ -4,6 +4,7 @@
 // 步道名稱/介紹等資料內容維持中文。要補翻譯：加 DICT 詞條或 PATTERNS 規則即可。
 const I18n = (() => {
   const DICT = {
+    "已從雲端同步紀錄 ☁️": "Records synced from cloud ☁️",
     // 情境式導覽（詳情／小隊／社群／記錄）
     "步道資訊": "Trail info",
     "與小隊同行": "Live with team",

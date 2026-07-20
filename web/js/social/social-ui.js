@@ -33,6 +33,7 @@ const SocialUI = (() => {
   }
 
   function shell() {
+    if (typeof window.cloudAutoSync === "function") window.cloudAutoSync();   // 登入確認後自動把雲端紀錄同步下來（每 session 一次）
     if (!subscribed && typeof Notifs !== "undefined") { subscribed = true; Notifs.subscribe(updateBadge); }   // 訂閱一次：新通知即時更新紅點
     render(`
       <div class="social-subnav">

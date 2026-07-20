@@ -784,7 +784,9 @@ body.navup-on #recMap .leaflet-map-pane { transition: transform .12s linear; }
 /* 欄數跟著字級走：字放大→自動從 4 欄降成 3 欄，標籤才有寬度，不會被擠成兩行 */
 .mstat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(72px * var(--fs, 1)), 1fr)); gap: 9px; }
 .mstat { background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 12px 6px; text-align: center; box-shadow: var(--sh-sm); }
-.mstat .mv { font-family: var(--num); font-size: calc(20px * var(--fs, 1)); font-weight: 600; color: var(--brand-deep); line-height: 1; font-variant-numeric: tabular-nums; }
+.mstat .mv { font-family: var(--num); font-size: calc(20px * var(--fs, 1)); font-weight: 600; color: var(--brand-deep); line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; max-width: 100%; }
+.mstat .mv.mv-lg { font-size: calc(15.5px * var(--fs, 1)); }   /* 7–8 位數字縮小免溢出 */
+.mstat .mv.mv-xl { font-size: calc(12.5px * var(--fs, 1)); }   /* 9 位以上再縮 */
 .mstat .ml { font-size: calc(10.5px * var(--fs, 1)); color: var(--ink-soft); margin-top: 6px; letter-spacing: .2px; }
 @media (max-width: 360px) { .mstat-grid { grid-template-columns: repeat(2, 1fr); } }
 
