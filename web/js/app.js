@@ -345,7 +345,48 @@ function confetti() {
 })();
 
 // ---------- 分頁切換 ----------
-let detailMap, detailOverlay, detailPoiLayer, recMap, recLine, recMarker, petMarker, _detailScroll = null;
+let detailMap, detailOverlay, detailPoiLayer, detailWpLayer, recMap, recLine, recMarker, petMarker, _detailScroll = null;
+
+// 沿線地標（三角點/山頭/駐在所遺址/吊橋/觀景/水源/山屋/鞍部）——資料取自 OSM，離步道夠近才收（見 enrich_waypoints.py）
+const WP_META = {
+  survey: { e: "▲", c: "#c0452f", label: "三角點" },
+  peak:   { e: "⛰", c: "#8a6d3b", label: "山頭" },
+  ruins:  { e: "🏚", c: "#7a5c3e", label: "遺址" },
+  bridge: { e: "🌉", c: "#2f7ab0", label: "吊橋" },
+  view:   { e: "📷", c: "#3f8f6a", label: "觀景" },
+  water:  { e: "💧", c: "#3a7bd5", label: "水源" },
+  hut:    { e: "🏠", c: "#b0762f", label: "山屋" },
+  saddle: { e: "⛰", c: "#8a6d3b", label: "鞍部" },
+};
+function wpIcon(type, dim) {
+  const m = WP_META[type] || WP_META.view;
+  return L.divIcon({ className: "wp-pin" + (dim ? " dim" : ""), html: `<span style="background:${m.c}">${m.e}</span>`, iconSize: [22, 22], iconAnchor: [11, 11], popupAnchor: [0, -12] });
+}
+// 把地標畫到某圖層；reached=已通過的地標名集合（記錄中變灰）
+function drawWaypoints(layer, wps, reached) {
+  if (!layer) return;
+  layer.clearLayers();
+  (wps || []).forEach(w => {
+    const m = WP_META[w.type] || WP_META.view;
+    const done = reached && reached.has(w.name);
+    L.marker([w.lat, w.lon], { icon: wpIcon(w.type, done), keyboard: false }).addTo(layer)
+      .bindPopup(`<b>${(w.name || "").replace(/[<>&]/g, "")}</b><br>${ttT(m.label)}${w.ele ? " · " + w.ele + " m" : ""} · ${ttT("距起點")} ${(w.distM / 1000).toFixed(1)} km`);
+  });
+}
+// 詳情頁「沿線地標」清單（依里程排序，點了跳到地圖）
+function wpListHtml(t) {
+  const wps = t.waypoints || [];
+  if (!wps.length) return "";
+  const rows = wps.map(w => {
+    const m = WP_META[w.type] || WP_META.view;
+    return `<button class="wp-row" data-wplat="${w.lat}" data-wplon="${w.lon}">
+      <span class="wp-ic" style="background:${m.c}">${m.e}</span>
+      <span class="wp-nm">${(w.name || "").replace(/[<>&]/g, "")}<em>${ttT(m.label)}</em></span>
+      <span class="wp-meta">${w.ele ? w.ele + " m · " : ""}${(w.distM / 1000).toFixed(1)} km</span></button>`;
+  }).join("");
+  return `<div class="section-title collapsible" id="secWp">${ic("landmark")}${ttT("沿線地標")}（${wps.length}）</div>
+    <div id="wpBox" class="wp-list">${rows}</div>`;
+}
 function petEmojiNow() { return PET_STAGES[petStageIndex(totalKm())].e; }
 // 把美食/景點標在詳情地圖（不改視角，可縮放查看周邊）
 // 同一批（美食／景點）重畫前先移除自己上一批的標記：
@@ -384,6 +425,7 @@ document.querySelectorAll(".tab").forEach(btn => {
         Recorder._trailName = null;   // 沒清的話這趟自由記錄會被冠上上一趟的步道名
         if (routeRefLayer && recMap) { recMap.removeLayer(routeRefLayer); routeRefLayer = null; }
         if (guideLine && recMap) { recMap.removeLayer(guideLine); guideLine = null; }   // GPX/貼文帶進來的參考線也要清
+        selectedTrailWps = []; if (recWpLayer) recWpLayer.clearLayers(); const _h = $("#recWpHud"); if (_h) _h.innerHTML = "";   // 清沿線地標與 HUD
       }
       ensureGeo();                       // 預載幾何，供模擬挑步道/疊圖用
       ensureMeAvatar();                  // 預取頭像供「我」的地圖標記
@@ -1590,6 +1632,7 @@ async function openDetail(id) {
     <div id="weatherBox"><div class="food-loading"><span class="spin"></span>查詢天氣中…</div></div>
     ${metaHtml}
     ${hasGeo ? `<div class="section-title collapsible" id="secElev">${ic("mountain")}海拔剖面</div><div id="profileBox"><div class="food-loading"><span class="spin"></span>計算海拔剖面中…</div></div>` : ""}
+    ${wpListHtml(t)}
     ${ecologyHtml(t)}
     ${t.guide ? `<div class="guide">${t.guide.replace(/\n/g, "<br>")}</div>${(typeof I18n !== "undefined" && I18n.lang() !== "zh") ? `<div class="pv-tr-row"><button class="link-btn" id="guideTranslate">${ic("translate")} ${ttT("翻譯年糕")}</button></div><div class="guide pv-cap-tr" id="guideTr" style="display:none"></div>` : ""}` : ""}
     <div class="link-row flow">
@@ -1686,6 +1729,12 @@ async function openDetail(id) {
   $("#detailBody").querySelectorAll(".nearby-card").forEach(el => el.addEventListener("click", () => {
     const nid = el.dataset.id; if (nid) openDetail(nid);
   }));
+  // 沿線地標：點清單一列 → 地圖跳到該地標並開泡泡
+  $("#detailBody").querySelectorAll(".wp-row").forEach(b => b.addEventListener("click", () => {
+    const la = +b.dataset.wplat, lo = +b.dataset.wplon;
+    if (detailMap) { detailMap.setView([la, lo], 16); const mp = $("#detailMap"); if (mp) mp.scrollIntoView({ block: "center", behavior: "smooth" }); }
+    detailWpLayer && detailWpLayer.eachLayer(m => { try { const ll = m.getLatLng(); if (Math.abs(ll.lat - la) < 1e-5 && Math.abs(ll.lng - lo) < 1e-5) setTimeout(() => m.openPopup(), 350); } catch (e) { /* */ } });
+  }));
   loadPhoto(t);
   loadWeather(t);
   loadElevation(t);
@@ -1703,9 +1752,11 @@ async function openDetail(id) {
       addThreeD(detailMap, () => open3D(currentDetailTrail()));   // 「3D」鈕：開 MapLibre 3D 地形
       detailOverlay = L.layerGroup().addTo(detailMap);
       detailPoiLayer = L.layerGroup().addTo(detailMap);
+      detailWpLayer = L.layerGroup().addTo(detailMap);
     }
     detailOverlay.clearLayers();
     detailPoiLayer.clearLayers();
+    drawWaypoints(detailWpLayer, t.waypoints);   // 沿線地標
     const geom = geoOf(t);
     if (geom && geom.length) {
       const lines = geom.map(seg => L.polyline(seg, { color: "#d2542e", weight: 4, opacity: .9 }));
@@ -1735,10 +1786,11 @@ async function openDetail(id) {
     document.querySelector('.tab[data-view="record"]').click();   // 會先清空 selectedTrailGeo
     selectedTrailGeo = g;                    // #9 再設定本步道路線（供疊圖與偏離判斷）
     selectedTrailId = t.id;                  // 記住步道 id，發文時連回該步道
+    selectedTrailWps = t.waypoints || [];    // 沿線地標（記錄地圖疊圖＋下一個地標 HUD）
     Recorder._trailName = nm;
     showSelectedTrail(nm);                   // 可取消的選定列（選錯了不必切分頁繞一圈）
     renderPreHike(t);                        // #3 行前小卡：天氣＋日落＋建議裝備
-    setTimeout(() => { initRecMap(); drawSelectedRoute(); }, 80);
+    setTimeout(() => { initRecMap(); drawSelectedRoute(); resetWpHud(); }, 80);
   });
   const lnk = $("#lnkGradeAll");
   if (lnk) lnk.addEventListener("click", e => { e.preventDefault(); openGradeInfo(); });
@@ -2614,6 +2666,55 @@ $("#trackMask").addEventListener("click", closeTrackReview);
 $("#closeTrackBtn").addEventListener("click", closeTrackReview);
 
 let guideLine = null, selectedTrailGeo = null, routeRefLayer = null, selectedTrailId = null;
+// 記錄頁沿線地標：選定步道的地標＋HUD（下一個地標／剩多遠／抵達）
+let selectedTrailWps = [], recWpLayer = null, _wpReached = null, _wpRefLine = null, _wpPrevAlong = null, _wpDir = 1;
+function _segProj(p, a, b) {   // p/a/b=[lat,lon]；回傳 {d公尺, t段內比例}
+  const C = 6371000, latref = a[0] * Math.PI / 180;
+  const mx = lon => lon * Math.PI / 180 * C * Math.cos(latref), my = lat => lat * Math.PI / 180 * C;
+  const px = mx(p[1]), py = my(p[0]), ax = mx(a[1]), ay = my(a[0]), bx = mx(b[1]), by = my(b[0]);
+  const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy;
+  const t = l2 ? Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / l2)) : 0;
+  return { d: Math.hypot(px - (ax + t * dx), py - (ay + t * dy)), t };
+}
+function _distAlong(pt, line) {   // 投影到折線，回傳距起點里程(公尺)
+  let bestD = 1e18, along = 0, cum = 0;
+  for (let i = 1; i < line.length; i++) {
+    const a = line[i - 1], b = line[i], r = _segProj(pt, a, b);
+    const seg = haversine({ lat: a[0], lon: a[1] }, { lat: b[0], lon: b[1] });
+    if (r.d < bestD) { bestD = r.d; along = cum + r.t * seg; }
+    cum += seg;
+  }
+  return along;
+}
+function resetWpHud() {
+  _wpReached = new Set(); _wpPrevAlong = null; _wpDir = 1;
+  _wpRefLine = (selectedTrailGeo && selectedTrailGeo.length) ? selectedTrailGeo.reduce((a, b) => (b.length > a.length ? b : a), selectedTrailGeo[0]) : null;
+  const hud = $("#recWpHud"); if (hud) hud.innerHTML = "";
+}
+function updateWpHud(lat, lon) {
+  const hud = $("#recWpHud"); if (!hud) return;
+  if (!selectedTrailWps.length || !_wpRefLine || lat == null) { hud.innerHTML = ""; return; }
+  const along = _distAlong([lat, lon], _wpRefLine);
+  // 抵達偵測：40m 內、尚未標記 → 提示並把該地標變灰
+  let hit = false;
+  for (const w of selectedTrailWps) {
+    if (_wpReached.has(w.name)) continue;
+    if (haversine({ lat, lon }, { lat: w.lat, lon: w.lon }) <= 40) { _wpReached.add(w.name); hit = true; if (typeof toast === "function") toast(ttT("抵達") + " " + w.name); }
+  }
+  if (hit && recWpLayer) drawWaypoints(recWpLayer, selectedTrailWps, _wpReached);
+  // 行進方向：里程增加=正向、減少=反向（從哪一頭走都對）
+  if (_wpPrevAlong != null && Math.abs(along - _wpPrevAlong) > 3) _wpDir = along > _wpPrevAlong ? 1 : -1;
+  _wpPrevAlong = along;
+  const ahead = selectedTrailWps
+    .filter(w => !_wpReached.has(w.name) && (_wpDir > 0 ? w.distM > along - 20 : w.distM < along + 20))
+    .sort((a, b) => _wpDir > 0 ? a.distM - b.distM : b.distM - a.distM)[0];
+  if (!ahead) { hud.innerHTML = ""; return; }
+  const rem = Math.abs(ahead.distM - along) / 1000;
+  const meta = WP_META[ahead.type] || WP_META.view;
+  hud.innerHTML = `<span class="wp-ic" style="background:${meta.c}">${meta.e}</span>`
+    + `<span class="h-txt">${ttT("下一個")}：<b>${(ahead.name || "").replace(/[<>&]/g, "")}</b></span>`
+    + `<span class="h-rem">${rem < 0.08 ? ttT("即將抵達") : ttT("剩") + " " + rem.toFixed(1) + " km"}</span>`;
+}
 // #3 行前小卡：選好步道、開始前顯示今日天氣＋日落時間（避免摸黑）＋該難度建議裝備
 function clearPreHike() { const el = $("#preHike"); if (el) { el.hidden = true; el.innerHTML = ""; } }
 function sunsetWarn(hm) {
@@ -2653,6 +2754,8 @@ function drawSelectedRoute() {
   if (!selectedTrailGeo || !selectedTrailGeo.length) return;
   routeRefLayer = L.layerGroup(selectedTrailGeo.map(seg =>
     L.polyline(seg, { color: "#2f7d4f", weight: 4, opacity: .55, dashArray: "6 6" }))).addTo(recMap);
+  if (!recWpLayer) recWpLayer = L.layerGroup().addTo(recMap); else recWpLayer.addTo(recMap);
+  drawWaypoints(recWpLayer, selectedTrailWps, _wpReached);   // 沿線地標疊到記錄地圖
   const b = L.featureGroup(selectedTrailGeo.map(s => L.polyline(s))).getBounds();
   if (b.isValid()) recMap.fitBounds(b, { padding: [20, 20] });
 }
@@ -2762,6 +2865,7 @@ function showSelectedTrail(name) {
 }
 function clearSelectedTrail() {
   selectedTrailGeo = null; selectedTrailId = null;
+  selectedTrailWps = []; if (recWpLayer) recWpLayer.clearLayers(); { const _h = $("#recWpHud"); if (_h) _h.innerHTML = ""; }
   Recorder._trailName = null;
   if (routeRefLayer && recMap) { recMap.removeLayer(routeRefLayer); routeRefLayer = null; }
   if (guideLine && recMap) { recMap.removeLayer(guideLine); guideLine = null; }
@@ -2891,6 +2995,8 @@ Recorder.onUpdate(s => {
   recSnap = s;
   syncRecButtons(s.state);   // 按鈕依 Recorder 實際狀態校正：startRecordingUI 中途若拋例外，這裡會補上暫停/結束鈕
   updateGpsSig(s);
+  // 沿線地標 HUD：用最新軌跡點算「下一個地標／剩多遠」＋抵達提示
+  if (s.state === "running" && selectedTrailWps.length && s.track && s.track.length) { const p = s.track[s.track.length - 1]; try { updateWpHud(p.lat, p.lon); } catch (e) { /* */ } }
   $("#stDist").textContent = s.distanceKm.toFixed(2);
   $("#stSteps").textContent = s.steps.toLocaleString();
   $("#stKcal").textContent = s.kcal;

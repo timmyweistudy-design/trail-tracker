@@ -808,6 +808,23 @@ body.navup-on #recMap .leaflet-map-pane { transition: transform .12s linear; }
 .cal-leg { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-top: 11px; font-size: calc(10.5px * var(--fs, 1)); color: var(--ink-faint); }
 .cal-ramp { flex: none; width: calc(76px * var(--fs, 1)); height: calc(9px * var(--fs, 1)); border-radius: var(--r-pill);
   background: linear-gradient(90deg, color-mix(in srgb, var(--brand) 16%, var(--surface)), var(--brand)); box-shadow: inset 0 0 0 1px var(--line-soft); }
+/* 沿線地標：地圖圖示 + 清單 */
+.wp-pin span { display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; font-size: 12px; line-height: 1; color: #fff; border: 1.5px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.45); }
+.wp-pin.dim { filter: grayscale(.7); opacity: .5; }
+.wp-list { display: flex; flex-direction: column; gap: 1px; margin: 2px 0 4px; }
+.wp-row { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: none; padding: 8px 4px; text-align: left; cursor: pointer; border-radius: 9px; }
+.wp-row:active { background: var(--brand-soft); }
+.wp-ic { flex: none; display: flex; align-items: center; justify-content: center; width: 25px; height: 25px; border-radius: 50%; font-size: 13px; line-height: 1; color: #fff; }
+.wp-nm { flex: 1; min-width: 0; font-size: calc(14px * var(--fs, 1)); color: var(--ink); }
+.wp-nm em { display: block; font-style: normal; font-size: calc(11px * var(--fs, 1)); color: var(--ink-soft); margin-top: 1px; }
+.wp-meta { flex: none; font-size: calc(12px * var(--fs, 1)); color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+/* 記錄頁「下一個地標」HUD */
+.rec-wp-hud:empty { display: none; }
+.rec-wp-hud { margin-top: 10px; display: flex; align-items: center; gap: 9px; background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 9px 13px; box-shadow: var(--sh-sm); }
+.rec-wp-hud .wp-ic { width: 27px; height: 27px; font-size: 14px; }
+.rec-wp-hud .h-txt { flex: 1; min-width: 0; font-size: calc(13.5px * var(--fs, 1)); color: var(--ink); }
+.rec-wp-hud .h-txt b { color: var(--brand-deep); }
+.rec-wp-hud .h-rem { flex: none; font-family: var(--num); font-weight: 700; color: var(--brand); font-variant-numeric: tabular-nums; }
 /* 記錄頁閒置天氣提示 */
 .rec-wx:empty { display: none; }
 .rec-wx-in { margin-top: 10px; border-radius: var(--r-sm); padding: 10px 14px; font-size: calc(13.5px * var(--fs, 1)); font-weight: 600; text-align: center; }

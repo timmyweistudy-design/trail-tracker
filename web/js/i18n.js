@@ -4,6 +4,19 @@
 // 步道名稱/介紹等資料內容維持中文。要補翻譯：加 DICT 詞條或 PATTERNS 規則即可。
 const I18n = (() => {
   const DICT = {
+    // 沿線地標
+    "沿線地標": "Trail landmarks",
+    "距起點": "From start",
+    "下一個": "Next",
+    "抵達": "Reached",
+    "即將抵達": "Almost there",
+    "三角點": "Trig point",
+    "山頭": "Peak",
+    "遺址": "Ruins",
+    "觀景": "Viewpoint",
+    "水源": "Water",
+    "山屋": "Mountain hut",
+    "鞍部": "Saddle",
     // 邀請好友
     "一起來用「循徑拾光」記錄爬山、養山林夥伴吧！": "Come track your hikes and raise a trail buddy with Gather the Trail!",
     "在 App 加我：": "Add me in the app: ",
