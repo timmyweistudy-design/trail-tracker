@@ -65,7 +65,12 @@ body {
 .app-header {
   position: sticky; top: 0; z-index: 20;
   color: #f3efe2;
-  background: linear-gradient(155deg, #1f4730 0%, #16301f 55%, #112619 100%);
+  background: #16301f;   /* 舊瀏覽器 fallback */
+  /* 由品牌色調暗生成頂欄漸層 → 換主題配色時整條頂欄跟著換色（淺/深色皆維持深底白字） */
+  background: linear-gradient(155deg,
+    color-mix(in srgb, var(--brand) 60%, #0a0a0a) 0%,
+    color-mix(in srgb, var(--brand) 32%, #0a0a0a) 55%,
+    color-mix(in srgb, var(--brand) 20%, #060606) 100%);
   box-shadow: 0 6px 24px rgba(15,33,21,.28);
   overflow: hidden;
 }
@@ -1004,6 +1009,22 @@ html[data-theme="dark"] body {
     radial-gradient(circle at 12% 8%, rgba(79,156,106,.07), transparent 40%),
     radial-gradient(circle at 90% 92%, rgba(217,138,91,.05), transparent 45%);
 }
+
+/* ===== PRO 主題配色：整組覆蓋品牌色，讓整個 App（頂欄/按鈕/分頁/連結/聚光燈…）都換色 =====
+   每個配色都有淺色 html[data-palette=X] 與深色 html[data-theme=dark][data-palette=X] 兩版；
+   靠屬性選擇器的權重蓋過 :root 與 html[data-theme=dark]。--brand-deep 在深色版是「亮色標題」。 */
+html[data-palette="ocean"]   { --brand: #1f6390; --brand-deep: #0f3049; --brand-mid: #3f83b0; --brand-soft: #dde9f2; --accent: #d98a3d; --accent-soft: #f5e7d3; }
+html[data-palette="twilight"]{ --brand: #6a4fa3; --brand-deep: #322350; --brand-mid: #8569ba; --brand-soft: #e8e1f3; --accent: #d38bb0; --accent-soft: #f5e3ee; }
+html[data-palette="maple"]   { --brand: #b0492f; --brand-deep: #561b10; --brand-mid: #c96840; --brand-soft: #f5e1d8; --accent: #cc9a3d; --accent-soft: #f4ecd2; }
+html[data-palette="amber"]   { --brand: #a67c1e; --brand-deep: #513806; --brand-mid: #c39a3d; --brand-soft: #f3edd6; --accent: #3f8f6a; --accent-soft: #dfeee5; }
+html[data-palette="rose"]    { --brand: #b0426e; --brand-deep: #571430; --brand-mid: #c96b90; --brand-soft: #f5dfe8; --accent: #6b8fc2; --accent-soft: #dde4f2; }
+html[data-palette="slate"]   { --brand: #45566a; --brand-deep: #232c38; --brand-mid: #5f7186; --brand-soft: #e2e6ec; --accent: #c2683d; --accent-soft: #f5e4d7; }
+html[data-theme="dark"][data-palette="ocean"]   { --brand: #4f9fd6; --brand-deep: #bcdcf2; --brand-mid: #6bb0e0; --brand-soft: #1b2c38; --accent: #e0a05f; --accent-soft: #35281b; }
+html[data-theme="dark"][data-palette="twilight"]{ --brand: #a487d8; --brand-deep: #ddd0f2; --brand-mid: #b39ee0; --brand-soft: #2a2338; --accent: #e0a0c4; --accent-soft: #352636; }
+html[data-theme="dark"][data-palette="maple"]   { --brand: #e07a55; --brand-deep: #f5cebc; --brand-mid: #e0906b; --brand-soft: #33221a; --accent: #e0b45f; --accent-soft: #362d1b; }
+html[data-theme="dark"][data-palette="amber"]   { --brand: #d9ad4f; --brand-deep: #f2e2b8; --brand-mid: #e0c06b; --brand-soft: #33291a; --accent: #67b083; --accent-soft: #22331e; }
+html[data-theme="dark"][data-palette="rose"]    { --brand: #e07aa0; --brand-deep: #f5c9db; --brand-mid: #e096b3; --brand-soft: #38222b; --accent: #8aa8d8; --accent-soft: #26303a; }
+html[data-theme="dark"][data-palette="slate"]   { --brand: #7d8ea3; --brand-deep: #d3dae2; --brand-mid: #94a3b5; --brand-soft: #262d36; --accent: #d98a5b; --accent-soft: #38271b; }
 html[data-theme="dark"] .tabbar { background: rgba(20,24,15,.92); }
 html[data-theme="dark"] .badge.src { background: #262d1f; color: #9aa090; }
 html[data-theme="dark"] .badge.closed { background: #3a211d; }
@@ -1152,7 +1173,7 @@ html[lang="de"] .chip, html[lang="nl"] .chip, html[lang="ru"] .chip, html[lang="
 .hero-dots span { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.5); transition: .2s; }
 .hero-dots span.on { background: #fff; width: 18px; border-radius: 3px; }
 .detail-hero::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to top, rgba(12,22,14,.82) 0%, rgba(12,22,14,.25) 42%, rgba(12,22,14,.05) 100%); }
-.detail-hero.noimg { background: linear-gradient(150deg, #25492f, #16301f); }
+.detail-hero.noimg { background: #16301f; background: linear-gradient(150deg, color-mix(in srgb, var(--brand) 66%, #0a0a0a), color-mix(in srgb, var(--brand) 30%, #080808)); }
 .detail-hero.noimg::before { content: ""; position: absolute; inset: 0; opacity: .5;
   background-image: repeating-radial-gradient(ellipse 130% 90% at 70% 20%, transparent 0 20px, rgba(220,232,210,.07) 20px 21.5px); }
 .hero-cap { position: absolute; left: 19px; right: 19px; bottom: 14px; z-index: 1; color: #fbf8ee; pointer-events: none; }
@@ -1946,9 +1967,14 @@ html[data-theme="dark"] body::after { opacity: .05; }
 .pm-manage { width: 100%; }
 .pm-manage .ic { width: 15px; height: 15px; vertical-align: -3px; margin-right: 5px; }
 
-/* Premium 主題色選擇 */
+/* Premium 主題配色：整組換色的色票（品牌色→點綴色漸層預覽 + 名稱） */
 .accent-head { font-size: calc(13px * var(--fs, 1)); color: var(--ink-soft); font-weight: 600; margin: 14px 0 8px; }
 .accent-row { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; }
+.pal-sw { position: relative; width: calc(74px * var(--fs, 1)); height: calc(46px * var(--fs, 1)); border-radius: 12px; border: none; box-shadow: 0 0 0 1px var(--line), var(--sh-sm); cursor: pointer; overflow: hidden; padding: 0; transition: transform .12s, box-shadow .12s; }
+.pal-sw .pal-nm { position: absolute; left: 0; right: 0; bottom: 0; padding: 3px 0 4px; font-size: calc(10.5px * var(--fs, 1)); font-weight: 700; color: #fff; text-align: center; background: linear-gradient(transparent, rgba(0,0,0,.42)); text-shadow: 0 1px 2px rgba(0,0,0,.5); letter-spacing: .3px; }
+.pal-sw:active { transform: scale(.95); }
+.pal-sw.on { box-shadow: 0 0 0 3px var(--brand), 0 4px 12px rgba(0,0,0,.22); transform: translateY(-2px); }
+.pal-sw.on::after { content: "✓"; position: absolute; top: 4px; right: 6px; color: #fff; font-size: calc(13px * var(--fs, 1)); font-weight: 800; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
 .acc-sw { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--line); cursor: pointer; color: #fff; font-size: calc(13px * var(--fs, 1)); font-weight: 700; display: flex; align-items: center; justify-content: center; }
 .acc-sw.on { box-shadow: 0 0 0 2px var(--accent); }
 .acc-reset { background: var(--surface-2); color: var(--ink-soft); box-shadow: 0 0 0 1px var(--line); }

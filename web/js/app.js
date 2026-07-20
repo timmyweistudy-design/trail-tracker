@@ -403,7 +403,7 @@ document.querySelectorAll(".tab").forEach(btn => {
         Pets.renderFriends();
       }
     }
-    if (view === "me") { renderHistory(); refreshOfflineStatus(); renderAccent(); renderProColor(); renderMeProfileCard(); if (typeof Premium !== "undefined") Premium.refresh().then(() => { Premium.renderBox($("#premiumBox")); renderAccent(); renderProColor(); renderMeProfileCard(); applySeason(); }); }
+    if (view === "me") { renderHistory(); refreshOfflineStatus(); renderPalette(); renderProColor(); renderMeProfileCard(); if (typeof Premium !== "undefined") Premium.refresh().then(() => { Premium.renderBox($("#premiumBox")); renderPalette(); renderProColor(); renderMeProfileCard(); applyPalette(); }); }
     if (view === "social") {
       // 社群模組延遲載入：還沒載就先載完再進（開機後 2 秒會自動載，多數時候已就緒）
       if (typeof SocialUI === "undefined" && window.loadSocial) window.loadSocial().then(() => { if (window.wireTeamLive) window.wireTeamLive(); if (typeof SocialUI !== "undefined") SocialUI.onShow(); });
@@ -3577,7 +3577,7 @@ if (_frs && _fri) {
     rd.readAsText(f);
   });
 }
-if (typeof Premium !== "undefined") { setTimeout(() => Premium.refresh(), 1500); Premium.handleReturn(); }   // 啟動後同步會員狀態 + 處理結帳返回
+if (typeof Premium !== "undefined") { setTimeout(() => Premium.refresh().then(() => { try { applyPalette(); applyProColor(); } catch (e) { /* */ } }), 1500); Premium.handleReturn(); }   // 啟動後同步會員狀態→重套主題配色/徽章色 + 處理結帳返回
 
 // 前端錯誤自動上報（phase19）：把 index.html 記到 localStorage 的錯誤批次上傳，
 // 開發者才能主動發現問題。已上傳的用時間戳記號避免重複；未登入/未跑 SQL 都靜默略過。
@@ -3802,15 +3802,31 @@ function applyTheme(mode) {
   if (meta) meta.setAttribute("content", dark ? "#13160f" : "#16301f");
   document.querySelectorAll(".theme-opt").forEach(b => b.classList.toggle("on", b.dataset.themeOpt === mode));
 }
-// 季節主題點綴色（春櫻/夏綠/秋楓/冬雪）；Premium 自選主題色會覆蓋
-const ACCENTS = [["#c2683d", "赤陶"], ["#3f8f6a", "森綠"], ["#8068c2", "暮紫"], ["#3a7bd5", "海藍"], ["#c0452f", "楓紅"], ["#d9a441", "金"]];
+// 季節點綴色（春櫻/夏綠/秋楓/冬雪）：沒選 PRO 主題配色時的預設 --accent
 function applySeason() {
-  const saved = localStorage.getItem("tt_accent");
-  if (saved && typeof Premium !== "undefined" && Premium.isOn()) { document.documentElement.style.setProperty("--accent", saved); return; }
   const m = new Date().getMonth() + 1;
   const col = m >= 3 && m <= 5 ? "#d2799a" : m >= 6 && m <= 8 ? "#3f8f6a" : m >= 9 && m <= 11 ? "#c2683d" : "#5a86b0";
   document.documentElement.style.setProperty("--accent", col);
 }
+// PRO 主題配色：一次覆蓋整組品牌色（--brand 家族 + --accent），讓「整個 App」換色而不是只有幾個字變色。
+// 實際色值定義在 CSS 的 html[data-palette="X"]（含淺／深色兩版）；這裡只負責存鍵值與切換 data-palette。
+const PALETTES = [
+  ["ocean", "海洋", "#1f6390", "#d98a3d"],
+  ["twilight", "暮紫", "#6a4fa3", "#d38bb0"],
+  ["maple", "楓紅", "#b0492f", "#cc9a3d"],
+  ["amber", "琥珀", "#a67c1e", "#3f8f6a"],
+  ["rose", "玫瑰", "#b0426e", "#6b8fc2"],
+  ["slate", "石墨", "#45566a", "#c2683d"],
+];
+function applyPalette() {
+  const root = document.documentElement;
+  const key = localStorage.getItem("tt_palette");
+  const pro = typeof Premium !== "undefined" && Premium.isOn();
+  const valid = pro && key && PALETTES.some(p => p[0] === key);
+  if (valid) { root.dataset.palette = key; root.style.removeProperty("--accent"); }   // 交給 CSS 整組換色；清掉季節 inline accent 才不會蓋過 palette
+  else { delete root.dataset.palette; applySeason(); }
+}
+if (typeof window !== "undefined") window.applyPalette = applyPalette;
 // PRO 徽章配色（會員）：套用到自己的 PRO 標籤
 const PRO_STYLES = [["#ffe07a", "#f0a91e", "#5a3a00", "金"], ["#dfe4ea", "#9aa3ad", "#2a2f36", "銀"], ["#7be0a3", "#2faa6b", "#0c3d24", "翡翠"], ["#ff9a9a", "#e0444f", "#5a0f14", "紅寶"], ["#9ec2ff", "#4f7fe0", "#0f1f4a", "藍寶"], ["#ffb3d1", "#e060a0", "#5a1338", "玫瑰"]];
 const PRO_FRAMES = [["#f0a91e", "金"], ["#9aa3ad", "銀"], ["#2faa6b", "翡翠"], ["#e0444f", "紅寶"], ["#4f7fe0", "藍寶"], ["#e060a0", "玫瑰"], ["#2c5d3f", "松綠"]];
@@ -3862,22 +3878,27 @@ async function renderMeProfileCard() {
     </div>
   </div>`;
 }
-function renderAccent() {
+function renderPalette() {
   const row = $("#accentRow"); if (!row) return;
   const pro = typeof Premium !== "undefined" && Premium.isOn();
-  const cur = localStorage.getItem("tt_accent");
-  row.innerHTML = ACCENTS.map(([c, n]) => `<button class="acc-sw${pro && cur === c ? " on" : ""}" data-acc="${c}" title="${n}" style="background:${c}">${pro && cur === c ? "✓" : ""}</button>`).join("")
-    + (pro ? `<button class="acc-sw acc-reset" id="accReset" title="自動（季節）">↺</button>` : `<span class="acc-lock">升級 Premium 解鎖</span>`);
-  row.querySelectorAll(".acc-sw[data-acc]").forEach(b => b.addEventListener("click", () => {
+  const cur = localStorage.getItem("tt_palette") || "";
+  // 每個色票用「品牌色→點綴色」漸層預覽，暗示選了會整組換色（不是只有一個小圓點）
+  const sw = (k, n, b, a) => `<button class="pal-sw${cur === k ? " on" : ""}" data-pal="${k}" title="${n}" style="background:linear-gradient(135deg,${b} 56%,${a})"><span class="pal-nm">${n}</span></button>`;
+  row.innerHTML = sw("", ttT("森綠"), "#2c5d3f", "#c2683d")
+    + PALETTES.map(p => sw(p[0], ttT(p[1]), p[2], p[3])).join("")
+    + (pro ? "" : `<div class="acc-lock">${ttT("升級 Premium 解鎖")}</div>`);
+  row.querySelectorAll(".pal-sw").forEach(b => b.addEventListener("click", () => {
     if (!pro) { if (typeof Premium !== "undefined") Premium.openUpgrade(); return; }
-    localStorage.setItem("tt_accent", b.dataset.acc); document.documentElement.style.setProperty("--accent", b.dataset.acc); renderAccent();
+    const k = b.dataset.pal;
+    if (k) localStorage.setItem("tt_palette", k); else localStorage.removeItem("tt_palette");
+    applyPalette(); renderPalette();
+    if (typeof toast === "function") toast(ttT("已套用主題配色"));
   }));
-  const rst = $("#accReset"); if (rst) rst.addEventListener("click", () => { localStorage.removeItem("tt_accent"); applySeason(); renderAccent(); });
 }
 let _themeBound = false;   // .theme-opt / .fs-opt 是靜態元素：initTheme 在還原備份後會再被呼叫，
                            // 不擋的話每還原一次就多疊一組 click 監聽器
 function initTheme() {
-  applySeason();
+  applyPalette();
   applyProColor();
   const mode = localStorage.getItem("tt_theme") === "dark" ? "dark" : "light";   // 預設淺色，只有明確選深色才深色
   applyTheme(mode);
