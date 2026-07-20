@@ -233,6 +233,29 @@ const PORT = 8899;
       else console.log("✓ 原生：購買未觸發 Stripe");
       await p2.close();
     }
+
+    // 本階段新功能冒煙：主題配色整組換色、健行日曆熱力圖、天氣提示位、情境導覽/提醒/同步/天氣等全域引擎
+    {
+      const p3 = await browser.newPage({ viewport: { width: 390, height: 844 } });
+      await p3.addInitScript(() => {
+        try {
+          localStorage.setItem("tt_lang", "zh"); localStorage.setItem("tt_onboarded_v2", "1");
+          ["tt_coach_trail", "tt_coach_team", "tt_coach_record", "tt_coach_soc_friends", "tt_coach_soc_explore", "tt_coach_soc_search", "tt_coach_soc_notif", "tt_coach_soc_me", "tt_locperm_prompted"].forEach(k => localStorage.setItem(k, "1"));
+          localStorage.setItem("tt_records", JSON.stringify([{ id: "e1", date: new Date().toISOString(), distanceKm: 4, ascent: 100, kcal: 200, elapsedMs: 3600000 }]));
+        } catch (e) { }
+      });
+      await p3.goto(`http://localhost:${PORT}/`, { waitUntil: "domcontentloaded" });
+      await p3.waitForTimeout(2600);
+      const globals = await p3.evaluate(() => ["ttCoach", "applyPalette", "renderReminderToggle", "cloudAutoSync", "hikeWxHint"].map(n => typeof window[n] === "function"));
+      ok("新功能全域引擎皆在（導覽/配色/提醒/同步/天氣）", globals.every(Boolean));
+      const brand = await p3.evaluate(() => { if (typeof Premium === "undefined") window.Premium = {}; Premium.isOn = () => true; localStorage.setItem("tt_palette", "ocean"); applyPalette(); return getComputedStyle(document.documentElement).getPropertyValue("--brand").trim().toLowerCase(); });
+      ok("PRO 主題配色 ocean 整組換色（--brand=#1f6390）", brand === "#1f6390");
+      await p3.evaluate(() => document.querySelector('.tab[data-view="me"]').click());
+      await p3.waitForTimeout(900);
+      ok("健行日曆熱力圖有渲染", await p3.locator("#meMonth .hm-grid").count() === 1);
+      ok("記錄頁天氣提示容器存在", await p3.locator("#recWxHint").count() === 1);
+      await p3.close();
+    }
   } catch (e) {
     errors.push("fatal: " + e.message);
   } finally {
