@@ -353,7 +353,7 @@ const WP_META = {
   survey: { c: "#c0452f", label: "三角點", svg: `<path d="M12 4 20 19H4Z"/>` },
   peak:   { c: "#8a6d3b", label: "山頭", svg: `<path d="M3 19 9 8l4 6 4-5 4 10Z"/>` },
   ruins:  { c: "#7a5c3e", label: "遺址", svg: `<path d="M4 20h16"/><path d="M7 20V9m5 11V6m5 14v-9"/>` },
-  bridge: { c: "#2f7ab0", label: "吊橋", svg: `<path d="M3 9q9 10 18 0"/><path d="M3 9v7m18-7v7"/><path d="M3 13h18"/>` },
+  bridge: { c: "#2f7ab0", label: "橋", svg: `<path d="M3 9q9 10 18 0"/><path d="M3 9v7m18-7v7"/><path d="M3 13h18"/>` },
   view:   { c: "#3f8f6a", label: "觀景", svg: `<path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="2.5"/>` },
   water:  { c: "#3a7bd5", label: "水源", svg: `<path d="M12 4c-4 6-5 9-5 11a5 5 0 0 0 10 0c0-2-1-5-5-11Z"/>` },
   hut:    { c: "#b0762f", label: "山屋", svg: `<path d="M4 11 12 4l8 7"/><path d="M6 10v10h12V10"/>` },
@@ -370,8 +370,9 @@ function drawWaypoints(layer, wps, reached) {
   (wps || []).forEach(w => {
     const m = WP_META[w.type] || WP_META.view;
     const done = reached && reached.has(w.name);
+    const lbl = ttT(m.label), nm = (w.name || "").replace(/[<>&]/g, "");
     L.marker([w.lat, w.lon], { icon: wpIcon(w.type, done), keyboard: false }).addTo(layer)
-      .bindPopup(`<b>${(w.name || "").replace(/[<>&]/g, "")}</b><br>${ttT(m.label)}${w.ele ? " · " + w.ele + " m" : ""} · ${ttT("距起點")} ${(w.distM / 1000).toFixed(1)} km`);
+      .bindPopup(`<b>${nm}</b><br>${nm && nm !== lbl ? lbl + " · " : ""}${w.ele ? w.ele + " m · " : ""}${ttT("距起點")} ${(w.distM / 1000).toFixed(1)} km`);
   });
 }
 // 詳情頁「沿線地標」清單（依里程排序，點了跳到地圖）
@@ -383,10 +384,10 @@ function wpListHtml(t) {
   const types = [...new Set(wps.map(w => w.type))].filter(ty => WP_META[ty]);
   const legend = `<div class="wp-legend">${types.map(ty => `<span class="wp-leg-i">${wpIconSvg(ty)}${ttT(WP_META[ty].label)}</span>`).join("")}</div>`;
   const rows = wps.map(w => {
-    const m = WP_META[w.type] || WP_META.view;
+    const m = WP_META[w.type] || WP_META.view, lbl = ttT(m.label), nm = (w.name || "").replace(/[<>&]/g, "");
     return `<button class="wp-row" data-wplat="${w.lat}" data-wplon="${w.lon}">
       ${wpIconSvg(w.type)}
-      <span class="wp-nm">${(w.name || "").replace(/[<>&]/g, "")}<em>${ttT(m.label)}</em></span>
+      <span class="wp-nm">${nm}${nm && nm !== lbl ? `<em>${lbl}</em>` : ""}</span>
       <span class="wp-meta">${w.ele ? w.ele + " m · " : ""}${(w.distM / 1000).toFixed(1)} km</span></button>`;
   }).join("");
   return `<div class="section-title collapsible" id="secWp">${ic("landmark")}${ttT("沿線地標")}（${wps.length}）</div>
