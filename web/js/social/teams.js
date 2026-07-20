@@ -131,6 +131,9 @@ const Team = (() => {
       <div class="auth-msg" id="tmMsg"></div>`;
     body.innerHTML = html;
 
+    // 首次開啟小隊浮層 → 情境導覽（導覽字串集中在 app.js，避免這裡新增多語字典）
+    if (typeof window.ttCoachTeam === "function") setTimeout(() => window.ttCoachTeam(!!aId), 350);
+
     body.querySelectorAll(".team-pick").forEach(b => b.addEventListener("click", () => { setActive(b.dataset.id, b.dataset.name); renderSheet(wrap, info); }));
     const leaveBtn = body.querySelector("#tmLeave");
     if (leaveBtn) leaveBtn.addEventListener("click", async () => { if (!(await ttConfirm("退出目前小隊？"))) return; if (typeof TeamLive !== "undefined") TeamLive.stop(); await leave(aId); renderSheet(wrap, info); });

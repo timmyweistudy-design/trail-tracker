@@ -393,6 +393,8 @@ document.querySelectorAll(".tab").forEach(btn => {
       const _tryAutoLive = () => { if (typeof Team !== "undefined" && Team.autoLive && typeof recMap !== "undefined" && recMap) Team.autoLive(recMap); };
       setTimeout(() => { if (typeof Team !== "undefined") _tryAutoLive(); else if (window.loadSocial) window.loadSocial().then(() => setTimeout(_tryAutoLive, 300)); }, 300);
       renderRecIdle();
+      // 首次進記錄頁（閒置）→ 情境導覽（等地圖建好再跳）
+      if (Recorder.getState() === "idle" && typeof window.ttCoachRecord === "function") setTimeout(() => window.ttCoachRecord(), 650);
     }
     if (view === "pet") {
       renderPet(); renderQuests(); renderBadges();
@@ -1754,6 +1756,9 @@ async function openDetail(id) {
     toast(inSet ? "已加入比較" : "已移出比較");
     updateCompareBar();
   });
+
+  // 首次點開步道詳情 → 情境導覽（等面板滑入穩定再跳；已關閉就不跳）
+  if (typeof window.ttCoachTrail === "function") setTimeout(() => window.ttCoachTrail(!!geoOf(t)), 550);
 }
 async function loadAmenities(t) {
   const box = $("#amenBox");
@@ -4196,8 +4201,6 @@ function onboarding(force, opts) {
       p: "這裡看你的里程、爬升、完成步道等統計。" },
     { view: "me", sel: ".set-zone-title", e: "⚙️", h: "設定",
       p: "設定都在這：會員、外觀（字體大小／主題）、語言、個人檔案、資料備份、離線地圖。" },
-    { view: "social", sel: ".social-subnav", e: "💬", h: "社群",
-      p: "社群有：動態看好友、探索找步道旅行、搜尋山友、通知、我的檔案。" },
     { center: true, e: "🎉", h: "開始探索吧！", p: "祝你在山林裡玩得開心 🏔️", last: true },
   ].map(s => ({ ...s, h: T(s.h), p: T(s.p) }));
 
@@ -4284,6 +4287,119 @@ function onboarding(force, opts) {
 }
 // 已選過語言的用戶（含重載回來的）：直接跑導覽；新用戶則由 langGate 選完語言後再觸發
 onboarding();
+
+// 情境式導覽：在「當前畫面」逐一聚光介紹某功能，各有 flag，看過一次就不再跳。與主導覽 onboarding 共用 .tour CSS。
+// steps: [{sel,e,h,p,center}]；opts:{scope}（限定在某容器內找目標，如詳情 sheet／小隊浮層）。長句 p 已全數翻進字典。
+window.ttCoach = function (flag, rawSteps, opts) {
+  opts = opts || {};
+  try { if (flag && localStorage.getItem(flag)) return; } catch (e) { return; }
+  if (!localStorage.getItem("tt_lang")) return;      // 還沒選語言 → 等語言選擇覆蓋層
+  if (document.querySelector(".tour")) return;         // 主導覽或別的情境導覽進行中 → 讓路（flag 不設，下次再跳）
+  const T = (typeof ttT === "function") ? ttT : (s => s);
+  const steps = (rawSteps || []).filter(Boolean).map(s => ({ ...s, h: T(s.h), p: T(s.p) }));
+  if (!steps.length) return;
+  steps[steps.length - 1].last = true;                 // 最後一步收尾
+  let i = 0;
+  const root = () => (opts.scope ? document.querySelector(opts.scope) : null) || document;
+  const ov = document.createElement("div"); ov.className = "tour";
+  const spot = document.createElement("div"); spot.className = "tour-spot";
+  const tip = document.createElement("div"); tip.className = "tour-tip";
+  ov.appendChild(spot); ov.appendChild(tip); document.body.appendChild(ov);
+  const done = () => { try { if (flag) localStorage.setItem(flag, "1"); } catch (e) { /* */ } ov.remove(); };
+  const findTarget = sel => {
+    const r = root();
+    for (const s of (sel || "").split(",")) { const el = r.querySelector(s.trim()); if (el && el.offsetParent !== null) return el; }
+    return null;
+  };
+  function place(rr) {
+    if (!rr) { spot.style.width = spot.style.height = "0px"; spot.style.top = "50%"; spot.style.left = "50%"; }
+    else {
+      const pad = 8;
+      spot.style.top = (rr.top - pad) + "px"; spot.style.left = (rr.left - pad) + "px";
+      spot.style.width = (rr.width + pad * 2) + "px"; spot.style.height = (rr.height + pad * 2) + "px";
+    }
+    tip.classList.toggle("center", !rr); tip.style.top = tip.style.bottom = "";
+    if (rr) {
+      if (rr.top + rr.height / 2 < window.innerHeight * 0.5) tip.style.bottom = "calc(24px + var(--safe-b, 0px))";
+      else tip.style.top = "84px";
+    }
+  }
+  function renderTip(st) {
+    const dots = steps.map((_, k) => `<span class="${k === i ? "on" : ""}"></span>`).join("");
+    const skipAll = st.last ? "" : `<button class="info-link tour-skipall" id="tourSkipAll">${T("跳過導覽")}</button>`;
+    tip.innerHTML = `${st.last ? "" : `<button class="tour-skip" id="tourSkip" aria-label="${T("跳過導覽")}">✕</button>`}`
+      + `<div class="tour-emoji">${st.e}</div><h3>${st.h}</h3><p>${st.p}</p>`
+      + `<div class="tour-dots">${dots}</div><button class="btn primary" id="tourNext">${st.last ? T("知道了") : T("下一步")}</button>${skipAll}`;
+    const nx = tip.querySelector("#tourNext"); if (nx) nx.addEventListener("click", () => { if (st.last) done(); else { i++; show(); } });
+    const sk = tip.querySelector("#tourSkip"); if (sk) sk.addEventListener("click", done);
+    const sa = tip.querySelector("#tourSkipAll"); if (sa) sa.addEventListener("click", done);
+  }
+  async function show() {
+    const st = steps[i];
+    renderTip(st); place(null);
+    let target = null;
+    if (st.sel && !st.center) { for (let k = 0; k < 16 && !target; k++) { target = findTarget(st.sel); if (!target) await new Promise(r => setTimeout(r, 130)); } }
+    let r = null;
+    if (target) {
+      try { target.scrollIntoView({ block: "center" }); } catch (e) { /* */ }
+      await new Promise(res => requestAnimationFrame(() => requestAnimationFrame(res)));
+      if (steps[i] !== st) return;
+      const rr = target.getBoundingClientRect();
+      const huge = rr.width > window.innerWidth * 0.92 && rr.height > window.innerHeight * 0.8;
+      if (!huge && rr.width > 4 && rr.height > 4) r = rr;
+    }
+    place(r);
+  }
+  show();
+};
+
+// 首次點開步道詳情：介紹分區、天氣、海拔、生態、動作列、離線地圖、開始記錄。
+window.ttCoachTrail = function (hasGeo) {
+  if (!document.querySelector("#detailSheet.show")) return;
+  window.ttCoach("tt_coach_trail", [
+    { sel: "#detailNav", e: "📑", h: "步道資訊", p: "上面這排可以快速跳到各區：天氣、海拔、生態、景點、美食。" },
+    { sel: "#weatherBox", e: "🌦️", h: "天氣", p: "顯示步道所在地的即時天氣與未來預報，出發前先看一下。" },
+    hasGeo ? { sel: "#profileBox", e: "⛰️", h: "海拔剖面", p: "沿路的高度變化圖，幫你評估上坡有多硬、要爬多高。" } : null,
+    { sel: "#secEco", e: "🦋", h: "生態", p: "這條步道常見的動植物，還能查 iNaturalist 附近的真實目擊。" },
+    { sel: ".link-row", e: "🔗", h: "分享", p: "分享步道、揪團出遊、加入比較、開啟導航，都在這一排。" },
+    { sel: "#btnOffline", e: "⬇️", h: "離線地圖", p: "山區常常沒有訊號，先在這裡把地圖下載起來就不怕迷路。" },
+    { sel: "#btnGoRecord", e: "📍", h: "記錄健行", p: "準備好了嗎？從這條步道直接開始記錄你的足跡吧！" },
+  ], { scope: "#detailSheet" });
+};
+
+// 首次開啟小隊浮層：介紹小隊用途、建立、加入碼、與小隊同行。
+window.ttCoachTeam = function (hasActive) {
+  if (!document.querySelector('[data-ov="team"]')) return;
+  window.ttCoach("tt_coach_team", [
+    { center: true, e: "👥", h: "小隊", p: "和山友組隊，在記錄地圖上即時看到彼此的位置，一起安全同行。" },
+    { sel: "#tmCreate", e: "➕", h: "建立小隊", p: "取個隊名按「建立」，系統會給你一組加入碼，分享給隊友。" },
+    { sel: "#tmJoin, #tmCode", e: "🔑", h: "用加入碼加入", p: "拿到隊友的加入碼？輸入後按「加入」，就成為小隊的一員。" },
+    hasActive ? { sel: ".team-live", e: "📍", h: "與小隊同行", p: "打開後，隊員在記錄頁的地圖上就能看到彼此的即時定位。" } : null,
+  ], { scope: '[data-ov="team"]' });
+};
+
+// 登入後首次點開各社群分頁：一頁一張小卡介紹該頁用途。
+window.ttCoachSocial = function (sub) {
+  if (document.body.dataset.view !== "social") return;
+  const M = {
+    friends: { flag: "tt_coach_soc_friends", e: "📰", h: "動態", p: "看你追蹤的山友發的貼文，可以按讚、留言，或收藏他們的路線。" },
+    explore: { flag: "tt_coach_soc_explore", e: "🧭", h: "探索", p: "探索其他山友公開的健行足跡與旅程，替下次出遊找靈感。" },
+    search: { flag: "tt_coach_soc_search", e: "🔍", h: "搜尋山友", p: "用名稱或 @帳號找到山友，追蹤他們就能在動態看到更新。" },
+    notif: { flag: "tt_coach_soc_notif", e: "🔔", h: "通知", p: "有人按讚、留言、追蹤你，或小隊邀請，都會出現在這裡。" },
+    me: { flag: "tt_coach_soc_me", e: "👤", h: "我的檔案", p: "你的個人檔案、發過的貼文和追蹤名單，也能在這裡編輯資料。" },
+  };
+  const c = M[sub]; if (!c) return;
+  window.ttCoach(c.flag, [{ center: true, e: c.e, h: c.h, p: c.p }], {});
+};
+
+// 首次進記錄頁（閒置）：介紹即時軌跡地圖與開始鈕。
+window.ttCoachRecord = function () {
+  if (document.body.dataset.view !== "record") return;
+  window.ttCoach("tt_coach_record", [
+    { sel: "#recMap", e: "🗺️", h: "記錄地圖", p: "開始後，地圖會即時畫出你走過的軌跡，鎖螢幕、沒訊號也照記。" },
+    { sel: "#btnStart", e: "▶️", h: "記錄健行", p: "出發時按「開始」，結束按「結束」就會存成一筆健行紀錄。" },
+  ], {});
+};
 
 // 浮起的小表情（按讚/表情回應時從按鈕飄起）
 window.ttFloat = function (el, emoji) {

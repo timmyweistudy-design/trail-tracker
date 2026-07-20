@@ -51,6 +51,8 @@ const SocialUI = (() => {
     else if (sub === "notif") { if (typeof Notifs !== "undefined") Notifs.render(into).then(updateBadge); }
     else if (sub === "me") Profiles.renderMe(into, myProf);
     updateBadge();
+    // 登入後首次點開各社群分頁 → 一頁一張情境導覽小卡（導覽字串集中在 app.js）
+    if (typeof window.ttCoachSocial === "function") setTimeout(() => window.ttCoachSocial(sub), 550);
     // 深連結：?post=<id> → 開啟該貼文（登入後才開，開一次後清掉網址參數）
     if (pendingPost && typeof PostView !== "undefined") {
       const pid = pendingPost; pendingPost = null;
