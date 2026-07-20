@@ -3727,6 +3727,25 @@ function openCompareSheet() {
   ov.addEventListener("click", e => { if (e.target === ov) close(); });
 }
 // #5 本月摘要：一眼看到本月里程／次數／連續天數／最長單次，日常回訪動機（免費，進階分析仍為 PRO）
+// 健行日曆：近 12 週的每日熱力圖（GitHub 貢獻圖風格），一眼看到規律與連續，增強回訪動機
+function hikeHeatmapHtml() {
+  const WEEKS = 12;
+  const byDay = {};
+  realRecords().forEach(r => { const d = localDay(r.date); if (d) byDay[d] = (byDay[d] || 0) + (r.distanceKm || 0); });
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const start = new Date(today);
+  start.setDate(start.getDate() - (WEEKS * 7 - 1));
+  start.setDate(start.getDate() - start.getDay());   // 對齊到該週週日（列首）
+  const cells = [];
+  for (const cur = new Date(start); cur <= today; cur.setDate(cur.getDate() + 1)) {
+    const key = localDayOf(cur), km = byDay[key] || 0;
+    const lvl = km <= 0 ? 0 : km >= 8 ? 4 : km >= 4 ? 3 : km >= 1.5 ? 2 : 1;
+    cells.push(`<div class="hm-c hm-l${lvl}" title="${key}${km > 0 ? "・" + km.toFixed(1) + " km" : ""}"></div>`);
+  }
+  return `<div class="hm-wrap"><div class="hm-cap">${ttT("健行日曆")}</div>
+    <div class="hm-grid">${cells.join("")}</div>
+    <div class="hm-leg"><span>${ttT("少")}</span><i class="hm-c hm-l0"></i><i class="hm-c hm-l1"></i><i class="hm-c hm-l2"></i><i class="hm-c hm-l3"></i><i class="hm-c hm-l4"></i><span>${ttT("多")}</span></div></div>`;
+}
 function renderMonthSummary() {
   const box = $("#meMonth"); if (!box) return;
   const recs = realRecords();
@@ -3746,6 +3765,7 @@ function renderMonthSummary() {
       ${cell(streak >= 1 ? `${streak}` : "0", ttT("連續天數"), streak >= 2)}
       ${cell(longest.toFixed(1), ttT("最長單次") + " km")}
     </div>
+    ${recs.length ? hikeHeatmapHtml() : ""}
   </div>`;
 }
 function renderStats() {
