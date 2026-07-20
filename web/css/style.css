@@ -1014,12 +1014,16 @@ html[data-theme="dark"] body {
    每個配色都有淺色 html[data-palette=X] 與深色 html[data-theme=dark][data-palette=X] 兩版；
    靠屬性選擇器的權重蓋過 :root 與 html[data-theme=dark]。--brand-deep 在深色版是「亮色標題」。 */
 html[data-palette="ocean"]   { --brand: #1f6390; --brand-deep: #0f3049; --brand-mid: #3f83b0; --brand-soft: #dde9f2; --accent: #d98a3d; --accent-soft: #f5e7d3; }
+html[data-palette="teal"]    { --brand: #17807a; --brand-deep: #0c3b38; --brand-mid: #3ba39b; --brand-soft: #d9eeeb; --accent: #d98a3d; --accent-soft: #f5e7d3; }
+html[data-palette="coral"]   { --brand: #c85a45; --brand-deep: #5e2016; --brand-mid: #d97a63; --brand-soft: #f6e2dc; --accent: #3f8f6a; --accent-soft: #dfeee5; }
 html[data-palette="twilight"]{ --brand: #6a4fa3; --brand-deep: #322350; --brand-mid: #8569ba; --brand-soft: #e8e1f3; --accent: #d38bb0; --accent-soft: #f5e3ee; }
 html[data-palette="maple"]   { --brand: #b0492f; --brand-deep: #561b10; --brand-mid: #c96840; --brand-soft: #f5e1d8; --accent: #cc9a3d; --accent-soft: #f4ecd2; }
 html[data-palette="amber"]   { --brand: #a67c1e; --brand-deep: #513806; --brand-mid: #c39a3d; --brand-soft: #f3edd6; --accent: #3f8f6a; --accent-soft: #dfeee5; }
 html[data-palette="rose"]    { --brand: #b0426e; --brand-deep: #571430; --brand-mid: #c96b90; --brand-soft: #f5dfe8; --accent: #6b8fc2; --accent-soft: #dde4f2; }
 html[data-palette="slate"]   { --brand: #45566a; --brand-deep: #232c38; --brand-mid: #5f7186; --brand-soft: #e2e6ec; --accent: #c2683d; --accent-soft: #f5e4d7; }
 html[data-theme="dark"][data-palette="ocean"]   { --brand: #4f9fd6; --brand-deep: #bcdcf2; --brand-mid: #6bb0e0; --brand-soft: #1b2c38; --accent: #e0a05f; --accent-soft: #35281b; }
+html[data-theme="dark"][data-palette="teal"]    { --brand: #4fbdb2; --brand-deep: #b8e8e2; --brand-mid: #6fcdc3; --brand-soft: #16302e; --accent: #e0a05f; --accent-soft: #35281b; }
+html[data-theme="dark"][data-palette="coral"]   { --brand: #e8917c; --brand-deep: #f6d3c9; --brand-mid: #e5a593; --brand-soft: #38241f; --accent: #67b083; --accent-soft: #22331e; }
 html[data-theme="dark"][data-palette="twilight"]{ --brand: #a487d8; --brand-deep: #ddd0f2; --brand-mid: #b39ee0; --brand-soft: #2a2338; --accent: #e0a0c4; --accent-soft: #352636; }
 html[data-theme="dark"][data-palette="maple"]   { --brand: #e07a55; --brand-deep: #f5cebc; --brand-mid: #e0906b; --brand-soft: #33221a; --accent: #e0b45f; --accent-soft: #362d1b; }
 html[data-theme="dark"][data-palette="amber"]   { --brand: #d9ad4f; --brand-deep: #f2e2b8; --brand-mid: #e0c06b; --brand-soft: #33291a; --accent: #67b083; --accent-soft: #22331e; }
@@ -1970,7 +1974,10 @@ html[data-theme="dark"] body::after { opacity: .05; }
 /* Premium 主題配色：整組換色的色票（品牌色→點綴色漸層預覽 + 名稱） */
 .accent-head { font-size: calc(13px * var(--fs, 1)); color: var(--ink-soft); font-weight: 600; margin: 14px 0 8px; }
 .accent-row { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; }
-.pal-sw { position: relative; width: calc(74px * var(--fs, 1)); height: calc(46px * var(--fs, 1)); border-radius: 12px; border: none; box-shadow: 0 0 0 1px var(--line), var(--sh-sm); cursor: pointer; overflow: hidden; padding: 0; transition: transform .12s, box-shadow .12s; }
+/* 主題配色色票：固定 3 欄格線 → 9 個色票永遠是整齊的 3×3（不論字級/寬度都對稱不留孤兒） */
+#accentRow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+.pal-sw { position: relative; width: 100%; height: calc(46px * var(--fs, 1)); border-radius: 12px; border: none; box-shadow: 0 0 0 1px var(--line), var(--sh-sm); cursor: pointer; overflow: hidden; padding: 0; transition: transform .12s, box-shadow .12s; }
+#accentRow .acc-lock { grid-column: 1 / -1; }
 .pal-sw .pal-nm { position: absolute; left: 0; right: 0; bottom: 0; padding: 3px 0 4px; font-size: calc(10.5px * var(--fs, 1)); font-weight: 700; color: #fff; text-align: center; background: linear-gradient(transparent, rgba(0,0,0,.42)); text-shadow: 0 1px 2px rgba(0,0,0,.5); letter-spacing: .3px; }
 .pal-sw:active { transform: scale(.95); }
 .pal-sw.on { box-shadow: 0 0 0 3px var(--brand), 0 4px 12px rgba(0,0,0,.22); transform: translateY(-2px); }

@@ -3858,10 +3858,12 @@ function applySeason() {
 }
 // PRO 主題配色：一次覆蓋整組品牌色（--brand 家族 + --accent），讓「整個 App」換色而不是只有幾個字變色。
 // 實際色值定義在 CSS 的 html[data-palette="X"]（含淺／深色兩版）；這裡只負責存鍵值與切換 data-palette。
-const PALETTES = [
+const PALETTES = [   // 加上「森綠」預設共 9 個 → 設定頁排成整齊的 3×3
   ["ocean", "海洋", "#1f6390", "#d98a3d"],
+  ["teal", "青碧", "#17807a", "#d98a3d"],
   ["twilight", "暮紫", "#6a4fa3", "#d38bb0"],
   ["maple", "楓紅", "#b0492f", "#cc9a3d"],
+  ["coral", "珊瑚", "#c85a45", "#3f8f6a"],
   ["amber", "琥珀", "#a67c1e", "#3f8f6a"],
   ["rose", "玫瑰", "#b0426e", "#6b8fc2"],
   ["slate", "石墨", "#45566a", "#c2683d"],

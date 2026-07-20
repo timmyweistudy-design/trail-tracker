@@ -4,6 +4,8 @@
 // 步道名稱/介紹等資料內容維持中文。要補翻譯：加 DICT 詞條或 PATTERNS 規則即可。
 const I18n = (() => {
   const DICT = {
+    "青碧": "Teal",
+    "珊瑚": "Coral",
     // 空狀態(收藏/完成)
     "還沒有收藏的步道": "No saved trails yet",
     "點步道卡右上的 ☆ 就能收藏": "Tap the ☆ on a trail card to save it",
