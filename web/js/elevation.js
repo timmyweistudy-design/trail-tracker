@@ -93,6 +93,17 @@ const Elevation = (() => {
 
   // 記錄中即時取樣：圖磚已在記憶體→同步回傳地面高度；否則背景抓、這次先回 null（呼叫端退回 GPS 高度）。
   // 目的：記錄中的即時爬升與結算的 DEM 校正用同一份資料，數字不會前後打架。
+  // 雙線性內插取樣：DEM 圖磚一格約 9 m，最近鄰會產生階梯狀量化，插值後高度連續、爬升/剖面更貼近實際。
+  function bilin(t, fpx, fpy) {
+    const w = t.w, e = t.e, hmax = (e.length / w) - 1;
+    const x0 = Math.max(0, Math.min(w - 1, Math.floor(fpx)));
+    const y0 = Math.max(0, Math.min(hmax, Math.floor(fpy)));
+    const x1 = Math.min(w - 1, x0 + 1), y1 = Math.min(hmax, y0 + 1);
+    const dx = fpx - x0, dy = fpy - y0;
+    const a = e[y0 * w + x0], b = e[y0 * w + x1], c = e[y1 * w + x0], d = e[y1 * w + x1];
+    const top = a + (b - a) * dx, bot = c + (d - c) * dx;
+    return top + (bot - top) * dy;
+  }
   function sample(lat, lon) {
     if (lat == null || lon == null || typeof createImageBitmap !== "function" || typeof document === "undefined") return null;
     const { fx, fy } = tileXY(lat, lon);
@@ -100,14 +111,12 @@ const Elevation = (() => {
     const t = _ready.get(k);
     if (!t) { tile(tx, ty).catch(() => {}); return null; }   // 首次進入這張圖磚 → 背景抓，不擋記錄
     touch(k);   // 記錄中持續讀的這張＝最近使用，不可以被舊行程的坡度著色擠掉
-    const px = Math.min(255, Math.floor((fx % 1) * 256));
-    const py = Math.min(255, Math.floor((fy % 1) * 256));
-    return t.e[py * t.w + px];
+    return bilin(t, (fx % 1) * 256, (fy % 1) * 256);
   }
   async function lookupTiles(pts) {
     const at = pts.map(p => {
       const { fx, fy } = tileXY(p.lat, p.lon);
-      return { tx: Math.floor(fx), ty: Math.floor(fy), px: Math.min(255, Math.floor((fx % 1) * 256)), py: Math.min(255, Math.floor((fy % 1) * 256)) };
+      return { tx: Math.floor(fx), ty: Math.floor(fy), fpx: (fx % 1) * 256, fpy: (fy % 1) * 256 };
     });
     // 先平行抓齊所有「不重複」的圖磚（逐點循序等待會把延遲乘上點數）
     const need = [...new Set(at.map(a => a.tx + "/" + a.ty))];
@@ -115,7 +124,7 @@ const Elevation = (() => {
     const out = [];
     for (const a of at) {
       const t = await tile(a.tx, a.ty);
-      out.push(t.e[a.py * t.w + a.px]);
+      out.push(bilin(t, a.fpx, a.fpy));   // 雙線性內插（同 sample），結算校正與剖面也更準
     }
     return out;
   }
@@ -194,6 +203,6 @@ const Elevation = (() => {
     } catch (err) { return null; }
   }
 
-  return { correct, downsample, recompute, decode, tileXY, sample, profile };
+  return { correct, downsample, recompute, decode, tileXY, sample, profile, bilin };
 })();
 if (typeof module !== "undefined") module.exports = Elevation;
