@@ -403,7 +403,7 @@ document.querySelectorAll(".tab").forEach(btn => {
         Pets.renderFriends();
       }
     }
-    if (view === "me") { renderHistory(); refreshOfflineStatus(); renderPalette(); renderProColor(); renderMeProfileCard(); if (typeof Premium !== "undefined") Premium.refresh().then(() => { Premium.renderBox($("#premiumBox")); renderPalette(); renderProColor(); renderMeProfileCard(); applyPalette(); }); }
+    if (view === "me") { renderHistory(); refreshOfflineStatus(); renderPalette(); renderProColor(); renderMeProfileCard(); renderSyncStatus(); if (typeof Premium !== "undefined") Premium.refresh().then(() => { Premium.renderBox($("#premiumBox")); renderPalette(); renderProColor(); renderMeProfileCard(); applyPalette(); }); }
     if (view === "social") {
       // 社群模組延遲載入：還沒載就先載完再進（開機後 2 秒會自動載，多數時候已就緒）
       if (typeof SocialUI === "undefined" && window.loadSocial) window.loadSocial().then(() => { if (window.wireTeamLive) window.wireTeamLive(); if (typeof SocialUI !== "undefined") SocialUI.onShow(); });
@@ -3464,7 +3464,7 @@ async function cloudBackupNow(silent) {
   try {
     if (!silent) toast("備份到雲端中…");
     const { error } = await x.c.from("backups").upsert({ user_id: x.uid, data: Store.exportAll(), updated_at: new Date().toISOString() }, { onConflict: "user_id" });
-    if (!error) { try { localStorage.setItem("tt_data_uid", x.uid); } catch (e) { /* */ } }   // 本機資料歸屬＝目前帳號
+    if (!error) { try { localStorage.setItem("tt_data_uid", x.uid); localStorage.setItem("tt_last_sync", String(Date.now())); } catch (e) { /* */ } try { renderSyncStatus(); } catch (e) { /* */ } }   // 本機資料歸屬＝目前帳號
     if (!silent) toast(error ? "備份失敗：" + error.message : "已備份到雲端 ✓");
     return !error;
   } catch (e) { if (!silent) toast("備份失敗：" + (e && e.message || e)); return false; }
@@ -3518,9 +3518,9 @@ async function cloudAutoSync() {
     const before = (Store.getRecords() || []).length;
     if (localReal === 0) Store.importAll(data.data, "merge");    // 全新裝置：完整還原
     else Store.cloudMergeRecords(data.data);                     // 已有資料：只安全聯集紀錄
-    try { localStorage.setItem("tt_data_uid", uid); } catch (e) { /* */ }
+    try { localStorage.setItem("tt_data_uid", uid); localStorage.setItem("tt_last_sync", String(Date.now())); } catch (e) { /* */ }
     const added = (Store.getRecords() || []).length - before;
-    try { renderHistory(); render(); initTheme(); renderPet(); renderQuests(); renderBadges(); renderStats(); loadProfile(); } catch (e) { /* 個別區塊未載入時忽略 */ }
+    try { renderHistory(); render(); initTheme(); renderPet(); renderQuests(); renderBadges(); renderStats(); loadProfile(); renderSyncStatus(); } catch (e) { /* 個別區塊未載入時忽略 */ }
     if (added > 0 && typeof toast === "function") toast(ttT("已從雲端同步紀錄 ☁️"));
     // 本機有雲端沒有的紀錄 → 反向補上傳，讓另一端也拉得到（雙向匯流）
     if (localReal > 0) autoCloudBackup();
@@ -3531,6 +3531,34 @@ if (typeof window !== "undefined") {
   // 開機：社群載完（含持久化 session）後試一次；未登入則等登入流程再觸發
   if (window.loadSocial) window.loadSocial().then(() => setTimeout(cloudAutoSync, 1200));
 }
+// 節流上傳：收藏／改名／步道完成／寵物進化等「小變動」也自動備份，讓雲端隨時是最新（不只每趟走完）。
+// debounce 10 秒把連續變動併成一次，避免狂點收藏就狂上傳。
+let _bkTimer = null;
+function scheduleCloudBackup() {
+  try { if (typeof Supa === "undefined") return; } catch (e) { return; }
+  clearTimeout(_bkTimer);
+  _bkTimer = setTimeout(() => { try { autoCloudBackup(); } catch (e) { /* */ } }, 10000);
+}
+if (typeof window !== "undefined") window.scheduleCloudBackup = scheduleCloudBackup;
+// 回到前景時再自動拉一次（換裝置/擱著很久再打開就看得到最新），但 5 分鐘內剛同步過就不重拉。
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "visible") return;
+  let last = 0; try { last = +(localStorage.getItem("tt_last_sync") || 0) || 0; } catch (e) { /* */ }
+  if (Date.now() - last < 5 * 60000) return;
+  _cloudSyncDone = false;                       // 允許本 session 再拉一次
+  setTimeout(cloudAutoSync, 800);
+});
+// 設定頁「資料備份」區顯示上次同步時間，讓使用者安心（＝雲端是最新的）
+function renderSyncStatus() {
+  const el = $("#syncStatus"); if (!el) return;
+  let last = 0; try { last = +(localStorage.getItem("tt_last_sync") || 0) || 0; } catch (e) { /* */ }
+  if (!last) { el.textContent = ""; return; }
+  const s = Math.max(1, Math.round((Date.now() - last) / 1000));
+  const rel = s < 60 ? ttT("剛剛") : s < 3600 ? Math.floor(s / 60) + " " + ttT("分鐘前")
+    : s < 86400 ? Math.floor(s / 3600) + " " + ttT("小時前") : Math.floor(s / 86400) + " " + ttT("天前");
+  el.textContent = ttT("上次同步") + "：" + rel;
+}
+if (typeof window !== "undefined") window.renderSyncStatus = renderSyncStatus;
 // 雲端備份/還原：資料安全，任何登入者可用（不鎖 Premium）
 const _cbk = $("#btnCloudBackup");
 if (_cbk) _cbk.addEventListener("click", () => cloudBackupNow(false));

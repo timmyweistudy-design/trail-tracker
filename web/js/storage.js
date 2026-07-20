@@ -10,7 +10,7 @@ const Store = (() => {
   function getProfile() {
     try { return JSON.parse(localStorage.getItem(PK)) || {}; } catch { return {}; }
   }
-  function saveProfile(p) { localStorage.setItem(PK, JSON.stringify(p)); }
+  function saveProfile(p) { localStorage.setItem(PK, JSON.stringify(p)); try { if (typeof window !== "undefined" && window.scheduleCloudBackup) window.scheduleCloudBackup(); } catch (e) { /* */ } }
 
   // 預設體重 60kg、身高 170cm
   function weight() { return Number(getProfile().weight) || 60; }
@@ -159,6 +159,7 @@ const Store = (() => {
     const i = f.indexOf(id);
     if (i === -1) f.push(id); else f.splice(i, 1);
     localStorage.setItem(FK, JSON.stringify(f));
+    try { if (typeof window !== "undefined" && window.scheduleCloudBackup) window.scheduleCloudBackup(); } catch (e) { /* */ }   // 收藏變動也自動備份
     return i === -1;   // true = 已加入
   }
 
@@ -171,6 +172,7 @@ const Store = (() => {
     l[id] = Object.assign({}, l[id], patch);
     if (!l[id].done && !l[id].rating && !(l[id].note || "").trim()) delete l[id];   // 空的就移除
     localStorage.setItem(LK, JSON.stringify(l));
+    try { if (typeof window !== "undefined" && window.scheduleCloudBackup) window.scheduleCloudBackup(); } catch (e) { /* */ }   // 步道完成/評分/筆記變動也自動備份
   }
   function doneCount() { return Object.values(getLog()).filter(v => v.done).length; }
 

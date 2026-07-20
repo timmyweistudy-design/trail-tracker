@@ -4,6 +4,7 @@
 // 步道名稱/介紹等資料內容維持中文。要補翻譯：加 DICT 詞條或 PATTERNS 規則即可。
 const I18n = (() => {
   const DICT = {
+    "上次同步": "Last synced",
     // 定位權限前置說明
     "記錄健行需要「定位」權限，用來即時畫出你走過的路線和里程。接著系統會跳出詢問，請選「允許」。": "Recording a hike needs Location permission to draw your route and distance live. The system will ask next — please choose Allow.",
     "好，開啟定位": "OK, enable location",

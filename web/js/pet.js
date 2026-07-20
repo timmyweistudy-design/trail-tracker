@@ -383,7 +383,7 @@ function checkPetEvolve() {
   const i = petStageIndex(totalKm());
   const prev = +(localStorage.getItem("tt_pet_stage") || 0);
   if (i !== prev) localStorage.setItem("tt_pet_stage", i);
-  if (i > prev) setTimeout(() => celebrateEvolve(PET_STAGES[i], i + 1), 800);
+  if (i > prev) { setTimeout(() => celebrateEvolve(PET_STAGES[i], i + 1), 800); try { if (typeof window !== "undefined" && window.scheduleCloudBackup) window.scheduleCloudBackup(); } catch (e) { /* */ } }   // 寵物進化也自動備份
 }
 // 記錄頁待機面板（未開始記錄時顯示夥伴/上次/推薦）
 function renderRecIdle() {

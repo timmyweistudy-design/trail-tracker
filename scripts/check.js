@@ -84,6 +84,7 @@ const BACKUP_EXEMPT = new Set([
   "tt_backup_pending",                                    // 離線待備份旗標：回線補送用的暫態，裝置性不備份
   "tt_locperm_prompted",                                  // 定位權限說明卡是否顯示過：裝置性
   "tt_review_at", "tt_review_n",                          // 上次請評分時間/次數：裝置性，不跨機還原
+  "tt_last_sync",                                         // 上次雲端同步時間：裝置性顯示用
 ]);
 const storageSrc = read(path.join(WEB, "js", "storage.js"));
 const bkMatch = storageSrc.match(/BACKUP_KEYS\s*=\s*\[([^\]]*)\]/);
