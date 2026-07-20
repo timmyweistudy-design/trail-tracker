@@ -252,7 +252,7 @@ const PORT = 8899;
       ok("PRO 主題配色 ocean 整組換色（--brand=#1f6390）", brand === "#1f6390");
       await p3.evaluate(() => document.querySelector('.tab[data-view="me"]').click());
       await p3.waitForTimeout(900);
-      ok("健行日曆熱力圖有渲染", await p3.locator("#meMonth .hm-grid").count() === 1);
+      ok("當月健行月曆有渲染", await p3.locator("#meMonth .cal-grid").count() === 1);
       ok("記錄頁天氣提示容器存在", await p3.locator("#recWxHint").count() === 1);
       await p3.close();
     }

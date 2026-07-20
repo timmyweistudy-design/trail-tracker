@@ -3755,41 +3755,34 @@ function openCompareSheet() {
   ov.addEventListener("click", e => { if (e.target === ov) close(); });
 }
 // #5 本月摘要：一眼看到本月里程／次數／連續天數／最長單次，日常回訪動機（免費，進階分析仍為 PRO）
-// 健行日曆：近 16 週的每日熱力圖（GitHub 貢獻圖風格），有月份標、今日圈記、活動天數，一眼看到規律與連續
+// 健行日曆：像月曆一樣的「當月」視圖（日一二三四五六），走過的日子依里程著色、今日圈記；每月自動更新。
 function hikeHeatmapHtml() {
-  const WEEKS = 16;
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth();
   const byDay = {};
-  realRecords().forEach(r => { const d = localDay(r.date); if (d) byDay[d] = (byDay[d] || 0) + (r.distanceKm || 0); });
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const todayKey = localDayOf(today);
-  const start = new Date(today);
-  start.setDate(start.getDate() - (WEEKS * 7 - 1));
-  start.setDate(start.getDate() - start.getDay());   // 對齊到該週週日
-  const days = [];
-  let activeDays = 0;
-  for (const cur = new Date(start); cur <= today; cur.setDate(cur.getDate() + 1)) {
-    const key = localDayOf(cur), km = byDay[key] || 0;
+  realRecords().forEach(r => { const dt = new Date(r.date); if (dt.getFullYear() === y && dt.getMonth() === m) { const d = dt.getDate(); byDay[d] = (byDay[d] || 0) + (r.distanceKm || 0); } });
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const startDow = new Date(y, m, 1).getDay();   // 0=週日
+  const todayDom = now.getDate();
+  const loc = (typeof ttLocale === "function") ? ttLocale() : undefined;
+  const wd = [];
+  for (let i = 0; i < 7; i++) wd.push(new Intl.DateTimeFormat(loc, { weekday: "narrow" }).format(new Date(2023, 0, 1 + i)));   // 2023-01-01 = 週日
+  const title = now.toLocaleDateString(loc, { year: "numeric", month: "long" });
+  let active = 0;
+  const cells = [];
+  for (let i = 0; i < startDow; i++) cells.push(`<div class="cal-c cal-blank"></div>`);
+  for (let d = 1; d <= daysInMonth; d++) {
+    const km = byDay[d] || 0;
     const lvl = km <= 0 ? 0 : km >= 8 ? 4 : km >= 4 ? 3 : km >= 1.5 ? 2 : 1;
-    if (km > 0) activeDays++;
-    days.push({ key, km, lvl, mo: cur.getMonth(), dom: cur.getDate(), today: key === todayKey });
+    if (km > 0) active++;
+    const tip = km > 0 ? ` title="${km.toFixed(1)} km"` : "";
+    cells.push(`<div class="cal-c cal-l${lvl}${d === todayDom ? " cal-today" : ""}"${tip}><span>${d}</span></div>`);
   }
-  const weeks = [];
-  for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
-  const moName = m => new Date(2020, m, 1).toLocaleDateString(ttLocale(), { month: "short" });
-  // 月份標：每欄的首日跨到新月份就標一次
-  const months = weeks.map((w, i) => {
-    const first = w[0]; if (!first) return "";
-    const prev = i > 0 ? weeks[i - 1][0] : null;
-    return (!prev || prev.mo !== first.mo) ? `<span>${moName(first.mo)}</span>` : "<span></span>";
-  }).join("");
-  const cells = weeks.map(w => w.map(d =>
-    `<div class="hm-c hm-l${d.lvl}${d.today ? " hm-today" : ""}" title="${d.key}${d.km > 0 ? "・" + d.km.toFixed(1) + " km" : ""}"></div>`
-  ).join("")).join("");
-  const cols = weeks.length;
-  return `<div class="hm-wrap" style="--hm-cols:${cols}">
-    <div class="hm-head"><span class="hm-title">📅 ${ttT("健行日曆")}</span><span class="hm-stat"><b>${activeDays}</b> ${ttT("天")}</span></div>
-    <div class="hm-scroll"><div class="hm-mos">${months}</div><div class="hm-grid">${cells}</div></div>
-    <div class="hm-leg"><span>${ttT("少")}</span><i class="hm-c hm-l0"></i><i class="hm-c hm-l1"></i><i class="hm-c hm-l2"></i><i class="hm-c hm-l3"></i><i class="hm-c hm-l4"></i><span>${ttT("多")}</span></div></div>`;
+  return `<div class="hm-wrap cal-wrap">
+    <div class="hm-head"><span class="hm-title">📅 ${title}</span><span class="hm-stat"><b>${active}</b> ${ttT("天")}</span></div>
+    <div class="cal-wd">${wd.map(w => `<span>${w}</span>`).join("")}</div>
+    <div class="cal-grid">${cells.join("")}</div>
+  </div>`;
 }
 function renderMonthSummary() {
   const box = $("#meMonth"); if (!box) return;
