@@ -403,7 +403,7 @@ document.querySelectorAll(".tab").forEach(btn => {
         Pets.renderFriends();
       }
     }
-    if (view === "me") { renderHistory(); refreshOfflineStatus(); renderPalette(); renderProColor(); renderMeProfileCard(); renderSyncStatus(); if (typeof Premium !== "undefined") Premium.refresh().then(() => { Premium.renderBox($("#premiumBox")); renderPalette(); renderProColor(); renderMeProfileCard(); applyPalette(); }); }
+    if (view === "me") { renderHistory(); refreshOfflineStatus(); renderPalette(); renderProColor(); renderReminderToggle(); renderMeProfileCard(); renderSyncStatus(); if (typeof Premium !== "undefined") Premium.refresh().then(() => { Premium.renderBox($("#premiumBox")); renderPalette(); renderProColor(); renderMeProfileCard(); applyPalette(); }); }
     if (view === "social") {
       // 社群模組延遲載入：還沒載就先載完再進（開機後 2 秒會自動載，多數時候已就緒）
       if (typeof SocialUI === "undefined" && window.loadSocial) window.loadSocial().then(() => { if (window.wireTeamLive) window.wireTeamLive(); if (typeof SocialUI !== "undefined") SocialUI.onShow(); });
@@ -3328,6 +3328,7 @@ async function finishRecording(autoVehicle) {
       safeRun("sync-stats", () => syncMyStatsToCloud());
       safeRun("confetti", () => confetti());
       safeRun("review-ask", () => { if (typeof ReviewPrompt !== "undefined") ReviewPrompt.maybeAsk(rec); });   // 走完有意義的一趟＝請評分的好時機
+      safeRun("reminder-refresh", () => { if (typeof Reminders !== "undefined") Reminders.refreshStreak(); });   // 今天走了→取消今晚的連續提醒、更新連續數
     }
     safeRun("pet-evolve", () => checkPetEvolve());
     safeRun("render-idle", () => renderRecIdle());
@@ -3620,6 +3621,7 @@ if (_frs && _fri) {
   });
 }
 if (typeof Premium !== "undefined") { setTimeout(() => Premium.refresh().then(() => { try { applyPalette(); applyProColor(); } catch (e) { /* */ } }), 1500); Premium.handleReturn(); }   // 啟動後同步會員狀態→重套主題配色/徽章色 + 處理結帳返回
+if (typeof window !== "undefined") setTimeout(() => { try { if (typeof Reminders !== "undefined") Reminders.syncAll(); } catch (e) { /* */ } }, 3500);   // 開機重排健行提醒（有開才會排）
 
 // 前端錯誤自動上報（phase19）：把 index.html 記到 localStorage 的錯誤批次上傳，
 // 開發者才能主動發現問題。已上傳的用時間戳記號避免重複；未登入/未跑 SQL 都靜默略過。
@@ -3920,6 +3922,20 @@ async function renderMeProfileCard() {
     </div>
   </div>`;
 }
+// 健行提醒開關（只在原生 App 顯示；網頁版沒有本地排程通知外掛）
+function renderReminderToggle() {
+  const el = $("#reminderWrap"); if (!el) return;
+  if (typeof Reminders === "undefined" || !Reminders.available()) { el.innerHTML = ""; return; }
+  const isOn = Reminders.on();
+  el.innerHTML = `<div class="accent-head" style="margin-top:16px">${ttT("健行提醒")}</div>
+    <label class="sim-toggle"><input type="checkbox" id="reminderToggle" ${isOn ? "checked" : ""}> ${ttT("提醒我保持連續天數、每週看足跡回顧")}</label>`;
+  const cb = el.querySelector("#reminderToggle");
+  if (cb) cb.addEventListener("change", async () => {
+    if (cb.checked) { const ok = await Reminders.enable(); cb.checked = ok; if (ok && typeof toast === "function") toast(ttT("已開啟健行提醒")); }
+    else { await Reminders.disable(); if (typeof toast === "function") toast(ttT("已關閉健行提醒")); }
+  });
+}
+if (typeof window !== "undefined") window.renderReminderToggle = renderReminderToggle;
 function renderPalette() {
   const row = $("#accentRow"); if (!row) return;
   const pro = typeof Premium !== "undefined" && Premium.isOn();

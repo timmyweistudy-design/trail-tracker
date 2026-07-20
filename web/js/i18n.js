@@ -4,6 +4,15 @@
 // 步道名稱/介紹等資料內容維持中文。要補翻譯：加 DICT 詞條或 PATTERNS 規則即可。
 const I18n = (() => {
   const DICT = {
+    // 留存提醒（本地通知）
+    "連續 %d 天！今天走一段就不會中斷 🔥": "%d days in a row! Take a short walk today to keep it going 🔥",
+    "來看看你這週走了多遠 🥾": "See how far you walked this week 🥾",
+    "健行提醒": "Hike reminders",
+    "提醒我保持連續天數、每週看足跡回顧": "Remind me to keep my streak and see my weekly recap",
+    "已開啟健行提醒": "Hike reminders on",
+    "已關閉健行提醒": "Hike reminders off",
+    "請到系統設定開啟通知權限": "Please enable notifications in system settings",
+    "這個版本不支援提醒": "This version doesn't support reminders",
     "上次同步": "Last synced",
     // 定位權限前置說明
     "記錄健行需要「定位」權限，用來即時畫出你走過的路線和里程。接著系統會跳出詢問，請選「允許」。": "Recording a hike needs Location permission to draw your route and distance live. The system will ask next — please choose Allow.",
