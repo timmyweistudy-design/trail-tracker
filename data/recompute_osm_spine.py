@@ -113,7 +113,7 @@ def main():
                 grew += 1
             elif new_len < old_len - 0.01:
                 shrank += 1
-    TRAILS.write_text(json.dumps(trails, ensure_ascii=False), encoding="utf-8")
+    TRAILS.write_text(json.dumps(trails, ensure_ascii=False, indent=2), encoding="utf-8")
     olds = sorted(o for o, _ in deltas)
     news = sorted(n for _, n in deltas)
     print(f"OSM 重算：{changed} 條")
