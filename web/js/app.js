@@ -348,19 +348,20 @@ function confetti() {
 let detailMap, detailOverlay, detailPoiLayer, detailWpLayer, recMap, recLine, recMarker, petMarker, _detailScroll = null;
 
 // 沿線地標（三角點/山頭/駐在所遺址/吊橋/觀景/水源/山屋/鞍部）——資料取自 OSM，離步道夠近才收（見 enrich_waypoints.py）
+// svg=線條式圖示（viewBox 24、白色描邊），地圖標記/清單/圖例共用
 const WP_META = {
-  survey: { e: "▲", c: "#c0452f", label: "三角點" },
-  peak:   { e: "⛰", c: "#8a6d3b", label: "山頭" },
-  ruins:  { e: "🏚", c: "#7a5c3e", label: "遺址" },
-  bridge: { e: "🌉", c: "#2f7ab0", label: "吊橋" },
-  view:   { e: "📷", c: "#3f8f6a", label: "觀景" },
-  water:  { e: "💧", c: "#3a7bd5", label: "水源" },
-  hut:    { e: "🏠", c: "#b0762f", label: "山屋" },
-  saddle: { e: "⛰", c: "#8a6d3b", label: "鞍部" },
+  survey: { c: "#c0452f", label: "三角點", svg: `<path d="M12 4 20 19H4Z"/>` },
+  peak:   { c: "#8a6d3b", label: "山頭", svg: `<path d="M3 19 9 8l4 6 4-5 4 10Z"/>` },
+  ruins:  { c: "#7a5c3e", label: "遺址", svg: `<path d="M4 20h16"/><path d="M7 20V9m5 11V6m5 14v-9"/>` },
+  bridge: { c: "#2f7ab0", label: "吊橋", svg: `<path d="M3 9q9 10 18 0"/><path d="M3 9v7m18-7v7"/><path d="M3 13h18"/>` },
+  view:   { c: "#3f8f6a", label: "觀景", svg: `<path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="2.5"/>` },
+  water:  { c: "#3a7bd5", label: "水源", svg: `<path d="M12 4c-4 6-5 9-5 11a5 5 0 0 0 10 0c0-2-1-5-5-11Z"/>` },
+  hut:    { c: "#b0762f", label: "山屋", svg: `<path d="M4 11 12 4l8 7"/><path d="M6 10v10h12V10"/>` },
+  saddle: { c: "#8a6d3b", label: "鞍部", svg: `<path d="M3 17 8 9l4 4 4-4 5 8"/>` },
 };
 function wpIcon(type, dim) {
   const m = WP_META[type] || WP_META.view;
-  return L.divIcon({ className: "wp-pin" + (dim ? " dim" : ""), html: `<span style="background:${m.c}">${m.e}</span>`, iconSize: [22, 22], iconAnchor: [11, 11], popupAnchor: [0, -12] });
+  return L.divIcon({ className: "wp-pin" + (dim ? " dim" : ""), html: `<span style="background:${m.c}"><svg viewBox="0 0 24 24">${m.svg}</svg></span>`, iconSize: [24, 24], iconAnchor: [12, 12], popupAnchor: [0, -13] });
 }
 // 把地標畫到某圖層；reached=已通過的地標名集合（記錄中變灰）
 function drawWaypoints(layer, wps, reached) {
@@ -374,18 +375,22 @@ function drawWaypoints(layer, wps, reached) {
   });
 }
 // 詳情頁「沿線地標」清單（依里程排序，點了跳到地圖）
+function wpIconSvg(type) { const m = WP_META[type] || WP_META.view; return `<span class="wp-ic" style="background:${m.c}"><svg viewBox="0 0 24 24">${m.svg}</svg></span>`; }
 function wpListHtml(t) {
   const wps = t.waypoints || [];
   if (!wps.length) return "";
+  // 線條式圖例：只列出這條步道有出現的類型
+  const types = [...new Set(wps.map(w => w.type))].filter(ty => WP_META[ty]);
+  const legend = `<div class="wp-legend">${types.map(ty => `<span class="wp-leg-i">${wpIconSvg(ty)}${ttT(WP_META[ty].label)}</span>`).join("")}</div>`;
   const rows = wps.map(w => {
     const m = WP_META[w.type] || WP_META.view;
     return `<button class="wp-row" data-wplat="${w.lat}" data-wplon="${w.lon}">
-      <span class="wp-ic" style="background:${m.c}">${m.e}</span>
+      ${wpIconSvg(w.type)}
       <span class="wp-nm">${(w.name || "").replace(/[<>&]/g, "")}<em>${ttT(m.label)}</em></span>
       <span class="wp-meta">${w.ele ? w.ele + " m · " : ""}${(w.distM / 1000).toFixed(1)} km</span></button>`;
   }).join("");
   return `<div class="section-title collapsible" id="secWp">${ic("landmark")}${ttT("沿線地標")}（${wps.length}）</div>
-    <div id="wpBox" class="wp-list">${rows}</div>`;
+    <div id="wpBox" class="wp-list">${legend}${rows}</div>`;
 }
 function petEmojiNow() { return PET_STAGES[petStageIndex(totalKm())].e; }
 // 把美食/景點標在詳情地圖（不改視角，可縮放查看周邊）
@@ -2710,8 +2715,7 @@ function updateWpHud(lat, lon) {
     .sort((a, b) => _wpDir > 0 ? a.distM - b.distM : b.distM - a.distM)[0];
   if (!ahead) { hud.innerHTML = ""; return; }
   const rem = Math.abs(ahead.distM - along) / 1000;
-  const meta = WP_META[ahead.type] || WP_META.view;
-  hud.innerHTML = `<span class="wp-ic" style="background:${meta.c}">${meta.e}</span>`
+  hud.innerHTML = wpIconSvg(ahead.type)
     + `<span class="h-txt">${ttT("下一個")}：<b>${(ahead.name || "").replace(/[<>&]/g, "")}</b></span>`
     + `<span class="h-rem">${rem < 0.08 ? ttT("即將抵達") : ttT("剩") + " " + rem.toFixed(1) + " km"}</span>`;
 }

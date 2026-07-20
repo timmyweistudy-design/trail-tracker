@@ -19,6 +19,7 @@ MIN_KM = float(sys.argv[1]) if len(sys.argv) > 1 else 1.5
 # 每類的：離步道最大容許距離(公尺) 與 顯示類型。峰/三角點允許在支稜上(較遠)，遺址/吊橋等必須在線上。
 NEAR_ONTRAIL = 70
 NEAR_SPUR = 160
+CAP = 40                                                        # 每條步道地標上限（避免高稜線抓到一大堆山頭而洗版）
 
 
 def hav(a, b):
@@ -188,7 +189,16 @@ def assign(t, cands):
         if cd["ele"] is not None:
             w["ele"] = cd["ele"]
         out[key] = w
-    return sorted(out.values(), key=lambda w: w["distM"])
+    wps = sorted(out.values(), key=lambda w: w["distM"])
+    if len(wps) > CAP:                                          # 超上限：地標型(駐在所/吊橋/山屋/水源/觀景/鞍部)全留，峰/三角點依里程均勻間引
+        keep = [w for w in wps if w["type"] not in ("peak", "survey")]
+        rest = [w for w in wps if w["type"] in ("peak", "survey")]
+        slots = max(0, CAP - len(keep))
+        if slots and rest:
+            step = len(rest) / slots
+            keep += [rest[min(len(rest) - 1, int(i * step))] for i in range(slots)]
+        wps = sorted(keep, key=lambda w: w["distM"])
+    return wps
 
 
 def main():
