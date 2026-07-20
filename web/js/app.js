@@ -869,8 +869,12 @@ function render() {
   if (_io) _io.disconnect();
   $("#trailList").innerHTML = "";
   if (!curList.length) {
-    $("#trailList").innerHTML = `<div class="empty">${EMPTY_ART}找不到符合的步道<br>
-      <span style="font-size:12.5px">試試清除篩選或換個關鍵字</span><br>
+    // 依「為什麼是空的」給對的話：收藏空/完成空要引導怎麼做，別一律說「找不到、清除篩選」
+    let msg = "找不到符合的步道", hint = "試試清除篩選或換個關鍵字";
+    if (activeFilters.has("fav")) { msg = "還沒有收藏的步道"; hint = "點步道卡右上的 ☆ 就能收藏"; }
+    else if (activeFilters.has("done")) { msg = "還沒有完成的步道"; hint = "走完一條步道就會自動標記完成"; }
+    $("#trailList").innerHTML = `<div class="empty">${EMPTY_ART}${msg}<br>
+      <span style="font-size:12.5px">${hint}</span><br>
       <button class="chip" style="margin-top:14px" onclick="document.getElementById('fsReset').click()">清除所有篩選</button></div>`;
     return;
   }
