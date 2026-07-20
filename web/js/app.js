@@ -4129,13 +4129,28 @@ refreshConditions();
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible" && Date.now() - (Conditions.lastUpdated() || 0) > 600000) refreshConditions();
 });
-// 深連結 ?trail=id → 直接開啟該步道
+// 深連結路由：?trail=id → 開該步道；?post=id → 開該貼文。網頁靠 location.search；原生 App 靠
+// Capacitor App 的 appUrlOpen（Universal Link / App Link / 自訂 scheme 進來的網址都走這裡）。
+function routeDeepLink(search) {
+  try {
+    const q = new URLSearchParams(search || "");
+    const id = q.get("trail");
+    if (id && typeof TRAILS !== "undefined" && TRAILS.some(t => t.id === id)) { setTimeout(() => openDetail(id), 200); return; }
+    const post = q.get("post");
+    if (post) {
+      const go = () => { const b = document.querySelector('.tab[data-view="social"]'); if (b) b.click(); setTimeout(() => { if (typeof PostView !== "undefined") PostView.open(post); }, 500); };
+      if (typeof SocialUI !== "undefined") go(); else if (window.loadSocial) window.loadSocial().then(go);
+    }
+  } catch (e) { /* */ }
+}
+routeDeepLink(location.search);   // 開機網址參數（網頁分享／PWA）
+if (typeof window !== "undefined") window.routeDeepLink = routeDeepLink;
+// 原生：App 在前景/背景被深連結喚醒 → 解析網址參數路由（需搭配 iOS Associated Domains / Android App Links，見 docs/deep-links.md）
 (function () {
-  const q = new URLSearchParams(location.search);
-  const id = q.get("trail");
-  if (id && TRAILS.some(t => t.id === id)) setTimeout(() => openDetail(id), 200);
-  // 分享的貼文連結 ?post=<id> → 切到社群分頁，由 SocialUI 開啟該貼文
-  if (q.get("post")) { const b = document.querySelector('.tab[data-view="social"]'); if (b) setTimeout(() => b.click(), 250); }
+  try {
+    const App = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+    if (App && App.addListener) App.addListener("appUrlOpen", d => { try { if (d && d.url) routeDeepLink(new URL(d.url).search); } catch (e) { /* */ } });
+  } catch (e) { /* */ }
 })();
 
 // ---------- 後台測試（debug） ----------
