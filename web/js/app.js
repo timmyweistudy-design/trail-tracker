@@ -3773,7 +3773,7 @@ function hikeHeatmapHtml() {
   for (let i = 0; i < startDow; i++) cells.push(`<div class="cal-c cal-blank"></div>`);
   for (let d = 1; d <= daysInMonth; d++) {
     const km = byDay[d] || 0;
-    const lvl = km <= 0 ? 0 : km >= 8 ? 4 : km >= 4 ? 3 : km >= 1.5 ? 2 : 1;
+    const lvl = km <= 0 ? 0 : Math.min(10, Math.ceil(km / 1.5));   // 每 1.5km 一級，共 10 級深淺
     if (km > 0) active++;
     const tip = km > 0 ? ` title="${km.toFixed(1)} km"` : "";
     cells.push(`<div class="cal-c cal-l${lvl}${d === todayDom ? " cal-today" : ""}"${tip}><span>${d}</span></div>`);
@@ -3782,6 +3782,7 @@ function hikeHeatmapHtml() {
     <div class="hm-head"><span class="hm-title">📅 ${title}</span><span class="hm-stat"><b>${active}</b> ${ttT("天")}</span></div>
     <div class="cal-wd">${wd.map(w => `<span>${w}</span>`).join("")}</div>
     <div class="cal-grid">${cells.join("")}</div>
+    <div class="cal-leg"><span>${ttT("少")}</span><i class="cal-ramp"></i><span>${ttT("多")}</span></div>
   </div>`;
 }
 function renderMonthSummary() {

@@ -793,11 +793,21 @@ body.navup-on #recMap .leaflet-map-pane { transition: transform .12s linear; }
   font-family: var(--num); font-size: calc(12.5px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
 .cal-c.cal-blank { background: none; }
 .cal-c.cal-l0 { background: color-mix(in srgb, var(--ink) 5%, var(--surface)); color: var(--ink-soft); }
-.cal-c.cal-l1 { background: color-mix(in srgb, var(--brand) 26%, var(--surface)); color: var(--brand-deep); font-weight: 600; }
-.cal-c.cal-l2 { background: color-mix(in srgb, var(--brand) 48%, var(--surface)); color: var(--brand-deep); font-weight: 600; }
-.cal-c.cal-l3 { background: color-mix(in srgb, var(--brand) 78%, var(--surface)); color: #fff; font-weight: 700; }
-.cal-c.cal-l4 { background: var(--brand); color: #fff; font-weight: 700; box-shadow: 0 0 6px color-mix(in srgb, var(--brand) 55%, transparent); }
+/* 10 級深淺：里程越多顏色越深（品牌色由淡到滿） */
+.cal-c.cal-l1  { background: color-mix(in srgb, var(--brand) 16%, var(--surface)); color: var(--brand-deep); font-weight: 600; }
+.cal-c.cal-l2  { background: color-mix(in srgb, var(--brand) 25%, var(--surface)); color: var(--brand-deep); font-weight: 600; }
+.cal-c.cal-l3  { background: color-mix(in srgb, var(--brand) 34%, var(--surface)); color: var(--brand-deep); font-weight: 600; }
+.cal-c.cal-l4  { background: color-mix(in srgb, var(--brand) 44%, var(--surface)); color: var(--brand-deep); font-weight: 700; }
+.cal-c.cal-l5  { background: color-mix(in srgb, var(--brand) 55%, var(--surface)); color: #fff; font-weight: 700; }
+.cal-c.cal-l6  { background: color-mix(in srgb, var(--brand) 65%, var(--surface)); color: #fff; font-weight: 700; }
+.cal-c.cal-l7  { background: color-mix(in srgb, var(--brand) 75%, var(--surface)); color: #fff; font-weight: 700; }
+.cal-c.cal-l8  { background: color-mix(in srgb, var(--brand) 85%, var(--surface)); color: #fff; font-weight: 700; }
+.cal-c.cal-l9  { background: color-mix(in srgb, var(--brand) 93%, var(--surface)); color: #fff; font-weight: 700; box-shadow: 0 0 5px color-mix(in srgb, var(--brand) 45%, transparent); }
+.cal-c.cal-l10 { background: var(--brand); color: #fff; font-weight: 700; box-shadow: 0 0 7px color-mix(in srgb, var(--brand) 60%, transparent); }
 .cal-c.cal-today { outline: 2px solid var(--accent); outline-offset: -2px; }
+.cal-leg { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-top: 11px; font-size: calc(10.5px * var(--fs, 1)); color: var(--ink-faint); }
+.cal-ramp { flex: none; width: calc(76px * var(--fs, 1)); height: calc(9px * var(--fs, 1)); border-radius: var(--r-pill);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--brand) 16%, var(--surface)), var(--brand)); box-shadow: inset 0 0 0 1px var(--line-soft); }
 /* 記錄頁閒置天氣提示 */
 .rec-wx:empty { display: none; }
 .rec-wx-in { margin-top: 10px; border-radius: var(--r-sm); padding: 10px 14px; font-size: calc(13.5px * var(--fs, 1)); font-weight: 600; text-align: center; }
