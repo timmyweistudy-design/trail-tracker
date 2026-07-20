@@ -4,6 +4,7 @@
 // 步道名稱/介紹等資料內容維持中文。要補翻譯：加 DICT 詞條或 PATTERNS 規則即可。
 const I18n = (() => {
   const DICT = {
+    "跳過導覽": "Skip tour",
     "社群有：動態看好友、探索找步道旅行、搜尋山友、通知、我的檔案。": "In Community: a feed of friends, explore trail trips, search hikers, notifications and your profile.",
     "這裡看你的里程、爬升、完成步道等統計。": "See your stats here: distance, ascent, trails completed and more.",
     // 導覽擴充

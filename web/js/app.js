@@ -4089,7 +4089,8 @@ async function toggleDebugPanel() {
     ["🗑清所有行程", async () => { if (await ttConfirm("清空全部行程記錄？")) ttDebug.clearAllRecords(); }],
     ["重置🥚", () => ttDebug.resetPet()],
     ["🌐重看語言選擇", () => { try { localStorage.removeItem("tt_lang"); localStorage.removeItem("tt_onboarded_v2"); } catch (e) { /* */ } const dp = document.getElementById("debugPanel"); if (dp) dp.remove(); langGate(true); }],
-    ["🧭重看導覽", () => { try { localStorage.removeItem("tt_onboarded_v2"); } catch (e) { /* */ } const dp = document.getElementById("debugPanel"); if (dp) dp.remove(); onboarding(true); }],
+    ["🧭導覽(中)", () => { try { localStorage.removeItem("tt_onboarded_v2"); localStorage.removeItem("tt_tour_resume"); } catch (e) { /* */ } const dp = document.getElementById("debugPanel"); if (dp) dp.remove(); onboarding(true, { previewLang: "zh", startAt: 0 }); }],
+    ["🧭導覽(英)", () => { try { localStorage.removeItem("tt_onboarded_v2"); localStorage.removeItem("tt_tour_resume"); } catch (e) { /* */ } const dp = document.getElementById("debugPanel"); if (dp) dp.remove(); onboarding(true, { previewLang: "en", startAt: 0 }); }],
   ];
   p.innerHTML = `<div class="dbg-h">🛠 測試面板 <span id="dbgState"></span><button id="dbgClose">✕</button></div><div class="dbg-grid"></div>`;
   const grid = p.querySelector(".dbg-grid");
@@ -4160,13 +4161,19 @@ langGate();
 
 // #22 首次使用導覽：聚光燈式，真的帶使用者點過每個分頁、在真的按鈕上跳說明（為年長者設計）。
 // 先引導社群登入（可略過），再逐頁介紹。長句 >40 字會跳過 i18n 檢查（比照舊導覽）。
-function onboarding(force) {
-  const KEY = "tt_onboarded_v2";
+function onboarding(force, opts) {
+  opts = opts || {};
+  const KEY = "tt_onboarded_v2", RESUME = "tt_tour_resume";
   if (!force && (localStorage.getItem(KEY) || new URLSearchParams(location.search).get("trail"))) return;
   if (!localStorage.getItem("tt_lang")) return;   // 尚未選語言 → 等語言選擇覆蓋層先處理
   if (document.querySelector(".tour")) return;     // 防重複開
 
-  const T = (typeof ttT === "function") ? ttT : (s => s);   // 導覽文字翻 25 語言（ttT：中文回原文、其他語言才翻）
+  // 翻譯：預設 ttT（中文回原文、其他語言翻）；DEBUG 中/英預覽用 previewLang 直接查該語言字典（不必切語言重載）
+  const previewLang = opts.previewLang;
+  let T;
+  if (previewLang === "zh") T = s => s;
+  else if (previewLang && typeof I18n !== "undefined" && I18n.tables) { const D = (I18n.tables()[previewLang] || {}).D || {}; T = s => D[s] || s; }
+  else T = (typeof ttT === "function") ? ttT : (s => s);
   const steps = [
     { center: true, e: "⛰️", h: "歡迎來到循徑拾光", p: "第一次來嗎？我帶你走一遍 👋" },
     { view: "social", sel: ".social-auth", e: "👥", h: "先登入吧（可略過）",
@@ -4194,14 +4201,32 @@ function onboarding(force) {
     { center: true, e: "🎉", h: "開始探索吧！", p: "祝你在山林裡玩得開心 🏔️", last: true },
   ].map(s => ({ ...s, h: T(s.h), p: T(s.p) }));
 
-  let i = 0;
+  // 起始步：opts.startAt（登入後續播）或續播旗標；否則從頭
+  let i = opts.startAt != null ? opts.startAt : (+(localStorage.getItem(RESUME) || 0) || 0);
+  try { localStorage.removeItem(RESUME); } catch (e) { /* 續播點已消費 */ }
+  if (i < 0 || i >= steps.length) i = 0;   // 越界保護（步數改動時）
   const ov = document.createElement("div"); ov.className = "tour";
   const spot = document.createElement("div"); spot.className = "tour-spot";
   const tip = document.createElement("div"); tip.className = "tour-tip";
   ov.appendChild(spot); ov.appendChild(tip);
   document.body.appendChild(ov);
 
-  const done = () => { try { localStorage.setItem(KEY, "1"); } catch (e) { /* */ } ov.remove(); };
+  const done = () => { try { localStorage.setItem(KEY, "1"); localStorage.removeItem(RESUME); } catch (e) { /* */ } ov.remove(); };
+  // 登入後續播：記住下一步、移除導覽讓使用者登入；同頁登入(Email 驗證碼)偵測到就續播，Google 重載則靠開機續播
+  function isSignedIn() {
+    try { const c = (typeof Supa !== "undefined" && Supa.ready && Supa.ready()) ? Supa.client() : null; if (!c) return Promise.resolve(false); return c.auth.getSession().then(({ data }) => !!(data && data.session && data.session.user)).catch(() => false); }
+    catch (e) { return Promise.resolve(false); }
+  }
+  function loginThenResume() {
+    const step = i + 1;
+    try { localStorage.setItem(RESUME, String(step)); } catch (e) { /* */ }
+    ov.remove();   // 讓出畫面給登入表單（已在社群分頁）
+    let n = 0;
+    const iv = setInterval(async () => {
+      if (document.querySelector(".tour") || ++n > 120) { clearInterval(iv); return; }   // 已由別處續播 / ~3 分放棄（靠開機續播兜底）
+      if (await isSignedIn()) { clearInterval(iv); onboarding(true, { startAt: step, previewLang }); }
+    }, 1500);
+  }
   const findTarget = sel => {
     for (const s of (sel || "").split(",")) { const el = document.querySelector(s.trim()); if (el && el.offsetParent !== null) return el; }
     return null;
@@ -4226,12 +4251,14 @@ function onboarding(force) {
     const btns = st.login
       ? `<button class="btn primary" id="tourLogin">${T("去登入")}</button><button class="info-link" id="tourNext" style="display:block;margin:10px auto 0">${T("先略過，繼續介紹")}</button>`
       : `<button class="btn primary" id="tourNext">${st.last ? T("開始探索") : T("下一步")}</button>`;
-    tip.innerHTML = `${st.last ? "" : `<button class="tour-skip" id="tourSkip" aria-label="${T("略過導覽")}">✕</button>`}`
+    const skipAll = st.last ? "" : `<button class="info-link tour-skipall" id="tourSkipAll">${T("跳過導覽")}</button>`;   // 明確的「跳過整個導覽」
+    tip.innerHTML = `${st.last ? "" : `<button class="tour-skip" id="tourSkip" aria-label="${T("跳過導覽")}">✕</button>`}`
       + `<div class="tour-emoji">${st.e}</div><h3>${st.h}</h3><p>${st.p}</p>`
-      + `<div class="tour-dots">${dots}</div>${btns}`;
+      + `<div class="tour-dots">${dots}</div>${btns}${skipAll}`;
     const nx = tip.querySelector("#tourNext"); if (nx) nx.addEventListener("click", () => { if (st.last) done(); else { i++; show(); } });
     const sk = tip.querySelector("#tourSkip"); if (sk) sk.addEventListener("click", done);
-    const lg = tip.querySelector("#tourLogin"); if (lg) lg.addEventListener("click", done);   // 結束導覽、留在社群分頁，登入表單就在眼前
+    const sa = tip.querySelector("#tourSkipAll"); if (sa) sa.addEventListener("click", done);
+    const lg = tip.querySelector("#tourLogin"); if (lg) lg.addEventListener("click", loginThenResume);   // 登入完成後續播
   }
   async function show() {
     const st = steps[i];
