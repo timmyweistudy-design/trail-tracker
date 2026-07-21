@@ -203,7 +203,7 @@ function renderPet() {
   } else evoTop = `<span>${ttT("已達最終型態")} ✨</span>`;
   const lovePct = Math.round(h / 5 * 100);
   box.innerHTML = `<div class="pet-card${i >= 6 ? " final" : ""}" style="--habitat:${PET_BG[i]}">
-    <div class="pet-habitat"><span class="pet-ff" style="left:16%;top:24%"></span><span class="pet-ff" style="left:78%;top:18%;animation-delay:2.1s;animation-duration:7.5s"></span><span class="pet-ff" style="left:60%;top:40%;animation-delay:3.4s;animation-duration:5.5s"></span></div>
+    <div class="pet-habitat">${(typeof PET_ART !== "undefined" && PET_ART.habitat) ? PET_ART.habitat(i) : ""}<span class="pet-ff" style="left:16%;top:24%"></span><span class="pet-ff" style="left:78%;top:18%;animation-delay:2.1s;animation-duration:7.5s"></span><span class="pet-ff" style="left:60%;top:40%;animation-delay:3.4s;animation-duration:5.5s"></span></div>
     <div class="pet-stage">
       <div class="pet-bubble">${mood.e} ${mood.t}</div>
       <div id="petEmoji" class="pet-m-${mood.k || "content"}" role="img" aria-label="${st.n}">${art}${petMoodFx(mood.k)}</div>
@@ -390,16 +390,22 @@ function celebrateEvolve(st, lv) {
   if (document.querySelector('[data-ov="evolve"]')) return;   // 防連點疊層
   const ov = document.createElement("div");
   ov.className = "evolve-ov"; ov.dataset.ov = "evolve";
+  const A = typeof PET_ART !== "undefined";
+  const newIdx = lv - 1, prevIdx = Math.max(0, lv - 2);
+  // 變身序列：舊角色抖動→白光爆閃→新角色現身
+  const stageHtml = A
+    ? `<div class="evolve-stage"><div class="evolve-from">${PET_ART.svg(prevIdx)}</div><div class="evolve-flash"></div><div class="evolve-to">${PET_ART.svg(newIdx)}</div></div>`
+    : `<div class="evolve-emoji">${st.e}</div>`;
   ov.innerHTML = `<div class="evolve-card">
     <div class="evolve-spark"></div>
-    <div class="evolve-emoji">${typeof PET_ART !== "undefined" ? PET_ART.svg(lv - 1) : st.e}</div>
+    ${stageHtml}
     <div class="evolve-h">進化！</div>
     <div class="evolve-n">${petName() || st.n} <span class="lv-chip lvt-${Math.min(lv, 7)}">Lv.${lv}</span></div>
     <div class="evolve-d">${st.d}</div>
     <button class="btn primary" id="evolveOk">太棒了</button>
   </div>`;
   document.body.appendChild(ov);
-  if (navigator.vibrate) navigator.vibrate([60, 40, 120]);
+  if (navigator.vibrate) navigator.vibrate([40, 60, 30, 40, 120]);
   const close = () => ov.remove();
   ov.querySelector("#evolveOk").addEventListener("click", close);
   ov.addEventListener("click", e => { if (e.target === ov) close(); });

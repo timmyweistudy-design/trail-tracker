@@ -700,6 +700,7 @@ body.navup-on #recMap .leaflet-map-pane { transition: transform .12s linear; }
 .pet-card.final { box-shadow: 0 0 0 1px rgba(232,200,122,.35), 0 12px 30px -10px rgba(15,40,25,.6); }
 .pet-habitat { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 .pet-habitat svg { position: absolute; bottom: 0; width: 100%; opacity: .45; }
+.pet-habitat svg.pet-hab { height: 62%; opacity: .7; }
 .pet-ff { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: #ffe6a0; box-shadow: 0 0 7px 2px #ffd873; opacity: .6; animation: pcff 6s ease-in-out infinite; }
 @keyframes pcff { 0%,100% { transform: translate(0,0); opacity: .25; } 50% { transform: translate(6px,-14px); opacity: .8; } }
 
@@ -803,6 +804,18 @@ body.navup-on #recMap .leaflet-map-pane { transition: transform .12s linear; }
 .evolve-emoji { font-size: calc(96px * var(--fs, 1)); line-height: 1; filter: drop-shadow(0 0 22px rgba(232,200,122,.8)); animation: evolvePop .7s cubic-bezier(.2,.9,.3,1.3); }
 .evolve-emoji .pet-critter { width: calc(120px * var(--fs, 1)); height: calc(120px * var(--fs, 1)); filter: none; margin: 0 auto; }
 @keyframes evolvePop { 0% { transform: scale(.2) rotate(-25deg); opacity: 0; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+/* A3 進化變身序列：舊角色抖動 → 白光爆閃 → 新角色現身 */
+.evolve-stage { position: relative; width: calc(140px * var(--fs, 1)); height: calc(140px * var(--fs, 1)); margin: 0 auto 4px; }
+.evolve-stage .pet-critter { width: 100%; height: 100%; filter: drop-shadow(0 0 18px rgba(232,200,122,.7)); }
+.evolve-from, .evolve-to { position: absolute; inset: 0; }
+.evolve-from { animation: evoFrom 1.5s ease-out both; }
+.evolve-to { opacity: 0; animation: evoTo 1.5s ease-out both; }
+.evolve-flash { position: absolute; inset: -55%; border-radius: 50%; pointer-events: none; opacity: 0; z-index: 2;
+  background: radial-gradient(circle, #fff 0%, rgba(255,240,190,.85) 32%, transparent 68%); animation: evoFlash 1.5s ease-out both; }
+@keyframes evoFrom { 0% { opacity: 1; transform: scale(1) rotate(0); } 12% { transform: scale(1.05) rotate(-5deg); } 24% { transform: scale(1.03) rotate(5deg); } 36% { transform: scale(1.08) rotate(-6deg); } 46% { opacity: 1; transform: scale(1.12) rotate(4deg); } 56% { opacity: 0; transform: scale(1.45); } 100% { opacity: 0; } }
+@keyframes evoTo { 0%, 54% { opacity: 0; transform: scale(.3) rotate(-16deg); } 70% { opacity: 1; transform: scale(1.2) rotate(4deg); } 84% { transform: scale(.94); } 100% { opacity: 1; transform: scale(1) rotate(0); } }
+@keyframes evoFlash { 0%, 28% { opacity: 0; transform: scale(.4); } 50% { opacity: 1; transform: scale(1); } 68% { opacity: .55; transform: scale(1.3); } 100% { opacity: 0; transform: scale(1.75); } }
+@media (prefers-reduced-motion: reduce) { .evolve-from { display: none; } .evolve-to, .evolve-flash { animation: none; } .evolve-to { opacity: 1; } .evolve-flash { opacity: 0; } }
 /* 手冊圖鑑 / 好友夥伴：SVG 角色填入原 emoji 容器 */
 .dex-row .dex-e .pet-critter { width: 44px; height: 44px; filter: none; }
 .fp-pet .pet-critter { width: 34px; height: 34px; filter: none; vertical-align: middle; }
