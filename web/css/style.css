@@ -796,7 +796,7 @@ body.navup-on #recMap .leaflet-map-pane { transition: transform .12s linear; }
 .fp-pet .pet-critter { width: 34px; height: 34px; filter: none; vertical-align: middle; }
 .pf-pet .pet-critter { width: 26px; height: 26px; filter: none; flex: 0 0 auto; }
 .me-card-pet .pet-critter { width: 30px; height: 30px; filter: none; vertical-align: middle; display: inline-block; }
-.tm-pet .pet-critter { width: 17px; height: 17px; filter: none; }
+.tm-pet .pet-critter { width: 30px; height: 30px; filter: none; }   /* 與頭像(32px)差不多大，坐在頭頂 */
 .evolve-h { font-family: var(--serif); font-size: calc(30px * var(--fs, 1)); font-weight: 900; letter-spacing: 6px; margin-top: 10px; color: #e8c87a; }
 .evolve-n { font-family: var(--serif); font-size: calc(18px * var(--fs, 1)); font-weight: 700; margin-top: 6px; }
 .evolve-d { font-size: calc(13px * var(--fs, 1)); opacity: .85; margin-top: 8px; max-width: 280px; margin-inline: auto; line-height: 1.6; }
@@ -1606,7 +1606,7 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 .team-marker .tm-av { position: relative; width: 32px; height: 32px; }
 .team-marker .tm-av img, .team-marker .tm-av .tm-ph { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; background: var(--brand); color: #fff; font-weight: 700; font-size: calc(13px * var(--fs, 1)); box-sizing: border-box; }
 /* 寵物：在頭頂置中浮動、較小 */
-.team-marker .tm-pet { position: absolute; top: -25px; left: 50%; font-size: calc(27px * var(--fs, 1)); line-height: 1; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); animation: tmFloat 2.2s ease-in-out infinite; }
+.team-marker .tm-pet { position: absolute; top: -31px; left: 50%; font-size: calc(27px * var(--fs, 1)); line-height: 1; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); animation: tmFloat 2.2s ease-in-out infinite; }
 @keyframes tmFloat { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-3px); } }
 /* 點名字看定位：脈動光圈標示（顯示 5 秒）；reduced-motion 由全域規則關成靜態環 */
 .team-marker.peek .tm-pulse { position: absolute; top: 50%; left: 50%; width: 32px; height: 32px; border-radius: 50%; border: 3px solid var(--accent); transform: translate(-50%, -50%); animation: tmPulse 1.35s ease-out infinite; pointer-events: none; }
