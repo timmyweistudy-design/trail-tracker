@@ -54,8 +54,17 @@ const PORT = 8899;
     await page.click(".card.jcard");
     await page.waitForTimeout(1500);
     ok("步道詳情開啟", await page.locator("#detailSheet.show").count() === 1);
+    // 分頁：預設「概覽」顯示，其餘隱藏；點頁籤切換內容
+    ok("詳情：四分頁存在", await page.locator("#detailNav button").count() === 4);
+    ok("詳情：概覽預設顯示", await page.locator('#detailBody .tabpane[data-pane="ov"]').isVisible());
+    ok("詳情：重點數據卡有渲染", await page.locator(".statcard .stat").count() > 0);
+    await page.click('#detailNav button[data-tab="rt"]');
+    await page.waitForTimeout(400);
+    ok("詳情：切到路線分頁顯示", await page.locator('#detailBody .tabpane[data-pane="rt"]').isVisible() && await page.locator('#detailBody .tabpane[data-pane="ov"]').isHidden());
     // 生態區塊：資料/邏輯有單元測試，這裡守「真的有串進詳情頁」——曾經漏掛 script 導致整區不顯示
     ok("生態：模組有載入", await page.evaluate(() => typeof Ecology !== "undefined" && !!window.ECO_HABITATS));
+    await page.click('#detailNav button[data-tab="ec"]');   // 生態移到獨立分頁，先切過去才看得到內容
+    await page.waitForTimeout(400);
     ok("生態：區塊有渲染", await page.locator("#ecoBox").count() === 1);
     ok("生態：有蚊蟲風險等級與防護建議", (await page.locator(".eco-lv").innerText()).trim().length > 0 && await page.locator(".eco-tips li").count() > 0);
     ok("生態：有物種且物種名維持中文", await page.locator(".eco-sp").count() > 0 && /[一-鿿]/.test(await page.locator(".eco-sp").first().innerText()));

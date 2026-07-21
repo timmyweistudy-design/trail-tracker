@@ -40,8 +40,7 @@ const EXT = /net::|favicon|404 \(|Failed to load resource|CORS|opentopodata|tran
   await step("探索:篩選 chip", async () => { for (const f of ["family", "fav", "done", "all"]) { await click(`.chip[data-filter="${f}"]`); await p.waitForTimeout(300); } });
 
   await step("詳情:開卡", async () => { await click(".card.jcard"); await p.waitForTimeout(1500); });
-  await step("詳情:子頁", async () => { for (const s of ["天氣", "海拔", "景點", "美食", "概覽"]) { await p.locator(`#detailSheet button:has-text("${s}"), #detailSheet .sub-tab:has-text("${s}")`).first().click({ timeout: 3000 }).catch(() => {}); await p.waitForTimeout(700); } });
-  await step("詳情:跳到底部鈕", async () => { await click("#detailJump"); await p.waitForTimeout(600); });
+  await step("詳情:分頁切換", async () => { for (const tab of ["rt", "ec", "nb", "ov"]) { await p.locator(`#detailNav button[data-tab="${tab}"]`).first().click({ timeout: 3000 }).catch(() => {}); await p.waitForTimeout(700); const pane = p.locator(`#detailBody .tabpane[data-pane="${tab}"]`); if (await pane.count() && await pane.isHidden()) throw new Error(`分頁 ${tab} 切換後仍隱藏`); } });
   await step("詳情:關閉", async () => { await click("#closeDetailBtn"); });
 
   await step("寵物:分頁", async () => { await click('.tab[data-view="pet"]'); await p.waitForTimeout(800); });

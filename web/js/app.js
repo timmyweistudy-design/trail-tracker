@@ -345,7 +345,7 @@ function confetti() {
 })();
 
 // ---------- 分頁切換 ----------
-let detailMap, detailOverlay, detailPoiLayer, detailWpLayer, recMap, recLine, recMarker, petMarker, _detailScroll = null;
+let detailMap, detailOverlay, detailPoiLayer, detailWpLayer, recMap, recLine, recMarker, petMarker;
 
 // 沿線地標（三角點/山頭/駐在所遺址/吊橋/觀景/水源/山屋/鞍部）——資料取自 OSM，離步道夠近才收（見 enrich_waypoints.py）
 // svg=線條式圖示（viewBox 24、白色描邊），地圖標記/清單/圖例共用
@@ -1578,18 +1578,17 @@ async function openDetail(id) {
   await Promise.all([ensureGeo(t.region), ensureDetail()]);   // 幾何只載這條步道的縣市分片
   mergeDetail(t);                       // 併入 guide/entrances/交通等詳情欄位
   const d = t.difficulty || 0;
-  // 只列出有資料的欄位（OSM 步道欄位較少，避免顯示空白「—」）
-  const kv = [];
-  if (t.length_km != null) kv.push(["長度", `${t.length_km} km${t.source === "osm" ? "（估）" : ""}`]);
-  if (t.alt_high != null || t.alt_low != null) kv.push(["海拔範圍", `${t.alt_low ?? "?"}–${t.alt_high ?? "?"} m`]);
   const ascCached = (typeof Profile !== "undefined" && Profile.cachedGain) ? Profile.cachedGain(t.id) : null;
   const ascInit = ascCached != null ? ascCached : (t.ascent != null ? Math.round(t.ascent) : null);
   const ascEst = (t.source === "osm" && ascCached == null) ? "（估）" : "";   // OSM 沿線推估、非實走→標示估算
-  if (ascInit != null || geoOf(t)) kv.push(["累積爬升", `<span id="kvAscent">${ascInit != null ? ascInit + " m" + ascEst : "計算中…"}</span>`]);
-  if (t.tour) kv.push(["預估時間", t.tour]);
-  const kvHtml = kv.length
-    ? `<div class="kv">${kv.map(([l, v]) => `<div class="item"><div class="l">${l}</div><div class="v">${v}</div></div>`).join("")}</div>`
-    : "";
+  // 重點數據卡：難度／長度／累積爬升／預估時間／海拔（只列有值的，OSM 步道欄位少時自動少格）
+  const stat = [["target", "難度", `<span class="badge diff d${d}"><span class="lvl">${d}</span>${t.difficulty_label}</span>`]];
+  if (t.length_km != null) stat.push(["ruler", "長度", `${t.length_km} km${t.source === "osm" ? "（估）" : ""}`]);
+  if (ascInit != null || geoOf(t)) stat.push(["up", "累積爬升", `<span id="kvAscent">${ascInit != null ? ascInit + " m" + ascEst : "計算中…"}</span>`]);
+  if (t.tour) stat.push(["clock", "預估時間", t.tour]);
+  if (t.alt_high != null || t.alt_low != null) stat.push(["mountain", "海拔範圍", `${t.alt_low ?? "?"}–${t.alt_high ?? "?"} m`]);
+  const statHtml = `<div class="statcard">${stat.map(([ico, l, v]) =>
+    `<div class="stat"><div class="stat-h">${ic(ico)}<span>${l}</span></div><div class="stat-v">${v}</div></div>`).join("")}</div>`;
 
   const metaBits = [];
   if (t.pave) metaBits.push(`🛤 ${t.pave}`);
@@ -1622,46 +1621,56 @@ async function openDetail(id) {
     </div>`;
   const hasGeo = !!geoOf(t);
   $("#detailBody").innerHTML = `
-    <div class="detail-nav" id="detailNav">
-      <button data-sec="top">概覽</button>
-      <button data-sec="secWx">天氣</button>
-      ${hasGeo ? `<button data-sec="secElev">海拔</button>` : ""}
-      <button data-sec="secEco">生態</button>
-      <button data-sec="secPoi">景點</button>
-      <button data-sec="secFood">美食</button>
+    <div class="detail-tabs" id="detailNav" role="tablist">
+      <button data-tab="ov" class="on" role="tab">概覽</button>
+      <button data-tab="rt" role="tab">路線</button>
+      <button data-tab="ec" role="tab">生態</button>
+      <button data-tab="nb" role="tab">周邊</button>
     </div>
-    <div id="condLive">${conditionBanner(t)}</div>
-    ${tagsOf(t).length ? `<div class="tag-row">${tagsOf(t).map(g => `<span class="tag">${TAG_ICON[g] ? TAG_ICON[g] + " " : ""}${g}</span>`).join("")}</div>` : ""}
-    ${gradeExplain(t)}
-    ${kvHtml}
-    <div class="section-title collapsible" id="secWx">${ic("sun")}天氣（步道所在地）</div>
-    <div id="weatherBox"><div class="food-loading"><span class="spin"></span>查詢天氣中…</div></div>
-    ${metaHtml}
-    ${hasGeo ? `<div class="section-title collapsible" id="secElev">${ic("mountain")}海拔剖面</div><div id="profileBox"><div class="food-loading"><span class="spin"></span>計算海拔剖面中…</div></div>` : ""}
-    ${wpListHtml(t)}
-    ${ecologyHtml(t)}
-    ${t.guide ? `<div class="guide">${t.guide.replace(/\n/g, "<br>")}</div>${(typeof I18n !== "undefined" && I18n.lang() !== "zh") ? `<div class="pv-tr-row"><button class="link-btn" id="guideTranslate">${ic("translate")} ${ttT("翻譯年糕")}</button></div><div class="guide pv-cap-tr" id="guideTr" style="display:none"></div>` : ""}` : ""}
-    <div class="link-row flow">
-      ${nav ? `<a class="link-btn" href="${nav}" target="_blank" rel="noopener">${ic("compass")} 導航</a>` : ""}
-      <a class="link-btn" href="${moreSearch}" target="_blank" rel="noopener">${ic("search")} 查資訊</a>
-      <button class="link-btn" id="btnShareTrail">${ic("share")} 分享</button>
-      <button class="link-btn" id="btnEventTrail">${ic("calendar")} 揪團</button>
-      <button class="link-btn" id="btnCompare">${ic("compare")} ${compareSet.has(t.id) ? "移出比較" : "加入比較"}</button>
-      ${t.url ? `<a class="link-btn" href="${t.url}" target="_blank" rel="noopener">${ic("external")} 原始頁</a>` : ""}
+    <div class="tabwrap">
+      <section class="tabpane" data-pane="ov" role="tabpanel">
+        <div id="condLive">${conditionBanner(t)}</div>
+        ${statHtml}
+        ${tagsOf(t).length ? `<div class="tag-row">${tagsOf(t).map(g => `<span class="tag">${TAG_ICON[g] ? TAG_ICON[g] + " " : ""}${g}</span>`).join("")}</div>` : ""}
+        ${gradeExplain(t)}
+        ${metaHtml}
+        ${t.guide ? `<div class="guide">${t.guide.replace(/\n/g, "<br>")}</div>${(typeof I18n !== "undefined" && I18n.lang() !== "zh") ? `<div class="pv-tr-row"><button class="link-btn" id="guideTranslate">${ic("translate")} ${ttT("翻譯年糕")}</button></div><div class="guide pv-cap-tr" id="guideTr" style="display:none"></div>` : ""}` : ""}
+        <div class="link-row flow">
+          ${nav ? `<a class="link-btn" href="${nav}" target="_blank" rel="noopener">${ic("compass")} 導航</a>` : ""}
+          <a class="link-btn" href="${moreSearch}" target="_blank" rel="noopener">${ic("search")} 查資訊</a>
+          <button class="link-btn" id="btnShareTrail">${ic("share")} 分享</button>
+          <button class="link-btn" id="btnEventTrail">${ic("calendar")} 揪團</button>
+          <button class="link-btn" id="btnCompare">${ic("compare")} ${compareSet.has(t.id) ? "移出比較" : "加入比較"}</button>
+          ${t.url ? `<a class="link-btn" href="${t.url}" target="_blank" rel="noopener">${ic("external")} 原始頁</a>` : ""}
+        </div>
+        ${myLogHtml(t)}
+        <div id="trailFeedBox"></div>
+        <div id="activityBox" hidden></div>
+      </section>
+      <section class="tabpane" data-pane="rt" role="tabpanel" hidden>
+        <div class="section-title" id="secWx">${ic("sun")}天氣（步道所在地）</div>
+        <div id="weatherBox"><div class="food-loading"><span class="spin"></span>查詢天氣中…</div></div>
+        ${hasGeo ? `<div class="section-title" id="secElev">${ic("mountain")}海拔剖面</div><div id="profileBox"><div class="food-loading"><span class="spin"></span>計算海拔剖面中…</div></div>` : ""}
+        ${wpListHtml(t)}
+        <button class="btn ghost" id="btnOffline" style="margin-top:14px">${ic("download")} 預載此步道離線地圖</button>
+        <div id="offlineBox" class="offline-box" style="display:none"></div>
+      </section>
+      <section class="tabpane" data-pane="ec" role="tabpanel" hidden>
+        ${ecologyHtml(t)}
+      </section>
+      <section class="tabpane" data-pane="nb" role="tabpanel" hidden>
+        <div id="amenBox" class="amen-box"></div>
+        <div class="section-title" id="secPoi">${ic("landmark")}附近人文景點</div>
+        <div id="poiBox">${skelCards(3)}</div>
+        <div class="section-title" id="secFood">${ic("food")}步道周邊美食</div>
+        <div id="foodBox">${skelCards(3)}</div>
+        ${nearbyStripHtml(t)}
+      </section>
     </div>
-    ${myLogHtml(t)}
-    <button class="btn ghost" id="btnOffline" style="margin-top:10px">${ic("download")} 預載此步道離線地圖</button>
-    <div id="offlineBox" class="offline-box" style="display:none"></div>
-    <div id="amenBox" class="amen-box"></div>
-    <div class="section-title collapsible" id="secPoi">${ic("landmark")}附近人文景點</div>
-    <div id="poiBox">${skelCards(3)}</div>
-    <div class="section-title collapsible" id="secFood">${ic("food")}步道周邊美食</div>
-    <div id="foodBox">${skelCards(3)}</div>
-    <div id="trailFeedBox"></div>
-    <div id="activityBox" hidden></div>
-    <button class="btn primary" id="btnGoRecord">${ic("pin")}在此步道開始記錄</button>
-    ${nearbyStripHtml(t)}
-    <div style="font-size:11px;color:var(--ink-soft);text-align:center;margin-top:14px">${credit}</div>
+    <div class="detail-credit">${credit}</div>
+    <div class="detail-actionbar">
+      <button class="btn primary" id="btnGoRecord">${ic("pin")}在此步道開始記錄</button>
+    </div>
   `;
   // 生態：連網才載 iNaturalist 附近真實目擊；離線/失敗安靜降級（不影響離線的規則式內容）
   const enb = $("#ecoNearbyBtn");
@@ -1706,25 +1715,17 @@ async function openDetail(id) {
     out.textContent = tr; out.dataset.done = "1"; out.style.display = "block";
     gtr.innerHTML = `${ic("translate")} ${ttT("收合翻譯")}`;
   });
-  // 詳情子頁籤：點一下捲到該區塊
+  // 詳情分頁：點頁籤切換內容（一次只顯示一頁）
   const navBtns = $("#detailNav").querySelectorAll("button");
-  navBtns.forEach(b => b.addEventListener("click", () => {
-    const sheet = $("#detailSheet"), sec = b.dataset.sec;
-    if (sec === "top") { sheet.scrollTo({ top: 0, behavior: "smooth" }); return; }
-    const el = document.getElementById(sec);
-    if (el) sheet.scrollTo({ top: el.offsetTop - 52, behavior: "smooth" });
-  }));
-  // scroll-spy：捲動時高亮目前區塊
-  const sheetEl = $("#detailSheet");
-  const secIds = ["top", "secWx", "secElev", "secPoi", "secFood"];
-  if (_detailScroll) sheetEl.removeEventListener("scroll", _detailScroll);
-  _detailScroll = () => {
-    const y = sheetEl.scrollTop + 70; let cur = "top";
-    for (const id of secIds) { const el = id !== "top" && document.getElementById(id); if (el && el.offsetTop <= y) cur = id; }
-    navBtns.forEach(b => b.classList.toggle("on", b.dataset.sec === cur));
+  const panes = $("#detailBody").querySelectorAll(".tabpane");
+  const showTab = (tab) => {
+    navBtns.forEach(b => b.classList.toggle("on", b.dataset.tab === tab));
+    panes.forEach(p => { p.hidden = p.dataset.pane !== tab; });
+    // 對齊頁籤（不重看 hero，也避免切到較短分頁時捲過頭露白）
+    const sheet = $("#detailSheet"), navTop = $("#detailNav").offsetTop;
+    if (sheet.scrollTop > navTop) sheet.scrollTop = navTop;
   };
-  sheetEl.addEventListener("scroll", _detailScroll, { passive: true });
-  _detailScroll();
+  navBtns.forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
   // 區塊可收合
   $("#detailBody").querySelectorAll(".section-title.collapsible").forEach(hd => hd.addEventListener("click", () => {
     const collapsed = hd.classList.toggle("collapsed");
@@ -2191,19 +2192,6 @@ function closeDetail() {
   $("#sheetMask").classList.remove("show");
   $("#detailSheet").classList.remove("show");
 }
-// 詳情頁很長：浮動鈕一鍵到底（在此步道開始記錄）/回頂部，依捲動位置自動換方向
-(() => {
-  const sheet = $("#detailSheet"), jump = $("#detailJump");
-  if (!sheet || !jump) return;
-  const nearBottom = () => sheet.scrollTop + sheet.clientHeight >= sheet.scrollHeight - 220;
-  jump.addEventListener("click", () => {
-    sheet.scrollTo({ top: nearBottom() ? 0 : sheet.scrollHeight, behavior: "smooth" });
-  });
-  sheet.addEventListener("scroll", () => {
-    jump.classList.toggle("up", nearBottom());
-    jump.title = jump.getAttribute("aria-label");
-  }, { passive: true });
-})();
 $("#sheetMask").addEventListener("click", closeDetail);
 $("#closeDetailBtn").addEventListener("click", closeDetail);
 // 下拉關閉手勢（拖曳握把往下滑關閉面板）

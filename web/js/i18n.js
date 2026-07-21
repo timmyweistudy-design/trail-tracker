@@ -391,7 +391,7 @@ const I18n = (() => {
     "此裝置不支援方位感測": "No orientation sensor on this device",
     "此裝置無法啟用指北針": "Can't enable compass on this device",
     "需允許「動作與方向」權限": "Needs “Motion & Orientation” permission",
-    "全螢幕": "Fullscreen", "概覽": "Overview", "模擬": "Simulated", "測試行程": "Test trip",
+    "全螢幕": "Fullscreen", "概覽": "Overview", "路線": "Route", "周邊": "Nearby", "模擬": "Simulated", "測試行程": "Test trip",
     // 結算/回顧
     "重播路徑": "Replay route", "分享圖卡": "Share card",
     "下載路線檔": "Download GPX", "分享行程": "Share trip", "分享到社群": "Share to Social",

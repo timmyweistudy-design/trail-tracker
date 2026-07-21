@@ -392,15 +392,35 @@ body.navup-on #recMap .leaflet-map-pane { transition: transform .12s linear; }
 .spd-line { text-align: center; font-size: calc(13px * var(--fs, 1)); font-weight: 700; color: var(--brand-mid); margin-top: 10px; }
 #detailMap { border-bottom: 1px solid var(--line); }
 .sheet-body { padding: 16px 19px; }
-/* 詳情頁子頁籤（黏頂） */
-.detail-nav { position: sticky; top: 0; z-index: 6; display: flex; gap: 6px; overflow-x: auto;
-  margin: -16px -19px 12px; padding: 10px 19px; background: var(--surface);
-  border-bottom: 1px solid var(--line-soft); scrollbar-width: none; }
-.detail-nav::-webkit-scrollbar { display: none; }
-.detail-nav button { flex: 0 0 auto; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft);
-  border-radius: var(--r-pill); padding: 6px 14px; font-size: calc(12.5px * var(--fs, 1)); font-weight: 600; cursor: pointer; transition: .15s; }
-.detail-nav button:active { background: var(--brand-soft); transform: scale(.96); }
-.detail-nav button.on { background: var(--brand); color: #f4f1e8; border-color: var(--brand); }
+/* 詳情頁分頁（黏頂，四頁等分切換） */
+.detail-tabs { position: sticky; top: 0; z-index: 6; display: flex; gap: 4px;
+  margin: -16px -19px 16px; padding: 9px 14px 0; background: var(--surface);
+  border-bottom: 1px solid var(--line-soft); }
+.detail-tabs button { flex: 1 1 0; border: none; background: transparent; color: var(--ink-soft);
+  font-family: var(--sans); font-weight: 700; font-size: calc(13.5px * var(--fs, 1)); letter-spacing: .5px;
+  padding: 9px 2px 11px; cursor: pointer; position: relative; transition: color .15s; }
+.detail-tabs button:active { transform: scale(.95); }
+.detail-tabs button.on { color: var(--brand); }
+.detail-tabs button.on::after { content: ""; position: absolute; left: 50%; bottom: -1px; transform: translateX(-50%);
+  width: 26px; height: 3px; border-radius: 3px 3px 0 0; background: var(--brand); }
+.tabpane { animation: paneIn .2s ease; }
+@keyframes paneIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+/* 重點數據卡 */
+.statcard { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; margin: 2px 0 15px;
+  background: var(--line-soft); border: 1px solid var(--line-soft); border-radius: var(--r-lg);
+  overflow: hidden; box-shadow: var(--sh-md); }
+.statcard .stat { background: var(--surface); padding: 13px 15px; min-width: 0; }
+.statcard .stat-h { display: flex; align-items: center; gap: 5px; font-size: calc(11.5px * var(--fs, 1));
+  color: var(--ink-soft); letter-spacing: .3px; }
+.statcard .stat-h .ic { width: 14px; height: 14px; flex: 0 0 auto; }
+.statcard .stat-v { font-family: var(--num); font-size: calc(18px * var(--fs, 1)); font-weight: 600;
+  margin-top: 6px; color: var(--ink); line-height: 1.2; }
+.statcard .stat-v .badge { font-family: var(--sans); }
+/* 底部固定主動作列 + 資料來源頁尾 */
+.detail-actionbar { position: sticky; bottom: 0; z-index: 5; margin: 8px -19px 0; padding: 12px 19px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(to top, var(--surface) 74%, transparent); }
+.detail-actionbar .btn { margin: 0; }
+.detail-credit { font-size: calc(11px * var(--fs, 1)); color: var(--ink-soft); text-align: center; margin-top: 12px; padding-bottom: 6px; }
 .sheet-body h2 { font-family: var(--serif); font-weight: 700; margin: 2px 0 10px; font-size: calc(23px * var(--fs, 1)); letter-spacing: .5px; line-height: 1.25; }
 #photoBox:not(:empty) { margin: -2px 0 14px; position: relative; }
 .trail-photo { width: 100%; height: 200px; object-fit: cover; border-radius: var(--r-sm); display: block; background: var(--surface-2); box-shadow: var(--sh-sm); }
@@ -757,14 +777,6 @@ body.navup-on #recMap .leaflet-map-pane { transition: transform .12s linear; }
 .op-io .btn { width: auto; flex: 1; margin-top: 0; padding: 11px 8px; font-size: calc(13.5px * var(--fs, 1)); letter-spacing: 0; }
 .op-hint { font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-faint); line-height: 1.55; margin-top: 7px; }
 .op-foot { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--line-soft); display: flex; justify-content: flex-end; }
-
-/* 步道詳情：跳到底部/回頂部 浮動鈕 */
-.detail-jump { position: sticky; bottom: 18px; margin: 0 14px 10px auto; display: flex; align-items: center; justify-content: center;
-  width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface);
-  color: var(--brand-mid); box-shadow: var(--sh-md)); cursor: pointer; z-index: 5; transition: transform .15s; }
-.detail-jump:active { transform: scale(.92); }
-.detail-jump .ic { width: 20px; height: 20px; transition: transform .2s; }
-.detail-jump.up .ic { transform: rotate(180deg); }
 
 /* 我的足跡統計 */
 /* #5 本月摘要條 */
@@ -1732,7 +1744,7 @@ button, a, .btn, .chip, .tab, .seg-btn, .link-btn, .icon-btn, [role="button"],
 .fc-like, .fc-comment, .sub-tab, .comp-x, .pv-react-b, .cm-like, .cm-reply, .disc-follow,
 .feed-card, .disc-row, .notif, .hist-view, .hist-gpx, .feed-refresh, .map-fs-btn,
 .theme-opt, .ach, .pet-btn, .quest, .fav-star, .food-item, .poi-item,
-.coll-card, .info-link, .detail-nav button, .cnt-link, .fc-traillink, .ht, .mention {
+.coll-card, .info-link, .detail-tabs button, .cnt-link, .fc-traillink, .ht, .mention {
   touch-action: manipulation;
 }
 /* 快速按壓動畫（個別已定義的 :active 仍會優先套用，不衝突） */
