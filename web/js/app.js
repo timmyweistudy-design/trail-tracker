@@ -3045,7 +3045,7 @@ Recorder.onUpdate(s => {
       if (!recMarker || !recMarker._av) {
         if (recMarker) recMap.removeLayer(recMarker);
         const mePro = (typeof Premium !== "undefined" && Premium.isOn()) ? " pro" : "";
-        recMarker = L.marker(last, { icon: L.divIcon({ className: "team-marker me-marker" + mePro, html: `<div class="tm-av"><div class="tm-dir"><span class="tm-cone"></span></div><img src="${meAv}" alt=""><span class="tm-pet"><span class="pm-face">${typeof PET_ART !== "undefined" ? PET_ART.svg(petStageIndex(totalKm())) : petEmojiNow()}${typeof petHat === "function" ? PET_ART.hat(petHat()) : ""}</span></span></div>`, iconSize: [32, 32], iconAnchor: [16, 16] }), zIndexOffset: 1100 }).addTo(recMap);
+        recMarker = L.marker(last, { icon: L.divIcon({ className: "team-marker me-marker" + mePro, html: `<div class="tm-av"><div class="tm-dir"><span class="tm-cone"></span></div><img src="${meAv}" alt=""><span class="tm-pet"><span class="pm-face">${typeof PET_ART !== "undefined" ? PET_ART.svg(petStageIndex(totalKm())) : petEmojiNow()}${typeof petHat === "function" ? PET_ART.hat(petHat(), petStageIndex(totalKm())) : ""}</span></span></div>`, iconSize: [32, 32], iconAnchor: [16, 16] }), zIndexOffset: 1100 }).addTo(recMap);
         recMarker._av = true;
       }
       recMarker.setLatLng(last);
@@ -3060,7 +3060,7 @@ Recorder.onUpdate(s => {
       recMarker.setLatLng(last);
       // 山林夥伴同行：寵物跟在當前位置上方
       if (!petMarker) petMarker = L.marker(last, {
-        icon: L.divIcon({ className: "pet-marker", html: `<span class="pm-e"><span class="pm-face">${typeof PET_ART !== "undefined" ? PET_ART.svg(petStageIndex(totalKm())) : petEmojiNow()}${typeof petHat === "function" ? PET_ART.hat(petHat()) : ""}</span></span>`, iconSize: [40, 40], iconAnchor: [20, 34] }),
+        icon: L.divIcon({ className: "pet-marker", html: `<span class="pm-e"><span class="pm-face">${typeof PET_ART !== "undefined" ? PET_ART.svg(petStageIndex(totalKm())) : petEmojiNow()}${typeof petHat === "function" ? PET_ART.hat(petHat(), petStageIndex(totalKm())) : ""}</span></span>`, iconSize: [40, 40], iconAnchor: [20, 34] }),
         interactive: false, zIndexOffset: 1000,
       }).addTo(recMap);
       petMarker.setLatLng(last);
@@ -4478,7 +4478,7 @@ function onboarding(force, opts) {
     { view: "record", sel: "#btnStart", e: "📍", h: "記錄健行",
       p: "出發時按「開始」，記錄里程、爬升，鎖螢幕、沒訊號也能記。" },
     { view: "pet", sel: "#petCard", e: "🐉", h: "山林夥伴",
-      p: "走路就能養夥伴！從一顆蛋開始，越走牠長越快。" },
+      p: "走路就能養夥伴！從一顆蛋一路進化，牠會隨心情露出表情，還能點牠、餵食、裝扮。" },
     { view: "pet", sel: "#petFeed", e: "🍎", h: "餵食與果實",
       p: "每天餵夥伴補活力；走路和每日任務會賺果實，還能到「好友的夥伴」送果實給山友。" },
     { view: "pet", sel: "#petBadges .section-title", e: "🏅", h: "成就系統",

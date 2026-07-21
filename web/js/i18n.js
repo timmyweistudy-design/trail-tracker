@@ -131,6 +131,8 @@ const I18n = (() => {
     "GPX 匯入 / 匯出": "GPX import / export",
     // 生態區塊（物種名維持中文，見 scripts/i18n-ignore.json）
     "生態": "Ecology",
+    "走路就能養夥伴！從一顆蛋一路進化，牠會隨心情露出表情，還能點牠、餵食、裝扮。": "Raise a buddy just by walking! It evolves from an egg, shows moods, and you can pet, feed and dress it up.",
+    "PRO 徽章、頭像框、名字跟色、專屬主題、夥伴命名與裝扮、PRO 表情貼": "PRO badge, avatar frame, name color, themes, buddy naming & dress-up, PRO reactions", "夥伴命名·裝扮 / 頭像框": "Buddy naming & dress-up / avatar frame",
     "裝扮": "Dress up", "幫夥伴裝扮": "Dress up your buddy", "選一件配件戴在你的山林夥伴頭上。": "Pick an accessory for your trail buddy.", "不戴": "None", "草帽": "Straw hat", "派對帽": "Party hat", "花冠": "Flower crown", "蝴蝶結": "Bow",
     "去走": "Hike", "同行": "Together", "小時後可餵": "h to feed", "已達最終型態": "Final form", "手冊": "Album", "累計里程": "Distance", "親密": "Bond", "進化": "Evolve", "餵食": "Feed",
     "上面這排分頁可切換不同步道資訊。": "These tabs switch between different trail info.", "看你本月的里程、連續天數與健行日曆。": "See your distance, day streak and hiking calendar for this month.",

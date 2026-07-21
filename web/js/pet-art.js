@@ -169,7 +169,22 @@ window.PET_ART = (function () {
   };
   const HAT_LABEL = { none: "不戴", straw: "草帽", party: "派對帽", crown: "花冠", bow: "蝴蝶結" };
   const HAT_IDS = ["none", "straw", "party", "crown", "bow"];
-  function hat(id) { return HATS[id] ? `<svg class="pet-hat-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${HATS[id]}</svg>` : ""; }
+  // 各階段頭頂錨點 [x, y, scale]：帽子以自身參考點(x100,y45)對到該階段頭頂。逐一調過位。
+  const HAT_ANCHOR = [
+    [100, 62, 1.0],   // 0 卵
+    [143, 90, 0.6],   // 1 幼蟲：頭在右下、縮小
+    [100, 63, 0.56],  // 2 蝶：小頭、上移縮小
+    [104, 50, 1.0],   // 3 狐（參考）
+    [102, 48, 1.02],  // 4 虎
+    [102, 58, 0.92],  // 5 幼龍
+    [86, 56, 0.92],   // 6 神龍：頭偏左
+  ];
+  function hat(id, i) {
+    if (!HATS[id]) return "";
+    const a = HAT_ANCHOR[clamp(i || 0)] || [100, 46, 1];
+    const tf = `translate(${a[0]} ${a[1]}) scale(${a[2]}) translate(-100 -45)`;
+    return `<svg class="pet-hat-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g transform="${tf}">${HATS[id]}</g></svg>`;
+  }
   const EMOJI = ["🥚", "🐛", "🦋", "🦊", "🐅", "🐲", "🐉"];   // 對映 PET_STAGES 的 e，供把同步來的 emoji 反查成階段
   const clamp = i => Math.max(0, Math.min(A.length - 1, (i | 0)));
   function svg(i, cls) {

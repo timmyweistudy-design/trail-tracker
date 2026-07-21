@@ -78,13 +78,13 @@ function feedPet() {
 function petStageIndex(km) { let i = 0; for (let k = 0; k < PET_STAGES.length; k++) if (km >= PET_STAGES[k].km) i = k; return i; }
 function petName() { return localStorage.getItem("tt_pet_name") || ""; }
 function petHat() { return localStorage.getItem("tt_pet_hat") || "none"; }   // A5 配件（Premium 裝扮）
-function petHatSvg() { return (typeof PET_ART !== "undefined" && PET_ART.hat) ? PET_ART.hat(petHat()) : ""; }
+function petHatSvg(i) { return (typeof PET_ART !== "undefined" && PET_ART.hat) ? PET_ART.hat(petHat(), i) : ""; }
 // Premium 裝扮選擇器：戴帽子在夥伴頭上
 function openHatPicker() {
   if (typeof Premium !== "undefined" && Premium.gate && !Premium.gate()) return;   // 非會員→開升級面板
   if (document.querySelector('[data-ov="pethat"]')) return;
   const i = petStageIndex(totalKm()), cur = petHat();
-  const opts = PET_ART.HAT_IDS.map(id => `<button class="hat-opt${id === cur ? " on" : ""}" data-hat="${id}"><div class="hat-prev">${PET_ART.svg(i)}${PET_ART.hat(id)}</div><div class="hat-lbl">${ttT(PET_ART.HAT_LABEL[id])}</div></button>`).join("");
+  const opts = PET_ART.HAT_IDS.map(id => `<button class="hat-opt${id === cur ? " on" : ""}" data-hat="${id}"><div class="hat-prev">${PET_ART.svg(i)}${PET_ART.hat(id, i)}</div><div class="hat-lbl">${ttT(PET_ART.HAT_LABEL[id])}</div></button>`).join("");
   const ov = document.createElement("div"); ov.className = "pet-modal"; ov.dataset.ov = "pethat";
   ov.innerHTML = `<div class="pet-modal-card"><button class="sheet-close" id="hatClose" aria-label="${ttT("關閉")}">✕</button><h2>${ic("sparkle")} ${ttT("幫夥伴裝扮")}</h2><p class="dex-intro">${ttT("選一件配件戴在你的山林夥伴頭上。")}</p><div class="hat-grid">${opts}</div></div>`;
   document.body.appendChild(ov);
@@ -227,7 +227,7 @@ function renderPet() {
     <div class="pet-habitat">${(typeof PET_ART !== "undefined" && PET_ART.habitat) ? PET_ART.habitat(i) : ""}<span class="pet-ff" style="left:16%;top:24%"></span><span class="pet-ff" style="left:78%;top:18%;animation-delay:2.1s;animation-duration:7.5s"></span><span class="pet-ff" style="left:60%;top:40%;animation-delay:3.4s;animation-duration:5.5s"></span></div>
     <div class="pet-stage">
       <div class="pet-bubble">${mood.e} ${mood.t}</div>
-      <div id="petEmoji" class="pet-m-${mood.k || "content"}" role="img" aria-label="${st.n}">${art}${petHatSvg()}${petMoodFx(mood.k)}</div>
+      <div id="petEmoji" class="pet-m-${mood.k || "content"}" role="img" aria-label="${st.n}">${art}${petHatSvg(i)}${petMoodFx(mood.k)}</div>
       <div class="pet-shadow"></div>
       <div class="pet-idline"><span class="pet-name">${nm || st.n}</span><span class="lv-chip lvt-${Math.min(i + 1, 7)} pet-lv-chip">Lv.${i + 1}</span><button class="pet-edit" id="petDress" title="${ttT("裝扮")}" aria-label="${ttT("裝扮")}">${ic("sparkle")}</button>${(typeof Premium !== "undefined" && Premium.isOn()) ? `<button class="pet-edit" id="petRename" title="命名" aria-label="命名">${ic("pencil")}</button>` : ""}</div>
       <div class="pet-evo"><div class="pet-evo-top">${evoTop}</div>${prog}</div>
