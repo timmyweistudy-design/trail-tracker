@@ -3045,7 +3045,7 @@ Recorder.onUpdate(s => {
       if (!recMarker || !recMarker._av) {
         if (recMarker) recMap.removeLayer(recMarker);
         const mePro = (typeof Premium !== "undefined" && Premium.isOn()) ? " pro" : "";
-        recMarker = L.marker(last, { icon: L.divIcon({ className: "team-marker me-marker" + mePro, html: `<div class="tm-av"><div class="tm-dir"><span class="tm-cone"></span></div><img src="${meAv}" alt=""><span class="tm-pet">${typeof PET_ART !== "undefined" ? PET_ART.svg(petStageIndex(totalKm())) : petEmojiNow()}</span></div>`, iconSize: [32, 32], iconAnchor: [16, 16] }), zIndexOffset: 1100 }).addTo(recMap);
+        recMarker = L.marker(last, { icon: L.divIcon({ className: "team-marker me-marker" + mePro, html: `<div class="tm-av"><div class="tm-dir"><span class="tm-cone"></span></div><img src="${meAv}" alt=""><span class="tm-pet"><span class="pm-face">${typeof PET_ART !== "undefined" ? PET_ART.svg(petStageIndex(totalKm())) : petEmojiNow()}${typeof petHat === "function" ? PET_ART.hat(petHat()) : ""}</span></span></div>`, iconSize: [32, 32], iconAnchor: [16, 16] }), zIndexOffset: 1100 }).addTo(recMap);
         recMarker._av = true;
       }
       recMarker.setLatLng(last);
@@ -3060,11 +3060,17 @@ Recorder.onUpdate(s => {
       recMarker.setLatLng(last);
       // 山林夥伴同行：寵物跟在當前位置上方
       if (!petMarker) petMarker = L.marker(last, {
-        icon: L.divIcon({ className: "pet-marker", html: `<span class="pm-e">${typeof PET_ART !== "undefined" ? PET_ART.svg(petStageIndex(totalKm())) : petEmojiNow()}</span>`, iconSize: [40, 40], iconAnchor: [20, 34] }),
+        icon: L.divIcon({ className: "pet-marker", html: `<span class="pm-e"><span class="pm-face">${typeof PET_ART !== "undefined" ? PET_ART.svg(petStageIndex(totalKm())) : petEmojiNow()}${typeof petHat === "function" ? PET_ART.hat(petHat()) : ""}</span></span>`, iconSize: [40, 40], iconAnchor: [20, 34] }),
         interactive: false, zIndexOffset: 1000,
       }).addTo(recMap);
       petMarker.setLatLng(last);
     }
+    // A6 面向前方：北向上時依 heading 的東西分量翻轉寵物（往西＝鏡射；heading-up 全隊朝上不翻）
+    try {
+      const _m = petMarker || recMarker, _el = _m && _m.getElement && _m.getElement();
+      const _f = _el && _el.querySelector(".pm-face");
+      if (_f) _f.classList.toggle("pet-flip", !_navUp && s.heading != null && Math.sin(s.heading * Math.PI / 180) < -0.2);
+    } catch (e) { /* */ }
     // 模擬高幀率：用 animate:false 讓地圖即時跟隨，路線從腳下滑過＝滑行感；真實 GPS 維持平滑動畫
     if (s.state === "running") recMap.panTo(last, (sim() || _navUp) ? { animate: false } : undefined);
   }
@@ -3238,6 +3244,7 @@ function syncRecButtons(state) {
 // 開始記錄（本人按鈕 / 小隊隊長廣播都走這裡）
 function startRecordingUI() {
   initRecMap();
+  document.body.classList.add("rec-running");   // A6：記錄中→地圖上的自己寵物走路擺動
   hideSelectedTrail();   // 開始後不給取消：中途改自由路線會讓偏離警告/完成判定的依據在半路消失
   ensureMeAvatar();
   clearPreHike();                     // #3 開始記錄後收起行前小卡
@@ -3395,6 +3402,7 @@ async function safeRun(label, fn) {
 }
 async function finishRecording(autoVehicle) {
   const rec = Recorder.stop();
+  document.body.classList.remove("rec-running");   // A6：結束→寵物停止走路
   setNavUp(false); _navUserOff = false;   // 結束記錄→退出導航視角、下趟恢復預設導航
   recPreloaded = false; lastKmMilestone = 0; _berryLastKm = null;   // 下次記錄重新預載/里程碑/果實錨點
   $("#btnStart").textContent = "▶ 開始";
