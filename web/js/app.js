@@ -4397,6 +4397,7 @@ async function toggleDebugPanel() {
     ["🌐重看語言選擇", () => { try { localStorage.removeItem("tt_lang"); localStorage.removeItem("tt_onboarded_v2"); } catch (e) { /* */ } const dp = document.getElementById("debugPanel"); if (dp) dp.remove(); langGate(true); }],
     ["🧭導覽(中)", () => { try { localStorage.removeItem("tt_onboarded_v2"); localStorage.removeItem("tt_tour_resume"); } catch (e) { /* */ } const dp = document.getElementById("debugPanel"); if (dp) dp.remove(); onboarding(true, { previewLang: "zh", startAt: 0 }); }],
     ["🧭導覽(英)", () => { try { localStorage.removeItem("tt_onboarded_v2"); localStorage.removeItem("tt_tour_resume"); } catch (e) { /* */ } const dp = document.getElementById("debugPanel"); if (dp) dp.remove(); onboarding(true, { previewLang: "en", startAt: 0 }); }],
+    ["🧭重設情境導覽", () => { try { ["tt_coach_trail", "tt_coach_team", "tt_coach_record", "tt_coach_soc_friends", "tt_coach_soc_explore", "tt_coach_soc_search", "tt_coach_soc_notif", "tt_coach_soc_me"].forEach(k => localStorage.removeItem(k)); } catch (e) { /* */ } const dp = document.getElementById("debugPanel"); if (dp) dp.remove(); toast("情境導覽已重設：重新打開步道／小隊／記錄／社群各頁就會再出現"); }],
   ];
   p.innerHTML = `<div class="dbg-h">🛠 測試面板 <span id="dbgState"></span><button id="dbgClose">✕</button></div><div class="dbg-grid"></div>`;
   const grid = p.querySelector(".dbg-grid");
@@ -4498,6 +4499,8 @@ function onboarding(force, opts) {
       p: "每天餵夥伴補活力；走路和每日任務會賺果實，還能到「好友的夥伴」送果實給山友。" },
     { view: "pet", sel: "#petBadges .section-title", e: "🏅", h: "成就系統",
       p: "成就樹：里程、爬升、連續天數等達標就解鎖徽章，永久保留。" },
+    { view: "me", sel: "#meMonth", e: "📅", h: "健行日曆",
+      p: "看你本月的里程、連續天數與健行日曆。" },
     { view: "me", sel: "#meStats", e: "📊", h: "我的足跡",
       p: "這裡看你的里程、爬升、完成步道等統計。" },
     { view: "me", sel: ".set-zone-title", e: "⚙️", h: "設定",
@@ -4638,6 +4641,7 @@ window.ttCoach = function (flag, rawSteps, opts) {
   async function show() {
     const st = steps[i];
     renderTip(st); place(null);
+    if (st.pre) { try { st.pre(); } catch (e) { /* 切分頁等前置動作失敗不擋導覽 */ } await new Promise(r => setTimeout(r, 200)); }   // 目標在隱藏分頁 → 先切過去
     let target = null;
     if (st.sel && !st.center) { for (let k = 0; k < 16 && !target; k++) { target = findTarget(st.sel); if (!target) await new Promise(r => setTimeout(r, 130)); } }
     let r = null;
@@ -4654,17 +4658,19 @@ window.ttCoach = function (flag, rawSteps, opts) {
   show();
 };
 
-// 首次點開步道詳情：介紹分區、天氣、海拔、生態、動作列、離線地圖、開始記錄。
+// 首次點開步道詳情：帶著切分頁介紹各區（天氣/海拔/離線在「路線」、生態在「生態」、分享/記錄在「概覽」）。
+// 目標區塊分散在隱藏分頁 → 每步用 pre 先切到該分頁，聚光燈才框得到（改版分頁化後必要）。
 window.ttCoachTrail = function (hasGeo) {
   if (!document.querySelector("#detailSheet.show")) return;
+  const tab = code => () => { const b = document.querySelector(`#detailNav button[data-tab="${code}"]`); if (b) b.click(); };
   window.ttCoach("tt_coach_trail", [
-    { sel: "#detailNav", e: "📑", h: "步道資訊", p: "上面這排可以快速跳到各區：天氣、海拔、生態、景點、美食。" },
-    { sel: "#weatherBox", e: "🌦️", h: "天氣", p: "顯示步道所在地的即時天氣與未來預報，出發前先看一下。" },
-    hasGeo ? { sel: "#profileBox", e: "⛰️", h: "海拔剖面", p: "沿路的高度變化圖，幫你評估上坡有多硬、要爬多高。" } : null,
-    { sel: "#secEco", e: "🦋", h: "生態", p: "這條步道常見的動植物，還能查 iNaturalist 附近的真實目擊。" },
-    { sel: ".link-row", e: "🔗", h: "分享", p: "分享步道、揪團出遊、加入比較、開啟導航，都在這一排。" },
-    { sel: "#btnOffline", e: "⬇️", h: "離線地圖", p: "山區常常沒有訊號，先在這裡把地圖下載起來就不怕迷路。" },
-    { sel: "#btnGoRecord", e: "📍", h: "記錄健行", p: "準備好了嗎？從這條步道直接開始記錄你的足跡吧！" },
+    { sel: "#detailNav", e: "📑", h: "步道資訊", p: "上面這排分頁可切換不同步道資訊。", pre: tab("ov") },
+    { sel: "#weatherBox", e: "🌦️", h: "天氣", p: "顯示步道所在地的即時天氣與未來預報，出發前先看一下。", pre: tab("rt") },
+    hasGeo ? { sel: "#profileBox", e: "⛰️", h: "海拔剖面", p: "沿路的高度變化圖，幫你評估上坡有多硬、要爬多高。", pre: tab("rt") } : null,
+    { sel: "#btnOffline", e: "⬇️", h: "離線地圖", p: "山區常常沒有訊號，先在這裡把地圖下載起來就不怕迷路。", pre: tab("rt") },
+    { sel: "#ecoBox", e: "🦋", h: "生態", p: "這條步道常見的動植物，還能查 iNaturalist 附近的真實目擊。", pre: tab("ec") },
+    { sel: ".link-row", e: "🔗", h: "分享", p: "分享步道、揪團出遊、加入比較、開啟導航，都在這一排。", pre: tab("ov") },
+    { sel: "#btnGoRecord", e: "📍", h: "記錄健行", p: "準備好了嗎？從這條步道直接開始記錄你的足跡吧！", pre: tab("ov") },
   ], { scope: "#detailSheet" });
 };
 

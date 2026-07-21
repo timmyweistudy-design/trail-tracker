@@ -131,6 +131,7 @@ const I18n = (() => {
     "GPX 匯入 / 匯出": "GPX import / export",
     // 生態區塊（物種名維持中文，見 scripts/i18n-ignore.json）
     "生態": "Ecology",
+    "上面這排分頁可切換不同步道資訊。": "These tabs switch between different trail info.", "看你本月的里程、連續天數與健行日曆。": "See your distance, day streak and hiking calendar for this month.",
     "哺乳類": "Mammals",
     "鳥類": "Birds",
     "昆蟲": "Insects",
