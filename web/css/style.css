@@ -416,9 +416,15 @@ body.navup-on #recMap .leaflet-map-pane { transition: transform .12s linear; }
 .statcard .stat-v { font-family: var(--num); font-size: calc(18px * var(--fs, 1)); font-weight: 600;
   margin-top: 6px; color: var(--ink); line-height: 1.2; }
 .statcard .stat-v .badge { font-family: var(--sans); }
+/* 格數為奇數時，最後一格橫跨兩欄，避免落單半格不對稱 */
+.statcard .stat:last-child:nth-child(odd) { grid-column: 1 / -1; }
 /* 底部固定主動作列 + 資料來源頁尾 */
-.detail-actionbar { position: sticky; bottom: 0; z-index: 5; margin: 8px -19px 0; padding: 12px 19px calc(12px + env(safe-area-inset-bottom, 0px));
-  background: linear-gradient(to top, var(--surface) 74%, transparent); }
+/* 負的下外距吃掉 .sheet-body(16px) 與 .sheet(22px+safe) 的底部 padding，讓動作列貼到 sheet 真正底緣；
+   下內距只留安全區（無瀏海手機為 0），按鈕直接坐底 → 下方不再露出白色 sheet padding 跟著捲。
+   向上的陰影讓底下捲動的內容與這條 docked 動作列有層次區隔 */
+.detail-actionbar { position: sticky; bottom: 0; z-index: 5;
+  margin: 8px -19px calc(-38px - var(--safe-b)); padding: 11px 15px var(--safe-b);
+  background: var(--surface); box-shadow: 0 -8px 16px -8px rgba(22, 48, 31, .14); }
 .detail-actionbar .btn { margin: 0; }
 .detail-credit { font-size: calc(11px * var(--fs, 1)); color: var(--ink-soft); text-align: center; margin-top: 12px; padding-bottom: 6px; }
 .sheet-body h2 { font-family: var(--serif); font-weight: 700; margin: 2px 0 10px; font-size: calc(23px * var(--fs, 1)); letter-spacing: .5px; line-height: 1.25; }

@@ -1587,6 +1587,7 @@ async function openDetail(id) {
   if (ascInit != null || geoOf(t)) stat.push(["up", "累積爬升", `<span id="kvAscent">${ascInit != null ? ascInit + " m" + ascEst : "計算中…"}</span>`]);
   if (t.tour) stat.push(["clock", "預估時間", t.tour]);
   if (t.alt_high != null || t.alt_low != null) stat.push(["mountain", "海拔範圍", `${t.alt_low ?? "?"}–${t.alt_high ?? "?"} m`]);
+  if (t.region) stat.push(["map", "地區", t.region]);   // 補第六格，湊成對稱的偶數格
   const statHtml = `<div class="statcard">${stat.map(([ico, l, v]) =>
     `<div class="stat"><div class="stat-h">${ic(ico)}<span>${l}</span></div><div class="stat-v">${v}</div></div>`).join("")}</div>`;
 
