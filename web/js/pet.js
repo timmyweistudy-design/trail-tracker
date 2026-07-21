@@ -58,7 +58,7 @@ function todayStr() { return localDayOf(new Date()); }
 function localDay(iso) { return localDayOf(iso); }
 const FEED_COOLDOWN = 8 * 3600e3;   // 餵食冷卻 8 小時
 function feedCooldownMs() { return Math.max(0, FEED_COOLDOWN - (Date.now() - (+(localStorage.getItem("tt_pet_fed_t") || 0)))); }
-function canFeedToday() { return berriesBalance() >= 3 && feedCooldownMs() === 0; }
+function canFeedNow() { return berriesBalance() >= 3 && feedCooldownMs() === 0; }   // 「現在能不能餵」（看 8h 冷卻，非每日）
 function feedPet() {
   if (feedCooldownMs() > 0) { toast(`還在休息，約 ${Math.ceil(feedCooldownMs() / 3600e3)} 小時後可再餵 🍃`); return; }
   if (berriesBalance() < 3) { toast("果實不足，多走幾步才有果實 🍓"); return; }
@@ -123,15 +123,21 @@ function petMood() {
   if (d <= 9) return { e: "🥺", t: "有點想念山林了…", k: "longing" };
   return { e: "😴", t: "好久沒出門，懶洋洋的", k: "sleepy" };
 }
-// 心情小裝飾（角色旁）：呼應對話泡，讓角色本體也「有情緒」
-function petMoodFx(k) { const M = { happy: "✨", sleepy: "💤", longing: "💭" }; return M[k] ? `<span class="pet-fx pet-fx-${k}">${M[k]}</span>` : ""; }
-// 冒出小粒子（點擊/餵食的反應）：從角色位置往上飄
-function petBurst(emoji, n) {
+// 心情小裝飾（角色旁）：呼應對話泡，讓角色本體也「有情緒」。O4：改 SVG（不再用 emoji，避免空框）
+const PET_FX_SVG = {
+  happy: `<svg viewBox="0 0 24 24" fill="#ffe08a" aria-hidden="true"><path d="M12 2l1.8 5.8L20 9.6l-6.2 1.8L12 17l-1.8-5.6L4 9.6l6.2-1.8z"/></svg>`,
+  sleepy: `<svg viewBox="0 0 24 24" fill="none" stroke="#cfe0e8" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 8h7l-7 8h7"/></svg>`,
+  longing: `<svg viewBox="0 0 24 24" fill="#e7e1cf" aria-hidden="true"><ellipse cx="14" cy="9" rx="8" ry="6"/><circle cx="5" cy="17" r="2.6"/><circle cx="9.5" cy="20.5" r="1.5"/></svg>`,
+};
+const PET_HEART_SVG = `<svg viewBox="0 0 24 24" fill="#e0556b" aria-hidden="true"><path d="M12 21c-5-3.5-8-7-8-11a4.2 4.2 0 0 1 8-1.2A4.2 4.2 0 0 1 20 10c0 4-3 7.5-8 11z"/></svg>`;
+function petMoodFx(k) { return PET_FX_SVG[k] ? `<span class="pet-fx pet-fx-${k}">${PET_FX_SVG[k]}</span>` : ""; }
+// 冒出小愛心（點擊/餵食的反應）：從角色位置往上飄（O4：紅愛心用 SVG）
+function petBurst(_ignore, n) {
   const em = document.getElementById("petEmoji"); if (!em) return;
-  const r = em.getBoundingClientRect(); n = n || 3;
+  const r = em.getBoundingClientRect(); n = n || 1;
   for (let i = 0; i < n; i++) {
     const s = document.createElement("span");
-    s.className = "pet-particle"; s.textContent = emoji;
+    s.className = "pet-particle"; s.innerHTML = PET_HEART_SVG;
     s.style.left = (r.left + r.width / 2 + (i - (n - 1) / 2) * 20) + "px";
     s.style.top = (r.top + r.height * 0.32) + "px";
     s.style.animationDelay = (i * 0.07) + "s";
@@ -213,7 +219,7 @@ function renderPet() {
   if (!box) return;
   const km = totalKm(), i = petStageIndex(km), st = PET_STAGES[i], next = PET_STAGES[i + 1];
   const nm = petName(), mood = petMood(), days = daysSince(petHatch()), streak = weeksStreak(), en = energy();
-  const berries = berriesBalance(), h = petHearts(), bonus = feedBonusKm(), canFeed = canFeedToday(), cd = feedCooldownMs();
+  const berries = berriesBalance(), h = petHearts(), canFeed = canFeedNow(), cd = feedCooldownMs();
   const art = (typeof PET_ART !== "undefined") ? PET_ART.svg(i) : `<span style="font-size:70px">${st.e}</span>`;
   let evoTop, prog = "";
   if (next) {
@@ -242,7 +248,7 @@ function renderPet() {
       <div class="pet-chip"><div class="cv">${streak}<small> ${ttT("週")}</small></div><div class="cl">${streak >= 2 ? "🔥 " : ""}${ttT("連續")}</div></div>
     </div>
     <div class="pet-acts">
-      <button class="pet-btn feed" id="petFeed"${canFeed ? "" : " disabled"}>${cd > 0 ? `🍃 ${Math.ceil(cd / 3600e3)} ${ttT("小時後可餵")}` : `🍖 ${ttT("餵食")} · 🍓${berries}`}</button>
+      <button class="pet-btn feed" id="petFeed"${canFeed ? "" : " disabled"}>${cd > 0 ? `🍃 ${cd >= 3600e3 ? `${Math.ceil(cd / 3600e3)} ${ttT("小時後可餵")}` : `${Math.ceil(cd / 6e4)} ${ttT("分鐘後可餵")}`}` : `🍖 ${ttT("餵食")} · 🍓${berries}`}</button>
       <button class="pet-btn" id="petDex">${ic("book")} ${ttT("手冊")}</button>
       <button class="pet-btn" id="petRec">${ic("compass")} ${ttT("去走")}</button>
     </div>

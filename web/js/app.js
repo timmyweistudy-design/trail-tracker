@@ -2995,13 +2995,14 @@ Recorder.onUpdate(s => {
   if (s.state === "running" && !s.resting && !sim()) {
     if (_berryLastKm == null || _berryLastKm > s.distanceKm) _berryLastKm = s.distanceKm;
     let dM = (s.distanceKm - _berryLastKm) * 1000;
+    if (dM > 1000) { _berryLastKm = s.distanceKm; dM = 0; }   // B4：單次異常大跳（補值/跳點）→ 不發果實、重新校準，避免一次撿爆量
     let picked = 0;
     while (dM >= 10) { dM -= 10; _berryLastKm += 0.01; if (Math.random() < 0.05) picked++; }
     if (picked > 0 && typeof addBerryPicked === "function") {
       addBerryPicked(picked);
       if (navigator.vibrate) navigator.vibrate([90, 40, 90]);
       toast(picked === 1 ? ttT("🍓 撿到一顆果實！") : `🍓 ${ttT("撿到果實")} +${picked}！`);
-      try { renderPet(); } catch (e) { /* */ }
+      try { if (document.body.dataset.view === "pet") renderPet(); } catch (e) { /* B1：寵物卡不可見就別重繪（記錄中在別頁），下次開夥伴頁自會重繪 */ }
     }
   }
   // 每公里震動里程提示（不再和果實綁定）
@@ -3040,13 +3041,19 @@ Recorder.onUpdate(s => {
     // 小隊同行：把記錄位置（含模擬）餵給隊伍圖層，隊友才看得到我（TeamLive 內部有 3 秒節流）
     if (typeof TeamLive !== "undefined" && TeamLive.isOn() && TeamLive.updatePos) TeamLive.updatePos(last[0], last[1], s.heading);
     const meAv = window.__meAvatar;   // 登入且有頭像才用頭像標記
+    // O5：寵物標記的階段/心情/帽子做成簽章 → 任一改變（含記錄中跨階進化）就重建，帶心情表情
+    const _pStage = petStageIndex(totalKm());
+    const _pMood = (typeof petMood === "function" ? petMood().k : "content");
+    const _pHat = (typeof petHat === "function" ? petHat() : "none");
+    const _pSig = _pStage + "|" + _pMood + "|" + _pHat;
+    const _petFace = () => `<span class="pm-face pet-m-${_pMood}">${typeof PET_ART !== "undefined" ? PET_ART.svg(_pStage) : petEmojiNow()}${(typeof PET_ART !== "undefined" && PET_ART.hat) ? PET_ART.hat(_pHat, _pStage) : ""}</span>`;
     if (meAv) {
       // 自己的原點＝頭像 + 寵物徽章（與隊友一致）；移除浮動寵物避免重複
-      if (!recMarker || !recMarker._av) {
+      if (!recMarker || !recMarker._av || recMarker._sig !== _pSig) {
         if (recMarker) recMap.removeLayer(recMarker);
         const mePro = (typeof Premium !== "undefined" && Premium.isOn()) ? " pro" : "";
-        recMarker = L.marker(last, { icon: L.divIcon({ className: "team-marker me-marker" + mePro, html: `<div class="tm-av"><div class="tm-dir"><span class="tm-cone"></span></div><img src="${meAv}" alt=""><span class="tm-pet"><span class="pm-face">${typeof PET_ART !== "undefined" ? PET_ART.svg(petStageIndex(totalKm())) : petEmojiNow()}${typeof petHat === "function" ? PET_ART.hat(petHat(), petStageIndex(totalKm())) : ""}</span></span></div>`, iconSize: [32, 32], iconAnchor: [16, 16] }), zIndexOffset: 1100 }).addTo(recMap);
-        recMarker._av = true;
+        recMarker = L.marker(last, { icon: L.divIcon({ className: "team-marker me-marker" + mePro, html: `<div class="tm-av"><div class="tm-dir"><span class="tm-cone"></span></div><img src="${meAv}" alt=""><span class="tm-pet">${_petFace()}</span></div>`, iconSize: [32, 32], iconAnchor: [16, 16] }), zIndexOffset: 1100 }).addTo(recMap);
+        recMarker._av = true; recMarker._sig = _pSig;
       }
       recMarker.setLatLng(last);
       if (s.heading != null) _gpsHeading = s.heading;
@@ -3058,11 +3065,12 @@ Recorder.onUpdate(s => {
         recMarker = L.circleMarker(last, { radius: 7, color: "#fff", weight: 3, fillColor: "#e8893b", fillOpacity: 1 }).addTo(recMap);
       }
       recMarker.setLatLng(last);
-      // 山林夥伴同行：寵物跟在當前位置上方
-      if (!petMarker) petMarker = L.marker(last, {
-        icon: L.divIcon({ className: "pet-marker", html: `<span class="pm-e"><span class="pm-face">${typeof PET_ART !== "undefined" ? PET_ART.svg(petStageIndex(totalKm())) : petEmojiNow()}${typeof petHat === "function" ? PET_ART.hat(petHat(), petStageIndex(totalKm())) : ""}</span></span>`, iconSize: [40, 40], iconAnchor: [20, 34] }),
-        interactive: false, zIndexOffset: 1000,
-      }).addTo(recMap);
+      // 山林夥伴同行：寵物跟在當前位置上方（階段/心情/帽子變就重建）
+      if (!petMarker || petMarker._sig !== _pSig) {
+        if (petMarker) recMap.removeLayer(petMarker);
+        petMarker = L.marker(last, { icon: L.divIcon({ className: "pet-marker", html: `<span class="pm-e">${_petFace()}</span>`, iconSize: [40, 40], iconAnchor: [20, 34] }), interactive: false, zIndexOffset: 1000 }).addTo(recMap);
+        petMarker._sig = _pSig;
+      }
       petMarker.setLatLng(last);
     }
     // A6 面向前方：北向上時依 heading 的東西分量翻轉寵物（往西＝鏡射；heading-up 全隊朝上不翻）
@@ -4270,7 +4278,7 @@ window.ttDebug = (() => {
     resetPet() {
       ls.setItem("tt_pet_base", String(realTotalKm())); ls.setItem("tt_pet_hatch", new Date().toISOString());
       ls.setItem("tt_pet_stage", "0"); ls.setItem("tt_pet_berry_spent", String(berriesEarned()));
-      ["tt_pet_name", "tt_pet_feedkm", "tt_pet_aff", "tt_pet_aff_t", "tt_pet_fed"].forEach(k => ls.removeItem(k));
+      ["tt_pet_name", "tt_pet_feedkm", "tt_pet_aff", "tt_pet_aff_t", "tt_pet_fed_t", "tt_pet_hat"].forEach(k => ls.removeItem(k));   // B2/B3：清真正的冷卻鍵 tt_pet_fed_t＋帽子（原本清死鍵 tt_pet_fed）
       refresh(); return "已重置寵物 🥚";
     },
     // 加一筆「真實」測試行程（推進成就統計/每日環/足跡圖/徽章/親密度，今天日期）

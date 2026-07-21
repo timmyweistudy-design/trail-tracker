@@ -646,6 +646,8 @@ body.navup-on #recMap .leaflet-map-pane { transition: transform .12s linear; }
 /* A6 記錄跟隨：自己的寵物走路擺動＋面向前方翻轉；A5 帽子跟著一起動 */
 .pm-face { position: relative; display: block; transition: transform .3s ease; }
 .pm-face.pet-flip { transform: scaleX(-1); }
+.pm-face.pet-m-sleepy .pc-eye { transform: scaleY(.28); animation: none; }   /* O5：地圖標記也吃心情 */
+.pm-face.pet-m-longing .pc-eye { transform: scaleY(1.14); animation: none; }
 .pm-face .pet-hat-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 body.rec-running #recMap .pm-e .pet-critter, body.rec-running #recMap .pm-e .pet-hat-svg,
 body.rec-running #recMap .me-marker .tm-pet .pet-critter, body.rec-running #recMap .me-marker .tm-pet .pet-hat-svg { animation: petWalk .62s ease-in-out infinite; }
@@ -780,11 +782,13 @@ body.rec-running #recMap .me-marker .tm-pet .pet-critter, body.rec-running #recM
 #petEmoji.pet-m-sleepy .pc-bob { animation-duration: 5.4s; }                                        /* 呼吸放慢 */
 #petEmoji.pet-m-longing .pc-eye { transform: scaleY(1.14) !important; animation: none !important; } /* 水汪汪大眼＝想念 */
 #petEmoji.pet-m-happy .pc-bob { animation-duration: 2.3s; }                                         /* 開心跳快一點 */
-.pet-fx { position: absolute; top: 8%; right: 15%; font-size: calc(21px * var(--fs, 1)); pointer-events: none; z-index: 3; animation: petFxFloat 2.6s ease-in-out infinite; }
+.pet-fx { position: absolute; top: 8%; right: 15%; width: calc(22px * var(--fs, 1)); pointer-events: none; z-index: 3; animation: petFxFloat 2.6s ease-in-out infinite; }
+.pet-fx svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 1px 2px rgba(0,0,0,.3)); }
 .pet-fx-sleepy { top: 4%; right: 18%; }
 @keyframes petFxFloat { 0%,100% { transform: translateY(0) rotate(-4deg); opacity: .8; } 50% { transform: translateY(-6px) rotate(4deg); opacity: 1; } }
 /* A2 反應：點擊/餵食冒出的小粒子 */
-.pet-particle { position: fixed; font-size: 23px; line-height: 1; pointer-events: none; z-index: 95; transform: translateX(-50%); animation: petParticle 1.15s ease-out forwards; will-change: transform, opacity; }
+.pet-particle { position: fixed; width: 26px; height: 26px; line-height: 1; pointer-events: none; z-index: 95; transform: translateX(-50%); animation: petParticle 1.15s ease-out forwards; will-change: transform, opacity; }
+.pet-particle svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 1px 3px rgba(224,85,107,.4)); }
 @keyframes petParticle { 0% { opacity: 0; transform: translate(-50%, 0) scale(.4); } 18% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -54px) scale(1.15); } }
 @media (prefers-reduced-motion: reduce) { .pet-fx, .pet-particle { animation: none !important; } }
 /* A5 配件：主卡角色頭上的帽子（與角色同步起伏；心情調速時同步） */
