@@ -126,9 +126,18 @@ function openYearReview() {
 }
 // 年度回顧 → 畫成可分享圖片（canvas，不需外部套件）
 function drawYearImage(d) {
-  if (d.avatar) { const img = new Image(); img.crossOrigin = "anonymous"; img.onload = () => build(img); img.onerror = () => build(null); img.src = d.avatar; }
-  else build(null);
-  function build(avImg) {
+  // 先載頭像，再把寵物 SVG 光柵化成 Image（canvas 不能直接畫 SVG 節點）→ 最後才 build
+  const afterAvatar = (avImg) => {
+    if (d.pet && typeof PET_ART !== "undefined" && PET_ART.dataUri) {
+      const pi = new Image();
+      pi.onload = () => build(avImg, pi);
+      pi.onerror = () => build(avImg, null);
+      pi.src = PET_ART.dataUri((d.pet.level || 1) - 1, 128);
+    } else build(avImg, null);
+  };
+  if (d.avatar) { const img = new Image(); img.crossOrigin = "anonymous"; img.onload = () => afterAvatar(img); img.onerror = () => afterAvatar(null); img.src = d.avatar; }
+  else afterAvatar(null);
+  function build(avImg, petImg) {
   const W = 540, H = 760, c = document.createElement("canvas"); c.width = W; c.height = H;
   const x = c.getContext("2d");
   const g = x.createLinearGradient(0, 0, W, H); g.addColorStop(0, "#1f4730"); g.addColorStop(.6, "#16301f"); g.addColorStop(1, "#112619");
@@ -143,7 +152,11 @@ function drawYearImage(d) {
     x.drawImage(avImg, acx - r, acy - r, r * 2, r * 2); x.restore();
     x.beginPath(); x.arc(acx, acy, r, 0, 7); x.lineWidth = 3; x.strokeStyle = "#e0b15a"; x.stroke();
   }
-  if (d.pet) { x.font = "30px sans-serif"; x.fillText(d.pet.emoji || "🐾", avImg ? acx + r - 4 : acx, avImg ? acy + r - 2 : acy + 12); }
+  if (d.pet) {
+    const ps = avImg ? 50 : 96, pcx = avImg ? acx + r - 4 : acx, pcy = avImg ? acy + r - 6 : acy;
+    if (petImg) x.drawImage(petImg, pcx - ps / 2, pcy - ps / 2, ps, ps);
+    else { x.font = "30px sans-serif"; x.fillText(d.pet.emoji || "🐾", pcx, avImg ? acy + r - 2 : acy + 12); }
+  }
   x.fillStyle = "#e0b15a"; x.font = "700 76px 'TaipeiSans', sans-serif"; x.fillText(String(d.year), W / 2, 200);
   x.fillStyle = "#f3efe4"; x.font = "600 21px 'TaipeiSans', sans-serif"; x.fillText(ttT("我的山行回顧"), W / 2, 234);
   const stats = [[d.n, ttT("趟旅程")], [Math.round(d.km), ttT("公里")], ["↑" + Math.round(d.asc), ttT("公尺爬升")], [Math.round(d.hrs), ttT("小時")]];
@@ -331,7 +344,7 @@ async function openCompare() {
   ov.querySelector("#cmpX").addEventListener("click", () => ov.remove());
   ov.addEventListener("click", e => { if (e.target === ov) ov.remove(); });
   // 依寵物等級對應成長階段 emoji（PET_STAGES 由 pet.js 提供）
-  const petEmoji = lv => { try { const s = (typeof PET_STAGES !== "undefined" && PET_STAGES) || []; return s.length ? s[Math.min(Math.max((+lv || 1) - 1, 0), s.length - 1)].e : "🐾"; } catch (e) { return "🐾"; } };
+  const petEmoji = lv => { try { const idx = Math.max((+lv || 1) - 1, 0); if (typeof PET_ART !== "undefined") return PET_ART.svg(idx); const s = (typeof PET_STAGES !== "undefined" && PET_STAGES) || []; return s.length ? s[Math.min(idx, s.length - 1)].e : "🐾"; } catch (e) { return "🐾"; } };
   const RANK_MEDAL = ["🥇", "🥈", "🥉"];
   const refreshBtn = ov.querySelector("#cmpRefresh");
   async function loadCmp() {

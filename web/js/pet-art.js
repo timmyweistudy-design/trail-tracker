@@ -148,5 +148,11 @@ window.PET_ART = (function () {
     return `<svg class="pet-critter ${cls || ""}" viewBox="0 0 200 200" role="img" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${A[clamp(i)]}</svg>`;
   }
   function byEmoji(e) { return EMOJI.indexOf(e); }   // 找不到回 -1
-  return { svg, count: A.length, byEmoji };
+  // 給 canvas 用：帶 width/height 的獨立 SVG data URI（靜態一幀，供 new Image().src 光柵化畫進分享圖卡）
+  function dataUri(i, size) {
+    const s = size || 120;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 200 200">${A[clamp(i)]}</svg>`;
+    return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+  }
+  return { svg, count: A.length, byEmoji, dataUri };
 })();

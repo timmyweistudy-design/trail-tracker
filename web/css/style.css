@@ -2151,6 +2151,7 @@ html[data-theme="dark"] body::after { opacity: .05; }
 .cmp-row.me { background: var(--accent-soft); border-radius: var(--r-xs); padding: 4px 6px; margin: 0 -6px; }
 .cmp-rank { font-family: var(--num); font-weight: 700; color: var(--ink-faint); text-align: center; font-size: calc(14px * var(--fs, 1)); }
 .cmp-pet { display: flex; align-items: center; gap: 3px; font-size: calc(15px * var(--fs, 1)); line-height: 1; }
+.cmp-pet .pet-critter { width: 24px; height: 24px; filter: none; flex: 0 0 auto; }
 .cmp-pet i { font-family: var(--num); font-style: normal; font-size: calc(10px * var(--fs, 1)); font-weight: 700; color: var(--ink-faint); }
 .cmp-name { font-size: calc(13.5px * var(--fs, 1)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cmp-bar { height: 6px; background: var(--line-soft); border-radius: 4px; overflow: hidden; }

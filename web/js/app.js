@@ -1028,7 +1028,9 @@ function open3DRecording() {
 function person3dEl(avatar, pet, isMe) {
   const d = document.createElement("div");
   d.className = "tm3d team-marker" + (isMe ? " me-marker" : "");
-  d.innerHTML = `<div class="tm-av">${avatar ? `<img src="${avatar}" alt="">` : `<span class="tm-ph">${isMe ? (typeof ttT === "function" ? ttT("我") : "我") : "?"}</span>`}${pet ? `<span class="tm-pet">${pet}</span>` : ""}</div>`;
+  const petIdx = (pet && typeof PET_ART !== "undefined" && PET_ART.byEmoji) ? PET_ART.byEmoji(pet) : -1;   // 同步來的是 emoji → 反查成 SVG 角色
+  const petHtml = pet ? `<span class="tm-pet">${petIdx >= 0 ? PET_ART.svg(petIdx) : pet}</span>` : "";
+  d.innerHTML = `<div class="tm-av">${avatar ? `<img src="${avatar}" alt="">` : `<span class="tm-ph">${isMe ? (typeof ttT === "function" ? ttT("我") : "我") : "?"}</span>`}${petHtml}</div>`;
   return d;
 }
 function _stop3dLive() {
@@ -3043,7 +3045,7 @@ Recorder.onUpdate(s => {
       if (!recMarker || !recMarker._av) {
         if (recMarker) recMap.removeLayer(recMarker);
         const mePro = (typeof Premium !== "undefined" && Premium.isOn()) ? " pro" : "";
-        recMarker = L.marker(last, { icon: L.divIcon({ className: "team-marker me-marker" + mePro, html: `<div class="tm-av"><div class="tm-dir"><span class="tm-cone"></span></div><img src="${meAv}" alt=""><span class="tm-pet">${petEmojiNow()}</span></div>`, iconSize: [32, 32], iconAnchor: [16, 16] }), zIndexOffset: 1100 }).addTo(recMap);
+        recMarker = L.marker(last, { icon: L.divIcon({ className: "team-marker me-marker" + mePro, html: `<div class="tm-av"><div class="tm-dir"><span class="tm-cone"></span></div><img src="${meAv}" alt=""><span class="tm-pet">${typeof PET_ART !== "undefined" ? PET_ART.svg(petStageIndex(totalKm())) : petEmojiNow()}</span></div>`, iconSize: [32, 32], iconAnchor: [16, 16] }), zIndexOffset: 1100 }).addTo(recMap);
         recMarker._av = true;
       }
       recMarker.setLatLng(last);
