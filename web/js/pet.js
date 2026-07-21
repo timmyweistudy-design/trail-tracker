@@ -369,15 +369,12 @@ function petBadges() {
   if (changed) try { localStorage.setItem("tt_badges_got", JSON.stringify([...got])); } catch { /* ignore */ }
   return list;
 }
-// 成就勳章專區（夥伴頁）
-function renderBadges() {
-  const box = $("#petBadges"); if (!box) return;
+// 成就資料＋步道 HTML（共用給夥伴頁精簡入口與全螢幕成就步道）
+function buildAchTree() {
   const list = petBadges(), got = list.filter(b => b.got).length;
-  // #8 下一個成就進度：挑最接近解鎖（且尚未解鎖、有量化門檻）的前 3 個，給進度條與「還差多少」
   const nextUp = list.filter(b => !b.got && b.p && b.p[1] > 0)
     .map(b => ({ b, ratio: Math.min(1, b.p[0] / b.p[1]) }))
-    .sort((a, b) => b.ratio - a.ratio)
-    .slice(0, 3);
+    .sort((a, b) => b.ratio - a.ratio).slice(0, 3);
   const fmt = (v, u) => u === "km" ? v.toFixed(1) : String(Math.round(v));
   const catOf = b => ACH_CAT[b.c] || ACH_CAT.trips;
   const hereNm = nextUp[0] ? nextUp[0].b.n : null;   // 最接近解鎖＝「你在這」
@@ -385,7 +382,6 @@ function renderBadges() {
     const [cur, goal, unit] = b.p, cat = catOf(b);
     return `<div class="anx" style="--c:${cat.col}"><span class="anx-e">${ic(cat.i)}</span><div class="anx-body"><div class="anx-top"><b>${b.n}</b><span class="anx-remain">${fmt(cur, unit)} / ${goal} ${ttT(unit)}</span></div><div class="anx-bar"><i style="width:${(ratio * 100).toFixed(0)}%"></i></div></div></div>`;
   }).join("")}</div>` : "";
-  // 步道路徑：一條中央蜿蜒步道，成就是路上左右交錯的停靠點；階層以紋章當「檢查點」
   const CHK = `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>`;
   const pctOf = b => b.got ? 100 : (b.p && b.p[1] ? Math.min(100, Math.round(b.p[0] / b.p[1] * 100)) : 0);
   const statOf = b => b.got ? ttT("已達成") : (b.p ? `${fmt(b.p[0], b.p[2])} / ${b.p[1]} ${ttT(b.p[2])}` : b.d);
@@ -408,10 +404,39 @@ function renderBadges() {
         </div>`;
   }).join("")}
     </div>`).join("");
-  box.innerHTML = `<div class="section-title">${ic("medal")}成就樹 <span class="badge-count">${got} / ${list.length}</span></div>
-    ${nextHtml}
-    <div class="ach-trail">${treeHtml}</div>`;
+  return { got, total: list.length, nextHtml, treeHtml };
 }
+// 夥伴頁的成就入口（精簡）：進度條＋「查看成就步道」按鈕開全螢幕頁；下方保留「即將解鎖」
+function renderBadges() {
+  const box = $("#petBadges"); if (!box) return;
+  const { got, total, nextHtml } = buildAchTree();
+  const pct = Math.round(got / total * 100);
+  box.innerHTML = `<div class="section-title">${ic("medal")}${ttT("成就步道")} <span class="badge-count">${got} / ${total}</span></div>
+    <button class="ach-entry" id="achOpen" aria-label="${ttT("查看成就步道")}">
+      <div class="ach-entry-bar"><i style="width:${pct}%"></i></div>
+      <div class="ach-entry-row"><span class="ach-entry-lbl">${ttT("查看成就步道")}</span><span class="ach-entry-go">${ic("compass")}</span></div>
+    </button>
+    ${nextHtml}`;
+  const bt = $("#achOpen"); if (bt) bt.addEventListener("click", openAchTree);
+}
+// 全螢幕成就步道：整頁的登山步道，節點放大、有標題與總進度
+function openAchTree() {
+  if (document.querySelector('[data-ov="achtree"]')) return;
+  const { got, total, treeHtml } = buildAchTree();
+  const pct = Math.round(got / total * 100);
+  const ov = document.createElement("div"); ov.className = "ach-modal"; ov.dataset.ov = "achtree";
+  ov.innerHTML = `<div class="ach-modal-inner">
+      <div class="ach-modal-head"><button class="sheet-close" id="achClose" aria-label="${ttT("關閉")}">✕</button><div class="ach-modal-h">${ic("medal")} ${ttT("成就步道")}</div>
+        <div class="ach-modal-prog"><span class="amp-n">${got}<small> / ${total}</small></span><div class="amp-bar"><i style="width:${pct}%"></i></div></div></div>
+      <div class="ach-modal-body"><div class="ach-trail big">${treeHtml}</div></div>
+    </div>`;
+  document.body.appendChild(ov);
+  const close = () => ov.remove();
+  ov.querySelector("#achClose").addEventListener("click", close);
+  ov.addEventListener("click", e => { if (e.target === ov) close(); });
+}
+// DEBUG 解鎖/重置成就後，若成就步道頁開著也一起刷新
+function refreshAchTree() { const ov = document.querySelector('[data-ov="achtree"]'); if (!ov) return; const t = ov.querySelector(".ach-modal-body .ach-trail"); if (t) t.innerHTML = buildAchTree().treeHtml; }
 // 夥伴手冊：進化圖鑑 + 成就徽章
 function openPetDex() {
   if (document.querySelector('[data-ov="petdex"]')) return;   // 防連點疊層

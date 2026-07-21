@@ -131,6 +131,8 @@ const I18n = (() => {
     "GPX 匯入 / 匯出": "GPX import / export",
     // 生態區塊（物種名維持中文，見 scripts/i18n-ignore.json）
     "生態": "Ecology",
+    "點開成就步道，沿路解鎖里程、爬升、連續天數等徽章，永久保留。": "Open the achievement trail and unlock badges for distance, ascent, day streaks and more along the way — kept forever.",
+    "成就步道": "Achievement trail", "查看成就步道": "View achievement trail",
     "已達成": "Achieved", "即將解鎖": "Almost there",
     "分鐘後可餵": "min to feed",
     "走路就能養夥伴！從一顆蛋一路進化，牠會隨心情露出表情，還能點牠、餵食、裝扮。": "Raise a buddy just by walking! It evolves from an egg, shows moods, and you can pet, feed and dress it up.",

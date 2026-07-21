@@ -4324,7 +4324,7 @@ window.ttDebug = (() => {
       // 補足完成 20 條（步道收藏家）：不足就再補一般步道
       let doneN = all.filter(t => Store.trailLog(t.id).done).length;
       for (const t of all) { if (doneN >= 22) break; if (!Store.trailLog(t.id).done) { Store.setTrailLog(t.id, { done: true }); doneN++; } }
-      checkPetEvolve(); refresh(); try { renderBadges(); } catch (e) { /* */ }
+      checkPetEvolve(); refresh(); try { renderBadges(); if (typeof refreshAchTree === "function") refreshAchTree(); } catch (e) { /* */ }
       return "已解鎖全部成就 🏅";
     },
     // 重置成就：清掉解鎖用的測試行程/完成紀錄，並清空永久解鎖名單(tt_badges_got)→ 徽章真的會重新上鎖
@@ -4333,7 +4333,7 @@ window.ttDebug = (() => {
       Store.setRecords(kept);
       localStorage.removeItem("tt_log");
       localStorage.removeItem("tt_badges_got");   // 關鍵：不清這個，永久解鎖名單會讓徽章一直亮著
-      checkPetEvolve(); refresh(); try { renderBadges(); } catch (e) { /* */ }
+      checkPetEvolve(); refresh(); try { renderBadges(); if (typeof refreshAchTree === "function") refreshAchTree(); } catch (e) { /* */ }
       return "已重置成就（完成/測試行程/永久解鎖名單已清空）";
     },
     // 重置每日任務：清掉今日領獎旗標 + 移除今天的行程，讓三項任務進度歸零可重測
@@ -4350,7 +4350,7 @@ window.ttDebug = (() => {
       Store.clearRecords();
       localStorage.setItem("tt_pet_base", "0");
       localStorage.removeItem("tt_pet_feedkm");
-      checkPetEvolve(); refresh(); try { renderBadges(); } catch (e) { /* */ }
+      checkPetEvolve(); refresh(); try { renderBadges(); if (typeof refreshAchTree === "function") refreshAchTree(); } catch (e) { /* */ }
       return "已清空所有行程記錄";
     },
     state() { return { 成長km: +totalKm().toFixed(2), 等級: petStageIndex(totalKm()) + 1, 果實: berriesBalance(), 愛心: petHearts(), 親密度: affinity(), 今日km: +todayKm().toFixed(1), 出行次數: realRecords().length, debug里程: debugKm() }; },
@@ -4489,8 +4489,8 @@ function onboarding(force, opts) {
       p: "走路就能養夥伴！從一顆蛋一路進化，牠會隨心情露出表情，還能點牠、餵食、裝扮。" },
     { view: "pet", sel: "#petFeed", e: "🍎", h: "餵食與果實",
       p: "每天餵夥伴補活力；走路和每日任務會賺果實，還能到「好友的夥伴」送果實給山友。" },
-    { view: "pet", sel: "#petBadges .section-title", e: "🏅", h: "成就系統",
-      p: "成就樹：里程、爬升、連續天數等達標就解鎖徽章，永久保留。" },
+    { view: "pet", sel: "#petBadges", e: "🏅", h: "成就系統",
+      p: "點開成就步道，沿路解鎖里程、爬升、連續天數等徽章，永久保留。" },
     { view: "me", sel: "#meMonth", e: "📅", h: "健行日曆",
       p: "看你本月的里程、連續天數與健行日曆。" },
     { view: "me", sel: "#meStats", e: "📊", h: "我的足跡",
