@@ -1873,35 +1873,45 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 .ach3d-cloud::before { width: 60%; height: 150%; left: 12%; top: -55%; }
 .ach3d-cloud::after { width: 45%; height: 130%; right: 14%; top: -38%; }
 @keyframes ach3dDrift { to { transform: translateX(calc(100vw + 260px)); } }
-/* 可捲動的攀登場景 */
-.ach3d { position: absolute; inset: 0; z-index: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
-.ach-climb-scene { position: relative; width: 100%; }
-.ach-climb-mtn { display: block; width: 100%; height: auto; filter: drop-shadow(0 -2px 10px rgba(0,0,0,.12)); }
+/* 五段攀登分頁：一頁一段海拔 */
+.ach-pager { position: absolute; left: 0; right: 0; top: 0; bottom: 58px; z-index: 1; overflow: hidden; touch-action: pan-y; }
+.ach-page { position: absolute; inset: 0; animation: achPageIn .42s cubic-bezier(.2,.8,.2,1); }
+.ach-page.up { animation: achPageUp .42s cubic-bezier(.2,.8,.2,1); }
+.ach-page.down { animation: achPageDown .42s cubic-bezier(.2,.8,.2,1); }
+@keyframes achPageIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes achPageUp { from { opacity: 0; transform: translateY(48px); } to { opacity: 1; transform: none; } }
+@keyframes achPageDown { from { opacity: 0; transform: translateY(-48px); } to { opacity: 1; transform: none; } }
+.ach-page-mtn { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* 章節標籤（本段海拔） */
+.ach-pgtag { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 6; display: flex; align-items: center; gap: 6px; font-family: var(--serif); font-weight: 800; font-size: calc(16px * var(--fs, 1)); letter-spacing: 3px; color: #fff; background: rgba(30,42,28,.42); padding: 5px 16px; border-radius: 999px; backdrop-filter: blur(3px); text-shadow: 0 1px 4px rgba(0,0,0,.4); }
+.ach-pgtag .ic { width: 19px; height: 19px; }
+.ach-pgtag, .ach-hiker { pointer-events: none; }
+.ach-pgtag i { font-style: normal; font-family: var(--num); font-weight: 700; font-size: .74em; opacity: .82; letter-spacing: 0; margin-left: 2px; }
 /* 山腳啟程 / 峰頂傳說 里程碑 */
 .ach-head, .ach-peak { position: absolute; transform: translate(-50%, -50%); z-index: 4; display: flex; flex-direction: column; align-items: center; gap: 2px; pointer-events: none; text-shadow: 0 1px 5px rgba(0,0,0,.5); }
 .ach-head b, .ach-peak b { font-family: var(--serif); font-weight: 800; font-size: calc(16px * var(--fs, 1)); color: #fff; letter-spacing: 2px; }
 .ach-head .ic, .ach-peak .ic { width: 26px; height: 26px; color: #fff; filter: drop-shadow(0 1px 3px rgba(0,0,0,.4)); }
 .ach-peak .ic { width: 34px; height: 34px; color: #f4d787; }
 .ach-peak { z-index: 6; }
-/* 階層區段路牌 */
-.ach-sign { position: absolute; transform: translateY(-50%); z-index: 4; font-family: var(--serif); font-weight: 700; font-size: calc(12px * var(--fs, 1)); color: #fff; background: rgba(60,74,52,.72); padding: 3px 10px; border-radius: 7px; backdrop-filter: blur(2px); box-shadow: 0 2px 6px rgba(0,0,0,.2); white-space: nowrap; }
-.ach-sign.l { margin-left: 30px; } .ach-sign.r { transform: translate(-100%, -50%); margin-left: -30px; }
-/* 雲海（隨場景捲動，標高於雲上） */
-.ach-cloudsea { position: absolute; left: -6%; right: -6%; height: 78px; transform: translateY(-50%); z-index: 5; pointer-events: none; }
-.ach-cloudsea span { position: absolute; background: #f4f8fc; border-radius: 60px; box-shadow: 0 10px 26px rgba(80,100,120,.2); opacity: .95; }
-.ach-cloudsea span:nth-child(1) { left: 0; top: 22px; width: 44%; height: 46px; }
-.ach-cloudsea span:nth-child(2) { left: 30%; top: 6px; width: 46%; height: 62px; }
-.ach-cloudsea span:nth-child(3) { left: 62%; top: 26px; width: 40%; height: 44px; }
-.ach-cloudsea span:nth-child(4) { left: 44%; top: 40px; width: 30%; height: 34px; opacity: .8; }
-:root[data-theme="dark"] .ach-cloudsea span, .ach-climb-sky.night ~ .ach3d .ach-cloudsea span { background: #c8d2df; opacity: .82; }
+/* 右側海拔圓點 */
+.ach-pgdots { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); z-index: 8; display: flex; flex-direction: column; gap: 10px; }
+.ach-pgdot { width: 11px; height: 11px; border-radius: 50%; border: 2px solid rgba(255,255,255,.85); background: transparent; padding: 0; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .2s; }
+.ach-pgdot.on { background: #fff; transform: scale(1.35); }
+/* 頁尾導覽 */
+.ach-pgnav { position: absolute; left: 0; right: 0; bottom: 0; height: 58px; z-index: 9; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 12px; background: var(--surface); border-top: 1px solid var(--line-soft); }
+.ach-pgnav-t { font-family: var(--serif); font-weight: 700; font-size: calc(15px * var(--fs, 1)); color: var(--ink); letter-spacing: 2px; }
+.ach-pgbtn { display: inline-flex; align-items: center; gap: 5px; border: none; background: var(--surface-2); color: var(--ink-soft); font-family: var(--serif); font-weight: 700; font-size: calc(13px * var(--fs, 1)); padding: 9px 12px; border-radius: 999px; cursor: pointer; }
+.ach-pgbtn.up { background: var(--accent); color: #fff; }
+.ach-pgbtn .ic { width: 17px; height: 17px; }
+.ach-pgbtn:disabled { opacity: .32; cursor: default; }
 /* 你在這 小腳印 */
-.ach-hiker { position: absolute; transform: translate(-50%, -100%); z-index: 8; display: flex; flex-direction: column; align-items: center; animation: achHikerBob 1.8s ease-in-out infinite; }
+.ach-hiker { position: absolute; transform: translate(-50%, -100%); z-index: 7; display: flex; flex-direction: column; align-items: center; animation: achHikerBob 1.8s ease-in-out infinite; }
 .ach-hiker-b { font-family: var(--serif); font-weight: 700; font-size: calc(11px * var(--fs, 1)); color: #fff; background: var(--accent); padding: 2px 9px; border-radius: 999px; box-shadow: 0 2px 6px rgba(0,0,0,.25); white-space: nowrap; }
 .ach-hiker-pin { width: 30px; height: 30px; margin-top: -1px; display: grid; place-items: center; color: var(--accent); }
 .ach-hiker-pin .ic { width: 22px; height: 22px; filter: drop-shadow(0 2px 3px rgba(0,0,0,.3)); }
 @keyframes achHikerBob { 0%, 100% { transform: translate(-50%, -100%); } 50% { transform: translate(-50%, calc(-100% - 5px)); } }
 /* 步道節點 */
-.ach-climb-marks { position: absolute; inset: 0; z-index: 7; }
+.ach-climb-marks { position: absolute; inset: 0; z-index: 5; }
 .ach3d-mk { position: absolute; border: none; background: none; padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; transform: translate(-50%, -50%); }
 .ach3d-mk .ach-dot { width: 46px; height: 46px; }
 .ach3d-mk.locked .ach-dot { opacity: .96; }

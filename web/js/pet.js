@@ -433,47 +433,50 @@ function _achSky() {
   if (h >= 17 && h < 19) return { sky: "linear-gradient(180deg,#e78a58 0%,#f0b489 40%,#e6d6bd 100%)", orb: "sun", ox: 22, oy: 78, oc: "#ff9a52", night: false };
   return { sky: "linear-gradient(180deg,#1a2740 0%,#26334c 46%,#33415c 100%)", orb: "moon", ox: 76, oy: 58, oc: "#eaeef6", night: true };
 }
-// —— 直向攀登步道幾何：t=0 山腳「啟程」→ t=1 峰頂「傳說」——
-const ACH_SW = 360, ACH_SH = 1560, ACH_YB = 1470, ACH_YT = 96, ACH_CLOUD = 0.80;
-function _achTX(t) { return 180 + Math.sin(t * Math.PI * 5.2 + 0.35) * (20 + 96 * Math.pow(1 - t, 0.9)); }
-function _achTY(t) { return ACH_YB - t * (ACH_YB - ACH_YT); }
-// 一座真的山：不規則山稜＋往上收窄＋雪冠＋陰影面＋遠山縱深＋之字步道
-function _achMtnScene(night) {
-  const halfW = t => 8 + 168 * Math.pow(1 - t, 0.72);
-  const jag = (t, ph) => 9 * Math.sin(t * 17 + ph) + 5 * Math.sin(t * 33 + ph * 1.7);
-  const N = 52, L = [], Rr = [], mid = [];
-  for (let i = 0; i <= N; i++) {
-    const t = i / N, y = +_achTY(t).toFixed(1), hw = halfW(t);
-    L.push([+(180 - hw + jag(t, 0)).toFixed(1), y]);
-    Rr.push([+(180 + hw + jag(t, 2.1)).toFixed(1), y]);
-    mid.push([+(180 + jag(t, 1) * 0.4).toFixed(1), y]);
-  }
-  const P = a => a.map(p => p.join(" ")).join(" L ");
-  const body = `M ${L[0][0]} ${ACH_SH} L ${P(L)} L ${P([...Rr].reverse())} L ${Rr[0][0]} ${ACH_SH} Z`;
-  const shade = `M ${P(mid)} L ${P([...Rr].reverse())} Z`;
-  const snowI = L.map((_, i) => i).filter(i => i / N >= 0.85);
-  const snow = `M ${P(snowI.map(i => L[i]))} L ${P(snowI.map(i => Rr[i]).reverse())} Z`;
-  const g = night
-    ? [["#2c4531", 0], ["#334c37", .5], ["#3c4a3d", .78], ["#464552", .9], ["#5a5a64", 1]]
-    : [["#5c8746", 0], ["#6f9455", .5], ["#87895a", .78], ["#a8977a", .9], ["#cdb995", 1]];
-  const stops = g.map(([c, o]) => `<stop offset="${o * 100}%" stop-color="${c}"/>`).join("");
-  const snowC = night ? "#c2ccd8" : "#f3f6ef", shadeC = night ? "#000814" : "#1c3320", far = night ? "#39485c" : "#a7bfce";
-  const fy = _achTY(0.83);
-  const farM = `<path d="M20 ${fy} L96 ${(fy - 96).toFixed(1)} L168 ${(fy - 34).toFixed(1)} L236 ${(fy - 116).toFixed(1)} L340 ${fy} Z" fill="${far}" opacity=".55"/>`;
-  return `<defs><linearGradient id="achMtnG" x1="0" y1="1" x2="0" y2="0"><stop offset="0%" stop-color="${g[0][0]}"/>${stops}</linearGradient></defs>
-    ${farM}
-    <path d="${body}" fill="url(#achMtnG)"/>
-    <path d="${shade}" fill="${shadeC}" opacity="${night ? .3 : .1}"/>
-    <path d="${snow}" fill="${snowC}"/>
-    ${_achTrailSvg(night)}`;
-}
-function _achTrailSvg(night) {
+// —— 五段攀登：一頁一段海拔（0 山腳啟程 → 4 雲上傳說），一頁頁往上爬 ——
+const ACH_NPG = 5, ACH_PGN = 6, PAGE_W = 360, PAGE_H = 660, PAGE_PAD = 48;
+const ACH_PG_IC = ["footprints", "leaf", "mountain", "trophy", "crown"];
+const ACH_PG_TITLE = ["啟程", "入山", "登高", "攻頂", "傳說"];   // 皆為既有 i18n 詞條
+// 頁內之字步道：u=0 底→u=1 頂（頂頁攻峰所以較短）
+function _achUX(u, band) { return 180 + Math.sin(u * Math.PI * 3) * 88 * (1 - 0.14 * band); }
+function _achUY(u, topY) { return PAGE_H - PAGE_PAD - u * (PAGE_H - PAGE_PAD - topY); }
+function _achPgTopY(p) { return p === 4 ? 190 : PAGE_PAD; }
+function _achPgTrail(p, night) {
+  const band = p / 4, topY = _achPgTopY(p);
+  const casing = night ? "#463724" : "#795d36", pc = night ? "#8a7350" : "#d8b878", dash = night ? "#b7a074" : "#fff3d6";
   let d = "";
-  for (let i = 0; i <= 96; i++) { const t = i / 96; d += (i ? "L" : "M") + _achTX(t).toFixed(1) + " " + _achTY(t).toFixed(1) + " "; }
-  const casing = night ? "#463724" : "#795d36", path = night ? "#8a7350" : "#d8b878", dash = night ? "#b7a074" : "#fff3d6";
-  return `<path d="${d}" fill="none" stroke="${casing}" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="${d}" fill="none" stroke="${path}" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="${d}" fill="none" stroke="${dash}" stroke-width="2.6" stroke-linecap="round" stroke-dasharray="1 13" opacity=".85"/>`;
+  for (let i = 0; i <= 60; i++) { const u = i / 60; d += (i ? "L" : "M") + _achUX(u, band).toFixed(1) + " " + _achUY(u, topY).toFixed(1) + " "; }
+  return `<path d="${d}" fill="none" stroke="${casing}" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${pc}" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${dash}" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="1 12" opacity=".85"/>`;
+}
+// 單頁山景 SVG：低海拔綠坡+樹 → 中段岩稜+遠山 → 高處殘雪 → 峰頂雪峰+雲海
+function _achPgSVG(p, night) {
+  const g = night ? ["#2c4531", "#37503a", "#45503f"] : ["#5c8746", "#6f9455", "#8f8d5a"];
+  const rock = night ? "#4a4a52" : "#9a8f7a", rockL = night ? "#5a5a63" : "#b3a790";
+  const snow = night ? "#c2ccd8" : "#f3f6ef", far = night ? "#39485c" : "#a7bfce";
+  const contour = night ? "#000" : "#3f5a34", trunk = night ? "#3a2c1c" : "#6b4d2e";
+  const gid = `apg${p}`;
+  const defs = `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${g[0]}"/><stop offset=".55" stop-color="${g[1]}"/><stop offset="1" stop-color="${g[2]}"/></linearGradient></defs>`;
+  let far2 = "", bg = "", surf = "", peak = "", cloudsea = "";   // far2=遠景(在山體後)、surf=山面裝飾(在山體前)
+  if (p < 4) {
+    const ry = [-0.08, -0.04, 0.16, 0.34][p] * PAGE_H;
+    if (p >= 2) far2 += `<path d="M-10 ${(ry + 24).toFixed(1)} L70 ${(ry - 72).toFixed(1)} L150 ${(ry - 4).toFixed(1)} L232 ${(ry - 86).toFixed(1)} L340 ${(ry - 2).toFixed(1)} L372 ${(ry + 24).toFixed(1)} Z" fill="${far}" opacity=".5"/>`;
+    let d = `M-10 ${PAGE_H + 10} L-10 ${ry.toFixed(1)} `;
+    for (let x = 0; x <= 360; x += 24) { const jy = ry + Math.sin(x * 0.07 + p) * 11 + Math.sin(x * 0.021) * 8; d += `L${x} ${jy.toFixed(1)} `; }
+    d += `L372 ${ry.toFixed(1)} L372 ${PAGE_H + 10} Z`;
+    bg = `<path d="${d}" fill="url(#${gid})"/>`;
+    for (let k = 1; k <= 3; k++) { const yy = ry + (PAGE_H - ry) * (k / 4); bg += `<path d="M0 ${yy.toFixed(1)} q90 ${18 - k * 4} 180 0 t180 0" fill="none" stroke="${contour}" stroke-width="2" opacity=".12"/>`; }
+    if (p <= 1) [[44, .78], [316, .7], [70, .46], [304, .36], [40, .22]].forEach(([x, u]) => { const y = ry + (PAGE_H - ry) * u; surf += `<rect x="${x - 2.5}" y="${(y + 30).toFixed(1)}" width="5" height="9" fill="${trunk}"/><path d="M${x} ${y.toFixed(1)} l-12 27 h24 Z" fill="${night ? "#28402c" : "#3f6a3c"}"/><path d="M${x} ${(y + 11).toFixed(1)} l-14 25 h28 Z" fill="${night ? "#2f4a32" : "#478046"}"/>`; });
+    if (p >= 2) [[58, .68], [306, .52], [52, .34], [310, .22]].forEach(([x, u]) => { const y = ry + (PAGE_H - ry) * u; surf += `<ellipse cx="${x}" cy="${y.toFixed(1)}" rx="17" ry="11" fill="${rock}"/><ellipse cx="${x - 5}" cy="${(y - 3).toFixed(1)}" rx="8" ry="5" fill="${rockL}"/>`; });
+    if (p === 3) { surf += `<ellipse cx="86" cy="${(ry + 40).toFixed(1)}" rx="70" ry="18" fill="#fff" opacity=".5"/><ellipse cx="288" cy="${(ry + 72).toFixed(1)}" rx="78" ry="20" fill="#fff" opacity=".45"/>`;[[130, .3], [248, .52], [180, .12]].forEach(([x, u]) => { const y = ry + (PAGE_H - ry) * u; surf += `<path d="M${x - 30} ${y.toFixed(1)} q30 -17 60 0 q-30 10 -60 0Z" fill="${snow}" opacity=".92"/>`; }); }
+  } else {
+    far2 += `<path d="M-10 472 L60 404 L120 460 Z" fill="${far}" opacity=".5"/><path d="M250 468 L322 398 L382 472 Z" fill="${far}" opacity=".5"/>`;
+    peak = `<path d="M64 ${PAGE_H} L150 258 L180 150 L214 250 L306 ${PAGE_H} Z" fill="url(#${gid})"/>
+      <path d="M150 258 L180 150 L214 250 L196 256 L180 208 L166 258 Z" fill="${snow}"/>
+      <path d="M180 150 L214 250 L200 256 L180 200 Z" fill="${night ? "#000814" : "#20361f"}" opacity=".18"/>`;
+    const cy = PAGE_H * 0.62;
+    cloudsea = `<g><ellipse cx="70" cy="${(cy + 10).toFixed(1)}" rx="140" ry="42" fill="${night ? "#c4cfdc" : "#eef4fa"}"/><ellipse cx="262" cy="${cy.toFixed(1)}" rx="150" ry="46" fill="${night ? "#cdd6e2" : "#fbfdff"}"/><ellipse cx="180" cy="${(cy + 28).toFixed(1)}" rx="185" ry="40" fill="${night ? "#c8d2df" : "#f4f8fc"}"/></g>`;
+  }
+  return `<svg class="ach-page-mtn" viewBox="0 0 ${PAGE_W} ${PAGE_H}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${defs}${far2}${bg}${surf}${peak}${cloudsea}${_achPgTrail(p, night)}</svg>`;
 }
 const _ACH_UP = `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>`;
 // 成就詳情彈卡（點節點顯示）
@@ -490,7 +493,7 @@ function showAchDetail(b) {
   box.classList.add("show");
   box.querySelector(".ach3d-dx").addEventListener("click", () => box.classList.remove("show"));
 }
-// 全螢幕成就頁：直向攀登步道（往上滑爬山、日夜天空、雲海、點成就看詳情）
+// 全螢幕成就頁：五段攀登（一頁一段海拔，山腳啟程→雲上傳說；日夜天空、點成就看詳情）
 function openAchTree() {
   if (document.querySelector('[data-ov="achtree"]')) return;
   const { got, total } = buildAchTree();
@@ -501,8 +504,9 @@ function openAchTree() {
         <div class="ach-modal-prog"><span class="amp-n">${got}<small> / ${total}</small></span><div class="amp-bar"><i style="width:${pct}%"></i></div></div></div>
       <div class="ach-modal-body">
         <div class="ach-climb-sky"></div>
-        <div class="ach3d" id="ach3d"></div>
-        <div class="ach3d-hint">${_ACH_UP} ${ttT("往上滑攀登")}</div>
+        <div class="ach-pager" id="ach3d"></div>
+        <div class="ach-pgdots"></div>
+        <div class="ach-pgnav"></div>
         <div class="ach3d-detail"></div>
       </div>
     </div>`;
@@ -510,61 +514,77 @@ function openAchTree() {
   const close = () => ov.remove();
   ov.querySelector("#achClose").addEventListener("click", close);
   ov.addEventListener("click", e => { if (e.target === ov) close(); });
-  _achInitClimb(ov.querySelector("#ach3d"), ov.querySelector(".ach-climb-sky"));
+  _achInitClimb(ov);
 }
-// 建立攀登場景：山＋步道靜態，節點沿步道依序排，開場捲到「你在這」
-function _achInitClimb(root, skyEl) {
+// 五段攀登控制器：頁 0 山腳 → 頁 4 雲上；上下切換、開場落在「你在這」那頁
+function _achInitClimb(ov) {
+  if (!ov) return;
+  const root = ov.querySelector("#ach3d"), skyEl = ov.querySelector(".ach-climb-sky");
   if (!root) return;
-  const list = petBadges();
+  const list = petBadges(), sky = _achSky();
   const nextUp = list.filter(b => !b.got && b.p && b.p[1] > 0).map(b => ({ b, r: Math.min(1, b.p[0] / b.p[1]) })).sort((a, b) => b.r - a.r);
   const allGot = list.every(b => b.got);
   const hereNm = nextUp[0] ? nextUp[0].b.n : (allGot ? list[list.length - 1].n : (list.find(b => !b.got) || {}).n);
-  const N = list.length, sky = _achSky();
-  const px = x => (x / ACH_SW * 100).toFixed(2) + "%", py = y => (y / ACH_SH * 100).toFixed(2) + "%";
-  // 節點沿步道依序（list 已按階層排）：t 從山腳到峰頂
-  const nodes = list.map((b, i) => { const t = 0.05 + (i + 0.5) / N * 0.9; return { b, t, x: _achTX(t), y: _achTY(t) }; });
-  const here = nodes.find(n => n.b.n === hereNm) || nodes[0];
-  // 天空背景（不隨捲動）：日夜漸層＋日/月＋夜星＋遠處飄雲
+  const hereIdx = Math.max(0, list.findIndex(b => b.n === hereNm));
+  // 天空背景（日夜）
   if (skyEl) {
-    const stars = sky.night ? Array.from({ length: 26 }, (_, i) => `<span class="ach3d-star" style="left:${(i * 37 % 96) + 2}%;top:${(i * 19 % 60)}%;--dl:${(i % 5) * 0.4}s"></span>`).join("") : "";
+    const stars = sky.night ? Array.from({ length: 26 }, (_, i) => `<span class="ach3d-star" style="left:${(i * 37 % 96) + 2}%;top:${(i * 19 % 62)}%;--dl:${(i % 5) * 0.4}s"></span>`).join("") : "";
     skyEl.className = "ach-climb-sky" + (sky.night ? " night" : "");
     skyEl.style.background = sky.sky;
     skyEl.innerHTML = `<div class="ach-climb-orb ${sky.orb}" style="left:${sky.ox}%;top:${sky.oy + 8}px;background:${sky.oc}"></div>
       <div class="ach3d-stars">${stars}</div>
-      <div class="ach3d-cloud" style="top:16%;--d:46s;--s:.9"></div>
-      <div class="ach3d-cloud" style="top:30%;--d:62s;--s:.68;animation-delay:-22s"></div>`;
+      <div class="ach3d-cloud" style="top:14%;--d:46s;--s:.9"></div>
+      <div class="ach3d-cloud" style="top:28%;--d:62s;--s:.66;animation-delay:-22s"></div>`;
   }
-  // 各階層第一個節點放區段路牌（入山/登高/縱走/攻頂）
-  const tierFirst = {}; nodes.forEach(n => { if (!(n.b.t in tierFirst)) tierFirst[n.b.t] = n; });
-  const signs = [2, 3, 4, 5].map(ti => { const n = tierFirst[ti]; if (!n) return ""; const side = _achTX(n.t) < 180 ? "l" : "r"; return `<div class="ach-sign ${side}" style="left:${px(n.x)};top:${py(n.y - 26)}">${ttT(ACH_TIERS[ti - 1])}</div>`; }).join("");
-  root.innerHTML = `<div class="ach-climb-scene">
-      <svg class="ach-climb-mtn" viewBox="0 0 ${ACH_SW} ${ACH_SH}" preserveAspectRatio="xMidYMin meet" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${_achMtnScene(sky.night)}</svg>
-      <div class="ach-cloudsea" style="top:${py(_achTY(ACH_CLOUD))}"><span></span><span></span><span></span><span></span></div>
-      <div class="ach-peak" style="left:50%;top:${py(_achTY(0.995) - 24)}">${ic("crown")}<b>${ttT("傳說")}</b></div>
-      <div class="ach-head" style="left:${px(_achTX(0.006))};top:${py(_achTY(0) + 18)}">${ic("footprints")}<b>${ttT("啟程")}</b></div>
-      ${signs}
-      <div class="ach-climb-marks"></div>
-      <div class="ach-hiker" style="left:${px(here.x)};top:${py(here.y - 42)}"><span class="ach-hiker-b">${ttT("你在這")}</span><span class="ach-hiker-pin">${ic("footprints")}</span></div>
-    </div>`;
-  const mc = root.querySelector(".ach-climb-marks");
-  nodes.forEach(n => {
-    const cat = _achCat(n.b), el = document.createElement("button");
-    el.className = `ach3d-mk ${n.b.got ? "got" : "locked"}${n.b.n === hereNm ? " here" : ""}`;
-    el.style.left = px(n.x); el.style.top = py(n.y);
-    el.style.setProperty("--c", cat.col); el.style.setProperty("--pct", _achPct(n.b));
-    el.innerHTML = `<span class="ach-dot"><span class="ach-dot-in">${ic(cat.i)}</span>${n.b.got ? `<span class="ach-check">${_ACH_CHK}</span>` : ""}</span>`;
-    el.addEventListener("click", e => { e.stopPropagation(); showAchDetail(n.b); });
-    mc.appendChild(el);
+  let cur = 0;   // 一開始永遠在山腳「啟程」，一頁頁往上爬（「你在這」仍標在對應那頁）
+  const dotsEl = ov.querySelector(".ach-pgdots"), navEl = ov.querySelector(".ach-pgnav");
+  // 右側海拔圓點（下＝啟程、上＝傳說）
+  dotsEl.innerHTML = Array.from({ length: ACH_NPG }, (_, i) => `<button class="ach-pgdot" data-pg="${i}" aria-label="${ttT(ACH_PG_TITLE[i])}"></button>`).reverse().join("");
+  function render(dir) {
+    const p = cur, band = p / 4, topY = _achPgTopY(p);
+    const nodes = list.slice(p * ACH_PGN, p * ACH_PGN + ACH_PGN).map((b, j) => { const u = 0.085 + j * 0.166; return { b, u, x: _achUX(u, band), y: _achUY(u, topY) }; });
+    const px = x => (x / PAGE_W * 100).toFixed(2) + "%", py = y => (y / PAGE_H * 100).toFixed(2) + "%";
+    const here = nodes.find(n => n.b.n === hereNm);
+    const headL = p === 0 ? `<div class="ach-head" style="left:${px(_achUX(0, band))};top:${py(_achUY(0, topY) + 26)}">${ic("footprints")}<b>${ttT("啟程")}</b></div>` : "";
+    const peakL = p === 4 ? `<div class="ach-peak" style="left:50%;top:${py(150 - 66)}">${ic("crown")}<b>${ttT("傳說")}</b></div>` : "";
+    const hikerL = here ? `<div class="ach-hiker" style="left:${px(here.x)};top:${py(here.y - 40)}"><span class="ach-hiker-b">${ttT("你在這")}</span><span class="ach-hiker-pin">${ic("footprints")}</span></div>` : "";
+    root.innerHTML = `<div class="ach-page ${dir || ""}">
+        ${_achPgSVG(p, sky.night)}
+        <div class="ach-pgtag">${ic(ACH_PG_IC[p])} ${ttT(ACH_PG_TITLE[p])}<i>${p + 1}/${ACH_NPG}</i></div>
+        ${peakL}${headL}${hikerL}
+        <div class="ach-climb-marks"></div>
+      </div>`;
+    const mc = root.querySelector(".ach-climb-marks");
+    nodes.forEach(n => {
+      const cat = _achCat(n.b), el = document.createElement("button");
+      el.className = `ach3d-mk ${n.b.got ? "got" : "locked"}${n.b.n === hereNm ? " here" : ""}`;
+      el.style.left = px(n.x); el.style.top = py(n.y);
+      el.style.setProperty("--c", cat.col); el.style.setProperty("--pct", _achPct(n.b));
+      el.innerHTML = `<span class="ach-dot"><span class="ach-dot-in">${ic(cat.i)}</span>${n.b.got ? `<span class="ach-check">${_ACH_CHK}</span>` : ""}</span>`;
+      el.addEventListener("click", e => { e.stopPropagation(); showAchDetail(n.b); });
+      mc.appendChild(el);
+    });
+    dotsEl.querySelectorAll(".ach-pgdot").forEach(d => d.classList.toggle("on", +d.dataset.pg === p));
+    navEl.innerHTML = `<button class="ach-pgbtn" data-go="down" ${p === 0 ? "disabled" : ""} aria-label="${ttT("回下方")}"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+      <span class="ach-pgnav-t">${ttT(ACH_PG_TITLE[p])}</span>
+      <button class="ach-pgbtn up" data-go="up" ${p === ACH_NPG - 1 ? "disabled" : ""} aria-label="${ttT("繼續往上")}">${ttT("繼續往上")} ${_ACH_UP}</button>`;
+    ov.dataset.pg = String(p);
+  }
+  function go(p, dir) { p = Math.max(0, Math.min(ACH_NPG - 1, p)); if (p === cur) return; cur = p; render(dir); }
+  dotsEl.addEventListener("click", e => { const d = e.target.closest(".ach-pgdot"); if (d) go(+d.dataset.pg, +d.dataset.pg > cur ? "up" : "down"); });
+  navEl.addEventListener("click", e => { const b = e.target.closest(".ach-pgbtn"); if (!b) return; go(b.dataset.go === "up" ? cur + 1 : cur - 1, b.dataset.go === "up" ? "up" : "down"); });
+  // 上下滑動切頁（往上滑＝往上爬）
+  let sy = 0, sx = 0, tracking = false;
+  root.addEventListener("pointerdown", e => { sy = e.clientY; sx = e.clientX; tracking = true; });
+  root.addEventListener("pointerup", e => {
+    if (!tracking) return; tracking = false;
+    const dy = e.clientY - sy, dx = e.clientX - sx;
+    if (Math.abs(dy) > 46 && Math.abs(dy) > Math.abs(dx)) go(dy < 0 ? cur + 1 : cur - 1, dy < 0 ? "up" : "down");
   });
-  // 開場捲到「你在這」，露出上方還沒爬的步道
-  requestAnimationFrame(() => {
-    const scene = root.querySelector(".ach-climb-scene"); if (!scene) return;
-    const hikerPx = (here.y / ACH_SH) * scene.offsetHeight;
-    root.scrollTop = Math.max(0, hikerPx - root.clientHeight * 0.62);
-  });
+  render();
 }
-// DEBUG 解鎖/重置成就後，若成就頁開著也一起重建攀登場景
-function refreshAchTree() { const ov = document.querySelector('[data-ov="achtree"]'); if (ov) _achInitClimb(ov.querySelector("#ach3d"), ov.querySelector(".ach-climb-sky")); }
+// DEBUG 解鎖/重置成就後，若成就頁開著也一起重建
+function refreshAchTree() { const ov = document.querySelector('[data-ov="achtree"]'); if (ov) _achInitClimb(ov); }
 // 夥伴手冊：進化圖鑑 + 成就徽章
 function openPetDex() {
   if (document.querySelector('[data-ov="petdex"]')) return;   // 防連點疊層

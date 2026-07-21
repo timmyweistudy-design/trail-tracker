@@ -131,6 +131,7 @@ const I18n = (() => {
     "GPX 匯入 / 匯出": "GPX import / export",
     // 生態區塊（物種名維持中文，見 scripts/i18n-ignore.json）
     "生態": "Ecology",
+    "繼續往上": "Climb higher", "回下方": "Go lower",
     "你在這": "You are here", "往上滑攀登": "Swipe up to climb",
     "里程": "Distance", "次數": "Trips", "時刻": "Time of day", "尚未達成": "Not yet", "拖曳旋轉看全部": "Drag to rotate",
     "點開成就步道，沿路解鎖里程、爬升、連續天數等徽章，永久保留。": "Open the achievement trail and unlock badges for distance, ascent, day streaks and more along the way — kept forever.",
