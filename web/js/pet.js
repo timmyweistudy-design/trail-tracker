@@ -69,10 +69,11 @@ function feedPet() {
   const gain = heartsBefore >= 5 ? 0.5 : 0.3;                  // 親密度滿時照顧獎勵更多
   localStorage.setItem("tt_pet_feedkm", String(+(feedBonusKm() + gain).toFixed(2)));
   if (navigator.vibrate) navigator.vibrate([20, 30, 20]);
-  const em = $("#petEmoji"); if (em) { em.classList.remove("tap"); void em.offsetWidth; em.classList.add("tap"); }
   toast(`餵食成功！🍓 親密度上升、照顧 +${gain}km`);
   checkPetEvolve();
   renderPet();
+  const em = $("#petEmoji"); if (em) { void em.offsetWidth; em.classList.add("tap"); }   // 開心扭動
+  petBurst("❤️", 4);   // 一串愛心飄起
 }
 function petStageIndex(km) { let i = 0; for (let k = 0; k < PET_STAGES.length; k++) if (km >= PET_STAGES[k].km) i = k; return i; }
 function petName() { return localStorage.getItem("tt_pet_name") || ""; }
@@ -94,12 +95,28 @@ function weeksStreak() {
 }
 function petMood() {
   const last = realRecords()[0];   // 最新一筆（紀錄為新到舊）
-  if (!last) return { e: "🌙", t: "等你帶牠出門走走" };
+  if (!last) return { e: "🌙", t: "等你帶牠出門走走", k: "sleepy" };
   const d = daysSince(last.date);
-  if (d <= 1) return { e: "😊", t: "剛運動完，活力滿滿！" };
-  if (d <= 4) return { e: "🙂", t: "狀態不錯，隨時能出發" };
-  if (d <= 9) return { e: "🥺", t: "有點想念山林了…" };
-  return { e: "😴", t: "好久沒出門，懶洋洋的" };
+  if (d <= 1) return { e: "😊", t: "剛運動完，活力滿滿！", k: "happy" };
+  if (d <= 4) return { e: "🙂", t: "狀態不錯，隨時能出發", k: "content" };
+  if (d <= 9) return { e: "🥺", t: "有點想念山林了…", k: "longing" };
+  return { e: "😴", t: "好久沒出門，懶洋洋的", k: "sleepy" };
+}
+// 心情小裝飾（角色旁）：呼應對話泡，讓角色本體也「有情緒」
+function petMoodFx(k) { const M = { happy: "✨", sleepy: "💤", longing: "💭" }; return M[k] ? `<span class="pet-fx pet-fx-${k}">${M[k]}</span>` : ""; }
+// 冒出小粒子（點擊/餵食的反應）：從角色位置往上飄
+function petBurst(emoji, n) {
+  const em = document.getElementById("petEmoji"); if (!em) return;
+  const r = em.getBoundingClientRect(); n = n || 3;
+  for (let i = 0; i < n; i++) {
+    const s = document.createElement("span");
+    s.className = "pet-particle"; s.textContent = emoji;
+    s.style.left = (r.left + r.width / 2 + (i - (n - 1) / 2) * 20) + "px";
+    s.style.top = (r.top + r.height * 0.32) + "px";
+    s.style.animationDelay = (i * 0.07) + "s";
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 1200);
+  }
 }
 // 活力：越久沒出門越低，出門健行恢復（約 7 天歸零）
 function energy() {
@@ -189,7 +206,7 @@ function renderPet() {
     <div class="pet-habitat"><span class="pet-ff" style="left:16%;top:24%"></span><span class="pet-ff" style="left:78%;top:18%;animation-delay:2.1s;animation-duration:7.5s"></span><span class="pet-ff" style="left:60%;top:40%;animation-delay:3.4s;animation-duration:5.5s"></span></div>
     <div class="pet-stage">
       <div class="pet-bubble">${mood.e} ${mood.t}</div>
-      <div id="petEmoji" role="img" aria-label="${st.n}">${art}</div>
+      <div id="petEmoji" class="pet-m-${mood.k || "content"}" role="img" aria-label="${st.n}">${art}${petMoodFx(mood.k)}</div>
       <div class="pet-shadow"></div>
       <div class="pet-idline"><span class="pet-name">${nm || st.n}</span><span class="lv-chip lvt-${Math.min(i + 1, 7)} pet-lv-chip">Lv.${i + 1}</span>${(typeof Premium !== "undefined" && Premium.isOn()) ? `<button class="pet-edit" id="petRename" title="命名" aria-label="命名">${ic("pencil")}</button>` : ""}</div>
       <div class="pet-evo"><div class="pet-evo-top">${evoTop}</div>${prog}</div>
@@ -213,6 +230,7 @@ function renderPet() {
   if (em) em.addEventListener("click", () => {
     em.classList.remove("tap"); void em.offsetWidth; em.classList.add("tap");
     if (navigator.vibrate) navigator.vibrate(20);
+    petBurst(["💛", "✨", "🐾"][Math.floor(Math.random() * 3)], 3);
     toast(PET_TAPS[Math.floor(Math.random() * PET_TAPS.length)]);
   });
   $("#petDex").addEventListener("click", openPetDex);

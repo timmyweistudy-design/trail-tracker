@@ -766,6 +766,18 @@ body.navup-on #recMap .leaflet-map-pane { transition: transform .12s linear; }
 @keyframes pctw { 0%,100% { opacity: .5; transform: scale(.9); } 50% { opacity: 1; transform: scale(1.12); } }
 @keyframes petTap { 0% { transform: scale(1); } 35% { transform: scale(1.18) rotate(-6deg); } 70% { transform: scale(.94) rotate(4deg); } 100% { transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .pc-bob,.pc-hover,.pc-eye,.pc-tail,.pc-wing,.pc-tw,.pet-ff { animation: none !important; } }
+/* A1 表情跟心情：改角色眼睛＋角色旁小裝飾 */
+#petEmoji.pet-m-sleepy .pc-eye { transform: scaleY(.28) !important; animation: none !important; }   /* 半瞇不眨＝睏 */
+#petEmoji.pet-m-sleepy .pc-bob { animation-duration: 5.4s; }                                        /* 呼吸放慢 */
+#petEmoji.pet-m-longing .pc-eye { transform: scaleY(1.14) !important; animation: none !important; } /* 水汪汪大眼＝想念 */
+#petEmoji.pet-m-happy .pc-bob { animation-duration: 2.3s; }                                         /* 開心跳快一點 */
+.pet-fx { position: absolute; top: 8%; right: 15%; font-size: calc(21px * var(--fs, 1)); pointer-events: none; z-index: 3; animation: petFxFloat 2.6s ease-in-out infinite; }
+.pet-fx-sleepy { top: 4%; right: 18%; }
+@keyframes petFxFloat { 0%,100% { transform: translateY(0) rotate(-4deg); opacity: .8; } 50% { transform: translateY(-6px) rotate(4deg); opacity: 1; } }
+/* A2 反應：點擊/餵食冒出的小粒子 */
+.pet-particle { position: fixed; font-size: 23px; line-height: 1; pointer-events: none; z-index: 95; transform: translateX(-50%); animation: petParticle 1.15s ease-out forwards; will-change: transform, opacity; }
+@keyframes petParticle { 0% { opacity: 0; transform: translate(-50%, 0) scale(.4); } 18% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -54px) scale(1.15); } }
+@media (prefers-reduced-motion: reduce) { .pet-fx, .pet-particle { animation: none !important; } }
 
 /* 夥伴手冊 */
 .pet-modal { position: fixed; inset: 0; z-index: 80; background: rgba(16,28,18,.6); backdrop-filter: blur(4px); display: grid; place-items: center; padding: 20px; animation: fadein .25s; }
