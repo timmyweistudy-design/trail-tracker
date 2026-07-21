@@ -419,24 +419,93 @@ function renderBadges() {
     ${nextHtml}`;
   const bt = $("#achOpen"); if (bt) bt.addEventListener("click", openAchTree);
 }
-// 全螢幕成就步道：整頁的登山步道，節點放大、有標題與總進度
+// —— 成就山景輔助 ——
+function _achCat(b) { return ACH_CAT[b.c] || ACH_CAT.trips; }
+function _achPct(b) { return b.got ? 100 : (b.p && b.p[1] ? Math.min(100, Math.round(b.p[0] / b.p[1] * 100)) : 0); }
+function _achFmt(v, u) { return u === "km" ? v.toFixed(1) : String(Math.round(v)); }
+function _achStat(b) { return b.got ? ttT("已達成") : (b.p ? `${_achFmt(b.p[0], b.p[2])} / ${b.p[1]} ${ttT(b.p[2])}` : b.d); }
+// 山的 SVG（viewBox 0 0 100 H，preserveAspectRatio none 撐滿；半 3D＝亮面／暗面＋雪冠＋遠山）
+function _achMountain(H, peakY) {
+  const bY = H, midL = H * 0.5;
+  return `
+    <defs>
+      <linearGradient id="ach-lit" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#6f8f5c"/><stop offset="1" stop-color="#5a7a49"/></linearGradient>
+      <linearGradient id="ach-shd" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3f5a38"/><stop offset="1" stop-color="#31492d"/></linearGradient>
+    </defs>
+    <path d="M0 ${peakY + 120} L18 ${peakY + 40} L34 ${peakY + 95} L50 ${peakY + 25} L66 ${peakY + 90} L84 ${peakY + 30} L100 ${peakY + 100} L100 ${bY} L0 ${bY}Z" fill="#8fa588" opacity=".5"/>
+    <path d="M3 ${bY} L50 ${peakY} L50 ${bY}Z" fill="url(#ach-lit)"/>
+    <path d="M50 ${peakY} L97 ${bY} L50 ${bY}Z" fill="url(#ach-shd)"/>
+    <path d="M50 ${peakY} L36 ${peakY + 46} q14 8 28 0Z" fill="#f4f6ef"/>
+    <path d="M50 ${peakY} L44 ${peakY + 22} l6 -4 l6 6Z" fill="#e8ecdf"/>
+    <path d="M14 ${bY} l7 -22 l7 22Z M30 ${bY} l6 -18 l6 18Z M74 ${bY} l6 -18 l6 18Z M88 ${bY} l6 -20 l6 20Z" fill="#2f4a2c"/>`;
+}
+// 產生整座山＋步道＋節點（山腳=啟程 → 山頂=傳說，越上面越難）
+function achSceneHtml() {
+  const list = petBadges();
+  const nextUp = list.filter(b => !b.got && b.p && b.p[1] > 0).map(b => ({ b, r: Math.min(1, b.p[0] / b.p[1]) })).sort((a, b) => b.r - a.r);
+  const hereNm = nextUp[0] ? nextUp[0].b.n : null;
+  const CHK = `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>`;
+  // 由山腳往山頂堆 items（每階：紋章＋徽章）
+  const items = [];
+  ACH_TIERS.forEach((name, i) => {
+    const bs = list.filter(b => b.t === i + 1), g = bs.filter(b => b.got).length;
+    const prevCleared = i === 0 || list.filter(b => b.t === i).every(b => b.got);
+    items.push({ tier: true, name, g, total: bs.length, ic: ACH_TIER_IC[i], cleared: g === bs.length, locked: !prevCleared });
+    bs.forEach(b => items.push({ b }));
+  });
+  const N = items.length, sp = 84, mTop = 150, mBot = 56, H = mTop + N * sp + mBot, peakY = mTop - 46;
+  const pos = items.map((it, idx) => {
+    const y = H - mBot - idx * sp, f = N > 1 ? idx / (N - 1) : 0;
+    const amp = 31 * (1 - f * 0.6);   // 越接近山頂擺幅越窄（步道往峰頂收斂）
+    return { x: 50 + amp * Math.sin(idx * 0.92), y };
+  });
+  const dPath = pos.map((p, i) => (i ? `L${p.x} ${p.y}` : `M${p.x} ${p.y}`)).join(" ");
+  let reached = 0; items.forEach((it, i) => { if (!it.tier && it.b.got) reached = i; });
+  const dDone = pos.slice(0, reached + 1).map((p, i) => (i ? `L${p.x} ${p.y}` : `M${p.x} ${p.y}`)).join(" ");
+  const legIdx = items.findIndex(it => it.tier && it.name === ACH_TIERS[5]);   // 傳說 tier
+  const cloudY = legIdx >= 0 ? pos[legIdx].y + sp * 0.62 : mTop * 1.4;
+  const nodes = items.map((it, idx) => {
+    const p = pos[idx];
+    if (it.tier) {
+      return `<div class="ach-pt tier${it.cleared ? " cleared" : ""}${it.locked ? " locked" : ""}" style="left:${p.x}%;top:${p.y}px"><span class="ach-emblem">${ic(it.ic)}</span><span class="ach-pt-name">${it.name}<i>${it.g}/${it.total}</i></span></div>`;
+    }
+    const b = it.b, cat = _achCat(b), lblR = p.x < 50;
+    return `<div class="ach-pt node ${b.got ? "got" : "locked"}${b.n === hereNm ? " here" : ""} ${lblR ? "lbl-right" : "lbl-left"}" style="left:${p.x}%;top:${p.y}px;--c:${cat.col};--pct:${_achPct(b)}">
+      <div class="ach-dot"><div class="ach-dot-in">${ic(cat.i)}</div>${b.got ? `<span class="ach-check">${CHK}</span>` : ""}</div>
+      <div class="ach-lbl"><b>${b.n}</b><span class="ach-lbl-d">${_achStat(b)}</span></div>
+    </div>`;
+  }).join("");
+  return `<div class="ach-scene" style="height:${H}px">
+    <svg class="ach-mtn" viewBox="0 0 100 ${H}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${_achMountain(H, peakY)}</svg>
+    <div class="ach-summit" style="top:${peakY - 8}px">${ic("crown")}</div>
+    <div class="ach-clouds" style="top:${cloudY}px"><span></span><span></span><span></span></div>
+    <svg class="ach-trailpath" viewBox="0 0 100 ${H}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="${dPath}" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="3" stroke-dasharray="1.5 4" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+      <path d="${dDone}" fill="none" stroke="#f0d78a" stroke-width="3.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+    </svg>
+    ${nodes}
+  </div>`;
+}
+// 全螢幕成就步道：一座能爬的山（山腳啟程→繞道往上→峰頂攻頂→雲上傳說）
 function openAchTree() {
   if (document.querySelector('[data-ov="achtree"]')) return;
-  const { got, total, treeHtml } = buildAchTree();
+  const { got, total } = buildAchTree();
   const pct = Math.round(got / total * 100);
   const ov = document.createElement("div"); ov.className = "ach-modal"; ov.dataset.ov = "achtree";
-  ov.innerHTML = `<div class="ach-modal-inner">
+  ov.innerHTML = `<div class="ach-modal-inner ach-mtn-modal">
       <div class="ach-modal-head"><button class="sheet-close" id="achClose" aria-label="${ttT("關閉")}">✕</button><div class="ach-modal-h">${ic("medal")} ${ttT("成就步道")}</div>
         <div class="ach-modal-prog"><span class="amp-n">${got}<small> / ${total}</small></span><div class="amp-bar"><i style="width:${pct}%"></i></div></div></div>
-      <div class="ach-modal-body"><div class="ach-trail big">${treeHtml}</div></div>
+      <div class="ach-modal-body">${achSceneHtml()}</div>
     </div>`;
   document.body.appendChild(ov);
   const close = () => ov.remove();
   ov.querySelector("#achClose").addEventListener("click", close);
   ov.addEventListener("click", e => { if (e.target === ov) close(); });
+  // 開啟時捲到「你在這」（目前進度），沒有就捲到山腳
+  setTimeout(() => { const here = ov.querySelector(".ach-pt.here") || ov.querySelector(".ach-scene"); const body = ov.querySelector(".ach-modal-body"); if (here && here.classList.contains("here")) here.scrollIntoView({ block: "center" }); else if (body) body.scrollTop = body.scrollHeight; }, 40);
 }
 // DEBUG 解鎖/重置成就後，若成就步道頁開著也一起刷新
-function refreshAchTree() { const ov = document.querySelector('[data-ov="achtree"]'); if (!ov) return; const t = ov.querySelector(".ach-modal-body .ach-trail"); if (t) t.innerHTML = buildAchTree().treeHtml; }
+function refreshAchTree() { const ov = document.querySelector('[data-ov="achtree"]'); if (!ov) return; const t = ov.querySelector(".ach-modal-body"); if (t) t.innerHTML = achSceneHtml(); }
 // 夥伴手冊：進化圖鑑 + 成就徽章
 function openPetDex() {
   if (document.querySelector('[data-ov="petdex"]')) return;   // 防連點疊層
