@@ -131,6 +131,7 @@ const I18n = (() => {
     "GPX 匯入 / 匯出": "GPX import / export",
     // 生態區塊（物種名維持中文，見 scripts/i18n-ignore.json）
     "生態": "Ecology",
+    "已達成": "Achieved", "即將解鎖": "Almost there",
     "分鐘後可餵": "min to feed",
     "走路就能養夥伴！從一顆蛋一路進化，牠會隨心情露出表情，還能點牠、餵食、裝扮。": "Raise a buddy just by walking! It evolves from an egg, shows moods, and you can pet, feed and dress it up.",
     "PRO 徽章、頭像框、名字跟色、專屬主題、夥伴命名與裝扮、PRO 表情貼": "PRO badge, avatar frame, name color, themes, buddy naming & dress-up, PRO reactions", "夥伴命名·裝扮 / 頭像框": "Buddy naming & dress-up / avatar frame",

@@ -284,6 +284,23 @@ function petRecommend() {
 }
 // 成就樹階層（基本→困難）
 const ACH_TIERS = ["啟程", "入山", "登高", "縱走", "攻頂", "傳說"];
+// 強化3：各階層專屬紋章（用現有 ic 線條圖示，不會空框）
+const ACH_TIER_IC = ["footprints", "leaf", "mountain", "compass", "trophy", "crown"];
+// 強化1：成就分六類，各給色與圖示（步道路徑上的節點依類上色）
+const ACH_CAT = {
+  dist: { i: "route", col: "#3f9d5c" }, climb: { i: "mountain", col: "#c26a35" },
+  trips: { i: "footprints", col: "#4a7ec8" }, streak: { i: "flame", col: "#d8613e" },
+  explore: { i: "compass", col: "#2f9aa4" }, challenge: { i: "target", col: "#8a5cc0" },
+  time: { i: "sun", col: "#cf9a2e" },
+};
+const ACH_CAT_OF = {
+  "初心者": "trips", "週末山友": "trips", "早起鳥": "time", "夜行者": "time",
+  "常客": "trips", "50K": "dist", "爬升新手": "climb", "週週不斷": "streak",
+  "老山友": "trips", "百K俱樂部": "dist", "爬升大師": "climb", "連續一週": "streak", "健行馬拉松": "challenge", "走遍三縣": "explore",
+  "山痴": "trips", "300K": "dist", "玉山高度": "climb", "半馬腳力": "challenge", "挑戰征服": "challenge", "四週堅持": "streak",
+  "縱橫五百": "dist", "聖母峰高度": "climb", "走遍十縣": "explore", "步道收藏家": "explore", "月月不休": "streak",
+  "千里健行": "dist", "萬米爬升": "climb", "環島達人": "explore", "超馬腳力": "challenge", "兩百次山旅": "trips",
+};
 // 成就徽章：成就樹，強調長期累積（拿掉一鍵可解的收藏類）
 function petBadges() {
   const recs = realRecords();
@@ -347,6 +364,7 @@ function petBadges() {
   for (const b of list) {
     if (b.got && !got.has(b.n)) { got.add(b.n); changed = true; }
     if (got.has(b.n)) b.got = true;
+    b.c = ACH_CAT_OF[b.n] || "trips";   // 強化1：標分類
   }
   if (changed) try { localStorage.setItem("tt_badges_got", JSON.stringify([...got])); } catch { /* ignore */ }
   return list;
@@ -361,25 +379,38 @@ function renderBadges() {
     .sort((a, b) => b.ratio - a.ratio)
     .slice(0, 3);
   const fmt = (v, u) => u === "km" ? v.toFixed(1) : String(Math.round(v));
-  const nextHtml = nextUp.length ? `<div class="ach-next">${nextUp.map(({ b, ratio }) => {
-    const [cur, goal, unit] = b.p;
-    return `<div class="anx"><span class="anx-e">${b.e}</span><div class="anx-body"><div class="anx-top"><b>${b.n}</b><span class="anx-remain">${fmt(cur, unit)} / ${goal} ${ttT(unit)}</span></div><div class="anx-bar"><i style="width:${(ratio * 100).toFixed(0)}%"></i></div></div></div>`;
+  const catOf = b => ACH_CAT[b.c] || ACH_CAT.trips;
+  const hereNm = nextUp[0] ? nextUp[0].b.n : null;   // 最接近解鎖＝「你在這」
+  const nextHtml = nextUp.length ? `<div class="ach-next-h">${ttT("即將解鎖")}</div><div class="ach-next">${nextUp.map(({ b, ratio }) => {
+    const [cur, goal, unit] = b.p, cat = catOf(b);
+    return `<div class="anx" style="--c:${cat.col}"><span class="anx-e">${ic(cat.i)}</span><div class="anx-body"><div class="anx-top"><b>${b.n}</b><span class="anx-remain">${fmt(cur, unit)} / ${goal} ${ttT(unit)}</span></div><div class="anx-bar"><i style="width:${(ratio * 100).toFixed(0)}%"></i></div></div></div>`;
   }).join("")}</div>` : "";
-  // 成就樹：依階層（啟程→傳說）由基本到困難分段呈現
+  // 步道路徑：一條中央蜿蜒步道，成就是路上左右交錯的停靠點；階層以紋章當「檢查點」
+  const CHK = `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>`;
+  const pctOf = b => b.got ? 100 : (b.p && b.p[1] ? Math.min(100, Math.round(b.p[0] / b.p[1] * 100)) : 0);
+  const statOf = b => b.got ? ttT("已達成") : (b.p ? `${fmt(b.p[0], b.p[2])} / ${b.p[1]} ${ttT(b.p[2])}` : b.d);
   const tiers = ACH_TIERS.map((name, i) => {
     const bs = list.filter(b => b.t === i + 1);
     const g = bs.filter(b => b.got).length;
-    const prevCleared = i === 0 || list.filter(b => b.t === i).every(b => b.got);   // 上一階全解→本階解鎖
+    const prevCleared = i === 0 || list.filter(b => b.t === i).every(b => b.got);
     return { name, i, bs, g, prevCleared };
   });
+  let side = 0;
   const treeHtml = tiers.map(tr => `
-    <div class="ach-tier${tr.g === tr.bs.length ? " cleared" : ""}${tr.prevCleared ? "" : " tier-locked"}">
-      <div class="ach-tier-head"><span class="ach-tier-rank">${tr.i + 1}</span><b>${tr.name}</b><span class="ach-tier-count">${tr.g}/${tr.bs.length}</span></div>
-      <div class="ach-grid">${tr.bs.map(b => `<div class="ach${b.got ? "" : " locked"}"><div class="ach-e">${b.got ? b.e : "🔒"}</div><div class="ach-n">${b.n}</div><div class="ach-d">${b.d}</div></div>`).join("")}</div>
+    <div class="ach-seg${tr.g === tr.bs.length ? " cleared" : ""}${tr.prevCleared ? "" : " tier-locked"}">
+      <div class="ach-marker"><span class="ach-emblem">${ic(ACH_TIER_IC[tr.i])}</span></div>
+      <div class="ach-seg-name"><b>${tr.name}</b><span>${tr.g}/${tr.bs.length}</span></div>
+      ${tr.bs.map(b => {
+    const cat = catOf(b), s = (side++ % 2) ? "right" : "left";
+    return `<div class="ach-stop ${s} ${b.got ? "got" : "locked"}${b.n === hereNm ? " here" : ""}" style="--c:${cat.col};--pct:${pctOf(b)}">
+          <div class="ach-dot"><div class="ach-dot-in">${ic(cat.i)}</div>${b.got ? `<span class="ach-check">${CHK}</span>` : ""}</div>
+          <div class="ach-lbl"><b>${b.n}</b><span class="ach-lbl-d">${statOf(b)}</span></div>
+        </div>`;
+  }).join("")}
     </div>`).join("");
   box.innerHTML = `<div class="section-title">${ic("medal")}成就樹 <span class="badge-count">${got} / ${list.length}</span></div>
     ${nextHtml}
-    <div class="ach-tree">${treeHtml}</div>`;
+    <div class="ach-trail">${treeHtml}</div>`;
 }
 // 夥伴手冊：進化圖鑑 + 成就徽章
 function openPetDex() {
