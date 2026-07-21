@@ -1858,35 +1858,60 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 .ach-trail.big .ach-lbl b { font-size: calc(14.5px * var(--fs, 1)); }
 .ach-trail.big .ach-lbl-d { font-size: calc(11.5px * var(--fs, 1)); }
 .ach-trail.big::before { top: 18px; bottom: 18px; }
-/* 3D 可旋轉梯形山（日夜天空＋飄雲＋節點點看詳情） */
+/* 直向攀登步道：山腳啟程→之字步道→穿雲海→峰頂傳說（往上滑攀登） */
 .ach3d-modal .ach-modal-body { padding: 0; overflow: hidden; position: relative; }
-.ach3d { position: relative; width: 100%; height: 100%; min-height: 540px; overflow: hidden; }
-.ach3d-sky { position: absolute; inset: 0; }
+/* 天空背景層（不隨捲動） */
+.ach-climb-sky { position: absolute; inset: 0; z-index: 0; overflow: hidden; }
+.ach-climb-orb { position: absolute; width: 48px; height: 48px; border-radius: 50%; transform: translate(-50%, -50%); }
+.ach-climb-orb.sun { box-shadow: 0 0 34px 14px rgba(255,220,120,.5); }
+.ach-climb-orb.moon { box-shadow: 0 0 24px 9px rgba(220,230,245,.35); }
 .ach3d-stars { position: absolute; inset: 0; pointer-events: none; }
 .ach3d-star { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: #fff; opacity: .8; animation: ach3dTwinkle 3.2s ease-in-out infinite; animation-delay: var(--dl, 0s); }
 @keyframes ach3dTwinkle { 0%, 100% { opacity: .25; } 50% { opacity: .95; } }
-.ach3d-orb { position: absolute; width: 46px; height: 46px; border-radius: 50%; transform: translate(-50%, -50%); z-index: 1; }
-.ach3d-orb.sun { box-shadow: 0 0 30px 12px rgba(255,220,120,.5); }
-.ach3d-orb.moon { box-shadow: 0 0 22px 8px rgba(220,230,245,.35); }
-.ach3d-cloudwrap { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 2; }
-.ach3d-cloud { position: absolute; left: -30%; width: calc(150px * var(--s, 1)); height: calc(46px * var(--s, 1)); background: #fbfdff; border-radius: 60px; opacity: .92; box-shadow: 0 8px 22px rgba(70,90,110,.18), inset 0 -6px 0 rgba(210,222,232,.5); animation: ach3dDrift var(--d, 40s) linear infinite; }
+.ach-climb-sky .ach3d-cloud { position: absolute; left: -35%; width: calc(160px * var(--s, 1)); height: calc(48px * var(--s, 1)); background: #fbfdff; border-radius: 60px; opacity: .55; box-shadow: 0 8px 22px rgba(70,90,110,.14); animation: ach3dDrift var(--d, 44s) linear infinite; }
 .ach3d-cloud::before, .ach3d-cloud::after { content: ""; position: absolute; background: inherit; border-radius: 50%; }
 .ach3d-cloud::before { width: 60%; height: 150%; left: 12%; top: -55%; }
 .ach3d-cloud::after { width: 45%; height: 130%; right: 14%; top: -38%; }
-@keyframes ach3dDrift { to { transform: translateX(calc(100vw + 220px)); } }
-.ach3d-stage { position: absolute; left: 50%; top: 6px; width: 360px; height: 540px; margin-left: -180px; transform-origin: top center; cursor: grab; z-index: 3; }
-.ach3d-stage:active { cursor: grabbing; }
-.ach3d-mtn { position: absolute; inset: 0; width: 360px; height: 540px; filter: drop-shadow(0 10px 18px rgba(0,0,0,.28)); }
-.ach3d-crown { position: absolute; transform: translate(-50%, -50%); color: #f0d78a; width: 34px; height: 34px; display: grid; place-items: center; z-index: 5; filter: drop-shadow(0 2px 5px rgba(0,0,0,.4)); pointer-events: none; }
-.ach3d-crown .ic { width: 31px; height: 31px; }
-.ach3d-markers { position: absolute; inset: 0; }
-.ach3d-mk { position: absolute; border: none; background: none; padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.ach3d-mk .ach-dot { width: 44px; height: 44px; }
-.ach3d-mk .ach-dot-in { width: 35px; height: 35px; }
-.ach3d-mk .ach-dot-in .ic { width: 18px; height: 18px; }
-.ach3d-mk.here .ach-dot { box-shadow: 0 0 0 5px var(--bg), 0 0 0 7px var(--c), 0 0 14px var(--c); }
-.ach3d-hint { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 6; display: flex; align-items: center; gap: 5px; background: rgba(20,30,20,.55); color: #fff; font-size: calc(12px * var(--fs, 1)); font-weight: 600; padding: 6px 14px; border-radius: 999px; backdrop-filter: blur(3px); pointer-events: none; }
+@keyframes ach3dDrift { to { transform: translateX(calc(100vw + 260px)); } }
+/* 可捲動的攀登場景 */
+.ach3d { position: absolute; inset: 0; z-index: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.ach-climb-scene { position: relative; width: 100%; }
+.ach-climb-mtn { display: block; width: 100%; height: auto; filter: drop-shadow(0 -2px 10px rgba(0,0,0,.12)); }
+/* 山腳啟程 / 峰頂傳說 里程碑 */
+.ach-head, .ach-peak { position: absolute; transform: translate(-50%, -50%); z-index: 4; display: flex; flex-direction: column; align-items: center; gap: 2px; pointer-events: none; text-shadow: 0 1px 5px rgba(0,0,0,.5); }
+.ach-head b, .ach-peak b { font-family: var(--serif); font-weight: 800; font-size: calc(16px * var(--fs, 1)); color: #fff; letter-spacing: 2px; }
+.ach-head .ic, .ach-peak .ic { width: 26px; height: 26px; color: #fff; filter: drop-shadow(0 1px 3px rgba(0,0,0,.4)); }
+.ach-peak .ic { width: 34px; height: 34px; color: #f4d787; }
+.ach-peak { z-index: 6; }
+/* 階層區段路牌 */
+.ach-sign { position: absolute; transform: translateY(-50%); z-index: 4; font-family: var(--serif); font-weight: 700; font-size: calc(12px * var(--fs, 1)); color: #fff; background: rgba(60,74,52,.72); padding: 3px 10px; border-radius: 7px; backdrop-filter: blur(2px); box-shadow: 0 2px 6px rgba(0,0,0,.2); white-space: nowrap; }
+.ach-sign.l { margin-left: 30px; } .ach-sign.r { transform: translate(-100%, -50%); margin-left: -30px; }
+/* 雲海（隨場景捲動，標高於雲上） */
+.ach-cloudsea { position: absolute; left: -6%; right: -6%; height: 78px; transform: translateY(-50%); z-index: 5; pointer-events: none; }
+.ach-cloudsea span { position: absolute; background: #f4f8fc; border-radius: 60px; box-shadow: 0 10px 26px rgba(80,100,120,.2); opacity: .95; }
+.ach-cloudsea span:nth-child(1) { left: 0; top: 22px; width: 44%; height: 46px; }
+.ach-cloudsea span:nth-child(2) { left: 30%; top: 6px; width: 46%; height: 62px; }
+.ach-cloudsea span:nth-child(3) { left: 62%; top: 26px; width: 40%; height: 44px; }
+.ach-cloudsea span:nth-child(4) { left: 44%; top: 40px; width: 30%; height: 34px; opacity: .8; }
+:root[data-theme="dark"] .ach-cloudsea span, .ach-climb-sky.night ~ .ach3d .ach-cloudsea span { background: #c8d2df; opacity: .82; }
+/* 你在這 小腳印 */
+.ach-hiker { position: absolute; transform: translate(-50%, -100%); z-index: 8; display: flex; flex-direction: column; align-items: center; animation: achHikerBob 1.8s ease-in-out infinite; }
+.ach-hiker-b { font-family: var(--serif); font-weight: 700; font-size: calc(11px * var(--fs, 1)); color: #fff; background: var(--accent); padding: 2px 9px; border-radius: 999px; box-shadow: 0 2px 6px rgba(0,0,0,.25); white-space: nowrap; }
+.ach-hiker-pin { width: 30px; height: 30px; margin-top: -1px; display: grid; place-items: center; color: var(--accent); }
+.ach-hiker-pin .ic { width: 22px; height: 22px; filter: drop-shadow(0 2px 3px rgba(0,0,0,.3)); }
+@keyframes achHikerBob { 0%, 100% { transform: translate(-50%, -100%); } 50% { transform: translate(-50%, calc(-100% - 5px)); } }
+/* 步道節點 */
+.ach-climb-marks { position: absolute; inset: 0; z-index: 7; }
+.ach3d-mk { position: absolute; border: none; background: none; padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; transform: translate(-50%, -50%); }
+.ach3d-mk .ach-dot { width: 46px; height: 46px; }
+.ach3d-mk.locked .ach-dot { opacity: .96; }
+.ach3d-mk .ach-dot-in { width: 36px; height: 36px; }
+.ach3d-mk .ach-dot-in .ic { width: 19px; height: 19px; }
+.ach3d-mk.here { transform: translate(-50%, -50%) scale(1.14); }
+.ach3d-mk.here .ach-dot { box-shadow: 0 0 0 4px var(--surface), 0 0 0 6px var(--c), 0 0 16px var(--c); }
+.ach3d-hint { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 9; display: flex; align-items: center; gap: 5px; background: rgba(20,30,20,.55); color: #fff; font-size: calc(12px * var(--fs, 1)); font-weight: 600; padding: 6px 14px; border-radius: 999px; backdrop-filter: blur(3px); pointer-events: none; animation: achHintFade 4s ease-in-out; }
 .ach3d-hint .ic { width: 15px; height: 15px; }
+@keyframes achHintFade { 0%, 70% { opacity: 1; } 100% { opacity: .55; } }
 /* 成就詳情彈卡 */
 .ach3d-detail { position: absolute; left: 12px; right: 12px; bottom: 12px; z-index: 10; background: var(--surface); border-radius: var(--r); box-shadow: 0 -4px 24px rgba(0,0,0,.28); padding: 16px 16px 18px; transform: translateY(140%); transition: transform .28s cubic-bezier(.2,.8,.2,1); }
 .ach3d-detail.show { transform: none; }
@@ -1904,7 +1929,7 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 .ach3d-d-prog { display: flex; align-items: center; gap: 10px; font-family: var(--num); font-size: calc(12.5px * var(--fs, 1)); font-weight: 700; color: var(--ink-soft); }
 .ach3d-d-bar { flex: 1; height: 8px; border-radius: 999px; background: var(--line-soft); overflow: hidden; }
 .ach3d-d-bar i { display: block; height: 100%; border-radius: 999px; background: var(--c); }
-@media (prefers-reduced-motion: reduce) { .ach3d-cloud, .ach3d-star { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .ach3d-cloud, .ach3d-star, .ach-hiker, .ach3d-hint { animation: none; } }
 
 /* 行程記錄分頁顯示按鈕 */
 .hist-more { width: 100%; margin: 4px 0 8px; }

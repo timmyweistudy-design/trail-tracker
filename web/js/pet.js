@@ -433,26 +433,49 @@ function _achSky() {
   if (h >= 17 && h < 19) return { sky: "linear-gradient(180deg,#e78a58 0%,#f0b489 40%,#e6d6bd 100%)", orb: "sun", ox: 22, oy: 78, oc: "#ff9a52", night: false };
   return { sky: "linear-gradient(180deg,#1a2740 0%,#26334c 46%,#33415c 100%)", orb: "moon", ox: 76, oy: 58, oc: "#eaeef6", night: true };
 }
-// 5 層梯形山的 SVG（等距俯視，旋轉對稱→只畫一次；夜晚換暗色）
-function _achMtnSvg(cx, cyBase, stepH, tilt, R, sumR, night) {
-  const lit = night ? "#3a5540" : "#6f9059", shd = night ? "#243a2c" : "#4a6a3c", top2 = night ? "#456249" : "#7c9d63";
-  const wallH = stepH * 0.66, terY = i => cyBase - i * stepH;
-  let s = "";
-  for (let i = 0; i < R.length; i++) {
-    const r = R[i], y = terY(i), ry = r * tilt;
-    // 前緣牆（暗面）
-    s += `<path d="M${cx - r} ${y} A ${r} ${ry} 0 0 0 ${cx + r} ${y} L ${cx + r} ${y + wallH} A ${r} ${ry} 0 0 1 ${cx - r} ${y + wallH} Z" fill="${shd}"/>`;
-    // 頂面
-    s += `<ellipse cx="${cx}" cy="${y}" rx="${r}" ry="${ry}" fill="${lit}"/>`;
-    s += `<ellipse cx="${cx - r * 0.28}" cy="${y - ry * 0.3}" rx="${r * 0.62}" ry="${ry * 0.62}" fill="${top2}" opacity=".55"/>`;
+// —— 直向攀登步道幾何：t=0 山腳「啟程」→ t=1 峰頂「傳說」——
+const ACH_SW = 360, ACH_SH = 1560, ACH_YB = 1470, ACH_YT = 96, ACH_CLOUD = 0.80;
+function _achTX(t) { return 180 + Math.sin(t * Math.PI * 5.2 + 0.35) * (20 + 96 * Math.pow(1 - t, 0.9)); }
+function _achTY(t) { return ACH_YB - t * (ACH_YB - ACH_YT); }
+// 一座真的山：不規則山稜＋往上收窄＋雪冠＋陰影面＋遠山縱深＋之字步道
+function _achMtnScene(night) {
+  const halfW = t => 8 + 168 * Math.pow(1 - t, 0.72);
+  const jag = (t, ph) => 9 * Math.sin(t * 17 + ph) + 5 * Math.sin(t * 33 + ph * 1.7);
+  const N = 52, L = [], Rr = [], mid = [];
+  for (let i = 0; i <= N; i++) {
+    const t = i / N, y = +_achTY(t).toFixed(1), hw = halfW(t);
+    L.push([+(180 - hw + jag(t, 0)).toFixed(1), y]);
+    Rr.push([+(180 + hw + jag(t, 2.1)).toFixed(1), y]);
+    mid.push([+(180 + jag(t, 1) * 0.4).toFixed(1), y]);
   }
-  // 山頂雪冠＋峰
-  const sy = terY(R.length - 1);
-  s += `<path d="M${cx - sumR} ${sy} A ${sumR} ${sumR * tilt} 0 0 0 ${cx + sumR} ${sy} L${cx + 4} ${sy - 40} Z" fill="${shd}"/>`;
-  s += `<path d="M${cx - sumR} ${sy} A ${sumR} ${sumR * tilt} 0 0 0 ${cx + 2} ${sy} L${cx - 4} ${sy - 40} Z" fill="${lit}"/>`;
-  s += `<path d="M${cx - 16} ${sy - 20} L${cx - 2} ${sy - 42} L${cx + 12} ${sy - 18} q-14 8 -28 0Z" fill="${night ? "#cdd6e0" : "#f4f6ef"}"/>`;
-  return s;
+  const P = a => a.map(p => p.join(" ")).join(" L ");
+  const body = `M ${L[0][0]} ${ACH_SH} L ${P(L)} L ${P([...Rr].reverse())} L ${Rr[0][0]} ${ACH_SH} Z`;
+  const shade = `M ${P(mid)} L ${P([...Rr].reverse())} Z`;
+  const snowI = L.map((_, i) => i).filter(i => i / N >= 0.85);
+  const snow = `M ${P(snowI.map(i => L[i]))} L ${P(snowI.map(i => Rr[i]).reverse())} Z`;
+  const g = night
+    ? [["#2c4531", 0], ["#334c37", .5], ["#3c4a3d", .78], ["#464552", .9], ["#5a5a64", 1]]
+    : [["#5c8746", 0], ["#6f9455", .5], ["#87895a", .78], ["#a8977a", .9], ["#cdb995", 1]];
+  const stops = g.map(([c, o]) => `<stop offset="${o * 100}%" stop-color="${c}"/>`).join("");
+  const snowC = night ? "#c2ccd8" : "#f3f6ef", shadeC = night ? "#000814" : "#1c3320", far = night ? "#39485c" : "#a7bfce";
+  const fy = _achTY(0.83);
+  const farM = `<path d="M20 ${fy} L96 ${(fy - 96).toFixed(1)} L168 ${(fy - 34).toFixed(1)} L236 ${(fy - 116).toFixed(1)} L340 ${fy} Z" fill="${far}" opacity=".55"/>`;
+  return `<defs><linearGradient id="achMtnG" x1="0" y1="1" x2="0" y2="0"><stop offset="0%" stop-color="${g[0][0]}"/>${stops}</linearGradient></defs>
+    ${farM}
+    <path d="${body}" fill="url(#achMtnG)"/>
+    <path d="${shade}" fill="${shadeC}" opacity="${night ? .3 : .1}"/>
+    <path d="${snow}" fill="${snowC}"/>
+    ${_achTrailSvg(night)}`;
 }
+function _achTrailSvg(night) {
+  let d = "";
+  for (let i = 0; i <= 96; i++) { const t = i / 96; d += (i ? "L" : "M") + _achTX(t).toFixed(1) + " " + _achTY(t).toFixed(1) + " "; }
+  const casing = night ? "#463724" : "#795d36", path = night ? "#8a7350" : "#d8b878", dash = night ? "#b7a074" : "#fff3d6";
+  return `<path d="${d}" fill="none" stroke="${casing}" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="${d}" fill="none" stroke="${path}" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="${d}" fill="none" stroke="${dash}" stroke-width="2.6" stroke-linecap="round" stroke-dasharray="1 13" opacity=".85"/>`;
+}
+const _ACH_UP = `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>`;
 // 成就詳情彈卡（點節點顯示）
 function showAchDetail(b) {
   const ov = document.querySelector('[data-ov="achtree"]'); if (!ov) return;
@@ -467,94 +490,81 @@ function showAchDetail(b) {
   box.classList.add("show");
   box.querySelector(".ach3d-dx").addEventListener("click", () => box.classList.remove("show"));
 }
-// 全螢幕成就頁：可旋轉的 3D 梯形山（拖曳轉動、日夜、飄雲、點成就看詳情）
+// 全螢幕成就頁：直向攀登步道（往上滑爬山、日夜天空、雲海、點成就看詳情）
 function openAchTree() {
   if (document.querySelector('[data-ov="achtree"]')) return;
   const { got, total } = buildAchTree();
   const pct = Math.round(got / total * 100);
-  const ov = document.createElement("div"); ov.className = "ach-modal ach3d-modal"; ov.dataset.ov = "achtree";
+  const ov = document.createElement("div"); ov.className = "ach-modal ach3d-modal ach-climb-modal"; ov.dataset.ov = "achtree";
   ov.innerHTML = `<div class="ach-modal-inner">
       <div class="ach-modal-head"><button class="sheet-close" id="achClose" aria-label="${ttT("關閉")}">✕</button><div class="ach-modal-h">${ic("medal")} ${ttT("成就步道")}</div>
         <div class="ach-modal-prog"><span class="amp-n">${got}<small> / ${total}</small></span><div class="amp-bar"><i style="width:${pct}%"></i></div></div></div>
-      <div class="ach-modal-body"><div class="ach3d" id="ach3d"></div></div>
+      <div class="ach-modal-body">
+        <div class="ach-climb-sky"></div>
+        <div class="ach3d" id="ach3d"></div>
+        <div class="ach3d-hint">${_ACH_UP} ${ttT("往上滑攀登")}</div>
+        <div class="ach3d-detail"></div>
+      </div>
     </div>`;
   document.body.appendChild(ov);
   const close = () => ov.remove();
   ov.querySelector("#achClose").addEventListener("click", close);
   ov.addEventListener("click", e => { if (e.target === ov) close(); });
-  _achInit3D(ov.querySelector("#ach3d"));
+  _achInitClimb(ov.querySelector("#ach3d"), ov.querySelector(".ach-climb-sky"));
 }
-// 建立並驅動 3D 山：山靜態，旋轉時只移動成就節點
-function _achInit3D(root) {
+// 建立攀登場景：山＋步道靜態，節點沿步道依序排，開場捲到「你在這」
+function _achInitClimb(root, skyEl) {
   if (!root) return;
   const list = petBadges();
   const nextUp = list.filter(b => !b.got && b.p && b.p[1] > 0).map(b => ({ b, r: Math.min(1, b.p[0] / b.p[1]) })).sort((a, b) => b.r - a.r);
-  const hereNm = nextUp[0] ? nextUp[0].b.n : null;
-  const SW = 360, SH = 540, cx = 180, cyBase = 452, stepH = 60, tilt = 0.46;
-  const R = [142, 119, 97, 75, 55], sumR = 30, terY = i => cyBase - i * stepH;
-  const sky = _achSky();
-  // 節點模型：每階徽章繞該層一圈
-  const marks = []; let hereTier = 0;
-  ACH_TIERS.forEach((name, ti) => {
-    const bs = list.filter(b => b.t === ti + 1);
-    const summit = ti === 5, r = summit ? sumR : R[ti], y = summit ? terY(4) - 30 : terY(ti);
-    bs.forEach((b, j) => {
-      if (b.n === hereNm) hereTier = ti;
-      marks.push({ b, r, y, theta: (j + 0.5) / bs.length * Math.PI * 2 + ti * 0.7 });
-    });
-  });
-  const clouds = `<div class="ach3d-cloud" style="top:12%;--d:34s;--s:1"></div><div class="ach3d-cloud" style="top:23%;--d:46s;--s:.8;animation-delay:-12s"></div><div class="ach3d-cloud" style="top:6%;--d:40s;--s:.65;animation-delay:-26s"></div>`;
-  const stars = sky.night ? Array.from({ length: 22 }, (_, i) => `<span class="ach3d-star" style="left:${(i * 37 % 96) + 2}%;top:${(i * 23 % 46)}%;--dl:${(i % 5) * 0.4}s"></span>`).join("") : "";
-  root.innerHTML = `
-    <div class="ach3d-sky" style="background:${sky.sky}"></div>
-    <div class="ach3d-stars">${stars}</div>
-    <div class="ach3d-orb ${sky.orb}" style="left:${sky.ox}%;top:${sky.oy}px;background:${sky.oc}"></div>
-    <div class="ach3d-cloudwrap">${clouds}</div>
-    <div class="ach3d-stage" id="ach3dStage">
-      <svg class="ach3d-mtn" viewBox="0 0 ${SW} ${SH}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${_achMtnSvg(cx, cyBase, stepH, tilt, R, sumR, sky.night)}</svg>
-      <div class="ach3d-crown" style="left:${cx}px;top:${terY(4) - 74}px">${ic("crown")}</div>
-      <div class="ach3d-markers"></div>
-    </div>
-    <div class="ach3d-hint">${ic("refresh")} ${ttT("拖曳旋轉看全部")}</div>
-    <div class="ach3d-detail"></div>`;
-  // 依螢幕寬把 360 舞台等比縮放
-  const body = root.parentElement;
-  const fit = Math.min(1, ((body ? body.clientWidth : SW) - 6) / SW);
-  const stage = root.querySelector("#ach3dStage");
-  stage.style.transform = `scale(${fit})`;
-  const mc = root.querySelector(".ach3d-markers");
-  marks.forEach(m => {
-    const cat = _achCat(m.b); const el = document.createElement("button");
-    el.className = `ach3d-mk ${m.b.got ? "got" : "locked"}${m.b.n === hereNm ? " here" : ""}`;
-    el.style.setProperty("--c", cat.col); el.style.setProperty("--pct", _achPct(m.b));
-    el.innerHTML = `<span class="ach-dot"><span class="ach-dot-in">${ic(cat.i)}</span>${m.b.got ? `<span class="ach-check">${_ACH_CHK}</span>` : ""}</span>`;
-    el.addEventListener("click", e => { e.stopPropagation(); showAchDetail(m.b); });
-    mc.appendChild(el); m.el = el;
-  });
-  let phi = Math.PI / 2 - hereTier * 0.7 - 0.25;   // 開場面向「你在這」那階
-  function draw() {
-    marks.forEach(m => {
-      const a = m.theta + phi, s = Math.sin(a), c = Math.cos(a);
-      const front = s > -0.25;
-      m.el.style.display = front ? "" : "none";
-      if (!front) return;
-      const sx = cx + m.r * c, sy = m.y + m.r * tilt * s - 16;
-      const sc = 0.8 + 0.2 * ((s + 1) / 2);
-      m.el.style.left = sx + "px"; m.el.style.top = sy + "px";
-      m.el.style.transform = `translate(-50%,-50%) scale(${sc.toFixed(3)})`;
-      m.el.style.zIndex = String(200 + Math.round(s * 60));
-    });
+  const allGot = list.every(b => b.got);
+  const hereNm = nextUp[0] ? nextUp[0].b.n : (allGot ? list[list.length - 1].n : (list.find(b => !b.got) || {}).n);
+  const N = list.length, sky = _achSky();
+  const px = x => (x / ACH_SW * 100).toFixed(2) + "%", py = y => (y / ACH_SH * 100).toFixed(2) + "%";
+  // 節點沿步道依序（list 已按階層排）：t 從山腳到峰頂
+  const nodes = list.map((b, i) => { const t = 0.05 + (i + 0.5) / N * 0.9; return { b, t, x: _achTX(t), y: _achTY(t) }; });
+  const here = nodes.find(n => n.b.n === hereNm) || nodes[0];
+  // 天空背景（不隨捲動）：日夜漸層＋日/月＋夜星＋遠處飄雲
+  if (skyEl) {
+    const stars = sky.night ? Array.from({ length: 26 }, (_, i) => `<span class="ach3d-star" style="left:${(i * 37 % 96) + 2}%;top:${(i * 19 % 60)}%;--dl:${(i % 5) * 0.4}s"></span>`).join("") : "";
+    skyEl.className = "ach-climb-sky" + (sky.night ? " night" : "");
+    skyEl.style.background = sky.sky;
+    skyEl.innerHTML = `<div class="ach-climb-orb ${sky.orb}" style="left:${sky.ox}%;top:${sky.oy + 8}px;background:${sky.oc}"></div>
+      <div class="ach3d-stars">${stars}</div>
+      <div class="ach3d-cloud" style="top:16%;--d:46s;--s:.9"></div>
+      <div class="ach3d-cloud" style="top:30%;--d:62s;--s:.68;animation-delay:-22s"></div>`;
   }
-  draw();
-  let dragging = false, lastX = 0, moved = 0;
-  stage.style.touchAction = "pan-y";
-  stage.addEventListener("pointerdown", e => { dragging = true; lastX = e.clientX; moved = 0; try { stage.setPointerCapture(e.pointerId); } catch (x) { } });
-  stage.addEventListener("pointermove", e => { if (!dragging) return; const dx = e.clientX - lastX; lastX = e.clientX; moved += Math.abs(dx); phi += dx * 0.011; draw(); });
-  const end = () => { dragging = false; };
-  stage.addEventListener("pointerup", end); stage.addEventListener("pointercancel", end);
+  // 各階層第一個節點放區段路牌（入山/登高/縱走/攻頂）
+  const tierFirst = {}; nodes.forEach(n => { if (!(n.b.t in tierFirst)) tierFirst[n.b.t] = n; });
+  const signs = [2, 3, 4, 5].map(ti => { const n = tierFirst[ti]; if (!n) return ""; const side = _achTX(n.t) < 180 ? "l" : "r"; return `<div class="ach-sign ${side}" style="left:${px(n.x)};top:${py(n.y - 26)}">${ttT(ACH_TIERS[ti - 1])}</div>`; }).join("");
+  root.innerHTML = `<div class="ach-climb-scene">
+      <svg class="ach-climb-mtn" viewBox="0 0 ${ACH_SW} ${ACH_SH}" preserveAspectRatio="xMidYMin meet" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${_achMtnScene(sky.night)}</svg>
+      <div class="ach-cloudsea" style="top:${py(_achTY(ACH_CLOUD))}"><span></span><span></span><span></span><span></span></div>
+      <div class="ach-peak" style="left:50%;top:${py(_achTY(0.995) - 24)}">${ic("crown")}<b>${ttT("傳說")}</b></div>
+      <div class="ach-head" style="left:${px(_achTX(0.006))};top:${py(_achTY(0) + 18)}">${ic("footprints")}<b>${ttT("啟程")}</b></div>
+      ${signs}
+      <div class="ach-climb-marks"></div>
+      <div class="ach-hiker" style="left:${px(here.x)};top:${py(here.y - 42)}"><span class="ach-hiker-b">${ttT("你在這")}</span><span class="ach-hiker-pin">${ic("footprints")}</span></div>
+    </div>`;
+  const mc = root.querySelector(".ach-climb-marks");
+  nodes.forEach(n => {
+    const cat = _achCat(n.b), el = document.createElement("button");
+    el.className = `ach3d-mk ${n.b.got ? "got" : "locked"}${n.b.n === hereNm ? " here" : ""}`;
+    el.style.left = px(n.x); el.style.top = py(n.y);
+    el.style.setProperty("--c", cat.col); el.style.setProperty("--pct", _achPct(n.b));
+    el.innerHTML = `<span class="ach-dot"><span class="ach-dot-in">${ic(cat.i)}</span>${n.b.got ? `<span class="ach-check">${_ACH_CHK}</span>` : ""}</span>`;
+    el.addEventListener("click", e => { e.stopPropagation(); showAchDetail(n.b); });
+    mc.appendChild(el);
+  });
+  // 開場捲到「你在這」，露出上方還沒爬的步道
+  requestAnimationFrame(() => {
+    const scene = root.querySelector(".ach-climb-scene"); if (!scene) return;
+    const hikerPx = (here.y / ACH_SH) * scene.offsetHeight;
+    root.scrollTop = Math.max(0, hikerPx - root.clientHeight * 0.62);
+  });
 }
-// DEBUG 解鎖/重置成就後，若成就頁開著也一起重建 3D 山
-function refreshAchTree() { const r = document.querySelector('[data-ov="achtree"] #ach3d'); if (r) _achInit3D(r); }
+// DEBUG 解鎖/重置成就後，若成就頁開著也一起重建攀登場景
+function refreshAchTree() { const ov = document.querySelector('[data-ov="achtree"]'); if (ov) _achInitClimb(ov.querySelector("#ach3d"), ov.querySelector(".ach-climb-sky")); }
 // 夥伴手冊：進化圖鑑 + 成就徽章
 function openPetDex() {
   if (document.querySelector('[data-ov="petdex"]')) return;   // 防連點疊層
