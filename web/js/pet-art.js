@@ -17,7 +17,6 @@ window.PET_ART = (function () {
   // 1 草叢幼蟲
   const LARVA = `
     <g class="pc-bob">
-      <path d="M40 178 q4-26 14-30 M170 178 q-6-24-16-28" stroke="#5f8a2e" stroke-width="6" fill="none" stroke-linecap="round" opacity=".55"/>
       <ellipse cx="66" cy="142" rx="18" ry="16" fill="#8bbd4e"/>
       <ellipse cx="90" cy="138" rx="20" ry="18" fill="#97c85a"/>
       <ellipse cx="116" cy="134" rx="22" ry="20" fill="#a3d167"/>
@@ -33,26 +32,27 @@ window.PET_ART = (function () {
       <path d="M141 133 q6 5 12 1" stroke="#5a7a28" stroke-width="2.4" fill="none" stroke-linecap="round"/>
     </g>`;
 
-  // 2 翩翩彩蝶
+  // 2 翩翩彩蝶（友善 chibi：暖色圓翅＋大眼微笑）
   const BUTTERFLY = `
     <g class="pc-hover">
       <g class="pc-wing l">
-        <path d="M96 102 C42 56 28 96 44 112 C32 134 64 146 96 118Z" fill="#4a9bb0"/>
-        <path d="M96 102 C42 56 28 96 44 112 C32 134 64 146 96 118Z" fill="none" stroke="#2f6f81" stroke-width="2"/>
-        <circle cx="58" cy="90" r="7.5" fill="#f0d878"/><circle cx="64" cy="122" r="5" fill="#eaf4f6" opacity=".8"/>
+        <ellipse cx="66" cy="84" rx="31" ry="27" fill="#ef9a6a" transform="rotate(-16 66 84)"/>
+        <ellipse cx="72" cy="124" rx="21" ry="19" fill="#f4b98f" transform="rotate(-8 72 124)"/>
+        <circle cx="58" cy="82" r="7" fill="#fff3e2"/><circle cx="70" cy="122" r="5" fill="#fff3e2"/>
       </g>
       <g class="pc-wing r">
-        <path d="M104 102 C158 56 172 96 156 112 C168 134 136 146 104 118Z" fill="#4a9bb0"/>
-        <path d="M104 102 C158 56 172 96 156 112 C168 134 136 146 104 118Z" fill="none" stroke="#2f6f81" stroke-width="2"/>
-        <circle cx="142" cy="90" r="7.5" fill="#f0d878"/><circle cx="136" cy="122" r="5" fill="#eaf4f6" opacity=".8"/>
+        <ellipse cx="134" cy="84" rx="31" ry="27" fill="#ef9a6a" transform="rotate(16 134 84)"/>
+        <ellipse cx="128" cy="124" rx="21" ry="19" fill="#f4b98f" transform="rotate(8 128 124)"/>
+        <circle cx="142" cy="82" r="7" fill="#fff3e2"/><circle cx="130" cy="122" r="5" fill="#fff3e2"/>
       </g>
-      <ellipse cx="100" cy="108" rx="8" ry="30" fill="#4a3826"/>
-      <circle cx="100" cy="82" r="13" fill="#5a4632"/>
-      <path d="M94 72 q-9-15-17-15 M106 72 q9-15 17-15" stroke="#4a3826" stroke-width="3" fill="none" stroke-linecap="round"/>
-      <circle cx="76" cy="56" r="3.6" fill="#4a3826"/><circle cx="124" cy="56" r="3.6" fill="#4a3826"/>
-      <g class="pc-eye"><circle cx="94" cy="82" r="3.4" fill="#fff"/></g>
-      <g class="pc-eye"><circle cx="106" cy="82" r="3.4" fill="#fff"/></g>
-      <path d="M95 90 q5 4 10 0" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <ellipse cx="100" cy="106" rx="9" ry="22" fill="#7a5540"/>
+      <circle cx="100" cy="84" r="15" fill="#8a6349"/>
+      <path d="M93 71 q-6-13-15-14 M107 71 q6-13 15-14" stroke="#7a5540" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <circle cx="76" cy="54" r="4" fill="#e07a34"/><circle cx="124" cy="54" r="4" fill="#e07a34"/>
+      <g class="pc-eye"><ellipse cx="93" cy="84" rx="4.6" ry="6.2" fill="#2a1608"/><circle cx="94.6" cy="81" r="1.7" fill="#fff"/></g>
+      <g class="pc-eye"><ellipse cx="107" cy="84" rx="4.6" ry="6.2" fill="#2a1608"/><circle cx="108.6" cy="81" r="1.7" fill="#fff"/></g>
+      <ellipse cx="88" cy="91" rx="3.6" ry="2.4" fill="#f0a0a0" opacity=".6"/><ellipse cx="112" cy="91" rx="3.6" ry="2.4" fill="#f0a0a0" opacity=".6"/>
+      <path d="M95 90 q5 5 10 0" stroke="#2a1608" stroke-width="1.9" fill="none" stroke-linecap="round"/>
     </g>`;
 
   // 3 靈巧山狐
@@ -142,9 +142,11 @@ window.PET_ART = (function () {
     </g>`;
 
   const A = [EGG, LARVA, BUTTERFLY, FOX, TIGER, HATCHDRAGON, DRAGON];
+  const EMOJI = ["🥚", "🐛", "🦋", "🦊", "🐅", "🐲", "🐉"];   // 對映 PET_STAGES 的 e，供把同步來的 emoji 反查成階段
   const clamp = i => Math.max(0, Math.min(A.length - 1, (i | 0)));
   function svg(i, cls) {
     return `<svg class="pet-critter ${cls || ""}" viewBox="0 0 200 200" role="img" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${A[clamp(i)]}</svg>`;
   }
-  return { svg, count: A.length };
+  function byEmoji(e) { return EMOJI.indexOf(e); }   // 找不到回 -1
+  return { svg, count: A.length, byEmoji };
 })();

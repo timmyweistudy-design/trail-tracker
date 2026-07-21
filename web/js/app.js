@@ -3058,7 +3058,7 @@ Recorder.onUpdate(s => {
       recMarker.setLatLng(last);
       // 山林夥伴同行：寵物跟在當前位置上方
       if (!petMarker) petMarker = L.marker(last, {
-        icon: L.divIcon({ className: "pet-marker", html: `<span class="pm-e">${petEmojiNow()}</span>`, iconSize: [34, 34], iconAnchor: [17, 30] }),
+        icon: L.divIcon({ className: "pet-marker", html: `<span class="pm-e">${typeof PET_ART !== "undefined" ? PET_ART.svg(petStageIndex(totalKm())) : petEmojiNow()}</span>`, iconSize: [40, 40], iconAnchor: [20, 34] }),
         interactive: false, zIndexOffset: 1000,
       }).addTo(recMap);
       petMarker.setLatLng(last);
@@ -4057,7 +4057,7 @@ async function renderMeProfileCard() {
     <div class="me-card-info">
       <div class="me-card-name">${esc(prof.display_name || prof.handle)}${lvl ? ` <span class="lv-chip lvt-${Math.min(lvl, 7)}">Lv.${lvl}</span>` : ""}${pro ? ` <span class="pro-tag pro-mine">PRO</span>` : ""}</div>
       <div class="me-card-handle">@${esc(prof.handle)}</div>
-      ${ps ? `<div class="me-card-pet">${ps.emoji} ${esc(ps.name)}　·　已走 <b>${ps.km}</b> km</div>` : ""}
+      ${ps ? `<div class="me-card-pet">${typeof PET_ART !== "undefined" ? PET_ART.svg((ps.level || 1) - 1) : ps.emoji} ${esc(ps.name)}　·　已走 <b>${ps.km}</b> km</div>` : ""}
     </div>
   </div>`;
 }

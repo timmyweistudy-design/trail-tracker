@@ -5,7 +5,8 @@ const Discover = (() => {
     if (!prof.pet_name && !prof.pet_level) return "";
     const lvl = prof.pet_level || 1;
     const emoji = (typeof PET_STAGES !== "undefined" && PET_STAGES[lvl - 1]) ? PET_STAGES[lvl - 1].e : "🐾";
-    return `<div class="pf-pet">${emoji} ${esc(prof.pet_name || "")} <span class="lv-chip lvt-${Math.min(lvl, 7)}">Lv.${lvl}</span>${prof.total_km != null ? `　·　已走 ${prof.total_km} km` : ""}</div>`;
+    const art = (typeof PET_ART !== "undefined") ? PET_ART.svg(lvl - 1) : emoji;
+    return `<div class="pf-pet">${art} ${esc(prof.pet_name || "")} <span class="lv-chip lvt-${Math.min(lvl, 7)}">Lv.${lvl}</span>${prof.total_km != null ? `　·　已走 ${prof.total_km} km` : ""}</div>`;
   }
 
   function render(renderInto) {

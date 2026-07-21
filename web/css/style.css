@@ -641,8 +641,8 @@ body.navup-on #recMap .leaflet-map-pane { transition: transform .12s linear; }
 .pre-hike .ph-row { display: flex; align-items: baseline; gap: 8px; font-size: calc(12.5px * var(--fs, 1)); color: var(--ink); line-height: 1.45; }
 .pre-hike .ph-ic { flex: none; font-size: calc(14px * var(--fs, 1)); }
 .pet-marker { background: none; border: none; }
-.pet-marker .pm-e { display: block; font-size: calc(27px * var(--fs, 1)); line-height: 1; text-align: center; filter: drop-shadow(0 2px 4px rgba(0,0,0,.45)); animation: petBob 2s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) { .pet-marker .pm-e { animation: none; } }
+.pet-marker .pm-e { display: block; font-size: calc(27px * var(--fs, 1)); line-height: 1; text-align: center; filter: drop-shadow(0 2px 4px rgba(0,0,0,.45)); }
+.pet-marker .pm-e .pet-critter { width: 40px; height: 40px; filter: none; }
 .rec-spark { width: 100%; height: 56px; display: block; background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: var(--r-sm); }
 .rec-spark-cap { font-size: calc(11px * var(--fs, 1)); color: var(--ink-soft); text-align: center; margin-top: 4px; font-family: var(--num); }
 #recElevSpark { margin-bottom: 12px; }
@@ -789,11 +789,14 @@ body.navup-on #recMap .leaflet-map-pane { transition: transform .12s linear; }
 .evolve-ov { position: fixed; inset: 0; z-index: 95; background: radial-gradient(circle at 50% 40%, rgba(40,80,55,.85), rgba(12,22,14,.92)); backdrop-filter: blur(4px); display: grid; place-items: center; padding: 24px; animation: fadein .3s; }
 .evolve-card { text-align: center; color: #fbf8ee; position: relative; }
 .evolve-emoji { font-size: calc(96px * var(--fs, 1)); line-height: 1; filter: drop-shadow(0 0 22px rgba(232,200,122,.8)); animation: evolvePop .7s cubic-bezier(.2,.9,.3,1.3); }
-.evolve-emoji .pet-critter { width: calc(120px * var(--fs, 1)); height: calc(120px * var(--fs, 1)); filter: none; }
+.evolve-emoji .pet-critter { width: calc(120px * var(--fs, 1)); height: calc(120px * var(--fs, 1)); filter: none; margin: 0 auto; }
 @keyframes evolvePop { 0% { transform: scale(.2) rotate(-25deg); opacity: 0; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
 /* 手冊圖鑑 / 好友夥伴：SVG 角色填入原 emoji 容器 */
 .dex-row .dex-e .pet-critter { width: 44px; height: 44px; filter: none; }
 .fp-pet .pet-critter { width: 34px; height: 34px; filter: none; vertical-align: middle; }
+.pf-pet .pet-critter { width: 26px; height: 26px; filter: none; flex: 0 0 auto; }
+.me-card-pet .pet-critter { width: 30px; height: 30px; filter: none; vertical-align: middle; display: inline-block; }
+.tm-pet .pet-critter { width: 17px; height: 17px; filter: none; }
 .evolve-h { font-family: var(--serif); font-size: calc(30px * var(--fs, 1)); font-weight: 900; letter-spacing: 6px; margin-top: 10px; color: #e8c87a; }
 .evolve-n { font-family: var(--serif); font-size: calc(18px * var(--fs, 1)); font-weight: 700; margin-top: 6px; }
 .evolve-d { font-size: calc(13px * var(--fs, 1)); opacity: .85; margin-top: 8px; max-width: 280px; margin-inline: auto; line-height: 1.6; }

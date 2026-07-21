@@ -22,7 +22,8 @@ const TeamLive = (() => {
 
   function icon(meta, opts) {
     const av = meta.avatar ? `<img src="${esc(meta.avatar)}" alt="">` : `<span class="tm-ph">${esc((meta.name || "?").slice(0, 1))}</span>`;
-    const pet = meta.pet ? `<span class="tm-pet">${esc(meta.pet)}</span>` : "";
+    const petIdx = (meta.pet && typeof PET_ART !== "undefined" && PET_ART.byEmoji) ? PET_ART.byEmoji(meta.pet) : -1;
+    const pet = meta.pet ? `<span class="tm-pet">${petIdx >= 0 ? PET_ART.svg(petIdx) : esc(meta.pet)}</span>` : "";
     const dir = (meta.heading != null) ? `<div class="tm-dir" style="transform:rotate(${(+meta.heading).toFixed(0)}deg)"><span class="tm-cone"></span></div>` : "";
     const pulse = (opts && opts.pulse) ? `<span class="tm-pulse"></span>` : "";   // 點名字看定位→脈動光圈標示
     return L.divIcon({ className: "team-marker" + ((opts && opts.pulse) ? " peek" : ""), html: `<div class="tm-av">${pulse}${dir}${av}${pet}</div>`, iconSize: [32, 32], iconAnchor: [16, 16] });
