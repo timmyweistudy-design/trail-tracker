@@ -694,42 +694,78 @@ body.navup-on #recMap .leaflet-map-pane { transition: transform .12s linear; }
 .empty .big { font-size: calc(42px * var(--fs, 1)); display: block; margin-bottom: 10px; opacity: .9; }
 .empty-art { width: 116px; height: auto; display: block; margin: 0 auto 16px; }
 
-/* 山林夥伴 */
-.pet-card { display: flex; align-items: center; gap: 16px; position: relative; overflow: hidden;
-  background: linear-gradient(140deg, #225033 0%, #16301f 60%, #102217 100%); color: #f3efe4;
-  border-radius: var(--r); padding: 18px 18px; box-shadow: var(--sh); }
-.pet-card::before { content: ""; position: absolute; inset: -40% -10% auto auto; width: 160px; height: 200%;
-  background-image: repeating-radial-gradient(ellipse 130% 90% at 80% 20%, transparent 0 18px, rgba(220,232,210,.07) 18px 19.5px); pointer-events: none; }
-.pet-card.final { background: linear-gradient(140deg, #2b5a3a, #234a6b 55%, #16301f); box-shadow: 0 0 0 1px rgba(232,200,122,.3), var(--sh-lg); }
-.pet-emoji { font-size: calc(56px * var(--fs, 1)); line-height: 1; flex: 0 0 auto; cursor: pointer; position: relative;
-  filter: drop-shadow(0 4px 10px rgba(0,0,0,.4)); animation: petBob 2.6s ease-in-out infinite; }
-.pet-card.final .pet-emoji { filter: drop-shadow(0 0 12px rgba(232,200,122,.7)) drop-shadow(0 4px 10px rgba(0,0,0,.4)); }
-@keyframes petBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
-.pet-emoji.tap { animation: petTap .55s cubic-bezier(.2,.8,.2,1); }
-@keyframes petTap { 0% { transform: scale(1); } 35% { transform: scale(1.4) rotate(-10deg); } 70% { transform: scale(.92) rotate(6deg); } 100% { transform: scale(1); } }
-.pet-info { flex: 1; min-width: 0; position: relative; }
-.pet-name { font-family: var(--serif); font-weight: 700; font-size: calc(18px * var(--fs, 1)); display: flex; align-items: center; }
-.pet-lv { font-family: var(--num); font-size: calc(11.5px * var(--fs, 1)); font-weight: 600; background: rgba(255,255,255,.18); padding: 2px 9px; border-radius: var(--r-pill); margin-left: 8px; }
-.pet-desc { font-size: calc(12px * var(--fs, 1)); opacity: .82; margin-top: 4px; line-height: 1.5; }
-.pet-sub { font-size: calc(11.5px * var(--fs, 1)); opacity: .9; margin-top: 9px; font-variant-numeric: tabular-nums; }
-.pet-sub b { font-family: var(--num); font-weight: 700; color: #e8c87a; }
-.pet-bar { height: 6px; background: rgba(255,255,255,.18); border-radius: 6px; margin-top: 7px; overflow: hidden; }
-.pet-bar i { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg, #9fe0b0, #e8c87a); transition: width .6s cubic-bezier(.2,.8,.2,1); }
-@media (prefers-reduced-motion: reduce) { .pet-emoji { animation: none; } }
-.pet-edit { background: rgba(255,255,255,.16); border: none; color: #f3efe4; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; margin-left: 8px; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; padding: 0; }
+/* 山林夥伴（直向主角版：角色放大置中 → 對話泡 → 名字 → 主進度 → 迷你雙條 → chip → 動作列） */
+.pet-card { position: relative; overflow: hidden; border-radius: 24px; padding: 18px 16px 16px; color: #f3f1e6;
+  background: var(--habitat, radial-gradient(120% 90% at 50% 8%, #356b4a, #1f4730 46%, #132a1c)); box-shadow: 0 12px 30px -12px rgba(15,40,25,.55); }
+.pet-card.final { box-shadow: 0 0 0 1px rgba(232,200,122,.35), 0 12px 30px -10px rgba(15,40,25,.6); }
+.pet-habitat { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.pet-habitat svg { position: absolute; bottom: 0; width: 100%; opacity: .45; }
+.pet-ff { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: #ffe6a0; box-shadow: 0 0 7px 2px #ffd873; opacity: .6; animation: pcff 6s ease-in-out infinite; }
+@keyframes pcff { 0%,100% { transform: translate(0,0); opacity: .25; } 50% { transform: translate(6px,-14px); opacity: .8; } }
+
+.pet-stage { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.pet-bubble { position: relative; background: rgba(255,253,246,.96); color: #2b2f26; font-size: calc(12.5px * var(--fs,1)); font-weight: 600;
+  padding: 6px 13px; border-radius: 14px 14px 14px 4px; max-width: 90%; box-shadow: 0 4px 12px rgba(0,0,0,.18); margin-bottom: 6px; animation: pcbubble .5s cubic-bezier(.2,.9,.3,1.3) both; }
+.pet-bubble::after { content: ""; position: absolute; left: 16px; bottom: -6px; border: 6px solid transparent; border-top-color: rgba(255,253,246,.96); border-bottom: 0; }
+@keyframes pcbubble { from { opacity: 0; transform: translateY(6px) scale(.9); } to { opacity: 1; transform: none; } }
+
+.pet-critter { width: calc(130px * var(--fs,1)); height: calc(130px * var(--fs,1)); max-width: 68vw; cursor: pointer; display: block; filter: drop-shadow(0 10px 12px rgba(0,0,0,.3)); }
+.pet-card.final .pet-critter { filter: drop-shadow(0 0 14px rgba(232,200,122,.55)) drop-shadow(0 10px 12px rgba(0,0,0,.32)); }
+#petEmoji { position: relative; z-index: 2; }
+#petEmoji.tap .pet-critter { animation: petTap .55s cubic-bezier(.2,.8,.2,1); }
+.pet-shadow { width: 86px; height: 12px; border-radius: 50%; background: rgba(0,0,0,.26); filter: blur(3px); margin: -8px 0 8px; }
+
+.pet-idline { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
+.pet-name { font-family: var(--serif); font-weight: 700; font-size: calc(20px * var(--fs,1)); letter-spacing: .5px; }
+.pet-edit { background: rgba(255,255,255,.16); border: none; color: #f3f1e6; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; flex: 0 0 auto; }
 .pet-edit .ic { width: 13px; height: 13px; }
 .pet-edit:active { transform: scale(.9); }
-.pet-mood { font-size: calc(12px * var(--fs, 1)); opacity: .85; margin-top: 4px; }
-.pet-hearts { font-size: calc(11px * var(--fs, 1)); letter-spacing: 1px; white-space: nowrap; }
-.pet-care { display: flex; align-items: center; gap: 10px; margin-top: 11px; }
-.pet-berry { font-size: calc(13px * var(--fs, 1)); font-weight: 600; background: rgba(255,255,255,.14); padding: 6px 11px; border-radius: var(--r-pill); font-variant-numeric: tabular-nums; flex: 0 0 auto; }
-.pet-btn.feed { flex: 1; background: rgba(232,200,122,.92); color: #3a2a12; border-color: transparent; font-weight: 700; }
-.pet-btn.feed:active { background: #e8c87a; }
-.pet-btn.feed:disabled { background: rgba(255,255,255,.1); color: rgba(255,255,255,.55); cursor: default; }
-.pet-btns { display: flex; gap: 8px; margin-top: 8px; }
-.pet-btn { flex: 1; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.18); color: #f3efe4; border-radius: var(--r-pill); padding: 11px 10px; font-size: calc(12px * var(--fs, 1)); font-weight: 600; cursor: pointer; transition: .15s;
-  min-height: 44px; display: inline-flex; align-items: center; justify-content: center;   /* 觸控區 44px（原 34px） */ }
+
+.pet-evo { width: 100%; margin: 12px 0 2px; }
+.pet-evo-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: calc(11.5px * var(--fs,1)); color: #d7e4d3; margin-bottom: 6px; }
+.pet-evo-top b { font-family: var(--num); color: #ffe6a0; font-size: calc(13.5px * var(--fs,1)); }
+.pet-evo-next { display: flex; align-items: center; gap: 4px; opacity: .92; flex: 0 0 auto; }
+.pet-evo-next .pet-critter { width: 26px; height: 26px; filter: none; }
+.pet-track { height: 8px; border-radius: 999px; background: rgba(255,255,255,.16); overflow: hidden; }
+.pet-track i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg,#8fd6a3,#e8c87a); box-shadow: 0 0 8px rgba(232,200,122,.4); transition: width .6s cubic-bezier(.2,.8,.2,1); }
+
+.pet-meters { position: relative; z-index: 2; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 11px; }
+.pet-meter { display: flex; align-items: center; gap: 7px; font-size: calc(11px * var(--fs,1)); color: #d7e4d3; }
+.pet-meter .mtrack { flex: 1; height: 7px; border-radius: 999px; background: rgba(255,255,255,.16); overflow: hidden; }
+.pet-meter .mtrack i { display: block; height: 100%; border-radius: 999px; transition: width .5s; }
+.pet-meter .m-en { background: linear-gradient(90deg,#e5a52e,#f2cf6a); }
+.pet-meter .m-love { background: linear-gradient(90deg,#e0556b,#f2969f); }
+
+.pet-chips { position: relative; z-index: 2; display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; margin-top: 9px; }
+.pet-chip { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.14); border-radius: 13px; padding: 8px 5px; text-align: center; }
+.pet-chip .cv { font-family: var(--num); font-size: calc(15px * var(--fs,1)); font-weight: 700; color: #fff; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.pet-chip .cv small { font-size: .7em; font-weight: 600; color: #cfe0cb; }
+.pet-chip .cl { font-size: calc(10px * var(--fs,1)); color: #cfe0cb; margin-top: 3px; }
+
+.pet-acts { position: relative; z-index: 2; display: flex; gap: 8px; margin-top: 13px; }
+.pet-btn { flex: 1; background: rgba(255,255,255,.13); border: 1px solid rgba(255,255,255,.17); color: #f3f1e6; border-radius: 14px; padding: 11px 8px; font-size: calc(12.5px * var(--fs,1)); font-weight: 700; cursor: pointer; transition: .15s; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
 .pet-btn:active { background: rgba(255,255,255,.26); transform: scale(.97); }
+.pet-btn.feed { flex: 1.5; background: linear-gradient(135deg,#e8a33b,#c9711d); color: #fff; border-color: transparent; box-shadow: 0 5px 14px -4px rgba(201,113,29,.6); }
+.pet-btn.feed:active { filter: brightness(1.06); }
+.pet-btn.feed:disabled { background: rgba(255,255,255,.1); color: rgba(255,255,255,.5); box-shadow: none; cursor: default; }
+
+/* 角色待機動畫（SVG 內以 part class 對應各部位） */
+.pc-bob { transform-box: fill-box; transform-origin: 50% 92%; animation: pcbob 3.4s ease-in-out infinite; }
+@keyframes pcbob { 0%,100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-6px) rotate(1deg); } }
+.pc-hover { transform-box: fill-box; transform-origin: 50% 50%; animation: pchover 3.8s ease-in-out infinite; }
+@keyframes pchover { 0%,100% { transform: translateY(2px); } 50% { transform: translateY(-8px); } }
+.pc-eye { transform-box: fill-box; transform-origin: center; animation: pcblink 4.4s infinite; }
+@keyframes pcblink { 0%,92%,100% { transform: scaleY(1); } 96% { transform: scaleY(.1); } }
+.pc-tail { transform-box: fill-box; transform-origin: 78% 62%; animation: pcwag 2.7s ease-in-out infinite; }
+@keyframes pcwag { 0%,100% { transform: rotate(-6deg); } 50% { transform: rotate(8deg); } }
+.pc-wing { transform-box: fill-box; animation: pcflut 1.1s ease-in-out infinite; }
+.pc-wing.l { transform-origin: 100% 50%; }
+.pc-wing.r { transform-origin: 0% 50%; }
+@keyframes pcflut { 0%,100% { transform: scaleX(1); } 50% { transform: scaleX(.72); } }
+.pc-tw { transform-box: fill-box; transform-origin: center; animation: pctw 2.4s ease-in-out infinite; }
+@keyframes pctw { 0%,100% { opacity: .5; transform: scale(.9); } 50% { opacity: 1; transform: scale(1.12); } }
+@keyframes petTap { 0% { transform: scale(1); } 35% { transform: scale(1.18) rotate(-6deg); } 70% { transform: scale(.94) rotate(4deg); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .pc-bob,.pc-hover,.pc-eye,.pc-tail,.pc-wing,.pc-tw,.pet-ff { animation: none !important; } }
 
 /* 夥伴手冊 */
 .pet-modal { position: fixed; inset: 0; z-index: 80; background: rgba(16,28,18,.6); backdrop-filter: blur(4px); display: grid; place-items: center; padding: 20px; animation: fadein .25s; }
@@ -753,7 +789,11 @@ body.navup-on #recMap .leaflet-map-pane { transition: transform .12s linear; }
 .evolve-ov { position: fixed; inset: 0; z-index: 95; background: radial-gradient(circle at 50% 40%, rgba(40,80,55,.85), rgba(12,22,14,.92)); backdrop-filter: blur(4px); display: grid; place-items: center; padding: 24px; animation: fadein .3s; }
 .evolve-card { text-align: center; color: #fbf8ee; position: relative; }
 .evolve-emoji { font-size: calc(96px * var(--fs, 1)); line-height: 1; filter: drop-shadow(0 0 22px rgba(232,200,122,.8)); animation: evolvePop .7s cubic-bezier(.2,.9,.3,1.3); }
+.evolve-emoji .pet-critter { width: calc(120px * var(--fs, 1)); height: calc(120px * var(--fs, 1)); filter: none; }
 @keyframes evolvePop { 0% { transform: scale(.2) rotate(-25deg); opacity: 0; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+/* 手冊圖鑑 / 好友夥伴：SVG 角色填入原 emoji 容器 */
+.dex-row .dex-e .pet-critter { width: 44px; height: 44px; filter: none; }
+.fp-pet .pet-critter { width: 34px; height: 34px; filter: none; vertical-align: middle; }
 .evolve-h { font-family: var(--serif); font-size: calc(30px * var(--fs, 1)); font-weight: 900; letter-spacing: 6px; margin-top: 10px; color: #e8c87a; }
 .evolve-n { font-family: var(--serif); font-size: calc(18px * var(--fs, 1)); font-weight: 700; margin-top: 6px; }
 .evolve-d { font-size: calc(13px * var(--fs, 1)); opacity: .85; margin-top: 8px; max-width: 280px; margin-inline: auto; line-height: 1.6; }

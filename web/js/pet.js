@@ -82,7 +82,7 @@ function petStats() {
   return { name: petName() || st.n, level: i + 1, stage: st.n, emoji: st.e, km: +km.toFixed(1) };
 }
 function petHatch() { let h = localStorage.getItem("tt_pet_hatch"); if (!h) { h = new Date().toISOString(); localStorage.setItem("tt_pet_hatch", h); } return h; }
-function daysSince(iso) { return Math.max(0, Math.floor((Date.now() - new Date(iso)) / 864e5)); }
+function daysSince(iso) { const t = new Date(iso).getTime(); if (!isFinite(t)) return 0; return Math.max(0, Math.floor((Date.now() - t) / 864e5)); }   // 防護：孵化日異常/舊格式 → 回 0（不再顯示 NaN）
 function weekIndex(d) { const dt = new Date(d); dt.setHours(0, 0, 0, 0); dt.setDate(dt.getDate() - ((dt.getDay() + 6) % 7)); return Math.round(dt / 6048e5); }
 function weeksStreak() {
   const recs = realRecords(); if (!recs.length) return 0;
@@ -176,29 +176,37 @@ function renderPet() {
   const km = totalKm(), i = petStageIndex(km), st = PET_STAGES[i], next = PET_STAGES[i + 1];
   const nm = petName(), mood = petMood(), days = daysSince(petHatch()), streak = weeksStreak(), en = energy();
   const berries = berriesBalance(), h = petHearts(), bonus = feedBonusKm(), canFeed = canFeedToday(), cd = feedCooldownMs();
-  let prog = "", sub;
+  const art = (typeof PET_ART !== "undefined") ? PET_ART.svg(i) : `<span style="font-size:70px">${st.e}</span>`;
+  let evoTop, prog = "";
   if (next) {
     const pct = Math.max(2, Math.min(100, Math.round((km - st.km) / (next.km - st.km) * 100)));
-    sub = `再 <b>${(next.km - km).toFixed(1)}</b> km 進化成 ${next.e} ${next.n}`;
-    prog = `<div class="pet-bar"><i style="width:${pct}%"></i></div>`;
-  } else sub = "已是最終型態 ✨ 繼續同行！";
-  box.innerHTML = `<div class="pet-card${i >= 6 ? " final" : ""}" style="background:${PET_BG[i]}">
-    <div class="pet-emoji" id="petEmoji" role="img" aria-label="${st.n}">${st.e}</div>
-    <div class="pet-info">
-      <div class="pet-name">${nm || st.n}<span class="lv-chip lvt-${Math.min(i + 1, 7)} pet-lv-chip">Lv.${i + 1}</span>${(typeof Premium !== "undefined" && Premium.isOn()) ? `<button class="pet-edit" id="petRename" title="命名" aria-label="命名">${ic("pencil")}</button>` : ""}</div>
-      <div class="pet-mood">${mood.e} ${mood.t}　<span class="pet-hearts">${"❤️".repeat(h)}${"🤍".repeat(5 - h)}</span></div>
-      <div class="pet-energy"><span class="pe-l">活力 ${en}</span><div class="pe-bar"><i style="width:${en}%"></i></div></div>
-      <div class="pet-sub">${nm ? st.n + "・" : ""}已走 <b>${km.toFixed(1)}</b> km${bonus > 0 ? `（含照顧 +${bonus.toFixed(1)}）` : ""}・同行 <b>${days}</b> 天${streak >= 2 ? `・<span class="inline-ic">${ic("flame")}</span>連續${streak}週` : ""}</div>
-      <div class="pet-sub" style="opacity:.9">${sub}</div>
-      ${prog}
-      <div class="pet-care">
-        <span class="pet-berry">🍓 ${berries}</span>
-        <button class="pet-btn feed" id="petFeed"${canFeed ? "" : " disabled"}>${cd > 0 ? `🍃 ${Math.ceil(cd / 3600e3)} 小時後可餵` : "🍖 餵食 (3🍓)"}</button>
-      </div>
-      <div class="pet-btns">
-        <button class="pet-btn" id="petDex">${ic("book")} 夥伴手冊</button>
-        <button class="pet-btn" id="petRec">${ic("compass")} 帶我去走</button>
-      </div>
+    const nextArt = (typeof PET_ART !== "undefined") ? PET_ART.svg(i + 1) : st.e;
+    evoTop = `<span><b>${(next.km - km).toFixed(1)}</b> km → ${ttT("進化")}</span><span class="pet-evo-next">${nextArt}<span>${next.n}</span></span>`;
+    prog = `<div class="pet-track"><i style="width:${pct}%"></i></div>`;
+  } else evoTop = `<span>${ttT("已達最終型態")} ✨</span>`;
+  const lovePct = Math.round(h / 5 * 100);
+  box.innerHTML = `<div class="pet-card${i >= 6 ? " final" : ""}" style="--habitat:${PET_BG[i]}">
+    <div class="pet-habitat"><span class="pet-ff" style="left:16%;top:24%"></span><span class="pet-ff" style="left:78%;top:18%;animation-delay:2.1s;animation-duration:7.5s"></span><span class="pet-ff" style="left:60%;top:40%;animation-delay:3.4s;animation-duration:5.5s"></span></div>
+    <div class="pet-stage">
+      <div class="pet-bubble">${mood.e} ${mood.t}</div>
+      <div id="petEmoji" role="img" aria-label="${st.n}">${art}</div>
+      <div class="pet-shadow"></div>
+      <div class="pet-idline"><span class="pet-name">${nm || st.n}</span><span class="lv-chip lvt-${Math.min(i + 1, 7)} pet-lv-chip">Lv.${i + 1}</span>${(typeof Premium !== "undefined" && Premium.isOn()) ? `<button class="pet-edit" id="petRename" title="命名" aria-label="命名">${ic("pencil")}</button>` : ""}</div>
+      <div class="pet-evo"><div class="pet-evo-top">${evoTop}</div>${prog}</div>
+    </div>
+    <div class="pet-meters">
+      <div class="pet-meter"><span>${ttT("活力")} ${en}</span><div class="mtrack"><i class="m-en" style="width:${en}%"></i></div></div>
+      <div class="pet-meter"><span>${ttT("親密")}</span><div class="mtrack"><i class="m-love" style="width:${lovePct}%"></i></div></div>
+    </div>
+    <div class="pet-chips">
+      <div class="pet-chip"><div class="cv">${km.toFixed(1)}<small> km</small></div><div class="cl">${ttT("累計里程")}</div></div>
+      <div class="pet-chip"><div class="cv">${days}<small> ${ttT("天")}</small></div><div class="cl">${ttT("同行")}</div></div>
+      <div class="pet-chip"><div class="cv">${streak}<small> ${ttT("週")}</small></div><div class="cl">${streak >= 2 ? "🔥 " : ""}${ttT("連續")}</div></div>
+    </div>
+    <div class="pet-acts">
+      <button class="pet-btn feed" id="petFeed"${canFeed ? "" : " disabled"}>${cd > 0 ? `🍃 ${Math.ceil(cd / 3600e3)} ${ttT("小時後可餵")}` : `🍖 ${ttT("餵食")} · 🍓${berries}`}</button>
+      <button class="pet-btn" id="petDex">${ic("book")} ${ttT("手冊")}</button>
+      <button class="pet-btn" id="petRec">${ic("compass")} ${ttT("去走")}</button>
     </div>
   </div>`;
   const em = $("#petEmoji");
@@ -334,7 +342,7 @@ function openPetDex() {
   const stages = PET_STAGES.map((s, i) => {
     const unlocked = i <= reached, isNow = i === reached;
     return `<div class="dex-row${unlocked ? "" : " locked"}${isNow ? " now" : ""}">
-      <div class="dex-e">${unlocked ? s.e : "❔"}</div>
+      <div class="dex-e">${unlocked && typeof PET_ART !== "undefined" ? PET_ART.svg(i) : (unlocked ? s.e : "❔")}</div>
       <div class="dex-body">
         <div class="dex-h"><b>${unlocked ? s.n : "？？？"}</b><span class="lv-chip lvt-${Math.min(i + 1, 7)}">Lv.${i + 1}</span>${isNow ? `<span class="dex-now">目前</span>` : ""}</div>
         <div class="dex-k">${i === 0 ? "起始型態" : `成長里程 ${s.km} km 解鎖`}</div>
@@ -342,7 +350,7 @@ function openPetDex() {
       </div>
     </div>`;
   }).join("");
-  const tip = next ? `再走 <b>${(next.km - km).toFixed(1)}</b> km 進化成 ${next.e} ${next.n}` : "已達最終型態 ✨ 與你繼續同行";
+  const tip = next ? `再走 <b>${(next.km - km).toFixed(1)}</b> km 進化成 ${next.n}` : "已達最終型態 ✨ 與你繼續同行";
   const ov = document.createElement("div");
   ov.className = "pet-modal"; ov.dataset.ov = "petdex";
   ov.innerHTML = `<div class="pet-modal-card">
@@ -366,7 +374,7 @@ function celebrateEvolve(st, lv) {
   ov.className = "evolve-ov"; ov.dataset.ov = "evolve";
   ov.innerHTML = `<div class="evolve-card">
     <div class="evolve-spark"></div>
-    <div class="evolve-emoji">${st.e}</div>
+    <div class="evolve-emoji">${typeof PET_ART !== "undefined" ? PET_ART.svg(lv - 1) : st.e}</div>
     <div class="evolve-h">進化！</div>
     <div class="evolve-n">${petName() || st.n} <span class="lv-chip lvt-${Math.min(lv, 7)}">Lv.${lv}</span></div>
     <div class="evolve-d">${st.d}</div>

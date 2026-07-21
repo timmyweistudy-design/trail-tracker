@@ -53,8 +53,9 @@ const Pets = (() => {
     if (!list.length) { box.innerHTML = `<div class="section-title">👯 好友的夥伴</div><div class="social-empty" style="padding:14px">在社群互相追蹤山友後，這裡會出現他們的夥伴，可以送果實打氣。</div>`; return; }
     box.innerHTML = `<div class="section-title">👯 好友的夥伴</div><div class="friend-pets">${list.map(p => {
       const lvl = p.pet_level || 1, emoji = (typeof PET_STAGES !== "undefined" && PET_STAGES[lvl - 1]) ? PET_STAGES[lvl - 1].e : "🥚";
+      const art = (typeof PET_ART !== "undefined") ? PET_ART.svg(lvl - 1) : emoji;   // 好友夥伴也用 SVG 角色
       const sent = sentToday.has(p.id);
-      return `<div class="fp"><span class="fp-pet">${emoji}</span><div class="fp-info"><b>${esc(p.pet_name || p.display_name || p.handle)}</b> <span class="lv-chip lvt-${Math.min(lvl, 7)}">Lv.${lvl}</span><div class="fp-by">@${esc(p.handle)}</div></div><button class="btn ghost fp-gift" data-id="${p.id}" data-name="${esc(p.display_name || p.handle)}"${sent ? " disabled" : ""}>${sent ? "今天已送" : "送 3🍓"}</button></div>`;
+      return `<div class="fp"><span class="fp-pet">${art}</span><div class="fp-info"><b>${esc(p.pet_name || p.display_name || p.handle)}</b> <span class="lv-chip lvt-${Math.min(lvl, 7)}">Lv.${lvl}</span><div class="fp-by">@${esc(p.handle)}</div></div><button class="btn ghost fp-gift" data-id="${p.id}" data-name="${esc(p.display_name || p.handle)}"${sent ? " disabled" : ""}>${sent ? "今天已送" : "送 3🍓"}</button></div>`;
     }).join("")}</div>`;
     box.querySelectorAll(".fp-gift").forEach(b => b.addEventListener("click", async () => {
       if (typeof berriesBalance === "function" && berriesBalance() < 3) { if (typeof toast === "function") toast("果實不足，多走幾步 🍓"); return; }

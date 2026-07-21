@@ -45,7 +45,7 @@ const EXT = /net::|favicon|404 \(|Failed to load resource|CORS|opentopodata|tran
 
   await step("寵物:分頁", async () => { await click('.tab[data-view="pet"]'); await p.waitForTimeout(800); });
   await step("寵物:餵食", async () => { await p.locator('button:has-text("餵食"), #btnFeed').first().click({ timeout: 3000 }).catch(() => {}); await p.waitForTimeout(600); });
-  await step("寵物:任務/成就/手冊", async () => { for (const t of ["每日任務", "成就", "夥伴手冊", "圖鑑", "帶我去走"]) { await p.locator(`button:has-text("${t}"), .link-btn:has-text("${t}")`).first().click({ timeout: 2500 }).catch(() => {}); await p.waitForTimeout(500); const x = p.locator(".pet-modal .sheet-close, .pet-modal-card .sheet-close").first(); if (await x.count()) await x.click().catch(() => {}); } });
+  await step("寵物:任務/成就/手冊", async () => { for (const t of ["每日任務", "成就", "手冊", "圖鑑", "去走"]) { await p.locator(`button:has-text("${t}"), .link-btn:has-text("${t}")`).first().click({ timeout: 2500 }).catch(() => {}); await p.waitForTimeout(500); const x = p.locator(".pet-modal .sheet-close, .pet-modal-card .sheet-close").first(); if (await x.count()) await x.click().catch(() => {}); } });
 
   await step("_clean1", closeAny);
   await step("記錄:分頁", async () => { await click('.tab[data-view="record"]'); await p.waitForTimeout(700); });
