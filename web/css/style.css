@@ -419,11 +419,13 @@ body.navup-on #recMap .leaflet-map-pane { transition: transform .12s linear; }
 /* 格數為奇數時，最後一格橫跨兩欄，避免落單半格不對稱 */
 .statcard .stat:last-child:nth-child(odd) { grid-column: 1 / -1; }
 /* 底部固定主動作列 + 資料來源頁尾 */
-/* 負的下外距吃掉 .sheet-body(16px) 與 .sheet(22px+safe) 的底部 padding，讓動作列貼到 sheet 真正底緣；
-   下內距只留安全區（無瀏海手機為 0），按鈕直接坐底 → 下方不再露出白色 sheet padding 跟著捲。
-   向上的陰影讓底下捲動的內容與這條 docked 動作列有層次區隔 */
+/* 詳情面板底部 padding 改成「只留安全區」（原 .sheet 是 22px+safe，會在按鈕下方露一條白帶且不對稱）。
+   home indicator 安全區留在動作列「下方」的 sheet 底部＝連續 surface、不成獨立白帶。 */
+#detailSheet { padding-bottom: var(--safe-b); }
+/* 動作列上下內距對稱 12px（不含安全區→安全區在下方 sheet 底）；負下外距只吃 sheet-body 的 16px，
+   不用大負值 → 不會把按鈕拉上去蓋到上面的頁尾文字。向上陰影與捲動內容分層。 */
 .detail-actionbar { position: sticky; bottom: 0; z-index: 5;
-  margin: 8px -19px calc(-38px - var(--safe-b)); padding: 11px 15px var(--safe-b);
+  margin: 8px -19px -16px; padding: 12px 15px;
   background: var(--surface); box-shadow: 0 -8px 16px -8px rgba(22, 48, 31, .14); }
 .detail-actionbar .btn { margin: 0; }
 .detail-credit { font-size: calc(11px * var(--fs, 1)); color: var(--ink-soft); text-align: center; margin-top: 12px; padding-bottom: 6px; }

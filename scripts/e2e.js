@@ -255,14 +255,26 @@ const PORT = 8899;
       });
       await p3.goto(`http://localhost:${PORT}/`, { waitUntil: "domcontentloaded" });
       await p3.waitForTimeout(2600);
-      const globals = await p3.evaluate(() => ["ttCoach", "applyPalette", "renderReminderToggle", "cloudAutoSync", "hikeWxHint"].map(n => typeof window[n] === "function"));
-      ok("新功能全域引擎皆在（導覽/配色/提醒/同步/天氣）", globals.every(Boolean));
+      const globals = await p3.evaluate(() => ["ttCoach", "applyPalette", "renderReminderToggle", "cloudAutoSync"].map(n => typeof window[n] === "function"));
+      ok("新功能全域引擎皆在（導覽/配色/提醒/同步）", globals.every(Boolean));
       const brand = await p3.evaluate(() => { if (typeof Premium === "undefined") window.Premium = {}; Premium.isOn = () => true; localStorage.setItem("tt_palette", "ocean"); applyPalette(); return getComputedStyle(document.documentElement).getPropertyValue("--brand").trim().toLowerCase(); });
       ok("PRO 主題配色 ocean 整組換色（--brand=#1f6390）", brand === "#1f6390");
       await p3.evaluate(() => document.querySelector('.tab[data-view="me"]').click());
       await p3.waitForTimeout(900);
       ok("當月健行月曆有渲染", await p3.locator("#meMonth .cal-grid").count() === 1);
-      ok("記錄頁天氣提示容器存在", await p3.locator("#recWxHint").count() === 1);
+      // 記錄頁改版：天氣提示「今天可能有雨」已移除；新順序 天氣卡→上次→地圖→開始鈕→開始文字
+      const recOrder = await p3.evaluate(() => {
+        const v = document.getElementById("view-record"); const kids = [...v.children];
+        const idx = sel => kids.findIndex(el => el.matches(sel));
+        return {
+          noWxHint: !document.getElementById("recWxHint"),
+          preHikeBeforeMap: idx("#preHike") >= 0 && idx("#preHike") < idx(".recmap-wrap"),
+          idleBeforeMap: idx("#recIdle") >= 0 && idx("#recIdle") < idx(".recmap-wrap"),
+          statusAfterControls: idx("#recStatus") > idx(".rec-controls"),
+        };
+      });
+      ok("記錄頁天氣提示已移除", recOrder.noWxHint);
+      ok("記錄頁新順序：天氣卡/上次在地圖前、開始文字在開始鈕後", recOrder.preHikeBeforeMap && recOrder.idleBeforeMap && recOrder.statusAfterControls);
       await p3.close();
     }
   } catch (e) {

@@ -140,13 +140,13 @@
         <div class="rc"><div class="rc-v" id="stDescent">↓0</div><div class="rc-l">下降 m</div></div>
       </div>
     </div>
+    <!-- 版面順序（使用者指定）：小隊(#teamReadyBar 由 teamlive 插在此前) → 已選古道 → 天氣卡 → 上次紀錄 → GPS → 地圖 → 開始鈕 → 開始文字 -->
     <div class="sel-trail" id="selTrail" hidden></div>
     <div class="off-route" id="offRoute" role="alert" aria-live="assertive" hidden></div>
-    <div class="rec-status" id="recStatus" role="status" aria-live="polite">準備就緒，按「開始」記錄路徑</div>
+    <div class="pre-hike" id="preHike" hidden></div>
+    <div id="recIdle"></div>
     <div id="recWpHud" class="rec-wp-hud"></div>
     <div class="gps-sig" id="gpsSig" hidden><i class="gs-dot"></i><span class="gs-txt"></span></div>
-    <div class="pre-hike" id="preHike" hidden></div>
-    <div id="recWxHint" class="rec-wx"></div>
     <div id="recElevSpark" style="display:none"></div>
     <div class="recmap-wrap"><div id="recMap"></div></div>
     <div class="rec-controls" style="margin-top:14px">
@@ -154,6 +154,7 @@
       <button class="btn amber" id="btnPause" style="display:none">⏸ 暫停</button>
       <button class="btn danger" id="btnStop" style="display:none">⏹ 結束</button>
     </div>
+    <div class="rec-status" id="recStatus" role="status" aria-live="polite">準備就緒，按「開始」記錄路徑</div>
     <button class="btn ghost" id="btnLock" style="display:none;margin-top:10px" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg> <span class="lock-label">鎖定畫面</span></button>
     <button class="btn ghost" id="btnSnap" style="display:none;margin-top:10px"><svg class="ic" viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4V8Z"/><circle cx="12" cy="13" r="3"/></svg> 隨手拍（記錄當下里程）<span id="snapCount"></span></button>
     <!-- 不用 capture="environment"：該屬性在 Capacitor iOS WKWebView 常讓 file input 點了完全沒反應。
@@ -170,7 +171,6 @@
       <button class="link-btn" id="btnImportGpx"><svg class="ic" viewBox="0 0 24 24"><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="5" r="2.2"/><path d="M8 19h6a4 4 0 0 0 0-8H10a4 4 0 0 1 0-8h6"/></svg>跟著路線走<span class="pro-tag">PRO</span></button>
     </div>
     <input type="file" id="gpxFile" accept=".gpx,application/gpx+xml" style="display:none">
-    <div id="recIdle"></div>
   </section>
 
   <!-- 我的 -->

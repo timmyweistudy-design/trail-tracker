@@ -198,7 +198,7 @@ const TeamLive = (() => {
   // 會成為 fixed 的包含塊兼堆疊脈絡，面板留在裡面會被全螢幕地圖蓋掉。搬到 body 才浮得上去。
   function placeBar(el) {
     const fs = document.body.classList.contains("map-fs-open");
-    const anchor = document.getElementById("recStatus");
+    const anchor = document.getElementById("selTrail");   // 小隊列置頂（rec-stats 下方、已選步道之前）
     if (fs) { if (el.parentNode !== document.body) document.body.appendChild(el); }
     else if (anchor && anchor.parentNode && el.nextSibling !== anchor) anchor.parentNode.insertBefore(el, anchor);
   }
@@ -206,7 +206,7 @@ const TeamLive = (() => {
   function readyBarEl() {
     let el = document.getElementById("teamReadyBar");
     if (el) { placeBar(el); return el; }
-    const anchor = document.getElementById("recStatus");
+    const anchor = document.getElementById("selTrail");   // 小隊列置頂（rec-stats 下方、已選步道之前）
     if (!anchor || !anchor.parentNode) return null;
     el = document.createElement("div");
     el.id = "teamReadyBar"; el.className = "team-ready-bar";
