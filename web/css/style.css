@@ -2500,8 +2500,16 @@ html[data-theme="dark"] body::after { opacity: .05; }
 .prof-handle { font-size: calc(12.5px * var(--fs, 1)); color: var(--ink-soft); margin-top: 2px; overflow-wrap: anywhere; }
 .prof-title { display: inline-flex; align-items: center; gap: 4px; font-family: var(--serif); font-weight: 700; font-size: calc(11.5px * var(--fs, 1)); padding: 2px 9px; border-radius: 999px; background: color-mix(in srgb, var(--brand) 15%, var(--surface)); color: var(--brand-deep); border: 1px solid color-mix(in srgb, var(--brand) 24%, transparent); white-space: nowrap; }
 .prof-title .ic { width: 13px; height: 13px; }
-.prof-title.rkt-5 { background: linear-gradient(100deg, #f6e2a8, #e8c06a); color: #6b4d13; border-color: #d9ad4e; }
-.prof-title.rkt-4 { background: color-mix(in srgb, #b98cd8 22%, var(--surface)); color: #6a3f8c; border-color: color-mix(in srgb, #b98cd8 40%, transparent); }
+/* 稱號依階級變色（與成就頁一致：石灰→森綠→湖青→靛紫→古銅→傳說金） */
+.prof-title.rkt-0 { background: color-mix(in srgb, #7c7768 15%, var(--surface)); color: color-mix(in srgb, #6f6a5b 72%, var(--ink)); border-color: color-mix(in srgb, #7c7768 34%, transparent); }
+.prof-title.rkt-1 { background: color-mix(in srgb, #3f8a48 15%, var(--surface)); color: color-mix(in srgb, #3f8a48 72%, var(--ink)); border-color: color-mix(in srgb, #3f8a48 36%, transparent); }
+.prof-title.rkt-2 { background: color-mix(in srgb, #2f8593 16%, var(--surface)); color: color-mix(in srgb, #2f8593 72%, var(--ink)); border-color: color-mix(in srgb, #2f8593 36%, transparent); }
+.prof-title.rkt-3 { background: color-mix(in srgb, #6155c4 16%, var(--surface)); color: color-mix(in srgb, #6155c4 74%, var(--ink)); border-color: color-mix(in srgb, #6155c4 38%, transparent); }
+.prof-title.rkt-4 { background: color-mix(in srgb, #c9752e 17%, var(--surface)); color: color-mix(in srgb, #c9752e 74%, var(--ink)); border-color: color-mix(in srgb, #c9752e 38%, transparent); }
+/* 傳說山神：金色實心＋掃過反光（同 PRO 標與成就頁） */
+.prof-title.rkt-5 { position: relative; overflow: hidden; background: linear-gradient(135deg, #ffe07a, #f0a91e); color: #5a3a00; border-color: #d9ad4e; box-shadow: 0 1px 6px rgba(240,169,30,.35); }
+.prof-title.rkt-5 .ic { color: #5a3a00; }
+.prof-title.rkt-5::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.7) 50%, transparent 65%); background-size: 220% 100%; animation: lv-shine 3.4s ease-in-out infinite; }
 .prof-pet { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-top: 8px; font-size: calc(12.5px * var(--fs, 1)); color: var(--ink-soft); }
 .prof-pet .pet-critter { width: 28px; height: 28px; flex: none; filter: none; }
 .prof-pet-t { min-width: 0; overflow-wrap: anywhere; }
