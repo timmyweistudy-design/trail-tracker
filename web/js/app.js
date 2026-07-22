@@ -4079,9 +4079,11 @@ async function renderMeProfileCard() {
       ${ps ? `<div class="me-card-pet">${typeof PET_ART !== "undefined" ? PET_ART.svg((ps.level || 1) - 1) : ps.emoji} ${esc(ps.name)}　·　已走 <b>${ps.km}</b> km</div>` : ""}
       ${(() => { try { if (typeof achScore !== "function") return ""; const s = achScore(); return `<button class="me-ach" id="meAchBtn">🏅 ${ttT(s.rank)} · ${ttT("成就")} <b>${s.got}/${s.total}</b> ›</button>`; } catch (e) { return ""; } })()}
     </div>
-  </div>`;
-  const ab = $("#meAchBtn");
-  if (ab) ab.addEventListener("click", () => { const t = document.querySelector('.tab[data-view="pet"]'); if (t) t.click(); setTimeout(() => { if (typeof openAchTree === "function") openAchTree(); }, 260); });
+  </div>
+  ${(() => { try { if (typeof petBadges !== "function") return ""; const got = petBadges().filter(b => b.got).sort((a, b) => b.t - a.t); if (!got.length) return ""; const show = got.slice(0, 10); return `<button class="me-medals" id="meMedalsBtn"><span class="me-medals-h">🏅 ${ttT("成就勳章")} <b>${got.length}</b> ›</span><span class="me-medals-row">${show.map(b => `<span class="me-medal ach-emo" title="${esc(ttT(b.n))}">${b.e}</span>`).join("")}${got.length > 10 ? `<span class="me-medal-more">+${got.length - 10}</span>` : ""}</span></button>`; } catch (e) { return ""; } })()}`;
+  const openAch = () => { const t = document.querySelector('.tab[data-view="pet"]'); if (t) t.click(); setTimeout(() => { if (typeof openAchTree === "function") openAchTree(); }, 260); };
+  const ab = $("#meAchBtn"); if (ab) ab.addEventListener("click", openAch);
+  const mb = $("#meMedalsBtn"); if (mb) mb.addEventListener("click", openAch);
 }
 // 健行提醒開關（只在原生 App 顯示；網頁版沒有本地排程通知外掛）
 function renderReminderToggle() {
@@ -4303,19 +4305,27 @@ window.ttDebug = (() => {
     // 一鍵解鎖全部成就：灌入足以滿足成就樹全部 30 個徽章的測試資料
     unlockAch() {
       const recs = [];
-      for (let i = 0; i < 200; i++) {                       // 200 筆連續天 → 出行次數(至200)/連續天數(至30)/週數
+      for (let i = 0; i < 200; i++) {                       // 200 筆連續天 → 出行次數(至200)/連續天數(至30)/週數/假日山友/十萬步
         const d = new Date(); d.setDate(d.getDate() - i);
-        if (i === 1) d.setHours(6, 0, 0, 0);                // 清晨 → 早起鳥
+        if (i === 1) d.setHours(5, 0, 0, 0);                // 清晨5點 → 早起鳥＋破曉行者
         else if (i === 2) d.setHours(20, 0, 0, 0);          // 夜間 → 夜行者
+        else if (i === 3) d.setHours(23, 30, 0, 0);         // 深夜 → 午夜山行(隱藏)
+        else if (i === 4) d.setHours(3, 0, 0, 0);           // 凌晨3點 → 凌晨出擊(隱藏)
         else d.setHours(12, 0, 0, 0);
         const km = i === 0 ? 42 : 6;                        // 一筆 42km → 超馬/半馬/馬拉松；總里程 ≈ 1236km → 千里健行
+        const asc = i === 0 ? 1200 : 60;                    // i0 單次爬升1200 → 一日千升；總爬升仍破萬(→萬米爬升/聖母峰)
         recs.push({
           id: "dbg-ach-" + i, date: d.toISOString(), dbg: true, note: "成就測試",
           distanceKm: km, distance3DKm: km, steps: Math.round(km * 1350), kcal: Math.round(km * 60),
-          elapsedMs: Math.round(km * 12 * 60000), ascent: 60, descent: 50,   // 總爬升 200*60=12000m → 萬米爬升/聖母峰
+          elapsedMs: Math.round(km * 12 * 60000), ascent: asc, descent: 50,
           track: [{ lat: 24, lon: 121, t: d.getTime() }],
         });
       }
+      // 四季行者：補 4 個不同季節的孤立紀錄（不打斷上面的連續天數鏈）
+      [0, 3, 6, 9].forEach((mo, k) => recs.push({
+        id: "dbg-ach-season-" + k, date: new Date(new Date().getFullYear() - 2, mo, 15, 12, 0, 0).toISOString(), dbg: true, note: "成就測試",
+        distanceKm: 6, distance3DKm: 6, steps: 8000, kcal: 360, elapsedMs: 4320000, ascent: 60, descent: 50, track: [{ lat: 23.57, lon: 119.56, t: 0 }],   // 澎湖座標 → 離島山旅(隱藏)
+      }));
       const kept = Store.getRecords().filter(r => !String(r.id).startsWith("dbg-ach-"));
       Store.setRecords(recs.concat(kept));
       // 縣市探索：每個縣市各挑一條完成 → counties 拉到 20+（環島達人）
@@ -4336,9 +4346,37 @@ window.ttDebug = (() => {
       const kept = Store.getRecords().filter(r => !String(r.id).startsWith("dbg-ach-"));
       Store.setRecords(kept);
       localStorage.removeItem("tt_log");
-      localStorage.removeItem("tt_badges_got");   // 關鍵：不清這個，永久解鎖名單會讓徽章一直亮著
+      // 關鍵：這些不清，徽章會靠「永久解鎖名單/持久化最大值」一直亮著
+      ["tt_badges_got", "tt_badges_seen", "tt_badges_date", "tt_ach_maxkm", "tt_ach_maxasc", "tt_ach_island"].forEach(k => localStorage.removeItem(k));
       checkPetEvolve(); refresh(); try { renderBadges(); if (typeof refreshAchTree === "function") refreshAchTree(); } catch (e) { /* */ }
-      return "已重置成就（完成/測試行程/永久解鎖名單已清空）";
+      return "已重置成就（完成/測試行程/永久解鎖名單/最大值/解鎖提示已清空）";
+    },
+    // 直接開成就步道頁（省得切到夥伴頁再點）
+    openAch() { try { if (typeof openAchTree === "function") openAchTree(); } catch (e) { /* */ } return "已開啟成就頁"; },
+    // 解鎖「下一個最接近」的成就：實測解鎖 toast＋果實獎勵＋自動揭曉隱藏彩蛋
+    unlockNextAch() {
+      const list = petBadges(), cand = list.filter(b => !b.got);
+      if (!cand.length) return "已全部解鎖 🏅";
+      const next = cand.map(b => ({ b, r: (b.p && b.p[1]) ? Math.min(1, b.p[0] / b.p[1]) : 0 })).sort((a, b) => b.r - a.r)[0].b;
+      let seen; try { seen = JSON.parse(localStorage.getItem("tt_badges_seen")); } catch (e) { /* */ }
+      if (!Array.isArray(seen)) localStorage.setItem("tt_badges_seen", JSON.stringify(list.filter(b => b.got).map(b => b.n)));   // 確保非首跑，才會 toast
+      const got = new Set(JSON.parse(localStorage.getItem("tt_badges_got") || "[]")); got.add(next.n);
+      localStorage.setItem("tt_badges_got", JSON.stringify([...got]));
+      try { if (typeof achCheckUnlocks === "function") achCheckUnlocks(); renderBadges(); } catch (e) { /* */ }
+      return "已解鎖：" + next.n;
+    },
+    // 解鎖一半（每隔一個），做「進行中」的畫面測試
+    halfAch() {
+      const list = petBadges(), got = new Set(JSON.parse(localStorage.getItem("tt_badges_got") || "[]"));
+      list.forEach((b, i) => { if (i % 2 === 0) got.add(b.n); });
+      localStorage.setItem("tt_badges_got", JSON.stringify([...got]));
+      try { renderBadges(); if (typeof refreshAchTree === "function") refreshAchTree(); } catch (e) { /* */ }
+      return "已解鎖約一半（測試進行中狀態）";
+    },
+    // 清掉解鎖提示紀錄：下次跨門檻/解下一個會「重新跳 toast」
+    resetAchSeen() {
+      ["tt_badges_seen", "tt_badges_date"].forEach(k => localStorage.removeItem(k));
+      return "已清空解鎖提示紀錄（下次解鎖會重新跳 toast）";
     },
     // 重置每日任務：清掉今日領獎旗標 + 移除今天的行程，讓三項任務進度歸零可重測
     resetQuests() {
@@ -4359,7 +4397,7 @@ window.ttDebug = (() => {
     },
     state() { return { 成長km: +totalKm().toFixed(2), 等級: petStageIndex(totalKm()) + 1, 果實: berriesBalance(), 愛心: petHearts(), 親密度: affinity(), 今日km: +todayKm().toFixed(1), 出行次數: realRecords().length, debug里程: debugKm() }; },
     panel() { toggleDebugPanel(); },
-    help() { console.log("ttDebug 指令：\n addKm(n) setLevel(0-6) maxLevel() evolve()\n addBerries(n) setAffinity(0-100) resetFeed() addDays(n)\n addHike(km) clearHikes()  ← 推進成就/每日環/足跡圖\n unlockAch() resetAch()  ← 解鎖/重置成就\n resetQuests()  ← 重置每日任務\n clearAllRecords()  ← 清空所有行程\n clearDebug() resetPet() state() panel()"); return api.state(); },
+    help() { console.log("ttDebug 指令：\n addKm(n) setLevel(0-6) maxLevel() evolve()\n addBerries(n) setAffinity(0-100) resetFeed() addDays(n)\n addHike(km) clearHikes()  ← 推進成就/每日環/足跡圖\n unlockAch() unlockNextAch() halfAch() resetAch()  ← 解鎖全部/下一個/一半/重置成就\n openAch() resetAchSeen()  ← 開成就頁/清解鎖提示重測 toast\n resetQuests()  ← 重置每日任務\n clearAllRecords()  ← 清空所有行程\n clearDebug() resetPet() state() panel()"); return api.state(); },
   };
   return api;
 })();
@@ -4386,7 +4424,9 @@ async function toggleDebugPanel() {
     ["可再餵", () => ttDebug.resetFeed()], ["+30天", () => ttDebug.addDays(30)],
     ["＋行程3km", () => ttDebug.addHike(3)], ["＋行程10km", () => ttDebug.addHike(10)],
     ["清測試行程", () => ttDebug.clearHikes()], ["清debug", () => ttDebug.clearDebug()],
-    ["🏅解全成就", () => ttDebug.unlockAch()], ["🏅重置成就", () => ttDebug.resetAch()],
+    ["🏅解全成就", () => ttDebug.unlockAch()], ["🏅解下一個", () => ttDebug.unlockNextAch()],
+    ["🏅解一半", () => ttDebug.halfAch()], ["🏅重置成就", () => ttDebug.resetAch()],
+    ["🏅開成就頁", () => ttDebug.openAch()], ["🏅清解鎖提示", () => ttDebug.resetAchSeen()],
     ["📅重置每日任務", () => ttDebug.resetQuests()],
     ["🗑清所有行程", async () => { if (await ttConfirm("清空全部行程記錄？")) ttDebug.clearAllRecords(); }],
     ["重置🥚", () => ttDebug.resetPet()],
@@ -4397,7 +4437,7 @@ async function toggleDebugPanel() {
   ];
   p.innerHTML = `<div class="dbg-h">🛠 測試面板 <span id="dbgState"></span><button id="dbgClose">✕</button></div><div class="dbg-grid"></div>`;
   const grid = p.querySelector(".dbg-grid");
-  btns.forEach(([t, fn]) => { const b = document.createElement("button"); b.textContent = t; b.onclick = () => { fn(); document.getElementById("dbgState").textContent = `Lv${ttDebug.state().等級}·${ttDebug.state().成長km}km`; }; grid.appendChild(b); });
+  btns.forEach(([t, fn]) => { const b = document.createElement("button"); b.textContent = t; b.onclick = () => { Promise.resolve(fn()).then(r => { if (typeof r === "string" && typeof toast === "function") toast(r); }).catch(() => { }); document.getElementById("dbgState").textContent = `Lv${ttDebug.state().等級}·${ttDebug.state().成長km}km`; }; grid.appendChild(b); });
   p.querySelector("#dbgClose").onclick = () => p.remove();
   document.body.appendChild(p);
   document.getElementById("dbgState").textContent = `Lv${ttDebug.state().等級}·${ttDebug.state().成長km}km`;

@@ -303,7 +303,8 @@ const ACH_CAT_OF = {
   "千里健行": "dist", "萬米爬升": "climb", "環島達人": "explore", "超馬腳力": "challenge", "兩百次山旅": "trips",
   // B 批新增
   "破曉行者": "time", "十萬步": "trips", "假日山友": "time", "兩百K": "dist",
-  "走遍五縣": "explore", "午夜山行": "time", "一日千升": "climb", "四季行者": "time",
+  "走遍五縣": "explore", "午夜山行": "time", "拔升五百": "climb", "四季行者": "time",
+  "凌晨出擊": "time", "離島山旅": "explore",
 };
 // 成就徽章：成就樹，強調長期累積（拿掉一鍵可解的收藏類）
 // petBadges 快取：資料未變就重用（一次開頁會被叫多次）；簽章涵蓋紀錄/終身/解鎖/完成數
@@ -312,7 +313,7 @@ function _pbSig() {
   const L = (typeof Store !== "undefined" && Store.life) ? Store.life() : {};
   const recN = (typeof Store !== "undefined" && Store.getRecords) ? Store.getRecords().length : 0;
   const done = (typeof Store !== "undefined" && Store.doneCount) ? Store.doneCount() : 0;
-  return `${recN}|${L.km || 0}|${L.trips || 0}|${L.asc || 0}|${L.steps || 0}|${done}|${localStorage.getItem("tt_badges_got") || ""}|${localStorage.getItem("tt_ach_maxkm") || 0}|${localStorage.getItem("tt_ach_maxasc") || 0}`;
+  return `${recN}|${L.km || 0}|${L.trips || 0}|${L.asc || 0}|${L.steps || 0}|${done}|${localStorage.getItem("tt_badges_got") || ""}|${localStorage.getItem("tt_ach_maxkm") || 0}|${localStorage.getItem("tt_ach_maxasc") || 0}|${localStorage.getItem("tt_ach_island") || 0}`;
 }
 function _petBadgesCached() { return (_pbCache && _pbKey === _pbSig()) ? _pbCache : null; }
 function petBadges() {
@@ -345,6 +346,16 @@ function petBadges() {
   const seasonOf = m => [11, 0, 1].includes(m) ? 0 : m <= 4 ? 1 : m <= 7 ? 2 : 3;   // 冬/春/夏/秋
   const seasons = new Set(recs.map(r => seasonOf(new Date(r.date).getMonth()))).size;
   const steps = Math.max(recs.reduce((s, r) => s + (r.steps || 0), 0), L.steps || 0);
+  const dark3 = hrs.some(h => h >= 2 && h < 4);            // 凌晨 2–4 點（隱藏彩蛋）
+  // 離島：座標落在澎湖/金門/馬祖/蘭嶼/綠島/小琉球，或完成的步道屬離島縣（永久記住，記錄被裁掉也不倒退）
+  let island = localStorage.getItem("tt_ach_island") === "1";
+  if (!island) {
+    island = doneTrails.some(t => ["澎湖縣", "金門縣", "連江縣"].includes(t.region)) || recs.some(r => (r.track || []).some(p => {
+      const lo = p.lon, la = p.lat; if (typeof lo !== "number") return false;
+      return lo < 119.7 || (lo >= 121.4 && lo <= 121.62 && la >= 21.9 && la <= 22.1) || (lo >= 121.4 && lo <= 121.55 && la >= 22.5 && la <= 22.75) || (lo >= 120.3 && lo <= 120.42 && la >= 22.3 && la <= 22.4);
+    }));
+    if (island) try { localStorage.setItem("tt_ach_island", "1"); } catch (e) { /* */ }
+  }
   // t: 階層(1–6)；p: [目前值, 門檻, 單位] 供進度提示；布林型（早起/夜行）不設 p；hidden: 隱藏彩蛋
   const list = [
     // 啟程
@@ -377,8 +388,10 @@ function petBadges() {
     { e: "🥇", n: "半馬腳力", got: maxOne >= 21, d: "單次步行 ≥ 21 km", p: [maxOne, 21, "km"], t: 4 },
     { e: "⚔️", n: "挑戰征服", got: hardDone >= 5, d: "完成 5 條挑戰級以上步道", p: [hardDone, 5, "條"], t: 4 },
     { e: "🗓️", n: "四週堅持", got: wk >= 4, d: "連續 4 週都有走", p: [wk, 4, "週"], t: 4 },
-    { e: "🪜", n: "一日千升", got: maxAsc >= 1000, d: "單次爬升 ≥ 1000 m", p: [maxAsc, 1000, "m"], t: 4 },
+    { e: "🪜", n: "拔升五百", got: maxAsc >= 500, d: "單次爬升 ≥ 500 m", p: [maxAsc, 500, "m"], t: 4 },
     { e: "🍂", n: "四季行者", got: seasons >= 4, d: "春夏秋冬都走過", p: [seasons, 4, "季"], t: 4 },
+    { e: "🌌", n: "凌晨出擊", got: dark3, d: "凌晨 2–4 點出發", t: 4, hidden: true },
+    { e: "🏝️", n: "離島山旅", got: island, d: "在離島記錄一次健行", t: 4, hidden: true },
     // 攻頂
     { e: "🏆", n: "縱橫五百", got: km >= 500, d: "總里程 500 km", p: [km, 500, "km"], t: 5 },
     { e: "🏔️", n: "聖母峰高度", got: asc >= 8848, d: "總爬升 8848 m（一座聖母峰）", p: [asc, 8848, "m"], t: 5 },

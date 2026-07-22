@@ -851,6 +851,13 @@ body.rec-running #recMap .me-marker .tm-pet .pet-critter, body.rec-running #recM
 /* 個人卡：成就進度 chip（提高成就可見度／可點進成就步道） */
 .me-ach { margin-top: 6px; display: inline-flex; align-items: center; gap: 4px; border: none; background: var(--surface-2); color: var(--ink-soft); font-size: calc(12px * var(--fs, 1)); font-weight: 600; padding: 4px 11px; border-radius: 999px; cursor: pointer; }
 .me-ach b { color: var(--accent); font-family: var(--num); }
+/* 社群頁：成就勳章展示櫃 */
+.me-medals { display: block; width: 100%; text-align: left; margin-top: 10px; border: 1px solid var(--line-soft); background: var(--surface); border-radius: var(--r-sm); padding: 10px 13px; cursor: pointer; box-shadow: var(--sh-sm); }
+.me-medals-h { display: flex; align-items: center; gap: 5px; font-family: var(--serif); font-weight: 700; font-size: calc(13px * var(--fs, 1)); color: var(--ink); }
+.me-medals-h b { color: var(--accent); font-family: var(--num); }
+.me-medals-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.me-medal { width: 34px; height: 34px; border-radius: 50%; background: color-mix(in srgb, var(--brand) 12%, var(--surface-2)); display: grid; place-items: center; font-size: 19px; }
+.me-medal-more { min-width: 34px; height: 34px; padding: 0 8px; border-radius: 999px; background: var(--surface-2); color: var(--ink-soft); display: grid; place-items: center; font-family: var(--num); font-weight: 700; font-size: calc(12px * var(--fs, 1)); }
 .tm-pet .pet-critter { width: 30px; height: 30px; filter: none; }   /* 與頭像(32px)差不多大，坐在頭頂 */
 .evolve-h { font-family: var(--serif); font-size: calc(30px * var(--fs, 1)); font-weight: 900; letter-spacing: 6px; margin-top: 10px; color: #e8c87a; }
 .evolve-n { font-family: var(--serif); font-size: calc(18px * var(--fs, 1)); font-weight: 700; margin-top: 6px; }
