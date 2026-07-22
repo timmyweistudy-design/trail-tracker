@@ -4056,7 +4056,34 @@ function renderProColor() {
     if (typeof toast === "function") toast("已套用頭像框配色");
   }));
 }
-// 我的分頁頂端：社群個人檔案摘要（頭像/名字/勳章/handle/寵物里程）
+// 共用個人卡頭部（「我的」頁與社群頁同一設計；chip 會 flex-wrap，放大字級也不跑版）
+function ttProfileHero(prof, opts) {
+  opts = opts || {};
+  const esc = s => (s || "").replace(/[<>&"]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c]));
+  const pro = typeof Premium !== "undefined" && Premium.isOn();
+  const ps = (typeof petStats === "function") ? petStats() : null;
+  const lvl = ps ? ps.level : 0;
+  const av = prof.avatar_url
+    ? `<img class="prof-av${pro ? " pro-av" : ""}" src="${esc(prof.avatar_url)}" alt="">`
+    : `<div class="prof-av prof-av-ph${pro ? " pro-av" : ""}">${esc((prof.display_name || prof.handle || "?").slice(0, 1))}</div>`;
+  let title = "";
+  try { if (typeof achScore === "function") { const s = achScore(); const ci = (typeof ACH_TIER_IC !== "undefined" && typeof ic === "function") ? ic(ACH_TIER_IC[s.rankIdx]) : ""; title = `<span class="prof-title rkt-${s.rankIdx}">${ci} ${ttT(s.rank)}</span>`; } } catch (e) { /* */ }
+  const petHtml = ps ? `<div class="prof-pet">${typeof PET_ART !== "undefined" ? PET_ART.svg((ps.level || 1) - 1) : ps.emoji}<span class="prof-pet-t">${esc(ps.name)} · ${ttT("已走")} <b>${ps.km}</b> km</span></div>` : "";
+  let ach = "";
+  if (opts.ach !== false) { try { if (typeof achScore === "function") { const s = achScore(); ach = `<button class="prof-ach" data-prof-ach="1">🏅 ${ttT("成就")} <b>${s.got}/${s.total}</b> · ${ttT("成就分數")} ${s.score} ›</button>`; } } catch (e) { /* */ } }
+  return `<div class="prof-hero">${av}
+    <div class="prof-hero-info">
+      <div class="prof-name"><span class="prof-nm">${esc(prof.display_name || prof.handle)}</span>${lvl ? ` <span class="lv-chip lvt-${Math.min(lvl, 7)}">Lv.${lvl}</span>` : ""}${pro ? ` <span class="pro-tag pro-mine">PRO</span>` : ""}${title}</div>
+      <div class="prof-handle">@${esc(prof.handle)}</div>
+      ${petHtml}${ach}
+    </div>
+  </div>`;
+}
+function bindProfAch(root) {
+  (root || document).querySelectorAll('[data-prof-ach]').forEach(b => b.onclick = () => { const t = document.querySelector('.tab[data-view="pet"]'); if (t) t.click(); setTimeout(() => { if (typeof openAchTree === "function") openAchTree(); }, 260); });
+}
+if (typeof window !== "undefined") { window.ttProfileHero = ttProfileHero; window.bindProfAch = bindProfAch; }
+// 我的分頁頂端：社群個人檔案摘要（頭像/名字/稱號/handle/寵物里程/成就）
 async function renderMeProfileCard() {
   const el = $("#meProfileCard"); if (!el) return;
   if (typeof Supa === "undefined" || !Supa.ready() || typeof Auth === "undefined") { el.innerHTML = ""; return; }
@@ -4064,24 +4091,8 @@ async function renderMeProfileCard() {
   if (!sess) { el.innerHTML = `<div class="me-card me-card-guest" id="meCardLogin">登入社群以顯示個人檔案 ›</div>`; const b = $("#meCardLogin"); if (b) b.addEventListener("click", () => { const t = document.querySelector('.tab[data-view="social"]'); if (t) t.click(); }); return; }
   const prof = await Auth.myProfile().catch(() => null);
   if (!prof) { el.innerHTML = `<div class="me-card me-card-guest" id="meCardLogin">完成社群註冊以顯示個人檔案 ›</div>`; const b = $("#meCardLogin"); if (b) b.addEventListener("click", () => { const t = document.querySelector('.tab[data-view="social"]'); if (t) t.click(); }); return; }
-  const esc = s => (s || "").replace(/[<>&"]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c]));
-  const pro = typeof Premium !== "undefined" && Premium.isOn();
-  const ps = (typeof petStats === "function") ? petStats() : null;
-  const lvl = ps ? ps.level : 0;
-  const av = prof.avatar_url
-    ? `<img class="me-av${pro ? " pro-av" : ""}" src="${esc(prof.avatar_url)}" alt="">`
-    : `<div class="me-av me-av-ph${pro ? " pro-av" : ""}">${esc((prof.display_name || prof.handle || "?").slice(0, 1))}</div>`;
-  el.innerHTML = `<div class="me-card">
-    ${av}
-    <div class="me-card-info">
-      <div class="me-card-name">${esc(prof.display_name || prof.handle)}${lvl ? ` <span class="lv-chip lvt-${Math.min(lvl, 7)}">Lv.${lvl}</span>` : ""}${pro ? ` <span class="pro-tag pro-mine">PRO</span>` : ""}</div>
-      <div class="me-card-handle">@${esc(prof.handle)}</div>
-      ${(() => { try { if (typeof achScore !== "function") return ""; const s = achScore(); const ic2 = (typeof ACH_TIER_IC !== "undefined" && typeof ic === "function") ? ic(ACH_TIER_IC[s.rankIdx]) : "🏅"; return `<div class="me-rank"><span class="me-rank-chip rkt-${s.rankIdx}">${ic2} ${ttT(s.rank)}</span></div>`; } catch (e) { return ""; } })()}
-      ${ps ? `<div class="me-card-pet">${typeof PET_ART !== "undefined" ? PET_ART.svg((ps.level || 1) - 1) : ps.emoji} ${esc(ps.name)}　·　已走 <b>${ps.km}</b> km</div>` : ""}
-      ${(() => { try { if (typeof achScore !== "function") return ""; const s = achScore(); return `<button class="me-ach" id="meAchBtn">🏅 ${ttT("成就")} <b>${s.got}/${s.total}</b> · ${ttT("成就分數")} ${s.score} ›</button>`; } catch (e) { return ""; } })()}
-    </div>
-  </div>`;
-  const ab = $("#meAchBtn"); if (ab) ab.addEventListener("click", () => { const t = document.querySelector('.tab[data-view="pet"]'); if (t) t.click(); setTimeout(() => { if (typeof openAchTree === "function") openAchTree(); }, 260); });
+  el.innerHTML = `<div class="me-card">${ttProfileHero(prof)}</div>`;
+  bindProfAch(el);
 }
 // 健行提醒開關（只在原生 App 顯示；網頁版沒有本地排程通知外掛）
 function renderReminderToggle() {

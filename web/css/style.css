@@ -847,16 +847,7 @@ body.rec-running #recMap .me-marker .tm-pet .pet-critter, body.rec-running #recM
 .dex-row .dex-e .pet-critter { width: 44px; height: 44px; filter: none; }
 .fp-pet .pet-critter { width: 34px; height: 34px; filter: none; vertical-align: middle; }
 .pf-pet .pet-critter { width: 26px; height: 26px; filter: none; flex: 0 0 auto; }
-.me-card-pet .pet-critter { width: 30px; height: 30px; filter: none; vertical-align: middle; display: inline-block; }
-/* 個人卡：成就進度 chip（提高成就可見度／可點進成就步道） */
-.me-ach { margin-top: 6px; display: inline-flex; align-items: center; gap: 4px; border: none; background: var(--surface-2); color: var(--ink-soft); font-size: calc(12px * var(--fs, 1)); font-weight: 600; padding: 4px 11px; border-radius: 999px; cursor: pointer; }
-.me-ach b { color: var(--accent); font-family: var(--num); }
-/* 社群頁：成就稱號 chip */
-.me-rank { margin-top: 5px; }
-.me-rank-chip { display: inline-flex; align-items: center; gap: 5px; font-family: var(--serif); font-weight: 700; font-size: calc(12.5px * var(--fs, 1)); padding: 3px 11px; border-radius: 999px; background: color-mix(in srgb, var(--brand) 15%, var(--surface)); color: var(--brand-deep); border: 1px solid color-mix(in srgb, var(--brand) 24%, transparent); }
-.me-rank-chip .ic { width: 14px; height: 14px; }
-.me-rank-chip.rkt-5 { background: linear-gradient(100deg, #f6e2a8, #e8c06a); color: #6b4d13; border-color: #d9ad4e; }
-.me-rank-chip.rkt-4 { background: color-mix(in srgb, #b98cd8 22%, var(--surface)); color: #6a3f8c; border-color: color-mix(in srgb, #b98cd8 40%, transparent); }
+.prof-pet .pet-critter { width: 28px; height: 28px; filter: none; }
 .tm-pet .pet-critter { width: 30px; height: 30px; filter: none; }   /* 與頭像(32px)差不多大，坐在頭頂 */
 .evolve-h { font-family: var(--serif); font-size: calc(30px * var(--fs, 1)); font-weight: 900; letter-spacing: 6px; margin-top: 10px; color: #e8c87a; }
 .evolve-n { font-family: var(--serif); font-size: calc(18px * var(--fs, 1)); font-weight: 700; margin-top: 6px; }
@@ -2445,15 +2436,26 @@ html[data-theme="dark"] body::after { opacity: .05; }
 /* 頭像框配色 swatch */
 .frame-sw { color: var(--ink-soft); }
 /* 我的分頁頂端個人檔案卡 */
-.me-card { display: flex; align-items: center; gap: 14px; background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r); padding: 16px; box-shadow: var(--sh-sm); margin-bottom: 16px; }
-.me-av { width: 58px; height: 58px; border-radius: 50%; object-fit: cover; flex: 0 0 auto; }
-.me-av-ph { display: flex; align-items: center; justify-content: center; background: var(--brand-mid); color: #fff; font-family: var(--serif); font-size: calc(24px * var(--fs, 1)); font-weight: 700; }
-.me-card-info { min-width: 0; }
-.me-card-name { font-family: var(--serif); font-weight: 700; font-size: calc(18px * var(--fs, 1)); display: flex; align-items: center; flex-wrap: wrap; gap: 2px; }
-.me-card-handle { font-size: calc(12.5px * var(--fs, 1)); color: var(--ink-faint); margin-top: 1px; }
-.me-card-pet { font-size: calc(13px * var(--fs, 1)); color: var(--ink-soft); margin-top: 5px; }
-.me-card-pet b { font-family: var(--num); color: var(--ink); }
-.me-card-guest { justify-content: center; color: var(--ink-soft); font-size: calc(14px * var(--fs, 1)); cursor: pointer; }
+.me-card { background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r); padding: 16px; box-shadow: var(--sh-sm); margin-bottom: 16px; }
+.me-card-guest { display: flex; justify-content: center; color: var(--ink-soft); font-size: calc(14px * var(--fs, 1)); cursor: pointer; }
+/* 共用個人卡頭部（「我的」頁＋社群頁同一設計；全 flex/wrap，放大字級不跑版） */
+.prof-hero { display: flex; align-items: flex-start; gap: 13px; }
+.prof-av { flex: none; width: 60px; height: 60px; border-radius: 50%; object-fit: cover; background: var(--surface-2); }
+.prof-av-ph { display: grid; place-items: center; background: var(--brand-mid); color: #fff; font-family: var(--serif); font-weight: 700; font-size: calc(24px * var(--fs, 1)); }
+.prof-hero-info { flex: 1; min-width: 0; }
+.prof-name { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 6px; font-family: var(--serif); font-weight: 700; font-size: calc(17.5px * var(--fs, 1)); color: var(--ink); line-height: 1.25; }
+.prof-nm { overflow-wrap: anywhere; }
+.prof-handle { font-size: calc(12.5px * var(--fs, 1)); color: var(--ink-soft); margin-top: 2px; overflow-wrap: anywhere; }
+.prof-title { display: inline-flex; align-items: center; gap: 4px; font-family: var(--serif); font-weight: 700; font-size: calc(11.5px * var(--fs, 1)); padding: 2px 9px; border-radius: 999px; background: color-mix(in srgb, var(--brand) 15%, var(--surface)); color: var(--brand-deep); border: 1px solid color-mix(in srgb, var(--brand) 24%, transparent); white-space: nowrap; }
+.prof-title .ic { width: 13px; height: 13px; }
+.prof-title.rkt-5 { background: linear-gradient(100deg, #f6e2a8, #e8c06a); color: #6b4d13; border-color: #d9ad4e; }
+.prof-title.rkt-4 { background: color-mix(in srgb, #b98cd8 22%, var(--surface)); color: #6a3f8c; border-color: color-mix(in srgb, #b98cd8 40%, transparent); }
+.prof-pet { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-top: 8px; font-size: calc(12.5px * var(--fs, 1)); color: var(--ink-soft); }
+.prof-pet .pet-critter { width: 28px; height: 28px; flex: none; filter: none; }
+.prof-pet-t { min-width: 0; overflow-wrap: anywhere; }
+.prof-pet-t b { font-family: var(--num); color: var(--brand-deep); }
+.prof-ach { margin-top: 9px; display: inline-flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; text-align: left; border: none; background: var(--surface-2); color: var(--ink-soft); font-size: calc(12px * var(--fs, 1)); font-weight: 600; padding: 6px 12px; border-radius: 999px; cursor: pointer; max-width: 100%; }
+.prof-ach b { color: var(--accent); font-family: var(--num); }
 
 /* 進場淡入錯落（年度回顧 / 進階分析） */
 @keyframes anim-fadeup { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }

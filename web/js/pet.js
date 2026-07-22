@@ -893,16 +893,23 @@ function _achInitClimb(ov) {
     const cnt = Math.max(1, mainB.length);
     const px = x => (x / PAGE_W * 100).toFixed(2) + "%", py = y => (y / PAGE_H * 100).toFixed(2) + "%";
     const mainNodes = mainB.map((b, j) => { const u = 0.06 + (j + 0.5) / cnt * 0.88; return { b, x: _achUX(u, band), y: _achUY(u, topY), spur: false }; });
-    // 隱藏成就：從主幹道另闢支線（虛線岔路 + 岔口小圓點）
+    // 隱藏成就：從主幹道另闢支線；用避讓演算法選離所有節點最遠的落點，任何一條都不擋到其他成就
     let spurs = "";
+    const occupied = mainNodes.map(n => ({ x: n.x, y: n.y }));
     const hiddenNodes = hiddenB.map((b, hi) => {
       const ua = Math.max(0.2, Math.min(0.8, 0.34 + hi * 0.3));
       const ax = _achUX(ua, band), ay = _achUY(ua, topY);
-      const side = ax <= 180 ? -1 : 1;   // 往外側岔出（遠離蜿蜒的主幹道與其節點，不互相遮擋）
-      const hx = Math.max(38, Math.min(322, ax + side * 82)), hy = ay - 34;
-      const mx = (ax + hx) / 2 + side * 4, my = (ay + hy) / 2 - 16;
+      let best = null;
+      for (const side of [1, -1]) for (const dy of [-38, -56, -18]) {
+        const hx = Math.max(40, Math.min(320, ax + side * 84)), hy = ay + dy;
+        const md = occupied.reduce((m, p) => Math.min(m, Math.hypot(hx - p.x, hy - p.y)), 1e9);
+        if (!best || md > best.md) best = { hx, hy, side, md };
+      }
+      const { hx, hy, side } = best;
+      const mx = (ax + hx) / 2 + side * 4, my = (ay + hy) / 2 - 14;
       const dp = `M ${ax.toFixed(1)} ${ay.toFixed(1)} Q ${mx.toFixed(1)} ${my.toFixed(1)} ${hx.toFixed(1)} ${hy.toFixed(1)}`;
       spurs += `<path d="${dp}" fill="none" stroke="${sky.night ? "#54462d" : "#a98a54"}" stroke-width="7" stroke-linecap="round" opacity=".55"/><path d="${dp}" fill="none" stroke="${sky.night ? "#b7a074" : "#fff3d6"}" stroke-width="2.2" stroke-dasharray="1 7" stroke-linecap="round" opacity=".85"/><circle cx="${ax.toFixed(1)}" cy="${ay.toFixed(1)}" r="4.5" fill="${sky.night ? "#7a6748" : "#9a7a44"}"/>`;
+      occupied.push({ x: hx, y: hy });
       return { b, x: hx, y: hy, spur: true };
     });
     const nodes = mainNodes.concat(hiddenNodes);

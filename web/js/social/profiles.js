@@ -14,21 +14,13 @@ const Profiles = (() => {
   }
 
   function renderMe(render, prof) {
-    const pa = (typeof Premium !== "undefined" && Premium.isOn()) ? " pro-av" : "";
-    const av = prof.avatar_url
-      ? `<img class="pf-av${pa}" src="${esc(prof.avatar_url)}" alt="">`
-      : `<div class="pf-av pf-av-ph${pa}">${esc((prof.display_name || prof.handle || "?").slice(0, 1))}</div>`;
-    const ps = (typeof petStats === "function") ? petStats() : null;
     syncMyStats(prof.id);   // 順手同步到雲端
     if (prof.avatar_url) window.__meAvatar = prof.avatar_url;   // 地圖「我」標記＝社群頭像（換頭像後也同步）
+    const hero = (typeof ttProfileHero === "function") ? ttProfileHero(prof) : "";
     render(`
       <div class="pf${prof.cover_url ? " has-cover" : ""}">
         ${prof.cover_url ? `<div class="pf-cover" style="background-image:url('${esc(prof.cover_url)}')"></div>` : ""}
-        <div class="pf-top">${av}
-          <div class="pf-id"><div class="pf-name">${esc(prof.display_name || prof.handle)}${(typeof Premium !== "undefined" && Premium.isOn()) ? '<span class="pro-tag pro-mine">PRO</span>' : ""}</div>
-            <div class="pf-handle">@${esc(prof.handle)}</div></div>
-        </div>
-        ${petLine(ps)}
+        ${hero}
         <div class="pf-counts"><span id="pfPostCount"></span><span id="pfFollowCounts"></span></div>
         ${prof.bio ? `<div class="pf-bio">${esc(prof.bio)}</div>` : ""}
         <div class="link-row pf-actions">
@@ -41,6 +33,7 @@ const Profiles = (() => {
         </div>
         <div id="pfPosts" class="feed-loading"><span class="spin"></span></div>
       </div>`);
+    if (typeof bindProfAch === "function") bindProfAch();
     document.getElementById("pfSignout").addEventListener("click", async () => {
       if (!(await ttConfirm("確定要登出嗎？"))) return;
       const btn = document.getElementById("pfSignout");
