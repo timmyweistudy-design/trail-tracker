@@ -142,7 +142,7 @@ const I18n = (() => {
     "你在這": "You are here", "往上滑攀登": "Swipe up to climb",
     "里程": "Distance", "次數": "Trips", "時刻": "Time of day", "尚未達成": "Not yet", "拖曳旋轉看全部": "Drag to rotate",
     "點開成就步道，沿路解鎖里程、爬升、連續天數等徽章，永久保留。": "Open the achievement trail and unlock badges for distance, ascent, day streaks and more along the way — kept forever.",
-    "成就步道": "Achievement trail", "查看成就步道": "View achievement trail",
+    "成就步道": "Achievement trail", "查看成就步道": "View achievement trail", "點擊查看成就步道": "Tap to view achievement trail",
     "已達成": "Achieved", "即將解鎖": "Almost there",
     "分鐘後可餵": "min to feed",
     "走路就能養夥伴！從一顆蛋一路進化，牠會隨心情露出表情，還能點牠、餵食、裝扮。": "Raise a buddy just by walking! It evolves from an egg, shows moods, and you can pet, feed and dress it up.",

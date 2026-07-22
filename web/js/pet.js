@@ -515,7 +515,7 @@ function renderBadges() {
   box.innerHTML = `<div class="section-title">${ic("medal")}${ttT("成就步道")} <span class="badge-count">${got} / ${total}</span></div>
     <button class="ach-entry" id="achOpen" aria-label="${ttT("查看成就步道")}">
       <div class="ach-entry-bar"><i style="width:${pct}%"></i></div>
-      <div class="ach-entry-row"><span class="ach-entry-lbl">${ttT("查看成就步道")}</span><span class="ach-entry-go">${ic("compass")}</span></div>
+      <div class="ach-entry-row"><span class="ach-entry-lbl">${ttT("點擊查看成就步道")}</span><span class="ach-entry-go">${ic("compass")}</span></div>
     </button>
     ${nextHtml}`;
   const bt = $("#achOpen"); if (bt) bt.addEventListener("click", openAchTree);
