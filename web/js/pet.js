@@ -527,13 +527,30 @@ function _achFmt(v, u) { return u === "km" ? v.toFixed(1) : String(Math.round(v)
 function _achStat(b) { return b.got ? ttT("已達成") : (b.p ? `${_achFmt(b.p[0], b.p[2])} / ${b.p[1]} ${ttT(b.p[2])}` : b.d); }
 const _ACH_CHK = `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>`;
 const _ACH_LOCK = `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`;
-// 日夜（依真實時間）：天空漸層＋日/月＋是否夜晚
+const _ACH_BIRD = `<svg viewBox="0 0 26 12" class="ach-bird-svg" aria-hidden="true"><path d="M1 8 Q6 1.5 13 7 Q20 1.5 25 8" fill="none" stroke="#5a6b7a" stroke-width="2" stroke-linecap="round"/></svg>`;
+// 場景動態：飛鳥＋蝴蝶（HTML 疊層，CSS 動畫）
+function _achFauna(p, night) {
+  let s = `<span class="ach-bird v1">${_ACH_BIRD}</span><span class="ach-bird v2">${_ACH_BIRD}</span>`;
+  if (p === 2 || p === 4) s += `<span class="ach-bird v3">${_ACH_BIRD}</span>`;
+  if (p <= 1) s += `<span class="ach-bug">🦋</span>`;
+  return `<div class="ach-fauna" aria-hidden="true">${s}</div>`;
+}
+// 日夜（依真實時間）：天空漸層＋日/月沿天弧升降（東升西落）＋是否夜晚
 function _achSky() {
-  const h = new Date().getHours();
-  if (h >= 5 && h < 8) return { sky: "linear-gradient(180deg,#f4c78e 0%,#f2d9bd 42%,#e9e3d2 100%)", orb: "sun", ox: 76, oy: 76, oc: "#ffcf6b", night: false };
-  if (h >= 8 && h < 17) return { sky: "linear-gradient(180deg,#8dc0e8 0%,#bcd7e6 46%,#e2eadd 100%)", orb: "sun", ox: 78, oy: 58, oc: "#ffe488", night: false };
-  if (h >= 17 && h < 19) return { sky: "linear-gradient(180deg,#e78a58 0%,#f0b489 40%,#e6d6bd 100%)", orb: "sun", ox: 22, oy: 78, oc: "#ff9a52", night: false };
-  return { sky: "linear-gradient(180deg,#1a2740 0%,#26334c 46%,#33415c 100%)", orb: "moon", ox: 76, oy: 58, oc: "#eaeef6", night: true };
+  const d = new Date(), t = d.getHours() + d.getMinutes() / 60;
+  const day = t >= 6 && t < 18;
+  const f = day ? (t - 6) / 12 : ((t < 6 ? t + 24 : t) - 18) / 12;   // 0=剛升起(東) 1=將落下(西)
+  const ox = +(9 + f * 82).toFixed(1);                                // 東(左)→西(右)
+  const oy = +(30 + (1 - Math.sin(f * Math.PI)) * 74).toFixed(1);     // 正午最高、地平線最低（px）
+  let sky, orb, oc;
+  if (day) {
+    orb = "sun";
+    if (t < 7.3) { sky = "linear-gradient(180deg,#f4c78e 0%,#f2d9bd 42%,#e9e3d2 100%)"; oc = "#ffcf6b"; }       // 破曉
+    else if (t > 16.7) { sky = "linear-gradient(180deg,#e78a58 0%,#f0b489 40%,#e6d6bd 100%)"; oc = "#ff9a52"; } // 黃昏
+    else { sky = "linear-gradient(180deg,#8dc0e8 0%,#bcd7e6 46%,#e2eadd 100%)"; oc = "#ffe488"; }               // 白天
+    return { sky, orb, ox, oy, oc, night: false };
+  }
+  return { sky: "linear-gradient(180deg,#1a2740 0%,#26334c 46%,#33415c 100%)", orb: "moon", ox, oy, oc: "#eaeef6", night: true };
 }
 // —— 五段攀登：一頁一段海拔（0 山腳啟程 → 4 雲上傳說），一頁頁往上爬 ——
 const ACH_NPG = 5, PAGE_W = 360, PAGE_H = 660, PAGE_PAD = 48;
@@ -564,13 +581,15 @@ function _achNearTrail(x, y, band, topY, pad) {
   if (u < -0.02 || u > 1.02) return false;
   return Math.abs(x - _achUX(u, band)) < (pad || 40);
 }
+// 樹外層 .ach-sway 只負責微風搖擺（CSS rotate），內層才定位/縮放，避免 CSS transform 蓋掉 SVG translate
+function _swayWrap(inner, x, dur) { const dl = ((Math.round(x) * 7) % 20) / 4; return `<g class="ach-sway" style="animation-duration:${dur}s;animation-delay:-${dl}s">${inner}</g>`; }
 function _pine(x, y, s, night) {
   const c = night ? ["#22381f", "#2b4a2a", "#356038"] : ["#2c5a30", "#3c7338", "#4c8a46"], tk = night ? "#33281a" : "#5f452a";
-  return `<g transform="translate(${x} ${y}) scale(${s})"><rect x="-2" y="-13" width="4" height="14" fill="${tk}"/><path d="M0 -47 L-13 -21 L13 -21Z" fill="${c[0]}"/><path d="M0 -37 L-15 -9 L15 -9Z" fill="${c[1]}"/><path d="M0 -27 L-17 3 L17 3Z" fill="${c[2]}"/></g>`;
+  return _swayWrap(`<g transform="translate(${x} ${y}) scale(${s})"><rect x="-2" y="-13" width="4" height="14" fill="${tk}"/><path d="M0 -47 L-13 -21 L13 -21Z" fill="${c[0]}"/><path d="M0 -37 L-15 -9 L15 -9Z" fill="${c[1]}"/><path d="M0 -27 L-17 3 L17 3Z" fill="${c[2]}"/></g>`, x, 4.6);
 }
 function _leafTree(x, y, s, night) {
   const c = night ? ["#2a4a2c", "#325a34", "#3c6a3c"] : ["#3f7d40", "#57974f", "#6aad5c"], tk = night ? "#33281a" : "#6b4d2e";
-  return `<g transform="translate(${x} ${y}) scale(${s})"><rect x="-2.5" y="-17" width="5" height="18" fill="${tk}"/><circle cx="-10" cy="-25" r="11" fill="${c[0]}"/><circle cx="11" cy="-26" r="11" fill="${c[2]}"/><circle cx="0" cy="-33" r="14" fill="${c[1]}"/><circle cx="0" cy="-24" r="12" fill="${c[2]}"/></g>`;
+  return _swayWrap(`<g transform="translate(${x} ${y}) scale(${s})"><rect x="-2.5" y="-17" width="5" height="18" fill="${tk}"/><circle cx="-10" cy="-25" r="11" fill="${c[0]}"/><circle cx="11" cy="-26" r="11" fill="${c[2]}"/><circle cx="0" cy="-33" r="14" fill="${c[1]}"/><circle cx="0" cy="-24" r="12" fill="${c[2]}"/></g>`, x, 5.4);
 }
 function _bush(x, y, s, night) {
   const c = night ? ["#2c4a2e", "#345a34"] : ["#4a8546", "#5c9a52"];
@@ -715,7 +734,7 @@ function _achArch(night) {
 }
 // 攻頂路標旗杆
 function _achFlagpole(x, y, night) {
-  return `<g transform="translate(${x} ${y})"><rect x="-1.5" y="-40" width="3" height="40" fill="${night ? "#8a7350" : "#6b4d2e"}"/><path d="M1 -40 L22 -34 L1 -27 Z" fill="${night ? "#c98a4a" : "#e2a24c"}"/></g>`;
+  return `<g transform="translate(${x} ${y})"><rect x="-1.5" y="-40" width="3" height="40" fill="${night ? "#8a7350" : "#6b4d2e"}"/><path class="ach-flag" d="M1 -40 L22 -34 L1 -27 Z" fill="${night ? "#c98a4a" : "#e2a24c"}"/></g>`;
 }
 // 前景框：底部近景（森林草叢／攻頂雪堆／雲上雲湧），加深縱深且避開中央步道口
 function _achFg(p, night) {
@@ -869,22 +888,39 @@ function _achInitClimb(ov) {
   // 建一頁 .ach-page 元素（含節點）
   function buildPage(p) {
     const band = p / 4, topY = _achPgTopY(p);
-    const [s, e] = _achRange(p, N), cnt = Math.max(1, e - s);
-    const nodes = list.slice(s, e).map((b, j) => { const u = 0.06 + (j + 0.5) / cnt * 0.88; return { b, u, x: _achUX(u, band), y: _achUY(u, topY) }; });
+    const [s, e] = _achRange(p, N);
+    const pageBadges = list.slice(s, e);
+    const mainB = pageBadges.filter(b => !b.hidden), hiddenB = pageBadges.filter(b => b.hidden);
+    const cnt = Math.max(1, mainB.length);
     const px = x => (x / PAGE_W * 100).toFixed(2) + "%", py = y => (y / PAGE_H * 100).toFixed(2) + "%";
-    const here = nodes.find(n => n.b.n === hereNm), gotN = nodes.filter(n => n.b.got).length;
+    const mainNodes = mainB.map((b, j) => { const u = 0.06 + (j + 0.5) / cnt * 0.88; return { b, x: _achUX(u, band), y: _achUY(u, topY), spur: false }; });
+    // 隱藏成就：從主幹道另闢支線（虛線岔路 + 岔口小圓點）
+    let spurs = "";
+    const hiddenNodes = hiddenB.map((b, hi) => {
+      const ua = Math.max(0.2, Math.min(0.8, 0.34 + hi * 0.3));
+      const ax = _achUX(ua, band), ay = _achUY(ua, topY), side = ax < 180 ? 1 : -1;
+      const hx = Math.max(40, Math.min(320, ax + side * 74)), hy = ay - 30;
+      const mx = (ax + hx) / 2 + side * 4, my = (ay + hy) / 2 - 16;
+      const dp = `M ${ax.toFixed(1)} ${ay.toFixed(1)} Q ${mx.toFixed(1)} ${my.toFixed(1)} ${hx.toFixed(1)} ${hy.toFixed(1)}`;
+      spurs += `<path d="${dp}" fill="none" stroke="${sky.night ? "#54462d" : "#a98a54"}" stroke-width="7" stroke-linecap="round" opacity=".55"/><path d="${dp}" fill="none" stroke="${sky.night ? "#b7a074" : "#fff3d6"}" stroke-width="2.2" stroke-dasharray="1 7" stroke-linecap="round" opacity=".85"/><circle cx="${ax.toFixed(1)}" cy="${ay.toFixed(1)}" r="4.5" fill="${sky.night ? "#7a6748" : "#9a7a44"}"/>`;
+      return { b, x: hx, y: hy, spur: true };
+    });
+    const nodes = mainNodes.concat(hiddenNodes);
+    const here = nodes.find(n => n.b.n === hereNm), gotN = pageBadges.filter(b => b.got).length;
     const headL = p === 0 ? `<div class="ach-head" style="left:${px(_achUX(0, band))};top:${py(_achUY(0, topY) + 26)}">${ic("footprints")}<b>${ttT("啟程")}</b></div>` : "";
     const peakL = p === 4 ? `<div class="ach-peak" style="left:50%;top:${py(150 - 66)}">${ic("crown")}<b>${ttT("傳說")}</b></div>` : "";
     const hikerL = here ? `<div class="ach-hiker" style="left:${px(here.x)};top:${py(here.y - 40)}"><span class="ach-hiker-b">${ttT("你在這")}</span><span class="ach-hiker-pin">${ic("footprints")}</span></div>` : "";
     const el = document.createElement("div"); el.className = "ach-page";
     el.innerHTML = `${_achPgSVG(p, sky.night)}
-        <div class="ach-pgtag">${ic(ACH_PG_IC[p])} ${ttT(ACH_PG_TITLE[p])}<i>${gotN}/${nodes.length}</i></div>
+        <svg class="ach-spurs" viewBox="0 0 ${PAGE_W} ${PAGE_H}" preserveAspectRatio="none" aria-hidden="true">${spurs}</svg>
+        ${_achFauna(p, sky.night)}
+        <div class="ach-pgtag">${ic(ACH_PG_IC[p])} ${ttT(ACH_PG_TITLE[p])}<i>${gotN}/${pageBadges.length}</i></div>
         ${peakL}${headL}${hikerL}
         <div class="ach-climb-marks"></div>`;
     const mc = el.querySelector(".ach-climb-marks");
     nodes.forEach((n, i) => {
       const cat = _achCat(n.b), b = document.createElement("button");
-      b.className = `ach3d-mk ${n.b.got ? "got" : "locked"}${n.b.n === hereNm ? " here" : ""}`;
+      b.className = `ach3d-mk ${n.b.got ? "got" : "locked"}${n.b.n === hereNm ? " here" : ""}${n.spur ? " spur" : ""}`;
       b.style.left = px(n.x); b.style.top = py(n.y);
       b.style.setProperty("--i", i);   // 由下(0)往上(5)依序浮現
       b.style.setProperty("--c", cat.col); b.style.setProperty("--pct", _achPct(n.b));

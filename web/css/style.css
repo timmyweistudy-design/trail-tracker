@@ -1903,6 +1903,28 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 .ach-page.intro .ach3d-mk { animation: achMkRise .55s ease both; animation-delay: calc(var(--i, 0) * .09s + .34s); }
 @keyframes achMkRise { from { opacity: 0; } to { opacity: 1; } }
 .ach-page-mtn { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* 隱藏成就支線（虛線岔路） */
+.ach-spurs { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 4; pointer-events: none; }
+.ach3d-mk.spur .ach-dot { box-shadow: 0 0 0 3px rgba(255,255,255,.35), 0 2px 7px rgba(0,0,0,.25); }
+/* 微風搖擺：樹 */
+.ach-sway { transform-box: fill-box; transform-origin: 50% 100%; animation-name: achSway; animation-timing-function: ease-in-out; animation-iteration-count: infinite; animation-direction: alternate; }
+@keyframes achSway { from { transform: rotate(-2deg); } to { transform: rotate(2.6deg); } }
+/* 旗子飄逸 */
+.ach-flag { transform-box: fill-box; transform-origin: 0% 60%; animation: achFlag 1.15s ease-in-out infinite; }
+@keyframes achFlag { 0%, 100% { transform: scaleX(1) skewY(0deg); } 50% { transform: scaleX(.82) skewY(-7deg); } }
+/* 飛鳥＋蝴蝶 */
+.ach-fauna { position: absolute; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; }
+.ach-bird { position: absolute; left: 0; will-change: transform; }
+.ach-bird-svg { width: 24px; height: 11px; display: block; animation: achFlap .5s ease-in-out infinite; transform-origin: center; }
+.ach-bird.v1 { top: 12%; animation: achFly1 19s linear infinite; }
+.ach-bird.v2 { top: 19%; animation: achFly2 25s linear infinite; animation-delay: -9s; }
+.ach-bird.v3 { top: 7%; animation: achFly1 22s linear infinite; animation-delay: -13s; }
+@keyframes achFly1 { from { transform: translate(-46px, 8px); } to { transform: translate(440px, -34px); } }
+@keyframes achFly2 { from { transform: translate(440px, 4px) scaleX(-1); } to { transform: translate(-46px, -26px) scaleX(-1); } }
+@keyframes achFlap { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(.5); } }
+.ach-bug { position: absolute; top: 52%; left: 8%; font-size: 16px; will-change: transform; animation: achBug 15s ease-in-out infinite; }
+@keyframes achBug { 0% { transform: translate(0, 0) rotate(-8deg); } 25% { transform: translate(64px, -44px) rotate(10deg); } 50% { transform: translate(150px, -8px) rotate(-6deg); } 75% { transform: translate(96px, 42px) rotate(9deg); } 100% { transform: translate(0, 0) rotate(-8deg); } }
+@media (prefers-reduced-motion: reduce) { .ach-sway, .ach-flag, .ach-bird, .ach-bird-svg, .ach-bug { animation: none; } }
 /* 跳到你在這 */
 .ach-jump { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 10; display: inline-flex; align-items: center; gap: 5px; border: none; background: rgba(20,30,20,.6); color: #fff; font-family: var(--serif); font-weight: 700; font-size: calc(12px * var(--fs, 1)); padding: 7px 15px; border-radius: 999px; box-shadow: 0 3px 10px rgba(0,0,0,.3); backdrop-filter: blur(3px); cursor: pointer; animation: achJumpIn .4s ease; }
 .ach-jump[hidden] { display: none; }
