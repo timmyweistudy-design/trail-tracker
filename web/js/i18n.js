@@ -131,6 +131,7 @@ const I18n = (() => {
     "GPX 匯入 / 匯出": "GPX import / export",
     // 生態區塊（物種名維持中文，見 scripts/i18n-ignore.json）
     "生態": "Ecology",
+    "破曉行者": "Dawn Walker", "十萬步": "100K Steps", "假日山友": "Weekend Warrior", "兩百K": "200K", "走遍五縣": "Five Counties", "午夜山行": "Midnight Hike", "一日千升": "1000m in a Day", "四季行者": "Four Seasons", "清晨 6 點前出發": "Start before 6 AM", "累積 10 萬步": "100,000 steps total", "週末出行 5 次": "5 weekend outings", "總里程 200 km": "200 km total", "完成 5 個縣市": "Complete 5 counties", "深夜 23–1 點出發": "Start between 11 PM–1 AM", "單次爬升 ≥ 1000 m": "1000 m ascent in one hike", "春夏秋冬都走過": "Hike in all four seasons", "神秘": "Secret", "神秘成就，達成後揭曉": "Secret achievement — revealed when unlocked", "季": "seasons",
     "山腳新手": "Trailhead Novice", "入山山友": "Forest Hiker", "登高好手": "Ridge Walker", "縱走達人": "Traverse Expert", "攻頂勇者": "Summit Hero", "傳說山神": "Legendary Spirit", "成就分數": "Score", "切換檢視": "Switch view", "解鎖": "unlock", "這個類別還沒有成就": "No achievements in this category yet",
     "成就": "Achievements", "解鎖成就": "Achievement unlocked", "解鎖於": "Unlocked", "又解鎖": "Unlocked", "項成就": "more",
     "繼續往上": "Climb higher", "回下方": "Go lower",

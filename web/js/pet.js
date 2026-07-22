@@ -301,6 +301,9 @@ const ACH_CAT_OF = {
   "山痴": "trips", "300K": "dist", "玉山高度": "climb", "半馬腳力": "challenge", "挑戰征服": "challenge", "四週堅持": "streak",
   "縱橫五百": "dist", "聖母峰高度": "climb", "走遍十縣": "explore", "步道收藏家": "explore", "月月不休": "streak",
   "千里健行": "dist", "萬米爬升": "climb", "環島達人": "explore", "超馬腳力": "challenge", "兩百次山旅": "trips",
+  // B 批新增
+  "破曉行者": "time", "十萬步": "trips", "假日山友": "time", "兩百K": "dist",
+  "走遍五縣": "explore", "午夜山行": "time", "一日千升": "climb", "四季行者": "time",
 };
 // 成就徽章：成就樹，強調長期累積（拿掉一鍵可解的收藏類）
 // petBadges 快取：資料未變就重用（一次開頁會被叫多次）；簽章涵蓋紀錄/終身/解鎖/完成數
@@ -309,7 +312,7 @@ function _pbSig() {
   const L = (typeof Store !== "undefined" && Store.life) ? Store.life() : {};
   const recN = (typeof Store !== "undefined" && Store.getRecords) ? Store.getRecords().length : 0;
   const done = (typeof Store !== "undefined" && Store.doneCount) ? Store.doneCount() : 0;
-  return `${recN}|${L.km || 0}|${L.trips || 0}|${L.asc || 0}|${done}|${localStorage.getItem("tt_badges_got") || ""}|${localStorage.getItem("tt_ach_maxkm") || 0}`;
+  return `${recN}|${L.km || 0}|${L.trips || 0}|${L.asc || 0}|${L.steps || 0}|${done}|${localStorage.getItem("tt_badges_got") || ""}|${localStorage.getItem("tt_ach_maxkm") || 0}|${localStorage.getItem("tt_ach_maxasc") || 0}`;
 }
 function _petBadgesCached() { return (_pbCache && _pbKey === _pbSig()) ? _pbCache : null; }
 function petBadges() {
@@ -332,18 +335,31 @@ function petBadges() {
   const doneTrails = (typeof TRAILS !== "undefined" && Array.isArray(TRAILS) && typeof Store !== "undefined" && Store.trailLog) ? TRAILS.filter(t => { try { return (Store.trailLog(t.id) || {}).done; } catch (e) { return false; } }) : [];
   const counties = new Set(doneTrails.map(t => t.region).filter(Boolean)).size;
   const hardDone = doneTrails.filter(t => (t.difficulty || 0) >= 4).length;
-  // t: 階層(1–6)；p: [目前值, 門檻, 單位] 供進度提示；布林型（早起/夜行）不設 p
+  // B 批新增訊號
+  let maxAsc = recs.reduce((m, r) => Math.max(m, r.ascent || 0), 0);
+  const savedAsc = +(localStorage.getItem("tt_ach_maxasc") || 0);
+  if (maxAsc > savedAsc) { try { localStorage.setItem("tt_ach_maxasc", String(maxAsc)); } catch (e) { /* */ } } else maxAsc = savedAsc;
+  const dawn = hrs.some(h => h < 6);                       // 清晨 6 點前
+  const midnight = hrs.some(h => h >= 23 || h < 1);        // 深夜 23–1 點（隱藏彩蛋）
+  const weekendN = recs.filter(r => { const d = new Date(r.date).getDay(); return d === 0 || d === 6; }).length;
+  const seasonOf = m => [11, 0, 1].includes(m) ? 0 : m <= 4 ? 1 : m <= 7 ? 2 : 3;   // 冬/春/夏/秋
+  const seasons = new Set(recs.map(r => seasonOf(new Date(r.date).getMonth()))).size;
+  const steps = Math.max(recs.reduce((s, r) => s + (r.steps || 0), 0), L.steps || 0);
+  // t: 階層(1–6)；p: [目前值, 門檻, 單位] 供進度提示；布林型（早起/夜行）不設 p；hidden: 隱藏彩蛋
   const list = [
     // 啟程
     { e: "👣", n: "初心者", got: n >= 1, d: "完成第一次記錄", p: [n, 1, "次"], t: 1 },
     { e: "🥾", n: "週末山友", got: n >= 3, d: "累積 3 次出行", p: [n, 3, "次"], t: 1 },
     { e: "🌅", n: "早起鳥", got: early, d: "清晨 7 點前出發", t: 1 },
     { e: "🌙", n: "夜行者", got: night, d: "晚間 7 點後出發", t: 1 },
+    { e: "🌄", n: "破曉行者", got: dawn, d: "清晨 6 點前出發", t: 1 },
     // 入山
     { e: "🎒", n: "常客", got: n >= 10, d: "累積 10 次出行", p: [n, 10, "次"], t: 2 },
     { e: "📏", n: "50K", got: km >= 50, d: "總里程 50 km", p: [km, 50, "km"], t: 2 },
     { e: "⛰️", n: "爬升新手", got: asc >= 1000, d: "總爬升 1000 m", p: [asc, 1000, "m"], t: 2 },
     { e: "🔥", n: "週週不斷", got: wk >= 2, d: "連續 2 週都有走", p: [wk, 2, "週"], t: 2 },
+    { e: "👟", n: "十萬步", got: steps >= 100000, d: "累積 10 萬步", p: [steps, 100000, "步"], t: 2 },
+    { e: "🗿", n: "假日山友", got: weekendN >= 5, d: "週末出行 5 次", p: [weekendN, 5, "次"], t: 2 },
     // 登高
     { e: "🏕️", n: "老山友", got: n >= 30, d: "累積 30 次出行", p: [n, 30, "次"], t: 3 },
     { e: "💯", n: "百K俱樂部", got: km >= 100, d: "總里程 100 km", p: [km, 100, "km"], t: 3 },
@@ -351,6 +367,9 @@ function petBadges() {
     { e: "📅", n: "連續一週", got: dstreak >= 7, d: "連續 7 天健行", p: [dstreak, 7, "天"], t: 3 },
     { e: "🏃", n: "健行馬拉松", got: maxOne >= 10, d: "單次步行 ≥ 10 km", p: [maxOne, 10, "km"], t: 3 },
     { e: "🧭", n: "走遍三縣", got: counties >= 3, d: "完成 3 個縣市的步道", p: [counties, 3, "縣"], t: 3 },
+    { e: "🎽", n: "兩百K", got: km >= 200, d: "總里程 200 km", p: [km, 200, "km"], t: 3 },
+    { e: "🌐", n: "走遍五縣", got: counties >= 5, d: "完成 5 個縣市", p: [counties, 5, "縣"], t: 3 },
+    { e: "🦉", n: "午夜山行", got: midnight, d: "深夜 23–1 點出發", t: 3, hidden: true },
     // 縱走
     { e: "🧗", n: "山痴", got: n >= 100, d: "累積 100 次出行", p: [n, 100, "次"], t: 4 },
     { e: "🚀", n: "300K", got: km >= 300, d: "總里程 300 km", p: [km, 300, "km"], t: 4 },
@@ -358,6 +377,8 @@ function petBadges() {
     { e: "🥇", n: "半馬腳力", got: maxOne >= 21, d: "單次步行 ≥ 21 km", p: [maxOne, 21, "km"], t: 4 },
     { e: "⚔️", n: "挑戰征服", got: hardDone >= 5, d: "完成 5 條挑戰級以上步道", p: [hardDone, 5, "條"], t: 4 },
     { e: "🗓️", n: "四週堅持", got: wk >= 4, d: "連續 4 週都有走", p: [wk, 4, "週"], t: 4 },
+    { e: "🪜", n: "一日千升", got: maxAsc >= 1000, d: "單次爬升 ≥ 1000 m", p: [maxAsc, 1000, "m"], t: 4 },
+    { e: "🍂", n: "四季行者", got: seasons >= 4, d: "春夏秋冬都走過", p: [seasons, 4, "季"], t: 4 },
     // 攻頂
     { e: "🏆", n: "縱橫五百", got: km >= 500, d: "總里程 500 km", p: [km, 500, "km"], t: 5 },
     { e: "🏔️", n: "聖母峰高度", got: asc >= 8848, d: "總爬升 8848 m（一座聖母峰）", p: [asc, 8848, "m"], t: 5 },
@@ -420,13 +441,18 @@ function achScore() {
   const list = petBadges(), gotList = list.filter(b => b.got);
   const got = gotList.length, total = list.length;
   const score = gotList.reduce((s, b) => s + b.t * 10, 0);
-  const idx = Math.min(ACH_RANK.length - 1, Math.floor(got / 5));
+  const idx = Math.min(ACH_RANK.length - 1, Math.floor(got / Math.max(1, total) * ACH_RANK.length));   // 稱號依達成比例，隨總數縮放
   return { got, total, score, rank: ACH_RANK[idx], rankIdx: idx };
 }
 function achUnlockDate(name) {
   try { const d = JSON.parse(localStorage.getItem("tt_badges_date") || "{}")[name]; if (d) { const t = new Date(d); return `${t.getFullYear()}/${String(t.getMonth() + 1).padStart(2, "0")}/${String(t.getDate()).padStart(2, "0")}`; } } catch (e) { /* */ }
   return "";
 }
+// 隱藏彩蛋：未達成前只露「？？？」，達成後正常揭曉
+function _achHidden(b) { return !!b.hidden && !b.got; }
+function _achName(b) { return _achHidden(b) ? "？？？" : ttT(b.n); }
+function _achEmo(b) { return _achHidden(b) ? "❓" : b.e; }
+function _achDesc(b) { return _achHidden(b) ? ttT("神秘成就，達成後揭曉") : ttT(b.d); }
 // 成就資料＋步道 HTML（共用給夥伴頁精簡入口與全螢幕成就步道）
 function buildAchTree() {
   const list = petBadges(), got = list.filter(b => b.got).length;
@@ -493,7 +519,10 @@ function _achSky() {
   return { sky: "linear-gradient(180deg,#1a2740 0%,#26334c 46%,#33415c 100%)", orb: "moon", ox: 76, oy: 58, oc: "#eaeef6", night: true };
 }
 // —— 五段攀登：一頁一段海拔（0 山腳啟程 → 4 雲上傳說），一頁頁往上爬 ——
-const ACH_NPG = 5, ACH_PGN = 6, PAGE_W = 360, PAGE_H = 660, PAGE_PAD = 48;
+const ACH_NPG = 5, PAGE_W = 360, PAGE_H = 660, PAGE_PAD = 48;
+// 把 N 顆成就平均分到 5 段海拔（可變數量，每頁 6–9 顆都行）
+function _achRange(p, N) { return [Math.round(p * N / ACH_NPG), Math.round((p + 1) * N / ACH_NPG)]; }
+function _achPageOf(idx, N) { for (let p = 0; p < ACH_NPG; p++) { const [s, e] = _achRange(p, N); if (idx >= s && idx < e) return p; } return ACH_NPG - 1; }
 const ACH_PG_IC = ["footprints", "leaf", "mountain", "trophy", "crown"];
 const ACH_PG_TITLE = ["啟程", "入山", "登高", "攻頂", "傳說"];   // 皆為既有 i18n 詞條
 // 頁內之字步道：u=0 底→u=1 頂（頂頁攻峰所以較短）
@@ -699,11 +728,11 @@ function renderAchList(ov) {
   const chips = cats.map(c => `<button class="ach-fchip${c === filter ? " on" : ""}" data-c="${c}">${c === "all" ? ttT("全部") : `${ic(ACH_CAT[c].i)} ${ttT(ACH_CATNAME[c])}`}</button>`).join("");
   const shown = list.map((b, i) => ({ b, i })).filter(o => filter === "all" || o.b.c === filter);
   const rows = shown.map(({ b, i }) => {
-    const cat = _achCat(b), pct = _achPct(b), date = b.got ? achUnlockDate(b.n) : "";
-    const right = b.got ? (date || ttT("已達成")) : (b.p ? `${_achFmt(b.p[0], b.p[2])}/${b.p[1]}` : ttT("尚未達成"));
+    const cat = _achCat(b), pct = _achPct(b), date = b.got ? achUnlockDate(b.n) : "", hid = _achHidden(b);
+    const right = b.got ? (date || ttT("已達成")) : (hid ? "？" : (b.p ? `${_achFmt(b.p[0], b.p[2])}/${b.p[1]}` : ttT("尚未達成")));
     return `<button class="ach-lrow ${b.got ? "got" : "locked"}" data-i="${i}" style="--c:${cat.col}">
-      <span class="ach-lemo ach-emo">${b.e}</span>
-      <span class="ach-lbody"><span class="ach-lname">${ttT(b.n)}${b.got ? ` <span class="ach-lchk">${_ACH_CHK}</span>` : ""}</span><span class="ach-ldesc">${ttT(b.d)}</span>${b.p ? `<span class="ach-lbar"><i style="width:${pct}%"></i></span>` : ""}</span>
+      <span class="ach-lemo ach-emo">${_achEmo(b)}</span>
+      <span class="ach-lbody"><span class="ach-lname">${_achName(b)}${b.got ? ` <span class="ach-lchk">${_ACH_CHK}</span>` : ""}</span><span class="ach-ldesc">${_achDesc(b)}</span>${b.p && !hid ? `<span class="ach-lbar"><i style="width:${pct}%"></i></span>` : ""}</span>
       <span class="ach-lright">${right}</span></button>`;
   }).join("");
   box.innerHTML = `<div class="ach-fchips">${chips}</div><div class="ach-lrows">${rows || `<div class="ach-lempty">${ttT("這個類別還沒有成就")}</div>`}</div>`;
@@ -747,15 +776,15 @@ function shareAchievement(b) {
 function showAchDetail(b) {
   const ov = document.querySelector('[data-ov="achtree"]'); if (!ov) return;
   const box = ov.querySelector(".ach3d-detail"); if (!box) return;
-  const cat = _achCat(b), pct = _achPct(b);
-  const catName = ACH_CATNAME[b.c] || "";
+  const cat = _achCat(b), pct = _achPct(b), hid = _achHidden(b);
+  const catName = hid ? "神秘" : (ACH_CATNAME[b.c] || "");
   const date = b.got ? achUnlockDate(b.n) : "";
   box.innerHTML = `<button class="ach3d-dx" aria-label="${ttT("關閉")}">✕</button>
-    <div class="ach3d-d-top"><div class="ach3d-d-dot" style="--c:${cat.col};--pct:${pct}"><div class="ach-dot-in ach-emo">${b.e}</div></div>
-      <div><div class="ach3d-d-name">${ttT(b.n)}${b.got ? ` <span class="ach3d-d-badge">${_ACH_CHK}</span>` : ""}</div><div class="ach3d-d-cat" style="color:${cat.col}">${ic(cat.i)} ${ttT(catName)}${date ? ` · ${ttT("解鎖於")} ${date}` : ""}</div></div></div>
-    <div class="ach3d-d-desc">${ttT(b.d)}</div>
-    ${b.p ? `<div class="ach3d-d-prog"><div class="ach3d-d-bar" style="--c:${cat.col}"><i style="width:${pct}%"></i></div><span>${_achFmt(b.p[0], b.p[2])} / ${b.p[1]} ${ttT(b.p[2])}</span></div>` : `<div class="ach3d-d-prog"><span>${b.got ? ttT("已達成") : ttT("尚未達成")}</span></div>`}
-    <button class="ach3d-d-share" id="achShareBtn">${ic("share")} ${ttT("分享")}</button>`;
+    <div class="ach3d-d-top"><div class="ach3d-d-dot" style="--c:${hid ? "var(--ink-faint)" : cat.col};--pct:${hid ? 0 : pct}"><div class="ach-dot-in ach-emo">${_achEmo(b)}</div></div>
+      <div><div class="ach3d-d-name">${_achName(b)}${b.got ? ` <span class="ach3d-d-badge">${_ACH_CHK}</span>` : ""}</div><div class="ach3d-d-cat" style="color:${hid ? "var(--ink-faint)" : cat.col}">${hid ? "" : ic(cat.i) + " "}${ttT(catName)}${date ? ` · ${ttT("解鎖於")} ${date}` : ""}</div></div></div>
+    <div class="ach3d-d-desc">${_achDesc(b)}</div>
+    ${b.p && !hid ? `<div class="ach3d-d-prog"><div class="ach3d-d-bar" style="--c:${cat.col}"><i style="width:${pct}%"></i></div><span>${_achFmt(b.p[0], b.p[2])} / ${b.p[1]} ${ttT(b.p[2])}</span></div>` : `<div class="ach3d-d-prog"><span>${b.got ? ttT("已達成") : ttT("尚未達成")}</span></div>`}
+    ${hid ? "" : `<button class="ach3d-d-share" id="achShareBtn">${ic("share")} ${ttT("分享")}</button>`}`;
   box.classList.add("show");
   box.querySelector(".ach3d-dx").addEventListener("click", () => box.classList.remove("show"));
   const sb = box.querySelector("#achShareBtn"); if (sb) sb.addEventListener("click", () => shareAchievement(b));
@@ -815,14 +844,16 @@ function _achInitClimb(ov) {
       <div class="ach3d-cloud" style="top:14%;--d:46s;--s:.9"></div>
       <div class="ach3d-cloud" style="top:28%;--d:62s;--s:.66;animation-delay:-22s"></div>`;
   }
-  const herePage = Math.min(ACH_NPG - 1, Math.floor(Math.max(0, list.findIndex(b => b.n === hereNm)) / ACH_PGN));
+  const N = list.length;
+  const herePage = _achPageOf(Math.max(0, list.findIndex(b => b.n === hereNm)), N);
   const dotsEl = ov.querySelector(".ach-pgdots"), navEl = ov.querySelector(".ach-pgnav");
   // 右側海拔圓點（下＝啟程、上＝傳說；標出你目前進度那頁）
   dotsEl.innerHTML = Array.from({ length: ACH_NPG }, (_, i) => `<button class="ach-pgdot${i === herePage ? " ishere" : ""}" data-pg="${i}" aria-label="${ttT(ACH_PG_TITLE[i])}"></button>`).reverse().join("");
   // 建一頁 .ach-page 元素（含節點）
   function buildPage(p) {
     const band = p / 4, topY = _achPgTopY(p);
-    const nodes = list.slice(p * ACH_PGN, p * ACH_PGN + ACH_PGN).map((b, j) => { const u = 0.085 + j * 0.166; return { b, u, x: _achUX(u, band), y: _achUY(u, topY) }; });
+    const [s, e] = _achRange(p, N), cnt = Math.max(1, e - s);
+    const nodes = list.slice(s, e).map((b, j) => { const u = 0.06 + (j + 0.5) / cnt * 0.88; return { b, u, x: _achUX(u, band), y: _achUY(u, topY) }; });
     const px = x => (x / PAGE_W * 100).toFixed(2) + "%", py = y => (y / PAGE_H * 100).toFixed(2) + "%";
     const here = nodes.find(n => n.b.n === hereNm), gotN = nodes.filter(n => n.b.got).length;
     const headL = p === 0 ? `<div class="ach-head" style="left:${px(_achUX(0, band))};top:${py(_achUY(0, topY) + 26)}">${ic("footprints")}<b>${ttT("啟程")}</b></div>` : "";
@@ -830,7 +861,7 @@ function _achInitClimb(ov) {
     const hikerL = here ? `<div class="ach-hiker" style="left:${px(here.x)};top:${py(here.y - 40)}"><span class="ach-hiker-b">${ttT("你在這")}</span><span class="ach-hiker-pin">${ic("footprints")}</span></div>` : "";
     const el = document.createElement("div"); el.className = "ach-page";
     el.innerHTML = `${_achPgSVG(p, sky.night)}
-        <div class="ach-pgtag">${ic(ACH_PG_IC[p])} ${ttT(ACH_PG_TITLE[p])}<i>${gotN}/${ACH_PGN}</i></div>
+        <div class="ach-pgtag">${ic(ACH_PG_IC[p])} ${ttT(ACH_PG_TITLE[p])}<i>${gotN}/${nodes.length}</i></div>
         ${peakL}${headL}${hikerL}
         <div class="ach-climb-marks"></div>`;
     const mc = el.querySelector(".ach-climb-marks");
@@ -840,8 +871,8 @@ function _achInitClimb(ov) {
       b.style.left = px(n.x); b.style.top = py(n.y);
       b.style.setProperty("--i", i);   // 由下(0)往上(5)依序浮現
       b.style.setProperty("--c", cat.col); b.style.setProperty("--pct", _achPct(n.b));
-      b.setAttribute("aria-label", `${ttT(n.b.n)} · ${n.b.got ? ttT("已達成") : ttT("尚未達成")}`);   // 無障礙
-      b.innerHTML = `<span class="ach-dot"><span class="ach-dot-in ach-emo">${n.b.e}</span>${n.b.got ? `<span class="ach-check">${_ACH_CHK}</span>` : `<span class="ach-lock">${_ACH_LOCK}</span>`}</span>`;   // 各徽章專屬 emoji＋鎖頭暗示
+      b.setAttribute("aria-label", `${_achName(n.b)} · ${n.b.got ? ttT("已達成") : ttT("尚未達成")}`);   // 無障礙
+      b.innerHTML = `<span class="ach-dot"><span class="ach-dot-in ach-emo">${_achEmo(n.b)}</span>${n.b.got ? `<span class="ach-check">${_ACH_CHK}</span>` : `<span class="ach-lock">${_ACH_LOCK}</span>`}</span>`;   // 各徽章專屬 emoji＋鎖頭暗示
       b.addEventListener("click", e => { e.stopPropagation(); showAchDetail(n.b); });
       mc.appendChild(b);
     });
