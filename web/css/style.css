@@ -977,6 +977,10 @@ body.rec-running #recMap .me-marker .tm-pet .pet-critter, body.rec-running #recM
 .mstat .ml { font-size: calc(10.5px * var(--fs, 1)); color: var(--ink-soft); margin-top: 6px; letter-spacing: .2px; }
 @media (max-width: 360px) { .mstat-grid { grid-template-columns: repeat(2, 1fr); } }
 
+.hist-month { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 4px 10px; margin: 16px 2px 9px; }
+.hist-month:first-child { margin-top: 2px; }
+.hist-month .hm-name { font-family: var(--serif); font-size: calc(14px * var(--fs, 1)); font-weight: 700; color: var(--ink); }
+.hist-month .hm-meta { font-family: var(--num); font-size: calc(11.5px * var(--fs, 1)); font-weight: 700; color: var(--ink-soft); }
 .hist-card { background: var(--surface); border-radius: var(--r); padding: 14px 16px; margin-bottom: 11px; box-shadow: var(--sh-sm); border: 1px solid var(--line-soft); }
 .hist-card .top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .hist-card .top b { font-family: var(--serif); font-size: calc(16px * var(--fs, 1)); font-weight: 700; }
