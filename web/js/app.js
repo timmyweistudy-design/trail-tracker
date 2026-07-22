@@ -361,7 +361,18 @@ function confetti() {
 // ---------- 分頁切換 ----------
 let detailMap, detailOverlay, detailPoiLayer, detailWpLayer, recMap, recLine, recMarker, petMarker;
 let _recFollow = true;   // 記錄地圖是否自動跟隨定位；使用者手動滑動→關閉（不再硬拉回中間），按「回到我的位置」→重新開啟
-function setRecFollow(on) { _recFollow = on; const b = recMap && recMap._recenterBtn; if (b) b.classList.toggle("following", on); }
+function setRecFollow(on) {
+  _recFollow = on;
+  const b = recMap && recMap._recenterBtn; if (b) b.classList.toggle("following", on);
+  if (!recMap) return;
+  if (!on) {
+    // 使用者滑開地圖＝暫停導航旋轉：地圖轉正，拖曳平順且方向正確（旋轉狀態下拖曳會抖、方向也不對）
+    if (typeof applyPaneRotation === "function") applyPaneRotation();   // _recFollow=false → 清掉 rotate
+    document.querySelectorAll("#recMap .tm-av, #recMap .pm-e").forEach(e => e.style.transform = "");
+  } else if (_navUp && typeof updateMeCone === "function") {
+    updateMeCone();   // 恢復跟隨→重新套回導航旋轉
+  }
+}
 
 // 沿線地標（三角點/山頭/駐在所遺址/吊橋/觀景/水源/山屋/鞍部）——資料取自 OSM，離步道夠近才收（見 enrich_waypoints.py）
 // svg=線條式圖示（viewBox 24、白色描邊），地圖標記/清單/圖例共用
@@ -1258,7 +1269,8 @@ function applyPaneRotation() {
   const t = pane.style.transform || "";
   const m = t.match(/translate3d\([^)]*\)|translate\([^)]*\)/);   // Leaflet 平移(縮放/拖曳都會重設它)
   const base = m ? m[0] : "";
-  if (!_navUp) { pane.style.transform = base; pane.style.transformOrigin = ""; return; }
+  // 導航關閉、或使用者滑開地圖（暫停跟隨）＝不旋轉：只在還殘留 rotate 時清一次，避免每幀重寫和 Leaflet 拖曳打架＝抖動
+  if (!_navUp || !_recFollow) { if (/rotate/.test(t)) { pane.style.transform = base; pane.style.transformOrigin = ""; } return; }
   const size = recMap.getSize();
   pane.style.transformOrigin = `${size.x / 2}px ${size.y / 2}px`;   // 繞畫面中心旋轉
   pane.style.transform = `rotate(${-_navHeadingSm}deg) scale(${NAV_SCALE}) ${base}`;   // 用平滑方位→不抖
@@ -1290,7 +1302,7 @@ function setNavUp(on) {
 }
 // 更新記錄地圖「我」的面朝錐：優先用手機羅盤(站著轉身也動)，沒有才用 GPS 行進方向
 function updateMeCone() {
-  if (_navUp) {
+  if (_navUp && _recFollow) {
     applyPaneRotation();   // 地圖圖層跟著行進方向轉（不動控制鈕）
     const h = navHeading();
     // 頭像框＋寵物保持「正的」＋抵銷面板放大：反向旋轉 +h、反向縮放 1/NAV_SCALE
@@ -1299,7 +1311,7 @@ function updateMeCone() {
   if (!recMarker || !recMarker._av || !recMarker.getElement) return;
   const el = recMarker.getElement(); const dir = el && el.querySelector(".tm-dir"); if (!dir) return;
   // 導航：頭像框已直立，方向角(tm-dir)設 0°→在螢幕上朝正上方(前方)＝原本相框的角就是指標
-  if (_navUp) { dir.style.transform = "rotate(0deg)"; dir.style.display = "block"; return; }
+  if (_navUp && _recFollow) { dir.style.transform = "rotate(0deg)"; dir.style.display = "block"; return; }
   const head = (_compassOn && _heading != null) ? _heading : _gpsHeading;
   if (head != null) { dir.style.transform = `rotate(${head}deg)`; dir.style.display = "block"; } else dir.style.display = "none";
 }
