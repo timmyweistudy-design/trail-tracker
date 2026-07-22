@@ -966,6 +966,7 @@ function renderMore() {
 
 // 地圖瀏覽模式
 let browseMap = null, browseLayer = null, mapOn = false;
+let browseMarkers = new Map(), browseMoveBound = false, browseMoveTimer = null;   // 視野虛擬化用
 const DIFF_COLOR = { 0: "#3aa3a0", 1: "#46a24f", 2: "#6aa83e", 3: "#d8a127", 4: "#e07a2c", 5: "#d2542e", 6: "#b3322a" };
 // 底圖：Esri 地形(含立體陰影) / 衛星影像 — 比 OpenTopoMap 精緻
 // 商用授權：config.js 設 window.ARCGIS_API_KEY → 走 Esri 授權端點 ibasemaps-api（帶 token）；
@@ -1448,23 +1449,39 @@ function showBrowseMap() {
     };
     lg.addTo(browseMap);
   }
-  browseLayer.clearLayers();
-  const list = curList.slice(0, 1500);   // 叢集後可放更多
-  const bounds = [];
-  list.forEach(t => {
-    if (!t.lat) return;
-    const closed = t.condition && /暫停|封閉|關閉/.test(t.condition.status || "");
-    const col = closed ? "#b3322a" : (DIFF_COLOR[t.difficulty] || "#888");
-    const mk = L.marker([t.lat, t.lon], { icon: pinIcon(col, closed ? "!" : (t.difficulty ?? "")) }).addTo(browseLayer);
-    const safeName = t.name.replace(/[<>&]/g, "");
-    mk.bindPopup(`<b>${safeName}</b><br>${t.difficulty_label}${t.length_km ? " · " + t.length_km + "km" : ""}${closed ? "<br>⚠️ " + t.condition.status : ""}<br><a href="#" class="popup-go">查看詳情</a>`);
-    mk.on("popupopen", e => {
-      const a = e.popup.getElement().querySelector(".popup-go");
-      if (a) a.addEventListener("click", ev => { ev.preventDefault(); openDetail(t.id); });
-    });
-    bounds.push([t.lat, t.lon]);
-  });
-  setTimeout(() => { browseMap.invalidateSize(); if (bounds.length) browseMap.fitBounds(bounds, { padding: [30, 30] }); }, 80);
+  // 視野虛擬化：只建目前地圖範圍內的 marker；平移/縮放時再增減（省物件、上千點也順、且不再有 1500 上限漏步道）
+  if (!browseMoveBound) {
+    browseMap.on("moveend zoomend", () => { clearTimeout(browseMoveTimer); browseMoveTimer = setTimeout(renderBrowseMarkers, 90); });
+    browseMoveBound = true;
+  }
+  // 換篩選：清掉不在新清單的舊 marker（其餘 renderBrowseMarkers 會 diff 處理）
+  const ids = new Set(curList.map(t => t.id));
+  for (const [id, mk] of browseMarkers) { if (!ids.has(id)) { browseLayer.removeLayer(mk); browseMarkers.delete(id); } }
+  // 先框住整個篩選結果（用座標，不需建 marker），fitBounds 觸發的 moveend 會接著只渲染視野內的點
+  const bounds = curList.filter(t => t.lat).map(t => [t.lat, t.lon]);
+  setTimeout(() => { browseMap.invalidateSize(); if (bounds.length) browseMap.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 }); renderBrowseMarkers(); }, 80);
+}
+function _browseMarker(t) {
+  const closed = t.condition && /暫停|封閉|關閉/.test(t.condition.status || "");
+  const col = closed ? "#b3322a" : (DIFF_COLOR[t.difficulty] || "#888");
+  const mk = L.marker([t.lat, t.lon], { icon: pinIcon(col, closed ? "!" : (t.difficulty ?? "")) });
+  const safeName = t.name.replace(/[<>&]/g, "");
+  mk.bindPopup(`<b>${safeName}</b><br>${t.difficulty_label}${t.length_km ? " · " + t.length_km + "km" : ""}${closed ? "<br>⚠️ " + t.condition.status : ""}<br><a href="#" class="popup-go">查看詳情</a>`);
+  mk.on("popupopen", e => { const a = e.popup.getElement().querySelector(".popup-go"); if (a) a.addEventListener("click", ev => { ev.preventDefault(); openDetail(t.id); }); });
+  return mk;
+}
+function renderBrowseMarkers() {
+  if (!browseMap || !browseLayer) return;
+  const b = browseMap.getBounds().pad(0.35);   // 視野外擴 35%，平移時邊緣不會空
+  const visible = new Set();
+  let n = 0;
+  for (const t of curList) {
+    if (!t.lat || !b.contains([t.lat, t.lon])) continue;
+    visible.add(t.id);
+    if (!browseMarkers.has(t.id)) { const mk = _browseMarker(t); browseMarkers.set(t.id, mk); browseLayer.addLayer(mk); }
+    if (++n >= 2500) break;   // 保險上限（>全部步道數，全覽時不漏；縮放進去時視野自然culling到數百）
+  }
+  for (const [id, mk] of browseMarkers) { if (!visible.has(id)) { browseLayer.removeLayer(mk); browseMarkers.delete(id); } }
 }
 
 // 附近半徑篩選（依距離排序開啟後出現）
