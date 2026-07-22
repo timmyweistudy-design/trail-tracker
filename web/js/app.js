@@ -3442,6 +3442,7 @@ async function finishRecording(autoVehicle) {
     if (!saved) toast(ttT("儲存失敗"));   // 極罕見（addRecord 有多層 fallback），但失敗不靜默；詳因記進 tt_errors
     // 完成判定放在結算前（結算頁可能顯示「已完成」狀態）
     await safeRun("mark-done", () => maybeMarkTrailDone(rec));   // 真實走過＋全程沒偏離步道超過 1km 才算完成
+    safeRun("ach-unlock", () => { if (typeof achCheckUnlocks === "function") achCheckUnlocks(); });   // 跨門檻即時慶祝解鎖
     $("#recStatus").textContent = autoVehicle ? "偵測到車輛速度，已自動結束" : "準備就緒，按「開始」記錄路徑";
     // 結算頁：一定要開，絕不被下面任何「背景加分」步驟連坐（這是使用者最在意的：走完看得到結算）
     safeRun("open-summary", () => openTrackReview(rec, true));   // isNew=true → 可慶祝破紀錄
@@ -4076,8 +4077,11 @@ async function renderMeProfileCard() {
       <div class="me-card-name">${esc(prof.display_name || prof.handle)}${lvl ? ` <span class="lv-chip lvt-${Math.min(lvl, 7)}">Lv.${lvl}</span>` : ""}${pro ? ` <span class="pro-tag pro-mine">PRO</span>` : ""}</div>
       <div class="me-card-handle">@${esc(prof.handle)}</div>
       ${ps ? `<div class="me-card-pet">${typeof PET_ART !== "undefined" ? PET_ART.svg((ps.level || 1) - 1) : ps.emoji} ${esc(ps.name)}　·　已走 <b>${ps.km}</b> km</div>` : ""}
+      ${(() => { try { if (typeof petBadges !== "function") return ""; const bl = petBadges(), g = bl.filter(x => x.got).length; return `<button class="me-ach" id="meAchBtn">🏅 ${ttT("成就")} <b>${g}/${bl.length}</b> ›</button>`; } catch (e) { return ""; } })()}
     </div>
   </div>`;
+  const ab = $("#meAchBtn");
+  if (ab) ab.addEventListener("click", () => { const t = document.querySelector('.tab[data-view="pet"]'); if (t) t.click(); setTimeout(() => { if (typeof openAchTree === "function") openAchTree(); }, 260); });
 }
 // 健行提醒開關（只在原生 App 顯示；網頁版沒有本地排程通知外掛）
 function renderReminderToggle() {

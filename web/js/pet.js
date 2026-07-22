@@ -303,12 +303,27 @@ const ACH_CAT_OF = {
   "千里健行": "dist", "萬米爬升": "climb", "環島達人": "explore", "超馬腳力": "challenge", "兩百次山旅": "trips",
 };
 // 成就徽章：成就樹，強調長期累積（拿掉一鍵可解的收藏類）
+// petBadges 快取：資料未變就重用（一次開頁會被叫多次）；簽章涵蓋紀錄/終身/解鎖/完成數
+let _pbCache = null, _pbKey = "";
+function _pbSig() {
+  const L = (typeof Store !== "undefined" && Store.life) ? Store.life() : {};
+  const recN = (typeof Store !== "undefined" && Store.getRecords) ? Store.getRecords().length : 0;
+  const done = (typeof Store !== "undefined" && Store.doneCount) ? Store.doneCount() : 0;
+  return `${recN}|${L.km || 0}|${L.trips || 0}|${L.asc || 0}|${done}|${localStorage.getItem("tt_badges_got") || ""}|${localStorage.getItem("tt_ach_maxkm") || 0}`;
+}
+function _petBadgesCached() { return (_pbCache && _pbKey === _pbSig()) ? _pbCache : null; }
 function petBadges() {
+  const cached = _petBadgesCached(); if (cached) return cached;
   const recs = realRecords();
-  const n = recs.length;
-  const km = recs.reduce((s, r) => s + (r.distanceKm || 0), 0);
-  const asc = recs.reduce((s, r) => s + (r.ascent || 0), 0);
-  const maxOne = recs.reduce((m, r) => Math.max(m, r.distanceKm || 0), 0);
+  // 累積型指標取「終身統計」（只增不減、不受紀錄上限影響）＋現存紀錄較大者，進度數字才不會失真
+  const L = (typeof Store !== "undefined" && Store.life) ? Store.life() : {};
+  const n = Math.max(recs.length, L.trips || 0);
+  const km = Math.max(recs.reduce((s, r) => s + (r.distanceKm || 0), 0), L.km || 0);
+  const asc = Math.max(recs.reduce((s, r) => s + (r.ascent || 0), 0), L.asc || 0);
+  // 單次最大里程也持久化（最大的那趟被容量保護砍掉也不倒退）
+  let maxOne = recs.reduce((m, r) => Math.max(m, r.distanceKm || 0), 0);
+  const savedMax = +(localStorage.getItem("tt_ach_maxkm") || 0);
+  if (maxOne > savedMax) { try { localStorage.setItem("tt_ach_maxkm", String(maxOne)); } catch (e) { /* */ } } else maxOne = savedMax;
   const hrs = recs.map(r => new Date(r.date).getHours());
   const early = hrs.some(h => h < 7), night = hrs.some(h => h >= 19);
   const done = (typeof Store.doneCount === "function") ? Store.doneCount() : 0;
@@ -368,7 +383,35 @@ function petBadges() {
     b.c = ACH_CAT_OF[b.n] || "trips";   // 強化1：標分類
   }
   if (changed) try { localStorage.setItem("tt_badges_got", JSON.stringify([...got])); } catch { /* ignore */ }
+  _pbCache = list; _pbKey = _pbSig();
   return list;
+}
+// 解鎖偵測：記錄完成後呼叫，跨門檻就即時 toast 慶祝＋記下解鎖日期（首跑不洗版）
+function achCheckUnlocks() {
+  _pbCache = null;                       // 強制重算最新達成狀態
+  const list = petBadges();
+  const gotNames = list.filter(b => b.got).map(b => b.n);
+  let seen = null, dates = {};
+  try { seen = JSON.parse(localStorage.getItem("tt_badges_seen")); } catch (e) { /* */ }
+  try { dates = JSON.parse(localStorage.getItem("tt_badges_date")) || {}; } catch (e) { /* */ }
+  const now = new Date().toISOString();
+  if (!Array.isArray(seen)) {            // 首次：靜默初始化，不洗版
+    for (const nm of gotNames) if (!dates[nm]) dates[nm] = now;
+    try { localStorage.setItem("tt_badges_seen", JSON.stringify(gotNames)); localStorage.setItem("tt_badges_date", JSON.stringify(dates)); } catch (e) { /* */ }
+    return;
+  }
+  const seenSet = new Set(seen);
+  const fresh = list.filter(b => b.got && !seenSet.has(b.n));
+  for (const b of fresh) if (!dates[b.n]) dates[b.n] = now;
+  try { localStorage.setItem("tt_badges_seen", JSON.stringify(gotNames)); localStorage.setItem("tt_badges_date", JSON.stringify(dates)); } catch (e) { /* */ }
+  if (!fresh.length) return;
+  fresh.slice(0, 3).forEach((b, i) => setTimeout(() => { try { toast(`🏆 ${ttT("解鎖成就")}：${ttT(b.n)}`); } catch (e) { /* */ } }, 700 + i * 1700));
+  if (fresh.length > 3) setTimeout(() => { try { toast(`🏆 ${ttT("又解鎖")} ${fresh.length - 3} ${ttT("項成就")}`); } catch (e) { /* */ } }, 700 + 3 * 1700);
+  if (typeof refreshAchTree === "function") refreshAchTree();
+}
+function achUnlockDate(name) {
+  try { const d = JSON.parse(localStorage.getItem("tt_badges_date") || "{}")[name]; if (d) { const t = new Date(d); return `${t.getFullYear()}/${String(t.getMonth() + 1).padStart(2, "0")}/${String(t.getDate()).padStart(2, "0")}`; } } catch (e) { /* */ }
+  return "";
 }
 // 成就資料＋步道 HTML（共用給夥伴頁精簡入口與全螢幕成就步道）
 function buildAchTree() {
@@ -381,7 +424,7 @@ function buildAchTree() {
   const hereNm = nextUp[0] ? nextUp[0].b.n : null;   // 最接近解鎖＝「你在這」
   const nextHtml = nextUp.length ? `<div class="ach-next-h">${ttT("即將解鎖")}</div><div class="ach-next">${nextUp.map(({ b, ratio }) => {
     const [cur, goal, unit] = b.p, cat = catOf(b);
-    return `<div class="anx" style="--c:${cat.col}"><span class="anx-e">${ic(cat.i)}</span><div class="anx-body"><div class="anx-top"><b>${b.n}</b><span class="anx-remain">${fmt(cur, unit)} / ${goal} ${ttT(unit)}</span></div><div class="anx-bar"><i style="width:${(ratio * 100).toFixed(0)}%"></i></div></div></div>`;
+    return `<div class="anx" style="--c:${cat.col}"><span class="anx-e ach-emo">${b.e}</span><div class="anx-body"><div class="anx-top"><b>${ttT(b.n)}</b><span class="anx-remain">${fmt(cur, unit)} / ${goal} ${ttT(unit)}</span></div><div class="anx-bar"><i style="width:${(ratio * 100).toFixed(0)}%"></i></div></div></div>`;
   }).join("")}</div>` : "";
   const CHK = `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>`;
   const pctOf = b => b.got ? 100 : (b.p && b.p[1] ? Math.min(100, Math.round(b.p[0] / b.p[1] * 100)) : 0);
@@ -426,6 +469,7 @@ function _achPct(b) { return b.got ? 100 : (b.p && b.p[1] ? Math.min(100, Math.r
 function _achFmt(v, u) { return u === "km" ? v.toFixed(1) : String(Math.round(v)); }
 function _achStat(b) { return b.got ? ttT("已達成") : (b.p ? `${_achFmt(b.p[0], b.p[2])} / ${b.p[1]} ${ttT(b.p[2])}` : b.d); }
 const _ACH_CHK = `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>`;
+const _ACH_LOCK = `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`;
 // 日夜（依真實時間）：天空漸層＋日/月＋是否夜晚
 function _achSky() {
   const h = new Date().getHours();
@@ -636,10 +680,11 @@ function showAchDetail(b) {
   const box = ov.querySelector(".ach3d-detail"); if (!box) return;
   const cat = _achCat(b), pct = _achPct(b);
   const catName = ACH_CATNAME[b.c] || "";
+  const date = b.got ? achUnlockDate(b.n) : "";
   box.innerHTML = `<button class="ach3d-dx" aria-label="${ttT("關閉")}">✕</button>
-    <div class="ach3d-d-top"><div class="ach3d-d-dot" style="--c:${cat.col};--pct:${pct}"><div class="ach-dot-in">${ic(cat.i)}</div></div>
-      <div><div class="ach3d-d-name">${b.n}${b.got ? ` <span class="ach3d-d-badge">${_ACH_CHK}</span>` : ""}</div><div class="ach3d-d-cat" style="color:${cat.col}">${ic(cat.i)} ${ttT(catName)}</div></div></div>
-    <div class="ach3d-d-desc">${b.d}</div>
+    <div class="ach3d-d-top"><div class="ach3d-d-dot" style="--c:${cat.col};--pct:${pct}"><div class="ach-dot-in ach-emo">${b.e}</div></div>
+      <div><div class="ach3d-d-name">${ttT(b.n)}${b.got ? ` <span class="ach3d-d-badge">${_ACH_CHK}</span>` : ""}</div><div class="ach3d-d-cat" style="color:${cat.col}">${ic(cat.i)} ${ttT(catName)}${date ? ` · ${ttT("解鎖於")} ${date}` : ""}</div></div></div>
+    <div class="ach3d-d-desc">${ttT(b.d)}</div>
     ${b.p ? `<div class="ach3d-d-prog"><div class="ach3d-d-bar" style="--c:${cat.col}"><i style="width:${pct}%"></i></div><span>${_achFmt(b.p[0], b.p[2])} / ${b.p[1]} ${ttT(b.p[2])}</span></div>` : `<div class="ach3d-d-prog"><span>${b.got ? ttT("已達成") : ttT("尚未達成")}</span></div>`}`;
   box.classList.add("show");
   box.querySelector(".ach3d-dx").addEventListener("click", () => box.classList.remove("show"));
@@ -711,7 +756,8 @@ function _achInitClimb(ov) {
       b.style.left = px(n.x); b.style.top = py(n.y);
       b.style.setProperty("--i", i);   // 由下(0)往上(5)依序浮現
       b.style.setProperty("--c", cat.col); b.style.setProperty("--pct", _achPct(n.b));
-      b.innerHTML = `<span class="ach-dot"><span class="ach-dot-in">${ic(cat.i)}</span>${n.b.got ? `<span class="ach-check">${_ACH_CHK}</span>` : ""}</span>`;
+      b.setAttribute("aria-label", `${ttT(n.b.n)} · ${n.b.got ? ttT("已達成") : ttT("尚未達成")}`);   // 無障礙
+      b.innerHTML = `<span class="ach-dot"><span class="ach-dot-in ach-emo">${n.b.e}</span>${n.b.got ? `<span class="ach-check">${_ACH_CHK}</span>` : `<span class="ach-lock">${_ACH_LOCK}</span>`}</span>`;   // 各徽章專屬 emoji＋鎖頭暗示
       b.addEventListener("click", e => { e.stopPropagation(); showAchDetail(n.b); });
       mc.appendChild(b);
     });

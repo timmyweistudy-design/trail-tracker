@@ -848,6 +848,9 @@ body.rec-running #recMap .me-marker .tm-pet .pet-critter, body.rec-running #recM
 .fp-pet .pet-critter { width: 34px; height: 34px; filter: none; vertical-align: middle; }
 .pf-pet .pet-critter { width: 26px; height: 26px; filter: none; flex: 0 0 auto; }
 .me-card-pet .pet-critter { width: 30px; height: 30px; filter: none; vertical-align: middle; display: inline-block; }
+/* 個人卡：成就進度 chip（提高成就可見度／可點進成就步道） */
+.me-ach { margin-top: 6px; display: inline-flex; align-items: center; gap: 4px; border: none; background: var(--surface-2); color: var(--ink-soft); font-size: calc(12px * var(--fs, 1)); font-weight: 600; padding: 4px 11px; border-radius: 999px; cursor: pointer; }
+.me-ach b { color: var(--accent); font-family: var(--num); }
 .tm-pet .pet-critter { width: 30px; height: 30px; filter: none; }   /* 與頭像(32px)差不多大，坐在頭頂 */
 .evolve-h { font-family: var(--serif); font-size: calc(30px * var(--fs, 1)); font-weight: 900; letter-spacing: 6px; margin-top: 10px; color: #e8c87a; }
 .evolve-n { font-family: var(--serif); font-size: calc(18px * var(--fs, 1)); font-weight: 700; margin-top: 6px; }
@@ -1813,6 +1816,14 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 .ach-stop.got .ach-dot { box-shadow: 0 0 0 5px var(--bg), 0 0 11px color-mix(in srgb, var(--c) 70%, transparent); }
 .ach-check { position: absolute; right: -3px; bottom: -3px; width: 19px; height: 19px; border-radius: 50%; background: #e0b15a; color: #fff; display: grid; place-items: center; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
 .ach-check .ic { width: 12px; height: 12px; }
+/* 各徽章專屬 emoji 字符（取代同類共用線圖示，一眼可辨） */
+.ach-emo { font-size: 21px; line-height: 1; filter: saturate(1.05); font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
+.anx-e.ach-emo, .ach-emo.anx-e { font-size: 18px; background: none; }
+.ach3d-d-dot .ach-emo { font-size: 25px; }
+/* 未解鎖節點：鎖頭暗示＋略去彩度 */
+.ach-lock { position: absolute; right: -3px; bottom: -3px; width: 18px; height: 18px; border-radius: 50%; background: var(--surface-2, #e7e2d6); color: var(--ink-faint); display: grid; place-items: center; box-shadow: 0 1px 3px rgba(0,0,0,.22); }
+.ach-lock .ic { width: 11px; height: 11px; }
+.ach3d-mk.locked .ach-emo { filter: grayscale(.55) opacity(.82); }
 .ach-lbl b { display: block; font-family: var(--serif); font-weight: 700; font-size: calc(13px * var(--fs, 1)); color: var(--ink); line-height: 1.2; }
 .ach-stop.locked .ach-lbl b { color: var(--ink-soft); }
 .ach-lbl-d { font-size: calc(10.5px * var(--fs, 1)); color: var(--ink-faint); font-variant-numeric: tabular-nums; }

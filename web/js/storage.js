@@ -182,7 +182,7 @@ const Store = (() => {
     "tt_pet_name", "tt_pet_hat", "tt_pet_hatch", "tt_pet_stage", "tt_pet_base",
     "tt_pet_berry_spent", "tt_pet_berry_bonus", "tt_pet_berry_picked", "tt_pet_aff", "tt_pet_aff_t",
     "tt_pet_fed_t", "tt_pet_feedkm",
-    "tt_quest_claim", "tt_quest_hi", "tt_badges_got", "tt_life",
+    "tt_quest_claim", "tt_quest_hi", "tt_badges_got", "tt_badges_seen", "tt_badges_date", "tt_ach_maxkm", "tt_life",
     "tt_theme", "tt_accent", "tt_palette", "tt_pro_color", "tt_pro_frame",
     "tt_presets", "tt_default_vis", "tt_wakelock",
   ];
