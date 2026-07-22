@@ -236,6 +236,9 @@ body[data-view]:not([data-view="explore"]) .app-header::before { opacity: .5; }
 .badge.ghost { background: var(--surface-2); color: var(--ink-soft); }
 .badge.src { background: #eef1ec; color: #788173; font-weight: 500; }
 .badge.closed { background: #f8e3df; color: var(--danger); }
+@media (prefers-color-scheme: dark) { .badge.closed { background: color-mix(in srgb, var(--danger) 24%, transparent); } }
+:root[data-theme="dark"] .badge.closed { background: color-mix(in srgb, var(--danger) 24%, transparent); }
+:root[data-theme="light"] .badge.closed { background: #f8e3df; }
 .badge.done { background: var(--brand); color: #f4f1e8; }
 
 /* 我的步記 */
