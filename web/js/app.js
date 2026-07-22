@@ -2995,6 +2995,24 @@ let hikePhotos = [], hikePhotosRecId = null, recSnap = null, _shotUrls = [];
 let _liveElev = null, _liveElevAt = 0, _liveElevLen = 0, _liveElevBusy = false, _recSeq = 0;
 let _gpsWeakHits = 0, _gpsWarnAt = 0;
 // （記錄頁閒置天氣提示「今天可能有雨」已依使用者要求移除；行前天氣改看已選步道的天氣卡 #preHike）
+// 每公里語音播報：走滿整公里時念出里程與當前時速（opt-in，預設關）。test=true 用於開關時的試聽。
+function speakMilestone(km, s, test) {
+  if (!test && localStorage.getItem("tt_voice") !== "1") return;
+  if (!("speechSynthesis" in window)) return;
+  let txt;
+  if (test) txt = ttT("語音播報已開啟");
+  else {
+    txt = km + " " + ttT("公里");
+    if (s && s.instKmh != null && isFinite(s.instKmh) && s.instKmh > 0)
+      txt += "，" + ttT("時速") + " " + s.instKmh.toFixed(1) + " " + ttT("公里");
+  }
+  try {
+    const u = new SpeechSynthesisUtterance(txt);
+    u.lang = (typeof ttTrTarget === "function") ? ttTrTarget() : "zh-TW";
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+  } catch (_) { /* 部分裝置在無使用者互動下會拋錯，忽略即可 */ }
+}
 // 依定位精度更新「GPS 訊號」小燈號（綠=好 / 黃=普通 / 紅=弱），並在持續弱訊號時提醒一次
 function updateGpsSig(s) {
   const gs = $("#gpsSig"); if (!gs) return;
@@ -3057,7 +3075,7 @@ Recorder.onUpdate(s => {
   // 每公里震動里程提示（不再和果實綁定）
   if (s.state === "running" && !s.resting && !sim()) {
     const kmDone = Math.floor(s.distanceKm);
-    if (kmDone > lastKmMilestone) { lastKmMilestone = kmDone; if (navigator.vibrate) navigator.vibrate([120, 60, 120]); }
+    if (kmDone > lastKmMilestone) { lastKmMilestone = kmDone; if (navigator.vibrate) navigator.vibrate([120, 60, 120]); speakMilestone(kmDone, s); }
   }
   if (s.simDone && !window.__simDoneToasted) { window.__simDoneToasted = true; toast("模擬已走完整條路線，按「⏹ 結束」看結算"); if (navigator.vibrate) navigator.vibrate([60, 40, 60]); }
   if (s.state === "idle") window.__simDoneToasted = false;
@@ -3150,6 +3168,17 @@ $("#lowPowerToggle").addEventListener("change", e => {
     localStorage.setItem("tt_wakelock", e.target.checked ? "1" : "0");
     Recorder.setWake(e.target.checked);
     toast(e.target.checked ? "已開螢幕保持喚醒（記錄中螢幕不熄滅）" : "已關螢幕保持喚醒");
+  });
+})();
+// 每公里語音播報：預設關（避免打擾）；不支援 SpeechSynthesis 的裝置隱藏此選項
+(() => {
+  const chk = $("#voiceToggle"); if (!chk) return;
+  if (!("speechSynthesis" in window)) { const lb = chk.closest("label"); if (lb) lb.style.display = "none"; return; }
+  chk.checked = localStorage.getItem("tt_voice") === "1";
+  chk.addEventListener("change", e => {
+    localStorage.setItem("tt_voice", e.target.checked ? "1" : "0");
+    if (e.target.checked) { try { speakMilestone(0, recSnap, true); } catch (_) { } toast(ttT("已開每公里語音播報")); }
+    else { try { window.speechSynthesis.cancel(); } catch (_) { } toast(ttT("已關每公里語音播報")); }
   });
 })();
 $("#simToggle").addEventListener("change", e => {

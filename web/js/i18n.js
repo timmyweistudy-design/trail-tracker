@@ -131,6 +131,7 @@ const I18n = (() => {
     "GPX 匯入 / 匯出": "GPX import / export",
     // 生態區塊（物種名維持中文，見 scripts/i18n-ignore.json）
     "生態": "Ecology",
+    "每公里語音播報": "Per-km voice cues", "時速": "Speed", "語音播報已開啟": "Voice cues on", "已開每公里語音播報": "Voice cues on", "已關每公里語音播報": "Voice cues off",
     "升級 PRO": "Upgrade to PRO", "這一刻，值得更多": "This moment deserves more", "升級 PRO：進階分析・無限離線地圖・專屬主題・3D 地形": "PRO: advanced stats, unlimited offline maps, themes & 3D terrain",
     "四年一會": "Once in Four Years", "在閏日 2/29 記錄一次": "Record a hike on Feb 29 (leap day)",
     "拔升五百": "500m Ascent", "單次爬升 ≥ 500 m": "500 m ascent in one hike", "凌晨出擊": "Small Hours Start", "凌晨 2–4 點出發": "Start between 2–4 AM", "離島山旅": "Island Trek", "在離島記錄一次健行": "Record a hike on an outlying island",
