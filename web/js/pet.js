@@ -329,7 +329,7 @@ function petBadges() {
   const done = (typeof Store.doneCount === "function") ? Store.doneCount() : 0;
   const wk = weeksStreak(), dstreak = (typeof daysStreak === "function") ? daysStreak() : 0;
   // 縣市探索＋難度征服：只算「真實走過/手動完成」的步道（done），非一鍵收藏
-  const doneTrails = (typeof TRAILS !== "undefined") ? TRAILS.filter(t => Store.trailLog(t.id).done) : [];
+  const doneTrails = (typeof TRAILS !== "undefined" && Array.isArray(TRAILS) && typeof Store !== "undefined" && Store.trailLog) ? TRAILS.filter(t => { try { return (Store.trailLog(t.id) || {}).done; } catch (e) { return false; } }) : [];
   const counties = new Set(doneTrails.map(t => t.region).filter(Boolean)).size;
   const hardDone = doneTrails.filter(t => (t.difficulty || 0) >= 4).length;
   // t: 階層(1–6)；p: [目前值, 門檻, 單位] 供進度提示；布林型（早起/夜行）不設 p
@@ -405,9 +405,23 @@ function achCheckUnlocks() {
   for (const b of fresh) if (!dates[b.n]) dates[b.n] = now;
   try { localStorage.setItem("tt_badges_seen", JSON.stringify(gotNames)); localStorage.setItem("tt_badges_date", JSON.stringify(dates)); } catch (e) { /* */ }
   if (!fresh.length) return;
-  fresh.slice(0, 3).forEach((b, i) => setTimeout(() => { try { toast(`🏆 ${ttT("解鎖成就")}：${ttT(b.n)}`); } catch (e) { /* */ } }, 700 + i * 1700));
-  if (fresh.length > 3) setTimeout(() => { try { toast(`🏆 ${ttT("又解鎖")} ${fresh.length - 3} ${ttT("項成就")}`); } catch (e) { /* */ } }, 700 + 3 * 1700);
+  // #19 解鎖獎勵：依階層送果實給寵物
+  const reward = fresh.reduce((s, b) => s + (ACH_REWARD[b.t] || 0), 0);
+  if (reward > 0 && typeof addBerryBonus === "function") addBerryBonus(reward);
+  fresh.slice(0, 3).forEach((b, i) => setTimeout(() => { try { toast(`🏆 ${ttT("解鎖成就")}：${ttT(b.n)}　+${ACH_REWARD[b.t] || 0}🍓`); } catch (e) { /* */ } }, 700 + i * 1700));
+  if (fresh.length > 3) setTimeout(() => { try { toast(`🏆 ${ttT("又解鎖")} ${fresh.length - 3} ${ttT("項成就")}　+${reward}🍓`); } catch (e) { /* */ } }, 700 + 3 * 1700);
   if (typeof refreshAchTree === "function") refreshAchTree();
+}
+// #19 各階層解鎖果實獎勵（index=階層 1–6）
+const ACH_REWARD = [0, 5, 8, 12, 18, 25, 40];
+// #21 成就分數＋#20 山友稱號（依已達成數升級）
+const ACH_RANK = ["山腳新手", "入山山友", "登高好手", "縱走達人", "攻頂勇者", "傳說山神"];
+function achScore() {
+  const list = petBadges(), gotList = list.filter(b => b.got);
+  const got = gotList.length, total = list.length;
+  const score = gotList.reduce((s, b) => s + b.t * 10, 0);
+  const idx = Math.min(ACH_RANK.length - 1, Math.floor(got / 5));
+  return { got, total, score, rank: ACH_RANK[idx], rankIdx: idx };
 }
 function achUnlockDate(name) {
   try { const d = JSON.parse(localStorage.getItem("tt_badges_date") || "{}")[name]; if (d) { const t = new Date(d); return `${t.getFullYear()}/${String(t.getMonth() + 1).padStart(2, "0")}/${String(t.getDate()).padStart(2, "0")}`; } } catch (e) { /* */ }
@@ -674,6 +688,61 @@ function _achFg(p, night) {
   return `<path d="M-10 ${PAGE_H} L-10 ${y - 10} Q30 ${y - 22} 66 ${y - 8} L70 ${PAGE_H} Z" fill="${c}"/><path d="M372 ${PAGE_H} L372 ${y - 12} Q332 ${y - 24} 296 ${y - 8} L292 ${PAGE_H} Z" fill="${c}"/>${s}`;
 }
 const _ACH_UP = `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>`;
+const _ACH_LISTIC = `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h12M8 12h12M8 18h12M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>`;
+const _ACH_CLIMBIC = `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20l6-11 4 6 3-4 5 9z"/></svg>`;
+// #17/#18 清單檢視：依類別分組/篩選，可快速掃找特定成就
+function renderAchList(ov) {
+  const box = ov.querySelector("#achList"); if (!box) return;
+  const list = petBadges();
+  const filter = box.dataset.filter || "all";
+  const cats = ["all", "dist", "climb", "trips", "streak", "explore", "challenge", "time"];
+  const chips = cats.map(c => `<button class="ach-fchip${c === filter ? " on" : ""}" data-c="${c}">${c === "all" ? ttT("全部") : `${ic(ACH_CAT[c].i)} ${ttT(ACH_CATNAME[c])}`}</button>`).join("");
+  const shown = list.map((b, i) => ({ b, i })).filter(o => filter === "all" || o.b.c === filter);
+  const rows = shown.map(({ b, i }) => {
+    const cat = _achCat(b), pct = _achPct(b), date = b.got ? achUnlockDate(b.n) : "";
+    const right = b.got ? (date || ttT("已達成")) : (b.p ? `${_achFmt(b.p[0], b.p[2])}/${b.p[1]}` : ttT("尚未達成"));
+    return `<button class="ach-lrow ${b.got ? "got" : "locked"}" data-i="${i}" style="--c:${cat.col}">
+      <span class="ach-lemo ach-emo">${b.e}</span>
+      <span class="ach-lbody"><span class="ach-lname">${ttT(b.n)}${b.got ? ` <span class="ach-lchk">${_ACH_CHK}</span>` : ""}</span><span class="ach-ldesc">${ttT(b.d)}</span>${b.p ? `<span class="ach-lbar"><i style="width:${pct}%"></i></span>` : ""}</span>
+      <span class="ach-lright">${right}</span></button>`;
+  }).join("");
+  box.innerHTML = `<div class="ach-fchips">${chips}</div><div class="ach-lrows">${rows || `<div class="ach-lempty">${ttT("這個類別還沒有成就")}</div>`}</div>`;
+  box.querySelector(".ach-fchips").addEventListener("click", e => { const c = e.target.closest(".ach-fchip"); if (c) { box.dataset.filter = c.dataset.c; renderAchList(ov); } });
+  box.querySelector(".ach-lrows").addEventListener("click", e => { const r = e.target.closest(".ach-lrow"); if (r) { const b = list[+r.dataset.i]; if (b) showAchDetail(b); } });
+}
+// #3 單一成就分享圖卡（canvas，不需外部套件）
+function shareAchievement(b) {
+  try {
+    const W = 540, H = 680, c = document.createElement("canvas"); c.width = W; c.height = H;
+    const x = c.getContext("2d"), cat = _achCat(b);
+    const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#20402c"); g.addColorStop(1, "#12251a");
+    x.fillStyle = g; x.fillRect(0, 0, W, H);
+    x.strokeStyle = "rgba(224,177,90,.10)"; x.lineWidth = 1.5;
+    for (let yy = 90; yy < H; yy += 48) { x.beginPath(); for (let xx = 0; xx <= W; xx += 12) x.lineTo(xx, yy + Math.sin((xx / W) * 6.28) * 10); x.stroke(); }
+    x.textAlign = "center";
+    const ccx = W / 2, ccy = 208, r = 96;
+    x.beginPath(); x.arc(ccx, ccy, r, 0, 7); x.fillStyle = "#f6f1e4"; x.fill();
+    x.lineWidth = 9; x.strokeStyle = cat.col; x.stroke();
+    x.font = "90px sans-serif"; x.fillStyle = "#333"; x.fillText(b.e, ccx, ccy + 32);
+    if (b.got) { x.beginPath(); x.arc(ccx + 66, ccy + 62, 22, 0, 7); x.fillStyle = "#e0b15a"; x.fill(); x.strokeStyle = "#fff"; x.lineWidth = 4; x.beginPath(); x.moveTo(ccx + 56, ccy + 62); x.lineTo(ccx + 63, ccy + 70); x.lineTo(ccx + 77, ccy + 54); x.stroke(); }
+    x.fillStyle = "#f3efe4"; x.font = "700 42px 'TaipeiSans', sans-serif"; x.fillText(ttT(b.n), W / 2, 358);
+    x.fillStyle = cat.col; x.font = "700 21px 'TaipeiSans', sans-serif"; x.fillText(ttT(ACH_CATNAME[b.c] || ""), W / 2, 392);
+    x.fillStyle = "rgba(243,239,228,.85)"; x.font = "400 19px sans-serif"; x.fillText(ttT(b.d), W / 2, 438);
+    const date = b.got ? achUnlockDate(b.n) : "";
+    x.fillStyle = "#e0b15a"; x.font = "600 18px 'TaipeiSans', sans-serif";
+    x.fillText(b.got ? (date ? ttT("解鎖於") + " " + date : ttT("已達成")) : (b.p ? `${_achFmt(b.p[0], b.p[2])} / ${b.p[1]} ${ttT(b.p[2])}` : ttT("尚未達成")), W / 2, 484);
+    const sc = achScore();
+    x.fillStyle = "rgba(255,255,255,.08)"; roundRect(x, W / 2 - 155, 528, 310, 62, 14); x.fill();
+    x.fillStyle = "#fff"; x.font = "700 24px 'TaipeiSans', sans-serif"; x.fillText(`${sc.got}/${sc.total} ${ttT("成就")} · ${ttT(sc.rank)}`, W / 2, 567);
+    x.fillStyle = "#e0b15a"; x.font = "700 19px 'TaipeiSans', sans-serif"; x.fillText(ttT("循徑拾光 · Gather the Trail"), W / 2, H - 30);
+    c.toBlob(async (blob) => {
+      if (!blob) { toast(ttT("產生圖片失敗")); return; }
+      const file = new File([blob], "gather-the-trail-achievement.png", { type: "image/png" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title: ttT("解鎖成就") }); return; } catch (e) { /* */ } }
+      const url = URL.createObjectURL(blob), a = document.createElement("a"); a.href = url; a.download = file.name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); toast(ttT("已存成圖片"));
+    }, "image/png");
+  } catch (e) { toast(ttT("產生圖片失敗")); }
+}
 // 成就詳情彈卡（點節點顯示）
 function showAchDetail(b) {
   const ov = document.querySelector('[data-ov="achtree"]'); if (!ov) return;
@@ -685,30 +754,45 @@ function showAchDetail(b) {
     <div class="ach3d-d-top"><div class="ach3d-d-dot" style="--c:${cat.col};--pct:${pct}"><div class="ach-dot-in ach-emo">${b.e}</div></div>
       <div><div class="ach3d-d-name">${ttT(b.n)}${b.got ? ` <span class="ach3d-d-badge">${_ACH_CHK}</span>` : ""}</div><div class="ach3d-d-cat" style="color:${cat.col}">${ic(cat.i)} ${ttT(catName)}${date ? ` · ${ttT("解鎖於")} ${date}` : ""}</div></div></div>
     <div class="ach3d-d-desc">${ttT(b.d)}</div>
-    ${b.p ? `<div class="ach3d-d-prog"><div class="ach3d-d-bar" style="--c:${cat.col}"><i style="width:${pct}%"></i></div><span>${_achFmt(b.p[0], b.p[2])} / ${b.p[1]} ${ttT(b.p[2])}</span></div>` : `<div class="ach3d-d-prog"><span>${b.got ? ttT("已達成") : ttT("尚未達成")}</span></div>`}`;
+    ${b.p ? `<div class="ach3d-d-prog"><div class="ach3d-d-bar" style="--c:${cat.col}"><i style="width:${pct}%"></i></div><span>${_achFmt(b.p[0], b.p[2])} / ${b.p[1]} ${ttT(b.p[2])}</span></div>` : `<div class="ach3d-d-prog"><span>${b.got ? ttT("已達成") : ttT("尚未達成")}</span></div>`}
+    <button class="ach3d-d-share" id="achShareBtn">${ic("share")} ${ttT("分享")}</button>`;
   box.classList.add("show");
   box.querySelector(".ach3d-dx").addEventListener("click", () => box.classList.remove("show"));
+  const sb = box.querySelector("#achShareBtn"); if (sb) sb.addEventListener("click", () => shareAchievement(b));
 }
 // 全螢幕成就頁：五段攀登（一頁一段海拔，山腳啟程→雲上傳說；日夜天空、點成就看詳情）
 function openAchTree() {
   if (document.querySelector('[data-ov="achtree"]')) return;
   const { got, total } = buildAchTree();
   const pct = Math.round(got / total * 100);
+  const sc = achScore();
   const ov = document.createElement("div"); ov.className = "ach-modal ach3d-modal ach-climb-modal"; ov.dataset.ov = "achtree";
   ov.innerHTML = `<div class="ach-modal-inner">
       <div class="ach-modal-head"><button class="sheet-close" id="achClose" aria-label="${ttT("關閉")}">✕</button><div class="ach-modal-h">${ic("medal")} ${ttT("成就步道")}</div>
-        <div class="ach-modal-prog"><span class="amp-n">${got}<small> / ${total}</small></span><div class="amp-bar"><i style="width:${pct}%"></i></div></div></div>
+        <button class="ach-viewtog" id="achViewTog" aria-label="${ttT("切換檢視")}">${_ACH_LISTIC}</button>
+        <div class="ach-modal-prog"><span class="amp-n">${got}<small> / ${total}</small></span><div class="amp-bar"><i style="width:${pct}%"></i></div></div>
+        <div class="ach-rankrow"><span class="ach-rankchip">${ic(ACH_TIER_IC[sc.rankIdx])} ${ttT(sc.rank)}</span><span class="ach-scorechip">${ttT("成就分數")} <b>${sc.score}</b></span></div></div>
       <div class="ach-modal-body">
         <div class="ach-climb-sky"></div>
         <div class="ach-pager" id="ach3d"></div>
         <div class="ach-pgdots"></div>
         <div class="ach-pgnav"></div>
+        <div class="ach-listview" id="achList"></div>
         <div class="ach3d-detail"></div>
       </div>
     </div>`;
   document.body.appendChild(ov);
   const close = () => ov.remove();
   ov.querySelector("#achClose").addEventListener("click", close);
+  // #17/#18 檢視切換：情境爬山 ⟷ 清單（可依類別篩選）
+  let listMode = false;
+  const tog = ov.querySelector("#achViewTog");
+  tog.addEventListener("click", () => {
+    listMode = !listMode;
+    ov.classList.toggle("list-mode", listMode);
+    tog.innerHTML = listMode ? _ACH_CLIMBIC : _ACH_LISTIC;
+    if (listMode) renderAchList(ov);
+  });
   ov.addEventListener("click", e => { if (e.target === ov) close(); });
   _achInitClimb(ov);
 }
@@ -891,7 +975,17 @@ function renderRecIdle() {
   const last = realRecords()[0];
   if (!last) { box.style.display = "none"; return; }
   box.style.display = "block";
-  box.innerHTML = `<div class="ridle-row"><span class="inline-ic">${ic("pin")}</span> 上次：${last.trailName || "自由路線"}・<b>${(last.distanceKm || 0).toFixed(2)}</b> km</div>`;
+  let html = `<div class="ridle-row"><span class="inline-ic">${ic("pin")}</span> 上次：${last.trailName || "自由路線"}・<b>${(last.distanceKm || 0).toFixed(2)}</b> km</div>`;
+  // #4 臨門提醒：離下一個成就還差多少
+  try {
+    const nu = petBadges().filter(b => !b.got && b.p && b.p[1] > 0).map(b => ({ b, r: Math.min(1, b.p[0] / b.p[1]) })).sort((a, b) => b.r - a.r)[0];
+    if (nu && nu.r >= 0.35) {   // 已接近才提醒，免洗版
+      const [cur, goal, unit] = nu.b.p, remain = goal - cur;
+      const rtxt = unit === "km" ? remain.toFixed(1) : String(Math.ceil(remain));
+      html += `<div class="ridle-row ridle-ach"><span class="ach-emo">${nu.b.e}</span> ${ttT("再")} <b>${rtxt} ${ttT(unit)}</b> ${ttT("解鎖")}「${ttT(nu.b.n)}」</div>`;
+    }
+  } catch (e) { /* */ }
+  box.innerHTML = html;
 }
 // 我的足跡熱力圖：所有真實軌跡疊在一張地圖上
 async function openFootprintMap() {

@@ -4077,7 +4077,7 @@ async function renderMeProfileCard() {
       <div class="me-card-name">${esc(prof.display_name || prof.handle)}${lvl ? ` <span class="lv-chip lvt-${Math.min(lvl, 7)}">Lv.${lvl}</span>` : ""}${pro ? ` <span class="pro-tag pro-mine">PRO</span>` : ""}</div>
       <div class="me-card-handle">@${esc(prof.handle)}</div>
       ${ps ? `<div class="me-card-pet">${typeof PET_ART !== "undefined" ? PET_ART.svg((ps.level || 1) - 1) : ps.emoji} ${esc(ps.name)}　·　已走 <b>${ps.km}</b> km</div>` : ""}
-      ${(() => { try { if (typeof petBadges !== "function") return ""; const bl = petBadges(), g = bl.filter(x => x.got).length; return `<button class="me-ach" id="meAchBtn">🏅 ${ttT("成就")} <b>${g}/${bl.length}</b> ›</button>`; } catch (e) { return ""; } })()}
+      ${(() => { try { if (typeof achScore !== "function") return ""; const s = achScore(); return `<button class="me-ach" id="meAchBtn">🏅 ${ttT(s.rank)} · ${ttT("成就")} <b>${s.got}/${s.total}</b> ›</button>`; } catch (e) { return ""; } })()}
     </div>
   </div>`;
   const ab = $("#meAchBtn");

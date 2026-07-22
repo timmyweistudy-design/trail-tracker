@@ -131,6 +131,7 @@ const I18n = (() => {
     "GPX 匯入 / 匯出": "GPX import / export",
     // 生態區塊（物種名維持中文，見 scripts/i18n-ignore.json）
     "生態": "Ecology",
+    "山腳新手": "Trailhead Novice", "入山山友": "Forest Hiker", "登高好手": "Ridge Walker", "縱走達人": "Traverse Expert", "攻頂勇者": "Summit Hero", "傳說山神": "Legendary Spirit", "成就分數": "Score", "切換檢視": "Switch view", "解鎖": "unlock", "這個類別還沒有成就": "No achievements in this category yet",
     "成就": "Achievements", "解鎖成就": "Achievement unlocked", "解鎖於": "Unlocked", "又解鎖": "Unlocked", "項成就": "more",
     "繼續往上": "Climb higher", "回下方": "Go lower",
     "你在這": "You are here", "往上滑攀登": "Swipe up to climb",

@@ -248,6 +248,23 @@ eval(fs.readFileSync(web("ecology.js"), "utf8") + "\n;globalThis.Ecology = Ecolo
   ok("毒蛇標記：青竹絲是毒蛇、蟾蜍不是", Ecology.isPoison("赤尾青竹絲") && !Ecology.isPoison("盤古蟾蜍"));
 }
 
+// N) 連續天數/成就日期一律用「本地日期」，不受 UTC 位移害到（半夜/清晨不會被算成前一天）
+{
+  const petSrc = fs.readFileSync(web("pet.js"), "utf8");
+  const m = petSrc.match(/function localDayOf\([\s\S]*?\n\}/);
+  ok("pet.js 有 localDayOf", !!m);
+  if (m) {
+    eval(m[0]);
+    ok("localDayOf 用本地日期(清晨不位移到前一天)", localDayOf(new Date(2026, 0, 15, 2, 30)) === "2026-01-15");
+    ok("localDayOf 深夜不位移到隔天", localDayOf(new Date(2026, 0, 15, 23, 45)) === "2026-01-15");
+    ok("localDayOf 補零", localDayOf(new Date(2026, 2, 3, 9, 0)) === "2026-03-03");
+    ok("localDayOf 空值安全", localDayOf("garbage") === "");
+  }
+  // 成就階層獎勵表長度正確（0 佔位 + 6 階）
+  const rw = petSrc.match(/ACH_REWARD\s*=\s*\[([^\]]*)\]/);
+  ok("ACH_REWARD 有 7 格(佔位+6階)", !!rw && rw[1].split(",").length === 7);
+}
+
 Promise.all(pending).then(() => {                 // 等非同步斷言跑完再結算，否則它們等於沒執行
   console.log(fails ? `✗ ${fails} 個測試失敗` : "✓ 單元測試全部通過");
   process.exit(fails ? 1 : 0);
