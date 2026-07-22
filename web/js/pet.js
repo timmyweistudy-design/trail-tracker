@@ -846,7 +846,9 @@ function openAchTree() {
       </div>
     </div>`;
   document.body.appendChild(ov);
-  const close = () => ov.remove();
+  let _a11y = null;
+  const close = () => { if (_a11y) _a11y(); ov.remove(); };
+  if (typeof ttModalA11y === "function") _a11y = ttModalA11y(ov, close, { focus: "#achClose" });
   ov.querySelector("#achClose").addEventListener("click", close);
   // #17/#18 檢視切換：情境爬山 ⟷ 清單（可依類別篩選）
   let listMode = false;

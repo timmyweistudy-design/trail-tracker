@@ -53,6 +53,28 @@ const before = Store.life().km;
 Store.importAll({ records: [mk("a", 1)] }, "replace");
 ok("還原較舊備份，終身統計不倒退", Store.life().km >= before);
 
+// 5b) 軌跡簡化 Douglas-Peucker
+{
+  const straight = [{ lat: 24, lon: 121, t: 0 }, { lat: 24.0005, lon: 121, t: 1 }, { lat: 24.001, lon: 121, t: 2 }, { lat: 24.0015, lon: 121, t: 3 }, { lat: 24.002, lon: 121, t: 4 }];
+  const s1 = simplifyTrack(straight, 4);
+  ok("simplify 直線→2點", s1.length === 2);
+  ok("simplify 保留端點(原物件含 t)", s1[0] === straight[0] && s1[1] === straight[4]);
+  const bend = [{ lat: 24, lon: 121 }, { lat: 24.0005, lon: 121.0005 }, { lat: 24.001, lon: 121 }];   // 中點偏東 ~51m
+  ok("simplify 保留明顯轉折點", simplifyTrack(bend, 4).length === 3);
+  ok("simplify <3 點原樣", simplifyTrack([{ lat: 1, lon: 1 }, { lat: 2, lon: 2 }], 4).length === 2);
+  const gt = [{ lat: 24, lon: 121 }, { lat: 24.001, lon: 121 }, { lat: 24.002, lon: 121 }, { lat: 25, lon: 122, gap: true }, { lat: 25.001, lon: 122 }, { lat: 25.002, lon: 122 }];
+  const gs = simplifyTrack(gt, 4);
+  ok("simplify 保留 gap 分段", gs.some(p => p.gap) && trackSegments(gs).length === 2);
+}
+// 5c) 紀錄容量保護：最多 100 筆、只保最近 20 筆軌跡
+{
+  localStorage._d = {};
+  for (let i = 0; i < 105; i++) Store.addRecord({ id: "cap" + i, distanceKm: 1, date: new Date().toISOString(), track: [{ lat: 1, lon: 1 }, { lat: 1.001, lon: 1.001 }] });
+  const rs = Store.getRecords();
+  ok("addRecord 上限 100 筆", rs.length === 100);
+  ok("addRecord 只留最近 ~20 筆軌跡", rs.slice(20).every(r => !r.track) && rs.slice(0, 20).some(r => r.track));
+  localStorage._d = {};
+}
 // 6) i18n 翻譯層：字典與規則式
 eval(fs.readFileSync(web("i18n.js"), "utf8").replace(/I18n\.start\(\);[^]*$/, "") + "\n;globalThis.I18n = I18n;");
 // 按需語言檔：載入全部（測試會切到各語言驗 tx）

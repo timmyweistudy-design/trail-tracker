@@ -274,3 +274,28 @@ function haversine(a, b) {
             Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLon / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(s));
 }
+
+// 公用：Douglas-Peucker 軌跡簡化（epsilon 公尺）——去掉近乎共線的冗餘 GPS 點，省空間又保形狀。
+// 保留端點與各段起點（gap 標記）；點物件(t 時間戳等)原樣保留；統計(距離/爬升)已另存，不受影響。
+function _perpDistM(p, a, b) {                       // 點 p 到線段 ab 的垂距（公尺，等距投影）
+  const mx = 111320 * Math.cos(a.lat * Math.PI / 180), my = 110540;
+  const bx = (b.lon - a.lon) * mx, by = (b.lat - a.lat) * my;
+  const px = (p.lon - a.lon) * mx, py = (p.lat - a.lat) * my;
+  const len2 = bx * bx + by * by;
+  if (len2 === 0) return Math.hypot(px, py);
+  let t = (px * bx + py * by) / len2; t = t < 0 ? 0 : t > 1 ? 1 : t;
+  return Math.hypot(px - t * bx, py - t * by);
+}
+function _rdp(pts, eps) {
+  if (pts.length < 3) return pts.slice();
+  let maxD = 0, idx = 0;
+  for (let i = 1; i < pts.length - 1; i++) { const d = _perpDistM(pts[i], pts[0], pts[pts.length - 1]); if (d > maxD) { maxD = d; idx = i; } }
+  if (maxD > eps) return _rdp(pts.slice(0, idx + 1), eps).slice(0, -1).concat(_rdp(pts.slice(idx), eps));
+  return [pts[0], pts[pts.length - 1]];
+}
+function simplifyTrack(track, epsMeters) {
+  if (!Array.isArray(track) || track.length < 3) return track;
+  const eps = epsMeters || 4, out = [];
+  for (const seg of trackSegments(track)) { if (seg.length < 3) out.push(...seg); else out.push(..._rdp(seg, eps)); }
+  return out;
+}

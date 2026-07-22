@@ -3437,6 +3437,8 @@ async function finishRecording(autoVehicle) {
         if (corr) { rec.ascent = corr.ascent; rec.descent = corr.descent; rec.altHigh = corr.altHigh; rec.altLow = corr.altLow; rec.altCorrected = true; }
       }
     });
+    // #11 軌跡簡化：海拔校正後、存檔前用 Douglas-Peucker 抽掉冗餘點（4m 內），省儲存又保形狀
+    safeRun("simplify-track", () => { if (rec.track && rec.track.length > 2 && typeof simplifyTrack === "function") rec.track = simplifyTrack(rec.track, 4); });
     // 存檔：最優先，先於任何週邊步驟；失敗不能靜默（讓使用者知道去確認，不是整趟消失）
     const saved = await safeRun("save-record", () => Store.addRecord(rec));
     if (!saved) toast(ttT("儲存失敗"));   // 極罕見（addRecord 有多層 fallback），但失敗不靜默；詳因記進 tt_errors
@@ -4087,6 +4089,37 @@ function bindProfAch(root) {
   (root || document).querySelectorAll('[data-prof-ach]').forEach(b => b.onclick = () => { const t = document.querySelector('.tab[data-view="pet"]'); if (t) t.click(); setTimeout(() => { if (typeof openAchTree === "function") openAchTree(); }, 260); });
 }
 if (typeof window !== "undefined") { window.ttProfileHero = ttProfileHero; window.bindProfAch = bindProfAch; }
+// #8 modal 無障礙：dialog 語意＋Escape 關閉＋Tab 焦點鎖在 modal 內＋關閉後焦點歸位
+function ttModalA11y(overlay, closeFn, opts) {
+  if (!overlay) return () => { };
+  opts = opts || {};
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-modal", "true");
+  const prev = document.activeElement;
+  const focusables = () => [...overlay.querySelectorAll('button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])')].filter(el => !el.disabled && el.offsetParent !== null);
+  const first = opts.focus ? overlay.querySelector(opts.focus) : focusables()[0];
+  if (first) setTimeout(() => { try { first.focus(); } catch (e) { /* */ } }, 40);
+  function onKey(e) {
+    if (e.key === "Escape") { e.preventDefault(); if (closeFn) closeFn(); return; }
+    if (e.key !== "Tab") return;
+    const f = focusables(); if (!f.length) return;
+    const i = f.indexOf(document.activeElement);
+    if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
+    else if (!e.shiftKey && (i === -1 || i === f.length - 1)) { e.preventDefault(); f[0].focus(); }
+  }
+  overlay.addEventListener("keydown", onKey);
+  return () => { overlay.removeEventListener("keydown", onKey); try { prev && prev.focus && prev.focus(); } catch (e) { /* */ } };
+}
+if (typeof window !== "undefined") window.ttModalA11y = ttModalA11y;
+// 全域 Escape：關掉最上層的 [data-ov] 動態面板（成就 modal 自己已 preventDefault，這裡略過已處理的）
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape" || e.defaultPrevented) return;
+  const ovs = [...document.querySelectorAll("[data-ov]")].filter(m => m.offsetParent !== null);
+  if (!ovs.length) return;
+  const top = ovs[ovs.length - 1];
+  const btn = top.querySelector('.sheet-close, .lb-close, .lb-x, .comp-x, [id$="Close"], button[aria-label="關閉"], button[aria-label="Close"]');
+  if (btn) { e.preventDefault(); btn.click(); }
+});
 // 我的分頁頂端：社群個人檔案摘要（頭像/名字/稱號/handle/寵物里程/成就）
 async function renderMeProfileCard() {
   const el = $("#meProfileCard"); if (!el) return;
