@@ -219,6 +219,7 @@ const ICON = {
   sparkle: '<path d="M12 3c.7 4.4 1.6 5.3 6 6-4.4.7-5.3 1.6-6 6-.7-4.4-1.6-5.3-6-6 4.4-.7 5.3-1.6 6-6Z"/>',
   megaphone: '<path d="M4 10v4l9 4V6l-9 4Z"/><path d="M13 8.5a4 4 0 0 1 0 7M4 12H3"/>',
   x: '<path d="M6 6l12 12M18 6 6 18"/>',
+  chevron: '<path d="m9 6 6 6-6 6"/>',
   trophy: '<path d="M7 4h10v4a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M10 14h4l-.5 4h-3L10 14ZM8 21h8"/>',
   download: '<path d="M12 4v10m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/>',
   compare: '<path d="M8 4 4 8l4 4M4 8h11M16 12l4 4-4 4M20 16H9"/>',
@@ -544,14 +545,14 @@ function updateFilterDot() {
 
 // 精選主題輯：點一下套用一組篩選，快速探索
 const COLLECTIONS = [
-  { t: "親子友善", s: "輕鬆好走帶小孩", f: ["family"], bg: "linear-gradient(135deg,#3f7a55,#2c5d3f)" },
-  { t: "古道巡禮", s: "走進歷史與人文", f: ["tag:古道"], bg: "linear-gradient(135deg,#a06a3d,#7c4f2c)" },
-  { t: "瀑布秘境", s: "清涼水景路線", f: ["tag:瀑布"], bg: "linear-gradient(135deg,#2f7e8c,#1f5a66)" },
-  { t: "海岸線", s: "看海聽濤", f: ["tag:海景"], bg: "linear-gradient(135deg,#3b6ea5,#274d77)" },
-  { t: "森林浴", s: "芬多精滿載", f: ["tag:森林"], bg: "linear-gradient(135deg,#4a8f55,#2f6b3a)" },
-  { t: "湖泊倒影", s: "靜謐水畔", f: ["tag:湖泊"], bg: "linear-gradient(135deg,#3c7a8c,#285a69)" },
-  { t: "輕鬆入門", s: "第一次健行", f: ["d1"], bg: "linear-gradient(135deg,#5aa06a,#3c7a4f)" },
-  { t: "挑戰級", s: "進階者專屬", f: ["d45"], bg: "linear-gradient(135deg,#c2683d,#9a4f2c)" },
+  { t: "親子友善", s: "輕鬆好走帶小孩", ic: "🧸", f: ["family"], bg: "linear-gradient(135deg,#3f7a55,#2c5d3f)" },
+  { t: "古道巡禮", s: "走進歷史與人文", ic: "🏯", f: ["tag:古道"], bg: "linear-gradient(135deg,#a06a3d,#7c4f2c)" },
+  { t: "瀑布秘境", s: "清涼水景路線", ic: "💧", f: ["tag:瀑布"], bg: "linear-gradient(135deg,#2f7e8c,#1f5a66)" },
+  { t: "海岸線", s: "看海聽濤", ic: "🌊", f: ["tag:海景"], bg: "linear-gradient(135deg,#3b6ea5,#274d77)" },
+  { t: "森林浴", s: "芬多精滿載", ic: "🌲", f: ["tag:森林"], bg: "linear-gradient(135deg,#4a8f55,#2f6b3a)" },
+  { t: "湖泊倒影", s: "靜謐水畔", ic: "🪞", f: ["tag:湖泊"], bg: "linear-gradient(135deg,#3c7a8c,#285a69)" },
+  { t: "輕鬆入門", s: "第一次健行", ic: "🌱", f: ["d1"], bg: "linear-gradient(135deg,#5aa06a,#3c7a4f)" },
+  { t: "挑戰級", s: "進階者專屬", ic: "🔥", f: ["d45"], bg: "linear-gradient(135deg,#c2683d,#9a4f2c)" },
 ];
 // 依收藏/已完成步道的常見主題，推一個個人化分類
 function favoriteTag() {
@@ -567,10 +568,12 @@ function buildCollections() {
   const box = $("#collections");
   if (!box) return;
   const ft = favoriteTag();
-  _collList = ft ? [{ t: "為你推薦", s: `你常走「${ft}」`, f: ["tag:" + ft], bg: "linear-gradient(135deg,#c79a3d,#9a6f2c)" }, ...COLLECTIONS] : COLLECTIONS.slice();
+  _collList = ft ? [{ t: "為你推薦", s: `你常走「${ft}」`, ic: "⭐", f: ["tag:" + ft], bg: "linear-gradient(135deg,#c79a3d,#9a6f2c)" }, ...COLLECTIONS] : COLLECTIONS.slice();
   box.innerHTML = _collList.map((c, i) =>
     `<button class="coll-card" data-coll="${i}" style="background:${c.bg}">
-       <span class="coll-t">${c.t}</span><span class="coll-s">${c.s}</span></button>`).join("");
+       <span class="coll-ic" aria-hidden="true">${c.ic || "🏔️"}</span>
+       <span class="coll-go" aria-hidden="true">${ic("chevron")}</span>
+       <span class="coll-txt"><span class="coll-t">${c.t}</span><span class="coll-s">${c.s}</span></span></button>`).join("");
   box.querySelectorAll(".coll-card").forEach(b => b.addEventListener("click", () => {
     const c = _collList[+b.dataset.coll];
     activeFilters = new Set(c.f); activeRegions.clear(); curQuery = ""; $("#searchInput").value = "";

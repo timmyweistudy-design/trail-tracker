@@ -85,6 +85,17 @@ const Notifs = (() => {
     return [...map.values()];
   }
 
+  // 依時間分段（今天／本週／更早），讓通知列表一眼看出新舊。回傳 0/1/2。
+  function timeBucket(iso) {
+    const now = new Date();
+    const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const t = new Date(iso).getTime();
+    if (t >= startToday) return 0;
+    if (t >= startToday - 6 * 86400000) return 1;
+    return 2;
+  }
+  const SEC_LABEL = ["今天", "本週", "更早"];
+
   let _filter = "all";
   const GROUPS = [["all", "全部"], ["like", "讚"], ["comment", "留言"], ["follow", "追蹤"]];
   function inGroup(n, g) {
@@ -102,13 +113,17 @@ const Notifs = (() => {
     const tabs = `<div class="notif-tabs">${GROUPS.map(([k, l]) => `<button class="notif-tab ${k === _filter ? "on" : ""}" data-g="${k}">${l}</button>`).join("")}</div>`;
     const paint = () => {
       const list2 = groupNotifs(items.filter(n => inGroup(n, _filter)));
+      let _curSec = -1;
       const body = list2.length
         ? `<div class="notif-list">${list2.map(g => {
           const n = g.rep;
+          let sec = "";
+          const b = timeBucket(n.created_at);
+          if (b !== _curSec) { _curSec = b; sec = `<div class="notif-sec">${SEC_LABEL[b]}</div>`; }
           const askBtns = (n.type === "follow_req" && n.actor_id && pending.has(n.actor_id))
             ? `<div class="notif-acts"><button class="btn primary nf-ok" data-uid="${n.actor_id}">同意</button><button class="btn ghost nf-no" data-uid="${n.actor_id}">拒絕</button></div>` : "";
           const countChip = g.count > 1 ? `<span class="notif-count">${ic("users")}${g.count}</span>` : "";
-          return `<div class="notif ${g.unread ? "unread" : ""}" data-type="${n.type}" data-post="${n.post_id || ""}" data-uid="${n.actor_id || ""}">
+          return `${sec}<div class="notif ${g.unread ? "unread" : ""}" data-type="${n.type}" data-post="${n.post_id || ""}" data-uid="${n.actor_id || ""}">
             <span class="notif-ic">${icon(n.type)}</span>
             <div class="notif-body"><div class="notif-line">${label(n)}${countChip}</div><div class="fc-sub">${ago(n.created_at)}</div>${askBtns}</div>
           </div>`;
