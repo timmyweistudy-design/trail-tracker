@@ -5,6 +5,7 @@
   "description": "循徑拾光 Gather the Trail — 台灣登山步道 PWA / Capacitor App",
   "scripts": {
     "check": "node scripts/check.js",
+    "build": "node scripts/build.mjs",
     "e2e": "node scripts/e2e.js",
     "add:android": "cap add android",
     "sync": "cap sync",
@@ -29,6 +30,7 @@
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^6.1.2",
+    "esbuild": "^0.28.1",
     "playwright": "^1.61.1"
   },
   "//overrides": "以下皆為建置工具(@capacitor/cli、@capacitor/assets)的間接相依，只在打包/產圖示時於開發機或 CI 執行，不會打包進 App、對使用者零風險。uuid 有安全版可鎖就鎖；minimatch/tar 上游 Capacitor 尚未升版、強鎖新版會弄壞 cap 工具，故先不動、待上游修。",

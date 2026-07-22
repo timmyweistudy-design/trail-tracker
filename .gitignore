@@ -33,3 +33,6 @@ data/tw_counties.geojson
 
 # 字型來源素材（21MB 原始 ttf）：網站只用裁切後的 web/vendor/fonts/taipei-sans.woff2
 /TaipeiSans.ttf
+
+# 壓縮版建置產物（Render build 時現生成）
+dist/
