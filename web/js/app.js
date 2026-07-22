@@ -360,6 +360,8 @@ function confetti() {
 
 // ---------- 分頁切換 ----------
 let detailMap, detailOverlay, detailPoiLayer, detailWpLayer, recMap, recLine, recMarker, petMarker;
+let _recFollow = true;   // 記錄地圖是否自動跟隨定位；使用者手動滑動→關閉（不再硬拉回中間），按「回到我的位置」→重新開啟
+function setRecFollow(on) { _recFollow = on; const b = recMap && recMap._recenterBtn; if (b) b.classList.toggle("following", on); }
 
 // 沿線地標（三角點/山頭/駐在所遺址/吊橋/觀景/水源/山屋/鞍部）——資料取自 OSM，離步道夠近才收（見 enrich_waypoints.py）
 // svg=線條式圖示（viewBox 24、白色描邊），地圖標記/清單/圖例共用
@@ -1392,10 +1394,12 @@ function addRecenter(map) {
   const SVG = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="8"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3"/></svg>';
   const c = L.control({ position: "topright" });
   c.onAdd = () => {
-    const d = L.DomUtil.create("div", "map-fs-btn");
+    const d = L.DomUtil.create("div", "map-fs-btn recenter-btn");
     d.innerHTML = SVG; d.title = ttT("回到我的位置");
+    if (map === recMap || map.getContainer().id === "recMap") { map._recenterBtn = d; if (_recFollow) d.classList.add("following"); }
     L.DomEvent.disableClickPropagation(d);
     d.addEventListener("click", () => {
+      if (map === recMap || map.getContainer().id === "recMap") setRecFollow(true);   // 手動回到我的位置＝恢復自動跟隨
       let ll = null;
       if (recMarker) ll = recMarker.getLatLng();
       else if (recSnap && recSnap.track && recSnap.track.length) { const p = recSnap.track[recSnap.track.length - 1]; ll = L.latLng(p.lat, p.lon); }
@@ -2932,7 +2936,10 @@ function initRecMap() {
     recMap = L.map("recMap", { zoomControl: false }).setView([25.033, 121.564], 15);
     baseTopo().addTo(recMap); hillshadeLayer(recMap).addTo(recMap); addCompass(recMap); addNavToggle(recMap); addRecenter(recMap); addThreeD(recMap, open3DRecording); addFullscreen(recMap);
     recLine = L.polyline([], { color: "#2f7d4f", weight: 5 }).addTo(recMap);
+    // 使用者手動滑動地圖 → 停止自動跟隨（不再每次定位就硬拉回中間）；捏合縮放不算，只認拖曳
+    recMap.on("dragstart", () => setRecFollow(false));
   }
+  setRecFollow(true);   // 每次進記錄頁預設恢復跟隨
   recMap.invalidateSize();
   // 復原中的軌跡重畫（依 gap 分段，暫停跳段不連線）
   if (recLine && Recorder.getState() !== "idle") {
@@ -3149,8 +3156,9 @@ Recorder.onUpdate(s => {
       const _f = _el && _el.querySelector(".pm-face");
       if (_f) _f.classList.toggle("pet-flip", !_navUp && s.heading != null && Math.sin(s.heading * Math.PI / 180) < -0.2);
     } catch (e) { /* */ }
-    // 模擬高幀率：用 animate:false 讓地圖即時跟隨，路線從腳下滑過＝滑行感；真實 GPS 維持平滑動畫
-    if (s.state === "running") recMap.panTo(last, (sim() || _navUp) ? { animate: false } : undefined);
+    // 模擬高幀率：用 animate:false 讓地圖即時跟隨，路線從腳下滑過＝滑行感；真實 GPS 維持平滑動畫。
+    // 只有在「跟隨中」才拉回定位；使用者手動滑開後就讓他自由看地圖，不再硬拉回中間。
+    if (s.state === "running" && _recFollow) recMap.panTo(last, (sim() || _navUp) ? { animate: false } : undefined);
   }
 });
 

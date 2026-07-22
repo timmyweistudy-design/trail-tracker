@@ -1049,6 +1049,9 @@ html[data-theme="dark"] .map-legend { background: rgba(27,32,23,.94); }
 .map-fs-btn { width: 32px; height: 32px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
   display: grid; place-items: center; cursor: pointer; font-size: calc(15px * var(--fs, 1)); line-height: 1; color: var(--ink); box-shadow: var(--sh-sm); }
 .map-fs-btn:active { background: var(--brand-soft); }
+/* 記錄地圖「回到我的位置」：跟隨中＝品牌色實心（鎖定你）；手動滑開後＝中性灰，提示可點回來 */
+.recenter-btn.following { color: var(--brand); border-color: color-mix(in srgb, var(--brand) 45%, var(--line)); }
+.recenter-btn:not(.following) { color: var(--ink-soft); }
 .map-3d-btn { font-family: var(--num); font-weight: 800; font-size: calc(12px * var(--fs, 1)); letter-spacing: .5px; color: var(--brand-deep); }
 .map-nav-btn.on { background: var(--brand-mid); color: #fff; }   /* 導航模式開啟時高亮 */
 /* 3D 地形全螢幕 */
