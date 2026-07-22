@@ -1877,10 +1877,14 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 .ach-pager { position: absolute; left: 0; right: 0; top: 0; bottom: 58px; z-index: 1; overflow: hidden; touch-action: pan-y; }
 .ach-page { position: absolute; inset: 0; will-change: transform; backface-visibility: hidden; }
 .ach-page.sliding { transition: transform .5s cubic-bezier(.33,0,.2,1); }
-.ach-page.intro { animation: achPageIn .5s cubic-bezier(.2,.8,.2,1); }
-@keyframes achPageIn { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+/* 開場：從山腳往上看，鏡頭沿步道上升定格 */
+.ach-page.intro { animation: achIntroUp .95s cubic-bezier(.2,.7,.2,1) both; transform-origin: 50% 100%; }
+@keyframes achIntroUp { 0% { opacity: 0; transform: translateY(13%) scale(1.1); } 55% { opacity: 1; } 100% { opacity: 1; transform: none; } }
+/* 成就由下往上依序浮現 */
+.ach-page.intro .ach3d-mk { animation: achMkRise .55s ease both; animation-delay: calc(var(--i, 0) * .09s + .34s); }
+@keyframes achMkRise { from { opacity: 0; } to { opacity: 1; } }
 .ach-page-mtn { position: absolute; inset: 0; width: 100%; height: 100%; }
-@media (prefers-reduced-motion: reduce) { .ach-page.sliding { transition-duration: .01ms; } .ach-page.intro { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .ach-page.sliding { transition-duration: .01ms; } .ach-page.intro, .ach-page.intro .ach3d-mk { animation: none; } }
 /* 章節標籤（本段海拔） */
 .ach-pgtag { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 6; display: flex; align-items: center; gap: 6px; font-family: var(--serif); font-weight: 800; font-size: calc(16px * var(--fs, 1)); letter-spacing: 3px; color: #fff; background: rgba(30,42,28,.42); padding: 5px 16px; border-radius: 999px; backdrop-filter: blur(3px); text-shadow: 0 1px 4px rgba(0,0,0,.4); }
 .ach-pgtag .ic { width: 19px; height: 19px; }
@@ -1897,7 +1901,7 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 .ach-pgdot { width: 11px; height: 11px; border-radius: 50%; border: 2px solid rgba(255,255,255,.85); background: transparent; padding: 0; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .2s; }
 .ach-pgdot.on { background: #fff; transform: scale(1.35); }
 /* 頁尾導覽 */
-.ach-pgnav { position: absolute; left: 0; right: 0; bottom: 0; height: 58px; z-index: 9; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 12px; background: var(--surface); border-top: 1px solid var(--line-soft); }
+.ach-pgnav { position: absolute; left: 0; right: 0; bottom: 0; height: 58px; z-index: 9; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 24px; background: var(--surface); border-top: 1px solid var(--line-soft); }
 .ach-pgnav-t { font-family: var(--serif); font-weight: 700; font-size: calc(15px * var(--fs, 1)); color: var(--ink); letter-spacing: 2px; }
 .ach-pgbtn { display: inline-flex; align-items: center; gap: 5px; border: none; background: var(--surface-2); color: var(--ink-soft); font-family: var(--serif); font-weight: 700; font-size: calc(13px * var(--fs, 1)); padding: 9px 12px; border-radius: 999px; cursor: pointer; }
 .ach-pgbtn.up { background: var(--accent); color: #fff; }

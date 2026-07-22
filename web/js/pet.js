@@ -695,10 +695,11 @@ function _achInitClimb(ov) {
         ${peakL}${headL}${hikerL}
         <div class="ach-climb-marks"></div>`;
     const mc = el.querySelector(".ach-climb-marks");
-    nodes.forEach(n => {
+    nodes.forEach((n, i) => {
       const cat = _achCat(n.b), b = document.createElement("button");
       b.className = `ach3d-mk ${n.b.got ? "got" : "locked"}${n.b.n === hereNm ? " here" : ""}`;
       b.style.left = px(n.x); b.style.top = py(n.y);
+      b.style.setProperty("--i", i);   // 由下(0)往上(5)依序浮現
       b.style.setProperty("--c", cat.col); b.style.setProperty("--pct", _achPct(n.b));
       b.innerHTML = `<span class="ach-dot"><span class="ach-dot-in">${ic(cat.i)}</span>${n.b.got ? `<span class="ach-check">${_ACH_CHK}</span>` : ""}</span>`;
       b.addEventListener("click", e => { e.stopPropagation(); showAchDetail(n.b); });
