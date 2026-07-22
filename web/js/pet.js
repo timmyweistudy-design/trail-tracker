@@ -443,9 +443,13 @@ function _achUY(u, topY) { return PAGE_H - PAGE_PAD - u * (PAGE_H - PAGE_PAD - t
 function _achPgTopY(p) { return p === 4 ? 190 : PAGE_PAD; }
 function _achPgTrail(p, night) {
   const band = p / 4, topY = _achPgTopY(p);
-  const casing = night ? "#463724" : "#795d36", pc = night ? "#8a7350" : "#d8b878", dash = night ? "#b7a074" : "#fff3d6";
   let d = "";
   for (let i = 0; i <= 60; i++) { const u = i / 60; d += (i ? "L" : "M") + _achUX(u, band).toFixed(1) + " " + _achUY(u, topY).toFixed(1) + " "; }
+  if (p === 4) {   // 雲上：發光的雲徑（騰雲駕霧）
+    const glow = night ? "#8ea3c4" : "#fff6d8", core = night ? "#e6ecf6" : "#fffdf3";
+    return `<path d="${d}" fill="none" stroke="${glow}" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" opacity=".5"/><path d="${d}" fill="none" stroke="${core}" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" opacity=".92"/><path d="${d}" fill="none" stroke="${night ? "#c7d2e4" : "#f2d98f"}" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="1 13" opacity=".8"/>`;
+  }
+  const casing = night ? "#463724" : "#795d36", pc = night ? "#8a7350" : "#d8b878", dash = night ? "#b7a074" : "#fff3d6";
   return `<path d="${d}" fill="none" stroke="${casing}" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${pc}" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${dash}" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="1 12" opacity=".85"/>`;
 }
 // —— 場景裝飾元件庫（可縮放、日夜配色；種子亂數散佈鋪滿每頁）——
@@ -520,32 +524,41 @@ function _achScatter(p, ry, night) {
       else if (it.r1 < 0.8) s += _grass(it.x, it.y, sc, night);
       else if (depth > 0.62 && it.r1 < 0.9) s += _pine(it.x, it.y, sc * 0.8, night);
       else s += _flower(it.x, it.y, sc * 0.8, fCol[(it.r2 * 4) | 0]);
-    } else {
-      if (it.r1 < 0.42) s += _rock(it.x, it.y, sc, night);
-      else if (it.r1 < 0.68) s += _snowP(it.x, it.y, sc, night);
-      else if (it.r1 < 0.84) s += _grass(it.x, it.y, sc * 0.7, night);
-      else s += _cairn(it.x, it.y, sc * 0.8, night);
+    } else {   // p===3 攻頂：雪線，白雪為主＋裸岩＋疊石
+      if (it.r1 < 0.54) s += _snowP(it.x, it.y, sc * 1.15, night);
+      else if (it.r1 < 0.76) s += _rock(it.x, it.y, sc, night);
+      else if (it.r1 < 0.9) s += _cairn(it.x, it.y, sc * 0.82, night);
+      else s += _snowP(it.x, it.y, sc * 0.7, night);
     }
   }
   return s;
 }
-// 單頁山景：低海拔森林 → 岩稜遠山 → 殘雪雲霧 → 雲上雪峰群
+// 各頁地表配色：森林綠 → 更深綠 → 登高橄欖岩 → 攻頂雪白
+const ACH_GRD = {
+  d: [["#5a8544", "#6f9455", "#8f8d5a"], ["#4f7d3e", "#5f8a4a", "#7c8a54"], ["#7c8a44", "#8a8850", "#9c8f66"], ["#dfe7ec", "#c6cfd8", "#a3aeba"]],
+  n: [["#2c4531", "#37503a", "#45503f"], ["#26402e", "#304a34", "#3e4a3a"], ["#3a4030", "#40483a", "#4a4a3e"], ["#4c5560", "#434b56", "#363e48"]],
+};
+// 單頁山景：低海拔森林 → 深林 → 登高橄欖岩稜 → 攻頂雪線 → 雲上騰雲駕霧
 function _achPgSVG(p, night) {
-  const g = night ? ["#2c4531", "#37503a", "#45503f"] : ["#5a8544", "#6f9455", "#8f8d5a"];
-  const snow = night ? "#c2ccd8" : "#f3f6ef", contour = night ? "#000" : "#3f5a34";
+  const g = p < 4 ? ACH_GRD[night ? "n" : "d"][p] : ACH_GRD[night ? "n" : "d"][3];
+  const snow = night ? "#c2ccd8" : "#f3f6ef", contour = p === 3 ? (night ? "#2c333d" : "#8fa0ae") : (night ? "#000" : "#3f5a34");
   const gid = `apg${p}`;
   const defs = `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${g[0]}"/><stop offset=".55" stop-color="${g[1]}"/><stop offset="1" stop-color="${g[2]}"/></linearGradient></defs>`;
   let far2 = "", bg = "", surf = "", peak = "", cloudsea = "", fg = "";
   if (p < 4) {
     const ry = [-0.06, -0.04, 0.2, 0.4][p] * PAGE_H;
-    // 天空側（露天時）：多層遠山＋雲＋飛鳥
-    if (p >= 2) {
-      far2 += _range(ry - 46, 40, night ? "#3a4b60" : "#c3d4de", p * 17 + 3);
-      far2 += _range(ry - 22, 58, night ? "#33455a" : "#aec5d3", p * 17 + 5);
-      far2 += _range(ry - 2, 40, night ? "#2e4053" : "#9bbccb", p * 17 + 9);
-      far2 += _cloud(72, ry - 74, 1.1, night ? "#39495d" : "#eef4fa", .92) + _cloud(298, ry - 50, .9, night ? "#39495d" : "#f6f9fc", .88);
-      if (p === 2) far2 += _bird(140, ry - 100, 1) + _bird(164, ry - 92, .85) + _bird(188, ry - 102, .95);
-      if (p === 3) far2 += _cloud(180, ry - 30, 1.3, night ? "#425268" : "#fbfdff", .7);
+    // 天空側（露天時）：多層遠山＋雲＋飛鳥（登高＝藍霧綠嶺、攻頂＝雪白冷峰）
+    if (p === 2) {
+      far2 += _range(ry - 46, 40, night ? "#3a4b60" : "#c3d4de", 40);
+      far2 += _range(ry - 22, 58, night ? "#33455a" : "#aec5d3", 55);
+      far2 += _range(ry - 2, 42, night ? "#33503a" : "#8caf6a", 91);
+      far2 += _cloud(72, ry - 74, 1.1, night ? "#39495d" : "#eef4fa", .9) + _cloud(298, ry - 50, .9, night ? "#39495d" : "#f6f9fc", .86);
+      far2 += _bird(140, ry - 100, 1) + _bird(164, ry - 92, .85) + _bird(188, ry - 102, .95);
+    } else if (p === 3) {
+      far2 += _range(ry - 54, 52, night ? "#54606e" : "#e4ebf0", 63);   // 雪峰遠稜
+      far2 += _range(ry - 26, 66, night ? "#48545f" : "#cdd8df", 77);
+      far2 += _range(ry - 2, 40, night ? "#3c4750" : "#b6c3cc", 88);
+      far2 += _cloud(80, ry - 30, 1.3, night ? "#4a5563" : "#fbfdff", .82) + _cloud(300, ry - 12, 1.0, night ? "#4a5563" : "#f4f8fc", .8) + _cloud(190, ry - 66, .9, night ? "#42505f" : "#ffffff", .7);
     } else if (p === 1) {
       far2 += `<path d="M-10 ${(ry + 46).toFixed(1)} L90 ${(ry - 10).toFixed(1)} L200 ${(ry + 30).toFixed(1)} L320 ${(ry - 6).toFixed(1)} L372 ${(ry + 40).toFixed(1)} Z" fill="${night ? "#2a4530" : "#5f8a4c"}" opacity=".6"/>`;
     }
@@ -555,25 +568,27 @@ function _achPgSVG(p, night) {
     d += `L372 ${ry.toFixed(1)} L372 ${PAGE_H + 10} Z`;
     bg = `<path d="${d}" fill="url(#${gid})"/>`;
     for (let k = 1; k <= 3; k++) { const yy = ry + (PAGE_H - ry) * (k / 4); bg += `<path d="M0 ${yy.toFixed(1)} q90 ${18 - k * 4} 180 0 t180 0" fill="none" stroke="${contour}" stroke-width="2" opacity=".12"/>`; }
+    if (p === 3) bg += `<path d="M-10 ${(ry + 10).toFixed(1)} q90 26 180 4 t190 -2 L372 ${PAGE_H} L-10 ${PAGE_H} Z" fill="${night ? "#d7dee6" : "#fbfdff"}" opacity=".35"/>`;   // 雪毯
     // 山面豐富散佈
     surf = _achScatter(p, ry, night);
     // 每頁英雄小物
     if (p === 0) surf = _achArch(night) + surf;               // 山腳木造登山口
     if (p === 3) surf += _achFlagpole(90, ry + 60, night) + _achFlagpole(286, ry + 120, night);  // 攻頂旗杆
-    // 前景框：底部草叢/岩緣加深縱深
+    // 前景框：底部草叢/岩緣/雪堆加深縱深
     fg = _achFg(p, night);
   } else {
-    // 雲上傳說：雲海上露出的遠峰群＋主雪峰＋豐厚雲海＋飛鳥＋登頂旗
-    const fc = night ? ["#33455a", "#3d4f66", "#293a4d"] : ["#b7ccd9", "#c9dae4", "#a4bece"];
-    far2 += `<path d="M-10 452 L44 386 L96 448 Z" fill="${fc[0]}"/><path d="M70 460 L150 356 L210 452 Z" fill="${fc[2]}"/><path d="M188 456 L262 372 L340 458 Z" fill="${fc[1]}"/><path d="M300 462 L356 398 L372 452 Z" fill="${fc[0]}"/>`;
-    far2 += _cloud(60, 250, 1.1, night ? "#3a4a5e" : "#f4f8fc", .8) + _cloud(300, 210, .95, night ? "#3a4a5e" : "#eef4fa", .78) + _bird(150, 200, 1) + _bird(176, 192, .85);
-    peak = `<path d="M52 ${PAGE_H} L142 262 L180 138 L220 254 L318 ${PAGE_H} Z" fill="url(#${gid})"/>
-      <path d="M142 262 L180 138 L220 254 L200 260 L180 196 L162 264 Z" fill="${snow}"/>
-      <path d="M180 138 L220 254 L204 260 L180 190 Z" fill="${night ? "#000814" : "#20361f"}" opacity=".2"/>
-      <path d="M118 300 q26 -12 44 8 M214 300 q22 -10 40 6" fill="none" stroke="${snow}" stroke-width="6" stroke-linecap="round" opacity=".8"/>
-      <g transform="translate(180 138)"><rect x="-1.5" y="-40" width="3" height="42" fill="${night ? "#c9d3df" : "#4a4a52"}"/><path d="M1 -40 L26 -33 L1 -25 Z" fill="${night ? "#c9556a" : "#e15568"}"/></g>`;
-    const cy = PAGE_H * 0.62, cc = night ? ["#c4cfdc", "#cdd6e2", "#bcc8d7"] : ["#eef4fa", "#fbfdff", "#e6eef7"];
-    cloudsea = `<g><ellipse cx="60" cy="${(cy + 12).toFixed(1)}" rx="150" ry="44" fill="${cc[0]}"/><ellipse cx="270" cy="${(cy + 2).toFixed(1)}" rx="160" ry="48" fill="${cc[1]}"/><ellipse cx="180" cy="${(cy + 30).toFixed(1)}" rx="200" ry="44" fill="${cc[2]}"/><ellipse cx="120" cy="${(cy + 44).toFixed(1)}" rx="120" ry="30" fill="${cc[1]}" opacity=".9"/><ellipse cx="300" cy="${(cy + 40).toFixed(1)}" rx="110" ry="28" fill="${cc[0]}" opacity=".9"/></g>`;
+    // 雲上傳說：整片雲海騰雲駕霧，無尖峰——只有雲
+    const cc = night ? ["#c4cfdc", "#cdd6e2", "#b6c3d3", "#aab8ca"] : ["#eef4fa", "#fbfdff", "#e3edf6", "#d6e4f1"];
+    const band = 1, topY = _achPgTopY(4);
+    // 高空薄雲＋飛鳥
+    far2 += _cloud(70, 196, 1.2, cc[0], .66) + _cloud(300, 150, 1.0, cc[1], .6) + _cloud(184, 108, .8, cc[0], .46);
+    far2 += _bird(150, 176, 1) + _bird(176, 168, .85) + _bird(120, 150, .8);
+    // 每個成就下方一朵浮雲（像踩在雲上）
+    for (let j = 0; j < 6; j++) { const u = 0.085 + j * 0.166; cloudsea += _cloud(_achUX(u, band), _achUY(u, topY) + 16, 1.0, cc[1], .95); }
+    // 底部厚雲海（多層堆疊）
+    [[PAGE_H - 30, 210, cc[3], 1], [PAGE_H - 78, 195, cc[2], 1], [PAGE_H - 126, 175, cc[1], .98], [PAGE_H - 172, 150, cc[0], .9], [PAGE_H - 214, 120, cc[1], .8]].forEach(([y, rx, c, op], i) => {
+      cloudsea += `<g opacity="${op}"><ellipse cx="${i % 2 ? 108 : 252}" cy="${y}" rx="${rx}" ry="46" fill="${c}"/><ellipse cx="${i % 2 ? 270 : 92}" cy="${(y + 10)}" rx="${(rx * 0.8).toFixed(0)}" ry="40" fill="${c}"/><ellipse cx="180" cy="${(y + 18)}" rx="205" ry="42" fill="${c}"/></g>`;
+    });
   }
   return `<svg class="ach-page-mtn" viewBox="0 0 ${PAGE_W} ${PAGE_H}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${defs}${far2}${bg}${surf}${peak}${cloudsea}${fg}${_achPgTrail(p, night)}</svg>`;
 }
@@ -587,10 +602,17 @@ function _achArch(night) {
 function _achFlagpole(x, y, night) {
   return `<g transform="translate(${x} ${y})"><rect x="-1.5" y="-40" width="3" height="40" fill="${night ? "#8a7350" : "#6b4d2e"}"/><path d="M1 -40 L22 -34 L1 -27 Z" fill="${night ? "#c98a4a" : "#e2a24c"}"/></g>`;
 }
-// 前景框：底部近景草叢/岩緣（加深縱深，避開中央步道口）
+// 前景框：底部近景（森林草叢／攻頂雪堆／雲上雲湧），加深縱深且避開中央步道口
 function _achFg(p, night) {
   const y = PAGE_H - 6;
-  if (p >= 3) { const r = night ? "#3a3a42" : "#7d735f"; return `<path d="M-10 ${PAGE_H} L-10 ${y - 16} Q28 ${y - 30} 60 ${y - 12} L70 ${PAGE_H} Z" fill="${r}"/><path d="M372 ${PAGE_H} L372 ${y - 20} Q330 ${y - 34} 300 ${y - 10} L292 ${PAGE_H} Z" fill="${r}"/>`; }
+  if (p === 4) {   // 雲上：前景翻湧的雲，把步道底包進雲裡（騰雲駕霧）
+    const c = night ? "#cdd6e2" : "#fbfdff";
+    return `<g opacity=".98"><ellipse cx="80" cy="${PAGE_H - 12}" rx="180" ry="52" fill="${c}"/><ellipse cx="292" cy="${PAGE_H - 4}" rx="176" ry="48" fill="${c}"/><ellipse cx="186" cy="${PAGE_H + 8}" rx="230" ry="48" fill="${c}"/></g>`;
+  }
+  if (p === 3) {   // 攻頂：前景雪堆
+    const c = night ? "#c2ccd8" : "#f3f6ef";
+    return `<path d="M-10 ${PAGE_H} L-10 ${y - 14} Q30 ${y - 30} 70 ${y - 10} L78 ${PAGE_H} Z" fill="${c}"/><path d="M372 ${PAGE_H} L372 ${y - 18} Q330 ${y - 34} 292 ${y - 8} L284 ${PAGE_H} Z" fill="${c}"/>`;
+  }
   const c = night ? "#26401f" : "#3f7a34";
   let s = "";
   [12, 30, 50, 300, 322, 344].forEach((x, i) => { s += _grass(x, y, 1.5 + (i % 2) * 0.5, night); });
@@ -658,37 +680,58 @@ function _achInitClimb(ov) {
   const dotsEl = ov.querySelector(".ach-pgdots"), navEl = ov.querySelector(".ach-pgnav");
   // 右側海拔圓點（下＝啟程、上＝傳說）
   dotsEl.innerHTML = Array.from({ length: ACH_NPG }, (_, i) => `<button class="ach-pgdot" data-pg="${i}" aria-label="${ttT(ACH_PG_TITLE[i])}"></button>`).reverse().join("");
-  function render(dir) {
-    const p = cur, band = p / 4, topY = _achPgTopY(p);
+  // 建一頁 .ach-page 元素（含節點）
+  function buildPage(p) {
+    const band = p / 4, topY = _achPgTopY(p);
     const nodes = list.slice(p * ACH_PGN, p * ACH_PGN + ACH_PGN).map((b, j) => { const u = 0.085 + j * 0.166; return { b, u, x: _achUX(u, band), y: _achUY(u, topY) }; });
     const px = x => (x / PAGE_W * 100).toFixed(2) + "%", py = y => (y / PAGE_H * 100).toFixed(2) + "%";
     const here = nodes.find(n => n.b.n === hereNm);
     const headL = p === 0 ? `<div class="ach-head" style="left:${px(_achUX(0, band))};top:${py(_achUY(0, topY) + 26)}">${ic("footprints")}<b>${ttT("啟程")}</b></div>` : "";
     const peakL = p === 4 ? `<div class="ach-peak" style="left:50%;top:${py(150 - 66)}">${ic("crown")}<b>${ttT("傳說")}</b></div>` : "";
     const hikerL = here ? `<div class="ach-hiker" style="left:${px(here.x)};top:${py(here.y - 40)}"><span class="ach-hiker-b">${ttT("你在這")}</span><span class="ach-hiker-pin">${ic("footprints")}</span></div>` : "";
-    root.innerHTML = `<div class="ach-page ${dir || ""}">
-        ${_achPgSVG(p, sky.night)}
+    const el = document.createElement("div"); el.className = "ach-page";
+    el.innerHTML = `${_achPgSVG(p, sky.night)}
         <div class="ach-pgtag">${ic(ACH_PG_IC[p])} ${ttT(ACH_PG_TITLE[p])}<i>${p + 1}/${ACH_NPG}</i></div>
         ${peakL}${headL}${hikerL}
-        <div class="ach-climb-marks"></div>
-      </div>`;
-    const mc = root.querySelector(".ach-climb-marks");
+        <div class="ach-climb-marks"></div>`;
+    const mc = el.querySelector(".ach-climb-marks");
     nodes.forEach(n => {
-      const cat = _achCat(n.b), el = document.createElement("button");
-      el.className = `ach3d-mk ${n.b.got ? "got" : "locked"}${n.b.n === hereNm ? " here" : ""}`;
-      el.style.left = px(n.x); el.style.top = py(n.y);
-      el.style.setProperty("--c", cat.col); el.style.setProperty("--pct", _achPct(n.b));
-      el.innerHTML = `<span class="ach-dot"><span class="ach-dot-in">${ic(cat.i)}</span>${n.b.got ? `<span class="ach-check">${_ACH_CHK}</span>` : ""}</span>`;
-      el.addEventListener("click", e => { e.stopPropagation(); showAchDetail(n.b); });
-      mc.appendChild(el);
+      const cat = _achCat(n.b), b = document.createElement("button");
+      b.className = `ach3d-mk ${n.b.got ? "got" : "locked"}${n.b.n === hereNm ? " here" : ""}`;
+      b.style.left = px(n.x); b.style.top = py(n.y);
+      b.style.setProperty("--c", cat.col); b.style.setProperty("--pct", _achPct(n.b));
+      b.innerHTML = `<span class="ach-dot"><span class="ach-dot-in">${ic(cat.i)}</span>${n.b.got ? `<span class="ach-check">${_ACH_CHK}</span>` : ""}</span>`;
+      b.addEventListener("click", e => { e.stopPropagation(); showAchDetail(n.b); });
+      mc.appendChild(b);
     });
+    return el;
+  }
+  let curEl = null, animating = false;
+  function render(dir) {
+    const p = cur, next = buildPage(p);
+    if (dir && curEl) {   // 過場：新頁滑入、舊頁滑出（往上滑＝下一頁從下方進、舊頁往上退）
+      animating = true;
+      const inFrom = dir === "up" ? "translateY(100%)" : "translateY(-100%)";
+      const outTo = dir === "up" ? "translateY(-100%)" : "translateY(100%)";
+      next.style.transform = inFrom;
+      root.appendChild(next);
+      void next.offsetWidth;                 // 逼一次 reflow 讓起點生效
+      next.classList.add("sliding"); const old = curEl; old.classList.add("sliding");
+      requestAnimationFrame(() => { next.style.transform = "translateY(0)"; old.style.transform = outTo; });
+      const done = () => { if (old.parentNode) old.remove(); next.classList.remove("sliding"); animating = false; };
+      old.addEventListener("transitionend", done, { once: true });
+      setTimeout(done, 620);
+    } else {
+      root.innerHTML = ""; root.appendChild(next); next.classList.add("intro");
+    }
+    curEl = next;
     dotsEl.querySelectorAll(".ach-pgdot").forEach(d => d.classList.toggle("on", +d.dataset.pg === p));
     navEl.innerHTML = `<button class="ach-pgbtn" data-go="down" ${p === 0 ? "disabled" : ""} aria-label="${ttT("回下方")}"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
       <span class="ach-pgnav-t">${ttT(ACH_PG_TITLE[p])}</span>
       <button class="ach-pgbtn up" data-go="up" ${p === ACH_NPG - 1 ? "disabled" : ""} aria-label="${ttT("繼續往上")}">${ttT("繼續往上")} ${_ACH_UP}</button>`;
     ov.dataset.pg = String(p);
   }
-  function go(p, dir) { p = Math.max(0, Math.min(ACH_NPG - 1, p)); if (p === cur) return; cur = p; render(dir); }
+  function go(p, dir) { p = Math.max(0, Math.min(ACH_NPG - 1, p)); if (p === cur || animating) return; cur = p; render(dir); }
   dotsEl.addEventListener("click", e => { const d = e.target.closest(".ach-pgdot"); if (d) go(+d.dataset.pg, +d.dataset.pg > cur ? "up" : "down"); });
   navEl.addEventListener("click", e => { const b = e.target.closest(".ach-pgbtn"); if (!b) return; go(b.dataset.go === "up" ? cur + 1 : cur - 1, b.dataset.go === "up" ? "up" : "down"); });
   // 上下滑動切頁（往上滑＝往上爬）

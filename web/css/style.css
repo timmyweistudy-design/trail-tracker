@@ -1875,13 +1875,12 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 @keyframes ach3dDrift { to { transform: translateX(calc(100vw + 260px)); } }
 /* 五段攀登分頁：一頁一段海拔 */
 .ach-pager { position: absolute; left: 0; right: 0; top: 0; bottom: 58px; z-index: 1; overflow: hidden; touch-action: pan-y; }
-.ach-page { position: absolute; inset: 0; animation: achPageIn .42s cubic-bezier(.2,.8,.2,1); }
-.ach-page.up { animation: achPageUp .42s cubic-bezier(.2,.8,.2,1); }
-.ach-page.down { animation: achPageDown .42s cubic-bezier(.2,.8,.2,1); }
-@keyframes achPageIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes achPageUp { from { opacity: 0; transform: translateY(48px); } to { opacity: 1; transform: none; } }
-@keyframes achPageDown { from { opacity: 0; transform: translateY(-48px); } to { opacity: 1; transform: none; } }
+.ach-page { position: absolute; inset: 0; will-change: transform; backface-visibility: hidden; }
+.ach-page.sliding { transition: transform .5s cubic-bezier(.33,0,.2,1); }
+.ach-page.intro { animation: achPageIn .5s cubic-bezier(.2,.8,.2,1); }
+@keyframes achPageIn { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
 .ach-page-mtn { position: absolute; inset: 0; width: 100%; height: 100%; }
+@media (prefers-reduced-motion: reduce) { .ach-page.sliding { transition-duration: .01ms; } .ach-page.intro { animation: none; } }
 /* 章節標籤（本段海拔） */
 .ach-pgtag { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 6; display: flex; align-items: center; gap: 6px; font-family: var(--serif); font-weight: 800; font-size: calc(16px * var(--fs, 1)); letter-spacing: 3px; color: #fff; background: rgba(30,42,28,.42); padding: 5px 16px; border-radius: 999px; backdrop-filter: blur(3px); text-shadow: 0 1px 4px rgba(0,0,0,.4); }
 .ach-pgtag .ic { width: 19px; height: 19px; }
