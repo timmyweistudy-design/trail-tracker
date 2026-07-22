@@ -1845,8 +1845,8 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 /* 全螢幕成就步道 */
 .ach-modal { position: fixed; inset: 0; z-index: 60; background: rgba(16,28,18,.5); backdrop-filter: blur(2px); display: flex; justify-content: center; animation: fadein .2s; }
 .ach-modal-inner { position: relative; width: 100%; max-width: 540px; background: var(--bg); display: flex; flex-direction: column; max-height: 100%; }
-.ach-modal-head { position: sticky; top: 0; z-index: 3; padding: 16px 18px 13px; background: linear-gradient(180deg, var(--surface), color-mix(in srgb, var(--brand) 9%, var(--surface))); border-bottom: 1px solid var(--line-soft); }
-.ach-modal .sheet-close { position: absolute; top: 13px; right: 13px; }
+.ach-modal-head { position: sticky; top: 0; z-index: 3; padding: calc(16px + env(safe-area-inset-top, 0px)) 18px 13px; background: linear-gradient(180deg, var(--surface), color-mix(in srgb, var(--brand) 9%, var(--surface))); border-bottom: 1px solid var(--line-soft); }
+.ach-modal .sheet-close { position: absolute; top: calc(13px + env(safe-area-inset-top, 0px)); right: 13px; }
 .ach-modal-h { font-family: var(--serif); font-weight: 700; font-size: calc(19px * var(--fs, 1)); color: var(--brand-deep); display: flex; align-items: center; gap: 7px; letter-spacing: .5px; }
 .ach-modal-h .ic { width: 22px; height: 22px; }
 .ach-modal-prog { display: flex; align-items: center; gap: 12px; margin-top: 11px; }
@@ -1885,7 +1885,7 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 .ach3d-cloud::after { width: 45%; height: 130%; right: 14%; top: -38%; }
 @keyframes ach3dDrift { to { transform: translateX(calc(100vw + 260px)); } }
 /* 五段攀登分頁：膠捲軌道（五頁預建堆疊、拖動只做 transform） */
-.ach-pager { position: absolute; left: 0; right: 0; top: 0; bottom: 58px; z-index: 1; overflow: hidden; touch-action: none; }
+.ach-pager { position: absolute; left: 0; right: 0; top: 0; bottom: calc(58px + env(safe-area-inset-bottom, 0px)); z-index: 1; overflow: hidden; touch-action: none; }
 .ach-track { position: absolute; left: 0; right: 0; top: 0; height: 500%; will-change: transform; transform: translateY(calc(var(--d, 4) * -20% + var(--drag, 0px))); }
 .ach-track.anim { transition: transform .42s cubic-bezier(.33, 0, .2, 1); }
 .ach-page { position: relative; width: 100%; height: 20%; overflow: hidden; }
@@ -1925,7 +1925,7 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 .ach-pgdot.ishere { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 55%, transparent), 0 1px 3px rgba(0,0,0,.3); animation: achDotHere 1.9s ease-in-out infinite; }
 @keyframes achDotHere { 0%, 100% { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent), 0 1px 3px rgba(0,0,0,.3); } 50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 30%, transparent), 0 1px 3px rgba(0,0,0,.3); } }
 /* 頁尾導覽 */
-.ach-pgnav { position: absolute; left: 0; right: 0; bottom: 0; height: 58px; z-index: 9; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 24px; background: var(--surface); border-top: 1px solid var(--line-soft); }
+.ach-pgnav { position: absolute; left: 0; right: 0; bottom: 0; height: calc(58px + env(safe-area-inset-bottom, 0px)); padding: 0 24px env(safe-area-inset-bottom, 0px); z-index: 9; display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--surface); border-top: 1px solid var(--line-soft); }
 .ach-pgnav-t { font-family: var(--serif); font-weight: 700; font-size: calc(15px * var(--fs, 1)); color: var(--ink); letter-spacing: 2px; }
 .ach-pgbtn { display: inline-flex; align-items: center; gap: 5px; border: none; background: var(--surface-2); color: var(--ink-soft); font-family: var(--serif); font-weight: 700; font-size: calc(13px * var(--fs, 1)); padding: 9px 12px; border-radius: 999px; cursor: pointer; }
 .ach-pgbtn.up { background: var(--accent); color: #fff; }
@@ -1954,7 +1954,8 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 @keyframes achHintFade { 0%, 70% { opacity: 1; } 100% { opacity: .55; } }
 /* 成就詳情彈卡 */
 .ach3d-detail { position: absolute; left: 12px; right: 12px; bottom: 12px; z-index: 10; background: var(--surface); border-radius: var(--r); box-shadow: 0 -4px 24px rgba(0,0,0,.28); padding: 16px 16px 18px; transform: translateY(140%); transition: transform .28s cubic-bezier(.2,.8,.2,1); }
-.ach3d-detail.show { transform: none; }
+.ach3d-detail { pointer-events: none; }
+.ach3d-detail.show { transform: none; pointer-events: auto; }
 .ach3d-dx { position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; border-radius: 50%; border: none; background: var(--surface-2); color: var(--ink-soft); font-size: 15px; cursor: pointer; }
 .ach3d-d-top { display: flex; align-items: center; gap: 13px; }
 .ach3d-d-dot { width: 52px; height: 52px; border-radius: 50%; flex: none; background: conic-gradient(var(--c) calc(var(--pct) * 1%), var(--line-soft) 0); display: grid; place-items: center; }
