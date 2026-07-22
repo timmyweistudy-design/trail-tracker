@@ -188,7 +188,7 @@ function exportCanvas(c, d, avImg) {
     toast("已存成圖片");
   }, "image/png");
 }
-function roundRect(x, X, Y, w, h, r) { x.beginPath(); x.moveTo(X + r, Y); x.arcTo(X + w, Y, X + w, Y + h, r); x.arcTo(X + w, Y + h, X, Y + h, r); x.arcTo(X, Y + h, X, Y, r); x.arcTo(X, Y, X + w, Y, r); x.closePath(); }
+// roundRect 已移到 app.js（常駐），此處不再定義
 function openAnalytics() {
   if (document.querySelector('[data-ov="analytics"]')) return;   // 防連點疊層
   const recs = realRecords();

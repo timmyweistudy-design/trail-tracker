@@ -40,6 +40,19 @@ function ensureDetail() {
   return _detailPromise;
 }
 function mergeDetail(t) { const d = (window.TRAILS_DETAIL || {})[t.id]; if (d) Object.assign(t, d); return t; }
+// 通用：動態載入 script（首屏拆載用；重複呼叫共用同一 Promise、已載入直接 resolve）
+const _loadedScripts = {};
+function ensureScript(src) {
+  if (_loadedScripts[src]) return _loadedScripts[src];
+  _loadedScripts[src] = new Promise(resolve => {
+    const s = document.createElement("script"); s.src = src;
+    s.onload = () => resolve(true); s.onerror = () => resolve(false);
+    document.head.appendChild(s);
+  });
+  return _loadedScripts[src];
+}
+// canvas 圓角矩形（年度回顧圖卡＋成就分享圖卡共用；放常駐檔避免被延遲載入的 analytics 綁住）
+function roundRect(x, X, Y, w, h, r) { x.beginPath(); x.moveTo(X + r, Y); x.arcTo(X + w, Y, X + w, Y + h, r); x.arcTo(X + w, Y + h, X, Y + h, r); x.arcTo(X, Y + h, X, Y, r); x.arcTo(X, Y, X + w, Y, r); x.closePath(); }
 // 真實登山客走法：把路段建成路徑圖，沿實際路徑走；遇叉路/死路「原路折返」回岔口再走下一條，
 // 不會憑空斜穿。只有資料本身斷成不相連的區塊時，才不得已直線接過去。
 function chainSegments(geo) {
@@ -3789,7 +3802,7 @@ setTimeout(reportClientErrors, 6000);
 
 // 進階分析：整頁 PRO（與年度回顧一致）
 const _aBtn = $("#btnAnalytics");
-if (_aBtn) _aBtn.addEventListener("click", () => { if (!_proGate()) return; openAnalytics(); });
+if (_aBtn) _aBtn.addEventListener("click", () => { if (!_proGate()) return; ensureScript("js/analytics.js").then(() => { if (typeof openAnalytics === "function") openAnalytics(); }); });
 // 年度回顧（PRO）
 const _yBtn = $("#btnYearReview");
 if (_yBtn) _yBtn.addEventListener("click", () => { if (!_proGate()) return; openYearReview(); });
