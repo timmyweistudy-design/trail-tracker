@@ -2,7 +2,7 @@
 const SocialUI = (() => {
   const $ = s => document.querySelector(s);
   let mounted = false, sub = "friends", myProf = null, subscribed = false;
-  let pendingPost = null;
+  let pendingPost = null, _renderGen = 0;   // 渲染世代碼：擋掉切分頁後晚回來的非同步渲染（否則會蓋掉現在這頁）
   try { pendingPost = new URLSearchParams(location.search).get("post"); } catch (e) { }
 
   function render(html) { const b = $("#socialBody"); if (b) b.innerHTML = html; }
@@ -40,8 +40,9 @@ const SocialUI = (() => {
         ${tab("friends", "動態")}${tab("explore", "探索")}${tab("search", "搜尋")}${tab("notif", "通知")}${tab("me", "我的")}
       </div>
       <div id="subBody"></div>`);
-    document.querySelectorAll(".sub-tab").forEach(b => b.addEventListener("click", () => { sub = b.dataset.sub; shell(); }));
-    const into = html => { const e = document.getElementById("subBody"); if (e) e.innerHTML = html; };
+    document.querySelectorAll(".sub-tab").forEach(b => b.addEventListener("click", () => { if (b.dataset.sub === sub) return; sub = b.dataset.sub; shell(); }));
+    const myGen = ++_renderGen;   // 這次 shell 的世代；晚回來的舊渲染(myGen 過期)一律不寫入
+    const into = html => { if (myGen !== _renderGen) return; const e = document.getElementById("subBody"); if (e) e.innerHTML = html; };
     // 本機隱藏清單以資料庫的檢舉紀錄為準（跨裝置撤回也會生效）。動態牆要等同步完再抓，
     // 否則會用舊的隱藏清單先濾一次 → 撤回了還是看不到那篇。
     const synced = (typeof Safety !== "undefined" && Safety.syncReportedCache)
