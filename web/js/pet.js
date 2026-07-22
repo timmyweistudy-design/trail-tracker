@@ -458,7 +458,10 @@ function achScore() {
   const list = petBadges(), gotList = list.filter(b => b.got);
   const got = gotList.length, total = list.length;
   const score = gotList.reduce((s, b) => s + b.t * 10, 0);
-  const idx = Math.min(ACH_RANK.length - 1, Math.floor(got / Math.max(1, total) * ACH_RANK.length));   // 稱號依達成比例，隨總數縮放
+  // 稱號只看「主線成就」達成比例：隱藏彩蛋不列入門檻，主線全解就升到傳說山神（彩蛋是額外驚喜、非必要）
+  const mainList = list.filter(b => !b.hidden);
+  const mainGot = mainList.filter(b => b.got).length, mainTotal = mainList.length;
+  const idx = Math.min(ACH_RANK.length - 1, Math.floor(mainGot / Math.max(1, mainTotal) * ACH_RANK.length));
   return { got, total, score, rank: ACH_RANK[idx], rankIdx: idx };
 }
 function achUnlockDate(name) {
@@ -897,6 +900,10 @@ function _achInitClimb(ov) {
     const mainNodes = mainB.map((b, j) => { const u = 0.06 + (j + 0.5) / cnt * 0.88; return { b, x: _achUX(u, band), y: _achUY(u, topY), spur: false }; });
     // 隱藏成就：從主幹道另闢支線；用避讓演算法選離所有節點最遠的落點，任何一條都不擋到其他成就
     let spurs = "";
+    // 支線配色：預設同山徑的褐色；傳說頁(雲徑)改用雲白／金，讓傳說隱藏成就的岔路和主幹道顏色一致
+    const spurCol = (p === 4)
+      ? { body: sky.night ? "#aebdd6" : "#fbecc0", dash: sky.night ? "#dfe6f2" : "#fffdf3", dot: sky.night ? "#c7d2e4" : "#f2d98f" }
+      : { body: sky.night ? "#54462d" : "#a98a54", dash: sky.night ? "#b7a074" : "#fff3d6", dot: sky.night ? "#7a6748" : "#9a7a44" };
     const occupied = mainNodes.map(n => ({ x: n.x, y: n.y }));
     const hiddenNodes = hiddenB.map((b, hi) => {
       const ua = Math.max(0.2, Math.min(0.8, 0.34 + hi * 0.3));
@@ -910,7 +917,7 @@ function _achInitClimb(ov) {
       const { hx, hy, side } = best;
       const mx = (ax + hx) / 2 + side * 4, my = (ay + hy) / 2 - 14;
       const dp = `M ${ax.toFixed(1)} ${ay.toFixed(1)} Q ${mx.toFixed(1)} ${my.toFixed(1)} ${hx.toFixed(1)} ${hy.toFixed(1)}`;
-      spurs += `<path d="${dp}" fill="none" stroke="${sky.night ? "#54462d" : "#a98a54"}" stroke-width="7" stroke-linecap="round" opacity=".55"/><path d="${dp}" fill="none" stroke="${sky.night ? "#b7a074" : "#fff3d6"}" stroke-width="2.2" stroke-dasharray="1 7" stroke-linecap="round" opacity=".85"/><circle cx="${ax.toFixed(1)}" cy="${ay.toFixed(1)}" r="4.5" fill="${sky.night ? "#7a6748" : "#9a7a44"}"/>`;
+      spurs += `<path d="${dp}" fill="none" stroke="${spurCol.body}" stroke-width="7" stroke-linecap="round" opacity=".55"/><path d="${dp}" fill="none" stroke="${spurCol.dash}" stroke-width="2.2" stroke-dasharray="1 7" stroke-linecap="round" opacity=".85"/><circle cx="${ax.toFixed(1)}" cy="${ay.toFixed(1)}" r="4.5" fill="${spurCol.dot}"/>`;
       occupied.push({ x: hx, y: hy });
       return { b, x: hx, y: hy, spur: true };
     });
