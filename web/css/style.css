@@ -2039,6 +2039,16 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 .ach-rankchip, .ach-scorechip { display: inline-flex; align-items: center; gap: 5px; font-size: calc(12px * var(--fs, 1)); font-weight: 700; padding: 4px 11px; border-radius: 999px; }
 .ach-rankchip { background: color-mix(in srgb, var(--brand) 16%, var(--surface)); color: var(--brand-deep); }
 .ach-rankchip .ic { width: 14px; height: 14px; }
+/* 稱號依階級變色（低→高：石灰→森綠→湖青→靛紫→古銅→傳說金）；顏色與 --ink 混合→深淺自動配合日夜 */
+.ach-rankchip.rank-0 { background: color-mix(in srgb, #7c7768 16%, var(--surface)); color: color-mix(in srgb, #6f6a5b 72%, var(--ink)); }
+.ach-rankchip.rank-1 { background: color-mix(in srgb, #3f8a48 16%, var(--surface)); color: color-mix(in srgb, #3f8a48 72%, var(--ink)); }
+.ach-rankchip.rank-2 { background: color-mix(in srgb, #2f8593 17%, var(--surface)); color: color-mix(in srgb, #2f8593 72%, var(--ink)); }
+.ach-rankchip.rank-3 { background: color-mix(in srgb, #6155c4 17%, var(--surface)); color: color-mix(in srgb, #6155c4 74%, var(--ink)); }
+.ach-rankchip.rank-4 { background: color-mix(in srgb, #c9752e 18%, var(--surface)); color: color-mix(in srgb, #c9752e 74%, var(--ink)); }
+/* 傳說山神：金色實心＋像 PRO 標一樣掃過反光 */
+.ach-rankchip.rank-5 { position: relative; overflow: hidden; color: #5a3a00; background: linear-gradient(135deg, #ffe07a, #f0a91e); box-shadow: 0 1px 7px rgba(240,169,30,.4); }
+.ach-rankchip.rank-5 .ic { color: #5a3a00; }
+.ach-rankchip.rank-5::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.7) 50%, transparent 65%); background-size: 220% 100%; animation: lv-shine 3.4s ease-in-out infinite; }
 .ach-scorechip { background: var(--surface-2); color: var(--ink-soft); }
 .ach-scorechip b { color: var(--accent); font-family: var(--num); }
 /* 檢視切換鈕（爬山 ⟷ 清單） */

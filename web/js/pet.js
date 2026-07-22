@@ -838,7 +838,7 @@ function openAchTree() {
       <div class="ach-modal-head"><button class="sheet-close" id="achClose" aria-label="${ttT("關閉")}">✕</button><div class="ach-modal-h">${ic("medal")} ${ttT("成就步道")}</div>
         <button class="ach-viewtog" id="achViewTog" aria-label="${ttT("切換檢視")}">${_ACH_LISTIC}</button>
         <div class="ach-modal-prog"><span class="amp-n">${got}<small> / ${total}</small></span><div class="amp-bar"><i style="width:${pct}%"></i></div></div>
-        <div class="ach-rankrow"><span class="ach-rankchip">${ic(ACH_TIER_IC[sc.rankIdx])} ${ttT(sc.rank)}</span><span class="ach-scorechip">${ttT("成就分數")} <b>${sc.score}</b></span></div></div>
+        <div class="ach-rankrow"><span class="ach-rankchip rank-${sc.rankIdx}">${ic(ACH_TIER_IC[sc.rankIdx])} ${ttT(sc.rank)}</span><span class="ach-scorechip">${ttT("成就分數")} <b>${sc.score}</b></span></div></div>
       <div class="ach-modal-body">
         <div class="ach-climb-sky"></div>
         <div class="ach-pager" id="ach3d"></div>
