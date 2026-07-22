@@ -4076,14 +4076,12 @@ async function renderMeProfileCard() {
     <div class="me-card-info">
       <div class="me-card-name">${esc(prof.display_name || prof.handle)}${lvl ? ` <span class="lv-chip lvt-${Math.min(lvl, 7)}">Lv.${lvl}</span>` : ""}${pro ? ` <span class="pro-tag pro-mine">PRO</span>` : ""}</div>
       <div class="me-card-handle">@${esc(prof.handle)}</div>
+      ${(() => { try { if (typeof achScore !== "function") return ""; const s = achScore(); const ic2 = (typeof ACH_TIER_IC !== "undefined" && typeof ic === "function") ? ic(ACH_TIER_IC[s.rankIdx]) : "🏅"; return `<div class="me-rank"><span class="me-rank-chip rkt-${s.rankIdx}">${ic2} ${ttT(s.rank)}</span></div>`; } catch (e) { return ""; } })()}
       ${ps ? `<div class="me-card-pet">${typeof PET_ART !== "undefined" ? PET_ART.svg((ps.level || 1) - 1) : ps.emoji} ${esc(ps.name)}　·　已走 <b>${ps.km}</b> km</div>` : ""}
-      ${(() => { try { if (typeof achScore !== "function") return ""; const s = achScore(); return `<button class="me-ach" id="meAchBtn">🏅 ${ttT(s.rank)} · ${ttT("成就")} <b>${s.got}/${s.total}</b> ›</button>`; } catch (e) { return ""; } })()}
+      ${(() => { try { if (typeof achScore !== "function") return ""; const s = achScore(); return `<button class="me-ach" id="meAchBtn">🏅 ${ttT("成就")} <b>${s.got}/${s.total}</b> · ${ttT("成就分數")} ${s.score} ›</button>`; } catch (e) { return ""; } })()}
     </div>
-  </div>
-  ${(() => { try { if (typeof petBadges !== "function") return ""; const got = petBadges().filter(b => b.got).sort((a, b) => b.t - a.t); if (!got.length) return ""; const show = got.slice(0, 10); return `<button class="me-medals" id="meMedalsBtn"><span class="me-medals-h">🏅 ${ttT("成就勳章")} <b>${got.length}</b> ›</span><span class="me-medals-row">${show.map(b => `<span class="me-medal ach-emo" title="${esc(ttT(b.n))}">${b.e}</span>`).join("")}${got.length > 10 ? `<span class="me-medal-more">+${got.length - 10}</span>` : ""}</span></button>`; } catch (e) { return ""; } })()}`;
-  const openAch = () => { const t = document.querySelector('.tab[data-view="pet"]'); if (t) t.click(); setTimeout(() => { if (typeof openAchTree === "function") openAchTree(); }, 260); };
-  const ab = $("#meAchBtn"); if (ab) ab.addEventListener("click", openAch);
-  const mb = $("#meMedalsBtn"); if (mb) mb.addEventListener("click", openAch);
+  </div>`;
+  const ab = $("#meAchBtn"); if (ab) ab.addEventListener("click", () => { const t = document.querySelector('.tab[data-view="pet"]'); if (t) t.click(); setTimeout(() => { if (typeof openAchTree === "function") openAchTree(); }, 260); });
 }
 // 健行提醒開關（只在原生 App 顯示；網頁版沒有本地排程通知外掛）
 function renderReminderToggle() {

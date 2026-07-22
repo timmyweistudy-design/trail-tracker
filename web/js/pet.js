@@ -450,8 +450,8 @@ function achCheckUnlocks() {
   if (fresh.length > 3) setTimeout(() => { try { toast(`🏆 ${ttT("又解鎖")} ${fresh.length - 3} ${ttT("項成就")}　+${reward}🍓`); } catch (e) { /* */ } }, 700 + 3 * 1700);
   if (typeof refreshAchTree === "function") refreshAchTree();
 }
-// #19 各階層解鎖果實獎勵（index=階層 1–6）
-const ACH_REWARD = [0, 5, 8, 12, 18, 25, 40];
+// #19 各階層解鎖果實獎勵（index=階層 1–6；依難度高低給，整體從少）
+const ACH_REWARD = [0, 2, 3, 4, 6, 9, 15];
 // #21 成就分數＋#20 山友稱號（依已達成數升級）
 const ACH_RANK = ["山腳新手", "入山山友", "登高好手", "縱走達人", "攻頂勇者", "傳說山神"];
 function achScore() {
@@ -532,7 +532,6 @@ const _ACH_BIRD = `<svg viewBox="0 0 26 12" class="ach-bird-svg" aria-hidden="tr
 function _achFauna(p, night) {
   let s = `<span class="ach-bird v1">${_ACH_BIRD}</span><span class="ach-bird v2">${_ACH_BIRD}</span>`;
   if (p === 2 || p === 4) s += `<span class="ach-bird v3">${_ACH_BIRD}</span>`;
-  if (p <= 1) s += `<span class="ach-bug">🦋</span>`;
   return `<div class="ach-fauna" aria-hidden="true">${s}</div>`;
 }
 // 日夜（依真實時間）：天空漸層＋日/月沿天弧升降（東升西落）＋是否夜晚
@@ -898,8 +897,9 @@ function _achInitClimb(ov) {
     let spurs = "";
     const hiddenNodes = hiddenB.map((b, hi) => {
       const ua = Math.max(0.2, Math.min(0.8, 0.34 + hi * 0.3));
-      const ax = _achUX(ua, band), ay = _achUY(ua, topY), side = ax < 180 ? 1 : -1;
-      const hx = Math.max(40, Math.min(320, ax + side * 74)), hy = ay - 30;
+      const ax = _achUX(ua, band), ay = _achUY(ua, topY);
+      const side = ax <= 180 ? -1 : 1;   // 往外側岔出（遠離蜿蜒的主幹道與其節點，不互相遮擋）
+      const hx = Math.max(38, Math.min(322, ax + side * 82)), hy = ay - 34;
       const mx = (ax + hx) / 2 + side * 4, my = (ay + hy) / 2 - 16;
       const dp = `M ${ax.toFixed(1)} ${ay.toFixed(1)} Q ${mx.toFixed(1)} ${my.toFixed(1)} ${hx.toFixed(1)} ${hy.toFixed(1)}`;
       spurs += `<path d="${dp}" fill="none" stroke="${sky.night ? "#54462d" : "#a98a54"}" stroke-width="7" stroke-linecap="round" opacity=".55"/><path d="${dp}" fill="none" stroke="${sky.night ? "#b7a074" : "#fff3d6"}" stroke-width="2.2" stroke-dasharray="1 7" stroke-linecap="round" opacity=".85"/><circle cx="${ax.toFixed(1)}" cy="${ay.toFixed(1)}" r="4.5" fill="${sky.night ? "#7a6748" : "#9a7a44"}"/>`;
