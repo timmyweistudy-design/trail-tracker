@@ -293,6 +293,7 @@ const ACH_CAT = {
   explore: { i: "compass", col: "#2f9aa4" }, challenge: { i: "target", col: "#8a5cc0" },
   time: { i: "sun", col: "#cf9a2e" },
 };
+const ACH_CATNAME = { dist: "里程", climb: "爬升", trips: "次數", streak: "連續", explore: "探索", challenge: "挑戰", time: "時刻" };
 const ACH_CAT_OF = {
   "初心者": "trips", "週末山友": "trips", "早起鳥": "time", "夜行者": "time",
   "常客": "trips", "50K": "dist", "爬升新手": "climb", "週週不斷": "streak",
@@ -559,7 +560,9 @@ function _achPgSVG(p, night) {
       far2 += _range(ry - 26, 66, night ? "#48545f" : "#cdd8df", 77);
       far2 += _range(ry - 2, 40, night ? "#3c4750" : "#b6c3cc", 88);
       far2 += _cloud(80, ry - 30, 1.3, night ? "#4a5563" : "#fbfdff", .82) + _cloud(300, ry - 12, 1.0, night ? "#4a5563" : "#f4f8fc", .8) + _cloud(190, ry - 66, .9, night ? "#42505f" : "#ffffff", .7);
-    } else if (p === 1) {
+    }
+    if (p === 2 || p === 3) far2 += `<rect x="-2" y="${(ry - 18).toFixed(1)}" width="364" height="40" fill="${night ? "#3a4657" : "#dbe6ee"}" opacity=".28"/>`;   // 稜線空氣遠近霧
+    if (p === 1) {
       far2 += `<path d="M-10 ${(ry + 46).toFixed(1)} L90 ${(ry - 10).toFixed(1)} L200 ${(ry + 30).toFixed(1)} L320 ${(ry - 6).toFixed(1)} L372 ${(ry + 40).toFixed(1)} Z" fill="${night ? "#2a4530" : "#5f8a4c"}" opacity=".6"/>`;
     }
     // 山體＋等高線
@@ -585,12 +588,20 @@ function _achPgSVG(p, night) {
     far2 += _bird(150, 176, 1) + _bird(176, 168, .85) + _bird(120, 150, .8);
     // 每個成就下方一朵浮雲（像踩在雲上）
     for (let j = 0; j < 6; j++) { const u = 0.085 + j * 0.166; cloudsea += _cloud(_achUX(u, band), _achUY(u, topY) + 16, 1.0, cc[1], .95); }
+    // 由最高節點接上「傳說」的雲階（不留斷口）
+    cloudsea += _cloud(178, 150, .82, cc[1], .92) + _cloud(180, 112, .6, cc[0], .82);
     // 底部厚雲海（多層堆疊）
     [[PAGE_H - 30, 210, cc[3], 1], [PAGE_H - 78, 195, cc[2], 1], [PAGE_H - 126, 175, cc[1], .98], [PAGE_H - 172, 150, cc[0], .9], [PAGE_H - 214, 120, cc[1], .8]].forEach(([y, rx, c, op], i) => {
       cloudsea += `<g opacity="${op}"><ellipse cx="${i % 2 ? 108 : 252}" cy="${y}" rx="${rx}" ry="46" fill="${c}"/><ellipse cx="${i % 2 ? 270 : 92}" cy="${(y + 10)}" rx="${(rx * 0.8).toFixed(0)}" ry="40" fill="${c}"/><ellipse cx="180" cy="${(y + 18)}" rx="205" ry="42" fill="${c}"/></g>`;
     });
   }
-  return `<svg class="ach-page-mtn" viewBox="0 0 ${PAGE_W} ${PAGE_H}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${defs}${far2}${bg}${surf}${peak}${cloudsea}${fg}${_achPgTrail(p, night)}</svg>`;
+  // 頁頂薄霧：軟化上下頁的接縫，並添騰霧氛圍
+  let mist = "";
+  if (p >= 1) {
+    const mc = p >= 3 ? (night ? "#9fb0c4" : "#eef4fa") : (night ? "#33475a" : "#dfeadf"), h = p >= 3 ? 118 : 82, op = p >= 3 ? .5 : .3;
+    mist = `<defs><linearGradient id="mist${p}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${mc}" stop-opacity="${op}"/><stop offset="1" stop-color="${mc}" stop-opacity="0"/></linearGradient></defs><rect x="-2" y="0" width="364" height="${h}" fill="url(#mist${p})"/>`;
+  }
+  return `<svg class="ach-page-mtn" viewBox="0 0 ${PAGE_W} ${PAGE_H}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${defs}${far2}${bg}${surf}${peak}${cloudsea}${mist}${fg}${_achPgTrail(p, night)}</svg>`;
 }
 // 山腳登山口木拱門（框住「啟程」）
 function _achArch(night) {
@@ -624,7 +635,7 @@ function showAchDetail(b) {
   const ov = document.querySelector('[data-ov="achtree"]'); if (!ov) return;
   const box = ov.querySelector(".ach3d-detail"); if (!box) return;
   const cat = _achCat(b), pct = _achPct(b);
-  const catName = { dist: "里程", climb: "爬升", trips: "次數", streak: "連續", explore: "探索", challenge: "挑戰", time: "時刻" }[b.c] || "";
+  const catName = ACH_CATNAME[b.c] || "";
   box.innerHTML = `<button class="ach3d-dx" aria-label="${ttT("關閉")}">✕</button>
     <div class="ach3d-d-top"><div class="ach3d-d-dot" style="--c:${cat.col};--pct:${pct}"><div class="ach-dot-in">${ic(cat.i)}</div></div>
       <div><div class="ach3d-d-name">${b.n}${b.got ? ` <span class="ach3d-d-badge">${_ACH_CHK}</span>` : ""}</div><div class="ach3d-d-cat" style="color:${cat.col}">${ic(cat.i)} ${ttT(catName)}</div></div></div>
@@ -665,7 +676,6 @@ function _achInitClimb(ov) {
   const nextUp = list.filter(b => !b.got && b.p && b.p[1] > 0).map(b => ({ b, r: Math.min(1, b.p[0] / b.p[1]) })).sort((a, b) => b.r - a.r);
   const allGot = list.every(b => b.got);
   const hereNm = nextUp[0] ? nextUp[0].b.n : (allGot ? list[list.length - 1].n : (list.find(b => !b.got) || {}).n);
-  const hereIdx = Math.max(0, list.findIndex(b => b.n === hereNm));
   // 天空背景（日夜）
   if (skyEl) {
     const stars = sky.night ? Array.from({ length: 26 }, (_, i) => `<span class="ach3d-star" style="left:${(i * 37 % 96) + 2}%;top:${(i * 19 % 62)}%;--dl:${(i % 5) * 0.4}s"></span>`).join("") : "";
@@ -676,22 +686,22 @@ function _achInitClimb(ov) {
       <div class="ach3d-cloud" style="top:14%;--d:46s;--s:.9"></div>
       <div class="ach3d-cloud" style="top:28%;--d:62s;--s:.66;animation-delay:-22s"></div>`;
   }
-  let cur = 0;   // 一開始永遠在山腳「啟程」，一頁頁往上爬（「你在這」仍標在對應那頁）
+  const herePage = Math.min(ACH_NPG - 1, Math.floor(Math.max(0, list.findIndex(b => b.n === hereNm)) / ACH_PGN));
   const dotsEl = ov.querySelector(".ach-pgdots"), navEl = ov.querySelector(".ach-pgnav");
-  // 右側海拔圓點（下＝啟程、上＝傳說）
-  dotsEl.innerHTML = Array.from({ length: ACH_NPG }, (_, i) => `<button class="ach-pgdot" data-pg="${i}" aria-label="${ttT(ACH_PG_TITLE[i])}"></button>`).reverse().join("");
+  // 右側海拔圓點（下＝啟程、上＝傳說；標出你目前進度那頁）
+  dotsEl.innerHTML = Array.from({ length: ACH_NPG }, (_, i) => `<button class="ach-pgdot${i === herePage ? " ishere" : ""}" data-pg="${i}" aria-label="${ttT(ACH_PG_TITLE[i])}"></button>`).reverse().join("");
   // 建一頁 .ach-page 元素（含節點）
   function buildPage(p) {
     const band = p / 4, topY = _achPgTopY(p);
     const nodes = list.slice(p * ACH_PGN, p * ACH_PGN + ACH_PGN).map((b, j) => { const u = 0.085 + j * 0.166; return { b, u, x: _achUX(u, band), y: _achUY(u, topY) }; });
     const px = x => (x / PAGE_W * 100).toFixed(2) + "%", py = y => (y / PAGE_H * 100).toFixed(2) + "%";
-    const here = nodes.find(n => n.b.n === hereNm);
+    const here = nodes.find(n => n.b.n === hereNm), gotN = nodes.filter(n => n.b.got).length;
     const headL = p === 0 ? `<div class="ach-head" style="left:${px(_achUX(0, band))};top:${py(_achUY(0, topY) + 26)}">${ic("footprints")}<b>${ttT("啟程")}</b></div>` : "";
     const peakL = p === 4 ? `<div class="ach-peak" style="left:50%;top:${py(150 - 66)}">${ic("crown")}<b>${ttT("傳說")}</b></div>` : "";
     const hikerL = here ? `<div class="ach-hiker" style="left:${px(here.x)};top:${py(here.y - 40)}"><span class="ach-hiker-b">${ttT("你在這")}</span><span class="ach-hiker-pin">${ic("footprints")}</span></div>` : "";
     const el = document.createElement("div"); el.className = "ach-page";
     el.innerHTML = `${_achPgSVG(p, sky.night)}
-        <div class="ach-pgtag">${ic(ACH_PG_IC[p])} ${ttT(ACH_PG_TITLE[p])}<i>${p + 1}/${ACH_NPG}</i></div>
+        <div class="ach-pgtag">${ic(ACH_PG_IC[p])} ${ttT(ACH_PG_TITLE[p])}<i>${gotN}/${ACH_PGN}</i></div>
         ${peakL}${headL}${hikerL}
         <div class="ach-climb-marks"></div>`;
     const mc = el.querySelector(".ach-climb-marks");
@@ -707,43 +717,60 @@ function _achInitClimb(ov) {
     });
     return el;
   }
-  let curEl = null, animating = false;
-  function render(dir) {
-    const p = cur, next = buildPage(p);
-    if (dir && curEl) {   // 過場：新頁滑入、舊頁滑出（往上滑＝下一頁從下方進、舊頁往上退）
-      animating = true;
-      const inFrom = dir === "up" ? "translateY(-100%)" : "translateY(100%)";   // 往上爬：新頁從上方下滑、舊頁往下退
-      const outTo = dir === "up" ? "translateY(100%)" : "translateY(-100%)";
-      next.style.transform = inFrom;
-      root.appendChild(next);
-      void next.offsetWidth;                 // 逼一次 reflow 讓起點生效
-      next.classList.add("sliding"); const old = curEl; old.classList.add("sliding");
-      requestAnimationFrame(() => { next.style.transform = "translateY(0)"; old.style.transform = outTo; });
-      const done = () => { if (old.parentNode) old.remove(); next.classList.remove("sliding"); animating = false; };
-      old.addEventListener("transitionend", done, { once: true });
-      setTimeout(done, 620);
-    } else {
-      root.innerHTML = ""; root.appendChild(next); next.classList.add("intro");
-    }
-    curEl = next;
-    dotsEl.querySelectorAll(".ach-pgdot").forEach(d => d.classList.toggle("on", +d.dataset.pg === p));
-    navEl.innerHTML = `<button class="ach-pgbtn" data-go="down" ${p === 0 ? "disabled" : ""} aria-label="${ttT("回下方")}"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
-      <span class="ach-pgnav-t">${ttT(ACH_PG_TITLE[p])}</span>
-      <button class="ach-pgbtn up" data-go="up" ${p === ACH_NPG - 1 ? "disabled" : ""} aria-label="${ttT("繼續往上")}">${ttT("繼續往上")} ${_ACH_UP}</button>`;
-    ov.dataset.pg = String(p);
+  // 膠捲軌道：五頁預先建好堆疊（上＝傳說、下＝啟程），拖動只做 transform → 60fps
+  root.innerHTML = `<div class="ach-track" id="achTrack"></div><button class="ach-jump" id="achJump" hidden>${ic("footprints")} ${ttT("你在這")}</button>`;
+  const track = root.querySelector("#achTrack"), jump = root.querySelector("#achJump");
+  for (let p = ACH_NPG - 1; p >= 0; p--) track.appendChild(buildPage(p));
+  const page0El = track.lastElementChild;   // 山腳頁（最後 append＝最下）
+  let cur = 0, dragging = false, startY = 0, drag = 0, moved = 0, cheered = false;
+  function place(anim) { track.classList.toggle("anim", !!anim); track.style.setProperty("--d", ACH_NPG - 1 - cur); track.style.setProperty("--drag", drag + "px"); }
+  function hideDetail() { const d = ov.querySelector(".ach3d-detail.show"); if (d) d.classList.remove("show"); }
+  function chrome() {
+    dotsEl.querySelectorAll(".ach-pgdot").forEach(d => d.classList.toggle("on", +d.dataset.pg === cur));
+    navEl.innerHTML = `<button class="ach-pgbtn" data-go="down" ${cur === 0 ? "disabled" : ""} aria-label="${ttT("回下方")}"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+      <span class="ach-pgnav-t">${ttT(ACH_PG_TITLE[cur])}</span>
+      <button class="ach-pgbtn up" data-go="up" ${cur === ACH_NPG - 1 ? "disabled" : ""} aria-label="${ttT("繼續往上")}">${ttT("繼續往上")} ${_ACH_UP}</button>`;
+    jump.hidden = (cur === herePage);
+    ov.dataset.pg = String(cur);
+    if (cur === ACH_NPG - 1 && allGot && !cheered) { cheered = true; _achCelebrate(root, sky.night); }
   }
-  function go(p, dir) { p = Math.max(0, Math.min(ACH_NPG - 1, p)); if (p === cur || animating) return; cur = p; render(dir); }
-  dotsEl.addEventListener("click", e => { const d = e.target.closest(".ach-pgdot"); if (d) go(+d.dataset.pg, +d.dataset.pg > cur ? "up" : "down"); });
-  navEl.addEventListener("click", e => { const b = e.target.closest(".ach-pgbtn"); if (!b) return; go(b.dataset.go === "up" ? cur + 1 : cur - 1, b.dataset.go === "up" ? "up" : "down"); });
-  // 上下滑動切頁（往上滑＝往上爬）
-  let sy = 0, sx = 0, tracking = false;
-  root.addEventListener("pointerdown", e => { sy = e.clientY; sx = e.clientX; tracking = true; });
-  root.addEventListener("pointerup", e => {
-    if (!tracking) return; tracking = false;
-    const dy = e.clientY - sy, dx = e.clientX - sx;
-    if (Math.abs(dy) > 46 && Math.abs(dy) > Math.abs(dx)) go(dy < 0 ? cur + 1 : cur - 1, dy < 0 ? "up" : "down");
+  function go(t) { t = Math.max(0, Math.min(ACH_NPG - 1, t)); drag = 0; if (t === cur) { place(true); return; } cur = t; hideDetail(); place(true); chrome(); }
+  // 拖動跟手（下拉＝往上爬，露出上方更高的一段；上滑＝下山）
+  root.addEventListener("pointerdown", e => { if (e.target.closest(".ach-jump")) return; dragging = true; startY = e.clientY; drag = 0; moved = 0; track.classList.remove("anim"); });
+  root.addEventListener("pointermove", e => {
+    if (!dragging) return; drag = e.clientY - startY; moved = Math.max(moved, Math.abs(drag));
+    if ((cur === ACH_NPG - 1 && drag > 0) || (cur === 0 && drag < 0)) drag *= 0.3;   // 兩端橡皮筋阻尼
+    if (moved > 6) hideDetail();
+    track.style.setProperty("--drag", drag + "px");
   });
-  render();
+  function endDrag() {
+    if (!dragging) return; dragging = false;
+    const th = Math.min(96, (root.clientHeight || 600) * 0.2);
+    go(drag > th ? cur + 1 : drag < -th ? cur - 1 : cur);
+  }
+  root.addEventListener("pointerup", endDrag);
+  root.addEventListener("pointercancel", endDrag);
+  // 滾輪／鍵盤（往上＝爬升）
+  let wheelAt = 0;
+  root.addEventListener("wheel", e => { if (e.timeStamp - wheelAt < 480 || Math.abs(e.deltaY) < 12) return; wheelAt = e.timeStamp; go(e.deltaY < 0 ? cur + 1 : cur - 1); }, { passive: true });
+  ov.addEventListener("keydown", e => { if (e.key === "ArrowUp") { e.preventDefault(); go(cur + 1); } else if (e.key === "ArrowDown") { e.preventDefault(); go(cur - 1); } });
+  dotsEl.addEventListener("click", e => { const d = e.target.closest(".ach-pgdot"); if (d) go(+d.dataset.pg); });
+  navEl.addEventListener("click", e => { const b = e.target.closest(".ach-pgbtn"); if (b) go(b.dataset.go === "up" ? cur + 1 : cur - 1); });
+  jump.addEventListener("click", () => go(herePage));
+  // 定位山腳＋播開場動畫（從山腳往上看）
+  place(false); chrome();
+  if (page0El) { page0El.classList.add("intro"); setTimeout(() => page0El.classList.remove("intro"), 1100); }
+}
+// 全數達成登頂：撒彩帶慶祝
+function _achCelebrate(root, night) {
+  if (!root || root.querySelector(".ach-cheer")) return;
+  const cols = ["#e8607a", "#f2c14e", "#4a7ec8", "#3f9d5c", "#8a5cc0", "#ffffff"];
+  const wrap = document.createElement("div"); wrap.className = "ach-cheer";
+  let s = "";
+  for (let i = 0; i < 28; i++) s += `<span style="left:${(i * 53 % 100)}%;background:${cols[i % cols.length]};animation-delay:${(i % 7) * 0.09}s;transform:rotate(${i * 40}deg)"></span>`;
+  wrap.innerHTML = s;
+  root.appendChild(wrap);
+  setTimeout(() => wrap.remove(), 2200);
 }
 // DEBUG 解鎖/重置成就後，若成就頁開著也一起重建
 function refreshAchTree() { const ov = document.querySelector('[data-ov="achtree"]'); if (ov) _achInitClimb(ov); }

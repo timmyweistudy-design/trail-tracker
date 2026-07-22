@@ -1873,10 +1873,11 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 .ach3d-cloud::before { width: 60%; height: 150%; left: 12%; top: -55%; }
 .ach3d-cloud::after { width: 45%; height: 130%; right: 14%; top: -38%; }
 @keyframes ach3dDrift { to { transform: translateX(calc(100vw + 260px)); } }
-/* 五段攀登分頁：一頁一段海拔 */
-.ach-pager { position: absolute; left: 0; right: 0; top: 0; bottom: 58px; z-index: 1; overflow: hidden; touch-action: pan-y; }
-.ach-page { position: absolute; inset: 0; will-change: transform; backface-visibility: hidden; }
-.ach-page.sliding { transition: transform .5s cubic-bezier(.33,0,.2,1); }
+/* 五段攀登分頁：膠捲軌道（五頁預建堆疊、拖動只做 transform） */
+.ach-pager { position: absolute; left: 0; right: 0; top: 0; bottom: 58px; z-index: 1; overflow: hidden; touch-action: none; }
+.ach-track { position: absolute; left: 0; right: 0; top: 0; height: 500%; will-change: transform; transform: translateY(calc(var(--d, 4) * -20% + var(--drag, 0px))); }
+.ach-track.anim { transition: transform .42s cubic-bezier(.33, 0, .2, 1); }
+.ach-page { position: relative; width: 100%; height: 20%; overflow: hidden; }
 /* 開場：從山腳往上看，鏡頭沿步道上升定格 */
 .ach-page.intro { animation: achIntroUp .95s cubic-bezier(.2,.7,.2,1) both; transform-origin: 50% 100%; }
 @keyframes achIntroUp { 0% { opacity: 0; transform: translateY(13%) scale(1.1); } 55% { opacity: 1; } 100% { opacity: 1; transform: none; } }
@@ -1884,7 +1885,16 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 .ach-page.intro .ach3d-mk { animation: achMkRise .55s ease both; animation-delay: calc(var(--i, 0) * .09s + .34s); }
 @keyframes achMkRise { from { opacity: 0; } to { opacity: 1; } }
 .ach-page-mtn { position: absolute; inset: 0; width: 100%; height: 100%; }
-@media (prefers-reduced-motion: reduce) { .ach-page.sliding { transition-duration: .01ms; } .ach-page.intro, .ach-page.intro .ach3d-mk { animation: none; } }
+/* 跳到你在這 */
+.ach-jump { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 10; display: inline-flex; align-items: center; gap: 5px; border: none; background: rgba(20,30,20,.6); color: #fff; font-family: var(--serif); font-weight: 700; font-size: calc(12px * var(--fs, 1)); padding: 7px 15px; border-radius: 999px; box-shadow: 0 3px 10px rgba(0,0,0,.3); backdrop-filter: blur(3px); cursor: pointer; animation: achJumpIn .4s ease; }
+.ach-jump[hidden] { display: none; }
+.ach-jump .ic { width: 15px; height: 15px; }
+@keyframes achJumpIn { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translateX(-50%); } }
+/* 登頂慶祝彩帶 */
+.ach-cheer { position: absolute; inset: 0; z-index: 12; pointer-events: none; overflow: hidden; }
+.ach-cheer span { position: absolute; top: -20px; width: 9px; height: 14px; border-radius: 2px; opacity: .95; animation: achFall 1.9s cubic-bezier(.3,.5,.5,1) forwards; }
+@keyframes achFall { 0% { transform: translateY(-20px) rotate(0); opacity: 1; } 100% { transform: translateY(720px) rotate(540deg); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .ach-track.anim { transition-duration: .01ms; } .ach-page.intro, .ach-page.intro .ach3d-mk, .ach-cheer span, .ach-jump { animation: none; } }
 /* 章節標籤（本段海拔） */
 .ach-pgtag { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 6; display: flex; align-items: center; gap: 6px; font-family: var(--serif); font-weight: 800; font-size: calc(16px * var(--fs, 1)); letter-spacing: 3px; color: #fff; background: rgba(30,42,28,.42); padding: 5px 16px; border-radius: 999px; backdrop-filter: blur(3px); text-shadow: 0 1px 4px rgba(0,0,0,.4); }
 .ach-pgtag .ic { width: 19px; height: 19px; }
@@ -1898,8 +1908,11 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 .ach-peak { z-index: 6; }
 /* 右側海拔圓點 */
 .ach-pgdots { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); z-index: 8; display: flex; flex-direction: column; gap: 10px; }
-.ach-pgdot { width: 11px; height: 11px; border-radius: 50%; border: 2px solid rgba(255,255,255,.85); background: transparent; padding: 0; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .2s; }
+.ach-pgdot { position: relative; width: 11px; height: 11px; border-radius: 50%; border: 2px solid rgba(255,255,255,.85); background: transparent; padding: 0; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .2s; }
 .ach-pgdot.on { background: #fff; transform: scale(1.35); }
+/* 你目前進度那頁的點：外圈光暈脈動，一眼知道爬到哪 */
+.ach-pgdot.ishere { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 55%, transparent), 0 1px 3px rgba(0,0,0,.3); animation: achDotHere 1.9s ease-in-out infinite; }
+@keyframes achDotHere { 0%, 100% { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent), 0 1px 3px rgba(0,0,0,.3); } 50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 30%, transparent), 0 1px 3px rgba(0,0,0,.3); } }
 /* 頁尾導覽 */
 .ach-pgnav { position: absolute; left: 0; right: 0; bottom: 0; height: 58px; z-index: 9; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 24px; background: var(--surface); border-top: 1px solid var(--line-soft); }
 .ach-pgnav-t { font-family: var(--serif); font-weight: 700; font-size: calc(15px * var(--fs, 1)); color: var(--ink); letter-spacing: 2px; }
@@ -1920,8 +1933,11 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 .ach3d-mk.locked .ach-dot { opacity: .96; }
 .ach3d-mk .ach-dot-in { width: 36px; height: 36px; }
 .ach3d-mk .ach-dot-in .ic { width: 19px; height: 19px; }
-.ach3d-mk.here { transform: translate(-50%, -50%) scale(1.14); }
-.ach3d-mk.here .ach-dot { box-shadow: 0 0 0 4px var(--surface), 0 0 0 6px var(--c), 0 0 16px var(--c); }
+.ach3d-mk.got .ach-dot { box-shadow: 0 0 0 2px color-mix(in srgb, var(--c) 32%, transparent), 0 2px 8px rgba(0,0,0,.16); }
+.ach3d-mk.here { transform: translate(-50%, -50%) scale(1.14); z-index: 2; }
+.ach3d-mk.here .ach-dot { animation: achHerePulse 1.9s ease-in-out infinite; }
+@keyframes achHerePulse { 0%, 100% { box-shadow: 0 0 0 4px var(--surface), 0 0 0 6px var(--c), 0 0 10px var(--c); } 50% { box-shadow: 0 0 0 4px var(--surface), 0 0 0 6px var(--c), 0 0 22px var(--c); } }
+@media (prefers-reduced-motion: reduce) { .ach3d-mk.here .ach-dot, .ach-pgdot.ishere { animation: none; } }
 .ach3d-hint { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 9; display: flex; align-items: center; gap: 5px; background: rgba(20,30,20,.55); color: #fff; font-size: calc(12px * var(--fs, 1)); font-weight: 600; padding: 6px 14px; border-radius: 999px; backdrop-filter: blur(3px); pointer-events: none; animation: achHintFade 4s ease-in-out; }
 .ach3d-hint .ic { width: 15px; height: 15px; }
 @keyframes achHintFade { 0%, 70% { opacity: 1; } 100% { opacity: .55; } }
