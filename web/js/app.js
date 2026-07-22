@@ -2523,14 +2523,32 @@ function speedHtml(rec) {
     <div class="spd-cmp">${bar(cur, "cur")}${usual > 0 ? bar(usual, "usual") : ""}</div>
     ${line ? `<div class="spd-line">${line}</div>` : ""}`;
 }
+// #18 Premium 高峰時刻轉換：只在「真的破紀錄」且非會員時，7 天最多推一次（節制、不洗版）
+function _maybePremiumUpsell(bk) {
+  try {
+    if (!bk || !bk.length) return "";
+    if (typeof Premium === "undefined" || Premium.isOn()) return "";
+    const last = +(localStorage.getItem("tt_upsell_last") || 0);
+    if (Date.now() - last < 7 * 864e5) return "";
+    localStorage.setItem("tt_upsell_last", String(Date.now()));
+    return `<div class="track-upsell" id="trackUpsell">
+      <button class="tu-x" id="tuDismiss" aria-label="${ttT("關閉")}">✕</button>
+      <div class="tu-h">✨ ${ttT("這一刻，值得更多")}</div>
+      <div class="tu-b">${ttT("升級 PRO：進階分析・無限離線地圖・專屬主題・3D 地形")}</div>
+      <button class="btn primary tu-go" id="tuUpgrade">${ttT("升級 PRO")}</button>
+    </div>`;
+  } catch (e) { return ""; }
+}
 function openTrackReview(rec, isNew) {
   if (!rec) return;
   _shotUrls.forEach(u => URL.revokeObjectURL(u)); _shotUrls = [];   // 回收上一份結算的照片 URL
   const km = rec.distanceKm || 0, t3 = rec.distance3DKm;
+  const bk = (isNew && isFootRec(rec)) ? personalBestBreaks(rec) : [];   // 破紀錄清單（慶祝＋#18 升級卡共用）
   $("#trackBody").innerHTML = `
     <h2>${rec.trailName || "自由路線"}</h2>
     <div class="track-date">${new Date(rec.date).toLocaleString(ttLocale())}</div>
-    ${(() => { const bk = (isNew && isFootRec(rec)) ? personalBestBreaks(rec) : []; return bk.length ? `<div class="pb-burst">${bk.map(b => `<span class="pb-badge">${b.e} <b>${b.label === "首次健行紀錄！" ? ttT(b.label) : `${ttT("破紀錄")}·${ttT(b.label)}`}</b></span>`).join("")}</div>` : ""; })()}
+    ${bk.length ? `<div class="pb-burst">${bk.map(b => `<span class="pb-badge">${b.e} <b>${b.label === "首次健行紀錄！" ? ttT(b.label) : `${ttT("破紀錄")}·${ttT(b.label)}`}</b></span>`).join("")}</div>` : ""}
+    ${_maybePremiumUpsell(bk)}
     <div class="kv">
       <div class="item"><div class="l">距離</div><div class="v">${km.toFixed(2)} km</div></div>
       <div class="item"><div class="l">時間</div><div class="v">${fmtTime(rec.elapsedMs)}</div></div>
@@ -2556,6 +2574,7 @@ function openTrackReview(rec, isNew) {
   $("#trackMask").classList.add("show");
   $("#trackSheet").classList.add("show");
   $("#trackSheet").scrollTop = 0;
+  { const tu = $("#tuUpgrade"); if (tu) tu.addEventListener("click", () => { if (typeof Premium !== "undefined") Premium.openUpgrade(); }); const tx = $("#tuDismiss"); if (tx) tx.addEventListener("click", () => { const u = $("#trackUpsell"); if (u) u.remove(); }); }
   setTimeout(() => {
     if (!trackMap) {
       trackMap = L.map("trackMap", { zoomControl: false });
