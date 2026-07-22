@@ -711,8 +711,8 @@ function _achInitClimb(ov) {
     const p = cur, next = buildPage(p);
     if (dir && curEl) {   // 過場：新頁滑入、舊頁滑出（往上滑＝下一頁從下方進、舊頁往上退）
       animating = true;
-      const inFrom = dir === "up" ? "translateY(100%)" : "translateY(-100%)";
-      const outTo = dir === "up" ? "translateY(-100%)" : "translateY(100%)";
+      const inFrom = dir === "up" ? "translateY(-100%)" : "translateY(100%)";   // 往上爬：新頁從上方下滑、舊頁往下退
+      const outTo = dir === "up" ? "translateY(100%)" : "translateY(-100%)";
       next.style.transform = inFrom;
       root.appendChild(next);
       void next.offsetWidth;                 // 逼一次 reflow 讓起點生效
