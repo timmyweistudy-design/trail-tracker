@@ -4309,7 +4309,6 @@ window.ttDebug = (() => {
         const d = new Date(); d.setDate(d.getDate() - i);
         if (i === 1) d.setHours(5, 0, 0, 0);                // 清晨5點 → 早起鳥＋破曉行者
         else if (i === 2) d.setHours(20, 0, 0, 0);          // 夜間 → 夜行者
-        else if (i === 3) d.setHours(23, 30, 0, 0);         // 深夜 → 午夜山行(隱藏)
         else if (i === 4) d.setHours(3, 0, 0, 0);           // 凌晨3點 → 凌晨出擊(隱藏)
         else d.setHours(12, 0, 0, 0);
         const km = i === 0 ? 42 : 6;                        // 一筆 42km → 超馬/半馬/馬拉松；總里程 ≈ 1236km → 千里健行
@@ -4326,6 +4325,10 @@ window.ttDebug = (() => {
         id: "dbg-ach-season-" + k, date: new Date(new Date().getFullYear() - 2, mo, 15, 12, 0, 0).toISOString(), dbg: true, note: "成就測試",
         distanceKm: 6, distance3DKm: 6, steps: 8000, kcal: 360, elapsedMs: 4320000, ascent: 60, descent: 50, track: [{ lat: 23.57, lon: 119.56, t: 0 }],   // 澎湖座標 → 離島山旅(隱藏)
       }));
+      recs.push({   // 閏日 2/29/2024 → 四年一會(傳說隱藏)
+        id: "dbg-ach-leap", date: new Date(2024, 1, 29, 12, 0, 0).toISOString(), dbg: true, note: "成就測試",
+        distanceKm: 6, distance3DKm: 6, steps: 8000, kcal: 360, elapsedMs: 4320000, ascent: 60, descent: 50, track: [{ lat: 24, lon: 121, t: 0 }],
+      });
       const kept = Store.getRecords().filter(r => !String(r.id).startsWith("dbg-ach-"));
       Store.setRecords(recs.concat(kept));
       // 縣市探索：每個縣市各挑一條完成 → counties 拉到 20+（環島達人）

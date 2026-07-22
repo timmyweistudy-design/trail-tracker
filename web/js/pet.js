@@ -303,8 +303,8 @@ const ACH_CAT_OF = {
   "千里健行": "dist", "萬米爬升": "climb", "環島達人": "explore", "超馬腳力": "challenge", "兩百次山旅": "trips",
   // B 批新增
   "破曉行者": "time", "十萬步": "trips", "假日山友": "time", "兩百K": "dist",
-  "走遍五縣": "explore", "午夜山行": "time", "拔升五百": "climb", "四季行者": "time",
-  "凌晨出擊": "time", "離島山旅": "explore",
+  "走遍五縣": "explore", "拔升五百": "climb", "四季行者": "time",
+  "凌晨出擊": "time", "離島山旅": "explore", "四年一會": "time",
 };
 // 成就徽章：成就樹，強調長期累積（拿掉一鍵可解的收藏類）
 // petBadges 快取：資料未變就重用（一次開頁會被叫多次）；簽章涵蓋紀錄/終身/解鎖/完成數
@@ -341,7 +341,7 @@ function petBadges() {
   const savedAsc = +(localStorage.getItem("tt_ach_maxasc") || 0);
   if (maxAsc > savedAsc) { try { localStorage.setItem("tt_ach_maxasc", String(maxAsc)); } catch (e) { /* */ } } else maxAsc = savedAsc;
   const dawn = hrs.some(h => h < 6);                       // 清晨 6 點前
-  const midnight = hrs.some(h => h >= 23 || h < 1);        // 深夜 23–1 點（隱藏彩蛋）
+  const leap = recs.some(r => { const d = new Date(r.date); return d.getMonth() === 1 && d.getDate() === 29; });   // 閏日 2/29（傳說隱藏彩蛋）
   const weekendN = recs.filter(r => { const d = new Date(r.date).getDay(); return d === 0 || d === 6; }).length;
   const seasonOf = m => [11, 0, 1].includes(m) ? 0 : m <= 4 ? 1 : m <= 7 ? 2 : 3;   // 冬/春/夏/秋
   const seasons = new Set(recs.map(r => seasonOf(new Date(r.date).getMonth()))).size;
@@ -351,8 +351,12 @@ function petBadges() {
   let island = localStorage.getItem("tt_ach_island") === "1";
   if (!island) {
     island = doneTrails.some(t => ["澎湖縣", "金門縣", "連江縣"].includes(t.region)) || recs.some(r => (r.track || []).some(p => {
-      const lo = p.lon, la = p.lat; if (typeof lo !== "number") return false;
-      return lo < 119.7 || (lo >= 121.4 && lo <= 121.62 && la >= 21.9 && la <= 22.1) || (lo >= 121.4 && lo <= 121.55 && la >= 22.5 && la <= 22.75) || (lo >= 120.3 && lo <= 120.42 && la >= 22.3 && la <= 22.4);
+      const lo = p.lon, la = p.lat; if (typeof lo !== "number" || typeof la !== "number") return false;
+      return lo < 119.75 ||                                                   // 金門/澎湖
+        (lo >= 119.8 && lo <= 120.6 && la >= 25.9 && la <= 26.4) ||           // 馬祖(連江)
+        (lo >= 121.4 && lo <= 121.62 && la >= 21.9 && la <= 22.1) ||          // 蘭嶼
+        (lo >= 121.4 && lo <= 121.55 && la >= 22.5 && la <= 22.75) ||         // 綠島
+        (lo >= 120.3 && lo <= 120.42 && la >= 22.3 && la <= 22.4);            // 小琉球
     }));
     if (island) try { localStorage.setItem("tt_ach_island", "1"); } catch (e) { /* */ }
   }
@@ -380,7 +384,6 @@ function petBadges() {
     { e: "🧭", n: "走遍三縣", got: counties >= 3, d: "完成 3 個縣市的步道", p: [counties, 3, "縣"], t: 3 },
     { e: "🎽", n: "兩百K", got: km >= 200, d: "總里程 200 km", p: [km, 200, "km"], t: 3 },
     { e: "🌐", n: "走遍五縣", got: counties >= 5, d: "完成 5 個縣市", p: [counties, 5, "縣"], t: 3 },
-    { e: "🦉", n: "午夜山行", got: midnight, d: "深夜 23–1 點出發", t: 3, hidden: true },
     // 縱走
     { e: "🧗", n: "山痴", got: n >= 100, d: "累積 100 次出行", p: [n, 100, "次"], t: 4 },
     { e: "🚀", n: "300K", got: km >= 300, d: "總里程 300 km", p: [km, 300, "km"], t: 4 },
@@ -404,6 +407,7 @@ function petBadges() {
     { e: "🗺️", n: "環島達人", got: counties >= 20, d: "完成 20 個縣市", p: [counties, 20, "縣"], t: 6 },
     { e: "🦿", n: "超馬腳力", got: maxOne >= 42, d: "單次步行 ≥ 42 km", p: [maxOne, 42, "km"], t: 6 },
     { e: "⭐", n: "兩百次山旅", got: n >= 200, d: "累積 200 次出行", p: [n, 200, "次"], t: 6 },
+    { e: "🍀", n: "四年一會", got: leap, d: "在閏日 2/29 記錄一次", t: 6, hidden: true },
   ];
   // 成就一旦解鎖就永久保留：舊紀錄被容量保護裁掉（最多存 100 筆）時，重算會低於門檻，
   // 所以把解鎖過的名字存進 tt_badges_got，顯示時取聯集。
