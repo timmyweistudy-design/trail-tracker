@@ -2732,7 +2732,7 @@ $("#closeTrackBtn").addEventListener("click", closeTrackReview);
 
 let guideLine = null, selectedTrailGeo = null, routeRefLayer = null, selectedTrailId = null;
 // 記錄頁沿線地標：選定步道的地標＋HUD（下一個地標／剩多遠／抵達）
-let selectedTrailWps = [], recWpLayer = null, _wpReached = null, _wpRefLine = null, _wpPrevAlong = null, _wpDir = 1;
+let selectedTrailWps = [], recWpLayer = null, _wpReached = null, _wpRefLine = null, _wpPrevAlong = null, _wpDir = 1, _wpAnnounced = new Set();
 function _segProj(p, a, b) {   // p/a/b=[lat,lon]；回傳 {d公尺, t段內比例}
   const C = 6371000, latref = a[0] * Math.PI / 180;
   const mx = lon => lon * Math.PI / 180 * C * Math.cos(latref), my = lat => lat * Math.PI / 180 * C;
@@ -2764,7 +2764,7 @@ function updateWpHud(lat, lon) {
   let hit = false;
   for (const w of selectedTrailWps) {
     if (_wpReached.has(w.name)) continue;
-    if (haversine({ lat, lon }, { lat: w.lat, lon: w.lon }) <= 40) { _wpReached.add(w.name); hit = true; if (typeof toast === "function") toast(ttT("抵達") + " " + w.name); }
+    if (haversine({ lat, lon }, { lat: w.lat, lon: w.lon }) <= 40) { _wpReached.add(w.name); hit = true; if (typeof toast === "function") toast(ttT("抵達") + " " + w.name); if (localStorage.getItem("tt_voice") === "1" && !(typeof sim === "function" && sim())) _ttsSpeak(ttT("抵達") + " " + w.name); }
   }
   if (hit && recWpLayer) drawWaypoints(recWpLayer, selectedTrailWps, _wpReached);
   // 行進方向：里程增加=正向、減少=反向（從哪一頭走都對）
@@ -2775,6 +2775,14 @@ function updateWpHud(lat, lon) {
     .sort((a, b) => _wpDir > 0 ? a.distM - b.distM : b.distM - a.distM)[0];
   if (!ahead) { hud.innerHTML = ""; return; }
   const rem = Math.abs(ahead.distM - along) / 1000;
+  // 接近地標語音：每個地標在 250 公尺內播一次「前方 N 公尺，○○」
+  if (localStorage.getItem("tt_voice") === "1" && !(typeof sim === "function" && sim())) {
+    const rm = rem * 1000;
+    if (rm > 45 && rm <= 250 && !_wpAnnounced.has(ahead.name)) {
+      _wpAnnounced.add(ahead.name);
+      _ttsSpeak(ttT("前方") + " " + (Math.round(rm / 50) * 50) + " " + ttT("公尺") + "，" + (ahead.name || ""));
+    }
+  }
   hud.innerHTML = wpIconSvg(ahead.type)
     + `<span class="h-txt">${ttT("下一個")}：<b>${(ahead.name || "").replace(/[<>&]/g, "")}</b></span>`
     + `<span class="h-rem">${rem < 0.08 ? ttT("即將抵達") : ttT("剩") + " " + rem.toFixed(1) + " km"}</span>`;
@@ -3018,6 +3026,35 @@ let _liveElev = null, _liveElevAt = 0, _liveElevLen = 0, _liveElevBusy = false, 
 let _gpsWeakHits = 0, _gpsWarnAt = 0;
 // （記錄頁閒置天氣提示「今天可能有雨」已依使用者要求移除；行前天氣改看已選步道的天氣卡 #preHike）
 // 每公里語音播報：走滿整公里時念出里程與當前時速（opt-in，預設關）。test=true 用於開關時的試聽。
+// ── 語音播報引擎：挑符合語言的 voice、語速略慢音量全開、兼容 Chrome 的 cancel→speak bug ──
+let _ttsVoice = null, _ttsVoiceLang = null, _lastVoiceState = "idle";
+function _pickVoice(lang) {
+  const vs = (window.speechSynthesis && window.speechSynthesis.getVoices()) || [];
+  if (!vs.length) return null;   // getVoices 首次常是空的（非同步）→ 交給 onvoiceschanged 之後重挑
+  const want = (lang || "").toLowerCase().replace("_", "-"), base = want.split("-")[0];
+  return vs.find(v => (v.lang || "").toLowerCase().replace("_", "-") === want)         // 完全符合
+      || vs.find(v => (v.lang || "").toLowerCase().replace("_", "-").startsWith(base))  // 同語系
+      || vs.find(v => v.default) || vs[0];
+}
+if ("speechSynthesis" in window) { try { window.speechSynthesis.onvoiceschanged = () => { _ttsVoice = null; _ttsVoiceLang = null; }; } catch (_) { /* */ } }
+function _ttsSpeak(txt) {
+  if (!("speechSynthesis" in window) || !txt) return;
+  try {
+    const ss = window.speechSynthesis;
+    const lang = (typeof ttTrTarget === "function") ? ttTrTarget() : "zh-TW";
+    if (_ttsVoiceLang !== lang) { _ttsVoice = _pickVoice(lang); _ttsVoiceLang = lang; }
+    const u = new SpeechSynthesisUtterance(txt);
+    u.lang = lang; if (_ttsVoice) u.voice = _ttsVoice;
+    u.rate = 0.95; u.pitch = 1; u.volume = 1;   // 戶外聽得清楚：語速略慢、音量全開
+    ss.cancel();
+    setTimeout(() => { try { ss.speak(u); ss.resume(); } catch (_) { } }, 45);   // cancel 後隔一個 tick 再 speak，避開 Chrome 偶爾不發聲
+  } catch (_) { /* 部分裝置在無使用者互動下會拋錯 */ }
+}
+function _spokenDuration(ms) {
+  const min = Math.round((ms || 0) / 60000), h = Math.floor(min / 60), m = min % 60;
+  if (h > 0) return h + " " + ttT("小時") + (m ? " " + m + " " + ttT("分") : "");
+  return Math.max(0, m) + " " + ttT("分");
+}
 function speakMilestone(km, s, test) {
   if (!test && localStorage.getItem("tt_voice") !== "1") return;
   if (!("speechSynthesis" in window)) return;
@@ -3025,15 +3062,11 @@ function speakMilestone(km, s, test) {
   if (test) txt = ttT("語音播報已開啟");
   else {
     txt = km + " " + ttT("公里");
-    if (s && s.instKmh != null && isFinite(s.instKmh) && s.instKmh > 0)
-      txt += "，" + ttT("時速") + " " + s.instKmh.toFixed(1) + " " + ttT("公里");
+    const asc = (_liveElev && s && (s.ascent || 0) < _liveElev.ascent) ? _liveElev.ascent : (s && s.ascent);   // 取較準的爬升（GPS 為 0 時用 DEM 校正值）
+    if (asc != null && Math.round(asc) > 0) txt += "，" + ttT("爬升") + " " + Math.round(asc) + " " + ttT("公尺");
+    if (s && s.elapsedMs) txt += "，" + ttT("用時") + " " + _spokenDuration(s.elapsedMs);
   }
-  try {
-    const u = new SpeechSynthesisUtterance(txt);
-    u.lang = (typeof ttTrTarget === "function") ? ttTrTarget() : "zh-TW";
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(u);
-  } catch (_) { /* 部分裝置在無使用者互動下會拋錯，忽略即可 */ }
+  _ttsSpeak(txt);
 }
 // 依定位精度更新「GPS 訊號」小燈號（綠=好 / 黃=普通 / 紅=弱），並在持續弱訊號時提醒一次
 function updateGpsSig(s) {
@@ -3053,6 +3086,15 @@ function updateGpsSig(s) {
 }
 Recorder.onUpdate(s => {
   recSnap = s;
+  // 語音：起訖／暫停狀態播報（跟里程播報同一個開關；模擬預覽不播）
+  if (s.state !== _lastVoiceState) {
+    const prev = _lastVoiceState; _lastVoiceState = s.state;
+    if (localStorage.getItem("tt_voice") === "1" && !(typeof sim === "function" && sim())) {
+      if (prev === "idle" && s.state === "running") _ttsSpeak(ttT("開始記錄"));
+      else if (s.state === "paused") _ttsSpeak(ttT("已暫停"));
+      else if (prev === "paused" && s.state === "running") _ttsSpeak(ttT("繼續記錄"));
+    }
+  }
   syncRecButtons(s.state);   // 按鈕依 Recorder 實際狀態校正：startRecordingUI 中途若拋例外，這裡會補上暫停/結束鈕
   updateGpsSig(s);
   // 沿線地標 HUD：用最新軌跡點算「下一個地標／剩多遠」＋抵達提示
@@ -3200,7 +3242,12 @@ $("#lowPowerToggle").addEventListener("change", e => {
   chk.checked = localStorage.getItem("tt_voice") === "1";
   chk.addEventListener("change", e => {
     localStorage.setItem("tt_voice", e.target.checked ? "1" : "0");
-    if (e.target.checked) { try { speakMilestone(0, recSnap, true); } catch (_) { } toast(ttT("已開每公里語音播報")); }
+    if (e.target.checked) {
+      try { speakMilestone(0, recSnap, true); } catch (_) { }
+      toast(ttT("已開每公里語音播報"));
+      // 螢幕關閉時 Web 語音常會停（尤其 iOS）→ 首次開啟提醒一次，建議搭配「螢幕保持喚醒」
+      if (localStorage.getItem("tt_voice_hinted") !== "1") { localStorage.setItem("tt_voice_hinted", "1"); setTimeout(() => toast(ttT("螢幕關閉時可能不會播報，建議搭配螢幕保持喚醒")), 2600); }
+    }
     else { try { window.speechSynthesis.cancel(); } catch (_) { } toast(ttT("已關每公里語音播報")); }
   });
 })();
@@ -3514,6 +3561,7 @@ async function finishRecording(autoVehicle) {
   document.body.classList.remove("rec-running");   // A6：結束→寵物停止走路
   setNavUp(false); _navUserOff = false;   // 結束記錄→退出導航視角、下趟恢復預設導航
   recPreloaded = false; lastKmMilestone = 0; _berryLastKm = null;   // 下次記錄重新預載/里程碑/果實錨點
+  _lastVoiceState = "idle"; _wpAnnounced.clear();   // 語音狀態/地標播報重置，下趟重新從「開始記錄」起算
   $("#btnStart").textContent = "▶ 開始";
   $("#btnStart").style.display = "block";
   $("#btnPause").style.display = "none";
@@ -3536,6 +3584,15 @@ async function finishRecording(autoVehicle) {
         $("#recStatus").textContent = "海拔校正中…";
         const corr = await Promise.race([Elevation.correct(rec.track), new Promise(r => setTimeout(() => r(null), 15000))]);
         if (corr) { rec.ascent = corr.ascent; rec.descent = corr.descent; rec.altHigh = corr.altHigh; rec.altLow = corr.altLow; rec.altCorrected = true; }
+      }
+    });
+    // 語音：完成播報（海拔已校正→爬升數字準）——全程／爬升／用時
+    safeRun("voice-finish", () => {
+      if (localStorage.getItem("tt_voice") === "1" && !rec.sim && !rec.vehicle) {
+        let t = ttT("完成") + "！" + (rec.distanceKm != null ? rec.distanceKm.toFixed(2) + " " + ttT("公里") : "");
+        if (rec.ascent) t += "，" + ttT("爬升") + " " + Math.round(rec.ascent) + " " + ttT("公尺");
+        if (rec.elapsedMs) t += "，" + ttT("用時") + " " + _spokenDuration(rec.elapsedMs);
+        _ttsSpeak(t);
       }
     });
     // #11 軌跡簡化：海拔校正後、存檔前用 Douglas-Peucker 抽掉冗餘點（4m 內），省儲存又保形狀
