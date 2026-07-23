@@ -184,7 +184,7 @@ const Store = (() => {
     "tt_pet_fed_t", "tt_pet_feedkm",
     "tt_quest_claim", "tt_quest_hi", "tt_badges_got", "tt_badges_seen", "tt_badges_date", "tt_ach_maxkm", "tt_ach_maxasc", "tt_ach_island", "tt_life",
     "tt_theme", "tt_accent", "tt_palette", "tt_pro_color", "tt_pro_frame",
-    "tt_presets", "tt_default_vis", "tt_wakelock", "tt_voice",
+    "tt_presets", "tt_default_vis", "tt_wakelock",
   ];
   function exportAll() {
     const pet = {};

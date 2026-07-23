@@ -131,9 +131,8 @@ const I18n = (() => {
     "GPX 匯入 / 匯出": "GPX import / export",
     // 生態區塊（物種名維持中文，見 scripts/i18n-ignore.json）
     "生態": "Ecology",
-    "每公里語音播報": "Per-km voice cues", "時速": "Speed", "語音播報已開啟": "Voice cues on", "已開每公里語音播報": "Voice cues on", "已關每公里語音播報": "Voice cues off", "筆": "hikes", "本週": "This week", "更早": "Earlier",
-    "公尺": "m", "用時": "Time", "開始記錄": "Recording started", "繼續記錄": "Recording resumed", "完成": "Done", "前方": "Ahead", "螢幕關閉時可能不會播報，建議搭配螢幕保持喚醒": "Voice may pause when the screen is off; keep the screen on",
-    "升級 PRO": "Upgrade to PRO", "這一刻，值得更多": "This moment deserves more", "升級 PRO：進階分析・無限離線地圖・專屬主題・3D 地形": "PRO: advanced stats, unlimited offline maps, themes & 3D terrain",
+    "時速": "Speed", "筆": "hikes", "本週": "This week", "更早": "Earlier",
+    "公尺": "m", "用時": "Time", "開始記錄": "Recording started", "繼續記錄": "Recording resumed", "完成": "Done", "前方": "Ahead", "升級 PRO": "Upgrade to PRO", "這一刻，值得更多": "This moment deserves more", "升級 PRO：進階分析・無限離線地圖・專屬主題・3D 地形": "PRO: advanced stats, unlimited offline maps, themes & 3D terrain",
     "四年一會": "Once in Four Years", "在閏日 2/29 記錄一次": "Record a hike on Feb 29 (leap day)",
     "拔升五百": "500m Ascent", "單次爬升 ≥ 500 m": "500 m ascent in one hike", "凌晨出擊": "Small Hours Start", "凌晨 2–4 點出發": "Start between 2–4 AM", "離島山旅": "Island Trek", "在離島記錄一次健行": "Record a hike on an outlying island",
     "破曉行者": "Dawn Walker", "十萬步": "100K Steps", "假日山友": "Weekend Warrior", "兩百K": "200K", "走遍五縣": "Five Counties", "午夜山行": "Midnight Hike", "一日千升": "1000m in a Day", "四季行者": "Four Seasons", "清晨 6 點前出發": "Start before 6 AM", "累積 10 萬步": "100,000 steps total", "週末出行 5 次": "5 weekend outings", "總里程 200 km": "200 km total", "完成 5 個縣市": "Complete 5 counties", "深夜 23–1 點出發": "Start between 11 PM–1 AM", "單次爬升 ≥ 1000 m": "1000 m ascent in one hike", "春夏秋冬都走過": "Hike in all four seasons", "神秘": "Secret", "神秘成就，達成後揭曉": "Secret achievement — revealed when unlocked", "季": "seasons",
