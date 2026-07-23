@@ -2214,18 +2214,23 @@ html[data-theme="dark"] .disc-sec, html[data-theme="dark"] .feed-trending-h { co
 .pf-sub-head b { font-family: var(--serif); font-size: calc(16px * var(--fs, 1)); }
 .pf-sub-head b .ic { width: 16px; height: 16px; vertical-align: -2px; margin-right: 5px; }
 .set-group { margin: 14px 0; }
-.set-label { font-weight: 700; font-size: calc(13.5px * var(--fs, 1)); color: var(--ink-soft); margin-bottom: 8px; }
-/* 設定列：長說明文字（例如「別人追蹤我需要我同意（關閉＝任何人可直接追蹤）」）原本沒有 gap，
-   會整個塞滿框、緊貼勾選框。給文字留換行空間、勾選框不被壓縮，並把字級降到與其他設定一致。 */
+/* ── 社群「隱私與設定」重新設計：每個 set-group 是一張「標題卡」，列與列用細分隔線隔開。
+   原本是「卡中又塞一排小卡」＋外層 overflow:hidden → 又擠又把邊角字截掉；改成單層卡＋內距＋分隔線。 */
+.pf .set-group { padding: 3px 16px 11px; overflow: visible; }
+.pf .set-group:first-of-type { margin-top: 8px; }
+.set-label { font-family: var(--serif); font-weight: 700; font-size: calc(12.5px * var(--fs, 1)); color: var(--ink-soft); letter-spacing: .3px; margin: 12px 0 2px; }
+/* 設定列：長說明文字可自由換行、控制項固定不被壓縮也不被截；列間細線分隔 */
 .set-row {
-  display: flex; justify-content: space-between; align-items: center; gap: 12px;
-  padding: 12px 13px; background: var(--surface-2); border-radius: var(--r-sm); margin-bottom: 7px;
-  font-size: calc(13.5px * var(--fs, 1)); line-height: 1.45; cursor: pointer;
+  display: flex; justify-content: space-between; align-items: center; gap: 16px;
+  padding: 14px 0; border-top: 1px solid var(--line-soft); background: none;
+  font-size: calc(13.5px * var(--fs, 1)); line-height: 1.5; cursor: pointer; overflow-wrap: anywhere;
 }
-.set-row > span { flex: 1 1 auto; min-width: 0; }                      /* 文字可換行、不擠壓右側 */
-.set-row input { flex: 0 0 auto; width: 20px; height: 20px; accent-color: var(--brand-mid); }
-.set-empty { color: var(--ink-faint); font-size: calc(13.5px * var(--fs, 1)); padding: 8px 2px; }
-.btn.st-danger { color: var(--danger); border: 1px solid var(--danger); background: none; width: auto; padding: 10px 16px; }
+.set-row:first-of-type { border-top: none; }
+.set-row > span { flex: 1 1 auto; min-width: 0; }
+.set-row input { flex: 0 0 auto; width: 22px; height: 22px; accent-color: var(--brand-mid); margin: 0; }
+.set-row:active { opacity: .65; }
+.set-empty { color: var(--ink-faint); font-size: calc(13px * var(--fs, 1)); line-height: 1.55; padding: 6px 0 2px; }
+.btn.st-danger { color: var(--danger); border: 1px solid var(--danger); background: none; width: auto; padding: 10px 18px; margin: 10px 0 6px; font-weight: 700; }
 .btn.st-danger:active { background: color-mix(in srgb, var(--danger) 12%, transparent); }
 .set-block-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line-soft); }
 /* 我的檢舉：左側是被檢舉的內容摘要（可長，需截斷），右側是撤回鈕（不縮） */
