@@ -245,8 +245,9 @@ def fetch_osm():
     """全台具名健行步道；含重試、多鏡像與本地快取（Overpass 常因負載暫時限流）。"""
     import subprocess
     import time
-    query = ('[out:json][timeout:90];area["ISO3166-1"="TW"][admin_level=2]->.tw;'
-             '(relation["route"="hiking"]["name"](area.tw););out center tags 1500;')
+    # route=foot 也要收：台灣有一批步道標成 foot（如陽明山橫嶺古道 relation 6000372），只抓 hiking 會漏
+    query = ('[out:json][timeout:180];area["ISO3166-1"="TW"][admin_level=2]->.tw;'
+             '(relation["route"~"^(hiking|foot)$"]["name"](area.tw););out center tags 3000;')
     for attempt in range(3):
         for url in OVERPASS_MIRRORS:
             try:
@@ -447,7 +448,13 @@ ABANDONED = _re.compile(
     r"廢林道|廢棄|已廢|荒廢|拆除|停用|消失的|不復存在"
     # 危險/坍塌/直下/攀岩（描述詞，不含單字「崩」以保留地名如「崩山坑」「崩埤山」）
     r"|坍塌|坍方|崩塌|崩壞|崩坍|崩毀|崩解|斷崖|落石|危險|直下|無法穿越|須改道|請備繩|繩索|攀岩|探勘"
+    # OSM 有人把 name 欄位當警語/狀態寫（實測：「禁止通行」「遊客止步」「步道中斷」「注意火車」）。
+    # 這類對所有來源都要擋，不只 osm_path，故放在此處而非 crawl_paths。
+    r"|禁止|止步|請勿|勿入|勿進|中斷|不通|無法進入|拉繩|峭壁|路跡不明|未整|難行"
 )
+
+
+MIN_TRAIL_KM = 0.2   # 與 crawl_paths.MIN_KM 一致；社群來源低於此長度視為殘片
 
 
 def is_abandoned(name):
@@ -474,6 +481,12 @@ def collect():
               if t.get("length_km") not in (0, 0.0)
               and not (t.get("length_km") is None and not t.get("geometry"))]
     print(f"[clean] 剔除 0m/無資料條目 {before - len(trails)} 條")
+    # 社群來源的殘片：幾何只抓到一小段，長度算出 0.0x km。前端顯示「0.03 公里」是壞資料，
+    # 不如不收。林業署是官方長度，不套用此門檻。
+    before = len(trails)
+    trails = [t for t in trails
+              if t["source"] == "forestry" or (t.get("length_km") or 0) >= MIN_TRAIL_KM]
+    print(f"[clean] 剔除社群來源 <{MIN_TRAIL_KM}km 殘片 {before - len(trails)} 條")
     borrow_geometry(trails)   # 去重前讓 forestry 借同名 osm 的幾何
     return merge(trails)
 

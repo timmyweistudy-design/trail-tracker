@@ -233,6 +233,17 @@ try {
 try { execFileSync(process.execPath, [path.join(__dirname, "tests", "test-fixes.js")], { stdio: "pipe" }); }
 catch (e) { err(`[測試] 單元測試失敗：\n${String(e.stdout || e.message).trim().split("\n").filter(l => l.startsWith("✗")).join("\n")}`); }
 
+// G2. 步道爬蟲過濾規則回歸測試（誤殺真步道／放過非步道都要在這裡擋下）
+try {
+  const out = execFileSync("python3", [path.join(__dirname, "..", "data", "crawl_paths.py"), "--selftest"],
+    { stdio: "pipe" }).toString();
+  if (out.includes("✗")) err(`[爬蟲] 過濾規則測試失敗：\n${out.trim()}`);
+} catch (e) {
+  const msg = String(e.stdout || e.message);
+  // 環境沒有 python3 就跳過（前端 CI 不該因此紅）
+  if (!/ENOENT|not found/.test(msg)) err(`[爬蟲] 過濾規則測試失敗：\n${msg.trim()}`);
+}
+
 if (errors.length) {
   console.error(`✗ 檢查未通過（${errors.length} 個問題）：\n`);
   for (const e of errors) console.error("• " + e + "\n");

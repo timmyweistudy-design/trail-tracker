@@ -137,3 +137,57 @@
 - **(c) 兩版 OSM 交叉比對**：資料夾已有 `osm_paths.json`(way) 與 `osm_routes_geom.json`(relation) 兩份 OSM 幾何（授權乾淨）。`refine_geo.py` 對「明顯過短(<0.65x 官方)」的步道就近彙整兩份片段成候選 → `apply_geo.js` **用執行期同一套 chainSegments 逐條驗收**（只在覆蓋更貼近官方、不超 1.6x 時採用）。結果：78 條候選採用 8 條、駁回 70 條（兩份 OSM 都缺料的補不出來）；整體模擬覆蓋 96.3%→96.7%、零回歸。
 
 **重跑方式**（build_data.py 之後）：`python3 data/refine_geo.py && node data/apply_geo.js`。驗收關卡永遠用 app.js 的 chainSegments，故不會與執行期脫節。
+
+## OSM 覆蓋擴充：放寬 highway/route 條件（2026-07-30）
+
+**病灶**：使用者查「橫嶺古道」（陽明山，士林區永公路）搜不到。診斷後發現不是資料源沒有，是**我們的爬取條件把它濾掉**：
+
+| 元素 | OSM 實際標法 | 舊爬取條件 | 結果 |
+|---|---|---|---|
+| relation 6000372「橫嶺古道」 | `route=foot`, `network=lwn` | `relation[route=hiking]` | 漏 |
+| way 369954916「橫嶺古道」 | `highway=footway`, `surface=dirt`, 0.87km | `way[highway=path]` | 漏 |
+
+不是特例，是系統性缺口。全台具名（名稱含步道/古道/登山/山徑/越嶺）的計數：
+
+| tag | 條數 | 舊條件收嗎 |
+|---|---|---|
+| `highway=path` | 2172 | ✅ |
+| `highway=footway` | **3282** | ❌ |
+| `highway=steps/track/bridleway/cycleway` | **1740** | ❌ |
+| `relation[route=hiking]` | 792 | ✅ |
+| `relation[route=foot]` | **136** | ❌ |
+
+漏掉的比抓到的多。台灣鋪面步道／親山步道常標 `footway`、石階步道標 `steps`、林道標 `track`。
+
+**修法**：
+- `crawl_paths.py`：查詢改成 `path`（不限名稱，維持舊行為）＋ `footway|steps|track|bridleway`（名稱須含步道關鍵字，否則整個城市的人行道都會進來）。
+- `crawl_routes.py`、`build_data.py::fetch_osm()`：`route` 改 `~"^(hiking|foot)$"`。
+- 續傳清單改名 `osm_paths_tiles_v2.json` / `osm_routes_tiles_v2.json` —— 條件變了，舊「已完成」清單不能沿用，否則全部格子被跳過（等於改了沒效果）。
+
+**同時補的品質關卡**（放寬條件會放大既有的垃圾資料問題，實測單格就撈到「禁止通行」「防火巷」「成都路43巷」「2023/07/06市政府終於把列管步道清出來了。」）：
+- `way_ok()`：剔除 `abandoned:/disused:` 前綴（實地已不存在）、`access=private` 且 `foot` 未明示可通行。
+- `REJECT_NAME`：門牌巷弄／警語當名稱／方向片段描述／設施（橋、涼亭、停車場）／備註或日期當名稱／純通用詞單獨成名。
+- `MIN_KM = 0.2`：低於此長度是單段殘片，在 App 上是壞資料（0.0x km 的「步道」）。
+- `norm_name()`：正規化名稱空白（OSM 上有「蜜  蜂  巢  古  道」這種排版，不正規化會被當成另一條）。
+- `build_data.py::ABANDONED` 擴充警語字（禁止/止步/中斷/拉繩/峭壁…），讓 relation 來源也一起擋。
+
+**同時修掉的既有漏抓**：舊 `is_trail()` 對無 `surface`／無 `sac` 的 path 一律不收，把台灣郊山一堆名路線漏掉（單格就漏 35 條以上，含 9.44km 的三方向山路線、7.7km 的五指山系縱走、黃金稜線系列）。改為加一條正面判定 `ROUTE_RE`（路線|路徑|稜|縱走|保線|山腰|O型|環狀|徑|階|線$|道$|路$）。
+
+**重跑方式**：`python3 data/crawl_routes.py && python3 data/crawl_paths.py`，再跑資料管線（見下節），最後 `python3 data/verify_trails.py <備份 trails.json>` 驗收。
+
+### 資料管線完整重跑順序
+```bash
+python3 data/crawl_routes.py            # relation 幾何（hiking + foot）
+python3 data/crawl_paths.py             # way 步道（path + footway/steps/track/bridleway）
+python3 data/build_data.py              # → trails.json / trails-data.js / trails-geo.js
+python3 data/enrich_osm.py              # relation 長度快取
+python3 data/enrich_elevation.py        # 沿線海拔 → 累積爬升（新步道要補）
+python3 data/build_data.py              # 再跑一次，讓爬升進到難度分級
+python3 data/refine_geo.py && node data/apply_geo.js     # 幾何精煉
+python3 data/enrich_waypoints.py && node scripts/apply-detail-fields.mjs   # 沿線地標
+node scripts/pack-trails.mjs && node scripts/shard-geo.mjs                 # 前端打包／分片
+python3 data/verify_trails.py data/trails.json.bak       # 驗收
+node scripts/check.js                   # 專案自檢
+```
+
+**驗收腳本 `data/verify_trails.py`**：跑完管線用它確認三件事 ——(1) 與備份比對列出「舊有新無」的步道（回歸偵測，並區分「符合過濾規則＝有意剔除」與「不明消失＝要人工看」）；(2) 掃名稱抓廢棄林道／警語／巷弄／設施；(3) 必要欄位覆蓋率（長度/難度/地區/座標/介紹全滿，爬升與幾何 ≥90%）。

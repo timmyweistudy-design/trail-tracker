@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-"""route=hiking 關係幾何爬蟲
+"""route=hiking / route=foot 關係幾何爬蟲
 
 route=hiking 關係（osm 來源 ~727 條）原本只抓中心點、沒有路線。
 本程式抓各關係的成員 way 幾何，連接成有序路線、保形簡化，
 輸出 {relation_id: lines}（osm_routes_geom.json），build_data 依 relation id 對應。
+
+⚠️ 台灣有一批步道被標成 route=foot 而非 route=hiking（例如陽明山「橫嶺古道」，
+relation 6000372, network=lwn），只抓 hiking 會整條漏掉，故兩種都收。
 
 特性：區域分塊、多鏡像、remark 偵測重試、續傳。
 用法：python3 crawl_routes.py
@@ -17,7 +20,7 @@ from geomutil import douglas_peucker, chain_ways, polyline_len
 
 HERE = Path(__file__).parent
 OUT = HERE / "osm_routes_geom.json"
-DONE = HERE / "osm_routes_tiles.json"
+DONE = HERE / "osm_routes_tiles_v2.json"   # v2 = 加入 route=foot 後的抓取，舊清單不能沿用
 MIRRORS = [
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
     "https://overpass-api.de/api/interpreter",
@@ -41,7 +44,7 @@ def tiles():
 
 def fetch_tile(bbox):
     s, w, n, e = bbox
-    q = (f'[out:json][timeout:120];relation["route"="hiking"]["name"]({s},{w},{n},{e});out geom;')
+    q = (f'[out:json][timeout:180];relation["route"~"^(hiking|foot)$"]["name"]({s},{w},{n},{e});out geom;')
     for url in MIRRORS:
         try:
             out = subprocess.run(["curl", "-s", "--max-time", "140", "-X", "POST", url,

@@ -11,7 +11,8 @@ from pathlib import Path
 
 HERE = Path(__file__).parent
 TRAILS = HERE / "trails.json"
-CACHE = Path("/tmp/claude-1000/-mnt-c-Users-timmy/a121fff7-158b-4353-86a8-634bb159139f/scratchpad/wpcache")
+# 快取放固定路徑：原本寫死某次工作階段的 scratchpad，該目錄一被清掉就等於沒快取（靜靜全部重查）
+CACHE = Path("/tmp/tt-wpcache")
 CACHE.mkdir(parents=True, exist_ok=True)
 OVERPASS = "https://overpass-api.de/api/interpreter"
 MIN_KM = float(sys.argv[1]) if len(sys.argv) > 1 else 1.5
