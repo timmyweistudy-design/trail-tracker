@@ -536,6 +536,9 @@ def collect():
               if t["source"] == "forestry" or not NOT_TRAIL.search(t["name"] or "")]
     print(f"[clean] 剔除都市步行設施（空橋/行人街道/公園跑道）{before - len(trails)} 條")
     borrow_geometry(trails)   # 去重前讓 forestry 借同名 osm 的幾何
+    bc = borrow_coords(trails)   # 官方沒給入口座標的，借同縣市同名社群步道的定位點
+    if bc:
+        print(f"[clean] 無座標官方步道借社群定位 {bc} 條")
     return merge(trails)
 
 
@@ -638,6 +641,50 @@ def borrow_geometry(trails):
         if _hv((t["lat"], t["lon"]), (best["lat"], best["lon"])) < 30000:   # 同名且 <30km
             t["geometry"] = best["geometry"]
             n += 1
+    return n
+
+
+# 官方步道名的「段／群」後綴：借座標時要先去掉才對得上社群那條完整步道
+_SEG_SUFFIX = _re.compile(r"(國家森林遊樂區)?步道群$|[：:\-－]?[東西南北中]段$|[東西南北]線$")
+
+
+def borrow_coords(trails):
+    """替「林業署有收錄但沒給入口座標」的步道，向同縣市的同名社群步道借一個定位點。
+
+    林業署 BasicInfo API 的 TR_ENTRANCE 偶爾是空的（實測 3 條：八仙山國家森林遊樂區步道群、
+    安通越嶺古道東段、烏山嶺水利古道-西段）。沒有座標的步道在 App 裡等於半殘：地圖不能定位、
+    「附近」篩不到、卡片算不出距離。這些步道 OSM 都有對應，借個座標比空著好。
+
+    只借座標不借幾何：「東段／西段／步道群」對應到的是社群那條**完整**步道，
+    把整條路線當成某一段的軌跡會誤導；座標只是定位參考，入口 memo 會註明來源。
+    """
+    from geomutil import haversine as _hv
+    n = 0
+    for t in trails:
+        if t.get("lat") or not t.get("name"):
+            continue
+        base = _SEG_SUFFIX.sub("", t["name"]).strip("：:-－ ")
+        if len(base) < 3:
+            continue
+        pool = [c for c in trails
+                if c is not t and c.get("lat") and c.get("region") == t.get("region")]
+        # 由長到短試前綴：官方與社群的用字常差一兩個字（官方「安通越嶺古道」vs OSM「安通越嶺道」），
+        # 全名對不上時用前綴才接得起來。最短 3 字＋同縣市，避免亂配。
+        cands = []
+        for k in range(len(base), 2, -1):
+            pre = base[:k]
+            cands = [c for c in pool if c["name"].startswith(pre) or pre in c["name"]]
+            if cands:
+                break
+        if not cands:
+            continue
+        # 幾何完整、名稱最接近的優先
+        cands.sort(key=lambda c: (not c.get("geometry"), abs(len(c["name"]) - len(base))))
+        best = cands[0]
+        t["lat"], t["lon"] = best["lat"], best["lon"]
+        t["entrances"] = [{"lat": best["lat"], "lon": best["lon"], "height": None,
+                           "memo": f"定位參考自社群步道「{best['name']}」（官方未提供入口座標）"}]
+        n += 1
     return n
 
 
