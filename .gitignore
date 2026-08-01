@@ -9,7 +9,9 @@ data/osm_routes_tiles_v2.json
 data/osm_paths_raw_*.json
 data/osm_paths_tiles_*.json
 data/*.cache
+data/geo_candidates.json
 scratchpad/databak/
+scratchpad/audit-shots/
 
 # 系統 / 編輯器
 .DS_Store

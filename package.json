@@ -11,8 +11,9 @@
     "sync": "cap sync",
     "open:android": "cap open android",
     "assets": "capacitor-assets generate --iconBackgroundColor #16301f --splashBackgroundColor #16301f",
-    "data:update": "python3 data/build_data.py && python3 data/refine_geo.py && node data/apply_geo.js && node scripts/pack-trails.mjs && node scripts/shard-geo.mjs && node scripts/check.js",
-    "data:pack": "node scripts/pack-trails.mjs && node scripts/shard-geo.mjs"
+    "data:update": "python3 data/build_data.py && python3 data/refine_geo.py && node data/apply_geo.js && python3 data/enrich_waypoints.py && node scripts/apply-detail-fields.mjs && node scripts/rebuild-names-pinyin.mjs && python3 scripts/build-font-subset.py && node scripts/pack-trails.mjs && node scripts/shard-geo.mjs && node scripts/check.js",
+    "data:pack": "node scripts/pack-trails.mjs && node scripts/shard-geo.mjs",
+    "audit": "node scripts/audit-ui.js"
   },
   "dependencies": {
     "@capacitor-community/background-geolocation": "^1.2.26",

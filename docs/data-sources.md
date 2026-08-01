@@ -214,3 +214,27 @@ node scripts/check.js                   # 專案自檢
 全形「、」殺七星山北峰、北北峰箭竹林小徑、「以路/街結尾」殺巴拉卡舊水管路等 16 條）。
 因此 `crawl_paths.py --selftest` 固化了 25 個「必須保留」與 29 個「必須剔除」的真實名稱，
 並接進 `npm run check`。**改過濾規則後一定要跑它**，光看總條數看不出誤殺。
+
+### 資料更新後「一定要跟著重跑」的四件事（漏了會靜靜壞掉）
+`npm run data:update` 已把這四步串進去，手動跑時別漏：
+
+| 產物 | 腳本 | 漏了會怎樣 |
+|---|---|---|
+| 英譯字典 `web/js/i18n-names.js` | `node scripts/rebuild-names-pinyin.mjs` | 非中文介面顯示中文步道名（實測擴充後缺 1070 條 = 38%） |
+| 中文字型子集 `web/vendor/fonts/taipei-sans.woff2` | `python3 scripts/build-font-subset.py` | 新字**靜靜 fallback 成系統字型**，畫面不報錯只是長得不一樣（實測缺 324 字：糶、嵙、崠…） |
+| 詳情檔 `web/js/trails-detail.js` | `node scripts/apply-detail-fields.mjs` | 沿線地標不會更新；已刪步道的舊條目留著變死資料（實測殘留 478 條） |
+| 幾何分片 `web/js/geo/*` | `node scripts/shard-geo.mjs` | 開步道詳情載不到路線 |
+
+`rebuild-names-pinyin.mjs` 預設只補缺的；改了翻譯規則才用 `--all` 全部重翻。
+Google 的 romanization 端點對某些名稱不回結果（語言偵測誤判成日文），腳本會退而求其次逐字拼。
+
+### UI 巡檢 `npm run audit`
+`scripts/audit-ui.js` 用真瀏覽器逐項驗「畫面上真的有東西而且是對的」：資料載入量、搜尋（含新步道）、
+步道詳情四大欄位、**導覽 13 步逐步驗聚光燈有框到元素**、情境導覽、五個分頁、JS 例外。
+`--shot` 會存截圖到 `scratchpad/audit-shots/`。
+
+兩個容易誤判成 bug 的環境現象，巡檢已內建處理：
+- **不給定位權限** → 記錄頁掛著權限說明卡（`.ttdlg-ov`），而 `ttCoach` 設計上「有對話框就讓路」，
+  情境導覽永遠不出現。巡檢改為實際授予定位權限。
+- **WSL 沒裝 emoji 字型** → 截圖裡所有 emoji 是豆腐框。字型子集本來就不含 emoji（TaipeiSans 沒有），
+  手機上由系統字型渲染，正常。

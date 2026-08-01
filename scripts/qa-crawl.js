@@ -68,9 +68,9 @@ const EXT = /net::|favicon|404 \(|Failed to load resource|CORS|opentopodata|tran
 
   await step("_clean2", closeAny);
   await step("我的:分頁", async () => { await click('.tab[data-view="me"]'); await p.waitForTimeout(700); });
-  await step("我的:進階分析渲染", async () => { const e = await p.evaluate(() => { try { openAnalytics(); return null; } catch (x) { return x.message; } }); if (e) errs.push(mark("openAnalytics THREW: " + e)); await p.waitForTimeout(900); await click("#anaX"); });
+  await step("我的:進階分析渲染", async () => { const e = await p.evaluate(async () => { try { await ensureScript("js/analytics.js"); openAnalytics(); return null; } catch (x) { return x.message; } }); if (e) errs.push(mark("openAnalytics THREW: " + e)); await p.waitForTimeout(900); await click("#anaX"); });
   await step("_clean3", closeAny);
-  await step("我的:年度回顧渲染", async () => { const e = await p.evaluate(() => { try { openYearReview(); return null; } catch (x) { return x.message; } }); if (e) errs.push(mark("openYearReview THREW: " + e)); await p.waitForTimeout(900); await click("#yrX"); });
+  await step("我的:年度回顧渲染", async () => { const e = await p.evaluate(async () => { try { await ensureScript("js/analytics.js"); openYearReview(); return null; } catch (x) { return x.message; } }); if (e) errs.push(mark("openYearReview THREW: " + e)); await p.waitForTimeout(900); await click("#yrX"); });
   await step("我的:切語言(ja)再切回", async () => {
     await p.evaluate(() => localStorage.setItem("tt_lang", "ja")); await p.reload({ waitUntil: "domcontentloaded" }); await p.waitForTimeout(2500);
     await p.evaluate(() => localStorage.setItem("tt_lang", "zh")); await p.reload({ waitUntil: "domcontentloaded" }); await p.waitForTimeout(2000);

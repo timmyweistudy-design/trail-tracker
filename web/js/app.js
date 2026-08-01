@@ -3846,8 +3846,10 @@ setTimeout(reportClientErrors, 6000);
 const _aBtn = $("#btnAnalytics");
 if (_aBtn) _aBtn.addEventListener("click", () => { if (!_proGate()) return; ensureScript("js/analytics.js").then(() => { if (typeof openAnalytics === "function") openAnalytics(); }); });
 // 年度回顧（PRO）
+// openYearReview 住在延遲載入的 js/analytics.js：沒先 ensureScript 就直接呼叫，使用者若沒開過
+// 「進階分析」，這顆按鈕會 ReferenceError 然後完全沒反應（不會有任何錯誤畫面）。
 const _yBtn = $("#btnYearReview");
-if (_yBtn) _yBtn.addEventListener("click", () => { if (!_proGate()) return; openYearReview(); });
+if (_yBtn) _yBtn.addEventListener("click", () => { if (!_proGate()) return; ensureScript("js/analytics.js").then(() => { if (typeof openYearReview === "function") openYearReview(); }); });
 // 離線地圖包：把快取圖磚打包成單一檔案（備份/給另一台裝置匯入，不必重新下載，也不占下載額度）
 const _pkBox = $("#packBox");
 function _pkMsg(html) { if (_pkBox) { _pkBox.style.display = "block"; _pkBox.innerHTML = html; } }

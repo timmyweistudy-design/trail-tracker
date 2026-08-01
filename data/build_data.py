@@ -241,6 +241,38 @@ OVERPASS_MIRRORS = [
 OSM_CACHE = HERE / "osm_cache.json"
 
 
+def _backfill_from_tiles(els, url):
+    """用分格爬蟲的結果補齊單次全台查詢漏掉的關係。
+
+    ⚠️ Overpass 的「一次查全台」結果**每次不一樣**（實測同一支查詢先後回 950 / 944 條，
+    熱門的「南子吝步道」relation 21013677 第二次就沒回來）。這代表每跑一次管線就會隨機
+    得失步道，而且完全無聲。crawl_routes.py 是分 18 格查、結果穩定得多，兩邊必須一致，
+    所以這裡把「有幾何但這次查詢沒回」的關係按 id 補查標籤。
+    """
+    import subprocess
+    if not OSM_ROUTES_GEOM:
+        return els
+    have = {str(e.get("id")) for e in els}
+    missing = sorted(set(OSM_ROUTES_GEOM) - have)
+    if not missing:
+        return els
+    got = []
+    for i in range(0, len(missing), 200):          # 分批，避免 URL 過長
+        chunk = ",".join(missing[i:i + 200])
+        q = f'[out:json][timeout:120];relation(id:{chunk});out center tags;'
+        try:
+            out = subprocess.run(["curl", "-s", "--max-time", "130", url,
+                                  "--data-urlencode", "data=" + q],
+                                 capture_output=True, timeout=140)
+            got += [e for e in json.loads(out.stdout.decode("utf-8")).get("elements", [])
+                    if e.get("tags", {}).get("name")]
+        except Exception:  # noqa: BLE001
+            continue
+    if got:
+        print(f"[osm] 全台查詢漏了 {len(missing)} 條有幾何的關係，按 id 補回 {len(got)} 條")
+    return els + got
+
+
 def fetch_osm():
     """全台具名健行步道；含重試、多鏡像與本地快取（Overpass 常因負載暫時限流）。"""
     import subprocess
@@ -262,6 +294,7 @@ def fetch_osm():
                 data = json.loads(out.stdout.decode("utf-8"))
                 els = data.get("elements", [])
                 if els:
+                    els = _backfill_from_tiles(els, url)
                     OSM_CACHE.write_text(json.dumps(els, ensure_ascii=False), encoding="utf-8")
                     return els
             except Exception:  # noqa: BLE001  下一個鏡像 / 下一輪
