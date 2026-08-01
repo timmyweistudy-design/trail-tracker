@@ -66,5 +66,6 @@ const dec = g2.window.TRAILS;
 const norm = t => JSON.stringify(Object.keys(t).sort().reduce((o, k) => (t[k] == null ? o : (o[k] = t[k], o)), {}));
 let ok = dec.length === arr.length;
 for (let i = 0; ok && i < arr.length; i++) if (norm(dec[i]) !== norm(arr[i])) { ok = false; console.error("mismatch at", i); }
-console.log(ok ? "✓ 解碼驗證：2187 筆逐筆深等" : "✗ 驗證失敗", "| 大小:", (src.length / 1024).toFixed(0), "KB →", (out.length / 1024).toFixed(0), "KB");
+// 筆數要用實際長度：寫死數字會在資料量變動後持續印舊值，看起來像管線沒更新（實際已更新）
+console.log(ok ? `✓ 解碼驗證：${arr.length} 筆逐筆深等` : "✗ 驗證失敗", "| 大小:", (src.length / 1024).toFixed(0), "KB →", (out.length / 1024).toFixed(0), "KB");
 if (!ok) { fs.writeFileSync(FILE, src); console.error("已還原原檔"); process.exit(1); }

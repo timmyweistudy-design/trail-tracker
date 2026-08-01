@@ -27,8 +27,11 @@ BAD_NAME = [
     ("警語當名稱", re.compile(r"禁止|止步|請勿|勿入|勿進|注意|中斷|不通|無法|遊客止|自行小心|路跡|未整|難行")),
     # ⚠️「\d+號」「吊橋」不可無條件擋：大坑1~8號步道、鹿鳴吊橋步道都是真步道
     ("門牌巷弄", re.compile(r"\d+巷|\d+弄|\d+號$")),
-    ("設施非步道", re.compile(r"橋$|涵管|電梯|停車場|廁所|觀景台|涼亭|排水|水溝|溝$|平台$|人行道|軌道$")),
-    ("方向/片段描述", re.compile(r"^往|^通往|^下山|^上登|^陡上|^陡下|捷徑|腰線")),
+    # ⚠️「停車場」不可無條件擋：中正山親山步道-停車場登山口線是真步道（停車場只是登山口位置）
+    ("設施非步道", re.compile(r"橋$|涵管|電梯|^停車場|停車場$|廁所|觀景台|涼亭|排水|水溝|溝$|平台$|人行道|軌道$")),
+    ("方向/片段描述", re.compile(r"^往|^通往|^下山|^上登|^陡上|^陡下|捷徑|腰線|艱難|替代路段|^下撤")),
+    # 「水源路$」不可寫成「水源路」：駒盆山水源路徑、凱蘭特崑山步道(黑森林水源路) 都是真步道
+    ("道路非步道", re.compile(r"產業道路|農路|聯絡道路|水源路$")),
     ("備註/日期當名稱", re.compile(r"[。，；]|\d{4}/\d{1,2}/\d{1,2}")),
     ("純通用詞", re.compile(r"^(小徑|小路|山徑|步道|主步道|登山步道|支線|路線|山路|林道|階梯|石階|水管路|防火巷|溪溝|待考查)$")),
 ]
@@ -67,7 +70,9 @@ def main():
     else:
         print("  ✓ 無廢棄林道／警語／巷弄／設施類名稱")
 
-    short = [t for t in trails if (t.get("length_km") or 0) < MIN_KM and t.get("length_km") is not None]
+    # 林業署是官方長度，即使很短也照收（與 build_data 的政策一致）
+    short = [t for t in trails if t["source"] != "forestry"
+             and t.get("length_km") is not None and t["length_km"] < MIN_KM]
     if short:
         fail.append(f"過短殘片 {len(short)} 條")
         print(f"  ✗ 長度 < {MIN_KM}km 的殘片 {len(short)} 條，例：" +
@@ -104,19 +109,34 @@ def main():
         lost = sorted(on - nn)
         gained = sorted(nn - on)
         print(f"  舊 {len(old)} 條 → 新 {len(trails)} 條（{len(gained)} 新增 / {len(lost)} 消失）")
-        # 消失的分兩類：被過濾規則有意剔除的 vs 不明消失（後者才是問題）
-        unexplained = []
+        # 消失原因分類。純比名稱會誤報一大票：名稱正規化（去空白）、同名加地區後綴、
+        # 以及「OSM 只畫了 0.0x km 殘片而被門檻剔除」都會讓名稱看起來不見了。
+        norm = lambda s: re.sub(r"[\s　]+", "", s or "")
+        strip_suffix = lambda s: re.sub(r"（[^）]*）$", "", s)
+        nn_norm = {norm(t["name"]) for t in trails}
+        nn_base = {strip_suffix(norm(t["name"])) for t in trails}
+        old_by_name = {t["name"]: t for t in old}
+        buckets = {"命中過濾規則（有意剔除）": [], "名稱正規化/地區後綴（其實還在）": [],
+                   f"OSM 只有 <{MIN_KM}km 殘片（有意剔除）": [], "★原因不明（需人工看）": []}
         for name in lost:
-            if any(rx.search(name) for _, rx in BAD_NAME):
-                continue
-            unexplained.append(name)
-        print(f"  · 消失但符合過濾規則（有意剔除）：{len(lost) - len(unexplained)} 條")
-        print(f"  · 消失且不符任何過濾規則（需人工看）：{len(unexplained)} 條")
+            if norm(name) in nn_norm or strip_suffix(norm(name)) in nn_base:
+                buckets["名稱正規化/地區後綴（其實還在）"].append(name)
+            elif any(rx.search(name) for _, rx in BAD_NAME):
+                buckets["命中過濾規則（有意剔除）"].append(name)
+            elif (old_by_name[name].get("length_km") or 0) < MIN_KM:
+                buckets[f"OSM 只有 <{MIN_KM}km 殘片（有意剔除）"].append(name)
+            else:
+                buckets["★原因不明（需人工看）"].append(name)
+        for k, v in buckets.items():
+            print(f"  · {k}：{len(v)} 條")
+        unexplained = buckets["★原因不明（需人工看）"]
         for name in unexplained[:60]:
-            print(f"      ? {name}")
+            print(f"      ? {name}（舊長度 {old_by_name[name].get('length_km')}km）")
         if len(unexplained) > 60:
             print(f"      …另外 {len(unexplained) - 60} 條")
-        print(f"  · 新增前 20：" + "、".join(gained[:20]))
+        if unexplained:
+            fail.append(f"不明消失 {len(unexplained)} 條")
+        print("  · 新增前 20：" + "、".join(gained[:20]))
 
     print("\n=== 結論 ===")
     if fail:

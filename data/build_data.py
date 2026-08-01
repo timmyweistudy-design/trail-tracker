@@ -245,9 +245,14 @@ def fetch_osm():
     """全台具名健行步道；含重試、多鏡像與本地快取（Overpass 常因負載暫時限流）。"""
     import subprocess
     import time
-    # route=foot 也要收：台灣有一批步道標成 foot（如陽明山橫嶺古道 relation 6000372），只抓 hiking 會漏
-    query = ('[out:json][timeout:180];area["ISO3166-1"="TW"][admin_level=2]->.tw;'
-             '(relation["route"~"^(hiking|foot)$"]["name"](area.tw););out center tags 3000;')
+    # route=foot 也要收：台灣有一批步道標成 foot（如陽明山橫嶺古道 relation 6000372），只抓 hiking 會漏。
+    # ⚠️ 改用 bbox 而非 area["ISO3166-1"="TW"]：area 過濾對 relation 判定不可靠，實測漏掉 10 條
+    # 有幾何的步道（含熱門的「南子吝步道」relation 21013677，route=hiking 卻不在 area 結果裡），
+    # 這些在 crawl_routes.py 的分格 bbox 查詢裡抓得到 → 兩邊不一致等於資料靜靜少掉。
+    # bbox 範圍含本島與澎湖/金門/馬祖。
+    query = ('[out:json][timeout:180];'
+             '(relation["route"~"^(hiking|foot)$"]["name"](21.5,118.0,26.5,122.5););'
+             'out center tags 4000;')
     for attempt in range(3):
         for url in OVERPASS_MIRRORS:
             try:
@@ -456,6 +461,12 @@ ABANDONED = _re.compile(
 
 MIN_TRAIL_KM = 0.2   # 與 crawl_paths.MIN_KM 一致；社群來源低於此長度視為殘片
 
+# route=foot 會帶進少量都市步行設施（空橋、行人專用街道、公園跑道分色線），這些不是登山/親子步道。
+# 只擋明確非步道者；河堤步道、健康步道、園區串連步道等仍是真的可走步道，保留。
+# 不套用於 forestry（官方步道一律信任）。
+# 另含「下撤/撤退/替代路段」這類路線註記——它們是走法說明，不是一條可搜尋的步道。
+NOT_TRAIL = _re.compile(r"空橋|行人專用街道|商圈|運動公園.*線[A-Z]?$|下撤|撤退|替代路段|替代道路")
+
 
 def is_abandoned(name):
     return bool(name and ABANDONED.search(name))
@@ -487,6 +498,10 @@ def collect():
     trails = [t for t in trails
               if t["source"] == "forestry" or (t.get("length_km") or 0) >= MIN_TRAIL_KM]
     print(f"[clean] 剔除社群來源 <{MIN_TRAIL_KM}km 殘片 {before - len(trails)} 條")
+    before = len(trails)
+    trails = [t for t in trails
+              if t["source"] == "forestry" or not NOT_TRAIL.search(t["name"] or "")]
+    print(f"[clean] 剔除都市步行設施（空橋/行人街道/公園跑道）{before - len(trails)} 條")
     borrow_geometry(trails)   # 去重前讓 forestry 借同名 osm 的幾何
     return merge(trails)
 

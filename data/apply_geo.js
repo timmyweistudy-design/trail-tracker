@@ -17,6 +17,16 @@ function loadGeo() { const s = fs.readFileSync(GEO_JS, "utf8"); return JSON.pars
 const geo = loadGeo();
 const cand = JSON.parse(fs.readFileSync(path.join(__dirname, "geo_candidates.json"), "utf8"));
 const td = fs.readFileSync(path.join(ROOT, "web/js/trails-data.js"), "utf8");
+// 本腳本要的是 build_data.py 產出的原格式（window.TRAILS = [ {...} ]）。若已被 pack-trails.mjs
+// 打包成欄式格式，下面的 JSON.parse 會失敗並把整份 700KB 內容當成錯誤訊息吐出來——完全看不出原因。
+// 先明確擋掉並講清楚正確順序。
+if (td.includes("pack-trails.mjs") || /window\.TRAILS\s*=\s*\(function/.test(td)) {
+  console.error("✗ web/js/trails-data.js 已是打包格式，本腳本需要原格式。\n"
+    + "  正確順序：build_data.py → refine_geo.py → apply_geo.js → enrich_waypoints.py\n"
+    + "            → apply-detail-fields.mjs → pack-trails.mjs → shard-geo.mjs（打包一定放最後）\n"
+    + "  修法：先重跑 python3 data/build_data.py 產生原格式，再跑本腳本。");
+  process.exit(1);
+}
 const T = {}; for (const t of JSON.parse(td.slice(td.indexOf("["), td.lastIndexOf("]") + 1))) T[t.id] = t;
 
 let applied = 0, rejected = 0;
