@@ -251,3 +251,23 @@ Google 的 romanization 端點對某些名稱不回結果（語言偵測誤判�
 - 入口 memo 會註明「定位參考自社群步道「XXX」（官方未提供入口座標）」，不假裝是官方資料
 
 實測三條反查 Nominatim 後都落在林業署標示的鄉鎮（和平區／長濱鄉／楠西區）。
+
+### 排版稽核 `npm run audit:center`
+`scripts/audit-center.js` 用真瀏覽器掃 20 個畫面（含只有點進去才看得到的彈窗：Premium 面板、
+分級說明、成就步道、進化圖鑑、足跡地圖、帽子選擇、步道比較、對話框、進階分析、年度回顧、
+行程結算含破紀錄升級卡），偵測兩類版面 bug：
+
+1. **該置中卻沒置中**：父層 `text-align:center`，子元素卻是 block/flex 且左右留白差 > 6px。
+   根因幾乎都是全域 `.btn { display:block; width:100% }` 被覆寫成 `width:auto`
+   卻忘了補 `margin-inline:auto` —— **block 元素不吃父層的 text-align:center**。
+2. **溢出容器**：元素比父層內容框寬（字被切、圖示壓到旁邊文字）。
+
+兩個必要的排除條件（不設會大量誤報）：
+- **父層是 flex/grid 時跳過**：子元素位置由 `justify-content` 決定，`text-align` 不相干。
+  按鈕裡「圖示在字前面」的 inline-flex 版面會被誤報（實測誤報 5 個）。
+- **負 margin 跳過**：那是刻意的「出血」版面（如 `.nearby-strip { margin: 0 -4px }`
+  讓橫向捲動條貼齊容器邊緣），不是溢出。
+
+實際抓到的 2 個真 bug：`.track-upsell .btn`（升級 PRO 按鈕貼左）、
+`.dex-row .dex-e`（槽寬 40px 但寵物 SVG 44px，左右各溢出 2px 壓到旁邊文字——
+手繪 SVG 是後來換上的，槽寬還停在 emoji 時代）。
