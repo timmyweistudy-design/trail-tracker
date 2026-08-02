@@ -4,17 +4,32 @@ const Premium = (() => {
 
   // 查雲端訂閱狀態。⚠️ 查不到 ≠ 沒訂閱：離線、逾時、Supabase 暫時掛掉都會走到 catch，
   // 這時必須沿用上次的快取結果，否則付費會員在山上（沒訊號）開 App 就會被降級成免費版、PRO 全鎖。
+  // 原生 App：商店端若確認訂閱有效，就直接解鎖，不必等 subscriptions 表。
+  // 帳本（subscriptions 表）要靠 RevenueCat webhook 寫回；webhook 慢、失敗、或 app_user_id
+  // 沒綁到 Supabase uid 時，使用者會「付了錢卻沒解鎖」——回復購買最明顯：商店說有、App 卻不給。
+  // Apple 審核必測回復購買，回復無效是拒審理由。故商店確認就先放行，帳本晚點對上不影響。
+  async function storeSaysOn() {
+    try {
+      return (typeof IAP !== "undefined" && IAP.native && IAP.native() && IAP.entitlementActive)
+        ? await IAP.entitlementActive() : false;
+    } catch (e) { return false; }
+  }
+
   async function refresh() {
     const cached = localStorage.getItem("tt_premium") === "1";
     try {
       const c = (typeof Supa !== "undefined" && Supa.ready && Supa.ready()) ? Supa.client() : null;
-      if (!c) { _on = cached; _loaded = true; return _on; }        // 未登入/未設定：維持快取，不主動降級
+      if (!c) { _on = cached || await storeSaysOn(); _loaded = true; sync(); return _on; }   // 未登入/未設定：維持快取
       const { data: u } = await c.auth.getUser();
-      if (!u || !u.user) { _on = false; _loaded = true; sync(); return false; }   // 確定沒登入 → 才是真的非會員
+      if (!u || !u.user) {                                        // 確定沒登入
+        _on = await storeSaysOn();                                // 但商店有訂閱就仍算會員（換帳號/未登入也不該把已付費的人鎖住）
+        _loaded = true; sync(); return _on;
+      }
       const { data, error } = await c.from("subscriptions").select("status, current_period_end").eq("user_id", u.user.id).maybeSingle();
       if (error) { _on = cached; _loaded = true; return _on; }     // 查詢失敗 → 沿用快取，不覆寫
       _periodEnd = data && data.current_period_end ? data.current_period_end : null;
       _on = !!(data && ["active", "trialing"].includes(data.status) && (!_periodEnd || new Date(_periodEnd) > new Date()));
+      if (!_on) _on = await storeSaysOn();                         // 帳本還沒對上 → 以商店為準
       if (_on && !localStorage.getItem("tt_premium_since")) localStorage.setItem("tt_premium_since", new Date().toISOString());
     } catch (e) {
       _on = cached; _loaded = true; return _on;                    // 離線/逾時 → 沿用快取
@@ -164,6 +179,9 @@ const Premium = (() => {
     ov.querySelector(".premium-card").insertBefore(r, ov.querySelector("#pmLater"));
     r.addEventListener("click", async () => {
       if (typeof toast === "function") toast(ttT("回復購買中…"));
+      // 面板開著時可能才登入/登出 → 回復當下重新確認一次綁定（購買路徑本來就有做，這裡原本漏了）。
+      // 沒綁對的話，restorePurchases() 會掛在匿名的 app_user_id 上，webhook 寫回來對不到人。
+      await ensureIapReady();
       const on = await IAP.restore();
       if (on) { ov.remove(); pollUnlock(); }
       else if (typeof toast === "function") toast(ttT("找不到可回復的購買"));
@@ -253,7 +271,22 @@ const Premium = (() => {
     refresh().then(on => {
       if (on) { try { document.querySelector('.tab[data-view="me"]')?.click(); } catch (e) { } return; }
       if (tries < 6) setTimeout(() => pollUnlock(tries + 1), 2500);
-      else if (typeof toast === "function") toast("款項處理中，稍後自動生效");
+      // 輪詢到底還是沒解鎖：商店明明說有訂閱卻進不來，多半是 webhook 沒寫回 subscriptions 表
+      // 或 app_user_id 沒綁到 Supabase uid。把原因記進 client_errors，別讓它只留一句「處理中」。
+      else {
+        storeSaysOn().then(storeOn => {
+          if (typeof toast === "function") {
+            toast(storeOn ? ttT("已購買但同步中，請稍後或重開 App") : ttT("款項處理中，稍後自動生效"));
+          }
+          if (storeOn) {
+            try {
+              const a = JSON.parse(localStorage.getItem("tt_errors") || "[]");
+              a.unshift({ t: new Date().toISOString(), m: "Premium: 商店 entitlement 有效但 subscriptions 表查不到（webhook 或 app_user_id 綁定問題）" });
+              localStorage.setItem("tt_errors", JSON.stringify(a.slice(0, 20)));
+            } catch (_) { /* 記錯誤失敗不能再噴錯 */ }
+          }
+        });
+      }
     });
   }
 

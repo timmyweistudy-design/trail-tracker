@@ -486,7 +486,7 @@ const I18n = (() => {
     "20 條": "20", "10 MB": "10 MB",
     "Premium 會員": "Premium member", "進階功能已全部解鎖": "All premium features unlocked",
     "續訂日": "Renews", "管理訂閱": "Manage subscription", "升級 Premium": "Upgrade to Premium",
-    "回復購買": "Restore purchase", "回復購買中…": "Restoring…", "找不到可回復的購買": "No purchase to restore", "款項處理中，稍後自動生效": "Payment processing — it will activate shortly", "購買失敗，請稍後再試": "Purchase failed, please try again",
+    "回復購買": "Restore purchase", "回復購買中…": "Restoring…", "找不到可回復的購買": "No purchase to restore", "款項處理中，稍後自動生效": "Payment processing — it will activate shortly", "已購買但同步中，請稍後或重開 App": "Purchased — syncing. Please wait a moment or reopen the app", "購買失敗，請稍後再試": "Purchase failed, please try again",
     "坡度": "Grade",
     "已偏離路線": "Off route", "距路線": "From route", "已回到路線": "Back on route",
     "已選擇": "Selected: ",

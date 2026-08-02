@@ -106,12 +106,32 @@ const IAP = (() => {
     } catch (e) { return false; }
   }
 
+  // 商店端的訂閱狀態（裝置上的權威來源）。
+  // 訂閱狀態的「帳本」是 subscriptions 表，但那張表要等 RevenueCat webhook 寫回；webhook 慢、
+  // 失敗、或 app_user_id 沒綁到 Supabase uid 時，使用者會「付了錢卻沒解鎖」——回復購買尤其明顯：
+  // 商店說有、App 卻不給。Apple 審核必測回復購買，回復無效是拒審理由。
+  // 故 premium.js 會拿這個當「商店已確認」的即時憑據先解鎖，帳本晚點對上不影響。
+  // 介面照 node_modules/@revenuecat/purchases-capacitor 的 definitions.d.ts：
+  //   getCustomerInfo(): Promise<{ customerInfo: CustomerInfo }>；entitlements.active 是 map。
+  async function entitlementActive() {
+    if (!available() || !_configured) return false;
+    try {
+      const r = await plugin().getCustomerInfo();
+      const ent = r && r.customerInfo && r.customerInfo.entitlements && r.customerInfo.entitlements.active;
+      const e = ent && ent[ENTITLEMENT];
+      if (!e) return false;
+      // isActive 已含過期判斷；仍多擋一次過期時間，避免 SDK 快取到舊資料
+      if (e.expirationDate && new Date(e.expirationDate) <= new Date()) return false;
+      return e.isActive !== false;
+    } catch (e) { note("getCustomerInfo", e); return false; }
+  }
+
   // 管理訂閱：開系統的訂閱設定頁（原生不得開 Stripe portal）
   function manageUrl() {
     return isIOS() ? "itms-apps://apps.apple.com/account/subscriptions"
                    : "https://play.google.com/store/account/subscriptions";
   }
 
-  return { available, native, init, plans, purchase, restore, manageUrl, lastError };
+  return { available, native, init, plans, purchase, restore, entitlementActive, manageUrl, lastError };
 })();
 if (typeof module !== "undefined" && module.exports) module.exports = IAP;

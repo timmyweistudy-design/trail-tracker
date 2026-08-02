@@ -213,8 +213,15 @@ const PORT = 8899;
               ] };
               return ({ all: { default: cur }, current: cur });
             },
-            purchasePackage: async () => ({ customerInfo: { entitlements: { active: { premium: {} } } } }),
+            purchasePackage: async () => ({ customerInfo: { entitlements: { active: { premium: { isActive: true, expirationDate: null } } } } }),
             restorePurchases: async () => ({ customerInfo: { entitlements: { active: {} } } }),
+            // 真 SDK 有這支（definitions.d.ts:340 getCustomerInfo(): Promise<{ customerInfo }>），
+            // 且未 configure 會 reject。mock 少一支＝Premium.refresh() 的商店查詢在測試裡永遠走 catch，
+            // 等於沒測到——這正是上次「假外掛比真 SDK 寬鬆」的同一個坑。
+            getCustomerInfo: async () => {
+              if (!rcConfigured) throw new Error("There is no singleton instance. Make sure you configure Purchases before trying to get customer info.");
+              return { customerInfo: { entitlements: { active: {} } } };
+            },
           } },
         };
       });
@@ -240,6 +247,19 @@ const PORT = 8899;
       await p2.waitForTimeout(1500);
       if (stripeHit) errors.push("IAP: 原生環境竟打了 Stripe create-checkout（會被 Apple 拒審）");
       else console.log("✓ 原生：購買未觸發 Stripe");
+
+      // 商店說訂閱有效、但 subscriptions 帳本還沒寫回時，仍必須解鎖。
+      // 不然使用者「回復購買顯示成功卻沒解鎖」，而 Apple 審核必測回復購買 → 拒審。
+      const unlocked = await p2.evaluate(async () => {
+        const P = window.Capacitor.Plugins.Purchases;
+        const orig = P.getCustomerInfo;
+        P.getCustomerInfo = async () => ({ customerInfo: { entitlements: { active: { premium: { isActive: true, expirationDate: null } } } } });
+        try { Premium.clearCache(); return await Premium.refresh(); }
+        finally { P.getCustomerInfo = orig; }
+      });
+      if (!unlocked) errors.push("IAP: 商店 entitlement 有效但 Premium.refresh() 沒解鎖（webhook 慢/失敗時使用者會付了錢沒功能）");
+      else console.log("✓ 原生：商店確認訂閱時即使帳本未同步也會解鎖");
+      await p2.evaluate(() => Premium.clearCache());
       await p2.close();
     }
 
