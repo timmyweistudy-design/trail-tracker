@@ -103,6 +103,8 @@ async function worker() {
   }
 }
 await Promise.all(Array.from({ length: 8 }, worker));
+// 專有名詞一律首字大寫：曾有 "nantou county"、"kaohsiung city" 小寫混進來，地區篩選英文版看起來很怪
+for (const k of Object.keys(N)) if (/^[a-z]/.test(N[k])) N[k] = N[k].replace(/\b[a-z]/g, c => c.toUpperCase());
 fs.writeFileSync("web/js/i18n-names.js",
   "// 自動產生（scripts/rebuild-names-pinyin.mjs）：步道名＝拼音+類型詞（知名步道用官方英譯）；縣市鄉鎮＝官方/標準拼音。非中文介面才載入。\n"
   + "window.TT_NAMES = " + JSON.stringify(N) + ";\n");

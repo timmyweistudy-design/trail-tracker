@@ -190,7 +190,7 @@ const Profiles = (() => {
     rb.querySelectorAll(".rp-undo").forEach(b => b.addEventListener("click", async () => {
       b.disabled = true;
       const ok = await Safety.unreport(b.dataset.id, b.dataset.post || null);
-      if (typeof toast === "function") toast(ok ? (b.dataset.post ? "已撤回檢舉，貼文回到動態牆" : "已撤回檢舉") : "撤回失敗，請先更新資料庫（phase23）");
+      if (typeof toast === "function") toast(ok ? (b.dataset.post ? "已撤回檢舉，貼文回到動態牆" : "已撤回檢舉") : "撤回失敗，等一下再試試");
       if (ok) renderMyReports(render, prof); else b.disabled = false;
     }));
   }

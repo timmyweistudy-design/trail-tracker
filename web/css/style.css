@@ -2687,3 +2687,91 @@ body.rec-running .rec-controls {
 .rh-main { flex-wrap: nowrap; }
 .rh-num { font-size: min(calc(58px * var(--fs, 1)), 19vw); }
 .rh-unit { white-space: nowrap; }
+
+/* ══ 探索頁全面整理（2026-09-30）══ */
+/* 頁首：往下捲就縮成跟內頁一樣的小版，把畫面留給步道（回到頂端再展開） */
+body.hdr-compact .app-header-inner { padding: calc(11px + env(safe-area-inset-top, 0px)) 20px 11px; }
+body.hdr-compact .app-header .sub { display: none; }
+body.hdr-compact .app-header h1 { font-size: calc(20px * var(--fs, 1)); letter-spacing: 2px; }
+body.hdr-compact .brand-en { font-size: calc(8.5px * var(--fs, 1)); letter-spacing: 3px; margin-top: 3px; }
+body.hdr-compact .brand-mark { width: 36px; height: 36px; }
+.app-header-inner, .app-header h1, .brand-mark { transition: padding .2s ease, font-size .2s ease, width .2s ease, height .2s ease; }
+
+/* 快速篩選列：右緣淡出＝還能往右滑 */
+.chips { -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent); mask-image: linear-gradient(90deg, #000 88%, transparent); padding-right: 24px; }
+
+/* 工具列一排：數量｜列表/地圖｜幫我選｜篩選（大字才允許換行） */
+.toolbar { flex-wrap: nowrap; gap: 6px; }
+.toolbar .count { order: 0; }
+.toolbar .grow { order: 1; }
+.toolbar .seg { order: 2; }
+.toolbar #btnSurprise { order: 3; }
+.toolbar #btnFilter { order: 4; }
+.toolbar .seg-btn { padding: 8px 10px; min-height: 38px; }
+.btn-filter.btn-icon { padding: 8px 9px; }
+.btn-filter.btn-icon .ic { width: 18px; height: 18px; }
+[data-fs-mid] .toolbar { flex-wrap: wrap; }
+[data-fs-mid] .toolbar .count { flex-basis: 100%; }
+
+/* 主題卡：線條圖示（取代 emoji）＋右下角一枚放大的淡色同款圖當插畫 */
+.coll-ic .ic { width: 19px; height: 19px; color: #fff; margin: 0; transform: none; }
+.coll-art { position: absolute; right: -14px; bottom: -12px; z-index: -1; opacity: .16; pointer-events: none; }
+.coll-art .ic { width: 86px; height: 86px; color: #fff; stroke-width: 1.4; margin: 0; transform: none; }
+.coll-t { word-break: keep-all; overflow-wrap: normal; hyphens: none; }
+
+/* 收藏星：SVG */
+.fav-star svg { width: calc(24px * var(--fs, 1)); height: calc(24px * var(--fs, 1)); fill: none; stroke: #cbb35e; stroke-width: 1.7; stroke-linejoin: round; }
+.fav-star.on svg { fill: #e3a417; stroke: #e3a417; }
+
+/* 卡片：地點只佔一行、陡度列精簡 */
+.jloc-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jloc { min-width: 0; }
+.slope-row .slope-v small { margin-left: 0; }
+/* 無限捲動上千張卡：畫面外的卡交給瀏覽器跳過排版與繪製（DOM 還在但幾乎不花成本） */
+.card.jcard { content-visibility: auto; contain-intrinsic-size: auto 230px; }
+.card.jcard:focus-visible { outline: 3px solid var(--brand-mid); outline-offset: 2px; }
+
+/* 搜尋建議：打中的字標色、鍵盤選取 */
+.sug mark { background: none; color: var(--brand); font-weight: 800; }
+.sug.on { background: var(--brand-soft); }
+
+/* 篩選面板：地區分區、長度/爬升改選項 */
+.fs-rg { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-bottom: 9px; }
+.fs-rg-h { flex: 0 0 100%; font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-faint); font-weight: 700; letter-spacing: .1em; margin-top: 2px; }
+.fs-sub { font-size: calc(12px * var(--fs, 1)); color: var(--ink-soft); font-weight: 700; margin: 4px 0 6px; }
+.chip .ic { width: 14px; height: 14px; vertical-align: -2px; margin-right: 2px; }
+.chip.preset .px { display: inline-flex; margin-left: 6px; opacity: .6; }
+.chip.preset .px .ic { width: 12px; height: 12px; margin: 0; }
+
+/* 地圖：範圍內數量＋列出這些、範圍篩選標籤、步道小卡彈窗 */
+.map-count { background: var(--surface); border-radius: var(--r-pill); box-shadow: var(--sh-md, 0 4px 12px rgba(0,0,0,.18)); padding: 5px 5px 5px 13px;
+  display: flex; align-items: center; gap: 8px; font-size: calc(12.5px * var(--fs, 1)); color: var(--ink); margin-bottom: 52px !important; }
+.map-count b { color: var(--brand); font-family: var(--num); }
+.mc-go { border: none; background: var(--brand); color: #f6f3ea; border-radius: var(--r-pill); padding: 6px 11px; font-weight: 700; font-size: calc(12px * var(--fs, 1)); cursor: pointer; }
+.map-scope { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--brand-soft); color: var(--brand-deep);
+  border-radius: var(--r-pill); padding: 5px 5px 5px 14px; margin: 0 0 10px; font-size: calc(13px * var(--fs, 1)); font-weight: 600; }
+.map-scope .ic { width: 15px; height: 15px; vertical-align: -3px; }
+.ms-x { border: none; background: var(--surface); border-radius: 50%; width: 30px; height: 30px; display: grid; place-items: center; cursor: pointer; }
+.ms-x .ic { margin: 0; }
+.trail-pop .leaflet-popup-content-wrapper { border-radius: 14px; padding: 0; }
+.trail-pop .leaflet-popup-content { margin: 12px 14px; line-height: 1.45; }
+.mp-h { display: flex; align-items: center; gap: 7px; font-size: 14.5px; }
+.mp-h b { font-weight: 800; color: var(--ink, #1b2417); }
+.mp-lv { flex: 0 0 auto; width: 20px; height: 20px; border-radius: 50%; color: #fff; font-size: 11.5px; font-weight: 800; display: grid; place-items: center; }
+.mp-loc { font-size: 12px; color: #7a7867; margin: 2px 0 4px 27px; }
+.mp-stats { font-size: 13px; font-weight: 600; margin-left: 27px; font-family: var(--num); }
+.mp-warn { font-size: 12px; color: #b3322a; margin: 4px 0 0 27px; }
+.mp-warn .ic { width: 13px; height: 13px; vertical-align: -2px; }
+.mp-go { display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 10px; background: var(--brand, #2c5d3f); color: #fff !important;
+  border-radius: 10px; padding: 8px; font-weight: 700; text-decoration: none; font-size: 13.5px; }
+.mp-go .ic { width: 15px; height: 15px; margin: 0; }
+
+/* 底部分頁：字不換行（日文「コミュニティ」曾擠成兩行） */
+.tab { white-space: nowrap; }
+/* 工具列擠不下（360px 手機、英文「Filter」會被切掉）→ 列表／地圖只留圖示，文字留給螢幕閱讀器 */
+.toolbar .seg-btn { font-size: 0; gap: 0; padding: 8px 11px; }
+.toolbar .seg-btn .ic { width: 17px; height: 17px; margin: 0; }
+.toolbar { min-width: 0; }
+.toolbar .count { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* 主題卡：預留左上角圖示的位置，標題換兩行（英文常見）也不會壓到圖示 */
+.coll-card { padding-top: 54px; }

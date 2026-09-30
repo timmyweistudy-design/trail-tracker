@@ -106,12 +106,13 @@ const html = read(path.join(WEB, "index.html"));
 const knownIds = new Set([...html.matchAll(/id="([\w-]+)"/g)].map(m => m[1]));
 for (const f of files) for (const m of read(f).matchAll(/id="([\w-]+)"/g)) knownIds.add(m[1]);
 for (const f of files) for (const m of read(f).matchAll(/id=\\"([\w-]+)\\"/g)) knownIds.add(m[1]);
-const appSrc = read(path.join(WEB, "js", "app.js"));
-appSrc.split("\n").forEach((l, i) => {
-  for (const m of l.matchAll(/\$\("#([\w-]+)"\)/g)) {
-    if (!knownIds.has(m[1])) err(`[HTML] web/js/app.js:${i + 1} 取用 #${m[1]}，但 index.html 與 JS 模板都沒有這個 id（可能打錯字）`);
-  }
-});
+for (const jf of ["app.js", "explore.js"]) {   // explore.js 是從 app.js 拆出來的，同一條規則
+  read(path.join(WEB, "js", jf)).split("\n").forEach((l, i) => {
+    for (const m of l.matchAll(/\$\("#([\w-]+)"\)/g)) {
+      if (!knownIds.has(m[1])) err(`[HTML] web/js/${jf}:${i + 1} 取用 #${m[1]}，但 index.html 與 JS 模板都沒有這個 id（可能打錯字）`);
+    }
+  });
+}
 
 // I. 禁用原生對話框：confirm/prompt/alert 樣式醜、翻譯不了、擋主執行緒——
 //    一律用 dialog.js 的 ttConfirm/ttChoice/ttPrompt/ttAlertBox 或 toast

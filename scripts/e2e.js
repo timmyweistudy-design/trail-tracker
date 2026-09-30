@@ -160,7 +160,9 @@ const PORT = 8899;
       return Store.getRecords().length;
     });
     await page.click("#btnStop");
-    await page.waitForTimeout(3000);
+    // 結算要等海拔校正（最多 8 秒，網路慢時才會等滿）；固定等 3 秒會偶發失敗
+    await page.waitForSelector("#trackSheet.show", { timeout: 12000 }).catch(() => {});
+    await page.waitForTimeout(300);
     ok("收尾某步 throw 時，結算頁仍開啟（不再全有全無）", await page.locator("#trackSheet.show").count() === 1);
     ok("收尾某步 throw 時，紀錄仍存進歷史", await page.evaluate(() => Store.getRecords().length) === recBefore + 1);
     await page.click("#trackSheet .sheet-close").catch(() => {});

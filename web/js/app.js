@@ -219,6 +219,14 @@ const ICON = {
   sparkle: '<path d="M12 3c.7 4.4 1.6 5.3 6 6-4.4.7-5.3 1.6-6 6-.7-4.4-1.6-5.3-6-6 4.4-.7 5.3-1.6 6-6Z"/>',
   megaphone: '<path d="M4 10v4l9 4V6l-9 4Z"/><path d="M13 8.5a4 4 0 0 1 0 7M4 12H3"/>',
   x: '<path d="M6 6l12 12M18 6 6 18"/>',
+  info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8h.01"/>',
+  drop: '<path d="M12 3.5c-4 5.6-5.5 8.6-5.5 11a5.5 5.5 0 0 0 11 0c0-2.4-1.5-5.4-5.5-11Z"/>',
+  wave: '<path d="M2 9c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M2 15c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/>',
+  tree: '<path d="M12 3 6 11h3l-4 6h14l-4-6h3L12 3Z"/><path d="M12 17v4"/>',
+  sprout: '<path d="M12 21v-9"/><path d="M12 12c0-4 3-6 7-6 0 4-3 6-7 6ZM12 14c0-3-2.4-5-6-5 0 3 2.4 5 6 5Z"/>',
+  lake: '<path d="M3 16c3 2 6 2 9 0s6-2 9 0"/><path d="m5 12 4-6 3 4 2-2 5 4"/>',
+  gate: '<path d="M4 21V9l8-5 8 5v12"/><path d="M9 21v-6h6v6"/>',
+  dice: '<rect x="4" y="4" width="16" height="16" rx="3.5"/><circle cx="9" cy="9" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="9" r="1.2" fill="currentColor" stroke="none"/><circle cx="9" cy="15" r="1.2" fill="currentColor" stroke="none"/>',
   chevron: '<path d="m9 6 6 6-6 6"/>',
   trophy: '<path d="M7 4h10v4a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M10 14h4l-.5 4h-3L10 14ZM8 21h8"/>',
   download: '<path d="M12 4v10m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/>',
@@ -232,12 +240,17 @@ const ICON = {
   restore: '<path d="M12 6v10m0 0 4-4m-4 4-4-4"/><path d="M4 8V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2"/>',
 };
 function ic(name, cls) { return `<svg class="ic${cls ? " " + cls : ""}" viewBox="0 0 24 24">${ICON[name] || ""}</svg>`; }
+// 收藏星星：SVG（原本是 ☆／★ 文字，換字型就跑位）；填色由 .fav-star.on 控制
+const STAR_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 17l-5.2 2.7 1-5.8L3.5 9.7l5.9-.9L12 3.5Z"/></svg>';
 // 空狀態手繪山林插圖
-const EMPTY_ART = `<svg class="empty-art" viewBox="0 0 120 84">
-  <circle cx="94" cy="20" r="9" fill="none" stroke="var(--accent)" stroke-width="2"/>
-  <path d="M4 74 L38 26 L58 52 L76 28 L116 74 Z" fill="var(--brand-soft)" stroke="var(--brand)" stroke-width="2" stroke-linejoin="round"/>
-  <path d="M38 26 L30 40 L46 40 Z M76 28 L68 42 L86 42 Z" fill="#fff" opacity=".6"/>
-  <path d="M4 74 H116" stroke="var(--brand-mid)" stroke-width="2" stroke-linecap="round"/>
+const EMPTY_ART = `<svg class="empty-art" viewBox="0 0 140 96" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <circle cx="108" cy="22" r="9" fill="var(--accent-soft, #f1e3cf)" stroke="var(--accent, #c2683d)" stroke-width="2"/>
+  <path d="M6 80 42 30l18 22 16-20 34 48" stroke="var(--brand-mid, #3f7a55)" stroke-width="2.4"/>
+  <path d="M36 38l6-8 6 8" stroke="var(--brand-mid, #3f7a55)" stroke-width="2.4"/>
+  <path d="M30 90c10-8 30-4 38-14s4-18 18-22" stroke="var(--ink-faint, #9a947f)" stroke-width="2" stroke-dasharray="1 6"/>
+  <path d="M96 58v26" stroke="var(--ink-soft, #6f6a57)" stroke-width="2.2"/>
+  <path d="M96 60h16l4 4-4 4H96z" fill="var(--surface, #fff)" stroke="var(--ink-soft, #6f6a57)" stroke-width="2"/>
+  <path d="M101 64h8" stroke="var(--accent, #c2683d)" stroke-width="2"/>
 </svg>`;
 
 // 分類標籤（由名稱/資料推導）
@@ -436,6 +449,8 @@ document.querySelectorAll(".tab").forEach(btn => {
     btn.classList.add("active");
     const view = btn.dataset.view;
     document.body.dataset.view = view;   // 供 CSS 在內頁縮小頂部 Banner
+    document.body.classList.toggle("hdr-compact", view === "explore" && window.scrollY > 90);
+    setTimeout(() => { if (typeof setHeaderH === "function") setHeaderH(); }, 230);   // 頁首高度換了，搜尋列吸頂位置跟著更新
     $("#view-" + view).classList.add("active");
     if (view === "record") {
       requestEntryPerms();   // 首次進記錄頁＝這一下點擊就是手勢，一次問完定位+方位權限
@@ -478,515 +493,7 @@ document.querySelectorAll(".tab").forEach(btn => {
   });
 });
 
-// ---------- 探索：篩選與列表 ----------
-// 複選：同類用 OR、跨類用 AND；「全部」＝清空該類；再按一次取消
-let activeFilters = new Set();   // fav, done, family, d1..d45, tag:*
-let activeRegions = new Set();   // 地區（可複選）
-let curQuery = "";
-
-function syncFilterUI() {
-  const none = activeFilters.size === 0;
-  document.querySelectorAll("[data-filter]").forEach(c =>
-    c.classList.toggle("active", c.dataset.filter === "all" ? none : activeFilters.has(c.dataset.filter)));
-}
-function syncRegionUI() {
-  const none = activeRegions.size === 0;
-  document.querySelectorAll("[data-region]").forEach(c =>
-    c.classList.toggle("active", c.dataset.region === "all" ? none : activeRegions.has(c.dataset.region)));
-}
-function toggleFilter(val) {
-  if (val === "all") activeFilters.clear();
-  else if (activeFilters.has(val)) activeFilters.delete(val);
-  else activeFilters.add(val);
-  syncFilterUI(); updateFilterDot(); render();
-}
-function toggleRegion(val) {
-  if (val === "all") activeRegions.clear();
-  else if (activeRegions.has(val)) activeRegions.delete(val);
-  else activeRegions.add(val);
-  syncRegionUI(); updateFilterDot(); render();
-}
-function setSort(val) {
-  if (val === "distance") return setDistanceSort();   // 依距離需先定位，特別處理
-  if (myLoc) { myLoc = null; nearRadius = 0; $("#nearRow").style.display = "none"; }   // 切換到其他排序→關閉附近
-  curSort = (curSort === val) ? "default" : val;     // 再按一次取消（回預設）
-  document.querySelectorAll("[data-sort]").forEach(c => c.classList.toggle("active", c.dataset.sort === curSort));
-  updateFilterDot(); render();
-}
-// 依距離排序：取得定位後依與使用者的距離排序，並顯示半徑篩選列
-function setDistanceSort() {
-  if (curSort === "distance") {   // 再按一次→關閉
-    curSort = "default"; myLoc = null; nearRadius = 0; $("#nearRow").style.display = "none";
-    document.querySelectorAll("[data-sort]").forEach(c => c.classList.toggle("active", c.dataset.sort === "default"));
-    updateFilterDot(); render(); toast("已關閉依距離排序"); return;
-  }
-  if (!navigator.geolocation) { toast("此裝置不支援定位"); return; }
-  toast("定位中…");
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      myLoc = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-      curSort = "distance";
-      document.querySelectorAll("[data-sort]").forEach(c => c.classList.toggle("active", c.dataset.sort === "distance"));
-      $("#nearRow").style.display = "flex";
-      updateFilterDot(); render(); toast("已依距離排序");
-    },
-    () => toast("定位失敗，請允許定位權限"),
-    { enableHighAccuracy: true, timeout: 10000 });
-}
-// 進階篩選啟用數量 → 篩選鈕上的小紅點
-function updateFilterDot() {
-  let n = activeFilters.size + activeRegions.size;
-  if (curSort !== "default") n++;
-  if (filterOpen) n++;
-  if (filterGeo) n++;
-  if (maxLen) n++;
-  if (maxAsc) n++;
-  const dot = $("#filterDot"), btn = $("#btnFilter");
-  if (dot) { dot.style.display = n ? "grid" : "none"; dot.textContent = n; }
-  if (btn) btn.classList.toggle("active", n > 0);
-  const fc = $("#fsCount"); if (fc) fc.textContent = curList ? curList.length : "";
-}
-
-// 精選主題輯：點一下套用一組篩選，快速探索
-const COLLECTIONS = [
-  { t: "親子友善", s: "輕鬆好走帶小孩", ic: "🧸", f: ["family"], bg: "linear-gradient(135deg,#3f7a55,#2c5d3f)" },
-  { t: "古道巡禮", s: "走進歷史與人文", ic: "🏯", f: ["tag:古道"], bg: "linear-gradient(135deg,#a06a3d,#7c4f2c)" },
-  { t: "瀑布秘境", s: "清涼水景路線", ic: "💧", f: ["tag:瀑布"], bg: "linear-gradient(135deg,#2f7e8c,#1f5a66)" },
-  { t: "海岸線", s: "看海聽濤", ic: "🌊", f: ["tag:海景"], bg: "linear-gradient(135deg,#3b6ea5,#274d77)" },
-  { t: "森林浴", s: "芬多精滿載", ic: "🌲", f: ["tag:森林"], bg: "linear-gradient(135deg,#4a8f55,#2f6b3a)" },
-  { t: "湖泊倒影", s: "靜謐水畔", ic: "🪞", f: ["tag:湖泊"], bg: "linear-gradient(135deg,#3c7a8c,#285a69)" },
-  { t: "輕鬆入門", s: "第一次健行", ic: "🌱", f: ["d1"], bg: "linear-gradient(135deg,#5aa06a,#3c7a4f)" },
-  { t: "挑戰級", s: "進階者專屬", ic: "🔥", f: ["d45"], bg: "linear-gradient(135deg,#c2683d,#9a4f2c)" },
-];
-// 依收藏/已完成步道的常見主題，推一個個人化分類
-function favoriteTag() {
-  const seen = TRAILS.filter(t => Store.isFav(t.id) || Store.trailLog(t.id).done);
-  if (seen.length < 2) return null;
-  const counts = {};
-  seen.forEach(t => tagsOf(t).forEach(g => counts[g] = (counts[g] || 0) + 1));
-  const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
-  return top && top[1] >= 2 ? top[0] : null;
-}
-let _collList = [];
-function buildCollections() {
-  const box = $("#collections");
-  if (!box) return;
-  const ft = favoriteTag();
-  _collList = ft ? [{ t: "為你推薦", s: `你常走「${ft}」`, ic: "⭐", f: ["tag:" + ft], bg: "linear-gradient(135deg,#c79a3d,#9a6f2c)" }, ...COLLECTIONS] : COLLECTIONS.slice();
-  box.innerHTML = _collList.map((c, i) =>
-    `<button class="coll-card" data-coll="${i}" style="background:${c.bg}">
-       <span class="coll-ic" aria-hidden="true">${c.ic || "🏔️"}</span>
-       <span class="coll-go" aria-hidden="true">${ic("chevron")}</span>
-       <span class="coll-txt"><span class="coll-t">${c.t}</span><span class="coll-s">${c.s}</span></span></button>`).join("");
-  box.querySelectorAll(".coll-card").forEach(b => b.addEventListener("click", () => {
-    const c = _collList[+b.dataset.coll];
-    activeFilters = new Set(c.f); activeRegions.clear(); curQuery = ""; $("#searchInput").value = "";
-    syncFilterUI(); syncRegionUI(); updateFilterDot(); render();
-    $("#trailList").scrollIntoView({ behavior: "smooth", block: "start" });
-  }));
-}
-// 預設瀏覽（無任何篩選/搜尋）才顯示精選輯，避免雜亂
-function updateCollections() {
-  const box = $("#collections");
-  if (!box) return;
-  const none = activeFilters.size === 0 && activeRegions.size === 0 && !curQuery && !mapOn;
-  box.style.display = none ? "flex" : "none";
-}
-
-function buildFsRegion() {
-  const regions = [...new Set(TRAILS.map(t => t.region).filter(Boolean))].sort();
-  $("#fsRegion").innerHTML = `<button class="chip active" data-region="all">全部</button>` +
-    regions.map(r => `<button class="chip" data-region="${r}">${r}</button>`).join("");
-}
-
-// 主列 + 篩選面板的難度/主題 chips（共用 data-filter，複選切換）
-document.querySelectorAll("[data-filter]").forEach(c =>
-  c.addEventListener("click", () => toggleFilter(c.dataset.filter)));
-// 篩選面板事件委派（地區/排序）
-$("#filterSheet").addEventListener("click", e => {
-  const r = e.target.closest("[data-region]"); if (r) return toggleRegion(r.dataset.region);
-  const s = e.target.closest("[data-sort]"); if (s) return setSort(s.dataset.sort);
-});
-$("#fsOpen").addEventListener("click", () => { filterOpen = !filterOpen; $("#fsOpen").classList.toggle("active", filterOpen); updateFilterDot(); render(); });
-$("#fsGeo").addEventListener("click", () => {
-  filterGeo = !filterGeo; $("#fsGeo").classList.toggle("active", filterGeo);
-  if (filterGeo) ensureGeo().then(() => { updateFilterDot(); render(); });
-  else { updateFilterDot(); render(); }
-});
-$("#lenRange").addEventListener("input", e => {
-  const v = +e.target.value; maxLen = v >= 30 ? 0 : v;
-  $("#lenVal").textContent = maxLen ? `≤ ${maxLen} km` : "不限";
-  updateFilterDot(); render();
-});
-$("#ascRange").addEventListener("input", e => {
-  const v = +e.target.value; maxAsc = v >= 2000 ? 0 : v;
-  $("#ascVal").textContent = maxAsc ? `≤ ${maxAsc} m` : "不限";
-  updateFilterDot(); render();
-});
-$("#fsGrade").addEventListener("click", openGradeInfo);
-$("#fsReset").addEventListener("click", () => {
-  filterOpen = false; filterGeo = false; maxLen = 0; maxAsc = 0;
-  $("#fsOpen").classList.remove("active"); $("#fsGeo").classList.remove("active");
-  $("#lenRange").value = 30; $("#ascRange").value = 2000; $("#lenVal").textContent = "不限"; $("#ascVal").textContent = "不限";
-  activeFilters.clear(); activeRegions.clear(); curSort = "default";
-  myLoc = null; nearRadius = 0; $("#nearRow").style.display = "none";   // 一併關閉依距離排序
-  syncFilterUI(); syncRegionUI();
-  document.querySelectorAll("[data-sort]").forEach(c => c.classList.toggle("active", c.dataset.sort === "default"));
-  updateFilterDot(); render();
-});
-$("#btnFilter").addEventListener("click", () => { updateFilterDot(); $("#filterMask").classList.add("show"); $("#filterSheet").classList.add("show"); $("#closeFilterBtn").focus({ preventScroll: true }); });
-// #6 驚喜推薦：依目前篩選結果隨機挑一條步道開詳情，解決選擇困難
-$("#btnSurprise").addEventListener("click", () => {
-  const pool = (curList && curList.length) ? curList : TRAILS;
-  if (!pool.length) { toast(ttT("找不到符合的步道")); return; }
-  const t = pool[Math.floor(Math.random() * pool.length)];
-  toast(`🎲 ${ttT("為你抽到")}：${t.name}`);
-  openDetail(t.id);
-});
-
-// 篩選預設組（口袋路線）
-function getPresets() { try { return JSON.parse(localStorage.getItem("tt_presets")) || []; } catch { return []; } }
-function savePresets(a) { localStorage.setItem("tt_presets", JSON.stringify(a)); }
-function currentFilterState() { return { filters: [...activeFilters], regions: [...activeRegions], sort: curSort, open: filterOpen, geo: filterGeo, maxLen, maxAsc }; }
-function applyPreset(p) {
-  activeFilters = new Set(p.filters || []); activeRegions = new Set(p.regions || []);
-  curSort = p.sort || "default"; filterOpen = !!p.open; filterGeo = !!p.geo; maxLen = p.maxLen || 0; maxAsc = p.maxAsc || 0;
-  if (curSort === "distance" && !myLoc) curSort = "default";   // 口袋路線不保存定位，無位置時回預設
-  syncFilterUI(); syncRegionUI();
-  document.querySelectorAll("[data-sort]").forEach(c => c.classList.toggle("active", c.dataset.sort === curSort));
-  $("#fsOpen").classList.toggle("active", filterOpen); $("#fsGeo").classList.toggle("active", filterGeo);
-  $("#lenRange").value = maxLen || 30; $("#ascRange").value = maxAsc || 2000;
-  $("#lenVal").textContent = maxLen ? `≤ ${maxLen} km` : "不限"; $("#ascVal").textContent = maxAsc ? `≤ ${maxAsc} m` : "不限";
-  if (filterGeo) ensureGeo().then(() => { updateFilterDot(); render(); }); else { updateFilterDot(); render(); }
-}
-function buildPresets() {
-  const ps = getPresets(), grp = $("#fsPresetGroup"), box = $("#fsPresets");
-  if (!grp) return;
-  grp.style.display = ps.length ? "" : "none";
-  box.innerHTML = ps.map((p, i) => `<button class="chip preset" data-i="${i}">${p.name}<span class="px" data-del="${i}">✕</span></button>`).join("");
-  box.querySelectorAll(".chip.preset").forEach(b => b.addEventListener("click", e => {
-    if (e.target.dataset.del != null) { const a = getPresets(); a.splice(+e.target.dataset.del, 1); savePresets(a); buildPresets(); return; }
-    applyPreset(ps[+b.dataset.i]);
-  }));
-}
-const PRESET_FREE = 3;
-$("#fsSavePreset").addEventListener("click", () => {
-  if (!activeFilters.size && !activeRegions.size && curSort === "default" && !filterOpen && !filterGeo && !maxLen && !maxAsc) { toast("先設定一些篩選再儲存"); return; }
-  if (!(typeof Premium !== "undefined" && Premium.isOn()) && getPresets().length >= PRESET_FREE) {
-    toast(`免費口袋路線上限 ${PRESET_FREE} 組，升級 Premium 無限`);
-    if (typeof Premium !== "undefined") Premium.openUpgrade();
-    return;
-  }
-  askInput({ title: "為這組篩選命名", value: "常用篩選", max: 10 }).then(name => {
-    if (name == null) return;
-    const a = getPresets(); a.push({ name: name.trim().slice(0, 10) || "常用", ...currentFilterState() }); savePresets(a);
-    buildPresets(); toast("已存成口袋路線");
-  });
-});
-function closeFilter() { $("#filterMask").classList.remove("show"); $("#filterSheet").classList.remove("show"); }
-$("#filterMask").addEventListener("click", closeFilter);
-$("#closeFilterBtn").addEventListener("click", closeFilter);
-$("#fsApply").addEventListener("click", closeFilter);
-
-let _searchTm;
-// 最近搜尋（裝置本機，最多 8 筆）
-function _recent() { try { return JSON.parse(localStorage.getItem("tt_recent") || "[]"); } catch { return []; } }
-function _pushRecent(q) {
-  q = (q || "").trim(); if (q.length < 1) return;
-  try { const a = _recent().filter(x => x !== q); a.unshift(q); localStorage.setItem("tt_recent", JSON.stringify(a.slice(0, 8))); } catch (e) { /* */ }
-}
-function _toggleClear() { const b = $("#searchClear"); if (b) b.style.display = $("#searchInput").value ? "flex" : "none"; }
-$("#searchInput").addEventListener("input", e => {
-  curQuery = e.target.value.trim();
-  _toggleClear();
-  buildSuggest(curQuery);
-  clearTimeout(_searchTm); _searchTm = setTimeout(render, 180);   // 防抖，打字更順
-});
-$("#searchInput").addEventListener("focus", e => buildSuggest(e.target.value.trim()));
-$("#searchInput").addEventListener("keydown", e => { if (e.key === "Enter") { _pushRecent(curQuery); $("#searchInput").blur(); } });
-$("#searchClear").addEventListener("click", () => {
-  const inp = $("#searchInput"); inp.value = ""; curQuery = ""; _toggleClear();
-  buildSuggest(""); render(); inp.focus();
-});
-// 語音搜尋
-(function () {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const mic = $("#searchMic"); if (!mic) return;
-  if (!SR) { mic.style.display = "none"; return; }
-  mic.addEventListener("click", () => {
-    const r = new SR(); r.lang = "zh-TW"; r.interimResults = false; r.maxAlternatives = 1;
-    mic.classList.add("listening"); toast("請說出步道名稱…");
-    r.onresult = e => {
-      const txt = (e.results[0][0].transcript || "").replace(/[。，、？！\s]/g, "");
-      $("#searchInput").value = txt; curQuery = txt; buildSuggest(txt); render();
-    };
-    r.onend = () => mic.classList.remove("listening");
-    r.onerror = () => { mic.classList.remove("listening"); toast("語音辨識失敗，請再試一次"); };
-    try { r.start(); } catch (e) { mic.classList.remove("listening"); }
-  });
-})();
-$("#searchInput").addEventListener("blur", () => setTimeout(() => { $("#searchSuggest").style.display = "none"; }, 150));
-// 搜尋建議下拉：即時列出符合的步道名，點一下直接進詳情
-function buildSuggest(q) {
-  const box = $("#searchSuggest");
-  q = q.toLowerCase().replace(/\s+/g, "");
-  // 空查詢＋有最近搜尋 → 顯示「最近搜尋」清單（點一下帶入並搜尋）
-  if (!q) {
-    const rec = _recent();
-    if (!rec.length) { box.style.display = "none"; return; }
-    box.innerHTML = `<div class="sug-head">${ttT("最近搜尋")}<button class="sug-clear" id="sugClearRecent">${ttT("清除")}</button></div>` +
-      rec.map(r => `<button class="sug" data-q="${r.replace(/"/g, "&quot;")}">${ic("clock")}<span class="sug-n">${r}</span></button>`).join("");
-    box.style.display = "block";
-    const cb = box.querySelector("#sugClearRecent");
-    if (cb) cb.addEventListener("mousedown", e => { e.preventDefault(); try { localStorage.removeItem("tt_recent"); } catch (x) { } box.style.display = "none"; });
-    box.querySelectorAll(".sug[data-q]").forEach(b => b.addEventListener("mousedown", e => {
-      e.preventDefault(); const inp = $("#searchInput"); inp.value = b.dataset.q; curQuery = b.dataset.q; _toggleClear(); buildSuggest(b.dataset.q); render();
-    }));
-    return;
-  }
-  const hits = [];
-  for (const t of TRAILS) {
-    const n = (t.name || "").toLowerCase().replace(/\s+/g, "");
-    if (n.includes(q)) hits.push(t);
-    if (hits.length >= 30) break;
-  }
-  hits.sort((a, b) => (a.name.toLowerCase().startsWith(q) ? 0 : 1) - (b.name.toLowerCase().startsWith(q) ? 0 : 1));
-  const top = hits.slice(0, 6);
-  if (!top.length) { box.style.display = "none"; return; }
-  box.innerHTML = top.map(t =>
-    `<button class="sug" data-id="${t.id}">${ic("pin")}<span class="sug-n">${t.name}</span><span class="sug-r">${t.region || ""}</span></button>`).join("");
-  box.style.display = "block";
-  box.querySelectorAll(".sug").forEach(b => b.addEventListener("mousedown", e => {
-    e.preventDefault(); box.style.display = "none"; _pushRecent($("#searchInput").value.trim()); openDetail(b.dataset.id);
-  }));
-}
-
-// 檢視模式：列表 / 地圖（分段控制）
-document.querySelectorAll(".seg-btn[data-mode]").forEach(b => b.addEventListener("click", () => {
-  const map = b.dataset.mode === "map";
-  document.querySelectorAll(".seg-btn[data-mode]").forEach(x => x.classList.toggle("on", x === b));
-  mapOn = map;
-  $("#browseMap").style.display = map ? "block" : "none";
-  $("#trailList").style.display = map ? "none" : "block";
-  if (map) showBrowseMap(); else render();
-}));
-
-let myLoc = null;       // 使用者位置（附近排序用）
-let pageSize = 60, shown = 0, curList = [];
-
-let curSort = "default", filterOpen = false, filterGeo = false, nearRadius = 0, maxLen = 0, maxAsc = 0;   // 0 = 不限
-function isClosed(t) { return t.condition && /暫停|封閉|關閉/.test(t.condition.status || ""); }
-function matchDiff(f, t) { return f === "d45" ? t.difficulty >= 4 : t.difficulty === +f.slice(1); }
-// render 期間快取收藏/步記，避免每張卡重複解析 localStorage
-let _favSet = new Set(), _logCache = {};
-function refreshCardCache() {
-  try { _favSet = new Set(JSON.parse(localStorage.getItem("tt_favs") || "[]")); } catch { _favSet = new Set(); }
-  try { _logCache = JSON.parse(localStorage.getItem("tt_log") || "{}"); } catch { _logCache = {}; }
-}
-const isFavC = id => _favSet.has(id);
-const logC = id => _logCache[id] || {};
-function matches(t) {
-  // 地區（複選 OR）
-  if (activeRegions.size && !activeRegions.has(t.region)) return false;
-  if (filterOpen && isClosed(t)) return false;
-  if (filterGeo && !geoOf(t)) return false;
-  // 旗標（各自 AND）
-  if (activeFilters.has("fav") && !isFavC(t.id)) return false;
-  if (activeFilters.has("done") && !logC(t.id).done) return false;
-  if (activeFilters.has("family") && !t.family_friendly) return false;
-  if (activeFilters.has("rated4") && (logC(t.id).rating || 0) < 4) return false;
-  if (maxLen && (t.length_km == null || t.length_km > maxLen)) return false;
-  if (maxAsc && (t.ascent == null || t.ascent > maxAsc)) return false;
-  if (nearRadius && myLoc) { if (!t.lat || haversine(myLoc, { lat: t.lat, lon: t.lon }) > nearRadius * 1000) return false; }
-  // 難度（複選 OR）
-  const diffs = [...activeFilters].filter(f => /^d\d/.test(f));
-  if (diffs.length && !diffs.some(f => matchDiff(f, t))) return false;
-  // 主題標籤（複選 OR）
-  const tags = [...activeFilters].filter(f => f.startsWith("tag:")).map(f => f.slice(4));
-  if (tags.length) { const tt = tagsOf(t); if (!tags.some(g => tt.includes(g))) return false; }
-  if (curQuery) {
-    const q = curQuery.toLowerCase().replace(/\s+/g, "");
-    const hay = `${t.name} ${t.position || ""} ${t.region || ""} ${t.system || ""} ${tagsOf(t).join("")} ${(typeof window !== "undefined" && window.TT_NAMES && window.TT_NAMES[t.name]) || ""}`
-      .toLowerCase().replace(/\s+/g, "");
-    if (!hay.includes(q)) return false;
-  }
-  return true;
-}
-
-function trailCard(t) {
-  const d = t.difficulty || 0;
-  const closed = t.condition && /暫停|封閉|關閉/.test(t.condition.status || "");
-  // 陡度條：每公里爬升（≈400 m/km 視為極陡）
-  let slope = "";
-  if (t.ascent != null && t.length_km) {
-    const perKm = t.ascent / t.length_km;
-    const w = Math.max(6, Math.min(100, Math.round(perKm / 4)));
-    // 光一條沒刻度的色條看不出意思 → 補一個白話形容＋每公里爬升
-    const word = perKm < 40 ? "平平的" : perKm < 100 ? "有點坡" : perKm < 200 ? "會喘" : "很陡";
-    slope = `<div class="slope-row"><span class="slope-label">陡度</span><div class="slope-bar"><i style="width:${w}%"></i></div><span class="slope-v">${word}<small>${Math.round(perKm)} m/km</small></span></div>`;
-  }
-  const fav = isFavC(t.id), done = logC(t.id).done;
-  const distKm = (myLoc && t.lat) ? (haversine(myLoc, { lat: t.lat, lon: t.lon }) / 1000).toFixed(1) : null;
-  // 山誌式 hero 數據（襯線數字當主角，最多三格）
-  const stats = [`<div class="jstat"><div class="jnum">${t.length_km != null ? t.length_km : "—"}</div><div class="jlbl">公里</div></div>`];
-  const gainC = (typeof Profile !== "undefined" && Profile.cachedGain) ? Profile.cachedGain(t.id) : null;
-  const ascShow = gainC != null ? gainC : (t.ascent != null ? Math.round(t.ascent) : null);
-  if (ascShow != null) stats.push(`<div class="jstat"><div class="jnum" data-card-asc>↑${ascShow}</div><div class="jlbl">累積爬升 m</div></div>`);
-  if (t.tour) stats.push(`<div class="jstat"><div class="jnum jnum-sm">${t.tour}</div><div class="jlbl">建議時程</div></div>`);
-  else if (distKm) stats.push(`<div class="jstat"><div class="jnum">${distKm}</div><div class="jlbl">公里外</div></div>`);
-  const locExtra = (distKm && t.tour) ? `<span class="jloc-dot">·</span>${ic("compass")}<span>${distKm} km</span>` : "";
-  return `<div class="card jcard" data-id="${t.id}">
-    <span class="jbar d${d}"></span>
-    <button class="fav-star${fav ? " on" : ""}" data-fav="${t.id}" aria-label="收藏 ${t.name}">${fav ? "★" : "☆"}</button>
-    ${done ? `<span class="done-badge" title="${ttT("已完成")}">✓</span>` : ""}
-    <h3>${t.name}</h3>
-    <div class="jloc">${ic("pin")}<span>${t.position || "—"}</span>${locExtra}</div>
-    <div class="jstats">${stats.join('<span class="jstats-div"></span>')}</div>
-    <div class="badges">
-      <span class="badge diff d${d}"><span class="lvl">${d}</span>${t.difficulty_label}</span>
-      ${closed ? `<span class="badge closed">${ic("alert")} ${t.condition.status}</span>` : ""}
-      ${t.family_friendly ? `<span class="badge family">親子友善</span>` : ""}
-      ${t.permit && t.permit !== "無" ? `<span class="badge ghost">需入山證</span>` : ""}
-      <span class="badge src">${SRC_LABEL[t.source] || t.source}</span>
-    </div>
-    ${slope}
-  </div>`;
-}
-
-// 「熱門」排序分數：沒有全站造訪數，用「資料完整度＋可近性」當熱門度代理
-// （官方建置、有路況監測、親子友善、交通便利、有季節/時程資訊、難度親民＝越熱門）
-function popularityScore(t) {
-  let s = 0;
-  if (t.source === "forestry") s += 4;
-  if (t.condition) s += 1;
-  if (t.family_friendly) s += 2;
-  if (t.tour) s += 1;
-  if (t.best_season) s += 1;
-  if (t.pave) s += 1;
-  if (t.transport && (t.transport.car || t.transport.m_bus || t.transport.l_bus)) s += 1;
-  s += (6 - (t.difficulty || 3)) * 0.5;   // 難度越低越大眾
-  return s;
-}
-// 詳情頁「附近其他步道」：優先用座標找最近的，否則同縣市
-function nearbyTrails(t, n = 8) {
-  const pool = TRAILS.filter(x => x.id !== t.id);
-  if (t.lat && t.lon) {
-    const near = pool.filter(x => x.lat && x.lon)
-      .map(x => ({ x, d: haversine({ lat: t.lat, lon: t.lon }, { lat: x.lat, lon: x.lon }) }))
-      .filter(o => o.d <= 80000)
-      .sort((a, b) => a.d - b.d)
-      .slice(0, n)
-      .map(o => Object.assign({ _distKm: o.d / 1000 }, o.x));
-    if (near.length) return near;
-  }
-  return pool.filter(x => x.region && x.region === t.region).slice(0, n);
-}
-function nearbyStripHtml(t) {
-  const list = nearbyTrails(t);
-  if (!list.length) return "";
-  const cards = list.map(x => {
-    const d = x.difficulty || 0;
-    const bits = [x.difficulty_label];
-    if (x.length_km != null) bits.push(`${x.length_km} km`);
-    const dist = x._distKm != null ? `<span class="nb-dist">${ic("compass")}${x._distKm.toFixed(x._distKm < 10 ? 1 : 0)} km</span>` : "";
-    return `<button class="nearby-card" data-id="${x.id}"><span class="nb-bar d${d}"></span><span class="nb-name">${x.name}</span><span class="nb-meta">${bits.join(" · ")}</span>${dist}</button>`;
-  }).join("");
-  return `<div class="section-title" id="secNearby">${ic("compass")}${ttT("附近其他步道")}</div><div class="nearby-strip" id="nearbyBox">${cards}</div>`;
-}
-
-function render() {
-  refreshCardCache();
-  curList = TRAILS.filter(matches);
-  if (myLoc) curList.sort((a, b) =>
-    (a.lat ? haversine(myLoc, { lat: a.lat, lon: a.lon }) : 9e9) -
-    (b.lat ? haversine(myLoc, { lat: b.lat, lon: b.lon }) : 9e9));
-  else if (curQuery && curSort === "default") {
-    // 搜尋相關度：名稱開頭命中 > 名稱包含 > 林務署官方優先 > 短的優先
-    const q = curQuery.toLowerCase().replace(/\s+/g, "");
-    const score = t => {
-      const n = (t.name || "").toLowerCase().replace(/\s+/g, "");
-      return (n.startsWith(q) ? 0 : n.includes(q) ? 1 : 2) * 10 + (t.source === "forestry" ? 0 : 3);
-    };
-    curList.sort((a, b) => score(a) - score(b) || (a.length_km ?? 9e9) - (b.length_km ?? 9e9));
-  }
-  else if (curSort !== "default") {
-    const ln = t => t.length_km == null ? 9e9 : t.length_km;
-    const df = t => t.difficulty == null ? 99 : t.difficulty;
-    // 最近走過：用紀錄裡各步道的最新日期
-    let lastWalk = null;
-    if (curSort === "recent") {
-      lastWalk = new Map();
-      for (const r of Store.getRecords()) {
-        if (r.trailId == null || !r.date) continue;
-        const k = String(r.trailId), d = String(r.date);
-        if (!lastWalk.has(k) || d > lastWalk.get(k)) lastWalk.set(k, d);
-      }
-    }
-    const cmp = {
-      "length-asc": (a, b) => ln(a) - ln(b), "length-desc": (a, b) => ln(b) - ln(a),
-      "diff-asc": (a, b) => df(a) - df(b), "diff-desc": (a, b) => df(b) - df(a),
-      "rating-desc": (a, b) => (Store.trailLog(b.id).rating || 0) - (Store.trailLog(a.id).rating || 0),
-      "name": (a, b) => a.name.localeCompare(b.name, "zh-Hant"),
-      "recent": (a, b) => (lastWalk.get(String(b.id)) || "").localeCompare(lastWalk.get(String(a.id)) || "") || ln(a) - ln(b),
-      "popular": (a, b) => popularityScore(b) - popularityScore(a) || ln(a) - ln(b),
-    }[curSort];
-    if (cmp) curList.sort(cmp);
-  }
-  $("#resultCount").textContent = `共 ${curList.length} 條步道`;
-  updateFilterDot();
-  updateCollections();
-  if (mapOn) { showBrowseMap(); return; }
-  shown = 0;
-  if (_io) _io.disconnect();
-  $("#trailList").innerHTML = "";
-  if (!curList.length) {
-    // 依「為什麼是空的」給對的話：收藏空/完成空要引導怎麼做，別一律說「找不到、清除篩選」
-    let msg = "找不到符合的步道", hint = "試試清除篩選或換個關鍵字";
-    if (activeFilters.has("fav")) { msg = "還沒有收藏的步道"; hint = "點步道卡右上的 ☆ 就能收藏"; }
-    else if (activeFilters.has("done")) { msg = "還沒有完成的步道"; hint = "走完一條步道就會自動標記完成"; }
-    $("#trailList").innerHTML = `<div class="empty">${EMPTY_ART}${msg}<br>
-      <span style="font-size:12.5px">${hint}</span><br>
-      <button class="chip" style="margin-top:14px" onclick="document.getElementById('fsReset').click()">清除所有篩選</button></div>`;
-    return;
-  }
-  renderMore();
-}
-
-let _io = null;
-function ensureObserver() {
-  if (!_io) _io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) renderMore(); }, { rootMargin: "700px" });
-  return _io;
-}
-function bindCards() {
-  $("#trailList").querySelectorAll(".card:not([data-bound])").forEach(c => {
-    c.setAttribute("data-bound", "1");
-    c.addEventListener("click", e => {
-      if (e.target.closest(".fav-star")) return;
-      openDetail(c.dataset.id);
-    });
-    const star = c.querySelector(".fav-star");
-    if (star) star.addEventListener("click", () => {
-      if (!Store.isFav(star.dataset.fav) && !favAddAllowed()) return;
-      const added = Store.toggleFav(star.dataset.fav);
-      star.classList.toggle("on", added); star.textContent = added ? "★" : "☆";
-      if (added) { star.classList.remove("pop"); void star.offsetWidth; star.classList.add("pop"); }
-      toast(added ? "已加入收藏" : "已移除收藏");
-    });
-  });
-}
-function renderMore() {
-  const slice = curList.slice(shown, shown + pageSize);
-  $("#trailList").insertAdjacentHTML("beforeend", slice.map(trailCard).join(""));
-  shown += slice.length;
-  bindCards();
-  if (_io) _io.disconnect();
-  const old = $("#listSentinel"); if (old) old.remove();
-  if (shown < curList.length) {                       // 無限捲動：哨兵進入視窗即續載
-    $("#trailList").insertAdjacentHTML("beforeend", `<div id="listSentinel" style="height:1px"></div>`);
-    ensureObserver().observe($("#listSentinel"));
-  }
-}
-
+// 探索頁（搜尋、篩選、列表、地圖瀏覽）已拆到 js/explore.js，在 app.js 之後載入
 // 地圖瀏覽模式
 let browseMap = null, browseLayer = null, mapOn = false;
 let browseMarkers = new Map(), browseMoveBound = false, browseMoveTimer = null;   // 視野虛擬化用
@@ -1453,73 +960,6 @@ function pinIcon(color, label) {
     iconSize: [24, 32], iconAnchor: [12, 32], popupAnchor: [0, -28],
   });
 }
-function showBrowseMap() {
-  if (!browseMap) {
-    browseMap = L.map("browseMap", { zoomControl: true }).setView([23.8, 121], 7);
-    addBaseWithToggle(browseMap);
-    addCompass(browseMap);       // 指北針只在主頁面地圖
-    addFullscreen(browseMap);    // 全螢幕也只在主頁面地圖（正常排版，假全螢幕可正確覆蓋）
-    // 圖釘叢集：縮放時聚合，全台上千點也順暢
-    browseLayer = (typeof L.markerClusterGroup === "function")
-      ? L.markerClusterGroup({ maxClusterRadius: 50, chunkedLoading: true })
-      : L.layerGroup();
-    browseMap.addLayer(browseLayer);
-    // 難度色彩圖例
-    const lg = L.control({ position: "bottomright" });
-    lg.onAdd = () => {
-      const d = L.DomUtil.create("div", "map-legend");
-      const rows = [[1, "輕鬆"], [2, "一般"], [3, "進階"], [4, "挑戰"], [5, "困難"]]
-        .map(([n, l]) => `<span><i style="background:${DIFF_COLOR[n]}"></i>${l}</span>`).join("");
-      d.innerHTML = `<b>難度</b>${rows}<span><i style="background:#b3322a"></i>封閉</span>`;
-      return d;
-    };
-    lg.addTo(browseMap);
-  }
-  // 視野虛擬化：只建目前地圖範圍內的 marker；平移/縮放時再增減（省物件、上千點也順、且不再有 1500 上限漏步道）
-  if (!browseMoveBound) {
-    browseMap.on("moveend zoomend", () => { clearTimeout(browseMoveTimer); browseMoveTimer = setTimeout(renderBrowseMarkers, 90); });
-    browseMoveBound = true;
-  }
-  // 換篩選：清掉不在新清單的舊 marker（其餘 renderBrowseMarkers 會 diff 處理）
-  const ids = new Set(curList.map(t => t.id));
-  for (const [id, mk] of browseMarkers) { if (!ids.has(id)) { browseLayer.removeLayer(mk); browseMarkers.delete(id); } }
-  // 先框住整個篩選結果（用座標，不需建 marker），fitBounds 觸發的 moveend 會接著只渲染視野內的點
-  const bounds = curList.filter(t => t.lat).map(t => [t.lat, t.lon]);
-  // 沒怎麼篩選（全台幾千條）時框台灣本島＋澎湖：金門馬祖也算進去的話會連福建沿海一起框，台灣只剩一小角。
-  // 金馬的點照樣在地圖上，只是不影響初始鏡頭；篩選後（如選金門縣）才依結果框。
-  const TW_MAIN = [[21.85, 119.3], [25.35, 122.05]];
-  setTimeout(() => { browseMap.invalidateSize(); if (bounds.length > 300) browseMap.fitBounds(TW_MAIN, { padding: [10, 10] }); else if (bounds.length) browseMap.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 }); renderBrowseMarkers(); }, 80);
-}
-function _browseMarker(t) {
-  const closed = t.condition && /暫停|封閉|關閉/.test(t.condition.status || "");
-  const col = closed ? "#b3322a" : (DIFF_COLOR[t.difficulty] || "#888");
-  const mk = L.marker([t.lat, t.lon], { icon: pinIcon(col, closed ? "!" : (t.difficulty ?? "")) });
-  const safeName = t.name.replace(/[<>&]/g, "");
-  mk.bindPopup(`<b>${safeName}</b><br>${t.difficulty_label}${t.length_km ? " · " + t.length_km + "km" : ""}${closed ? "<br>⚠️ " + t.condition.status : ""}<br><a href="#" class="popup-go">查看詳情</a>`);
-  mk.on("popupopen", e => { const a = e.popup.getElement().querySelector(".popup-go"); if (a) a.addEventListener("click", ev => { ev.preventDefault(); openDetail(t.id); }); });
-  return mk;
-}
-function renderBrowseMarkers() {
-  if (!browseMap || !browseLayer) return;
-  const b = browseMap.getBounds().pad(0.35);   // 視野外擴 35%，平移時邊緣不會空
-  const visible = new Set();
-  let n = 0;
-  for (const t of curList) {
-    if (!t.lat || !b.contains([t.lat, t.lon])) continue;
-    visible.add(t.id);
-    if (!browseMarkers.has(t.id)) { const mk = _browseMarker(t); browseMarkers.set(t.id, mk); browseLayer.addLayer(mk); }
-    if (++n >= 2500) break;   // 保險上限（>全部步道數，全覽時不漏；縮放進去時視野自然culling到數百）
-  }
-  for (const [id, mk] of browseMarkers) { if (!visible.has(id)) { browseLayer.removeLayer(mk); browseMarkers.delete(id); } }
-}
-
-// 附近半徑篩選（依距離排序開啟後出現）
-$("#nearRow").querySelectorAll("[data-radius]").forEach(b => b.addEventListener("click", () => {
-  nearRadius = +b.dataset.radius;
-  $("#nearRow").querySelectorAll("[data-radius]").forEach(x => x.classList.toggle("active", x === b));
-  render();
-}));
-
 // 步道路況/封閉警示橫幅
 function fmtYmd(s) { return s && s.length === 8 ? `${s.slice(0, 4)}/${s.slice(4, 6)}/${s.slice(6)}` : s; }
 function condStamp() {
@@ -4386,13 +3826,9 @@ setTimeout(() => { const s = document.getElementById("splash"); if (s) s.remove(
 // 量測 header 高度供搜尋列吸頂用
 function setHeaderH() { const h = document.querySelector(".app-header"); if (h) document.documentElement.style.setProperty("--hdr-h", h.offsetHeight + "px"); }
 setHeaderH(); window.addEventListener("load", setHeaderH); window.addEventListener("resize", setHeaderH);
-buildFsRegion();
-buildCollections();
-buildPresets();
 initTheme();
 if (localStorage.getItem("tt_pet_stage") === null) localStorage.setItem("tt_pet_stage", petStageIndex(totalKm()));   // 既有里程不誤觸進化提示
-render();
-loadProfile();
+loadProfile();   // 探索列表的第一次 render() 在 explore.js 最後
 restoreActiveRecording();
 // 資料自動救援：localStorage 紀錄被清空（iOS 清快取/儲存）但 IndexedDB 封存還在 → 回填
 (async () => {
