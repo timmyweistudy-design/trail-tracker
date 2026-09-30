@@ -271,7 +271,7 @@ function openAnalytics() {
     <div class="ana-week">${wd.map((c, i) => `<div class="aw"><div class="aw-v">${c}</div><div class="aw-bar" style="height:${Math.round(c / maxW * 46) + 4}px"></div><div class="aw-l">${WLBL[i]}</div></div>`).join("")}</div>
     <div class="ana-spark-cap">星期幾最常出門</div>
     ${regionHtml}
-    <button class="btn ghost hide-personal" id="anaCompare" style="margin-top:10px">${ic("users")} 好友里程比較</button>
+    <button class="btn ghost social-only" id="anaCompare" style="margin-top:10px">${ic("users")} 好友里程比較</button>
     <div class="ana-exp">
       <button class="btn ghost" id="anaCsv">${ic("download")} CSV</button>
       <button class="btn ghost" id="anaGpx">${ic("download")} GPX</button>

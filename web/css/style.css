@@ -1113,8 +1113,12 @@ body.map-fs-open { overflow: hidden; }
 .toast {
   position: fixed; bottom: calc(100px + var(--safe-b)); left: 50%; transform: translateX(-50%) translateY(20px);
   background: var(--brand-deep); color: #f2efe4; padding: 12px 20px; border-radius: var(--r-pill); font-size: calc(13.5px * var(--fs, 1));
-  opacity: 0; pointer-events: none; transition: .28s cubic-bezier(.2,.8,.2,1); z-index: 60; max-width: 90%;
+  opacity: 0; pointer-events: none; transition: .28s cubic-bezier(.2,.8,.2,1); z-index: 60;
   box-shadow: var(--sh-lg); font-weight: 500;
+  /* left:50% 會讓瀏覽器只給它「半個畫面」寬 → 短句也被擠成兩行、而且靠左。
+     改成按文字實寬、最多 90vw，置中對齊；兩行時膠囊圓角看起來歪，改一般圓角 */
+  width: max-content; max-width: min(90vw, 440px); text-align: center; text-wrap: balance; line-height: 1.45;
+  border-radius: 18px;
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
@@ -2608,10 +2612,11 @@ html[data-theme="dark"] body::after { opacity: .05; }
 .ptr-ind.loading .ptr-spin { display: inline-block; }
 
 /* ── 自用模式（config.js PERSONAL_MODE）：收起付費與社交入口 ── */
-.personal .pro-tag, .personal .hide-personal,
-.personal .tab[data-view="social"], .personal #petFriends,
-.personal #trailFeedBox, .personal #activityBox { display: none !important; }
-.personal .link-row.rec-links { grid-template-columns: repeat(2, 1fr); }   /* 隊友同行收起來後剩 2 顆，別留一格空位 */
+.personal .pro-tag, .personal .hide-personal { display: none !important; }
+/* 社群功能開關（我的 → 外觀）關掉時才收：跟自用模式分開，自用照樣可以玩社群 */
+.hide-social .social-only, .hide-social .tab[data-view="social"], .hide-social #petFriends,
+.hide-social #trailFeedBox, .hide-social #activityBox { display: none !important; }
+.hide-social .link-row.rec-links { grid-template-columns: repeat(2, 1fr); }   /* 隊友同行收起來後剩 2 顆，別留一格空位 */
 /* 同名的其他路段 */
 .sib-box { margin: 4px 0 14px; }
 .sib-h { font-size: calc(12px * var(--fs, 1)); color: var(--ink-soft); font-weight: 700; margin-bottom: 7px; }

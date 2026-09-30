@@ -18,6 +18,8 @@
         if (!fs || MIG[fs]) { fs = (fs && MIG[fs]) || "1.2"; localStorage.setItem("tt_fontscale", fs); }
         document.documentElement.style.setProperty("--fs", fs);
         document.documentElement.toggleAttribute("data-fs-big", +fs >= 1.5);   // 特大/超大字：部分格狀版面改少欄
+        // 社群功能開關（我的 → 外觀）：預設顯示；關掉才收起社群分頁、小隊、揪團等入口。開機就套，免得閃一下
+        if (localStorage.getItem("tt_hide_social") === "1") document.documentElement.classList.add("hide-social");
       } catch (e) { /* */ }
     })();
   </script>
@@ -167,7 +169,7 @@
       <label class="sim-toggle"><input type="checkbox" id="simToggle"> 模擬（無 GPS 預覽）<span class="pro-tag">PRO</span></label>
     </div>
     <div class="link-row rec-links" style="margin-top:14px">
-      <button class="link-btn hide-personal" id="btnTeam"><span class="lb-ic"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 5.2A3 3 0 0 1 16 11M21 20a6 6 0 0 0-4-5.7"/></svg></span>隊友同行</button>
+      <button class="link-btn social-only" id="btnTeam"><span class="lb-ic"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 5.2A3 3 0 0 1 16 11M21 20a6 6 0 0 0-4-5.7"/></svg></span>隊友同行</button>
       <button class="link-btn" id="btnShareLoc"><span class="lb-ic"><svg class="ic" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg></span>分享位置</button>
       <button class="link-btn" id="btnImportGpx"><span class="lb-ic"><svg class="ic" viewBox="0 0 24 24"><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="5" r="2.2"/><path d="M8 19h6a4 4 0 0 0 0-8H10a4 4 0 0 1 0-8h6"/></svg></span>跟著路線走<span class="pro-tag">PRO</span></button>
     </div>
@@ -232,6 +234,8 @@
         </div>
         <div class="accent-head">主題配色<span class="pro-tag">PRO</span></div>
         <div class="accent-row" id="accentRow"></div>
+        <div class="accent-head">社群功能</div>
+        <label class="sim-toggle"><input type="checkbox" id="socialToggle"> 顯示社群、小隊、揪團等功能</label>
         <div id="reminderWrap"></div>
       </div>
     </div>

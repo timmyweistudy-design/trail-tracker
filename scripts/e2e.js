@@ -313,7 +313,8 @@ const PORT = 8899;
       await pm.close();
     }
 
-    // 自用模式（config.js 預設開）：全部 PRO 直接可用、升級面板不出現、PRO 標籤與社群入口收起來
+    // 自用模式（config.js 預設開）：全部 PRO 直接可用、升級面板不出現、PRO 標籤收起；
+    // 社群入口預設照常顯示，「我的 → 外觀」的社群功能開關可自行收起／打開
     {
       const ps = await browser.newPage({ viewport: { width: 390, height: 844 } });
       await ps.addInitScript(() => {
@@ -334,10 +335,14 @@ const PORT = 8899;
       });
       ok("自用模式：會員功能全開", st.on && st.gate);
       ok("自用模式：不跳升級面板", !st.panel);
-      ok("自用模式：社群分頁收起", !st.social);
+      ok("自用模式：社群分頁預設照常顯示", st.social);
       ok("自用模式：看不到 PRO 標籤", !st.proTag);
       await ps.evaluate(() => { const t = document.getElementById("simToggle"); if (t && !t.checked) t.click(); });
       ok("自用模式：模擬模式可直接勾", await ps.evaluate(() => document.getElementById("simToggle").checked));
+      const flip = async on => ps.evaluate(on => { const cb = document.getElementById("socialToggle"); if (cb.checked !== on) cb.click();
+        const t = document.querySelector('.tab[data-view="social"]'); return (getComputedStyle(t).display !== "none") === on && localStorage.getItem("tt_hide_social") === (on ? "0" : "1"); }, on);
+      ok("社群開關：關掉就收起社群分頁", await flip(false));
+      ok("社群開關：打開就回來", await flip(true));
       await ps.close();
     }
 

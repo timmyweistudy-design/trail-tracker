@@ -1703,7 +1703,7 @@ async function openDetail(id) {
           ${nav ? `<a class="link-btn" href="${nav}" target="_blank" rel="noopener">${ic("compass")} 導航</a>` : ""}
           <a class="link-btn" href="${moreSearch}" target="_blank" rel="noopener">${ic("search")} 查資訊</a>
           <button class="link-btn" id="btnShareTrail">${ic("share")} 分享</button>
-          <button class="link-btn hide-personal" id="btnEventTrail">${ic("calendar")} 揪團</button>
+          <button class="link-btn social-only" id="btnEventTrail">${ic("calendar")} 揪團</button>
           <button class="link-btn" id="btnCompare">${ic("compare")} ${compareSet.has(t.id) ? "移出比較" : "加入比較"}</button>
           ${t.url ? `<a class="link-btn" href="${t.url}" target="_blank" rel="noopener">${ic("external")} 原始頁</a>` : ""}
         </div>
@@ -2479,7 +2479,7 @@ async function saveImageFile(file) {
 // 否則「近 30 天 1 人走過」等於公開某個人的行蹤）。資料庫端也擋一次（schema-phase26）。
 async function loadTrailActivity(t) {
   const box = $("#activityBox");
-  if (window.PERSONAL_MODE) return;   // 自用：不查別人的健行統計
+  if (socialHidden()) return;   // 社群功能關掉時不查別人的健行統計
   if (!box || typeof Supa === "undefined" || !Supa.ready || !Supa.ready()) return;
   try {
     const c = Supa.client(); if (!c) return;
@@ -2500,7 +2500,7 @@ async function loadTrailActivity(t) {
 
 async function loadTrailFeed(t) {
   const box = $("#trailFeedBox"); if (!box) return;
-  if (window.PERSONAL_MODE) { box.innerHTML = ""; return; }   // 自用：不撈社群貼文
+  if (socialHidden()) { box.innerHTML = ""; return; }   // 社群功能關掉時不撈社群貼文
   if (typeof Supa === "undefined" || !Supa.ready() || typeof Posts === "undefined" || typeof Feed === "undefined") { box.innerHTML = ""; return; }
   try {
     const posts = await Posts.byTrail(t.id, 12);
@@ -2608,7 +2608,7 @@ function openTrackReview(rec, isNew) {
       <button class="link-btn" id="trackCard">${ic("camera")} 分享圖卡</button>
       <button class="link-btn" id="trackGpx">${ic("download")} 下載路線檔<span class="pro-tag">PRO</span></button>
       <button class="link-btn" id="trackShare">${ic("share")} 分享行程</button>
-      ${rec.sim ? "" : `<button class="link-btn hide-personal" id="trackSocial">${ic("megaphone")} 分享到社群</button>`}
+      ${rec.sim ? "" : `<button class="link-btn social-only" id="trackSocial">${ic("megaphone")} 分享到社群</button>`}
     </div>`;
   $("#trackMask").classList.add("show");
   $("#trackSheet").classList.add("show");
@@ -3673,7 +3673,7 @@ async function cloudClient() {
   const c = Supa.client(); const { data: u } = await c.auth.getUser();
   if (!u || !u.user) {
     // 自用模式把社群分頁藏起來了，直接帶去登入畫面，別叫人去找一個看不到的分頁
-    if (window.PERSONAL_MODE) { toast(ttT("先登入，才能備份到雲端")); const t = document.querySelector('.tab[data-view="social"]'); if (t) t.click(); }
+    if (socialHidden()) { toast(ttT("先登入，才能備份到雲端")); const t = document.querySelector('.tab[data-view="social"]'); if (t) t.click(); }
     else toast("請先到社群分頁登入");
     return null;
   }
@@ -4240,8 +4240,8 @@ async function renderMeProfileCard() {
   const el = $("#meProfileCard"); if (!el) return;
   if (typeof Supa === "undefined" || !Supa.ready() || typeof Auth === "undefined") { el.innerHTML = ""; return; }
   const sess = await Auth.session().catch(() => null);
-  // 自用模式：登入只為了雲端備份，登入後這張卡就不用出現了
-  if (window.PERSONAL_MODE) {
+  // 社群功能關掉時：登入只為了雲端備份，登入後這張卡就不用出現了
+  if (socialHidden()) {
     el.innerHTML = sess ? "" : `<div class="me-card me-card-guest" id="meCardLogin">${ttT("登入一下，之後每趟都自動備份到雲端")} ›</div>`;
     const b = $("#meCardLogin"); if (b) b.addEventListener("click", () => { const t = document.querySelector('.tab[data-view="social"]'); if (t) t.click(); });
     return;
@@ -4252,6 +4252,20 @@ async function renderMeProfileCard() {
   el.innerHTML = `<div class="me-card">${ttProfileHero(prof)}</div>`;
   bindProfAch(el);
 }
+// 社群功能開關（我的 → 外觀）：關掉＝收起社群分頁、小隊、揪團、分享到社群、好友比較、好友的夥伴。
+// 只是藏入口，資料與登入都在（雲端備份仍要登入）。狀態存 tt_hide_social，開機時 index.html 就先套 class。
+function socialHidden() { return document.documentElement.classList.contains("hide-social"); }
+(function wireSocialToggle() {
+  const cb = document.getElementById("socialToggle"); if (!cb) return;
+  cb.checked = !socialHidden();
+  cb.addEventListener("change", () => {
+    const hide = !cb.checked;
+    try { localStorage.setItem("tt_hide_social", hide ? "1" : "0"); } catch (e) { /* */ }
+    document.documentElement.classList.toggle("hide-social", hide);
+    renderMeProfileCard();
+    toast(hide ? ttT("社群功能已收起") : ttT("社群功能回來了"));
+  });
+})();
 // 健行提醒開關（只在原生 App 顯示；網頁版沒有本地排程通知外掛）
 function renderReminderToggle() {
   const el = $("#reminderWrap"); if (!el) return;

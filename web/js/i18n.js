@@ -4,6 +4,10 @@
 // 步道名稱/介紹等資料內容維持中文。要補翻譯：加 DICT 詞條或 PATTERNS 規則即可。
 const I18n = (() => {
   const DICT = {
+    "社群功能": "Social features",
+    "顯示社群、小隊、揪團等功能": "Show social, teams, group hikes and more",
+    "社群功能已收起": "Social features hidden",
+    "社群功能回來了": "Social features are back",
     "正在整理這趟的海拔數字…": "Crunching this hike's elevation…",
     "最高": "High",
     "全長約": "Length approx.",
