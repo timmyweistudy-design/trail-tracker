@@ -160,6 +160,7 @@ const PORT = 8899;
       return Store.getRecords().length;
     });
     await page.click("#btnStop");
+    await page.click(".ttdlg .btn.primary", { timeout: 3000 }).catch(() => {});   // 結束前確認（走了一段以上才會問）
     // 結算要等海拔校正（最多 8 秒，網路慢時才會等滿）；固定等 3 秒會偶發失敗
     await page.waitForSelector("#trackSheet.show", { timeout: 12000 }).catch(() => {});
     await page.waitForTimeout(300);
@@ -313,6 +314,30 @@ const PORT = 8899;
       if (scene === "store") ok("冷啟動：商店有訂閱、帳本未同步，開機即解鎖", st.on && st.cache === "1");
       else ok("冷啟動：會員離線開 App 不被降級（快取仍是 1）", st.on && st.cache === "1");
       await pm.close();
+    }
+
+    // 閃退復原：自動存檔要保留「模擬」與步道 id——否則模擬中閃退、復原後結束會被當真實健行，步道判定也全失效
+    {
+      const pr = await browser.newPage({ viewport: { width: 390, height: 844 } });
+      await pr.addInitScript(() => {
+        try { localStorage.setItem("tt_lang", "zh"); ["tt_onboarded_v2", "tt_coach_record", "tt_locperm_prompted"].forEach(k => localStorage.setItem(k, "1")); } catch (e) { }
+      });
+      await pr.goto(`http://localhost:${PORT}/`, { waitUntil: "domcontentloaded" });
+      await pr.waitForTimeout(2600);
+      const r = await pr.evaluate(() => {
+        const tid = TRAILS.find(t => t.source === "forestry").id;
+        const tr = []; for (let i = 0; i < 50; i++) tr.push({ lat: 25 + i * 1e-4, lon: 121 + i * 1e-4, t: Date.now() - (50 - i) * 1000 });
+        const enc = Recorder._enc(tr, 1), back = Recorder._dec(enc);
+        const same = back.length === tr.length && Math.abs(back[49].lat - tr[49].lat) < 1e-6;
+        localStorage.setItem("tt_active_rec", JSON.stringify({ v: 2, distance: 500, ascent: 20, descent: 10, movingMs: 60000, elapsedMs: 60000, trailName: "測試", trailId: tid, sim: true, tk: enc }));
+        const s = Recorder.restore();
+        const rec = Recorder.stop();
+        return { same, restored: !!s, sim: !!(rec && rec.sim), trailId: Recorder._trailId === tid };
+      });
+      ok("閃退備份：精簡格式存取無誤差", r.same);
+      ok("閃退復原：保留「模擬」標記（不會被算成真實健行）", r.restored && r.sim);
+      ok("閃退復原：保留步道 id", r.trailId);
+      await pr.close();
     }
 
     // 自用模式（config.js 預設開）：全部 PRO 直接可用、升級面板不出現、PRO 標籤收起；

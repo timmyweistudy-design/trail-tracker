@@ -45,12 +45,16 @@ const Recorder = (() => {
   let simPos = null;
   let cb = () => {};
   let autoStopCb = () => {};
+  let persistFailCb = () => {};
+  let showSrc = null;          // 即時海拔曲線目前用的高度來源（gps/dem）；換來源時整條曲線平移接上，不畫出假斷崖
+  let errCode = null;          // 最近一次定位錯誤：1=沒權限 2=抓不到 3=逾時
   let overSpeedHits = 0;       // 連續偵測到超速(>20km/h)的次數
   let stillHits = 0;           // 連續低速（近乎靜止）讀數次數，供漂移過濾
   let autoStopping = false;    // 已觸發自動結束，避免重複
 
   function onUpdate(fn) { cb = fn; }
   function onAutoStop(fn) { autoStopCb = fn; }   // 偵測到車輛速度自動結束時通知前端
+  function onPersistFail(fn) { persistFailCb = fn; }   // 自動存檔連縮小版都存不下時通知前端（閃退會救不回來）
 
   // 步距(公尺) ≈ 身高 * 0.415；卡路里採 MET 法
   function strideMeters() { return (Store.height() * 0.415) / 100; }
@@ -118,7 +122,11 @@ const Recorder = (() => {
     const paceSec = (km > 0.01 && movingMs > 0) ? (movingMs / 1000) / km : 0;
     return {
       state, resting, track, altSeries, distanceKm: km, distance3DKm: dist3D / 1000, steps: steps(), kcal: calories(),
-      elapsedMs: ms, movingMs, ascent, descent, speedKmh: kmh, instKmh: (state === "running" && !resting) ? curSpeed * 3.6 : 0, heading: curHeading,
+      // 模擬是 10 秒跑完整條路線的時間壓縮，沒有真實速度可言 → 回 null（畫面顯示 --，不要一直 0.0 像壞掉）
+      elapsedMs: ms, movingMs, ascent, descent, speedKmh: kmh, instKmh: simMode ? null : (state === "running" && !resting) ? curSpeed * 3.6 : 0, heading: curHeading,
+      sim: simMode, errCode,
+      waiting: state === "running" && !simMode && !lastFix && !track.length,   // 開始了但還沒拿到第一個定位
+      restMs: (resting && lastMoveAt) ? Date.now() - lastMoveAt : 0,
       pace: paceSec ? `${Math.floor(paceSec / 60)}'${String(Math.round(paceSec % 60)).padStart(2, "0")}` : "--",
       acc: curAcc,
     };
@@ -126,6 +134,7 @@ const Recorder = (() => {
 
   // 接受一個定位點，套用抖動/跳點/精度過濾，只在真的移動時累積
   function push(lat, lon, alt, acc, clean, gpsSpeed, altAcc, heading) {
+    errCode = null;   // 有定位進來＝錯誤已解除
     if (heading != null && isFinite(heading) && heading >= 0) curHeading = heading;   // 行進方向
     if (!clean && acc != null && isFinite(acc)) curAcc = acc;   // 記錄訊號精度（模擬點不覆寫，維持「良好」）
     if (!clean && acc != null && acc > MAX_ACC) { cb(snapshot()); return; }   // 訊號太差，忽略此點但仍更新訊號指示
@@ -193,8 +202,16 @@ const Recorder = (() => {
       const dem = groundAlt(lat, lon);               // DEM 地形高度（圖磚在手才有）
       updateElevation(dem != null ? dem : alt, altAcc, dem != null ? "dem" : "gps");   // 平滑+去抖動後累積爬升/下降
       track.push(p);
-      const showAlt = dem != null ? dem : alt;
-      if (showAlt != null) altSeries.push({ x: distance, e: showAlt });   // 即時海拔曲線（與爬升同一份高度）
+      const showAlt = dem != null ? dem : alt, src = dem != null ? "dem" : "gps";
+      if (showAlt != null) {
+        // 高度來源換了（地形圖磚剛下載到）→ 前面那段整條平移接上，否則曲線會出現一道假斷崖
+        if (showSrc && src !== showSrc && altSeries.length) {
+          const off = showAlt - altSeries[altSeries.length - 1].e;
+          altSeries.forEach(q => { q.e += off; });
+        }
+        showSrc = src;
+        altSeries.push({ x: distance, e: showAlt });   // 即時海拔曲線（與爬升同一份高度）
+      }
       if (now - lastPersist > 4000) { lastPersist = now; persist(); }   // 節流即時存檔
     }
     // d > MAX_JUMP：GPS 跳點，不累積，但更新錨點避免下次又算成大跳
@@ -213,7 +230,7 @@ const Recorder = (() => {
     if (!navigator.geolocation) { if (typeof ttAlertBox === "function") ttAlertBox("此裝置不支援定位，請改用模擬模式"); return false; }
     watchId = navigator.geolocation.watchPosition(
       pos => push(pos.coords.latitude, pos.coords.longitude, pos.coords.altitude, pos.coords.accuracy, false, pos.coords.speed, pos.coords.altitudeAccuracy, pos.coords.heading),
-      err => cb({ ...snapshot(), error: err.message }),
+      err => { errCode = (err && err.code) || 2; cb({ ...snapshot(), error: true }); },
       // 省電模式：關高精度、容許較舊定位，降低 GPS 耗電
       lowPower ? { enableHighAccuracy: false, maximumAge: 8000, timeout: 20000 }
                : { enableHighAccuracy: true, maximumAge: 1000, timeout: 15000 }
@@ -230,7 +247,7 @@ const Recorder = (() => {
         stale: false,
         distanceFilter: lowPower ? 12 : 4,   // 移動幾公尺才回報一點
       }, (location, error) => {
-        if (error) { cb({ ...snapshot(), error: (error && error.message) || String(error) }); return; }
+        if (error) { errCode = (error && /permission|denied/i.test(error.code + " " + error.message)) ? 1 : 2; cb({ ...snapshot(), error: true }); return; }
         if (!location) return;
         push(location.latitude, location.longitude, location.altitude, location.accuracy, false, location.speed, location.altitudeAccuracy, location.bearing);
       }).then(id => { _bgWatcherId = id; }).catch(() => { _startWebGPS(); });   // 外掛失敗→退回一般定位
@@ -241,7 +258,15 @@ const Recorder = (() => {
   function _stopBg() {
     if (_bgWatcherId != null) { const bg = _bgPlugin(); if (bg && bg.removeWatcher) bg.removeWatcher({ id: _bgWatcherId }).catch(() => {}); _bgWatcherId = null; }
   }
-  function setLowPower(on) { lowPower = !!on; }
+  // 記錄中切換省電：立刻重開定位來源套用新設定（以前要暫停再繼續才生效）
+  function setLowPower(on) {
+    lowPower = !!on;
+    if (state === "running" && !simMode) {
+      if (watchId != null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+      _stopBg();
+      startGPS();
+    }
+  }
 
   // --- 螢幕喚醒鎖：記錄中讓螢幕不自動熄滅，避免 App 被系統凍結而停止記錄（使用者可勾選開關）---
   let wakeWanted = false, wakeSentinel = null;
@@ -328,7 +353,7 @@ const Recorder = (() => {
 
   function start(sim) {
     if (state === "running") return;
-    if (state === "idle") { track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; smAlt = null; altSrc = null; lastFixAlt = null; smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; lastAcceptT = 0; curSpeed = 0; simMode = !!sim; overSpeedHits = 0; stillHits = 0; autoStopping = false; }
+    if (state === "idle") { showSrc = null; errCode = null; track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; smAlt = null; altSrc = null; lastFixAlt = null; smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; lastAcceptT = 0; curSpeed = 0; simMode = !!sim; overSpeedHits = 0; stillHits = 0; autoStopping = false; }
     lastResume = Date.now();
     state = "running";
     resting = false; lastMoveAt = Date.now();   // 開始/繼續都重設休息計時
@@ -382,7 +407,7 @@ const Recorder = (() => {
       sim: simMode || undefined,
       vehicle: autoStopping || undefined,   // 因車速(>20km/h)自動斷掉→整趟不計里程
     } : null;
-    state = "idle"; track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; smAlt = null; altSrc = null; lastFixAlt = null;
+    state = "idle"; showSrc = null; errCode = null; track = []; altSeries = []; distance = 0; dist3D = 0; ascent = 0; descent = 0; refAlt = null; smAlt = null; altSrc = null; lastFixAlt = null;
     smLat = null; smLon = null; elapsedMs = 0; movingMs = 0; lastFix = null; lastAcceptT = 0; curSpeed = 0; simPos = null; overSpeedHits = 0; stillHits = 0; autoStopping = false;
     simRoute = null; simDist = 0;   // 清除殘留路線，避免下次記錄誤跑舊模擬路線
     persist();
@@ -391,31 +416,60 @@ const Recorder = (() => {
   }
 
   // --- 崩潰復原：即時把記錄狀態存進 localStorage ---
+  // 格式 v2：軌跡壓成整數陣列 [緯度×1e6 差值, 經度×1e6 差值, 秒, gap]（約原本的 4 成大小）。
+  // 以前整條 JSON 每 4 秒寫一次，8000 點就 516 KB，多日縱走會撞 localStorage 上限而「靜靜存失敗」。
+  // 真的存不下 → 先抽稀一半再存；還是不行才通知前端提醒使用者。
+  // 也一併存 sim / trailId：閃退復原後才不會把模擬算成真的、也不會丟掉選定的步道。
   const ACTIVE = "tt_active_rec";
+  let _persistWarned = false;
+  function encTrack(tr, every) {
+    const out = []; let pl = 0, po = 0, pt = 0;
+    for (let i = 0; i < tr.length; i += every) {
+      const q = tr[i], la = Math.round(q.lat * 1e6), lo = Math.round(q.lon * 1e6), t = Math.round(q.t / 1000);
+      out.push(q.gap ? [la - pl, lo - po, t - pt, 1] : [la - pl, lo - po, t - pt]);
+      pl = la; po = lo; pt = t;
+    }
+    if (every > 1 && tr.length && (tr.length - 1) % every) { const q = tr[tr.length - 1]; out.push([Math.round(q.lat * 1e6) - pl, Math.round(q.lon * 1e6) - po, Math.round(q.t / 1000) - pt]); }
+    return out;
+  }
+  function decTrack(a) {
+    const out = []; let la = 0, lo = 0, t = 0;
+    for (const r of a) { la += r[0]; lo += r[1]; t += r[2]; const q = { lat: la / 1e6, lon: lo / 1e6, t: t * 1000 }; if (r[3]) q.gap = true; out.push(q); }
+    return out;
+  }
   function persist() {
+    try { if (state === "idle") { localStorage.removeItem(ACTIVE); return; } } catch { return; }
+    const base = { v: 2, distance, dist3D, ascent, descent, movingMs, elapsedMs: elapsed(), trailName: Recorder._trailName || null,
+      trailId: Recorder._trailId || null, sim: simMode || undefined, savedAt: Date.now() };
+    for (const every of [1, 2, 4]) {
+      try { localStorage.setItem(ACTIVE, JSON.stringify({ ...base, tk: encTrack(track, every) })); return; }
+      catch { /* 存不下：抽稀再試 */ }
+    }
+    if (!_persistWarned) { _persistWarned = true; try { persistFailCb(); } catch { /* */ } }
+  }
+  function _load() {
     try {
-      if (state === "idle") { localStorage.removeItem(ACTIVE); return; }
-      localStorage.setItem(ACTIVE, JSON.stringify({
-        track, distance, dist3D, ascent, descent, movingMs,
-        elapsedMs: elapsed(), trailName: Recorder._trailName || null, savedAt: Date.now(),
-      }));
-    } catch { /* quota */ }
+      const d = JSON.parse(localStorage.getItem(ACTIVE));
+      if (!d) return null;
+      if (d.tk) d.track = decTrack(d.tk);   // v2
+      return d.track ? d : null;
+    } catch { return null; }
   }
-  function hasActive() {
-    try { const d = JSON.parse(localStorage.getItem(ACTIVE)); return !!(d && d.track && d.track.length > 1); }
-    catch { return false; }
-  }
+  function hasActive() { const d = _load(); return !!(d && d.track.length > 1); }
   // 復原為「暫停」狀態，使用者可繼續或結束
   function restore() {
-    let d; try { d = JSON.parse(localStorage.getItem(ACTIVE)); } catch { return null; }
-    if (!d || !d.track) return null;
+    const d = _load();
+    if (!d) return null;
     track = d.track; distance = d.distance || 0; dist3D = d.dist3D || 0;
     ascent = d.ascent || 0; descent = d.descent || 0; movingMs = d.movingMs || 0; elapsedMs = d.elapsedMs || 0;
     refAlt = null; smAlt = null; altSrc = null; lastFixAlt = null; smLat = null; smLon = null; lastFix = null;
-    state = "paused"; Recorder._trailName = d.trailName || null;
+    simMode = !!d.sim;   // ⚠️ 一定要還原：否則模擬中閃退、復原後結束，會被當成真實健行算進統計
+    state = "paused"; Recorder._trailName = d.trailName || null; Recorder._trailId = d.trailId || null;
+    _persistWarned = false;
     cb(snapshot());
     return snapshot();
   }
 
-  return { start, pause, resume, stop, snapshot, onUpdate, onAutoStop, getState: () => state, hasActive, restore, setLowPower, setWake, setSimRoute };
+  return { start, pause, resume, stop, snapshot, onUpdate, onAutoStop, onPersistFail, getState: () => state, hasActive, restore, setLowPower, setWake, setSimRoute,
+    _enc: encTrack, _dec: decTrack };
 })();

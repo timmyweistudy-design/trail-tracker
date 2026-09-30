@@ -1071,11 +1071,19 @@ function checkPetEvolve() {
 // 記錄頁待機面板（未開始記錄時顯示夥伴/上次/推薦）
 function renderRecIdle() {
   const box = $("#recIdle"); if (!box) return;
-  if (Recorder.getState && Recorder.getState() !== "idle") { box.style.display = "none"; return; }
-  const last = realRecords()[0];
-  if (!last) { box.style.display = "none"; return; }
-  box.style.display = "block";
-  let html = `<div class="ridle-row"><span class="inline-ic">${ic("pin")}</span> 上次：${last.trailName || "自由路線"}・<b>${(last.distanceKm || 0).toFixed(2)}</b> km</div>`;
+  if (Recorder.getState && Recorder.getState() !== "idle") { box.hidden = true; return; }
+  // 已選好步道：收起這張，讓地圖和「開始」留在第一個畫面裡
+  if (typeof selectedTrailId !== "undefined" && selectedTrailId) { box.hidden = true; return; }
+  const recs = realRecords(), last = recs[0];
+  // 快捷卡：最近走過＋收藏的步道，點一下就選好（不用回探索頁找）
+  const seen = new Set(), picks = [];
+  for (const r of recs) { if (r.trailId != null && !seen.has(String(r.trailId))) { const t = TRAILS.find(x => String(x.id) === String(r.trailId)); if (t) { seen.add(String(t.id)); picks.push([t, "clock"]); } } if (picks.length >= 3) break; }
+  for (const t of TRAILS) { if (picks.length >= 5) break; if (Store.isFav(t.id) && !seen.has(String(t.id))) { seen.add(String(t.id)); picks.push([t, "star"]); } }
+  if (!last && !picks.length) { box.hidden = true; return; }
+  box.hidden = false;
+  let html = last ? `<div class="ridle-row"><span class="inline-ic">${ic("pin")}</span><span>${ttT("上次")}：${escHtml(last.trailName || "自由路線")}・<b>${(last.distanceKm || 0).toFixed(2)}</b> km</span></div>` : "";
+  if (picks.length) html += `<div class="ridle-picks-h">${ttT("今天走這條？")}</div><div class="ridle-picks">${picks.map(([t, i]) =>
+    `<button class="ridle-pick" data-pick="${t.id}">${ic(i)}<span>${escHtml(t.name)}</span></button>`).join("")}</div>`;
   // #4 臨門提醒：離下一個成就還差多少
   try {
     const nu = petBadges().filter(b => !b.got && b.p && b.p[1] > 0).map(b => ({ b, r: Math.min(1, b.p[0] / b.p[1]) })).sort((a, b) => b.r - a.r)[0];
@@ -1086,6 +1094,10 @@ function renderRecIdle() {
     }
   } catch (e) { /* */ }
   box.innerHTML = html;
+  box.querySelectorAll("[data-pick]").forEach(b => b.addEventListener("click", () => {
+    const t = TRAILS.find(x => String(x.id) === b.dataset.pick); if (!t) return;
+    ensureGeo(t.region).then(() => selectTrailForRecord(t)).catch(() => selectTrailForRecord(t));
+  }));
 }
 // 我的足跡熱力圖：所有真實軌跡疊在一張地圖上
 async function openFootprintMap() {

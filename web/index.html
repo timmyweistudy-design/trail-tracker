@@ -129,7 +129,7 @@
   </section>
 
   <!-- 記錄 -->
-  <section id="view-record" class="view">
+  <section id="view-record" class="view" data-state="idle">
     <div class="rec-stats">
       <div class="rec-hero">
         <div class="rh-main"><span class="rh-num" id="stDist">0.00</span><span class="rh-unit">公里</span></div>
@@ -152,16 +152,16 @@
     <div id="recIdle"></div>
     <div id="recWpHud" class="rec-wp-hud"></div>
     <div class="gps-sig" id="gpsSig" hidden><i class="gs-dot"></i><span class="gs-txt"></span></div>
-    <div id="recElevSpark" style="display:none"></div>
+    <div id="recElevSpark" hidden></div>
     <div class="recmap-wrap"><div id="recMap"></div></div>
     <div class="rec-controls" style="margin-top:14px">
-      <button class="btn primary" id="btnStart">▶ 開始</button>
-      <button class="btn amber" id="btnPause" style="display:none">⏸ 暫停</button>
-      <button class="btn danger" id="btnStop" style="display:none">⏹ 結束</button>
+      <button class="btn primary" id="btnStart"><svg class="ic" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5L8 5.5Z" fill="currentColor"/></svg><span class="bl">開始</span></button>
+      <button class="btn amber" id="btnPause" hidden><svg class="ic" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14" stroke-width="3"/></svg><span class="bl">暫停</span></button>
+      <button class="btn stop-btn" id="btnStop" hidden><svg class="ic" viewBox="0 0 24 24"><rect x="6.5" y="6.5" width="11" height="11" rx="2" fill="currentColor"/></svg><span class="bl">結束</span></button>
+      <button class="btn ghost lock-btn" id="btnLock" hidden aria-pressed="false" aria-label="鎖定畫面" title="鎖定畫面"><svg class="ic" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span class="lock-label">鎖定</span></button>
     </div>
     <div class="rec-status" id="recStatus" role="status" aria-live="polite">準備好就按開始</div>
-    <button class="btn ghost" id="btnLock" style="display:none;margin-top:10px" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg> <span class="lock-label">鎖定畫面</span></button>
-    <button class="btn ghost" id="btnSnap" style="display:none;margin-top:10px"><svg class="ic" viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4V8Z"/><circle cx="12" cy="13" r="3"/></svg> 隨手拍（記錄當下里程）<span id="snapCount"></span></button>
+    <button class="btn ghost" id="btnSnap" hidden style="margin-top:10px"><svg class="ic" viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4V8Z"/><circle cx="12" cy="13" r="3"/></svg> 隨手拍（記錄當下里程）<span id="snapCount"></span></button>
     <!-- 不用 capture="environment"：該屬性在 Capacitor iOS WKWebView 常讓 file input 點了完全沒反應。
          拿掉後 WebView 會彈原生選單（拍照／相簿），較可靠，也讓使用者能選已拍好的照片。 -->
     <input type="file" id="snapInput" accept="image/*" style="display:none">
@@ -517,6 +517,7 @@ window.addEventListener("load", () => {
 <script defer src="js/native-local-notif.js"></script>
 <script defer src="js/app.js"></script>
 <script defer src="js/explore.js"></script>
+<script defer src="js/record.js"></script>
 <script defer src="js/debug.js"></script>
 <script>
   // Service Worker：偵測新版本 → 顯示更新橫幅；點擊後讓新版接手並重載

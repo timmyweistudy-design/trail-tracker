@@ -684,7 +684,7 @@ body.rec-running #recMap .me-marker .tm-pet .pet-critter, body.rec-running #recM
 .rec-spark-cap { font-size: calc(11px * var(--fs, 1)); color: var(--ink-soft); text-align: center; margin-top: 4px; font-family: var(--num); }
 #recElevSpark { margin-bottom: 12px; }
 @keyframes blink { 50% { opacity: .25; } }
-#recIdle { margin-top: 16px; display: none; }
+#recIdle { margin-top: 0; margin-bottom: 12px; }   /* 顯示與否改由 hidden 屬性控制 */
 .ridle-row { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 11px 14px; font-size: calc(13px * var(--fs, 1)); color: var(--ink-soft); margin-bottom: 8px; box-shadow: var(--sh-sm); }
 .ridle-row b { color: var(--brand-deep); font-family: var(--num); }
 .ridle-e { font-size: calc(22px * var(--fs, 1)); }
@@ -2653,14 +2653,7 @@ html[data-theme="dark"] .cond-banner.note .cond-h { color: #b9c3cf; }
 
 /* 導覽卡：圖示改用線條 SVG（原本是 emoji，每支手機長得不一樣） */
 .tour-emoji .ic { width: calc(34px * var(--fs, 1)); height: calc(34px * var(--fs, 1)); color: var(--brand); margin: 0; transform: none; }
-/* 記錄中：暫停／結束黏在分頁列上方。大字體時結束鈕會掉到分頁列後面，要先往下捲才按得到
-   （E2E 在 1.5 倍字體下也會點到分頁列）。分頁列高度隨 --fs 變，這裡用同一個倍率估算。 */
-body.rec-running .rec-controls {
-  position: sticky; z-index: 25;
-  bottom: calc(26px + 40px * var(--fs, 1) + var(--safe-b, 0px));
-  background: var(--bg); padding: 8px 0; margin-inline: -4px; padding-inline: 4px;
-  box-shadow: 0 -10px 14px -8px var(--bg);
-}
+
 
 /* ── 數字格：每種字體大小都要舒服（2026-09-30）──
    問題：數字用固定字級，格子又被內容撐開 → 大字時「123,45612,345」黏在一起、分析/年度卡片被切出畫面、
@@ -2775,3 +2768,63 @@ body.hdr-compact .brand-mark { width: 36px; height: 36px; }
 .toolbar .count { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 /* 主題卡：預留左上角圖示的位置，標題換兩行（英文常見）也不會壓到圖示 */
 .coll-card { padding-top: 54px; }
+
+/* ══ 記錄頁整理（2026-09-30）══ */
+/* 待機：頂部一排 0 不佔版面；選步道、快捷卡、地圖、開始鈕往上 */
+#view-record[data-state="idle"] .rec-stats { display: none; }
+#view-record[data-state="idle"] #recMap { height: 260px; }
+/* 記錄中／暫停：數字精簡、地圖放大（走路時最常看的是地圖） */
+#view-record:not([data-state="idle"]) .rh-num { font-size: min(calc(46px * var(--fs, 1)), 15vw); }
+#view-record:not([data-state="idle"]) .rec-hero { padding: 12px 14px 10px; }
+#view-record:not([data-state="idle"]) .rh-time { margin-top: 4px; }
+#view-record:not([data-state="idle"]) .rec-row { padding: 9px 4px; }
+#view-record:not([data-state="idle"]) .rec-stats { display: grid; gap: 8px; }
+#view-record:not([data-state="idle"]) #recMap { height: max(300px, 46vh); }
+/* 記錄中不能改的選項收起來（模擬/省電混用會把真實和模擬混在同一趟） */
+#view-record:not([data-state="idle"]) .rec-opts { display: none; }
+/* 控制列：記錄中、暫停都黏在分頁列上方（原本只有記錄中） */
+#view-record:not([data-state="idle"]) .rec-controls {
+  position: sticky; z-index: 25; bottom: calc(26px + 40px * var(--fs, 1) + var(--safe-b, 0px));
+  background: var(--bg); padding: 8px 0; box-shadow: 0 -10px 14px -8px var(--bg);
+}
+.rec-controls .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+.rec-controls .btn .ic { width: 18px; height: 18px; margin: 0; transform: none; }
+.rec-controls .btn:not(.lock-btn) { flex: 1 1 0; }
+/* 結束：改成沉穩的外框樣式，跟暫停拉開差距，降低誤觸 */
+.btn.stop-btn { background: var(--surface); color: var(--danger, #b3322a); border: 2px solid currentColor; box-shadow: none; }
+.btn.stop-btn .ic { color: var(--danger, #b3322a); }
+/* 鎖定：控制列裡的一顆方鈕 */
+.btn.lock-btn { flex: 0 0 auto; width: auto; min-width: 58px; padding-inline: 12px; flex-direction: column; gap: 2px; font-size: calc(11px * var(--fs, 1)); }
+.btn.lock-btn .ic { width: 17px; height: 17px; }
+/* 提示訊息：在記錄頁移到上方，不要蓋住暫停／結束 */
+body[data-view="record"] .toast { bottom: auto; top: calc(var(--hdr-h, 60px) + 10px + env(safe-area-inset-top, 0px)); transform: translateX(-50%) translateY(-12px); }
+body[data-view="record"] .toast.show { transform: translateX(-50%) translateY(0); }
+/* 大字時狀態列不要被分頁列蓋住 */
+.view { padding-bottom: calc(60px + 36px * var(--fs, 1) + var(--safe-b, 0px)); }
+/* 深色：里程卡原本是淺色漸層，淡綠數字幾乎看不到 */
+html[data-theme="dark"] .rec-hero { background-image: linear-gradient(155deg, #1f2a1d, var(--surface)); }
+html[data-theme="dark"] .rh-num { color: #d7ecd9; }
+/* 行前小卡：線條圖示 */
+.pre-hike .ph-ic { display: inline-flex; }
+.pre-hike .ph-ic .ic { width: 15px; height: 15px; color: var(--brand-mid); margin: 0; transform: translateY(2px); }
+.ph-warn { color: var(--danger, #b3322a); font-weight: 700; }
+/* 即時海拔曲線：目前位置點＋最低／最高 */
+.rec-spark-box { position: relative; }
+.rec-spark-dot { position: absolute; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 50%; background: var(--accent, #e8893b); box-shadow: 0 0 0 2px var(--surface); }
+.rec-spark-cap { display: flex; justify-content: space-between; gap: 8px; }
+.rec-spark-cap b { color: var(--brand-deep); }
+/* 狀態列 */
+.rs-warn { color: var(--danger, #b3322a); font-weight: 700; }
+.rs-warn .ic { width: 15px; height: 15px; vertical-align: -3px; }
+.rs-wait { display: inline-flex; align-items: center; gap: 7px; color: var(--ink-soft); }
+/* 待機快捷卡 */
+.ridle-picks-h { font-size: calc(12px * var(--fs, 1)); color: var(--ink-faint); font-weight: 700; margin: 10px 2px 6px; }
+.ridle-picks { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; }
+.ridle-pick { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; max-width: 220px; border: 1px solid var(--line); background: var(--surface);
+  border-radius: var(--r-pill); padding: 8px 13px; font-size: calc(13px * var(--fs, 1)); font-weight: 600; color: var(--brand-deep); cursor: pointer; }
+.ridle-pick span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ridle-pick .ic { width: 14px; height: 14px; flex: none; color: var(--brand-mid); }
+/* 結算頁 */
+.ok-mark .ic { width: 13px; height: 13px; color: var(--brand-mid); vertical-align: -2px; }
+/* 結算頁動作鈕 6 顆（開著社群時）→ 排成 3×2，不硬擠一排 */
+.link-row.flow:has(> .link-btn:nth-child(6)) { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }

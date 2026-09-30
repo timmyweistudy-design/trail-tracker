@@ -216,9 +216,9 @@ ok("terrarium 解碼：負高度（死海）", Elevation.decode(126, 40, 0) < 0)
 // 15) 點到路線距離：必須算「到線段」而非「到頂點」
 // （官方路線頂點間距常 100–200m，只比頂點的話，走在兩點正中間的人會被誤判成偏離數十公尺）
 {
-  const src = fs.readFileSync(web("app.js"), "utf8");
+  const src = fs.readFileSync(web("record.js"), "utf8");   // 記錄頁程式已從 app.js 拆到 record.js
   const m = src.match(/function distToSegment[\s\S]*?\n}/);
-  ok("app.js 有 distToSegment（點到線段）", !!m);
+  ok("record.js 有 distToSegment（點到線段）", !!m);
   if (m) {
     // eslint-disable-next-line no-new-func
     const distToSegment = new Function("return " + m[0])();
@@ -236,9 +236,9 @@ ok("terrarium 解碼：負高度（死海）", Elevation.decode(126, 40, 0) < 0)
 // safeRun：記錄收尾每步的錯誤隔離器。一步 throw 不外拋、回 false、記進 tt_errors 供診斷；
 //   正常步驟回 true。這是「有時候不能結束/進結算、自動儲存沒全存到」的根因修復核心。
 {
-  const appSrc = fs.readFileSync(web("app.js"), "utf8");
+  const appSrc = fs.readFileSync(web("record.js"), "utf8");
   const m = appSrc.match(/async function safeRun\(label, fn\)[\s\S]*?\n\}/);
-  ok("app.js 有 safeRun 收尾隔離器", !!m);
+  ok("record.js 有 safeRun 收尾隔離器", !!m);
   if (m) {
     eval(m[0] + "\n;globalThis.safeRun = safeRun;");
     localStorage.setItem("tt_errors", "[]");

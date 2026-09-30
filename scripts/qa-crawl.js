@@ -63,7 +63,7 @@ const EXT = /net::|favicon|404 \(|Failed to load resource|CORS|opentopodata|tran
     });
     await p.waitForTimeout(300);
     await p.evaluate(() => { const t = document.getElementById("simToggle"); if (t && !t.checked) t.click(); });
-    await click("#btnStart"); await p.waitForTimeout(4000); await click("#btnStop"); await p.waitForSelector("#trackSheet.show", { timeout: 12000 }).catch(() => {}); await p.waitForTimeout(400);   // 結算要等海拔校正（最多 8 秒），固定等 2 秒會偶發點不到
+    await click("#btnStart"); await p.waitForTimeout(4000); await click("#btnStop"); await p.locator(".ttdlg .btn.primary").click({ timeout: 3000 }).catch(() => {}); await p.waitForSelector("#trackSheet.show", { timeout: 12000 }).catch(() => {}); await p.waitForTimeout(400);   // 結算要等海拔校正（最多 8 秒），固定等 2 秒會偶發點不到
     await click("#trackSheet .sheet-close");
   });
 

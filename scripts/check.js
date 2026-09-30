@@ -106,7 +106,7 @@ const html = read(path.join(WEB, "index.html"));
 const knownIds = new Set([...html.matchAll(/id="([\w-]+)"/g)].map(m => m[1]));
 for (const f of files) for (const m of read(f).matchAll(/id="([\w-]+)"/g)) knownIds.add(m[1]);
 for (const f of files) for (const m of read(f).matchAll(/id=\\"([\w-]+)\\"/g)) knownIds.add(m[1]);
-for (const jf of ["app.js", "explore.js"]) {   // explore.js 是從 app.js 拆出來的，同一條規則
+for (const jf of ["app.js", "explore.js", "record.js"]) {   // explore.js、record.js 是從 app.js 拆出來的，同一條規則
   read(path.join(WEB, "js", jf)).split("\n").forEach((l, i) => {
     for (const m of l.matchAll(/\$\("#([\w-]+)"\)/g)) {
       if (!knownIds.has(m[1])) err(`[HTML] web/js/${jf}:${i + 1} 取用 #${m[1]}，但 index.html 與 JS 模板都沒有這個 id（可能打錯字）`);
