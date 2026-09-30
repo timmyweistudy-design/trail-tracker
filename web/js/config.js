@@ -33,3 +33,4 @@ window.REVENUECAT_ANDROID_KEY = "";
 // 測試可在載入前先設 window.PERSONAL_MODE=false，照舊測付費牆。
 if (window.PERSONAL_MODE === undefined) window.PERSONAL_MODE = true;
 document.documentElement.classList.toggle("personal", !!window.PERSONAL_MODE);
+if (window.PERSONAL_MODE) document.documentElement.classList.add("is-pro");   // 會員就不顯示「PRO 功能」提示標籤

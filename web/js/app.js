@@ -4038,6 +4038,7 @@ function countUp(el) {
   const finalLen = fmt(to).length;
   el.classList.toggle("mv-lg", finalLen >= 7 && finalLen < 9);
   el.classList.toggle("mv-xl", finalLen >= 9);
+  el.style.setProperty("--n", finalLen);   // CSS 依「字數 × 格寬」算字級：放得下就原尺寸，放不下才縮（見 style.css 數字格）
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) { el.textContent = fmt(to); return; }
   const dur = 750, t0 = performance.now();
   (function step(t) {
@@ -4194,7 +4195,7 @@ function ttProfileHero(prof, opts) {
   const achRow = (title || ach) ? `<div class="prof-achrow">${title}${ach}</div>` : "";
   return `<div class="prof-hero">${av}
     <div class="prof-hero-info">
-      <div class="prof-name"><span class="prof-nm">${esc(prof.display_name || prof.handle)}</span>${pro ? ` <span class="pro-tag pro-mine">PRO</span>` : ""}</div>
+      <div class="prof-name"><span class="prof-nm">${esc(prof.display_name || prof.handle)}</span>${pro ? ` <span class="pro-tag pro-id pro-mine">PRO</span>` : ""}</div>
       <div class="prof-handle">@${esc(prof.handle)}</div>
       ${petHtml}${achRow}
     </div>
@@ -4319,7 +4320,7 @@ function initTheme() {
     b.classList.toggle("on", b.dataset.fs === curFs);
     if (!_themeBound) b.addEventListener("click", () => {
       try { localStorage.setItem("tt_fontscale", b.dataset.fs); } catch (e) { /* */ }
-      document.documentElement.style.setProperty("--fs", b.dataset.fs); document.documentElement.toggleAttribute("data-fs-big", +b.dataset.fs >= 1.5);
+      document.documentElement.style.setProperty("--fs", b.dataset.fs); document.documentElement.toggleAttribute("data-fs-big", +b.dataset.fs >= 1.5); document.documentElement.toggleAttribute("data-fs-mid", +b.dataset.fs >= 1.35);
       document.querySelectorAll(".fs-opt").forEach(x => x.classList.toggle("on", x === b));
     });
   });
@@ -4476,7 +4477,7 @@ function langGate(force) {
     b.classList.toggle("on", b.dataset.fs === curFs);
     b.addEventListener("click", () => {
       try { localStorage.setItem("tt_fontscale", b.dataset.fs); } catch (e) { /* */ }
-      document.documentElement.style.setProperty("--fs", b.dataset.fs); document.documentElement.toggleAttribute("data-fs-big", +b.dataset.fs >= 1.5);
+      document.documentElement.style.setProperty("--fs", b.dataset.fs); document.documentElement.toggleAttribute("data-fs-big", +b.dataset.fs >= 1.5); document.documentElement.toggleAttribute("data-fs-mid", +b.dataset.fs >= 1.35);
       ov.querySelectorAll(".lg-fs-opt").forEach(x => x.classList.toggle("on", x === b));
     });
   });

@@ -330,13 +330,13 @@ const PORT = 8899;
           on: Premium.isOn(), gate: Premium.gate(),
           panel: !!document.querySelector(".premium-mask"),
           social: vis(document.querySelector('.tab[data-view="social"]')),
-          proTag: [...document.querySelectorAll(".pro-tag")].some(vis),
+          proTag: [...document.querySelectorAll(".pro-tag:not(.pro-id)")].some(vis),   // 身分徽章 .pro-id 要留
         };
       });
       ok("自用模式：會員功能全開", st.on && st.gate);
       ok("自用模式：不跳升級面板", !st.panel);
       ok("自用模式：社群分頁預設照常顯示", st.social);
-      ok("自用模式：看不到 PRO 標籤", !st.proTag);
+      ok("自用模式：看不到「PRO 功能」提示標籤", !st.proTag);
       await ps.evaluate(() => { const t = document.getElementById("simToggle"); if (t && !t.checked) t.click(); });
       ok("自用模式：模擬模式可直接勾", await ps.evaluate(() => document.getElementById("simToggle").checked));
       const flip = async on => ps.evaluate(on => { const cb = document.getElementById("socialToggle"); if (cb.checked !== on) cb.click();

@@ -49,12 +49,15 @@ const Premium = (() => {
     }
     _loaded = true; sync(); return _on;   // 只有真的查到結果才寫回快取
   }
-  function sync() { try { localStorage.setItem("tt_premium", _on ? "1" : "0"); } catch (e) { } }
+  function sync() { try { localStorage.setItem("tt_premium", _on ? "1" : "0"); } catch (e) { } markPro(); }
+  // html.is-pro：會員就藏「PRO 功能」提示標籤（身分徽章 .pro-id 不受影響）
+  function markPro() { try { document.documentElement.classList.toggle("is-pro", isOn()); } catch (e) { /* */ } }
   // 登出時呼叫：清掉會員快取。不清的話，前一位使用者登出後只要不進「我的」分頁，
   // PRO 功能會在這個 session 繼續放行（共用裝置上等於把會員身分留給下一個人）。
   function clearCache() {
     _on = false; _loaded = true; _periodEnd = null;
     try { localStorage.removeItem("tt_premium"); localStorage.removeItem("tt_premium_since"); } catch (e) { /* */ }
+    markPro();
   }
   function isOn() { if (personal()) return true; return _loaded ? _on : (localStorage.getItem("tt_premium") === "1"); }
   function gate() { if (isOn()) return true; openUpgrade(); return false; }
@@ -263,7 +266,10 @@ const Premium = (() => {
   }
 
   function renderBox(el) {
-    if (personal()) { if (el) el.innerHTML = ""; return; }
+    if (personal()) {   // 自用：顯示會員身分卡，但沒有訂閱可管理
+      if (el) el.innerHTML = `<div class="pm-status on"><span class="pm-b-ic">${icc("sparkle")}</span><div><b>Premium 會員</b><div class="pm-b-d">進階功能已全部解鎖</div></div></div>`;
+      return;
+    }
     if (!el) return;
     if (typeof Supa === "undefined" || !Supa.ready || !Supa.ready()) { el.innerHTML = ""; return; }
     if (isOn()) {
@@ -320,5 +326,6 @@ const Premium = (() => {
     } catch (e) { /* */ }
   }
 
+  if (typeof document !== "undefined") setTimeout(markPro, 0);   // 開機依快取先標一次
   return { refresh, isOn, gate, openUpgrade, openPortal, renderBox, handleReturn, clearCache };
 })();

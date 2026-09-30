@@ -2612,7 +2612,9 @@ html[data-theme="dark"] body::after { opacity: .05; }
 .ptr-ind.loading .ptr-spin { display: inline-block; }
 
 /* ── 自用模式（config.js PERSONAL_MODE）：收起付費與社交入口 ── */
-.personal .pro-tag, .personal .hide-personal { display: none !important; }
+/* PRO 標籤兩種：①「這是 PRO 功能」提示＝只給非會員看，會員（含自用）不必看；
+   ②身分徽章 .pro-id（社群名字旁、我的個人檔案）＝個人名譽，永遠顯示 */
+.is-pro .pro-tag:not(.pro-id), .personal .hide-personal { display: none !important; }
 /* 社群功能開關（我的 → 外觀）關掉時才收：跟自用模式分開，自用照樣可以玩社群 */
 .hide-social .social-only, .hide-social .tab[data-view="social"], .hide-social #petFriends,
 .hide-social #trailFeedBox, .hide-social #activityBox { display: none !important; }
@@ -2659,3 +2661,29 @@ body.rec-running .rec-controls {
   background: var(--bg); padding: 8px 0; margin-inline: -4px; padding-inline: 4px;
   box-shadow: 0 -10px 14px -8px var(--bg);
 }
+
+/* ── 數字格：每種字體大小都要舒服（2026-09-30）──
+   問題：數字用固定字級，格子又被內容撐開 → 大字時「123,45612,345」黏在一起、分析/年度卡片被切出畫面、
+   「↑14,392」快頂到邊；auto-fit 在寬螢幕會變 4 欄，6 格排成 4+2 不對稱。
+   做法：①格子一律等寬 minmax(0,1fr)，欄數寫死（6 格＝3×2 或大字 2×3，永遠對稱）
+         ②每格是 container，數字字級＝min(原字級, 格寬 ÷ 字數)——短數字維持原大小，長的才縮
+         （--n＝最終字數，由 countUp 設定；沒有 --n 的即時數字用固定比例） */
+.mstat, .ana-card, .yr-stat, .yr-sub > div, .rc, .mo-cell { container-type: inline-size; min-width: 0; }
+.mstat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+[data-fs-big] .mstat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.mstat .mv, .mstat .mv.mv-lg, .mstat .mv.mv-xl {
+  font-size: min(calc(20px * var(--fs, 1)), calc(100cqw / (var(--n, 4) * 0.62))); }
+.ana-cards, .yr-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ana-cv, .yr-stat b, .yr-sub b { white-space: nowrap; }
+.ana-card .cu, .yr-stat .cu, .yr-sub .cu { font-size: min(1em, calc(100cqw / (var(--n, 4) * 0.62))); }
+.yr-sub { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.mo-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+[data-fs-mid] .mo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 12px; }
+.mo-cell .mo-v { white-space: nowrap; font-size: min(calc(19px * var(--fs, 1)), 30cqw); }
+.mo-cell .mo-l { white-space: nowrap; }
+/* 記錄頁：步數/大卡/時速 即時更新，沒有 --n → 用 7 位數（123,456）估 */
+.rc-v { white-space: nowrap; font-size: min(calc(23px * var(--fs, 1)), 23cqw); }
+.rc-l { white-space: nowrap; }
+.rh-main { flex-wrap: nowrap; }
+.rh-num { font-size: min(calc(58px * var(--fs, 1)), 19vw); }
+.rh-unit { white-space: nowrap; }

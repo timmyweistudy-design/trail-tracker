@@ -27,7 +27,7 @@ const Discover = (() => {
     if (!people.length) { box.innerHTML = `<div class="social-empty">輸入名字或 @帳號找山友。</div>`; return; }
     box.innerHTML = `<div class="disc-sec">✨ 推薦追蹤</div>` + people.map(p => `<div class="disc-row" data-id="${p.id}">
       ${p.avatar_url ? `<img class="fc-av" src="${esc(p.avatar_url)}">` : `<div class="fc-av fc-av-ph">${esc((p.display_name || p.handle).slice(0, 1))}</div>`}
-      <div class="disc-id"><b>${esc(p.display_name || p.handle)}${p.pet_level ? ` <span class="lv-chip lvt-${Math.min(p.pet_level,7)}">Lv.${p.pet_level}</span>` : ""}${p.is_premium ? ` <span class="pro-tag">PRO</span>` : ""}</b><span>@${esc(p.handle)}</span></div>
+      <div class="disc-id"><b>${esc(p.display_name || p.handle)}${p.pet_level ? ` <span class="lv-chip lvt-${Math.min(p.pet_level,7)}">Lv.${p.pet_level}</span>` : ""}${p.is_premium ? ` <span class="pro-tag pro-id">PRO</span>` : ""}</b><span>@${esc(p.handle)}</span></div>
       <button class="btn primary disc-follow" data-id="${p.id}">追蹤</button></div>`).join("");
     box.querySelectorAll(".disc-row").forEach(r => r.addEventListener("click", e => { if (e.target.closest(".disc-follow")) return; openProfile(r.dataset.id); }));
     box.querySelectorAll(".disc-follow").forEach(b => b.addEventListener("click", async e => {
@@ -60,7 +60,7 @@ const Discover = (() => {
     }
     box.innerHTML = tagRow + `<div class="disc-sec">山友</div>` + data.map(p => `<div class="disc-row" data-id="${p.id}">
       ${p.avatar_url ? `<img class="fc-av" src="${esc(p.avatar_url)}">` : `<div class="fc-av fc-av-ph">${esc((p.display_name || p.handle).slice(0, 1))}</div>`}
-      <div class="disc-id"><b>${esc(p.display_name || p.handle)}${p.is_premium ? ` <span class="pro-tag">PRO</span>` : ""}</b><span>@${esc(p.handle)}</span></div></div>`).join("");
+      <div class="disc-id"><b>${esc(p.display_name || p.handle)}${p.is_premium ? ` <span class="pro-tag pro-id">PRO</span>` : ""}</b><span>@${esc(p.handle)}</span></div></div>`).join("");
     box.querySelectorAll(".disc-row").forEach(r => r.addEventListener("click", () => openProfile(r.dataset.id)));
     box.querySelectorAll(".hot-tag").forEach(b => b.addEventListener("click", () => { if (typeof Feed !== "undefined") Feed.openTag(b.dataset.tag); }));
   }
@@ -118,7 +118,7 @@ const Discover = (() => {
       <div class="pv-body${prof.cover_url ? " has-cover" : ""}">
         ${prof.cover_url ? `<div class="pf-cover" style="background-image:url('${esc(prof.cover_url)}')"></div>` : ""}
         <div class="pf-top">${prof.avatar_url ? `<img class="pf-av${prof.is_premium ? " pro-av" : ""}" src="${esc(prof.avatar_url)}">` : `<div class="pf-av pf-av-ph${prof.is_premium ? " pro-av" : ""}">${esc((prof.display_name || prof.handle).slice(0, 1))}</div>`}
-          <div class="pf-id"><div class="pf-name">${esc(prof.display_name || prof.handle)}${prof.is_premium ? ` <span class="pro-tag">PRO</span>` : ""}</div><div class="pf-handle">@${esc(prof.handle)}</div></div></div>
+          <div class="pf-id"><div class="pf-name">${esc(prof.display_name || prof.handle)}${prof.is_premium ? ` <span class="pro-tag pro-id">PRO</span>` : ""}</div><div class="pf-handle">@${esc(prof.handle)}</div></div></div>
         ${petLineFor(prof)}
         <div class="pf-counts" id="dpCounts"></div>
         ${prof.bio ? `<div class="pf-bio">${esc(prof.bio)}</div>` : ""}
@@ -226,7 +226,7 @@ const Discover = (() => {
     return profilesByIds((data || []).map(r => r.following_id));
   }
   function userRow(p) {
-    return `<div class="disc-row" data-id="${p.id}">${p.avatar_url ? `<img class="fc-av" src="${esc(p.avatar_url)}">` : `<div class="fc-av fc-av-ph">${esc((p.display_name || p.handle).slice(0, 1))}</div>`}<div class="disc-id"><b>${esc(p.display_name || p.handle)}${p.pet_level ? ` <span class="lv-chip lvt-${Math.min(p.pet_level,7)}">Lv.${p.pet_level}</span>` : ""}${p.is_premium ? ` <span class="pro-tag">PRO</span>` : ""}</b><span>@${esc(p.handle)}</span></div></div>`;
+    return `<div class="disc-row" data-id="${p.id}">${p.avatar_url ? `<img class="fc-av" src="${esc(p.avatar_url)}">` : `<div class="fc-av fc-av-ph">${esc((p.display_name || p.handle).slice(0, 1))}</div>`}<div class="disc-id"><b>${esc(p.display_name || p.handle)}${p.pet_level ? ` <span class="lv-chip lvt-${Math.min(p.pet_level,7)}">Lv.${p.pet_level}</span>` : ""}${p.is_premium ? ` <span class="pro-tag pro-id">PRO</span>` : ""}</b><span>@${esc(p.handle)}</span></div></div>`;
   }
   // 粉絲 / 追蹤中 名單覆蓋層
   async function openUserList(uid, mode) {
