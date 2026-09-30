@@ -1,7 +1,11 @@
 # 循徑拾光 上架前最終確認清單
 
-**目前狀態（2026-07-18）**：build **1.0 (25)** 已上 TestFlight、在外部測試群組 → **公測收 feedback 中**。
-下一步：收完意見 → 送 App Store 審核（填表步驟見 `docs/app-store-submit.md`）。
+**目前狀態（2026-09-30）**：**改為自用，暫不公開上架；網頁版不使用。**
+下面的「送審」與「上線後」清單先凍結，日後決定公開時再照做（填表步驟見 `docs/app-store-submit.md`）。
+自己裝的方式：沿用 TestFlight（內部測試，不需送審）。注意 build 25 之後又改了很多（生態資訊、沿線地標、
+訂閱解鎖修正…），要重跑 Codemagic 出新 build 才裝得到。TestFlight 每個 build 90 天到期，到期前要再出一版。
+
+> 歷史：2026-07-18 build 1.0 (25) 上 TestFlight 外部公測。
 
 ---
 
@@ -11,6 +15,7 @@
 - [x] 生態資訊區塊（小黑蚊警示＋常見動植物＋iNaturalist 目擊）
 - [x] 離線地圖免費額度 50MB → 10MB
 - [x] 修 bug：PRO 閘門 fail-open、字典重複 key、翻譯吃空白
+- [x] 訂閱解鎖：冷啟動也問商店（先前只有開過升級面板才問得到）、離線開 App 不再被降級（2026-09-30）
 - [x] 上架前全頁面體檢（功能／效能／排版／UI）
 - [x] 付費牆 4 條漏翻補齊（×24 語言）
 - [x] **隨手拍相機**：改 Capacitor 相機外掛（原生不再黑畫面）、權限被拒友善引導、選單標籤翻譯
@@ -64,7 +69,7 @@
 - [ ] 商標註冊「循徑拾光 / Gather the Trail」名稱＋Logo（智財局）
 - [ ] 小隊加入碼：用非隊長帳號實測一次
 - [ ] 刪測試用 RevenueCat customer `diag-key-check-20260716`
-- [ ] 網頁 Stripe 價格改月 100/年 1000（Stripe 建新 Price + 更新 Supabase secret `STRIPE_PRICE_ID`/`_YEAR`；現況顯示 100 實收 60）
+- [ ] ~~網頁 Stripe 價格改月 100/年 1000~~（2026-09-30：網頁版不使用，擱置。原註：Stripe 建新 Price + 更新 Supabase secret `STRIPE_PRICE_ID`/`_YEAR`；現況顯示 100 實收 60）
 - [ ] Android 上架（RevenueCat Android 金鑰 + Play Console 訂閱產品 + Service Account）
 - [ ] 原生推播 APNs：設定清單 `docs/push-setup.md`（已完成）
 

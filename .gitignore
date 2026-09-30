@@ -22,7 +22,7 @@ Thumbs.db
 
 # Capacitor / Node（原生 App 打包用）
 node_modules/
-package-lock.json
+# package-lock.json 要進版控：Codemagic 用 npm ci 照鎖檔裝，原生外掛版本才可重現
 # 原生專案(android/、ios/)原始碼進版控（分支/圖示/權限/設定要保留、可重現）；
 # 建置產生物由各自的 .gitignore 排除（build/、.gradle/、Pods/、DerivedData、複製進去的 web 資產）
 
@@ -43,3 +43,6 @@ data/tw_counties.geojson
 
 # 壓縮版建置產物（Render build 時現生成）
 dist/
+
+# 一次性腳本與字典工作區（本機保留，不進版控）
+scratchpad/

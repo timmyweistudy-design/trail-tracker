@@ -32,7 +32,7 @@ workflows:
         BUNDLE_ID: "com.timmyweistudy.trailtracker"
     scripts:
       - name: 安裝 npm 依賴
-        script: npm install
+        script: npm ci   # 照 package-lock.json 裝，避免 ^ 範圍在雲端抓到不同版本的原生外掛
       - name: Capacitor 同步 iOS（複製最新 web/ + 外掛）
         script: npx cap sync ios
       - name: pod install
@@ -90,7 +90,7 @@ workflows:
       java: 17
     scripts:
       - name: 安裝 npm 依賴
-        script: npm install
+        script: npm ci   # 照 package-lock.json 裝，避免 ^ 範圍在雲端抓到不同版本的原生外掛
       - name: Capacitor 同步 Android
         script: npx cap sync android
       - name: 編譯 Debug APK（可直接裝）

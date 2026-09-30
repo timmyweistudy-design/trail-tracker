@@ -1,4 +1,5 @@
-// 產生壓縮版靜態站到 dist/（源碼保持可讀；部署改指向 dist/）
+// 產生壓縮版靜態站到 dist/（源碼保持可讀）。目前 App（capacitor.config webDir）與 render.yaml 都直接吃 web/，
+// dist/ 沒有任何地方在用；這支只在日後想改吃壓縮版時才需要，且屆時要一起改 webDir／staticPublishPath。
 // 逐檔 minify JS/CSS；vendor/已.min/minify後反而變大的檔一律原樣複製 → 零語意風險
 import esbuild from "esbuild";
 import fs from "fs";

@@ -18,7 +18,8 @@ HERE = Path(__file__).parent
 TRAILS = HERE / "trails.json"
 Z = 14
 TILEURL = "https://elevation-tiles-prod.s3.amazonaws.com/terrarium"
-CACHE = Path(os.environ.get("DEM_CACHE", "/tmp/claude-1000/-mnt-c-Users-timmy/a121fff7-158b-4353-86a8-634bb159139f/scratchpad/demcache"))
+# 固定路徑（同 enrich_waypoints 的 /tmp/tt-wpcache）：原本寫死某次工作階段的暫存目錄，清掉就靜靜全部重抓
+CACHE = Path(os.environ.get("DEM_CACHE", "/tmp/tt-demcache"))
 CACHE.mkdir(parents=True, exist_ok=True)
 
 
