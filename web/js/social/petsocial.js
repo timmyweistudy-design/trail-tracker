@@ -31,7 +31,9 @@ const Pets = (() => {
     const { data } = await c.from("pet_gifts").select("id,berries").eq("to_user", uid).eq("claimed", false).limit(200);
     if (!data || !data.length) return 0;
     const sum = data.reduce((s, g) => s + (g.berries || 0), 0);
-    await c.from("pet_gifts").update({ claimed: true }).eq("to_user", uid).eq("claimed", false);
+    // 只標記「剛才讀到的那幾筆」：以前整批標「所有未領」，讀完到標記之間剛好送來的果實會被標成已領卻沒算到
+    const { error } = await c.from("pet_gifts").update({ claimed: true }).in("id", data.map(g => g.id)).eq("claimed", false);
+    if (error) return 0;
     if (sum > 0 && typeof addBerryBonus === "function") addBerryBonus(sum);
     return sum;
   }
@@ -48,10 +50,11 @@ const Pets = (() => {
     const box = document.getElementById("petFriends"); if (!box) return;
     if (typeof Supa === "undefined" || !Supa.ready()) { box.innerHTML = ""; return; }
     const sess = typeof Auth !== "undefined" ? await Auth.session().catch(() => null) : null;
-    if (!sess) { box.innerHTML = `<div class="section-title">👯 好友的夥伴</div><div class="social-empty" style="padding:14px">到「社群」分頁登入後，這裡會出現好友的夥伴。</div>`; return; }
+    const H = `<div class="section-title"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 5.2A3 3 0 0 1 16 11M21 20a6 6 0 0 0-4-5.7"/></svg>好友的夥伴</div>`;
+    if (!sess) { box.innerHTML = `<button class="fp-login" id="fpLogin">登入社群，就能看到好友的夥伴、互送果實 ›</button>`; const b = document.getElementById("fpLogin"); if (b) b.addEventListener("click", () => { const t = document.querySelector('.tab[data-view="social"]'); if (t) t.click(); }); return; }
     const [list, sentToday] = await Promise.all([friendsPets(), giftedTodayIds()]);
-    if (!list.length) { box.innerHTML = `<div class="section-title">👯 好友的夥伴</div><div class="social-empty" style="padding:14px">在社群互相追蹤山友後，這裡會出現他們的夥伴，可以送果實打氣。</div>`; return; }
-    box.innerHTML = `<div class="section-title">👯 好友的夥伴</div><div class="friend-pets">${list.map(p => {
+    if (!list.length) { box.innerHTML = `${H}<div class="social-empty" style="padding:14px">在社群互相追蹤山友後，這裡會出現他們的夥伴，可以送果實打氣。</div>`; return; }
+    box.innerHTML = `${H}<div class="friend-pets">${list.map(p => {
       const lvl = p.pet_level || 1, emoji = (typeof PET_STAGES !== "undefined" && PET_STAGES[lvl - 1]) ? PET_STAGES[lvl - 1].e : "🥚";
       const art = (typeof PET_ART !== "undefined") ? PET_ART.svg(lvl - 1) : emoji;   // 好友夥伴也用 SVG 角色
       const sent = sentToday.has(p.id);
@@ -61,10 +64,10 @@ const Pets = (() => {
       if (typeof berriesBalance === "function" && berriesBalance() < 3) { if (typeof toast === "function") toast("果實不夠，再多走一點就有"); return; }
       b.disabled = true; b.textContent = "送出中…";
       const r = await sendGift(b.dataset.id, 3);
-      if (!r.ok) { b.textContent = "今天已送"; if (typeof toast === "function") toast("今天已送過這位了，明天再來 🍃"); return; }   // RPC 擋下＝今天已送
+      if (!r.ok) { b.textContent = "今天已送"; if (typeof toast === "function") toast("今天送過這位了，明天再來"); return; }   // RPC 擋下＝今天已送
       if (typeof addBerryBonus === "function") addBerryBonus(-3);   // 扣自己 3 顆
       b.textContent = "今天已送";
-      if (typeof toast === "function") toast("已送 3🍓 給 " + b.dataset.name + " 的夥伴");
+      if (typeof toast === "function") toast("果實送出去了，對方會很開心");
       if (typeof renderPet === "function") renderPet();
     }));
   }

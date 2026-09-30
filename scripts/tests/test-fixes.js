@@ -283,8 +283,17 @@ eval(fs.readFileSync(web("ecology.js"), "utf8") + "\n;globalThis.Ecology = Ecolo
     ok("localDayOf 空值安全", localDayOf("garbage") === "");
   }
   // 成就階層獎勵表長度正確（0 佔位 + 6 階）
-  const rw = petSrc.match(/ACH_REWARD\s*=\s*\[([^\]]*)\]/);
+  const achSrc = fs.readFileSync(web("achievements.js"), "utf8");   // 成就已從 pet.js 拆到 achievements.js
+  const rw = achSrc.match(/ACH_REWARD\s*=\s*\[([^\]]*)\]/);
   ok("ACH_REWARD 有 7 格(佔位+6階)", !!rw && rw[1].split(",").length === 7);
+  // 成就固定 id：每個成就都要有 id，且 id 不重複（改名不再掉解鎖）
+  const idm = achSrc.match(/const ACH_ID = (\{[^}]*\});/);
+  ok("成就有固定 id 對照表", !!idm);
+  if (idm) {
+    const map = JSON.parse(idm[1]), names = [...achSrc.matchAll(/\{ e: "[^"]*", n: "([^"]+)"/g)].map(m => m[1]);
+    ok("每個成就都有 id（" + names.length + " 個）", names.length >= 40 && names.every(n => map[n]));
+    ok("成就 id 不重複", new Set(Object.values(map)).size === Object.values(map).length);
+  }
 }
 
 Promise.all(pending).then(() => {                 // 等非同步斷言跑完再結算，否則它們等於沒執行

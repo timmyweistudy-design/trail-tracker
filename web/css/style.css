@@ -2828,3 +2828,62 @@ html[data-theme="dark"] .rh-num { color: #d7ecd9; }
 .ok-mark .ic { width: 13px; height: 13px; color: var(--brand-mid); vertical-align: -2px; }
 /* 結算頁動作鈕 6 顆（開著社群時）→ 排成 3×2，不硬擠一排 */
 .link-row.flow:has(> .link-btn:nth-child(6)) { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+/* ══ 夥伴頁整理（2026-10-01）══ */
+.view-title .ic { width: 22px; height: 22px; vertical-align: -3px; margin-right: 4px; color: var(--brand-mid); }
+/* 果實：專屬 SVG（遊戲貨幣） */
+.berry { width: 1.15em; height: 1.15em; vertical-align: -0.2em; flex: none; }
+/* 裝扮／改名：有字的按鈕，看得懂也好按 */
+.pet-tools { position: relative; z-index: 2; display: flex; justify-content: center; gap: 8px; margin: 6px 0 2px; }
+.pet-tool { display: inline-flex; align-items: center; gap: 5px; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.2); color: #f3f1e6;
+  border-radius: 999px; padding: 6px 13px; font-size: calc(12px * var(--fs, 1)); font-weight: 700; cursor: pointer; min-height: 34px; }
+.pet-tool .ic { width: 14px; height: 14px; margin: 0; }
+.pet-tool:active { transform: scale(.95); }
+/* 下一階：剪影不劇透 */
+.pet-evo-next .pet-evo-sil svg, .pet-evo-next .pet-evo-sil .pet-critter { filter: brightness(0) opacity(.45); }
+/* 活力／親密：數字＋說明鈕 */
+.pet-meters { grid-template-columns: 1fr 1fr auto; align-items: center; }
+.pet-meter b { color: #fff; font-family: var(--num); }
+.pet-help { width: 26px; height: 26px; border-radius: 50%; border: 1px solid rgba(255,255,255,.3); background: rgba(255,255,255,.12); color: #fff; font-weight: 800; cursor: pointer; }
+/* 餵食鈕：果實圖示＋餘額；不夠時直接說還差幾顆 */
+.pet-btn.feed { display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
+.pet-btn.feed .feed-bal { font-family: var(--num); background: rgba(0,0,0,.18); border-radius: 999px; padding: 1px 7px; font-size: .9em; }
+.pet-btn.feed:disabled .berry { filter: grayscale(.6) opacity(.7); }
+/* 數字格大字不斷行：字級跟著格寬走 */
+.pet-chip { container-type: inline-size; min-width: 0; }
+.pet-chip .cv { white-space: nowrap; font-size: min(calc(15px * var(--fs, 1)), 17cqw); }
+.pet-chip .cl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+[data-fs-big] .pet-acts { flex-wrap: wrap; }
+[data-fs-big] .pet-btn.feed { flex-basis: 100%; }
+/* 帽子：果實解鎖、兩排都置中（5 個不再留一格空位） */
+.hat-grid { display: flex; flex-wrap: wrap; justify-content: center; }
+.hat-grid .hat-opt { flex: 0 0 calc((100% - 20px) / 3); position: relative; }
+.hat-opt.locked .hat-prev { filter: grayscale(.7) opacity(.6); }
+.hat-cost { position: absolute; top: 6px; right: 6px; display: inline-flex; align-items: center; gap: 2px; background: var(--surface); border-radius: 999px;
+  padding: 1px 7px 1px 4px; font-size: 11.5px; font-weight: 800; font-family: var(--num); box-shadow: var(--sh-sm); }
+.hat-bal { display: flex; align-items: center; justify-content: center; gap: 4px; margin: -4px 0 10px; font-weight: 800; font-family: var(--num); color: var(--brand-deep); }
+/* 每日任務：右邊顯示「目前 / 目標 單位」 */
+.q-chk { min-width: 64px; white-space: nowrap; font-size: calc(12px * var(--fs, 1)); }
+.q-chk .ic { width: 18px; height: 18px; color: var(--brand); }
+#qClaim .berry, .quest-mile .berry { margin-left: 2px; }
+/* 成就入口：稱號、分數、六階紋章 */
+.ae-top { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
+.ae-top .ach-entry-go { margin-left: auto; }
+.ae-score { font-size: calc(12px * var(--fs, 1)); color: var(--ink-soft); }
+.ae-score b { color: var(--accent, #c2683d); font-family: var(--num); }
+.ae-tiers { display: flex; justify-content: space-between; margin-top: 10px; }
+.ae-tier { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); color: var(--ink-faint); border: 1.5px dashed var(--line); }
+.ae-tier .ic { width: 16px; height: 16px; margin: 0; }
+.ae-tier.part { color: var(--brand-mid); border-style: solid; border-color: var(--brand-mid); }
+.ae-tier.full { background: var(--brand); color: #fff; border: none; }
+.anx-sug { margin-top: 6px; display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px;
+  padding: 4px 10px; font-size: calc(12px * var(--fs, 1)); font-weight: 700; color: var(--brand-deep); cursor: pointer; max-width: 100%; }
+.anx-sug span { color: var(--ink-faint); font-weight: 500; }
+.anx-sug .ic { width: 13px; height: 13px; margin: 0; }
+/* 好友的夥伴（未登入）：一行就好 */
+.fp-login { width: 100%; text-align: left; margin: 14px 0 6px; padding: 12px 14px; border: 1px dashed var(--line); border-radius: var(--r-sm); background: transparent;
+  color: var(--brand-deep); font-weight: 700; font-size: calc(13px * var(--fs, 1)); cursor: pointer; }
+/* 進化：新型態的棲息地當背景 */
+.evolve-bg { position: absolute; inset: 0; background: var(--habitat, #16301f); opacity: .9; }
+.evolve-bg svg { width: 100%; height: 100%; opacity: .55; }
+.evolve-card { z-index: 1; }

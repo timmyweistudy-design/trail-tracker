@@ -100,8 +100,8 @@ window.ttDebug = (() => {
       if (!cand.length) return "已全部解鎖 🏅";
       const next = cand.map(b => ({ b, r: (b.p && b.p[1]) ? Math.min(1, b.p[0] / b.p[1]) : 0 })).sort((a, b) => b.r - a.r)[0].b;
       let seen; try { seen = JSON.parse(localStorage.getItem("tt_badges_seen")); } catch (e) { /* */ }
-      if (!Array.isArray(seen)) localStorage.setItem("tt_badges_seen", JSON.stringify(list.filter(b => b.got).map(b => b.n)));   // 確保非首跑，才會 toast
-      const got = new Set(JSON.parse(localStorage.getItem("tt_badges_got") || "[]")); got.add(next.n);
+      if (!Array.isArray(seen)) localStorage.setItem("tt_badges_seen", JSON.stringify(list.filter(b => b.got).map(b => b.id)));   // 確保非首跑，才會 toast
+      const got = new Set(JSON.parse(localStorage.getItem("tt_badges_got") || "[]")); got.add(next.id);
       localStorage.setItem("tt_badges_got", JSON.stringify([...got]));
       try { if (typeof achCheckUnlocks === "function") achCheckUnlocks(); renderBadges(); } catch (e) { /* */ }
       return "已解鎖：" + next.n;
@@ -109,7 +109,7 @@ window.ttDebug = (() => {
     // 解鎖一半（每隔一個），做「進行中」的畫面測試
     halfAch() {
       const list = petBadges(), got = new Set(JSON.parse(localStorage.getItem("tt_badges_got") || "[]"));
-      list.forEach((b, i) => { if (i % 2 === 0) got.add(b.n); });
+      list.forEach((b, i) => { if (i % 2 === 0) got.add(b.id); });
       localStorage.setItem("tt_badges_got", JSON.stringify([...got]));
       try { renderBadges(); if (typeof refreshAchTree === "function") refreshAchTree(); } catch (e) { /* */ }
       return "已解鎖約一半（測試進行中狀態）";

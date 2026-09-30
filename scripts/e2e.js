@@ -340,6 +340,29 @@ const PORT = 8899;
       await pr.close();
     }
 
+    // 成就固定 id：舊版用中文名稱存的解鎖紀錄（含舊備份還原）要自動轉成 id，而且不能掉解鎖
+    {
+      const pa = await browser.newPage({ viewport: { width: 390, height: 844 } });
+      await pa.addInitScript(() => {
+        try {
+          localStorage.setItem("tt_lang", "zh"); ["tt_onboarded_v2", "tt_coach_record", "tt_locperm_prompted"].forEach(k => localStorage.setItem(k, "1"));
+          localStorage.setItem("tt_badges_got", JSON.stringify(["百K俱樂部"]));
+          localStorage.setItem("tt_badges_date", JSON.stringify({ "百K俱樂部": "2026-05-01T00:00:00Z" }));
+        } catch (e) { }
+      });
+      await pa.goto(`http://localhost:${PORT}/`, { waitUntil: "domcontentloaded" });
+      await pa.waitForTimeout(2600);
+      const r = await pa.evaluate(() => {
+        _pbCache = null;
+        const b = petBadges().find(x => x.id === "km100");
+        return { got: !!(b && b.got), stored: localStorage.getItem("tt_badges_got"), date: achUnlockDate("百K俱樂部") };
+      });
+      ok("成就 id 轉換：舊名稱的解鎖仍算數", r.got);
+      ok("成就 id 轉換：存回 id 格式", /km100/.test(r.stored) && !/百K/.test(r.stored));
+      ok("成就 id 轉換：解鎖日期也對得上", r.date === "2026/05/01");
+      await pa.close();
+    }
+
     // 自用模式（config.js 預設開）：全部 PRO 直接可用、升級面板不出現、PRO 標籤收起；
     // 社群入口預設照常顯示，「我的 → 外觀」的社群功能開關可自行收起／打開
     {
