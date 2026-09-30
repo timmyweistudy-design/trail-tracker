@@ -11,7 +11,7 @@ const Discover = (() => {
 
   function render(renderInto) {
     renderInto(`<div class="disc">
-      <input id="discQ" class="auth-input" placeholder="搜尋 handle 或名字" autocapitalize="off">
+      <input id="discQ" class="auth-input" placeholder="搜尋名字或 @帳號" autocapitalize="off">
       <div id="discResults"></div></div>`);
     const q = document.getElementById("discQ"); let t = null;
     q.addEventListener("input", () => { clearTimeout(t); t = setTimeout(() => { const v = q.value.trim(); v.length < 2 ? showSuggestions() : search(v); }, 300); });
@@ -24,7 +24,7 @@ const Discover = (() => {
     box.innerHTML = `<div class="feed-loading"><span class="spin"></span></div>`;
     const people = (typeof Posts !== "undefined" && Posts.suggestions) ? await Posts.suggestions() : [];
     if (!document.getElementById("discResults")) return;
-    if (!people.length) { box.innerHTML = `<div class="social-empty">輸入 handle 或名字搜尋山友。</div>`; return; }
+    if (!people.length) { box.innerHTML = `<div class="social-empty">輸入名字或 @帳號找山友。</div>`; return; }
     box.innerHTML = `<div class="disc-sec">✨ 推薦追蹤</div>` + people.map(p => `<div class="disc-row" data-id="${p.id}">
       ${p.avatar_url ? `<img class="fc-av" src="${esc(p.avatar_url)}">` : `<div class="fc-av fc-av-ph">${esc((p.display_name || p.handle).slice(0, 1))}</div>`}
       <div class="disc-id"><b>${esc(p.display_name || p.handle)}${p.pet_level ? ` <span class="lv-chip lvt-${Math.min(p.pet_level,7)}">Lv.${p.pet_level}</span>` : ""}${p.is_premium ? ` <span class="pro-tag">PRO</span>` : ""}</b><span>@${esc(p.handle)}</span></div>

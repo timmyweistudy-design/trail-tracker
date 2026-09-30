@@ -8,7 +8,7 @@ const SocialUI = (() => {
   function render(html) { const b = $("#socialBody"); if (b) b.innerHTML = html; }
 
   async function onShow() {
-    if (typeof Supa === "undefined" || !Supa.ready()) { render(`<div class="social-empty">社群功能尚未啟用（缺少 Supabase 設定）。</div>`); return; }
+    if (typeof Supa === "undefined" || !Supa.ready()) { render(`<div class="social-empty">社群暫時用不了。</div>`); return; }
     if (!mounted) { mounted = true; if (typeof Auth !== "undefined") Auth.init(route); }
     route();
   }

@@ -28,7 +28,7 @@ const Events = (() => {
     const { data, error } = await c.from("events")
       .select("id, trail_id, trail_name, title, when_at, note, creator_id, creator:profiles!events_creator_profile_fk(handle, display_name)")
       .gte("when_at", new Date(Date.now() - 6 * 3600e3).toISOString()).order("when_at", { ascending: true }).limit(50);
-    if (error) { body.innerHTML = `<div class="social-empty">活動功能尚未啟用（請先執行 phase13 SQL）。</div>`; return; }
+    if (error) { body.innerHTML = `<div class="social-empty">揪團功能暫時用不了。</div>`; return; }
     if (!data || !data.length) { body.innerHTML = `<div class="social-empty"><span class="ee">📅</span>目前沒有揪團活動，點右上角 ＋ 發起一個！</div>`; return; }
     const ids = data.map(e => e.id);
     const myId = await me();

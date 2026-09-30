@@ -8,21 +8,34 @@ const Premium = (() => {
   // 帳本（subscriptions 表）要靠 RevenueCat webhook 寫回；webhook 慢、失敗、或 app_user_id
   // 沒綁到 Supabase uid 時，使用者會「付了錢卻沒解鎖」——回復購買最明顯：商店說有、App 卻不給。
   // Apple 審核必測回復購買，回復無效是拒審理由。故商店確認就先放行，帳本晚點對上不影響。
+  // RevenueCat 沒 configure 過就問不到商店（entitlementActive 直接回 false）。開機時的 refresh 比
+  // 社群分頁/升級面板都早，不先補 configure 的話，重開 App 後這條永遠是 false＝帳本沒對上的人又被鎖。
+  // configure 需要 Supabase uid，所以未登入時仍問不到（設計如此：匿名 app_user_id 對不回人）。
   async function storeSaysOn() {
     try {
-      return (typeof IAP !== "undefined" && IAP.native && IAP.native() && IAP.entitlementActive)
-        ? await IAP.entitlementActive() : false;
+      if (typeof IAP === "undefined" || !IAP.available || !IAP.available()) return false;
+      if (IAP.configured && !IAP.configured()) await ensureIapReady();
+      return await IAP.entitlementActive();
     } catch (e) { return false; }
   }
 
+  // 自用模式：自己的 App 不必付錢給自己，全部當會員（見 config.js PERSONAL_MODE）
+  const personal = () => typeof window !== "undefined" && !!window.PERSONAL_MODE;
+
   async function refresh() {
+    if (personal()) { _on = true; _loaded = true; return true; }
     const cached = localStorage.getItem("tt_premium") === "1";
     try {
       const c = (typeof Supa !== "undefined" && Supa.ready && Supa.ready()) ? Supa.client() : null;
       if (!c) { _on = cached || await storeSaysOn(); _loaded = true; sync(); return _on; }   // 未登入/未設定：維持快取
-      const { data: u } = await c.auth.getUser();
-      if (!u || !u.user) {                                        // 確定沒登入
-        _on = await storeSaysOn();                                // 但商店有訂閱就仍算會員（換帳號/未登入也不該把已付費的人鎖住）
+      const { data: u, error: ue } = await c.auth.getUser();
+      if (!u || !u.user) {
+        // 拿不到 user 不一定是沒登入：沒訊號時 supabase-js 不會 throw，而是回 { user: null, error:
+        // AuthRetryableFetchError }。這種「不確定」要跟上面 catch 一樣沿用快取，不能降級、也不能寫回 0。
+        // 只有「沒有 session」或伺服器明確拒絕（4xx，token 失效）才算確定沒登入。
+        const unsure = ue && ue.name !== "AuthSessionMissingError" && !(ue.status >= 400 && ue.status < 500);
+        if (unsure) { _on = cached || await storeSaysOn(); _loaded = true; return _on; }
+        _on = await storeSaysOn();                                // 確定沒登入：商店有訂閱仍算會員
         _loaded = true; sync(); return _on;
       }
       const { data, error } = await c.from("subscriptions").select("status, current_period_end").eq("user_id", u.user.id).maybeSingle();
@@ -43,7 +56,7 @@ const Premium = (() => {
     _on = false; _loaded = true; _periodEnd = null;
     try { localStorage.removeItem("tt_premium"); localStorage.removeItem("tt_premium_since"); } catch (e) { /* */ }
   }
-  function isOn() { return _loaded ? _on : (localStorage.getItem("tt_premium") === "1"); }
+  function isOn() { if (personal()) return true; return _loaded ? _on : (localStorage.getItem("tt_premium") === "1"); }
   function gate() { if (isOn()) return true; openUpgrade(); return false; }
 
   const BENEFITS = [
@@ -78,6 +91,7 @@ const Premium = (() => {
   const icc = n => (typeof ic === "function" ? ic(n) : "");
 
   function openUpgrade() {
+    if (personal()) return;
     if (document.querySelector(".premium-mask")) return;   // 防連點疊層
     let plan = "month";
     const ov = document.createElement("div");
@@ -249,6 +263,7 @@ const Premium = (() => {
   }
 
   function renderBox(el) {
+    if (personal()) { if (el) el.innerHTML = ""; return; }
     if (!el) return;
     if (typeof Supa === "undefined" || !Supa.ready || !Supa.ready()) { el.innerHTML = ""; return; }
     if (isOn()) {

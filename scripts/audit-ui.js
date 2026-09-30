@@ -202,6 +202,7 @@ const ok = m => console.log("  ✓ " + m);
   for (const [sel, name] of [["[data-view=explore]", "探索"], ["[data-view=record]", "記錄"], ["[data-view=pet]", "夥伴"], ["[data-view=social]", "社群"], ["[data-view=me]", "我的"]]) {
     const el = p.locator(sel).first();
     if (!await el.count()) { bad(`找不到分頁按鈕 ${name}`); continue; }
+    if (name === "社群" && !(await el.isVisible())) { ok("社群 分頁在自用模式收起（略過）"); continue; }
     // headless 沒有定位權限，記錄頁會跳 GPS 錯誤對話框，覆蓋層會擋住後續所有點擊
     await p.evaluate(() => document.querySelectorAll(".ttdlg-ov, .tour").forEach(x => x.remove()));
     await el.click({ timeout: 8000 }).catch(() => bad(`分頁 ${name} 點不動（有東西擋住）`));

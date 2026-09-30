@@ -147,7 +147,7 @@ const Profiles = (() => {
     if (ap) ap.addEventListener("change", async () => {
       const c = Supa.client();
       const { error } = await c.from("profiles").update({ follow_approval: ap.checked }).eq("id", prof.id);
-      if (error) { ap.checked = !ap.checked; if (typeof toast === "function") toast("儲存失敗，請先更新資料庫（phase18）"); return; }
+      if (error) { ap.checked = !ap.checked; if (typeof toast === "function") toast("沒存成功，等一下再試試"); return; }
       prof.follow_approval = ap.checked;
       if (typeof toast === "function") toast(ap.checked ? "已開啟：追蹤需你同意" : "已關閉：任何人可直接追蹤你");
     });
@@ -208,7 +208,7 @@ const Profiles = (() => {
         <label class="ob-l">封面照</label>
         <div class="ed-cover" id="edCoverImg" style="${prof.cover_url ? `background-image:url('${esc(prof.cover_url)}')` : ""}"></div>
         <label class="comp-add">更換封面<input type="file" id="edCoverFile" accept="image/*" hidden></label>
-        <label class="ob-l">帳號 handle（給朋友搜尋你）</label>
+        <label class="ob-l">帳號（朋友用這個找到你）</label>
         <input id="edHandle" class="auth-input" value="${esc(prof.handle || "")}" autocapitalize="off" autocomplete="off">
         <div class="auth-msg" id="edHandleMsg"></div>
         <label class="ob-l">顯示名稱</label>
@@ -252,7 +252,7 @@ const Profiles = (() => {
       hMsg.textContent = "檢查中…"; hMsg.className = "auth-msg"; hOk = false;
       ht = setTimeout(async () => {
         const taken = await Auth.handleTaken(v.handle);
-        if (taken) { hMsg.textContent = "這個 handle 已被使用"; hMsg.className = "auth-msg bad"; hOk = false; }
+        if (taken) { hMsg.textContent = "這個帳號名稱有人用了"; hMsg.className = "auth-msg bad"; hOk = false; }
         else { hMsg.textContent = "可以使用 ✓"; hMsg.className = "auth-msg ok"; hOk = true; }
       }, 350);
     });
@@ -265,7 +265,7 @@ const Profiles = (() => {
       const hv = Handle.validate(hEl.value);
       if (!hv.ok) { msg.textContent = "handle：" + hv.msg; return; }
       const handleChanged = hv.handle !== prof.handle;
-      if (handleChanged && !hOk) { msg.textContent = "請確認 handle 可用"; return; }
+      if (handleChanged && !hOk) { msg.textContent = "先確認帳號名稱能用"; return; }
       msg.textContent = "儲存中…";
       const patch = { display_name, bio };
       if (handleChanged) patch.handle = hv.handle;
@@ -278,7 +278,7 @@ const Profiles = (() => {
         catch (e) { msg.textContent = "封面上傳失敗：" + (e && e.message || e); return; }
       }
       const { error } = await c.from("profiles").update(patch).eq("id", prof.id);
-      if (error) { msg.textContent = /duplicate|unique/i.test(error.message) ? "這個 handle 已被使用" : ("儲存失敗：" + error.message); return; }
+      if (error) { msg.textContent = /duplicate|unique/i.test(error.message) ? "這個帳號名稱有人用了" : ("儲存失敗：" + error.message); return; }
       renderMe(render, Object.assign({}, prof, patch));
     });
   }

@@ -137,7 +137,7 @@ const Notifs = (() => {
         const c = Supa.client(); const ok = b.classList.contains("nf-ok");
         b.disabled = true;
         const { error } = await c.rpc(ok ? "approve_follow" : "decline_follow", { p_requester: b.dataset.uid });
-        if (error) { b.disabled = false; if (typeof toast === "function") toast("操作失敗，請先更新資料庫（phase18）"); return; }
+        if (error) { b.disabled = false; if (typeof toast === "function") toast("操作失敗，等一下再試試"); return; }
         if (typeof toast === "function") toast(ok ? "已同意，對方現在追蹤你了" : "已拒絕請求");
         pending.delete(b.dataset.uid);
         paint();

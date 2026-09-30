@@ -173,7 +173,7 @@ const Auth = (() => {
     render(`
       <div class="social-auth">
         <h3>建立你的山友檔案</h3>
-        <label class="ob-l">帳號 handle（給朋友搜尋你）</label>
+        <label class="ob-l">帳號（朋友用這個找到你）</label>
         <input id="obHandle" class="auth-input" placeholder="例如 hiker_tim" autocapitalize="off" autocomplete="off">
         <div class="auth-msg" id="obHandleMsg"></div>
         <label class="ob-l">顯示名稱</label>
@@ -193,7 +193,7 @@ const Auth = (() => {
       hMsg.textContent = "檢查中…"; hMsg.className = "auth-msg";
       t = setTimeout(async () => {
         const taken = await handleTaken(v.handle);
-        if (taken) { hMsg.textContent = "這個 handle 已被使用"; hMsg.className = "auth-msg bad"; }
+        if (taken) { hMsg.textContent = "這個帳號名稱有人用了"; hMsg.className = "auth-msg bad"; }
         else { hMsg.textContent = "可以使用 ✓"; hMsg.className = "auth-msg ok"; lastOk = true; }
       }, 350);
     });
@@ -201,7 +201,7 @@ const Auth = (() => {
       const v = Handle.validate(hEl.value);
       const msg = document.getElementById("obMsg");
       if (!v.ok) { msg.textContent = v.msg; return; }
-      if (!lastOk) { msg.textContent = "請確認 handle 可用"; return; }
+      if (!lastOk) { msg.textContent = "先確認帳號名稱能用"; return; }
       msg.textContent = "建立中…";
       const r = await createProfile({
         handle: v.handle,

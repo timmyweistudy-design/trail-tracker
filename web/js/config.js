@@ -28,3 +28,8 @@ window.STRIPE_ENABLED = true;
 window.IAP_ENABLED = true;    // 原生 App 內購已上線（RevenueCat）；網頁版仍走 Stripe，不受影響
 window.REVENUECAT_IOS_KEY = "appl_hOuPaGDfqdHXcBZmyBWdxqUBRGy";   // public key 固定 32 字元（appl_ + 27）；曾經尾巴多貼 age 三個字 → 401 Invalid API Key
 window.REVENUECAT_ANDROID_KEY = "";
+// 自用模式（2026-09-30 起不公開上架）：本機直接解鎖全部 PRO、藏起升級面板與 PRO 標籤、
+// 社群/小隊/揪團這些要跟別人互動的入口也收起來。社群模組仍在（登入才能雲端備份）。
+// 測試可在載入前先設 window.PERSONAL_MODE=false，照舊測付費牆。
+if (window.PERSONAL_MODE === undefined) window.PERSONAL_MODE = true;
+document.documentElement.classList.toggle("personal", !!window.PERSONAL_MODE);

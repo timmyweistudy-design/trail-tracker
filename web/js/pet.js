@@ -61,7 +61,7 @@ function feedCooldownMs() { return Math.max(0, FEED_COOLDOWN - (Date.now() - (+(
 function canFeedNow() { return berriesBalance() >= 3 && feedCooldownMs() === 0; }   // 「現在能不能餵」（看 8h 冷卻，非每日）
 function feedPet() {
   if (feedCooldownMs() > 0) { toast(`還在休息，約 ${Math.ceil(feedCooldownMs() / 3600e3)} 小時後可再餵 🍃`); return; }
-  if (berriesBalance() < 3) { toast("果實不足，多走幾步才有果實 🍓"); return; }
+  if (berriesBalance() < 3) { toast("果實不夠，再多走一點就有"); return; }
   const heartsBefore = petHearts();
   localStorage.setItem("tt_pet_berry_spent", String((+(localStorage.getItem("tt_pet_berry_spent") || 0)) + 3));
   bumpAffinity(15);
@@ -1011,25 +1011,25 @@ function openPetDex() {
   const stages = PET_STAGES.map((s, i) => {
     const unlocked = i <= reached, isNow = i === reached;
     return `<div class="dex-row${unlocked ? "" : " locked"}${isNow ? " now" : ""}">
-      <div class="dex-e">${unlocked && typeof PET_ART !== "undefined" ? PET_ART.svg(i) : (unlocked ? s.e : "❔")}</div>
+      <div class="dex-e">${unlocked && typeof PET_ART !== "undefined" ? PET_ART.svg(i) : (unlocked ? s.e : `<svg class="ic dex-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`)}</div>
       <div class="dex-body">
         <div class="dex-h"><b>${unlocked ? s.n : "？？？"}</b><span class="lv-chip lvt-${Math.min(i + 1, 7)}">Lv.${i + 1}</span>${isNow ? `<span class="dex-now">目前</span>` : ""}</div>
         <div class="dex-k">${i === 0 ? "起始型態" : `成長里程 ${s.km} km 解鎖`}</div>
-        <div class="dex-d">${unlocked ? s.d : "繼續健行，解鎖牠的樣貌與故事…"}</div>
+        <div class="dex-d">${unlocked ? s.d : "還沒見過牠。多走幾趟就碰得到"}</div>
       </div>
     </div>`;
   }).join("");
-  const tip = next ? `再走 <b>${(next.km - km).toFixed(1)}</b> km 進化成 ${next.n}` : "已達最終型態 ✨ 與你繼續同行";
+  const tip = next ? `再走 <b>${(next.km - km).toFixed(1)}</b> km 進化成 ？？？` : "已經是最終型態了，接下來就一起走吧";
   const ov = document.createElement("div");
   ov.className = "pet-modal"; ov.dataset.ov = "petdex";
   ov.innerHTML = `<div class="pet-modal-card">
-    <button class="sheet-close" id="petDexClose" aria-label="關閉">✕</button>
+    <button class="sheet-close" id="petDexClose" aria-label="關閉"><svg class="ic" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
     <h2>夥伴手冊</h2>
-    <p class="dex-intro">你的夥伴會隨著累積的<b>成長里程</b>一階階進化 —— 走路的里程、餵食、每日任務與好友送的果實，都會讓牠成長。</p>
+    <p class="dex-intro">牠靠你的腳程長大。<b>成長里程</b>主要來自你走的路，餵食和每日任務也會偷偷加一點。</p>
     <div class="dex-tip"><span class="inline-ic">${ic("footprints")}</span> ${tip}</div>
     <div class="dex-sec">進化圖鑑（共 ${PET_STAGES.length} 階）</div>
     <div class="dex-list">${stages}</div>
-    <p class="dex-foot">💡 想看成就勳章？回「夥伴」頁往下捲就有。</p>
+    <p class="dex-foot">成就勳章在「夥伴」頁最下面。</p>
   </div>`;
   document.body.appendChild(ov);
   const close = () => ov.remove();
@@ -1092,7 +1092,7 @@ async function openFootprintMap() {
   if (document.querySelector('[data-ov="footmap"]')) return;   // 防連點疊層
   if (typeof ttBusy === "function" && ttBusy("footmap")) return;   // 同步鎖：讀封存的空窗期連點也擋
   const recs = (await Store.allFull()).filter(r => isFootRec(r) && r.track && r.track.length > 1);
-  if (!recs.length) { toast("還沒有可顯示的軌跡，先去走一條吧"); return; }
+  if (!recs.length) { toast("地圖還空空的，走完第一趟就畫上去了"); return; }
   const ov = document.createElement("div");
   ov.className = "foot-modal"; ov.dataset.ov = "footmap";
   ov.innerHTML = `<button class="lb-close" id="footClose" aria-label="關閉">✕</button><div id="footMap"></div><div class="foot-cap">我的足跡 · ${recs.length} 段軌跡</div>`;

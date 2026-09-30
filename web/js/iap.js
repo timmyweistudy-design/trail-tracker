@@ -132,6 +132,8 @@ const IAP = (() => {
                    : "https://play.google.com/store/account/subscriptions";
   }
 
-  return { available, native, init, plans, purchase, restore, entitlementActive, manageUrl, lastError };
+  function configured() { return _configured; }
+
+  return { available, native, init, configured, plans, purchase, restore, entitlementActive, manageUrl, lastError };
 })();
 if (typeof module !== "undefined" && module.exports) module.exports = IAP;

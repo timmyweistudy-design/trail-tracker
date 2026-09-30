@@ -57,7 +57,7 @@ function openYearReview() {
   const sum = (a, f) => a.reduce((s, r) => s + (f(r) || 0), 0);
   const km = sum(recs, r => r.distanceKm), asc = sum(recs, r => r.ascent), hrs = sum(recs, r => r.elapsedMs) / 3.6e6;
   const steps = sum(recs, r => r.steps), kcal = sum(recs, r => r.kcal);
-  const distinct = new Set(recs.map(r => r.trailName || "自由路線")).size;
+  const distinct = new Set(recs.filter(r => r.trailId || (r.trailName && r.trailName !== "自由路線")).map(r => r.trailId || r.trailName)).size;
   let longest = 0, maxAlt = 0, longestRec = null; recs.forEach(r => { if ((r.distanceKm || 0) > longest) { longest = r.distanceKm || 0; longestRec = r; } maxAlt = Math.max(maxAlt, r.altHigh || 0); });
   const mo = {}; recs.forEach(r => { const m = +(r.date || "").slice(5, 7); if (m) mo[m] = (mo[m] || 0) + 1; });
   const busiest = Object.keys(mo).sort((a, b) => mo[b] - mo[a])[0];
@@ -84,14 +84,14 @@ function openYearReview() {
       <div><b>${cuSpan(distinct, "", 0)}</b><span>條步道</span></div>
     </div>
     <div class="yr-months">${mk.map((v, i) => `<div class="yr-mo"><div class="yr-mo-v">${v > 0 ? (v >= 10 ? Math.round(v) : v.toFixed(1)) : ""}</div><div class="yr-mo-bar" style="height:${Math.round(v / mkMax * 46) + 3}px;animation-delay:${(i * 0.04).toFixed(2)}s"></div><span>${i + 1}</span></div>`).join("")}</div>
-    <div class="yr-mo-cap">每月里程（單位：km）</div>
+    <div class="yr-mo-cap">每個月走了幾公里</div>
     ${longestRec && longestRec.track && longestRec.track.length > 1 ? `<div class="yr-route"><div class="yr-route-l">最遠的一條 ‧ ${(longestRec.trailName || "自由路線")}（${longest.toFixed(1)} km）</div>${routeMini(longestRec.track, "yr-route-svg")}</div>` : ""}
     <div class="yr-lines">
       ${longest ? `<div>單次最長 <b>${longest.toFixed(1)} km</b></div>` : ""}
       ${maxAlt ? `<div>最高造訪海拔 <b>${maxAlt} m</b></div>` : ""}
       ${busiest ? `<div>最常出門 <b>${busiest} 月</b></div>` : ""}
       ${top ? `<div>最愛步道 <b>${top}</b></div>` : ""}
-      <div>較去年里程 <b>${delta >= 0 ? "↑ +" : "↓ "}${Math.abs(delta).toFixed(0)} km</b></div>
+      <div>較去年里程 <b>${delta >= 0 ? "+" : "−"}${Math.abs(delta).toFixed(0)} km</b></div>
       <div class="yr-foot">↑ 累積爬升約 ${(asc / 3952).toFixed(1)} 座玉山</div>
     </div>
     <div class="yr-btns"><button class="btn primary" id="yrShare">${ic("share")} 分享</button><button class="btn ghost yr-imgbtn" id="yrImg">${ic("camera")} 存成圖片</button></div>`
@@ -201,6 +201,10 @@ function openAnalytics() {
   const by = {};
   for (const r of recs) { const m = (r.date || "").slice(0, 7); if (!m) continue; (by[m] = by[m] || { km: 0, asc: 0, n: 0, kcal: 0 }); by[m].km += r.distanceKm || 0; by[m].asc += r.ascent || 0; by[m].kcal += r.kcal || 0; by[m].n++; }
   const months = Object.keys(by).sort().reverse().slice(0, 12);
+  // 月份標籤：今年的只寫「9月」、往年加年份（原本「2026 / 09」會在窄欄裡斷成兩行）
+  const thisY = new Date().getFullYear();
+  const mLabel = m => { const [y, mo] = m.split("-").map(Number); const d = new Date(y, mo - 1, 1);
+    return d.toLocaleDateString(ttLocale(), y === thisY ? { month: "short" } : { year: "2-digit", month: "short" }); };
   const maxKm = Math.max(1, ...months.map(m => by[m].km));
   const maxKcal = Math.max(1, ...months.map(m => by[m].kcal));
   const card = (to, pre, dec, l) => `<div class="ana-card"><div class="ana-cv">${cuSpan(to, pre, dec)}</div><div class="ana-cl">${l}</div></div>`;
@@ -253,21 +257,21 @@ function openAnalytics() {
       ${pb("整體平均配速", avgPace.toFixed(1) + " km/h")}
       ${pb("最常走", favTrail ? favTrail + "（" + tc[favTrail] + " 次）" : "—")}
     </div>
-    ${paced.length >= 2 ? `<div class="ana-sec">速度趨勢</div>${paceBars(paced)}<div class="ana-spark-cap">${ttT("每根＝一趟平均速度 km/h，越高越快；最右是最近、綠色最快")}</div>` : ""}
+    ${paced.length >= 2 ? `<div class="ana-sec">速度趨勢</div>${paceBars(paced)}<div class="ana-spark-cap">${ttT("每根是一趟的平均時速，最右邊是最近一趟")}</div>` : ""}
     <div class="ana-sec">難度分布</div>
-    ${diffN.slice(1).some(c => c > 0) ? diffRadar(diffN.slice(1), DLBL.slice(1)) : `<div class="ana-empty-note">尚無對應到分級步道的紀錄</div>`}
+    ${diffN.slice(1).some(c => c > 0) ? diffRadar(diffN.slice(1), DLBL.slice(1)) : `<div class="ana-empty-note">還沒走過有分級的步道</div>`}
     <div class="ana-sec">年度里程</div>
     <div class="ana-list">${years.map(y => `<div class="ana-row"><div class="ana-m">${y}</div><div class="ana-bar"><i style="width:${Math.round(yr[y] / maxY * 100)}%"></i></div><div class="ana-v"><b>${yr[y].toFixed(1)}</b> km</div></div>`).join("")}</div>
     <div class="ana-sec">每月卡路里消耗</div>
     <div class="ana-list">${months.map(m => `
-      <div class="ana-row"><div class="ana-m">${m.replace("-", " / ")}</div>
+      <div class="ana-row"><div class="ana-m">${mLabel(m)}</div>
         <div class="ana-bar kcal"><i style="width:${Math.round(by[m].kcal / maxKcal * 100)}%"></i></div>
         <div class="ana-v"><b>${Math.round(by[m].kcal).toLocaleString()}</b> kcal</div></div>`).join("")}</div>
     <div class="ana-sec">一週節律</div>
     <div class="ana-week">${wd.map((c, i) => `<div class="aw"><div class="aw-v">${c}</div><div class="aw-bar" style="height:${Math.round(c / maxW * 46) + 4}px"></div><div class="aw-l">${WLBL[i]}</div></div>`).join("")}</div>
-    <div class="ana-spark-cap">各星期的出行次數（單位：次）</div>
+    <div class="ana-spark-cap">星期幾最常出門</div>
     ${regionHtml}
-    <button class="btn ghost" id="anaCompare" style="margin-top:10px">${ic("users")} 好友里程比較</button>
+    <button class="btn ghost hide-personal" id="anaCompare" style="margin-top:10px">${ic("users")} 好友里程比較</button>
     <div class="ana-exp">
       <button class="btn ghost" id="anaCsv">${ic("download")} CSV</button>
       <button class="btn ghost" id="anaGpx">${ic("download")} GPX</button>
@@ -283,7 +287,7 @@ function openAnalytics() {
     </div>`;
 
   const totSteps = recs.reduce((s, r) => s + (r.steps || 0), 0);
-  const distinct = new Set(recs.map(r => r.trailName || "自由路線")).size;
+  const distinct = new Set(recs.filter(r => r.trailId || (r.trailName && r.trailName !== "自由路線")).map(r => r.trailId || r.trailName)).size;
   const ov = document.createElement("div"); ov.className = "pet-modal"; ov.dataset.ov = "analytics";
   ov.innerHTML = `<div class="pet-modal-card anim-seq">
     <button class="sheet-close" id="anaX" aria-label="關閉">${ic("x")}</button>
@@ -295,15 +299,15 @@ function openAnalytics() {
       ${card(totAsc, "↑", 0, "總爬升 m")}
       ${card(totHrs, "", 1, "總時數 小時")}
       ${card(totSteps, "", 0, "總步數")}
-      ${card(distinct, "", 0, "探索步道")}
+      ${card(distinct, "", 0, "走過的步道")}
     </div>
     <div class="ana-sec">每月里程</div>
     <div class="ana-list">${months.map(m => `
-      <div class="ana-row"><div class="ana-m">${m.replace("-", " / ")}</div>
+      <div class="ana-row"><div class="ana-m">${mLabel(m)}</div>
         <div class="ana-bar"><i style="width:${Math.round(by[m].km / maxKm * 100)}%"></i></div>
-        <div class="ana-v"><b>${by[m].km.toFixed(1)}</b>km ・ ↑${Math.round(by[m].asc)}m ・ ${by[m].n}次</div></div>`).join("")}</div>
+        <div class="ana-v"><b>${by[m].km.toFixed(1)}</b> km・↑${Math.round(by[m].asc)} m・${by[m].n} ${ttT("次")}</div></div>`).join("")}</div>
     ${pro ? proInner : proLocked}`
-    : `<div class="social-empty"><span class="ee">${ic("target")}</span>還沒有行程可分析，先去走一條吧。</div>`}
+    : `<div class="social-empty"><span class="ee">${ic("target")}</span>還沒有行程。走完第一趟，這裡就熱鬧了。</div>`}
   </div>`;
   document.body.appendChild(ov);
   runCountUps(ov);

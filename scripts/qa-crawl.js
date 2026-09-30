@@ -13,7 +13,8 @@ const EXT = /net::|favicon|404 \(|Failed to load resource|CORS|opentopodata|tran
   await new Promise(r => setTimeout(r, 1200));
   const b = await chromium.launch();
   const p = await b.newPage({ viewport: { width: 390, height: 844 } });
-  await p.addInitScript(() => localStorage.setItem("tt_onboarded_v2", "1"));
+  // 跳過首次導覽、情境導覽、定位權限說明卡——不跳的話記錄頁被說明卡蓋住，開始/結束鈕點不到（環境問題，不是 bug）
+  await p.addInitScript(() => { localStorage.setItem("tt_onboarded_v2", "1"); ["tt_coach_trail", "tt_coach_team", "tt_coach_record", "tt_coach_soc_friends", "tt_coach_soc_explore", "tt_coach_soc_search", "tt_coach_soc_notif", "tt_coach_soc_me", "tt_locperm_prompted"].forEach(k => localStorage.setItem(k, "1")); });
   const errs = [];
   const mark = s => `${cur} | ${s}`;
   let cur = "load";
@@ -62,7 +63,7 @@ const EXT = /net::|favicon|404 \(|Failed to load resource|CORS|opentopodata|tran
     });
     await p.waitForTimeout(300);
     await p.evaluate(() => { const t = document.getElementById("simToggle"); if (t && !t.checked) t.click(); });
-    await click("#btnStart"); await p.waitForTimeout(4000); await click("#btnStop"); await p.waitForTimeout(2000);
+    await click("#btnStart"); await p.waitForTimeout(4000); await click("#btnStop"); await p.waitForSelector("#trackSheet.show", { timeout: 12000 }).catch(() => {}); await p.waitForTimeout(400);   // 結算要等海拔校正（最多 8 秒），固定等 2 秒會偶發點不到
     await click("#trackSheet .sheet-close");
   });
 
@@ -76,7 +77,8 @@ const EXT = /net::|favicon|404 \(|Failed to load resource|CORS|opentopodata|tran
     await p.evaluate(() => localStorage.setItem("tt_lang", "zh")); await p.reload({ waitUntil: "domcontentloaded" }); await p.waitForTimeout(2000);
   });
 
-  await step("社群:分頁(未登入)", async () => { await click('.tab[data-view="social"]'); await p.waitForTimeout(3000); });
+  // 自用模式（PERSONAL_MODE）把社群分頁收起來了 → 看不到就跳過，不算失敗
+  await step("社群:分頁(未登入)", async () => { if (!(await p.locator('.tab[data-view="social"]').isVisible())) return; await click('.tab[data-view="social"]'); await p.waitForTimeout(3000); });
 
   // App 內部錯誤日誌
   const ttErrs = await p.evaluate(() => (window.ttErrors ? window.ttErrors() : []));

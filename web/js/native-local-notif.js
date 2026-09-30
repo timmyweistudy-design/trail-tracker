@@ -41,7 +41,7 @@ const Reminders = (() => {
     try {
       await p.schedule({ notifications: [{
         id: ID_STREAK, title: tt("循徑拾光"),
-        body: tt("連續 %d 天！今天走一段就不會中斷 🔥").replace("%d", streak),
+        body: tt("連續 %d 天了，今天走一小段就不會斷").replace("%d", streak),
         schedule: { at },
       }] });
     } catch (e) { /* */ }

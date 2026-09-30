@@ -58,7 +58,7 @@ const Pets = (() => {
       return `<div class="fp"><span class="fp-pet">${art}</span><div class="fp-info"><b>${esc(p.pet_name || p.display_name || p.handle)}</b> <span class="lv-chip lvt-${Math.min(lvl, 7)}">Lv.${lvl}</span><div class="fp-by">@${esc(p.handle)}</div></div><button class="btn ghost fp-gift" data-id="${p.id}" data-name="${esc(p.display_name || p.handle)}"${sent ? " disabled" : ""}>${sent ? "今天已送" : "送 3🍓"}</button></div>`;
     }).join("")}</div>`;
     box.querySelectorAll(".fp-gift").forEach(b => b.addEventListener("click", async () => {
-      if (typeof berriesBalance === "function" && berriesBalance() < 3) { if (typeof toast === "function") toast("果實不足，多走幾步 🍓"); return; }
+      if (typeof berriesBalance === "function" && berriesBalance() < 3) { if (typeof toast === "function") toast("果實不夠，再多走一點就有"); return; }
       b.disabled = true; b.textContent = "送出中…";
       const r = await sendGift(b.dataset.id, 3);
       if (!r.ok) { b.textContent = "今天已送"; if (typeof toast === "function") toast("今天已送過這位了，明天再來 🍃"); return; }   // RPC 擋下＝今天已送

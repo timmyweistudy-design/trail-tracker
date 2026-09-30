@@ -62,9 +62,12 @@ const Food = (() => {
     return items;
   }
 
+  // 星級排序要把評論數算進去：1 則評論的 ★5.0 不該排在 1,200 則的 ★4.6 前面。
+  // 貝氏平均：評論少的往全體平均（4.0）拉，評論多的才站得住自己的分數。
+  const score = x => { const v = x.reviews || 0, R = x.rating || 0; return R ? (v * R + 20 * 4.0) / (v + 20) : 0; };
   function sortItems(items, by) {
     const a = items.slice();
-    if (by === "rating") a.sort((x, y) => (y.rating || 0) - (x.rating || 0) || y.reviews - x.reviews);
+    if (by === "rating") a.sort((x, y) => score(y) - score(x) || y.reviews - x.reviews);
     else a.sort((x, y) => x.dist - y.dist);
     return a;
   }

@@ -240,7 +240,6 @@ const EMPTY_ART = `<svg class="empty-art" viewBox="0 0 120 84">
   <path d="M4 74 H116" stroke="var(--brand-mid)" stroke-width="2" stroke-linecap="round"/>
 </svg>`;
 
-const TAG_ICON = { 古道: "🛤", 瀑布: "💧", 海景: "🌊", 森林: "🌲", 湖泊: "🏞", 溫泉: "♨️", 環狀: "🔄", 親子: "🧸", 無障礙: "♿", 挑戰級: "⚡" };
 // 分類標籤（由名稱/資料推導）
 function tagsOf(t) {
   const n = t.name || "", g = [];
@@ -263,29 +262,21 @@ if (window.L && L.Icon && L.Icon.Default) L.Icon.Default.imagePath = "vendor/lea
 function openGradeInfo() {
   const rows = Object.entries(GRADES).map(([n, g]) => `
     <div class="grade-row">
-      <span class="grade-chip" style="background:${g.color}">${g.emoji} ${n}級·${g.name}</span>
+      <span class="grade-chip" style="background:${g.color}">${n}級·${g.name}</span>
       <div class="grade-text">
         <div class="grade-plain">${g.plain}</div>
-        <div class="grade-meta">適合：${g.who}　·　${g.time}　·　${g.gear}</div>
+        <div class="grade-meta"><span><i>適合</i>${g.who}</span><span><i>時間</i>${g.time}</span><span><i>裝備</i>${g.gear}</span></div>
       </div>
     </div>`).join("");
   $("#gradeBody").innerHTML = `
     <h2 style="margin-top:6px">步道分級怎麼看？</h2>
-    <p style="font-size:13.5px;color:var(--ink-soft);line-height:1.6;margin:0 0 14px">
-      分級數字越大代表越難走。等級依
-      <b>林業及自然保育署「自然步道使用困難度分級標準」</b>，
-      綜合海拔、坡度、危險地形、天候、路況、長度等 10 項因子評定。
-    </p>
+    <p style="font-size:13.5px;color:var(--ink-soft);line-height:1.6;margin:0 0 14px">數字越大越難。等級照林業署的「自然步道使用困難度分級標準」，看海拔、坡度、路況、天候等 10 項來打分。</p>
     <div class="grade-list">${rows}</div>
     <div class="grade-note" style="margin-top:14px">
-      <b>👨‍👩‍👧 「親子友善」徽章</b>是另一個獨立標記（不是難度等級）：代表這條步道
-      <b>難度低、路程短、路面好走</b>，特別適合帶小孩。一條步道可能同時是「輕鬆」難度又被標為「親子友善」。
+      「親子友善」不是難度，是另外貼的標籤：路短、好走、坡緩，帶小孩去剛剛好。
     </div>
-    <p style="font-size:11.5px;color:var(--ink-soft);line-height:1.6;margin-top:14px">
-      標示「<b>估</b>」的步道為社群（OpenStreetMap）資料，依步道實際長度推估等級，僅供參考；
-      林業署步道則為官方正式分級。出發前請再查詢即時路況與天氣。
-    </p>
-    <button class="btn ghost" id="btnGradeClose" style="margin-top:8px">了解了</button>`;
+    <p style="font-size:11.5px;color:var(--ink-soft);line-height:1.6;margin-top:14px">標「估」的是 OpenStreetMap 社群步道，等級是照長度推估的，參考就好；林業署的步道才是官方分級。出門前記得再看一下路況和天氣。</p>
+    <button class="btn ghost" id="btnGradeClose" style="margin-top:8px">好，知道了</button>`;
   $("#gradeMask").classList.add("show");
   $("#gradeSheet").classList.add("show");
   $("#gradeSheet").scrollTop = 0;                 // 浮到最上層並回到頂部
@@ -828,8 +819,11 @@ function trailCard(t) {
   // 陡度條：每公里爬升（≈400 m/km 視為極陡）
   let slope = "";
   if (t.ascent != null && t.length_km) {
-    const w = Math.max(6, Math.min(100, Math.round(t.ascent / t.length_km / 4)));
-    slope = `<div class="slope-row"><span class="slope-label">陡度</span><div class="slope-bar"><i style="width:${w}%"></i></div></div>`;
+    const perKm = t.ascent / t.length_km;
+    const w = Math.max(6, Math.min(100, Math.round(perKm / 4)));
+    // 光一條沒刻度的色條看不出意思 → 補一個白話形容＋每公里爬升
+    const word = perKm < 40 ? "平平的" : perKm < 100 ? "有點坡" : perKm < 200 ? "會喘" : "很陡";
+    slope = `<div class="slope-row"><span class="slope-label">陡度</span><div class="slope-bar"><i style="width:${w}%"></i></div><span class="slope-v">${word}<small>${Math.round(perKm)} m/km</small></span></div>`;
   }
   const fav = isFavC(t.id), done = logC(t.id).done;
   const distKm = (myLoc && t.lat) ? (haversine(myLoc, { lat: t.lat, lon: t.lon }) / 1000).toFixed(1) : null;
@@ -893,8 +887,8 @@ function nearbyStripHtml(t) {
   const cards = list.map(x => {
     const d = x.difficulty || 0;
     const bits = [x.difficulty_label];
-    if (x.length_km != null) bits.push(`${x.length_km}km`);
-    const dist = x._distKm != null ? `<span class="nb-dist">${ic("compass")}${x._distKm.toFixed(x._distKm < 10 ? 1 : 0)}km</span>` : "";
+    if (x.length_km != null) bits.push(`${x.length_km} km`);
+    const dist = x._distKm != null ? `<span class="nb-dist">${ic("compass")}${x._distKm.toFixed(x._distKm < 10 ? 1 : 0)} km</span>` : "";
     return `<button class="nearby-card" data-id="${x.id}"><span class="nb-bar d${d}"></span><span class="nb-name">${x.name}</span><span class="nb-meta">${bits.join(" · ")}</span>${dist}</button>`;
   }).join("");
   return `<div class="section-title" id="secNearby">${ic("compass")}${ttT("附近其他步道")}</div><div class="nearby-strip" id="nearbyBox">${cards}</div>`;
@@ -1175,7 +1169,7 @@ async function _open3D(name, geom, opts) {
       preload3DFull({ n: c[1] + 0.02, s: c[1] - 0.02, e: c[0] + 0.02, w: c[0] - 0.02 }, () => {});   // 預載周邊，走動/拖曳都順
       _live3dInteractAt = 0;
       _map3d.on("dragstart zoomstart rotatestart pitchstart", () => { _live3dInteractAt = Date.now(); });   // 使用者操作時暫停自動跟隨
-      toast(ttT("🗺 記錄中 3D：可自由滑動、縮放、傾斜地圖"));
+      toast(ttT("3D 模式：地圖可以隨便拖、縮放、傾斜"));
       _start3dLive();
       return;
     }
@@ -1183,7 +1177,7 @@ async function _open3D(name, geom, opts) {
       // 回放＝俯瞰整條路線、可自由滑動地圖。相機不自己動→不會被山擋、不閃；只讓小藍點沿路線走
       try { _map3d.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 60, pitch: 38, bearing: 0, duration: 0 }); } catch (e) { /* */ }
       preload3DFull({ n: maxLat + 0.01, s: minLat - 0.01, e: maxLng + 0.01, w: minLng - 0.01 }, () => {});   // 背景預載，拖到別處也順
-      toast(ttT("🗺 俯瞰模式：可自由滑動、縮放、傾斜地圖"));
+      toast(ttT("俯瞰模式：地圖可以隨便拖、縮放、傾斜"));
       setTimeout(() => { if (_map3d) flyAlong(); }, 300);   // 小藍點開始走（相機交給使用者）
     } else {
       try { _map3d.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 55, pitch: 62, bearing: 18, duration: 0 }); } catch (e) { /* */ }
@@ -1297,7 +1291,7 @@ function setNavUp(on) {
   _navUp = on;
   applyNavUp();
   if (recMap && recMap._navBtnPaint) recMap._navBtnPaint();   // 切換鈕高亮跟著狀態走
-  if (_navUp) { try { enableCompass(); } catch (e) { /* */ } updateMeCone(); }
+  if (_navUp) { try { enableCompass(true); } catch (e) { /* */ } updateMeCone(); }
   else { document.querySelectorAll("#recMap .tm-av, #recMap .pm-e").forEach(e => e.style.transform = ""); updateMeCone(); if (recMap) setTimeout(() => recMap.invalidateSize(), 60); }
 }
 // 更新記錄地圖「我」的面朝錐：優先用手機羅盤(站著轉身也動)，沒有才用 GPS 行進方向
@@ -1321,9 +1315,9 @@ function onOrient(e) {
   if (h == null) return;
   _heading = h; rotateCompasses(); updateMeCone();
 }
-function enableCompass() {
+function enableCompass(silent) {   // silent：開機預熱權限時別跳 toast（使用者根本沒按指北針）
   if (_compassOn) return;
-  const start = () => { _compassOn = true; window.addEventListener("deviceorientationabsolute", onOrient, true); window.addEventListener("deviceorientation", onOrient, true); document.querySelectorAll(".map-compass").forEach(c => c.classList.add("on")); toast("指北針已啟用，轉動手機看看"); };
+  const start = () => { _compassOn = true; window.addEventListener("deviceorientationabsolute", onOrient, true); window.addEventListener("deviceorientation", onOrient, true); document.querySelectorAll(".map-compass").forEach(c => c.classList.add("on")); if (!silent) toast("指北針已啟用，轉動手機看看"); };
   const DOE = window.DeviceOrientationEvent;
   if (DOE && typeof DOE.requestPermission === "function") {
     DOE.requestPermission().then(p => p === "granted" ? start() : toast("需允許「動作與方向」權限")).catch(() => toast("此裝置無法啟用指北針"));
@@ -1333,7 +1327,7 @@ function enableCompass() {
 // 一次問完定位＋方位權限（iOS 方位必須由使用者手勢觸發，故綁在「進 App 的第一次點擊」）
 let _entryPermAsked = false;
 function _warmUpPerms() {
-  try { enableCompass(); } catch (e) { /* */ }
+  try { enableCompass(true); } catch (e) { /* */ }
   if (navigator.geolocation) { try { navigator.geolocation.getCurrentPosition(() => {}, () => {}, { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }); } catch (e) { /* */ } }
 }
 // 進記錄頁才要定位權限：首次先用一張說明卡鋪陳「為什麼要定位」，讓年長使用者看得懂再面對系統的允許/拒絕（大幅降低誤拒）。
@@ -1491,7 +1485,10 @@ function showBrowseMap() {
   for (const [id, mk] of browseMarkers) { if (!ids.has(id)) { browseLayer.removeLayer(mk); browseMarkers.delete(id); } }
   // 先框住整個篩選結果（用座標，不需建 marker），fitBounds 觸發的 moveend 會接著只渲染視野內的點
   const bounds = curList.filter(t => t.lat).map(t => [t.lat, t.lon]);
-  setTimeout(() => { browseMap.invalidateSize(); if (bounds.length) browseMap.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 }); renderBrowseMarkers(); }, 80);
+  // 沒怎麼篩選（全台幾千條）時框台灣本島＋澎湖：金門馬祖也算進去的話會連福建沿海一起框，台灣只剩一小角。
+  // 金馬的點照樣在地圖上，只是不影響初始鏡頭；篩選後（如選金門縣）才依結果框。
+  const TW_MAIN = [[21.85, 119.3], [25.35, 122.05]];
+  setTimeout(() => { browseMap.invalidateSize(); if (bounds.length > 300) browseMap.fitBounds(TW_MAIN, { padding: [10, 10] }); else if (bounds.length) browseMap.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 }); renderBrowseMarkers(); }, 80);
 }
 function _browseMarker(t) {
   const closed = t.condition && /暫停|封閉|關閉/.test(t.condition.status || "");
@@ -1559,21 +1556,36 @@ function conditionBanner(t) {
   // OSM 步道：無官方即時路況來源 → 中性提示，誠實告知
   return `<div class="cond-banner note">
     <div class="cond-h">ℹ️ 無官方即時路況資料</div>
-    <div class="cond-meta">此步道非林業署轄管，目前無即時封閉公告來源。出發前請查詢當地主管單位公告或近期山友回報。</div>
+    <div class="cond-meta">這條不歸林業署管，我們拿不到即時封閉公告。出發前查一下當地公告，或看看最近的山友回報。</div>
   </div>`;
 }
 
 // 詳情頁的分級白話說明（含資料來源註記）
+// 同名步道的其他路段：OSM 常把一條步道切成好幾筆（草嶺古道 2.06 km 只是其中一段、另有「草嶺古道福隆路線」），
+// 詳情頁列出來讓人知道「這可能只是一段」，點了直接跳過去。只比同縣市，最多 4 筆。
+function _sibCore(n) { return String(n || "").replace(/(國家步道|自然步道|親山步道|登山步道|環狀步道|生態步道|步道|古道|越嶺道).*$/, ""); }
+function siblingTrails(t) {
+  const k = _sibCore(t.name); if (k.length < 2 || typeof TRAILS === "undefined") return [];
+  const head = t.name.slice(0, k.length + 2), county = String(t.region || "").slice(0, 3);
+  return TRAILS.filter(o => o !== t && o.name !== t.name && String(o.region || "").slice(0, 3) === county
+    && (_sibCore(o.name) === k || (k.length >= 3 && o.name.startsWith(k)) || (t.name.length > k.length && o.name.startsWith(head))))
+    .slice(0, 4);
+}
+function siblingHtml(t) {
+  const sib = siblingTrails(t); if (!sib.length) return "";
+  return `<div class="sib-box"><div class="sib-h">${ttT("同名的其他路段")}</div>
+    <div class="sib-row">${sib.map(o => `<button class="sib-chip" data-sib="${o.id}">${o.name}<span>${o.length_km ? o.length_km + " km" : ""}</span></button>`).join("")}</div></div>`;
+}
 function gradeExplain(t) {
   const g = GRADES[t.difficulty];
   if (!g) return `<div class="grade-note">此步道尚無分級資料。</div>`;
   const basis = t.source === "forestry"
-    ? "依林業署官方分級標準"
-    : "依步道長度估算（標示「估」，僅供參考）";
+    ? "林業署官方分級"
+    : "照長度推估的，參考就好";
   return `<div class="grade-note">
     <b>${t.difficulty}級·${g.name}</b>：${g.plain}
-    <div class="grade-note-meta">適合：${g.who}　·　建議裝備：${g.gear}<br>${basis}　·
-      <a href="#" id="lnkGradeAll">看完整分級說明</a></div>
+    <div class="grade-note-meta"><span><i>適合</i>${g.who}</span><span><i>裝備</i>${g.gear}</span>
+      <span class="gn-basis">${basis}・<a href="#" id="lnkGradeAll">看完整分級說明</a></span></div>
   </div>`;
 }
 
@@ -1606,7 +1618,7 @@ function ecologyHtml(t) {
         <div class="eco-bite-h"><span class="eco-emo">🦟</span><span>小黑蚊・蚊蟲</span><span class="eco-lv">${lvTxt}</span></div>
         <ul class="eco-tips">${risk.tips.map(x => `<li>${x}</li>`).join("")}</ul>
       </div>
-      <div class="eco-src">這個海拔帶常會遇到的（非本步道實際紀錄）</div>
+      <div class="eco-src">這個海拔常碰到的傢伙（不是這條步道的實際紀錄）</div>
       ${cats}
       <button class="link-btn eco-nearby-btn" id="ecoNearbyBtn">${ic("search")}<span>看這附近的真實目擊</span></button>
       <div id="ecoNearbyBox" class="eco-nearby"></div>
@@ -1642,14 +1654,14 @@ async function openDetail(id) {
     `<div class="stat"><div class="stat-h">${ic(ico)}<span>${l}</span></div><div class="stat-v">${v}</div></div>`).join("")}</div>`;
 
   const metaBits = [];
-  if (t.pave) metaBits.push(`🛤 ${t.pave}`);
-  if (t.best_season) metaBits.push(`🍂 ${t.best_season}`);
-  if (t.transport?.car) metaBits.push("🚗 可開車");
-  if (t.transport?.m_bus || t.transport?.l_bus) metaBits.push("🚌 有公車");
+  if (t.pave) metaBits.push(t.pave);
+  if (t.best_season) metaBits.push(t.best_season);
+  if (t.transport?.car) metaBits.push("可開車");
+  if (t.transport?.m_bus || t.transport?.l_bus) metaBits.push("有公車");
   const metaHtml = metaBits.length
     ? `<div class="item" style="background:var(--bg);border-radius:12px;padding:10px 12px;margin-bottom:12px">
          <div class="l" style="font-size:11.5px;color:var(--ink-soft)">路面・季節・交通</div>
-         <div style="font-size:13.5px;margin-top:4px">${metaBits.join("　")}</div></div>`
+         <div style="font-size:13.5px;margin-top:4px">${metaBits.map(b => `<span>${b}</span>`).join("・")}</div></div>`
     : "";
 
   const nav = t.lat ? `https://www.google.com/maps/dir/?api=1&destination=${t.lat},${t.lon}` : "";
@@ -1682,15 +1694,16 @@ async function openDetail(id) {
       <section class="tabpane" data-pane="ov" role="tabpanel">
         <div id="condLive">${conditionBanner(t)}</div>
         ${statHtml}
-        ${tagsOf(t).length ? `<div class="tag-row">${tagsOf(t).map(g => `<span class="tag">${TAG_ICON[g] ? TAG_ICON[g] + " " : ""}${g}</span>`).join("")}</div>` : ""}
+        ${tagsOf(t).length ? `<div class="tag-row">${tagsOf(t).map(g => `<span class="tag">${g}</span>`).join("")}</div>` : ""}
         ${gradeExplain(t)}
         ${metaHtml}
+        ${siblingHtml(t)}
         ${t.guide ? `<div class="guide">${t.guide.replace(/\n/g, "<br>")}</div>${(typeof I18n !== "undefined" && I18n.lang() !== "zh") ? `<div class="pv-tr-row"><button class="link-btn" id="guideTranslate">${ic("translate")} ${ttT("翻譯年糕")}</button></div><div class="guide pv-cap-tr" id="guideTr" style="display:none"></div>` : ""}` : ""}
         <div class="link-row flow">
           ${nav ? `<a class="link-btn" href="${nav}" target="_blank" rel="noopener">${ic("compass")} 導航</a>` : ""}
           <a class="link-btn" href="${moreSearch}" target="_blank" rel="noopener">${ic("search")} 查資訊</a>
           <button class="link-btn" id="btnShareTrail">${ic("share")} 分享</button>
-          <button class="link-btn" id="btnEventTrail">${ic("calendar")} 揪團</button>
+          <button class="link-btn hide-personal" id="btnEventTrail">${ic("calendar")} 揪團</button>
           <button class="link-btn" id="btnCompare">${ic("compare")} ${compareSet.has(t.id) ? "移出比較" : "加入比較"}</button>
           ${t.url ? `<a class="link-btn" href="${t.url}" target="_blank" rel="noopener">${ic("external")} 原始頁</a>` : ""}
         </div>
@@ -1723,6 +1736,7 @@ async function openDetail(id) {
       <button class="btn primary" id="btnGoRecord">${ic("pin")}在此步道開始記錄</button>
     </div>
   `;
+  document.querySelectorAll("#detailBody .sib-chip").forEach(b => b.addEventListener("click", () => openDetail(b.dataset.sib)));
   // 生態：連網才載 iNaturalist 附近真實目擊；離線/失敗安靜降級（不影響離線的規則式內容）
   const enb = $("#ecoNearbyBtn");
   if (enb) enb.addEventListener("click", async () => {
@@ -1897,7 +1911,7 @@ async function loadAmenities(t) {
     if (_detailTrail !== t) return;                    // 使用者已切到別條步道 → 這批資料不是他要看的
     if (!items || !items.length) { box.style.display = "none"; return; }
     box.innerHTML = `<div class="amen-row">` + items.map(a =>
-      `<span class="amen"><b>${a.label}</b> ${(a.dist / 1000).toFixed(1)}km</span>`).join("") + `</div>`;
+      `<span class="amen"><b>${a.label}</b> ${(a.dist / 1000).toFixed(1)} km</span>`).join("") + `</div>`;
   } catch { box.style.display = "none"; }
 }
 
@@ -1918,7 +1932,7 @@ async function loadPhoto(t) {
     // CC 授權要求標作者＋授權：隨輪播顯示當張照片的 credit
     const creditEl = document.createElement("div");
     creditEl.className = "hero-credit";
-    const setCredit = i => { creditEl.textContent = `📷 ${items[i].credit}${items.length > 1 ? " · 左右滑看更多" : ""}`; };
+    const setCredit = i => { creditEl.textContent = `© ${items[i].credit}`; };   // 下方的點點已經告訴人可以滑，不必再寫
     setCredit(0);
     hero.insertBefore(creditEl, hero.firstChild);
     car.querySelectorAll("img").forEach((im, idx) => {
@@ -1969,7 +1983,7 @@ async function loadElevation(t) {
     }
     box.innerHTML = `<div class="profile-wrap" id="profWrap">${p.svg}
         <div class="prof-cursor" id="profCursor"></div><div class="prof-tip" id="profTip"></div></div>
-      <div class="profile-stat">最低 ${p.min}m　最高 ${p.max}m　累積爬升 ↑${p.gain}m　全長約 ${p.distKm.toFixed(1)}km</div>
+      <div class="profile-stat"><span>最低 <b>${p.min} m</b></span><span>最高 <b>${p.max} m</b></span><span>累積爬升 <b>↑${p.gain} m</b></span><span>全長約 <b>${p.distKm.toFixed(1)} km</b></span></div>
       <div class="profile-legend"><span style="color:#4a8f55">●</span>緩　<span style="color:#c39327">●</span>中　<span style="color:#c0542f">●</span>陡　<span style="color:var(--ink-faint)">·滑過看各點海拔</span></div>`;
     // 滑過/觸控顯示該點距離與海拔
     const wrap = $("#profWrap"), cur = $("#profCursor"), tip = $("#profTip");
@@ -1981,7 +1995,7 @@ async function loadElevation(t) {
       const pct = best.x / p.W * 100;
       cur.style.left = pct + "%"; cur.style.display = "block";
       tip.style.left = pct + "%"; tip.style.display = "block";
-      tip.textContent = `${best.d.toFixed(2)}km · ${best.e}m`;
+      tip.textContent = `${best.d.toFixed(2)} km · ${best.e} m`;
     };
     wrap.addEventListener("pointermove", e => move(e.clientX));
     wrap.addEventListener("pointerdown", e => move(e.clientX));
@@ -2038,7 +2052,7 @@ async function loadWeather(t) {
   }
 }
 
-let _foodItems = [], _foodSort = "distance";
+let _foodItems = [], _foodSort = "distance", _foodAll = false;
 async function loadFood(t) {
   const box = $("#foodBox");
   if (!box) return;
@@ -2047,13 +2061,11 @@ async function loadFood(t) {
   try {
     const items = await Food.nearby(t);
     if (_detailTrail !== t) return;                    // 已切換步道 → 舊步道的美食不可以蓋到新面板
-    _foodItems = items;
+    _foodItems = items; _foodAll = false;
     plotPoi(_foodItems, "#c2683d", "food");
     renderFood();
   } catch (err) {
-    box.innerHTML = err && err.nokey
-      ? `<div class="food-empty">美食功能尚未設定（需在 Render 設定 GOOGLE_PLACES_KEY）</div>`
-      : `<div class="food-empty">美食查詢失敗，請稍後再試（需網路）</div>`;
+    box.innerHTML = `<div class="food-empty">美食查詢失敗，請稍後再試（需網路）</div>`;
   }
 }
 function foodStars(f) {
@@ -2064,7 +2076,8 @@ function renderFood() {
   const box = $("#foodBox");
   if (!box) return;
   if (!_foodItems.length) { box.innerHTML = `<div class="food-empty">附近 8 公里內查無餐飲（山區步道常見）</div>`; return; }
-  const items = Food.sortItems(_foodItems, _foodSort);
+  const all = Food.sortItems(_foodItems, _foodSort);
+  const items = _foodAll ? all : all.slice(0, 8);   // 一次 20 筆太長，先給 8 筆
   box.innerHTML = `
     <div class="food-sort">排序
       <button class="food-sort-btn${_foodSort === "distance" ? " on" : ""}" data-fsort="distance">${ic("pin")}距離</button>
@@ -2075,15 +2088,17 @@ function renderFood() {
         <span class="food-kind">${f.kind}</span>
         <span class="food-name">${escHtml(f.name)}</span>
         ${foodStars(f)}
-        <span class="food-dist">${(f.dist / 1000).toFixed(1)}km</span>
+        <span class="food-dist">${(f.dist / 1000).toFixed(1)} km</span>
       </a>`).join("")}</div>
-    <div class="food-credit">🟠 已標於上方地圖　·　星級來源：Google 地圖</div>`;
+    ${all.length > items.length ? `<button class="more-btn" id="foodMore">${ttT("再看更多")}（${all.length - items.length}）</button>` : ""}
+    <div class="food-credit"><i class="lg-dot" style="background:#c2683d"></i>已標在上方地圖・星級來自 Google 地圖</div>`;
   box.querySelectorAll(".food-sort-btn").forEach(b =>
     b.addEventListener("click", () => { _foodSort = b.dataset.fsort; renderFood(); }));
+  const fm = box.querySelector("#foodMore"); if (fm) fm.addEventListener("click", () => { _foodAll = true; renderFood(); });
 }
 
 // 附近人文景點（歷史、廟宇、博物館、文化、觀光）
-let _poiItems = [], _poiSort = "distance";
+let _poiItems = [], _poiSort = "distance", _poiAll = false;
 async function loadAttractions(t) {
   const box = $("#poiBox");
   if (!box) return;
@@ -2091,20 +2106,19 @@ async function loadAttractions(t) {
   try {
     const pois = await Attractions.nearby(t);
     if (_detailTrail !== t) return;                    // 已切換步道
-    _poiItems = pois;
+    _poiItems = pois; _poiAll = false;
     plotPoi(_poiItems, "#3b6ea5", "poi");
     renderAttractions();
   } catch (err) {
-    box.innerHTML = err && err.nokey
-      ? `<div class="food-empty">景點功能尚未設定（需在 Render 設定 GOOGLE_PLACES_KEY）</div>`
-      : `<div class="food-empty">景點查詢失敗，請稍後再試（需網路）</div>`;
+    box.innerHTML = `<div class="food-empty">景點查詢失敗，請稍後再試（需網路）</div>`;
   }
 }
 function renderAttractions() {
   const box = $("#poiBox");
   if (!box) return;
   if (!_poiItems.length) { box.innerHTML = `<div class="food-empty">附近 12 公里內查無人文景點</div>`; return; }
-  const items = Attractions.sortItems(_poiItems, _poiSort);
+  const all = Attractions.sortItems(_poiItems, _poiSort);
+  const items = _poiAll ? all : all.slice(0, 8);
   box.innerHTML = `
     <div class="food-sort">排序
       <button class="food-sort-btn${_poiSort === "distance" ? " on" : ""}" data-psort="distance">${ic("pin")}距離</button>
@@ -2120,9 +2134,11 @@ function renderAttractions() {
         ${p.summary ? `<div class="poi-sum">${escHtml(p.summary)}</div>` : ""}
         <div class="poi-dist">${(p.dist / 1000).toFixed(1)} km</div>
       </a>`).join("")}</div>
-    <div class="food-credit">🔵 已標於上方地圖　·　來源：Google 地圖</div>`;
+    ${all.length > items.length ? `<button class="more-btn" id="poiMore">${ttT("再看更多")}（${all.length - items.length}）</button>` : ""}
+    <div class="food-credit"><i class="lg-dot" style="background:#3b6ea5"></i>已標在上方地圖・資料來自 Google 地圖</div>`;
   box.querySelectorAll(".food-sort-btn").forEach(b =>
     b.addEventListener("click", () => { _poiSort = b.dataset.psort; renderAttractions(); }));
+  const pm = box.querySelector("#poiMore"); if (pm) pm.addEventListener("click", () => { _poiAll = true; renderAttractions(); });
 }
 
 // Premium：離線地圖免費 5 次，用完才需升級。回傳是否允許本次下載（允許則計入並提醒剩餘）。
@@ -2412,13 +2428,15 @@ function playTrackReplay(pts, segLL) {
     dot.setLatLng(cur);
     trackMap.panTo(cur, { animate: false });      // 鏡頭跟著腳步滑行＝重走這條路
     const frac = f / frames;
-    live.innerHTML = `<b>${(d / 1000).toFixed(2)}</b> km　·　${fmtTime(totMs * frac)}`;
+    // 里程依重播比例換算「統計里程」：直接用簡化後的軌跡幾何算會比下方統計少一截，看起來像數字打架
+    const kmNow = trackStats && trackStats.km ? trackStats.km * (d / total) : d / 1000;
+    live.innerHTML = `<span class="rl-tag">${ttT("重播")}</span><b>${kmNow.toFixed(2)}</b> km　·　${fmtTime(totMs * frac)}`;
     barFill.style.width = (frac * 100) + "%";
     if (f >= frames || d >= total) {
       clearInterval(trackAnim); trackAnim = null;
       grow.setLatLngs(finalLL);
       L.circleMarker(pts[pts.length - 1], { radius: 6, color: "#fff", weight: 2, fillColor: "#d2542e", fillOpacity: 1 }).addTo(trackReplayLayer);
-      live.innerHTML = `<b>${(trackStats ? trackStats.km : d / 1000).toFixed(2)}</b> km　·　${fmtTime(totMs)}　🏁`;
+      live.innerHTML = `<span class="rl-tag">${ttT("全程")}</span><b>${(trackStats ? trackStats.km : d / 1000).toFixed(2)}</b> km　·　${fmtTime(totMs)}`;
       trackMap.flyToBounds(fullBounds, { padding: [24, 24], duration: 0.8 });   // 走完拉遠看全程
       paintSlope(finalLL, grow);   // 走完才上色：重播中維持單色綠線，看得清楚走到哪
     }
@@ -2461,6 +2479,7 @@ async function saveImageFile(file) {
 // 否則「近 30 天 1 人走過」等於公開某個人的行蹤）。資料庫端也擋一次（schema-phase26）。
 async function loadTrailActivity(t) {
   const box = $("#activityBox");
+  if (window.PERSONAL_MODE) return;   // 自用：不查別人的健行統計
   if (!box || typeof Supa === "undefined" || !Supa.ready || !Supa.ready()) return;
   try {
     const c = Supa.client(); if (!c) return;
@@ -2481,6 +2500,7 @@ async function loadTrailActivity(t) {
 
 async function loadTrailFeed(t) {
   const box = $("#trailFeedBox"); if (!box) return;
+  if (window.PERSONAL_MODE) { box.innerHTML = ""; return; }   // 自用：不撈社群貼文
   if (typeof Supa === "undefined" || !Supa.ready() || typeof Posts === "undefined" || typeof Feed === "undefined") { box.innerHTML = ""; return; }
   try {
     const posts = await Posts.byTrail(t.id, 12);
@@ -2581,14 +2601,14 @@ function openTrackReview(rec, isNew) {
     </div>
     ${speedHtml(rec)}
     ${(rec.id === hikePhotosRecId && hikePhotos.length) ? `<div class="section-title">${ic("camera")}隨手拍（${hikePhotos.length}）<span class="shot-hint">點照片存到相簿</span></div>
-      <div class="hike-shots">${hikePhotos.map((p, i) => `<figure class="shot" data-i="${i}"><img loading="lazy" decoding="async" src="${(u => { _shotUrls.push(u); return u; })(URL.createObjectURL(p.file))}" alt=""><figcaption>${new Date(p.t).toLocaleTimeString(ttLocale(), { hour: "2-digit", minute: "2-digit" })} · ${p.km.toFixed(2)}km</figcaption></figure>`).join("")}</div>` : ""}
+      <div class="hike-shots">${hikePhotos.map((p, i) => `<figure class="shot" data-i="${i}"><img loading="lazy" decoding="async" src="${(u => { _shotUrls.push(u); return u; })(URL.createObjectURL(p.file))}" alt=""><figcaption>${new Date(p.t).toLocaleTimeString(ttLocale(), { hour: "2-digit", minute: "2-digit" })} · ${p.km.toFixed(2)} km</figcaption></figure>`).join("")}</div>` : ""}
     <div class="link-row flow">
       <button class="link-btn" id="trackReplay">${ic("play")} 重播路徑</button>
       <button class="link-btn" id="track3d">${ic("mountain")} 3D 回放<span class="pro-tag">PRO</span></button>
       <button class="link-btn" id="trackCard">${ic("camera")} 分享圖卡</button>
       <button class="link-btn" id="trackGpx">${ic("download")} 下載路線檔<span class="pro-tag">PRO</span></button>
       <button class="link-btn" id="trackShare">${ic("share")} 分享行程</button>
-      ${rec.sim ? "" : `<button class="link-btn" id="trackSocial">${ic("megaphone")} 分享到社群</button>`}
+      ${rec.sim ? "" : `<button class="link-btn hide-personal" id="trackSocial">${ic("megaphone")} 分享到社群</button>`}
     </div>`;
   $("#trackMask").classList.add("show");
   $("#trackSheet").classList.add("show");
@@ -2935,7 +2955,7 @@ function clearSelectedTrail() {
   if (guideLine && recMap) { recMap.removeLayer(guideLine); guideLine = null; }
   clearPreHike();
   hideSelectedTrail();
-  $("#recStatus").textContent = "自由路線，按「開始」記錄路徑";
+  $("#recStatus").textContent = "沒選步道也行，按開始就記";
   toast(ttT("已改為自由路線"));
 }
 function hideSelectedTrail() {
@@ -3010,7 +3030,7 @@ function drawRecSpark(series) {
   box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" class="rec-spark" preserveAspectRatio="none">
       <path d="${area}" fill="rgba(63,122,85,.18)"/>
       <path d="${line}" fill="none" stroke="var(--brand-mid)" stroke-width="2" stroke-linejoin="round"/>
-    </svg><div class="rec-spark-cap">即時海拔 ${Math.round(es[es.length - 1])}m　·　${Math.round(minE)}–${Math.round(maxE)}m</div>`;
+    </svg><div class="rec-spark-cap">即時海拔 ${Math.round(es[es.length - 1])} m　·　${Math.round(minE)}–${Math.round(maxE)} m</div>`;
 }
 // 隨拍隨傳：記錄中拍照，存當下時間與里程；結算頁顯示、可選擇分享
 let hikePhotos = [], hikePhotosRecId = null, recSnap = null, _shotUrls = [];
@@ -3030,7 +3050,7 @@ function updateGpsSig(s) {
   if (lvl === "weak") {
     _gpsWeakHits++;
     // 連續多次弱訊號才提醒，且每 25 秒最多一次，避免洗版
-    if (_gpsWeakHits >= 4 && Date.now() - _gpsWarnAt > 25000) { _gpsWarnAt = Date.now(); toast(ttT("📡 GPS 訊號較弱，走到空曠處收訊會更準")); }
+    if (_gpsWeakHits >= 4 && Date.now() - _gpsWarnAt > 25000) { _gpsWarnAt = Date.now(); toast(ttT("GPS 訊號有點弱，走到開闊一點的地方會好很多")); }
   } else _gpsWeakHits = 0;
 }
 Recorder.onUpdate(s => {
@@ -3081,7 +3101,7 @@ Recorder.onUpdate(s => {
     const kmDone = Math.floor(s.distanceKm);
     if (kmDone > lastKmMilestone) { lastKmMilestone = kmDone; if (navigator.vibrate) navigator.vibrate([120, 60, 120]); }
   }
-  if (s.simDone && !window.__simDoneToasted) { window.__simDoneToasted = true; toast("模擬已走完整條路線，按「⏹ 結束」看結算"); if (navigator.vibrate) navigator.vibrate([60, 40, 60]); }
+  if (s.simDone && !window.__simDoneToasted) { window.__simDoneToasted = true; toast("模擬走完了，按「結束」看結算"); if (navigator.vibrate) navigator.vibrate([60, 40, 60]); }
   if (s.state === "idle") window.__simDoneToasted = false;
   if (s.error) $("#recStatus").innerHTML = `⚠️ ${s.error}（可改用模擬模式）`;
   else if (s.state === "running" && s.resting) $("#recStatus").innerHTML = `<span class="resting">🌿 休息中</span>`;
@@ -3493,7 +3513,7 @@ async function finishRecording(autoVehicle) {
   $("#btnLock").style.display = "none"; setRecLock(false);   // 結束記錄→解除口袋鎖定
   if (rec) hikePhotosRecId = rec.id;   // 隨手拍歸屬這趟，結算頁才顯示
   safeRun("clear-markers", () => { if (recMarker) { recMap.removeLayer(recMarker); recMarker = null; } if (petMarker) { recMap.removeLayer(petMarker); petMarker = null; } if (recLine) recLine.setLatLngs([]); });
-  if (autoVehicle) toast("偵測到車輛速度（>20km/h），已自動結束記錄");
+  if (autoVehicle) toast("速度超過 20 km/h，看起來是上車了，先幫你結束記錄");
   if (rec) {
     rec.trailName = Recorder._trailName || "自由路線";
     if (selectedTrailId) rec.trailId = selectedTrailId;   // 連回步道，供社群貼文點擊開啟
@@ -3501,11 +3521,14 @@ async function finishRecording(autoVehicle) {
     // 模擬也校正：沿真實步道座標查地形，原路折返自然會有對應的下降（不再只計爬升）
     // 不再要求 navigator.onLine：高程圖磚可能已在快取（記錄中預載/看過地圖）→ 離線也校正得出來，
     // 真的拿不到資料時 Elevation.correct 會回 null，維持 GPS 數字，不會壞。
-    // 海拔校正（Elevation.correct 內部已 try/catch 回 null，這裡再包一層兜底；逾時 15 秒）
+    // 海拔校正（Elevation.correct 內部已 try/catch 回 null，這裡再包一層兜底；逾時 8 秒）
     await safeRun("elevation-correct", async () => {
       if (!rec.vehicle && rec.track && rec.track.length > 1 && typeof Elevation !== "undefined") {
         $("#recStatus").textContent = "海拔校正中…";
-        const corr = await Promise.race([Elevation.correct(rec.track), new Promise(r => setTimeout(() => r(null), 15000))]);
+        // 等校正時給個交代：山上訊號差時這裡可能要好幾秒，畫面沒反應會以為「按結束沒用」
+        const st = $("#recStatus"); if (st) st.textContent = ttT("正在整理這趟的海拔數字…");
+        const sb = $("#btnStart"); if (sb) sb.disabled = true;   // 上一趟還沒存好，先別讓人開新的一趟
+        const corr = await Promise.race([Elevation.correct(rec.track), new Promise(r => setTimeout(() => r(null), 8000))]);   // 原 15 秒太久
         if (corr) { rec.ascent = corr.ascent; rec.descent = corr.descent; rec.altHigh = corr.altHigh; rec.altLow = corr.altLow; rec.altCorrected = true; }
       }
     });
@@ -3517,7 +3540,8 @@ async function finishRecording(autoVehicle) {
     // 完成判定放在結算前（結算頁可能顯示「已完成」狀態）
     await safeRun("mark-done", () => maybeMarkTrailDone(rec));   // 真實走過＋全程沒偏離步道超過 1km 才算完成
     safeRun("ach-unlock", () => { if (typeof achCheckUnlocks === "function") achCheckUnlocks(); });   // 跨門檻即時慶祝解鎖
-    $("#recStatus").textContent = autoVehicle ? "偵測到車輛速度，已自動結束" : "準備就緒，按「開始」記錄路徑";
+    $("#recStatus").textContent = autoVehicle ? "偵測到車輛速度，已自動結束" : "準備好就按開始";
+    { const sb = $("#btnStart"); if (sb) sb.disabled = false; }
     // 結算頁：一定要開，絕不被下面任何「背景加分」步驟連坐（這是使用者最在意的：走完看得到結算）
     safeRun("open-summary", () => openTrackReview(rec, true));   // isNew=true → 可慶祝破紀錄
     // 以下都是背景加分，各自隔離：任一 throw 都不影響已存的紀錄與已開的結算頁
@@ -3532,8 +3556,8 @@ async function finishRecording(autoVehicle) {
     safeRun("pet-evolve", () => checkPetEvolve());
     safeRun("render-idle", () => renderRecIdle());
   } else {
-    toast(autoVehicle ? "偵測到車輛速度，已停止（路徑太短，未儲存）" : "路徑太短，未儲存");
-    $("#recStatus").textContent = "準備就緒，按「開始」記錄路徑";
+    toast(autoVehicle ? "看起來是上車了，已停止。這段太短，就不存了" : "路徑太短，未儲存");
+    $("#recStatus").textContent = "準備好就按開始";
   }
 }
 $("#btnStop").addEventListener("click", () => {
@@ -3647,7 +3671,12 @@ $("#btnFavOffline").addEventListener("click", downloadFavOffline);
 async function cloudClient() {
   if (typeof Supa === "undefined" || !Supa.ready()) { toast("社群尚未啟用"); return null; }
   const c = Supa.client(); const { data: u } = await c.auth.getUser();
-  if (!u || !u.user) { toast("請先到社群分頁登入"); return null; }
+  if (!u || !u.user) {
+    // 自用模式把社群分頁藏起來了，直接帶去登入畫面，別叫人去找一個看不到的分頁
+    if (window.PERSONAL_MODE) { toast(ttT("先登入，才能備份到雲端")); const t = document.querySelector('.tab[data-view="social"]'); if (t) t.click(); }
+    else toast("請先到社群分頁登入");
+    return null;
+  }
   return { c, uid: u.user.id };
 }
 async function cloudBackupNow(silent) {
@@ -3677,7 +3706,7 @@ async function autoCloudBackup() {
     if (!u || !u.user) return;   // 沒登入就沒雲端備份（改用匯出備份檔）
     // 離線送出佇列：離線或失敗→標記待備份，回線自動補送（資料安全不因當下沒網路而漏）
     if (typeof navigator !== "undefined" && navigator.onLine === false) { try { localStorage.setItem("tt_backup_pending", "1"); } catch (e) { } return; }
-    if (await cloudBackupNow(true)) { try { localStorage.removeItem("tt_backup_pending"); } catch (e) { } toast("已自動備份到雲端 ☁️"); }
+    if (await cloudBackupNow(true)) { try { localStorage.removeItem("tt_backup_pending"); } catch (e) { } toast("這趟已經備份到雲端"); }
     else { try { localStorage.setItem("tt_backup_pending", "1"); } catch (e) { } }
   } catch (e) { try { localStorage.setItem("tt_backup_pending", "1"); } catch (_) { } }
 }
@@ -3721,7 +3750,7 @@ async function cloudAutoSync() {
     try { localStorage.setItem("tt_data_uid", uid); localStorage.setItem("tt_last_sync", String(Date.now())); } catch (e) { /* */ }
     const added = (Store.getRecords() || []).length - before;
     try { renderHistory(); render(); initTheme(); renderPet(); renderQuests(); renderBadges(); renderStats(); loadProfile(); renderSyncStatus(); } catch (e) { /* 個別區塊未載入時忽略 */ }
-    if (added > 0 && typeof toast === "function") toast(ttT("已從雲端同步紀錄 ☁️"));
+    if (added > 0 && typeof toast === "function") toast(ttT("雲端上的紀錄同步下來了"));
     // 本機有雲端沒有的紀錄 → 反向補上傳，讓另一端也拉得到（雙向匯流）
     if (localReal > 0) autoCloudBackup();
   } catch (e) { /* 靜默：同步失敗不影響使用 */ }
@@ -3781,7 +3810,7 @@ if (_crs) _crs.addEventListener("click", async () => {
     renderHistory(); render();
     // 主題/外觀與寵物、任務、成就一併還原後重繪
     try { initTheme(); renderPet(); renderQuests(); renderBadges(); renderStats(); loadProfile(); } catch (e) { /* 個別區塊未載入時忽略 */ }
-    toast("已從雲端還原 ✓");
+    toast("從雲端還原好了");
   } catch (e) { toast("還原失敗：" + (e && e.message || e)); }
 });
 // 本機備份檔：匯出 JSON 自己保管（不需登入、不需網路）／匯入還原
@@ -3812,7 +3841,7 @@ if (_frs && _fri) {
         Store.importAll(data, mode);
         renderHistory(); render();
         try { initTheme(); renderPet(); renderQuests(); renderBadges(); renderStats(); loadProfile(); } catch (e) { /* */ }
-        toast("已從備份檔還原 ✓");
+        toast("備份檔還原好了");
       } catch (e) { toast("匯入失敗：檔案可能損壞"); }
       _fri.value = "";
     };
@@ -3948,7 +3977,7 @@ function hikeHeatmapHtml() {
     cells.push(`<div class="cal-c cal-l${lvl}${d === todayDom ? " cal-today" : ""}"${tip}><span>${d}</span></div>`);
   }
   return `<div class="hm-wrap cal-wrap">
-    <div class="hm-head"><span class="hm-title">📅 ${title}</span><span class="hm-stat"><b>${active}</b> ${ttT("天")}</span></div>
+    <div class="hm-head"><span class="hm-title">${ic("calendar")} ${title}</span><span class="hm-stat"><b>${active}</b> ${ttT("天")}</span></div>
     <div class="cal-wd">${wd.map(w => `<span>${w}</span>`).join("")}</div>
     <div class="cal-grid">${cells.join("")}</div>
     <div class="cal-leg"><span>${ttT("少")}</span><i class="cal-ramp"></i><span>${ttT("多")}</span></div>
@@ -3981,16 +4010,14 @@ function renderStats() {
   renderMonthSummary();
   if (!box) return;
   const recs = realRecords();   // 成就統計不計入模擬
-  const favs = TRAILS.filter(t => Store.isFav(t.id)).length;
-  const doneTrails = new Set(TRAILS.filter(t => Store.trailLog(t.id).done).map(t => t.id)).size;
+  // 「走過的步道」＝真實紀錄裡出現過幾條不同步道（和進階分析同一個定義；自由路線不算）
+  const walked = new Set(recs.filter(r => r.trailId || (r.trailName && r.trailName !== "自由路線")).map(r => r.trailId || r.trailName)).size;
   // 各欄取「終身統計」與「現存紀錄合計」較大者（舊紀錄被容量保護砍掉也不縮水）
   const lf = (Store.life && Store.life()) || {};
   const km = Math.max(recs.reduce((s, r) => s + (r.distanceKm || 0), 0), lf.km || 0);
   const asc = Math.max(recs.reduce((s, r) => s + (r.ascent || 0), 0), lf.asc || 0);
   const kcal = Math.max(recs.reduce((s, r) => s + (r.kcal || 0), 0), lf.kcal || 0);
   const ms = Math.max(recs.reduce((s, r) => s + (r.elapsedMs || 0), 0), lf.ms || 0);
-  const now = new Date(), moKm = recs.filter(r => { const d = new Date(r.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); })
-    .reduce((s, r) => s + (r.distanceKm || 0), 0);
   const hrs = ms / 3.6e6;
   const cell = (to, pre, dec, l) => `<div class="mstat"><div class="mv" data-to="${to}" data-pre="${pre}" data-dec="${dec}">${pre}0</div><div class="ml">${l}</div></div>`;
   box.innerHTML = `<div class="mstat-grid">
@@ -3999,9 +4026,7 @@ function renderStats() {
     ${cell(asc, "↑", 0, "總爬升 m")}
     ${cell(hrs, "", 1, "總時數 小時")}
     ${cell(kcal, "", 0, "總卡路里")}
-    ${cell(moKm, "", 1, "本月 km")}
-    ${cell(doneTrails, "✓", 0, "完成步道")}
-    ${cell(favs, "★", 0, "收藏步道")}
+    ${cell(walked, "", 0, "走過的步道")}
   </div>`;
   box.querySelectorAll(".mv").forEach(countUp);
 }
@@ -4060,7 +4085,7 @@ function renderHistory(keepShown) {
         <span>${ic("fire")}<b>${r.kcal}</b> 大卡</span>
         <span>${ic("clock")}<b>${fmtTime(r.elapsedMs)}</b></span>
       </div>
-      ${r.ascent ? `<div class="row"><span>${ic("mountain")}爬升 <b>↑${r.ascent}</b>m${r.descent ? ` 下降 <b>↓${r.descent}</b>m` : ""}</span></div>` : ""}
+      ${r.ascent ? `<div class="row"><span>${ic("mountain")}爬升 <b>↑${r.ascent}</b> m${r.descent ? `　下降 <b>↓${r.descent}</b> m` : ""}</span></div>` : ""}
       <div class="hist-actions">
         <button class="hist-view" data-id="${r.id}">${ic("map")} 回顧軌跡</button>
         <button class="hist-gpx" data-id="${r.id}">${ic("download")} 路線檔</button>
@@ -4215,6 +4240,12 @@ async function renderMeProfileCard() {
   const el = $("#meProfileCard"); if (!el) return;
   if (typeof Supa === "undefined" || !Supa.ready() || typeof Auth === "undefined") { el.innerHTML = ""; return; }
   const sess = await Auth.session().catch(() => null);
+  // 自用模式：登入只為了雲端備份，登入後這張卡就不用出現了
+  if (window.PERSONAL_MODE) {
+    el.innerHTML = sess ? "" : `<div class="me-card me-card-guest" id="meCardLogin">${ttT("登入一下，之後每趟都自動備份到雲端")} ›</div>`;
+    const b = $("#meCardLogin"); if (b) b.addEventListener("click", () => { const t = document.querySelector('.tab[data-view="social"]'); if (t) t.click(); });
+    return;
+  }
   if (!sess) { el.innerHTML = `<div class="me-card me-card-guest" id="meCardLogin">登入社群以顯示個人檔案 ›</div>`; const b = $("#meCardLogin"); if (b) b.addEventListener("click", () => { const t = document.querySelector('.tab[data-view="social"]'); if (t) t.click(); }); return; }
   const prof = await Auth.myProfile().catch(() => null);
   if (!prof) { el.innerHTML = `<div class="me-card me-card-guest" id="meCardLogin">完成社群註冊以顯示個人檔案 ›</div>`; const b = $("#meCardLogin"); if (b) b.addEventListener("click", () => { const t = document.querySelector('.tab[data-view="social"]'); if (t) t.click(); }); return; }
@@ -4274,7 +4305,7 @@ function initTheme() {
     b.classList.toggle("on", b.dataset.fs === curFs);
     if (!_themeBound) b.addEventListener("click", () => {
       try { localStorage.setItem("tt_fontscale", b.dataset.fs); } catch (e) { /* */ }
-      document.documentElement.style.setProperty("--fs", b.dataset.fs);
+      document.documentElement.style.setProperty("--fs", b.dataset.fs); document.documentElement.toggleAttribute("data-fs-big", +b.dataset.fs >= 1.5);
       document.querySelectorAll(".fs-opt").forEach(x => x.classList.toggle("on", x === b));
     });
   });
@@ -4410,7 +4441,7 @@ function langGate(force) {
   ov.className = "lang-gate";
   ov.innerHTML = `<div class="lang-gate-card">
     <div class="lang-gate-head">
-      <div class="lang-gate-mark">🌐</div>
+      <div class="lang-gate-mark"><svg class="tt-logo" viewBox="0 0 48 48" aria-hidden="true"><circle cx="35" cy="12" r="5" fill="#f3e9c6"/><path d="M3 41 17 22l14 19Z" fill="#2f6b47"/><path d="M13 41 27 15l16 26Z" fill="#43905f"/><path d="m27 15-3.6 6.7L27 20l3.7 1.8Z" fill="#f4f1e6"/><path d="m17 22-2.3 3.2 2.3-.9 2.4 1Z" fill="#f4f1e6"/><path d="M27.5 21c-4.5 5-6.5 11-4.5 20" stroke="#e2b85c" stroke-width="2.6" fill="none" stroke-linecap="round"/></svg></div>
       <h2>選擇語言 · Language</h2>
       <p>循徑拾光 · Gather the Trail</p>
     </div>
@@ -4431,7 +4462,7 @@ function langGate(force) {
     b.classList.toggle("on", b.dataset.fs === curFs);
     b.addEventListener("click", () => {
       try { localStorage.setItem("tt_fontscale", b.dataset.fs); } catch (e) { /* */ }
-      document.documentElement.style.setProperty("--fs", b.dataset.fs);
+      document.documentElement.style.setProperty("--fs", b.dataset.fs); document.documentElement.toggleAttribute("data-fs-big", +b.dataset.fs >= 1.5);
       ov.querySelectorAll(".lg-fs-opt").forEach(x => x.classList.toggle("on", x === b));
     });
   });
@@ -4467,30 +4498,30 @@ function onboarding(force, opts) {
   else if (previewLang && typeof I18n !== "undefined" && I18n.tables) { const D = (I18n.tables()[previewLang] || {}).D || {}; T = s => D[s] || s; }
   else T = (typeof ttT === "function") ? ttT : (s => s);
   const steps = [
-    { center: true, e: "⛰️", h: "歡迎來到循徑拾光", p: "第一次來嗎？我帶你走一遍 👋" },
-    { view: "social", sel: ".social-auth", e: "👥", h: "先登入吧（可略過）",
-      p: "登入可以雲端備份紀錄、和山友交流。要登入按「去登入」，或按「先略過」。", login: true },
-    { view: "explore", sel: "#searchInput", e: "🔍", h: "搜尋步道",
-      p: "打步道名、地區或主題，找你想走的路線。" },
-    { view: "explore", sel: ".toolbar .seg, .toolbar", e: "🗺️", h: "清單或地圖",
-      p: "切換用清單或地圖看步道，上面還有精選主題輯。" },
-    { view: "explore", sel: "#trailList .card", e: "📄", h: "點開步道看資訊",
-      p: "點任一步道卡片，裡面有難度、路況、天氣、海拔、生態、周邊景點美食。" },
-    { view: "record", sel: "#btnStart", e: "📍", h: "記錄健行",
-      p: "出發時按「開始」，記錄里程、爬升，鎖螢幕、沒訊號也能記。" },
-    { view: "pet", sel: "#petCard", e: "🐉", h: "山林夥伴",
-      p: "走路就能養夥伴！從一顆蛋一路進化，牠會隨心情露出表情，還能點牠、餵食、裝扮。" },
-    { view: "pet", sel: "#petFeed", e: "🍎", h: "餵食與果實",
-      p: "每天餵夥伴補活力；走路和每日任務會賺果實，還能到「好友的夥伴」送果實給山友。" },
-    { view: "pet", sel: "#petBadges", e: "🏅", h: "成就系統",
-      p: "點開成就步道，沿路解鎖里程、爬升、連續天數等徽章，永久保留。" },
-    { view: "me", sel: "#meMonth", e: "📅", h: "健行日曆",
-      p: "看你本月的里程、連續天數與健行日曆。" },
-    { view: "me", sel: "#meStats", e: "📊", h: "我的足跡",
-      p: "這裡看你的里程、爬升、完成步道等統計。" },
-    { view: "me", sel: ".set-zone-title", e: "⚙️", h: "設定",
-      p: "設定都在這：會員、外觀（字體大小／主題）、語言、個人檔案、資料備份、離線地圖。" },
-    { center: true, e: "🎉", h: "開始探索吧！", p: "祝你在山林裡玩得開心 🏔️", last: true },
+    { center: true, e: ic("mountain"), h: "嗨，歡迎來到循徑拾光", p: "花 30 秒帶你逛一圈，隨時可以跳過。" },
+    { view: "social", sel: ".social-auth", e: ic("users"), h: "要雲端備份嗎？",
+      p: "登入之後，每趟走完都會自動備份，換手機也不怕。現在不想弄就按「先略過」。", login: true },
+    { view: "explore", sel: "#searchInput", e: ic("search"), h: "找步道",
+      p: "打名字、地區，或「瀑布」「古道」這種關鍵字都行。" },
+    { view: "explore", sel: ".toolbar .seg, .toolbar", e: ic("map"), h: "清單或地圖",
+      p: "想用清單滑、還是在地圖上挑，這裡切。上面那排是幫你整理好的主題。" },
+    { view: "explore", sel: "#trailList .card", e: ic("book"), h: "點進去看細節",
+      p: "難度、路況、天氣、海拔、會遇到什麼動物、走完去哪吃，都在裡面。" },
+    { view: "record", sel: "#btnStart", e: ic("pin"), h: "記錄健行",
+      p: "出發按「開始」就好。鎖螢幕、山裡沒訊號，照樣記得到。" },
+    { view: "pet", sel: "#petCard", e: ic("paw"), h: "你的山林夥伴",
+      p: "一顆蛋，靠你走路長大。戳戳牠、餵牠、幫牠戴帽子，牠都會有反應。" },
+    { view: "pet", sel: "#petFeed", e: ic("leaf"), h: "餵食與果實",
+      p: "果實靠走路和每日任務賺，每天餵一次，牠就有精神。" },
+    { view: "pet", sel: "#petBadges", e: ic("medal"), h: "成就",
+      p: "里程、爬升、連續天數達標就解鎖勳章。拿到就是你的，不會不見。" },
+    { view: "me", sel: "#meMonth", e: ic("calendar"), h: "健行日曆",
+      p: "這個月走了幾天、幾公里，一眼看完。" },
+    { view: "me", sel: "#meStats", e: ic("target"), h: "我的足跡",
+      p: "從第一趟累積到現在的里程、爬升，都在這。" },
+    { view: "me", sel: ".set-zone-title", e: ic("sliders"), h: "設定",
+      p: "字太小、想換深色、要備份資料，往下找這裡。" },
+    { center: true, e: ic("sparkle"), h: "逛完了", p: "挑一條步道，出門走走吧。", last: true },
   ].map(s => ({ ...s, h: T(s.h), p: T(s.p) }));
 
   // 起始步：opts.startAt（登入後續播）或續播旗標；否則從頭
@@ -4649,13 +4680,13 @@ window.ttCoachTrail = function (hasGeo) {
   if (!document.querySelector("#detailSheet.show")) return;
   const tab = code => () => { const b = document.querySelector(`#detailNav button[data-tab="${code}"]`); if (b) b.click(); };
   window.ttCoach("tt_coach_trail", [
-    { sel: "#detailNav", e: "📑", h: "步道資訊", p: "上面這排分頁可切換不同步道資訊。", pre: tab("ov") },
-    { sel: "#weatherBox", e: "🌦️", h: "天氣", p: "顯示步道所在地的即時天氣與未來預報，出發前先看一下。", pre: tab("rt") },
-    hasGeo ? { sel: "#profileBox", e: "⛰️", h: "海拔剖面", p: "沿路的高度變化圖，幫你評估上坡有多硬、要爬多高。", pre: tab("rt") } : null,
-    { sel: "#btnOffline", e: "⬇️", h: "離線地圖", p: "山區常常沒有訊號，先在這裡把地圖下載起來就不怕迷路。", pre: tab("rt") },
-    { sel: "#ecoBox", e: "🦋", h: "生態", p: "這條步道常見的動植物，還能查 iNaturalist 附近的真實目擊。", pre: tab("ec") },
-    { sel: ".link-row", e: "🔗", h: "分享", p: "分享步道、揪團出遊、加入比較、開啟導航，都在這一排。", pre: tab("ov") },
-    { sel: "#btnGoRecord", e: "📍", h: "記錄健行", p: "準備好了嗎？從這條步道直接開始記錄你的足跡吧！", pre: tab("ov") },
+    { sel: "#detailNav", e: ic("book"), h: "分頁", p: "概覽、路線、生態、周邊，點上面切換。", pre: tab("ov") },
+    { sel: "#weatherBox", e: ic("sun"), h: "天氣", p: "步道那邊現在的天氣和一週預報，出門前瞄一眼。", pre: tab("rt") },
+    hasGeo ? { sel: "#profileBox", e: ic("mountain"), h: "海拔剖面", p: "整條路的高低起伏。曲線越陡，腿越酸。", pre: tab("rt") } : null,
+    { sel: "#btnOffline", e: ic("download"), h: "離線地圖", p: "山上常常沒訊號，出發前先把地圖存起來。", pre: tab("rt") },
+    { sel: "#ecoBox", e: ic("leaf"), h: "生態", p: "這一帶常見的動植物，還能看附近真的有人拍到什麼。", pre: tab("ec") },
+    { sel: ".link-row", e: ic("share"), h: "這一排", p: "導航、分享、加入比較，都在這。", pre: tab("ov") },
+    { sel: "#btnGoRecord", e: ic("pin"), h: "記錄健行", p: "要走這條？按這裡直接開始記錄。", pre: tab("ov") },
   ], { scope: "#detailSheet" });
 };
 
@@ -4663,10 +4694,10 @@ window.ttCoachTrail = function (hasGeo) {
 window.ttCoachTeam = function (hasActive) {
   if (!document.querySelector('[data-ov="team"]')) return;
   window.ttCoach("tt_coach_team", [
-    { center: true, e: "👥", h: "小隊", p: "和山友組隊，在記錄地圖上即時看到彼此的位置，一起安全同行。" },
-    { sel: "#tmCreate", e: "➕", h: "建立小隊", p: "取個隊名按「建立」，系統會給你一組加入碼，分享給隊友。" },
-    { sel: "#tmJoin, #tmCode", e: "🔑", h: "用加入碼加入", p: "拿到隊友的加入碼？輸入後按「加入」，就成為小隊的一員。" },
-    hasActive ? { sel: ".team-live", e: "📍", h: "與小隊同行", p: "打開後，隊員在記錄頁的地圖上就能看到彼此的即時定位。" } : null,
+    { center: true, e: ic("users"), h: "小隊", p: "和山友組隊，在記錄地圖上即時看到彼此的位置，一起安全同行。" },
+    { sel: "#tmCreate", e: ic("plus"), h: "建立小隊", p: "取個隊名按「建立」，系統會給你一組加入碼，分享給隊友。" },
+    { sel: "#tmJoin, #tmCode", e: ic("users"), h: "用加入碼加入", p: "拿到隊友的加入碼？輸入後按「加入」，就成為小隊的一員。" },
+    hasActive ? { sel: ".team-live", e: ic("pin"), h: "與小隊同行", p: "打開後，隊員在記錄頁的地圖上就能看到彼此的即時定位。" } : null,
   ], { scope: '[data-ov="team"]' });
 };
 
@@ -4674,11 +4705,11 @@ window.ttCoachTeam = function (hasActive) {
 window.ttCoachSocial = function (sub) {
   if (document.body.dataset.view !== "social") return;
   const M = {
-    friends: { flag: "tt_coach_soc_friends", e: "📰", h: "動態", p: "看你追蹤的山友發的貼文，可以按讚、留言，或收藏他們的路線。" },
-    explore: { flag: "tt_coach_soc_explore", e: "🧭", h: "探索", p: "探索其他山友公開的健行足跡與旅程，替下次出遊找靈感。" },
-    search: { flag: "tt_coach_soc_search", e: "🔍", h: "搜尋山友", p: "用名稱或 @帳號找到山友，追蹤他們就能在動態看到更新。" },
-    notif: { flag: "tt_coach_soc_notif", e: "🔔", h: "通知", p: "有人按讚、留言、追蹤你，或小隊邀請，都會出現在這裡。" },
-    me: { flag: "tt_coach_soc_me", e: "👤", h: "我的檔案", p: "你的個人檔案、發過的貼文和追蹤名單，也能在這裡編輯資料。" },
+    friends: { flag: "tt_coach_soc_friends", e: ic("megaphone"), h: "動態", p: "看你追蹤的山友發的貼文，可以按讚、留言，或收藏他們的路線。" },
+    explore: { flag: "tt_coach_soc_explore", e: ic("compass"), h: "探索", p: "探索其他山友公開的健行足跡與旅程，替下次出遊找靈感。" },
+    search: { flag: "tt_coach_soc_search", e: ic("search"), h: "搜尋山友", p: "用名稱或 @帳號找到山友，追蹤他們就能在動態看到更新。" },
+    notif: { flag: "tt_coach_soc_notif", e: ic("bell"), h: "通知", p: "有人按讚、留言、追蹤你，或小隊邀請，都會出現在這裡。" },
+    me: { flag: "tt_coach_soc_me", e: ic("users"), h: "我的檔案", p: "你的個人檔案、發過的貼文和追蹤名單，也能在這裡編輯資料。" },
   };
   const c = M[sub]; if (!c) return;
   window.ttCoach(c.flag, [{ center: true, e: c.e, h: c.h, p: c.p }], {});
@@ -4688,8 +4719,8 @@ window.ttCoachSocial = function (sub) {
 window.ttCoachRecord = function () {
   if (document.body.dataset.view !== "record") return;
   window.ttCoach("tt_coach_record", [
-    { sel: "#recMap", e: "🗺️", h: "記錄地圖", p: "開始後，地圖會即時畫出你走過的軌跡，鎖螢幕、沒訊號也照記。" },
-    { sel: "#btnStart", e: "▶️", h: "記錄健行", p: "出發時按「開始」，結束按「結束」就會存成一筆健行紀錄。" },
+    { sel: "#recMap", e: ic("map"), h: "記錄地圖", p: "開始之後，走過的路會一路畫在地圖上。" },
+    { sel: "#btnStart", e: ic("play"), h: "記錄健行", p: "出發按「開始」，走完按「結束」，就存成一筆紀錄。" },
   ], {});
 };
 

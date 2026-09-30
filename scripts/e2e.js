@@ -25,7 +25,7 @@ const PORT = 8899;
   try {
     browser = await chromium.launch();
     const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
-    await page.addInitScript(() => { try { localStorage.setItem("tt_onboarded_v2", "1"); ["tt_coach_trail", "tt_coach_team", "tt_coach_record", "tt_coach_soc_friends", "tt_coach_soc_explore", "tt_coach_soc_search", "tt_coach_soc_notif", "tt_coach_soc_me", "tt_locperm_prompted"].forEach(k => localStorage.setItem(k, "1")); } catch (e) { } });   // 跳過首次導覽浮層＋情境導覽
+    await page.addInitScript(() => { window.PERSONAL_MODE = false; try { localStorage.setItem("tt_onboarded_v2", "1"); ["tt_coach_trail", "tt_coach_team", "tt_coach_record", "tt_coach_soc_friends", "tt_coach_soc_explore", "tt_coach_soc_search", "tt_coach_soc_notif", "tt_coach_soc_me", "tt_locperm_prompted"].forEach(k => localStorage.setItem(k, "1")); } catch (e) { } });   // 跳過首次導覽浮層＋情境導覽
     page.on("pageerror", e => errors.push("pageerror: " + e.message));
     // 忽略外部服務在無頭測試環境的網路/CORS 失敗（線上皆有 try/catch＋後備）：海拔 DEM、翻譯、Supabase、Overpass、圖磚
     const EXT_NOISE = /net::|favicon|404 \(|Failed to load resource|CORS policy|opentopodata|translate\.googleapis|mymemory|supabase|overpass|tile\.|Access to fetch/i;
@@ -188,6 +188,7 @@ const PORT = 8899;
     {
       const p2 = await browser.newPage({ viewport: { width: 390, height: 844 } });
       await p2.addInitScript(() => {
+        window.PERSONAL_MODE = false;
         try { localStorage.setItem("tt_onboarded_v2", "1"); ["tt_coach_trail", "tt_coach_team", "tt_coach_record", "tt_coach_soc_friends", "tt_coach_soc_explore", "tt_coach_soc_search", "tt_coach_soc_notif", "tt_coach_soc_me", "tt_locperm_prompted"].forEach(k => localStorage.setItem(k, "1")); } catch (e) { }
         // 假的已登入 session：升級面板要拿 Supabase user id 當 RevenueCat 的 app_user_id 才能 configure。
         // supabase-js 直接讀這個 storage key，expires_at 給未來時間就不會去連網 refresh。
@@ -230,7 +231,8 @@ const PORT = 8899;
       await p2.goto(`http://localhost:${PORT}/index.html`);
       await p2.waitForTimeout(2500);
       await p2.evaluate(() => { window.IAP_ENABLED = true; Premium.openUpgrade(); });
-      await p2.waitForTimeout(1200);
+      // 升級面板要先延遲載入社群模組（~378KB）才能 configure，慢機器上 1.2 秒不夠 → 等它真的畫完
+      await p2.waitForSelector("#pmRestore, #pmGo[disabled]", { timeout: 15000 }).catch(() => {});
 
       const priceM = await p2.locator('.pm-plan[data-plan="month"] span').innerText();
       if (!priceM.includes("US$1.99")) errors.push(`IAP: 原生價格未用商店回傳值（看到「${priceM}」）`);
@@ -263,10 +265,87 @@ const PORT = 8899;
       await p2.close();
     }
 
+    // 會員狀態的兩個冷啟動情境（不經過升級面板，模擬「重開 App」）：
+    //  A. 帳本沒寫回、但商店說有訂閱 → 開機就要解鎖（之前只有開過升級面板、RevenueCat configure 過才會生效）
+    //  B. 已是會員、山上沒訊號 → getUser 網路失敗不能被當成「沒登入」而降級、把快取寫成 0
+    // Supabase 的請求全部攔下來，不連真伺服器。
+    for (const scene of ["store", "offline"]) {
+      const pm = await browser.newPage({ viewport: { width: 390, height: 844 } });
+      await pm.addInitScript((scene) => {
+        window.PERSONAL_MODE = false;
+        try {
+          localStorage.setItem("tt_lang", "zh"); localStorage.setItem("tt_onboarded_v2", "1");
+          ["tt_coach_trail", "tt_coach_team", "tt_coach_record", "tt_coach_soc_friends", "tt_coach_soc_explore", "tt_coach_soc_search", "tt_coach_soc_notif", "tt_coach_soc_me", "tt_locperm_prompted"].forEach(k => localStorage.setItem(k, "1"));
+          localStorage.setItem("sb-bkbkamvbczqdejrlpiqo-auth-token", JSON.stringify({
+            access_token: "e2e-fake", refresh_token: "e2e-fake", token_type: "bearer",
+            expires_in: 86400, expires_at: Math.floor(Date.now() / 1000) + 86400,
+            user: { id: "e2e-user-0001", email: "e2e@example.com", user_metadata: {} },
+          }));
+          if (scene === "offline") localStorage.setItem("tt_premium", "1");
+        } catch (e) { }
+        let rcConfigured = false;
+        window.Capacitor = {
+          isNativePlatform: () => true, getPlatform: () => "ios",
+          Plugins: { Purchases: {
+            configure: async () => { rcConfigured = true; }, logIn: async () => {},
+            getOfferings: async () => ({ all: {}, current: null }),
+            getCustomerInfo: async () => {
+              if (!rcConfigured) throw new Error("There is no singleton instance. Make sure you configure Purchases before trying to get customer info.");
+              const active = scene === "store" ? { premium: { isActive: true, expirationDate: null } } : {};
+              return { customerInfo: { entitlements: { active } } };
+            },
+          } },
+        };
+      }, scene);
+      await pm.route("**/*.supabase.co/**", r => {
+        const u = r.request().url();
+        if (scene === "offline") return r.abort("internetdisconnected");
+        if (u.includes("/auth/v1/user")) return r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ id: "e2e-user-0001", aud: "authenticated", email: "e2e@example.com" }) });
+        return r.fulfill({ status: 200, contentType: "application/json", body: "[]" });   // subscriptions 查無資料＝帳本沒寫回
+      });
+      await pm.goto(`http://localhost:${PORT}/index.html`);
+      // app.js 開機 1.5 秒後才 refresh；再加上延遲載入社群模組、configure 的時間
+      if (scene === "store") await pm.waitForFunction(() => typeof Premium !== "undefined" && Premium.isOn(), null, { timeout: 15000 }).catch(() => {});
+      else await pm.waitForTimeout(6000);   // 離線情境要等 refresh 真的跑完，才看得出有沒有被降級
+      const st = await pm.evaluate(() => ({ on: Premium.isOn(), cache: localStorage.getItem("tt_premium") }));
+      if (scene === "store") ok("冷啟動：商店有訂閱、帳本未同步，開機即解鎖", st.on && st.cache === "1");
+      else ok("冷啟動：會員離線開 App 不被降級（快取仍是 1）", st.on && st.cache === "1");
+      await pm.close();
+    }
+
+    // 自用模式（config.js 預設開）：全部 PRO 直接可用、升級面板不出現、PRO 標籤與社群入口收起來
+    {
+      const ps = await browser.newPage({ viewport: { width: 390, height: 844 } });
+      await ps.addInitScript(() => {
+        try { localStorage.setItem("tt_lang", "zh"); ["tt_onboarded_v2", "tt_coach_trail", "tt_coach_record", "tt_locperm_prompted"].forEach(k => localStorage.setItem(k, "1")); } catch (e) { }
+      });
+      ps.on("pageerror", e => errors.push("personal pageerror: " + e.message));
+      await ps.goto(`http://localhost:${PORT}/`, { waitUntil: "domcontentloaded" });
+      await ps.waitForTimeout(2600);
+      const st = await ps.evaluate(() => {
+        Premium.openUpgrade();
+        const vis = el => !!el && getComputedStyle(el).display !== "none";
+        return {
+          on: Premium.isOn(), gate: Premium.gate(),
+          panel: !!document.querySelector(".premium-mask"),
+          social: vis(document.querySelector('.tab[data-view="social"]')),
+          proTag: [...document.querySelectorAll(".pro-tag")].some(vis),
+        };
+      });
+      ok("自用模式：會員功能全開", st.on && st.gate);
+      ok("自用模式：不跳升級面板", !st.panel);
+      ok("自用模式：社群分頁收起", !st.social);
+      ok("自用模式：看不到 PRO 標籤", !st.proTag);
+      await ps.evaluate(() => { const t = document.getElementById("simToggle"); if (t && !t.checked) t.click(); });
+      ok("自用模式：模擬模式可直接勾", await ps.evaluate(() => document.getElementById("simToggle").checked));
+      await ps.close();
+    }
+
     // 本階段新功能冒煙：主題配色整組換色、健行日曆熱力圖、天氣提示位、情境導覽/提醒/同步/天氣等全域引擎
     {
       const p3 = await browser.newPage({ viewport: { width: 390, height: 844 } });
       await p3.addInitScript(() => {
+        window.PERSONAL_MODE = false;
         try {
           localStorage.setItem("tt_lang", "zh"); localStorage.setItem("tt_onboarded_v2", "1");
           ["tt_coach_trail", "tt_coach_team", "tt_coach_record", "tt_coach_soc_friends", "tt_coach_soc_explore", "tt_coach_soc_search", "tt_coach_soc_notif", "tt_coach_soc_me", "tt_locperm_prompted"].forEach(k => localStorage.setItem(k, "1"));
