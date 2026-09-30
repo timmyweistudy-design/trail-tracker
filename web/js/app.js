@@ -501,7 +501,10 @@ document.querySelectorAll(".tab").forEach(btn => {
         Pets.renderFriends();
       }
     }
-    if (view === "me") { renderHistory(); refreshOfflineStatus(); renderPalette(); renderProColor(); renderReminderToggle(); renderMeProfileCard(); renderSyncStatus(); if (typeof Premium !== "undefined") Premium.refresh().then(() => { Premium.renderBox($("#premiumBox")); renderPalette(); renderProColor(); renderMeProfileCard(); applyPalette(); }); }
+    if (view === "me") {
+      renderHistory(); refreshOfflineStatus(); renderPalette(); renderProColor(); renderReminderToggle(); renderMeProfileCard(); renderSyncStatus();
+      if (typeof Premium !== "undefined") { const was = Premium.isOn(); Premium.renderBox($("#premiumBox")); Premium.refresh().then(on => { if (on === was) return; Premium.renderBox($("#premiumBox")); renderPalette(); renderProColor(); renderMeProfileCard(); applyPalette(); }); }   // 狀態沒變就不再畫第二次
+    }
     if (view === "social") {
       // 社群模組延遲載入：還沒載就先載完再進（開機後 2 秒會自動載，多數時候已就緒）
       if (typeof SocialUI === "undefined" && window.loadSocial) window.loadSocial().then(() => { if (window.wireTeamLive) window.wireTeamLive(); if (typeof SocialUI !== "undefined") SocialUI.onShow(); });
@@ -1640,7 +1643,7 @@ async function downloadAllTaiwan() {
     const r = await Offline.download(tiles, (done, total) => {
       box.innerHTML = `下載全台地圖中… ${done}/${total}<div class="offline-bar"><i style="width:${Math.round(done / total * 100)}%"></i></div>`;
     });
-    addOfflineMb(r.mb);
+    addOfflineMb(r.mb); saveOfflineSet("taiwan", { name: "全台概覽" });
     box.innerHTML = `✅ 已下載 ${r.ok}/${r.total} 張圖磚，全台概覽地圖可離線看了。`;
     btn.textContent = "✓ 已下載全台離線地圖";
     refreshOfflineStatus();
@@ -1655,14 +1658,7 @@ async function downloadFavOffline() {
   const btn = $("#btnFavOffline"), box = $("#favOfflineBox");
   if (!favs.length) { toast("尚無含座標的收藏步道"); return; }
   const seen = new Set(); let tiles = [];
-  for (const t of favs) {
-    const bbox = Offline.bboxFor(t);
-    const { zmin, zmax } = Offline.planZoom(bbox);
-    for (const k of Offline.tileList(bbox, zmin, zmax)) {
-      const key = JSON.stringify(k);
-      if (!seen.has(key)) { seen.add(key); tiles.push(k); }
-    }
-  }
+  for (const t of favs) for (const k of trailTiles(t)) if (!seen.has(k)) { seen.add(k); tiles.push(k); }
   if (!offlineAllow(tiles)) return;   // 非會員：MB 額度制
   box.style.display = "block";
   box.innerHTML = `準備下載 ${favs.length} 條收藏、約 ${tiles.length} 張圖磚（約 ${(tiles.length * 0.02).toFixed(1)} MB）…`;
@@ -1671,7 +1667,7 @@ async function downloadFavOffline() {
     const r = await Offline.download(tiles, (done, total) => {
       box.innerHTML = `下載中… ${done}/${total}<div class="offline-bar"><i style="width:${Math.round(done / total * 100)}%"></i></div>`;
     });
-    addOfflineMb(r.mb);
+    addOfflineMb(r.mb); favs.forEach(t => saveOfflineSet("trail:" + t.id, { name: t.name }));
     box.innerHTML = `✅ 已下載 ${r.ok}/${r.total} 張圖磚，${favs.length} 條收藏步道可離線看地圖了。`;
     btn.textContent = "✓ 已預載收藏";
     refreshOfflineStatus();
@@ -1683,11 +1679,9 @@ async function downloadFavOffline() {
 async function downloadOffline(t, btn) {
   if (!t.lat) { toast("此步道無座標，無法下載地圖"); return; }
   const box = $("#offlineBox");
-  const bbox = Offline.bboxFor(t);
-  const { zmin, zmax } = Offline.planZoom(bbox);
   // 底圖 + 高程圖磚（z13–14）：高程一起抓，山上沒訊號時爬升/下降校正與坡度著色才算得出來。
   // 高程圖磚數量比底圖少一個數量級（同範圍只需低倍），對額度影響很小。
-  const tiles = [...Offline.tileList(bbox, zmin, zmax), ...Offline.tileListUrl(bbox, 13, 14, _TERR_URL)];
+  const tiles = trailTiles(t);
   if (!offlineAllow(tiles)) return;   // 非會員：MB 額度制
   box.style.display = "block";
   box.innerHTML = `準備下載約 ${tiles.length} 張圖磚（約 ${(tiles.length * 0.02).toFixed(1)} MB）…`;
@@ -1697,7 +1691,7 @@ async function downloadOffline(t, btn) {
       box.innerHTML = `下載離線地圖中… ${done}/${total}
         <div class="offline-bar"><i style="width:${Math.round(done / total * 100)}%"></i></div>`;
     });
-    addOfflineMb(r.mb);
+    addOfflineMb(r.mb); saveOfflineSet("trail:" + t.id, { name: t.name });
     box.innerHTML = `✅ 已下載 ${r.ok}/${r.total} 張圖磚，此步道範圍可離線看地圖了。`;
     btn.textContent = "✓ 已預載離線地圖";
   } catch {
@@ -1742,331 +1736,6 @@ document.addEventListener("keydown", e => {
 });
 
 // 記錄頁（記錄中、行程結算、閃退復原）已拆到 js/record.js，在 app.js、explore.js 之後載入
-// ---------- 我的 ----------
-function loadProfile() {
-  const p = Store.getProfile();
-  if (p.weight) $("#pfWeight").value = p.weight;
-  if (p.height) $("#pfHeight").value = p.height;
-  if (p.pack) $("#pfPack").value = p.pack;
-}
-$("#btnSaveProfile").addEventListener("click", () => {
-  Store.saveProfile({ weight: Number($("#pfWeight").value) || 60, height: Number($("#pfHeight").value) || 170, pack: Math.max(0, Number($("#pfPack").value) || 0) });
-  toast("已儲存個人資料");
-});
-$("#btnExportGpxAll").addEventListener("click", async () => {
-  if (!_proGate()) return;   // PRO：批次匯出全部路線檔
-  GPX.exportAll(await Store.allFull()) ? toast("已下載全部行程路線檔") : toast("尚無行程可下載");
-});
-
-async function refreshOfflineStatus() {
-  const el = $("#offlineStatus");
-  if (!el) return;
-  Offline.enforceCap && Offline.enforceCap().catch(() => { });   // 順手控管圖磚快取上限（瀏覽時 SW 也會塞）
-  const n = await Offline.cachedCount();
-  el.textContent = n ? `已快取地圖圖磚：${n} 張（約 ${(n * 0.02).toFixed(1)} MB）` : "尚未下載任何離線地圖";
-  const q = $("#offlineQuota");
-  if (q) {
-    if (typeof Premium !== "undefined" && Premium.isOn()) q.innerHTML = `<span class="oq-pro">${ic("sparkle")} Premium：無限下載</span>`;
-    else { const left = Math.max(0, OFFLINE_FREE_MB - offlineMbUsed()); q.innerHTML = `免費額度：剩 <b>${left.toFixed(1)}</b> / ${OFFLINE_FREE_MB} MB（含記錄時預載）<div class="oq-up-line"><a class="oq-up" id="oqUp">升級 Premium 無限下載</a></div>`; const up = $("#oqUp"); if (up) up.addEventListener("click", () => { if (typeof Premium !== "undefined") Premium.openUpgrade(); }); }
-  }
-  // #9 收藏一鍵預載：按鈕即時顯示可下載的收藏數（（N）為語言中性），沒有收藏就淡化提示
-  const fb = $("#btnFavOffline");
-  if (fb && !fb.disabled) {
-    const favN = TRAILS.filter(t => Store.isFav(t.id) && t.lat).length;
-    let sp = fb.querySelector(".fav-n");
-    if (!sp) { sp = document.createElement("span"); sp.className = "fav-n"; fb.appendChild(sp); }
-    sp.textContent = favN ? `（${favN}）` : "";
-    fb.classList.toggle("op-btn-dim", favN === 0);
-  }
-}
-// 「我的」設定區：點分類標題展開/收合
-document.querySelectorAll("#view-me .set-head").forEach(h => h.addEventListener("click", () => h.parentElement.classList.toggle("open")));
-$("#btnDiag").addEventListener("click", async () => {
-  const errs = (window.ttErrors ? window.ttErrors() : []);
-  const g = fn => { try { const v = fn(); return (v == null ? "?" : v); } catch (e) { return "?"; } };
-  let sw = "?"; try { const t = await (await fetch("./sw.js", { cache: "no-store" })).text(); sw = (t.match(/trail-tracker-v\d+/) || ["?"])[0]; } catch (e) { /* */ }
-  let tiles = "?"; try { if (typeof Offline !== "undefined" && Offline.cachedCount) tiles = await Offline.cachedCount(); } catch (e) { /* */ }
-  let login = "未登入"; try { if (typeof Supa !== "undefined" && Supa.ready && Supa.ready()) { const { data } = await Supa.client().auth.getUser(); if (data && data.user) login = "已登入"; } } catch (e) { /* */ }
-  const pro = g(() => (typeof Premium !== "undefined" && Premium.isOn()) ? "PRO" : "免費");
-  const recN = g(() => Store.getRecords().length);
-  const doneN = g(() => (Store.doneCount ? Store.doneCount() : "?"));
-  const favN = g(() => TRAILS.filter(t => Store.isFav(t.id)).length);
-  const lang = g(() => (typeof I18n !== "undefined" ? I18n.lang() : "zh"));
-  const theme = g(() => localStorage.getItem("tt_theme") || "light");
-  const fs = g(() => localStorage.getItem("tt_fontscale") || "1.2");
-  const lsKB = g(() => Math.round(Object.keys(localStorage).reduce((s, k) => s + ((localStorage.getItem(k) || "").length + k.length), 0) / 1024));
-  const os = g(() => (navigator.userAgent.match(/iPhone|iPad|Android|Windows|Macintosh|Linux/) || ["?"])[0]);
-  const swState = g(() => (navigator.serviceWorker && navigator.serviceWorker.controller) ? "已控制" : "未控制");
-  const L = [
-    "循徑拾光 診斷報告",
-    "時間 " + new Date().toLocaleString(),
-    "SW版本 " + sw + " " + swState,
-    "裝置 " + innerWidth + "x" + innerHeight + " @" + (window.devicePixelRatio || 1) + "x " + (navigator.onLine ? "線上" : "離線"),
-    "系統 " + os,
-    "語言 " + lang + " 主題 " + theme + " 字級 " + fs,
-    "帳號 " + login + " " + pro,
-    "小隊 " + g(() => { if (typeof TeamLive === "undefined" || !TeamLive.status) return "模組未載"; const s = TeamLive.status(); return s.on ? ("輪詢" + (s.poll ? "OK" : "失敗") + "/回報" + (s.push ? "OK" : "失敗") + " · 在線 " + s.members + " · 隊長" + (s.leader ? "有" : "無")) : "未連線"; }),
-    "步道 " + TRAILS.length + " 紀錄 " + recN + " 完成 " + doneN + " 收藏 " + favN,
-    "離線圖磚 " + tiles + " 本機資料 " + lsKB + "KB",
-    "近期錯誤 " + errs.length,
-    (errs.slice(0, 10).map(e => "· " + ((e.t || "") + "").slice(5, 16) + " " + e.m).join("\n") || "（無）"),
-  ];
-  const info = L.join("\n");
-  if (navigator.clipboard) navigator.clipboard.writeText(info).then(() => toast(errs.length ? `已複製診斷(${errs.length}筆錯誤)，可貼給開發者` : "已複製診斷，目前無錯誤")).catch(() => ttAlertBox(info));
-  else ttAlertBox(info);
-});
-$("#btnFootMap").addEventListener("click", () => { if (!_proGate()) return; openFootprintMap(); });
-$("#btnAllOffline").addEventListener("click", downloadAllTaiwan);
-$("#btnFavOffline").addEventListener("click", downloadFavOffline);
-
-// Premium：雲端備份 / 還原（跨裝置）
-async function cloudClient() {
-  if (typeof Supa === "undefined" || !Supa.ready()) { toast("社群尚未啟用"); return null; }
-  const c = Supa.client(); const { data: u } = await c.auth.getUser();
-  if (!u || !u.user) {
-    // 自用模式把社群分頁藏起來了，直接帶去登入畫面，別叫人去找一個看不到的分頁
-    if (socialHidden()) { toast(ttT("先登入，才能備份到雲端")); const t = document.querySelector('.tab[data-view="social"]'); if (t) t.click(); }
-    else toast("請先到社群分頁登入");
-    return null;
-  }
-  return { c, uid: u.user.id };
-}
-async function cloudBackupNow(silent) {
-  const x = await cloudClient(); if (!x) return false;
-  // 同一支手機切換多個帳號時：localStorage 是共用的，但雲端備份是「每個帳號一列」。
-  // 若本機資料屬於「別的帳號」（tt_data_uid≠目前登入），直接備份會用 A 的資料蓋掉 B 的雲端備份。
-  // 自動備份→直接跳過保護；手動備份→先警告確認。
-  const owner = (() => { try { return localStorage.getItem("tt_data_uid"); } catch (e) { return null; } })();
-  if (owner && owner !== x.uid) {
-    if (silent) return false;   // 自動：絕不覆蓋別的帳號的雲端
-    const go = await ttConfirm("這台裝置目前的資料是「另一個帳號」的。備份會用這份資料覆蓋『目前登入帳號』的雲端備份，確定要繼續？");
-    if (!go) return false;
-  }
-  try {
-    if (!silent) toast("備份到雲端中…");
-    const { error } = await x.c.from("backups").upsert({ user_id: x.uid, data: Store.exportAll(), updated_at: new Date().toISOString() }, { onConflict: "user_id" });
-    if (!error) { try { localStorage.setItem("tt_data_uid", x.uid); localStorage.setItem("tt_last_sync", String(Date.now())); } catch (e) { /* */ } try { renderSyncStatus(); } catch (e) { /* */ } }   // 本機資料歸屬＝目前帳號
-    if (!silent) toast(error ? "備份失敗：" + error.message : "已備份到雲端 ✓");
-    return !error;
-  } catch (e) { if (!silent) toast("備份失敗：" + (e && e.message || e)); return false; }
-}
-// 每趟走完自動雲端備份（靜默，失敗不打擾）——資料安全不鎖付費：任何登入者都自動備份
-async function autoCloudBackup() {
-  try {
-    if (typeof Supa === "undefined" || !Supa.ready()) return;
-    const c = Supa.client(); const { data: u } = await c.auth.getUser();
-    if (!u || !u.user) return;   // 沒登入就沒雲端備份（改用匯出備份檔）
-    // 離線送出佇列：離線或失敗→標記待備份，回線自動補送（資料安全不因當下沒網路而漏）
-    if (typeof navigator !== "undefined" && navigator.onLine === false) { try { localStorage.setItem("tt_backup_pending", "1"); } catch (e) { } return; }
-    if (await cloudBackupNow(true)) { try { localStorage.removeItem("tt_backup_pending"); } catch (e) { } toast("這趟已經備份到雲端"); }
-    else { try { localStorage.setItem("tt_backup_pending", "1"); } catch (e) { } }
-  } catch (e) { try { localStorage.setItem("tt_backup_pending", "1"); } catch (_) { } }
-}
-// 回線自動補送待備份（離線時走完的行程，恢復連線就補傳雲端）
-function _retryPendingBackup() { try { if (localStorage.getItem("tt_backup_pending") === "1" && navigator.onLine) setTimeout(autoCloudBackup, 1500); } catch (e) { } }
-if (typeof window !== "undefined") { window.addEventListener("online", _retryPendingBackup); setTimeout(_retryPendingBackup, 4000); }   // 回線時＋開機後各試一次
-// 同步累積里程/寵物到雲端 profile：好友比較讀 profiles.total_km，走完就更新才不會過時
-async function syncMyStatsToCloud() {
-  try {
-    if (typeof Supa === "undefined" || !Supa.ready() || typeof Profiles === "undefined") return;
-    const c = Supa.client(); const { data: u } = await c.auth.getUser();
-    if (u && u.user) await Profiles.syncMyStats(u.user.id);
-  } catch (e) { /* 靜默；社群模組未載入或未登入就略過 */ }
-}
-if (typeof window !== "undefined") window.syncMyStatsToCloud = syncMyStatsToCloud;
-// 自動雲端「拉取」：登入後把雲端備份自動同步下來，讓同一帳號換裝置／網頁版就看得到彼此的紀錄。
-// （原本只有自動「上傳」沒有自動「下載」→ 換平台像空的，要手動按還原。）安全策略：
-//   本機沒紀錄(全新裝置/平台) → 完整還原（含寵物/成就/設定）；本機已有紀錄 → 只聯集紀錄/收藏(不倒退寵物)。
-//   本機資料屬別的帳號 → 略過（交手動還原，避免混帳號）。每個 session 只跑一次。
-let _cloudSyncDone = false;
-async function cloudAutoSync() {
-  if (_cloudSyncDone) return;
-  try {
-    if (typeof Supa === "undefined" || !Supa.ready()) return;   // 社群未載入/未設定 → 之後再試
-    const c = Supa.client(); const { data: u } = await c.auth.getUser();
-    if (!u || !u.user) return;                                   // 未登入 → 不標記完成，登入後會再觸發
-    const uid = u.user.id;
-    const owner = (() => { try { return localStorage.getItem("tt_data_uid"); } catch (e) { return null; } })();
-    if (owner && owner !== uid) { _cloudSyncDone = true; return; }   // 本機是別帳號的資料 → 不自動拉
-    const { data, error } = await c.from("backups").select("data, updated_at").eq("user_id", uid).maybeSingle();
-    if (error) return;                                           // 查詢失敗 → 不標記，下次再試
-    _cloudSyncDone = true;
-    const localReal = (Store.getRecords() || []).filter(r => !r.sim).length;
-    if (!data || !data.data) {                                   // 雲端還沒備份 → 本機有資料就上傳當種子
-      if (localReal > 0) autoCloudBackup();
-      return;
-    }
-    const before = (Store.getRecords() || []).length;
-    if (localReal === 0) Store.importAll(data.data, "merge");    // 全新裝置：完整還原
-    else Store.cloudMergeRecords(data.data);                     // 已有資料：只安全聯集紀錄
-    try { localStorage.setItem("tt_data_uid", uid); localStorage.setItem("tt_last_sync", String(Date.now())); } catch (e) { /* */ }
-    const added = (Store.getRecords() || []).length - before;
-    try { renderHistory(); render(); initTheme(); renderPet(); renderQuests(); renderBadges(); renderStats(); loadProfile(); renderSyncStatus(); } catch (e) { /* 個別區塊未載入時忽略 */ }
-    if (added > 0 && typeof toast === "function") toast(ttT("雲端上的紀錄同步下來了"));
-    // 本機有雲端沒有的紀錄 → 反向補上傳，讓另一端也拉得到（雙向匯流）
-    if (localReal > 0) autoCloudBackup();
-  } catch (e) { /* 靜默：同步失敗不影響使用 */ }
-}
-if (typeof window !== "undefined") {
-  window.cloudAutoSync = cloudAutoSync;
-  // 開機：社群載完（含持久化 session）後試一次；未登入則等登入流程再觸發
-  if (window.loadSocial) window.loadSocial().then(() => setTimeout(cloudAutoSync, 1200));
-}
-// 節流上傳：收藏／改名／步道完成／寵物進化等「小變動」也自動備份，讓雲端隨時是最新（不只每趟走完）。
-// debounce 10 秒把連續變動併成一次，避免狂點收藏就狂上傳。
-let _bkTimer = null;
-function scheduleCloudBackup() {
-  try { if (typeof Supa === "undefined") return; } catch (e) { return; }
-  clearTimeout(_bkTimer);
-  _bkTimer = setTimeout(() => { try { autoCloudBackup(); } catch (e) { /* */ } }, 10000);
-}
-if (typeof window !== "undefined") window.scheduleCloudBackup = scheduleCloudBackup;
-// 回到前景時再自動拉一次（換裝置/擱著很久再打開就看得到最新），但 5 分鐘內剛同步過就不重拉。
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState !== "visible") return;
-  let last = 0; try { last = +(localStorage.getItem("tt_last_sync") || 0) || 0; } catch (e) { /* */ }
-  if (Date.now() - last < 5 * 60000) return;
-  _cloudSyncDone = false;                       // 允許本 session 再拉一次
-  setTimeout(cloudAutoSync, 800);
-});
-// 設定頁「資料備份」區顯示上次同步時間，讓使用者安心（＝雲端是最新的）
-function renderSyncStatus() {
-  const el = $("#syncStatus"); if (!el) return;
-  let last = 0; try { last = +(localStorage.getItem("tt_last_sync") || 0) || 0; } catch (e) { /* */ }
-  if (!last) { el.textContent = ""; return; }
-  const s = Math.max(1, Math.round((Date.now() - last) / 1000));
-  const rel = s < 60 ? ttT("剛剛") : s < 3600 ? Math.floor(s / 60) + " " + ttT("分鐘前")
-    : s < 86400 ? Math.floor(s / 3600) + " " + ttT("小時前") : Math.floor(s / 86400) + " " + ttT("天前");
-  el.textContent = ttT("上次同步") + "：" + rel;
-}
-if (typeof window !== "undefined") window.renderSyncStatus = renderSyncStatus;
-// 雲端備份/還原：資料安全，任何登入者可用（不鎖 Premium）
-const _cbk = $("#btnCloudBackup");
-if (_cbk) _cbk.addEventListener("click", () => cloudBackupNow(false));
-const _crs = $("#btnCloudRestore");
-if (_crs) _crs.addEventListener("click", async () => {
-  const x = await cloudClient(); if (!x) return;
-  try {
-    const { data, error } = await x.c.from("backups").select("data, updated_at").eq("user_id", x.uid).maybeSingle();
-    if (error) { toast("還原失敗：" + error.message); return; }
-    if (!data) { toast("雲端尚無備份，請先按「雲端備份」"); return; }
-    const when = new Date(data.updated_at).toLocaleString(ttLocale());
-    const mode = await ttChoice(`雲端備份（${when}）\n要怎麼還原？`, [
-      { label: "取消", value: null, cls: "ghost" },
-      { label: "完全取代", value: "replace", cls: "ghost" },
-      { label: "合併", value: "merge", cls: "primary" },
-    ]);
-    if (!mode) return;
-    Store.importAll(data.data, mode);
-    try { localStorage.setItem("tt_data_uid", x.uid); } catch (e) { /* */ }   // 本機資料歸屬＝還原來源帳號
-    renderHistory(); render();
-    // 主題/外觀與寵物、任務、成就一併還原後重繪
-    try { initTheme(); renderPet(); renderQuests(); renderBadges(); renderStats(); loadProfile(); } catch (e) { /* 個別區塊未載入時忽略 */ }
-    toast("從雲端還原好了");
-  } catch (e) { toast("還原失敗：" + (e && e.message || e)); }
-});
-// 本機備份檔：匯出 JSON 自己保管（不需登入、不需網路）／匯入還原
-const _fbk = $("#btnFileBackup");
-if (_fbk) _fbk.addEventListener("click", () => {
-  try {
-    const blob = new Blob([JSON.stringify(Store.exportAll())], { type: "application/json" });
-    saveBlob(blob, `循徑拾光備份_${new Date().toISOString().slice(0, 10)}.json`, "Gather the Trail backup");
-    toast("已匯出備份檔，請妥善保存");
-  } catch (e) { toast("匯出失敗：" + (e && e.message || e)); }
-});
-const _frs = $("#btnFileRestore"), _fri = $("#fileRestoreInput");
-if (_frs && _fri) {
-  _frs.addEventListener("click", () => _fri.click());
-  _fri.addEventListener("change", () => {
-    const f = _fri.files && _fri.files[0]; if (!f) return;
-    const rd = new FileReader();
-    rd.onload = async () => {
-      try {
-        const data = JSON.parse(rd.result);
-        if (!data || (!data.records && !data.pet && !data.v)) { toast("這不是有效的備份檔"); return; }
-        const mode = await ttChoice("匯入備份檔\n要怎麼還原？", [
-          { label: "取消", value: null, cls: "ghost" },
-          { label: "完全取代", value: "replace", cls: "ghost" },
-          { label: "合併", value: "merge", cls: "primary" },
-        ]);
-        if (!mode) { _fri.value = ""; return; }
-        Store.importAll(data, mode);
-        renderHistory(); render();
-        try { initTheme(); renderPet(); renderQuests(); renderBadges(); renderStats(); loadProfile(); } catch (e) { /* */ }
-        toast("備份檔還原好了");
-      } catch (e) { toast("匯入失敗：檔案可能損壞"); }
-      _fri.value = "";
-    };
-    rd.readAsText(f);
-  });
-}
-if (typeof Premium !== "undefined") { setTimeout(() => Premium.refresh().then(() => { try { applyPalette(); applyProColor(); } catch (e) { /* */ } }), 1500); Premium.handleReturn(); }   // 啟動後同步會員狀態→重套主題配色/徽章色 + 處理結帳返回
-if (typeof window !== "undefined") setTimeout(() => { try { if (typeof Reminders !== "undefined") Reminders.syncAll(); } catch (e) { /* */ } }, 3500);   // 開機重排健行提醒（有開才會排）
-
-// 前端錯誤自動上報（phase19）：把 index.html 記到 localStorage 的錯誤批次上傳，
-// 開發者才能主動發現問題。已上傳的用時間戳記號避免重複；未登入/未跑 SQL 都靜默略過。
-async function reportClientErrors() {
-  try {
-    if (typeof Supa === "undefined" || !Supa.ready()) return;
-    const errs = JSON.parse(localStorage.getItem("tt_errors") || "[]");
-    const lastSent = localStorage.getItem("tt_errors_sent") || "";
-    const fresh = errs.filter(e => e.t > lastSent).slice(0, 10);
-    if (!fresh.length) return;
-    const c = Supa.client(); const { data: u } = await c.auth.getUser();
-    if (!u || !u.user) return;
-    let ver = "";
-    try { ver = ((await (await fetch("sw.js")).text()).match(/trail-tracker-(v\d+)/) || [])[1] || ""; } catch (e) { /* 離線 */ }
-    const rows = fresh.map(e => ({ user_id: u.user.id, message: e.m, app_ver: ver, ua: navigator.userAgent.slice(0, 200), happened_at: e.t }));
-    const { error } = await c.from("client_errors").insert(rows);
-    if (!error) localStorage.setItem("tt_errors_sent", fresh[0].t);   // errs 由新到舊，第一筆最新
-  } catch (e) { /* 靜默 */ }
-}
-setTimeout(reportClientErrors, 6000);
-
-// 進階分析：整頁 PRO（與年度回顧一致）
-const _aBtn = $("#btnAnalytics");
-if (_aBtn) _aBtn.addEventListener("click", () => { if (!_proGate()) return; ensureScript("js/analytics.js").then(() => { if (typeof openAnalytics === "function") openAnalytics(); }); });
-// 年度回顧（PRO）
-// openYearReview 住在延遲載入的 js/analytics.js：沒先 ensureScript 就直接呼叫，使用者若沒開過
-// 「進階分析」，這顆按鈕會 ReferenceError 然後完全沒反應（不會有任何錯誤畫面）。
-const _yBtn = $("#btnYearReview");
-if (_yBtn) _yBtn.addEventListener("click", () => { if (!_proGate()) return; ensureScript("js/analytics.js").then(() => { if (typeof openYearReview === "function") openYearReview(); }); });
-// 離線地圖包：把快取圖磚打包成單一檔案（備份/給另一台裝置匯入，不必重新下載，也不占下載額度）
-const _pkBox = $("#packBox");
-function _pkMsg(html) { if (_pkBox) { _pkBox.style.display = "block"; _pkBox.innerHTML = html; } }
-$("#btnPackExport").addEventListener("click", async () => {
-  if (!_proGate()) return;   // PRO 限定
-  if (typeof ttBusy === "function" && ttBusy("packexp", 4000)) return;
-  const n = await Offline.cachedCount();
-  if (!n) { toast("尚未下載任何離線地圖"); return; }
-  _pkMsg("打包離線地圖中…");
-  try {
-    const r = await Offline.exportPack((done, total) => { if (done % 200 === 0) _pkMsg(`打包離線地圖中… ${done}/${total}`); });
-    if (!r) { _pkMsg("尚未下載任何離線地圖"); return; }
-    const en = (typeof I18n !== "undefined" && I18n.lang() === "en");
-    saveBlob(r.blob, (en ? "gather-the-trail-maps" : "循徑拾光離線地圖") + ".ttmap", "Gather the Trail offline maps");
-    _pkMsg(`✅ 已匯出離線地圖包（${r.count} 張、${(r.bytes / 1048576).toFixed(1)} MB）`);
-  } catch (e) { _pkMsg("匯出失敗，請再試一次"); }
-});
-$("#btnPackImport").addEventListener("click", () => { if (!_proGate()) return; $("#packFile").click(); });
-$("#packFile").addEventListener("change", async e => {
-  const f = e.target.files[0]; e.target.value = "";
-  if (!f) return;
-  _pkMsg("匯入離線地圖中…");
-  try {
-    const n = await Offline.importPack(f, (done, total) => { if (done % 200 === 0) _pkMsg(`匯入離線地圖中… ${done}/${total}`); });
-    _pkMsg(`✅ 已匯入 ${n} 張圖磚，離線可用`);
-    refreshOfflineStatus();
-  } catch (err) { _pkMsg("這不是有效的離線地圖包（.ttmap）"); }
-});
-$("#btnClearTiles").addEventListener("click", async () => {
-  if (await ttConfirm("確定清除已下載的離線地圖？")) {
-    await Offline.clear();
-    refreshOfflineStatus();
-    toast("已清除離線地圖");
-  }
-});
-
 // ---------- 步道比較 ----------
 let compareSet = new Set();
 function updateCompareBar() {
@@ -2104,162 +1773,6 @@ function openCompareSheet() {
   ov.querySelector("#cmpClose").onclick = close;
   ov.addEventListener("click", e => { if (e.target === ov) close(); });
 }
-// #5 本月摘要：一眼看到本月里程／次數／連續天數／最長單次，日常回訪動機（免費，進階分析仍為 PRO）
-// 健行日曆：像月曆一樣的「當月」視圖（日一二三四五六），走過的日子依里程著色、今日圈記；每月自動更新。
-function hikeHeatmapHtml() {
-  const now = new Date();
-  const y = now.getFullYear(), m = now.getMonth();
-  const byDay = {};
-  realRecords().forEach(r => { const dt = new Date(r.date); if (dt.getFullYear() === y && dt.getMonth() === m) { const d = dt.getDate(); byDay[d] = (byDay[d] || 0) + (r.distanceKm || 0); } });
-  const daysInMonth = new Date(y, m + 1, 0).getDate();
-  const startDow = new Date(y, m, 1).getDay();   // 0=週日
-  const todayDom = now.getDate();
-  const loc = (typeof ttLocale === "function") ? ttLocale() : undefined;
-  const wd = [];
-  for (let i = 0; i < 7; i++) wd.push(new Intl.DateTimeFormat(loc, { weekday: "narrow" }).format(new Date(2023, 0, 1 + i)));   // 2023-01-01 = 週日
-  const title = now.toLocaleDateString(loc, { year: "numeric", month: "long" });
-  let active = 0;
-  const cells = [];
-  for (let i = 0; i < startDow; i++) cells.push(`<div class="cal-c cal-blank"></div>`);
-  for (let d = 1; d <= daysInMonth; d++) {
-    const km = byDay[d] || 0;
-    const lvl = km <= 0 ? 0 : Math.min(10, Math.ceil(km / 1.5));   // 每 1.5km 一級，共 10 級深淺
-    if (km > 0) active++;
-    const tip = km > 0 ? ` title="${km.toFixed(1)} km"` : "";
-    cells.push(`<div class="cal-c cal-l${lvl}${d === todayDom ? " cal-today" : ""}"${tip}><span>${d}</span></div>`);
-  }
-  return `<div class="hm-wrap cal-wrap">
-    <div class="hm-head"><span class="hm-title">${ic("calendar")} ${title}</span><span class="hm-stat"><b>${active}</b> ${ttT("天")}</span></div>
-    <div class="cal-wd">${wd.map(w => `<span>${w}</span>`).join("")}</div>
-    <div class="cal-grid">${cells.join("")}</div>
-    <div class="cal-leg"><span>${ttT("少")}</span><i class="cal-ramp"></i><span>${ttT("多")}</span></div>
-  </div>`;
-}
-function renderMonthSummary() {
-  const box = $("#meMonth"); if (!box) return;
-  const recs = realRecords();
-  const now = new Date();
-  const mo = recs.filter(r => { const d = new Date(r.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); });
-  const moKm = mo.reduce((s, r) => s + (r.distanceKm || 0), 0);
-  const moTrips = mo.length;
-  const streak = (typeof daysStreak === "function") ? daysStreak() : 0;
-  const longest = recs.reduce((m, r) => Math.max(m, r.distanceKm || 0), 0);
-  const moName = now.toLocaleDateString(ttLocale(), { month: "short" });
-  const cell = (v, l, hot) => `<div class="mo-cell${hot ? " hot" : ""}"><div class="mo-v">${v}</div><div class="mo-l">${l}</div></div>`;
-  box.innerHTML = `<div class="mo-summary">
-    <div class="mo-head">${ic("calendar")} <b>${moName}</b> ${ttT("本月摘要")}</div>
-    <div class="mo-grid">
-      ${cell(moKm.toFixed(1), ttT("本月里程") + " km")}
-      ${cell(moTrips, ttT("本月次數"))}
-      ${cell(streak >= 1 ? `${streak}` : "0", ttT("連續天數"), streak >= 2)}
-      ${cell(longest.toFixed(1), ttT("最長單次") + " km")}
-    </div>
-    ${recs.length ? hikeHeatmapHtml() : ""}
-  </div>`;
-}
-function renderStats() {
-  const box = $("#meStats");
-  renderMonthSummary();
-  if (!box) return;
-  const recs = realRecords();   // 成就統計不計入模擬
-  // 「走過的步道」＝真實紀錄裡出現過幾條不同步道（和進階分析同一個定義；自由路線不算）
-  const walked = new Set(recs.filter(r => r.trailId || (r.trailName && r.trailName !== "自由路線")).map(r => r.trailId || r.trailName)).size;
-  // 各欄取「終身統計」與「現存紀錄合計」較大者（舊紀錄被容量保護砍掉也不縮水）
-  const lf = (Store.life && Store.life()) || {};
-  const km = Math.max(recs.reduce((s, r) => s + (r.distanceKm || 0), 0), lf.km || 0);
-  const asc = Math.max(recs.reduce((s, r) => s + (r.ascent || 0), 0), lf.asc || 0);
-  const kcal = Math.max(recs.reduce((s, r) => s + (r.kcal || 0), 0), lf.kcal || 0);
-  const ms = Math.max(recs.reduce((s, r) => s + (r.elapsedMs || 0), 0), lf.ms || 0);
-  const hrs = ms / 3.6e6;
-  const cell = (to, pre, dec, l) => `<div class="mstat"><div class="mv" data-to="${to}" data-pre="${pre}" data-dec="${dec}">${pre}0</div><div class="ml">${l}</div></div>`;
-  box.innerHTML = `<div class="mstat-grid">
-    ${cell(Math.max(recs.length, lf.trips || 0), "", 0, "出行次數")}
-    ${cell(km, "", 1, "總里程 km")}
-    ${cell(asc, "↑", 0, "總爬升 m")}
-    ${cell(hrs, "", 1, "總時數 小時")}
-    ${cell(kcal, "", 0, "總卡路里")}
-    ${cell(walked, "", 0, "走過的步道")}
-  </div>`;
-  box.querySelectorAll(".mv").forEach(countUp);
-}
-// 數字成長動畫（尊重減少動態）
-function countUp(el) {
-  const to = parseFloat(el.dataset.to) || 0, pre = el.dataset.pre || "", dec = +el.dataset.dec || 0;
-  const fmt = v => pre + (dec ? v.toFixed(dec) : Math.round(v).toLocaleString());
-  // 大數字（含千分位/小數/前綴）會擠爆方框 → 依最終字串長度縮小字級
-  const finalLen = fmt(to).length;
-  el.classList.toggle("mv-lg", finalLen >= 7 && finalLen < 9);
-  el.classList.toggle("mv-xl", finalLen >= 9);
-  el.style.setProperty("--n", finalLen);   // CSS 依「字數 × 格寬」算字級：放得下就原尺寸，放不下才縮（見 style.css 數字格）
-  if (matchMedia("(prefers-reduced-motion: reduce)").matches) { el.textContent = fmt(to); return; }
-  const dur = 750, t0 = performance.now();
-  (function step(t) {
-    const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3);
-    el.textContent = fmt(to * e);
-    if (p < 1) requestAnimationFrame(step);
-  })(t0);
-}
-const HIST_PAGE = 8;       // 一次顯示幾筆，避免行程太多把頁面拉很長
-let histShown = HIST_PAGE;
-function renderHistory(keepShown) {
-  renderPet();
-  renderStats();
-  const recs = Store.getRecords();
-  const wrap = $("#historyList");
-  const gpxAll = $("#btnExportGpxAll");
-  if (gpxAll) gpxAll.style.display = recs.length ? "block" : "none";
-  if (!recs.length) { wrap.innerHTML = `<div class="empty">${EMPTY_ART}還沒有行程紀錄<br>到「記錄」分頁開始你的第一條路線</div>`; return; }
-  if (!keepShown) histShown = HIST_PAGE;          // 重新進入頁面→收合回前 8 筆
-  const shownRecs = recs.slice(0, histShown);
-  // 依「年月」分組：每個月開頭插一條月份小標＋當月總計（次數／里程，車速紀錄不計里程），
-  // 讓長長的歷史列表變成可掃讀的月度回顧。
-  const monthKey = r => { const d = new Date(r.date); return d.getFullYear() + "-" + d.getMonth(); };
-  let _curMonth = null;
-  wrap.innerHTML = shownRecs.map(r => {
-    let head = "";
-    const mk = monthKey(r);
-    if (mk !== _curMonth) {
-      _curMonth = mk;
-      const d = new Date(r.date);
-      const mrecs = recs.filter(x => monthKey(x) === mk);
-      const mkm = mrecs.reduce((s, x) => s + (x.vehicle ? 0 : (x.distanceKm || 0)), 0);
-      const label = d.toLocaleDateString(ttLocale(), { year: "numeric", month: "long" });
-      head = `<div class="hist-month"><span class="hm-name">${label}</span><span class="hm-meta">${mrecs.length} ${ttT("筆")} · ${mkm.toFixed(1)} km</span></div>`;
-    }
-    return head + `
-    <div class="hist-card" data-id="${r.id}">
-      <div class="top">
-        <b>${r.trailName || "自由路線"}${r.sim ? ` <span class="sim-tag">模擬</span>` : ""}${r.vehicle ? ` <span class="sim-tag">車速·不計里程</span>` : ""}</b>
-        <span class="date">${new Date(r.date).toLocaleString(ttLocale(), { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
-      </div>
-      <div class="row">
-        <span>${ic("ruler")}<b>${r.distanceKm.toFixed(2)}</b> km${r.distance3DKm && r.distance3DKm > r.distanceKm + 0.05 ? ` <small>(含坡度 ${r.distance3DKm.toFixed(2)})</small>` : ""}</span>
-        <span>${ic("steps")}<b>${r.steps.toLocaleString()}</b> 步</span>
-        <span>${ic("fire")}<b>${r.kcal}</b> 大卡</span>
-        <span>${ic("clock")}<b>${fmtDur(r.elapsedMs)}</b></span>
-      </div>
-      ${r.ascent ? `<div class="row"><span>${ic("mountain")}爬升 <b>↑${r.ascent}</b> m${r.descent ? `　下降 <b>↓${r.descent}</b> m` : ""}</span></div>` : ""}
-      <div class="hist-actions">
-        <button class="hist-view" data-id="${r.id}">${ic("map")} 回顧軌跡</button>
-        <button class="hist-gpx" data-id="${r.id}">${ic("download")} 路線檔</button>
-      </div>
-    </div>`;
-  }).join("")
-    + (recs.length > histShown
-      ? `<button class="btn ghost hist-more" id="histMore">顯示更多（剩 ${recs.length - histShown} 筆）</button>`
-      : (recs.length > HIST_PAGE ? `<button class="btn ghost hist-more" id="histLess">收合</button>` : ""));
-  wrap.querySelectorAll(".hist-view").forEach(b => b.addEventListener("click", async () => {
-    const rec = await Store.fullRecord(b.dataset.id);   // 軌跡被容量保護精簡過就到封存撈完整版
-    if (rec) openTrackReview(rec);
-  }));
-  wrap.querySelectorAll(".hist-gpx").forEach(b => b.addEventListener("click", async () => {
-    const rec = await Store.fullRecord(b.dataset.id);
-    if (rec) { GPX.exportRecord(rec); toast("已下載路線檔"); }
-  }));
-  const more = $("#histMore"); if (more) more.addEventListener("click", () => { histShown += HIST_PAGE; renderHistory(true); });
-  const less = $("#histLess"); if (less) less.addEventListener("click", () => { histShown = HIST_PAGE; renderHistory(true); $("#historyList").scrollIntoView({ behavior: "smooth", block: "start" }); });
-}
-
 // ---------- 分級說明按鈕 ----------
 $("#gradeMask").addEventListener("click", closeGradeInfo);
 $("#closeGradeBtn").addEventListener("click", closeGradeInfo);
@@ -2342,7 +1855,7 @@ function ttProfileHero(prof, opts) {
   // Lv 與寵物一組
   const petHtml = ps ? `<div class="prof-pet">${lvChip}${typeof PET_ART !== "undefined" ? PET_ART.svg((ps.level || 1) - 1) : ps.emoji}<span class="prof-pet-t">${esc(ps.name)} · ${ttT("已走")} <b>${ps.km}</b> km</span></div>` : (lvChip ? `<div class="prof-pet">${lvChip}</div>` : "");
   let ach = "";
-  if (opts.ach !== false) { try { if (typeof achScore === "function") { const s = achScore(); ach = `<button class="prof-ach" data-prof-ach="1" aria-label="${ttT("成就")} ${s.got}/${s.total} · ${ttT("成就分數")} ${s.score}">🏅 <b>${s.got}/${s.total}</b> · <b>${s.score}</b> ›</button>`; } } catch (e) { /* */ } }
+  if (opts.ach !== false) { try { if (typeof achScore === "function") { const s = achScore(); ach = `<button class="prof-ach" data-prof-ach="1" aria-label="${ttT("成就")} ${s.got}/${s.total} · ${ttT("成就分數")} ${s.score}">${ic("medal")} <b>${s.got}/${s.total}</b> · <b>${s.score}</b> ›</button>`; } } catch (e) { /* */ } }
   // 稱號與成就一組
   const achRow = (title || ach) ? `<div class="prof-achrow">${title}${ach}</div>` : "";
   return `<div class="prof-hero">${av}
@@ -2388,18 +1901,34 @@ document.addEventListener("keydown", e => {
   const btn = top.querySelector('.sheet-close, .lb-close, .lb-x, .comp-x, [id$="Close"], button[aria-label="關閉"], button[aria-label="Close"]');
   if (btn) { e.preventDefault(); btn.click(); }
 });
+// 「我的」頂部：夥伴＋今年走了多少（沒登入也有個主角，不再一打開就是一條登入提示）
+function meYearCard(loginHint) {
+  const y = new Date().getFullYear(), recs = realRecords().filter(r => new Date(r.date).getFullYear() === y);
+  const km = recs.reduce((s, r) => s + (r.distanceKm || 0), 0);
+  const ps = typeof petStats === "function" ? petStats() : null;
+  const art = (ps && typeof PET_ART !== "undefined") ? PET_ART.svg(ps.level - 1) : "";
+  let rank = ""; try { const sc = achScore(); rank = `<button class="prof-ach" data-prof-ach="1">${ic(ACH_TIER_IC[sc.rankIdx])} ${ttT(sc.rank)} ›</button>`; } catch (e) { /* */ }
+  return `<div class="me-card me-year">
+    <div class="my-pet">${art}</div>
+    <div class="my-body">
+      <div class="my-h">${(() => { try { return new Intl.DateTimeFormat(ttLocale(), { year: "numeric" }).format(new Date()); } catch (e) { return y + " 年"; } })()}</div>
+      <div class="my-big"><b>${km.toFixed(1)}</b> km<span>・${ttCount(recs.length, "trip")}</span></div>
+      <div class="my-sub">${rank}</div>
+    </div>
+  </div>${loginHint ? `<button class="me-login" id="meCardLogin">${ic("backup")} ${loginHint} ›</button>` : ""}`;
+}
 // 我的分頁頂端：社群個人檔案摘要（頭像/名字/稱號/handle/寵物里程/成就）
 async function renderMeProfileCard() {
   const el = $("#meProfileCard"); if (!el) return;
   if (typeof Supa === "undefined" || !Supa.ready() || typeof Auth === "undefined") { el.innerHTML = ""; return; }
   const sess = await Auth.session().catch(() => null);
   // 社群功能關掉時：登入只為了雲端備份，登入後這張卡就不用出現了
-  if (socialHidden()) {
-    el.innerHTML = sess ? "" : `<div class="me-card me-card-guest" id="meCardLogin">${ttT("登入一下，之後每趟都自動備份到雲端")} ›</div>`;
+  if (socialHidden() || !sess) {
+    el.innerHTML = meYearCard(sess ? "" : (socialHidden() ? ttT("登入一下，之後每趟都自動備份到雲端") : ttT("登入社群，看到自己的個人檔案")));
     const b = $("#meCardLogin"); if (b) b.addEventListener("click", () => { const t = document.querySelector('.tab[data-view="social"]'); if (t) t.click(); });
+    bindProfAch(el);
     return;
   }
-  if (!sess) { el.innerHTML = `<div class="me-card me-card-guest" id="meCardLogin">登入社群以顯示個人檔案 ›</div>`; const b = $("#meCardLogin"); if (b) b.addEventListener("click", () => { const t = document.querySelector('.tab[data-view="social"]'); if (t) t.click(); }); return; }
   const prof = await Auth.myProfile().catch(() => null);
   if (!prof) { el.innerHTML = `<div class="me-card me-card-guest" id="meCardLogin">完成社群註冊以顯示個人檔案 ›</div>`; const b = $("#meCardLogin"); if (b) b.addEventListener("click", () => { const t = document.querySelector('.tab[data-view="social"]'); if (t) t.click(); }); return; }
   el.innerHTML = `<div class="me-card">${ttProfileHero(prof)}</div>`;
@@ -2485,6 +2014,12 @@ function initTheme() {
       `<button class="lang-item${c === curLang ? " on" : ""}" data-lang-opt="${c}" data-search="${(n + " " + sub + " " + c).toLowerCase()}">
         <span class="flag">${f}</span><span class="names"><span class="native">${n}</span>${n === sub ? "" : ` <span class="sub">${sub}</span>`}</span><span class="tick">✓</span>
       </button>`;
+    const cur = TT_LANGS.find(x => x[0] === curLang) || TT_LANGS[0], lc = document.getElementById("langCur");
+    if (lc) {
+      lc.innerHTML = `<span class="lang-cur-n">${cur[2]}${cur[2] === cur[3] ? "" : ` <small>${cur[3]}</small>`}</span><button class="btn ghost lang-change" id="langChange" aria-expanded="false">${ttT("更換")}</button>`;
+      const lb = document.getElementById("langChange");
+      lb.addEventListener("click", () => { row.hidden = !row.hidden; lb.setAttribute("aria-expanded", row.hidden ? "false" : "true"); if (!row.hidden) { const sr = document.getElementById("langSearch"); if (sr) sr.focus({ preventScroll: true }); } });
+    }
     row.innerHTML = `<input type="search" class="lang-search" id="langSearch" placeholder="${ttT("搜尋語言")}" autocomplete="off">
       <div class="lang-scroll" id="langScroll">${TT_LANGS.map(itemHtml).join("")}</div>`;
     const bind = b => b.addEventListener("click", () => {
@@ -2526,7 +2061,7 @@ function setHeaderH() { const h = document.querySelector(".app-header"); if (h) 
 setHeaderH(); window.addEventListener("load", setHeaderH); window.addEventListener("resize", setHeaderH);
 initTheme();
 if (localStorage.getItem("tt_pet_stage") === null) localStorage.setItem("tt_pet_stage", petStageIndex(totalKm()));   // 既有里程不誤觸進化提示
-loadProfile();   // 探索列表的第一次 render() 在 explore.js 最後
+// loadProfile() 移到 me.js 最後；探索列表的第一次 render() 在 explore.js 最後
 // 資料自動救援：localStorage 紀錄被清空（iOS 清快取/儲存）但 IndexedDB 封存還在 → 回填
 (async () => {
   try {

@@ -247,9 +247,9 @@ function renderQuests() {
   // #7 連續達成獎勵：基礎 +5，連續每多一天 +1（上限 +5），到 3/7/14/30 天再給里程碑大獎
   const reward = questReward(streak);
   const nextMile = QUEST_MILES.find(m => m.day > streak);
-  const streakChip = streak >= 2 ? ` <span class="streak-chip">${ic("flame")} ${ttT("連續健行")} ${streak} ${ttT("天")}</span>` : "";
+  const streakChip = streak >= 2 ? ` <span class="streak-chip">${ic("flame")} ${ttT("連續健行")} ${ttCount(streak, "day")}</span>` : "";
   const btnLabel = claimed ? `${ic("check")} ${ttT("今天的獎勵領過了")}` : (allDone ? `${ttT("領取")} +${reward.total} ${BERRY_SVG}` : `${ttT("三項都完成就能領")} ${BERRY_SVG}`);
-  const mileHint = (!claimed && nextMile) ? `<div class="quest-mile">${ic("flame")} ${ttT("下個連續里程碑")}：${nextMile.day} ${ttT("天")} +${nextMile.bonus} ${BERRY_SVG}</div>` : "";
+  const mileHint = (!claimed && nextMile) ? `<div class="quest-mile">${ic("flame")} ${ttT("下個連續里程碑")}：${ttCount(nextMile.day, "day")} +${nextMile.bonus} ${BERRY_SVG}</div>` : "";
   const fmtQ = q => q.unit ? `${q.dec ? Math.min(q.cur, 999).toFixed(q.dec) : Math.round(q.cur)} / ${q.goal} ${q.unit}` : `${Math.min(q.cur, q.goal)} / ${q.goal}`;
   box.innerHTML = `<div class="section-title">${ic("calendar")}每日任務${streakChip}</div>
     <div class="quest-list">${quests.map(q => { const done = q.cur >= q.goal, pc = Math.min(100, q.cur / q.goal * 100).toFixed(0); return `<div class="quest ${done ? "done" : ""}"><span class="q-ic">${ic(q.icon)}</span><div class="q-body"><div class="q-l">${q.label}</div><div class="q-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pc}"><i style="width:${pc}%"></i></div></div><span class="q-chk">${done ? ic("check") : fmtQ(q)}</span></div>`; }).join("")}</div>

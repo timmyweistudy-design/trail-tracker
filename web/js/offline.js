@@ -1,7 +1,10 @@
 // 離線地圖：下載/快取指定範圍的 OSM 圖磚，供山區無網路時使用。
 // 圖磚存在 Cache Storage 'tt-tiles'，Service Worker 會優先從此快取取用。
 const Offline = (() => {
-  const TILE_CACHE = "tt-tiles";
+  const TILE_CACHE = "tt-tiles";          // 瀏覽時順手快取的圖磚（有上限，滿了清最舊的）
+  const SAVED_CACHE = "tt-tiles-saved";   // 使用者「按下載」的離線地圖：獨立存放、不受上限影響
+  // 以前兩者混在同一個快取，上限 6000 張一到就從最舊刪起——最舊的剛好是特地下載的離線地圖，
+  // 等於滑一滑地圖，山上要用的圖就被刪掉。
   // 與 app.js baseTopo 用同一組 URL（NLSC 台灣官方電子地圖；下載與顯示快取鍵必須完全一致）。
   // 免金鑰、座標 z/y/x。（Esri 授權端點無地形 raster，故底圖改 NLSC。）
   const tileUrl = (z, x, y) => `https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/${z}/${y}/${x}`;
@@ -55,13 +58,15 @@ const Offline = (() => {
 
   // 併發下載（Esri 商用圖磚伺服器，5 併發沒問題）：全台 6000 張從 ~15 分鐘縮到 1–2 分鐘
   async function download(tiles, onProgress) {
-    const cache = await caches.open(TILE_CACHE);
+    const cache = await caches.open(SAVED_CACHE);
+    const browse = await caches.open(TILE_CACHE).catch(() => null);
     let done = 0, ok = 0, bytes = 0, idx = 0;
     async function worker() {
       while (idx < tiles.length) {
         const url = tiles[idx++];
         try {
           if (await cache.match(url)) { ok++; }   // 已快取過的不重複計流量
+          else if (browse && await browse.match(url)) { await cache.put(url, await browse.match(url)); ok++; }   // 瀏覽時看過的直接搬過來
           else {
             const res = await fetch(url, { mode: "cors" });
             if (res.ok) {
@@ -76,7 +81,6 @@ const Offline = (() => {
       }
     }
     await Promise.all(Array.from({ length: Math.min(5, tiles.length || 1) }, worker));
-    enforceCap().catch(() => { });   // 下載完順手控管快取上限
     return { total: tiles.length, ok, bytes, mb: bytes / 1048576 };
   }
 
@@ -91,17 +95,35 @@ const Offline = (() => {
     } catch { /* ignore */ }
   }
 
-  async function cachedCount() {
-    try { return (await (await caches.open(TILE_CACHE)).keys()).length; } catch { return 0; }
+  async function _n(name) { try { return (await (await caches.open(name)).keys()).length; } catch { return 0; } }
+  async function cachedCount() { return (await _n(SAVED_CACHE)) + (await _n(TILE_CACHE)); }
+  async function savedCount() { return _n(SAVED_CACHE); }
+  async function clear() { try { await caches.delete(TILE_CACHE); await caches.delete(SAVED_CACHE); } catch { /* ignore */ } }
+  // 刪掉指定圖磚（刪單條步道的離線地圖）
+  async function removeTiles(urls) {
+    try { const c = await caches.open(SAVED_CACHE); let n = 0; for (const u of urls) if (await c.delete(u)) n++; return n; } catch { return 0; }
   }
-  async function clear() { try { await caches.delete(TILE_CACHE); } catch { /* ignore */ } }
+  // 實際佔用空間（瀏覽器回報，比「張數 × 0.02」準）；不支援就回 null
+  async function usageMB() {
+    try { const e = await navigator.storage.estimate(); return e && e.usage != null ? e.usage / 1048576 : null; } catch { return null; }
+  }
+  // 舊版：下載的地圖都在 tt-tiles 裡分不出來 → 第一次升級時整批搬進 SAVED（保守：寧可多留）
+  async function migrate() {
+    try {
+      if (localStorage.getItem("tt_tiles_migrated") === "1") return;
+      const src = await caches.open(TILE_CACHE), dst = await caches.open(SAVED_CACHE);
+      for (const req of await src.keys()) { const r = await src.match(req); if (r) await dst.put(req, r); }
+      await caches.delete(TILE_CACHE);
+      localStorage.setItem("tt_tiles_migrated", "1");
+    } catch { /* 下次再試 */ }
+  }
 
   // ---- 離線地圖包匯出/匯入（.ttmap）----
   // 格式：8 bytes（魔數 "TTMP" + 索引長度）+ JSON 索引 + 圖磚原始位元組串接。
   // 用途：把下載好的圖磚存成一個檔案備份，或傳給朋友/另一台裝置匯入，不必重新下載。
   const MAGIC = 0x54544d50;   // "TTMP"
   async function exportPack(onProgress) {
-    const cache = await caches.open(TILE_CACHE);
+    const cache = await caches.open(SAVED_CACHE);
     const keys = await cache.keys();
     if (!keys.length) return null;
     const parts = [], index = [];
@@ -126,7 +148,7 @@ const Offline = (() => {
     if (dv.getUint32(0) !== MAGIC) throw new Error("badformat");
     const hl = dv.getUint32(4);
     const head = JSON.parse(new TextDecoder().decode(await file.slice(8, 8 + hl).arrayBuffer()));
-    const cache = await caches.open(TILE_CACHE);
+    const cache = await caches.open(SAVED_CACHE);
     const base = 8 + hl;
     let done = 0;
     for (const t of (head.tiles || [])) {
@@ -137,9 +159,8 @@ const Offline = (() => {
       done++;
       if (onProgress) onProgress(done, head.tiles.length);
     }
-    enforceCap().catch(() => { });
     return done;
   }
 
-  return { tileList, tileListUrl, planZoom, bboxFor, download, cachedCount, clear, enforceCap, exportPack, importPack };
+  return { tileList, tileListUrl, planZoom, bboxFor, download, cachedCount, savedCount, clear, removeTiles, usageMB, migrate, enforceCap, exportPack, importPack };
 })();

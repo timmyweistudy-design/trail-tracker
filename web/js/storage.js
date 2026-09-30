@@ -126,6 +126,14 @@ const Store = (() => {
       return restored.length;                                 // 回實際寫回的筆數（清單上限 100，回封存總數會對不上）
     } catch (e) { return 0; }
   }
+  // 改紀錄欄位（目前給「改名稱」用）：localStorage 與封存正本一起改
+  function updateRecord(id, patch) {
+    const all = getRecords(); const r = all.find(x => x.id === id);
+    if (!r) return false;
+    Object.assign(r, patch); _saveRecords(all);
+    Archive.get(id).then(full => Archive.put(Object.assign(full || r, patch))).catch(() => {});   // 封存裡是含軌跡的完整版
+    return true;
+  }
   function setRecordNote(id, note) {
     const all = getRecords(); const r = all.find(x => x.id === id);
     if (r) { if (note) r.note = note; else delete r.note; _saveRecords(all); Archive.put(r); }
@@ -225,7 +233,7 @@ const Store = (() => {
     _lifeReconcile();
   }
 
-  return { getProfile, saveProfile, weight, height, getRecords, setRecords: _saveRecords, addRecord, deleteRecord, clearRecords,
+  return { getProfile, saveProfile, weight, height, getRecords, setRecords: _saveRecords, addRecord, deleteRecord, updateRecord, clearRecords,
            getFavs, isFav, toggleFav, trailLog, setTrailLog, doneCount, exportAll, importAll, cloudMergeRecords, clearSimRecords, packWeight, setRecordNote,
            life, fullRecord, allFull, recoverFromArchive };
 })();

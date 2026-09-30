@@ -189,6 +189,12 @@
 
   <section id="view-me" class="view">
     <div id="meProfileCard"></div>
+    <!-- 頁內跳轉：設定不用再滑過整個行程列表才找得到 -->
+    <nav class="me-jump" aria-label="跳到">
+      <button class="me-jump-b" data-jump="meMonth">這個月</button>
+      <button class="me-jump-b" data-jump="histHead">走過的路</button>
+      <button class="me-jump-b" data-jump="setZone"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>設定</button>
+    </nav>
 
     <!-- 內容區：一眼看到自己的足跡與紀錄 -->
     <div class="section-title">我的足跡</div>
@@ -200,16 +206,21 @@
       <button class="link-btn" id="btnFootMap"><svg class="ic" viewBox="0 0 24 24"><path d="m9 4-6 2v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/></svg> 足跡地圖<span class="pro-tag">PRO</span></button>
     </div>
 
-    <div class="hist-head">
-      <span class="section-title" style="margin:0">行程紀錄</span>
+    <div class="hist-head" id="histHead">
+      <span class="section-title" style="margin:0">走過的路</span>
       <span style="display:flex;gap:8px">
-        <button class="btn-clear-all" id="btnExportGpxAll" style="display:none;color:var(--brand-deep)"><svg class="ic" viewBox="0 0 24 24"><path d="M12 4v10m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/></svg> 全部路線檔<span class="pro-tag">PRO</span></button>
+        <button class="btn-clear-all" id="btnExportGpxAll" hidden style="color:var(--brand-deep)"><svg class="ic" viewBox="0 0 24 24"><path d="M12 4v10m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/></svg> 全部路線檔<span class="pro-tag">PRO</span></button>
       </span>
     </div>
+    <div class="hist-tools" id="histTools" hidden>
+      <input type="search" id="histSearch" class="hist-search" placeholder="找找走過的步道" autocomplete="off">
+      <label class="hist-simchk"><input type="checkbox" id="histHideSim"> 不看模擬</label>
+    </div>
+    <div class="hist-filter" id="histFilter" hidden></div>
     <div id="historyList"></div>
 
     <!-- 設定區：全部收進可折疊分類，畫面不再一長串 -->
-    <div class="section-title set-zone-title">設定</div>
+    <div class="section-title set-zone-title" id="setZone">設定</div>
 
     <div class="set-group">
       <button class="set-head" type="button">會員<span id="setMemberTag" class="set-tag"></span><svg class="set-chev ic" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
@@ -229,10 +240,10 @@
         </div>
         <div class="accent-head">字體大小</div>
         <div class="theme-row" id="fontRow">
-          <button class="theme-opt fs-opt" data-fs="1.2" aria-label="標準"><span style="font-size:16px">A</span></button>
-          <button class="theme-opt fs-opt" data-fs="1.35" aria-label="大"><span style="font-size:20px">A</span></button>
-          <button class="theme-opt fs-opt" data-fs="1.5" aria-label="特大"><span style="font-size:25px">A</span></button>
-          <button class="theme-opt fs-opt" data-fs="1.65" aria-label="超大"><span style="font-size:30px">A</span></button>
+          <button class="theme-opt fs-opt" data-fs="1.2" ><span class="sr-only">標準</span><span aria-hidden="true" style="font-size:16px">A</span></button>
+          <button class="theme-opt fs-opt" data-fs="1.35" ><span class="sr-only">放大</span><span aria-hidden="true" style="font-size:20px">A</span></button>
+          <button class="theme-opt fs-opt" data-fs="1.5" ><span class="sr-only">特大</span><span aria-hidden="true" style="font-size:25px">A</span></button>
+          <button class="theme-opt fs-opt" data-fs="1.65" ><span class="sr-only">超大</span><span aria-hidden="true" style="font-size:30px">A</span></button>
         </div>
         <div class="accent-head">主題配色<span class="pro-tag">PRO</span></div>
         <div class="accent-row" id="accentRow"></div>
@@ -245,17 +256,19 @@
     <div class="set-group">
       <button class="set-head" type="button">語言<svg class="set-chev ic" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
       <div class="set-body">
-        <div class="lang-list" id="langRow"></div>
+        <div class="lang-cur" id="langCur"></div>
+        <div class="lang-list" id="langRow" hidden></div>
       </div>
     </div>
 
     <div class="set-group">
       <button class="set-head" type="button">個人資料<svg class="set-chev ic" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
       <div class="set-body">
-        <div class="offline-hint" style="margin:0 0 8px">用於估算步數與卡路里</div>
-        <div class="field"><label>體重（公斤）</label><input id="pfWeight" type="number" inputmode="decimal" min="20" max="200" placeholder="60"></div>
-        <div class="field"><label>身高（公分）</label><input id="pfHeight" type="number" inputmode="numeric" min="100" max="220" placeholder="170"></div>
-        <div class="field"><label>背包負重（公斤，選填，納入卡路里）</label><input id="pfPack" type="number" inputmode="decimal" min="0" max="40" placeholder="0"></div>
+        <div class="offline-hint" style="margin:0 0 8px">步數和卡路里靠這些估算，填越準越接近</div>
+        <div class="field"><label for="pfWeight">體重（公斤）</label><input id="pfWeight" type="number" inputmode="decimal" min="20" max="200" placeholder="60"></div>
+        <div class="field"><label for="pfHeight">身高（公分）</label><input id="pfHeight" type="number" inputmode="numeric" min="100" max="220" placeholder="170"></div>
+        <div class="field"><label for="pfPack">背包重量（公斤）<small>選填</small></label><input id="pfPack" type="number" inputmode="decimal" min="0" max="40" placeholder="0"></div>
+        <div class="pf-err" id="pfErr" role="alert" hidden></div>
         <button class="btn primary" id="btnSaveProfile">儲存</button>
       </div>
     </div>
@@ -263,15 +276,20 @@
     <div class="set-group">
       <button class="set-head" type="button">資料備份<svg class="set-chev ic" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
       <div class="set-body">
+        <div class="bk-sub">雲端（要登入）</div>
         <div class="link-row two">
           <button class="link-btn" id="btnCloudBackup"><svg class="ic" viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1 0-8 5 5 0 0 1 9.6-1.5A3.5 3.5 0 0 1 18 18Z"/><path d="M12 16v-5m0 0-2 2m2-2 2 2"/></svg>雲端備份</button>
           <button class="link-btn" id="btnCloudRestore"><svg class="ic" viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1 0-8 5 5 0 0 1 9.6-1.5A3.5 3.5 0 0 1 18 18Z"/><path d="M12 11v5m0 0-2-2m2 2 2-2"/></svg>雲端還原</button>
+        </div>
+        <div class="offline-hint" id="syncStatus" style="margin-top:6px"></div>
+        <div class="bk-sub">備份檔（不用網路）</div>
+        <div class="link-row two">
           <button class="link-btn" id="btnFileBackup"><svg class="ic" viewBox="0 0 24 24"><path d="M12 14V4m0 10 4-4m-4 4-4-4"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></svg>匯出備份檔</button>
           <button class="link-btn" id="btnFileRestore"><svg class="ic" viewBox="0 0 24 24"><path d="M12 10v10m0-10 4 4m-4-4-4 4"/><path d="M4 9V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v4"/></svg>匯入備份檔</button>
         </div>
-        <input type="file" id="fileRestoreInput" accept=".json,application/json" style="display:none">
-        <div class="offline-hint" id="syncStatus" style="margin-top:6px"></div>
-        <div class="offline-hint" style="margin-top:6px">登入後每趟走完會自動備份到雲端，換手機也救得回來。想自己留一份，就匯出備份檔。</div>
+        <input type="file" id="fileRestoreInput" accept=".json,application/json" hidden>
+        <div class="offline-hint" style="margin-top:6px">登入後每趟走完會自動備份到雲端；想自己留一份就匯出備份檔。</div>
+        <div class="op-foot"><button class="btn-clear-all" id="btnWipeLocal">清除這台手機上的所有資料</button></div>
       </div>
     </div>
 
@@ -286,11 +304,13 @@
               <div id="offlineQuota" class="offline-quota"></div>
             </div>
           </div>
+          <div class="op-sec" id="offlineSetsHead" hidden>已下載</div>
+          <div class="op-sets" id="offlineSets"></div>
           <div class="op-sec">下載</div>
           <button class="btn ghost op-btn" id="btnAllOffline"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18"/></svg> 一鍵下載全台離線地圖（概覽）</button>
-          <div id="allOfflineBox" class="offline-box" style="display:none"></div>
+          <div id="allOfflineBox" class="offline-box" hidden></div>
           <button class="btn ghost op-btn" id="btnFavOffline"><svg class="ic" viewBox="0 0 24 24"><path d="M12 4v10m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/></svg> 預載所有收藏步道的離線地圖</button>
-          <div id="favOfflineBox" class="offline-box" style="display:none"></div>
+          <div id="favOfflineBox" class="offline-box" hidden></div>
           <div class="op-hint">在步道詳情頁按「預載離線地圖」可下載該步道範圍，山區無網路也能看地圖。</div>
           <div class="op-sec">備份與分享<span class="pro-tag">PRO</span></div>
           <div class="op-io">
@@ -298,15 +318,15 @@
             <button class="btn ghost" id="btnPackImport"><svg class="ic" viewBox="0 0 24 24"><path d="M12 10v10m0-10 4 4m-4-4-4 4"/><path d="M4 9V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v4"/></svg> 匯入地圖包</button>
           </div>
           <div class="op-hint">把下載好的地圖打包成檔案備份，或傳到另一台裝置匯入，不必重新下載。</div>
-          <input type="file" id="packFile" style="display:none">
-          <div id="packBox" class="offline-box" style="display:none"></div>
+          <input type="file" id="packFile" hidden>
+          <div id="packBox" class="offline-box" hidden></div>
           <div class="op-foot"><button class="btn-clear-all" id="btnClearTiles">清除離線地圖</button></div>
         </div>
       </div>
     </div>
 
     <div style="text-align:center;margin:18px 0 4px">
-      <button class="info-link" id="btnDiag">🐞 診斷／回報問題</button>
+      <button class="info-link" id="btnDiag"><svg class="ic" viewBox="0 0 24 24"><path d="M9 9V7a3 3 0 0 1 6 0v2"/><rect x="7" y="9" width="10" height="11" rx="5"/><path d="M12 13v7M3 13h4M17 13h4M4 7l3 3M20 7l-3 3M4 20l3-3M20 20l-3-3"/></svg> 診斷／回報問題</button>
     </div>
   </section>
 
@@ -517,6 +537,7 @@ window.addEventListener("load", () => {
 <script defer src="js/native-review.js"></script>
 <script defer src="js/native-local-notif.js"></script>
 <script defer src="js/app.js"></script>
+<script defer src="js/me.js"></script>
 <script defer src="js/explore.js"></script>
 <script defer src="js/record.js"></script>
 <script defer src="js/debug.js"></script>

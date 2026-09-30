@@ -1,13 +1,14 @@
 // 離線快取：app shell + 地圖圖磚
-const CACHE = "trail-tracker-v503";
-const TILE_CACHE = "tt-tiles";   // 地圖圖磚（不隨版本清除，保留離線地圖）
+const CACHE = "trail-tracker-v504";
+const TILE_CACHE = "tt-tiles";
+const SAVED_CACHE = "tt-tiles-saved";   // 使用者下載的離線地圖（不隨版本清除、不受上限）   // 地圖圖磚（不隨版本清除，保留離線地圖）
 const ASSETS = [
   "./", "./index.html",
   "./css/style.css",
   "./vendor/fonts/taipei-sans.woff2",
   "./vendor/fonts/brand-serif.woff2",
   "./js/trails-data.js", "./js/geo-manifest.js", "./js/storage.js", "./js/dialog.js", "./js/i18n.js", "./js/i18n-names.js", "./js/grades.js", "./js/config.js", "./js/conditions.js",
-  "./js/photos.js", "./js/amenities.js", "./js/food.js", "./js/attractions.js", "./js/weather.js", "./js/profile.js", "./js/recorder.js", "./js/elevation.js", "./js/offline.js", "./js/gpx.js", "./js/iap.js", "./js/premium.js", "./js/pet-art.js", "./js/pet.js", "./js/achievements.js", "./js/analytics.js", "./js/ecology-data.js", "./js/ecology.js", "./js/native-cam.js", "./js/native-push.js", "./js/native-review.js", "./js/native-local-notif.js", "./js/app.js", "./js/explore.js", "./js/record.js", "./js/debug.js",
+  "./js/photos.js", "./js/amenities.js", "./js/food.js", "./js/attractions.js", "./js/weather.js", "./js/profile.js", "./js/recorder.js", "./js/elevation.js", "./js/offline.js", "./js/gpx.js", "./js/iap.js", "./js/premium.js", "./js/pet-art.js", "./js/pet.js", "./js/achievements.js", "./js/analytics.js", "./js/ecology-data.js", "./js/ecology.js", "./js/native-cam.js", "./js/native-push.js", "./js/native-review.js", "./js/native-local-notif.js", "./js/app.js", "./js/me.js", "./js/explore.js", "./js/record.js", "./js/debug.js",
   "./vendor/supabase/supabase.js",
   "./js/social/supa.js", "./js/social/handle.js", "./js/social/media.js", "./js/social/posts.js", "./js/social/composer.js", "./js/social/safety.js", "./js/social/feed.js", "./js/social/postview.js", "./js/social/discover.js", "./js/social/petsocial.js", "./js/social/teamlive.js", "./js/social/teams.js", "./js/social/notifications.js", "./js/social/push.js", "./js/social/autocomplete.js", "./js/social/events.js", "./js/social/lightbox.js", "./js/social/auth.js", "./js/social/profiles.js", "./js/social/social-ui.js",
   "./manifest.webmanifest",
@@ -39,7 +40,7 @@ self.addEventListener("install", e => {
 self.addEventListener("message", e => { if (e.data === "skipWaiting") self.skipWaiting(); });
 self.addEventListener("activate", e => {
   e.waitUntil(caches.keys().then(keys =>
-    Promise.all(keys.filter(k => k !== CACHE && k !== TILE_CACHE).map(k => caches.delete(k))))
+    Promise.all(keys.filter(k => k !== CACHE && k !== TILE_CACHE && k !== SAVED_CACHE).map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
   // 背景暖機：不掛 waitUntil，抓失敗也不影響（真的用到時 fetch handler 會再快取一次）
   caches.open(CACHE).then(c => Promise.allSettled(ASSETS_LAZY.map(a => c.add(a)))).catch(() => {});
@@ -49,14 +50,14 @@ self.addEventListener("fetch", e => {
   // 地圖圖磚：cache 優先，順手存入圖磚快取 → 看過/預載過的離線可用
   if (url.includes("server.arcgisonline.com") || url.includes("ibasemaps-api.arcgis.com") || url.includes("tile.opentopomap.org") || url.includes("tile.openstreetmap") || url.includes("elevation-tiles-prod") || url.includes("wmts.nlsc.gov.tw")) {
     e.respondWith(
-      caches.open(TILE_CACHE).then(c => c.match(e.request, { ignoreVary: true }).then(hit => {
+      caches.match(e.request, { cacheName: SAVED_CACHE, ignoreVary: true }).then(saved => saved || caches.open(TILE_CACHE).then(c => c.match(e.request, { ignoreVary: true }).then(hit => {
         // 近似 LRU：命中時 2% 抽樣重新寫入（移到快取尾端），常看的圖磚不會被上限清掉
         if (hit && Math.random() < 0.02) { c.delete(e.request).then(() => c.put(e.request, hit.clone())).catch(() => {}); }
         return hit || fetch(e.request).then(res => {
           if (res && res.status === 200) c.put(e.request, res.clone());
           return res;
         }).catch(() => hit);   // 離線且未快取 → 該圖磚留白
-      }))
+      })))
     );
     return;
   }

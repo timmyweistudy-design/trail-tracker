@@ -4,6 +4,58 @@
 // 步道名稱/介紹等資料內容維持中文。要補翻譯：加 DICT 詞條或 PATTERNS 規則即可。
 const I18n = (() => {
   const DICT = {
+    "主題配色": "Theme colors",
+    "放大": "Large",
+    "上車了・不算": "In a vehicle · not counted",
+    "全台概覽": "All-Taiwan overview",
+    "全部清掉": "Clear everything",
+    "刪了就找不回來，統計也會一起扣掉。": "Once it's gone it's gone, and your stats drop with it.",
+    "刪掉了": "Deleted",
+    "刪掉這份離線地圖？": "Delete this offline map?",
+    "刪除這一趟": "Delete this hike",
+    "刪除這一趟？": "Delete this hike?",
+    "去記錄": "Start recording",
+    "存好了": "Saved!",
+    "存成檔案": "Save as file",
+    "已下載的離線地圖": "Downloaded offline maps",
+    "張圖磚": "tiles",
+    "找不到符合的行程": "No hikes match that",
+    "改名稱": "Rename",
+    "改好了": "Renamed",
+    "改好了，也連到這條步道": "Renamed — and linked to that trail",
+    "更換": "Change",
+    "最後確認：真的全部清掉？雲端備份不受影響。": "Last check: really wipe it all? Your cloud backup stays safe.",
+    "會刪掉這台手機上的行程、夥伴、成就、設定。建議先按「匯出備份檔」。要繼續嗎？": "This wipes the hikes, buddy, achievements and settings on this phone. Export a backup first if you might want them back. Continue?",
+    "登入社群，看到自己的個人檔案": "Sign in to see your profile",
+    "看更早的": "Show older",
+    "第一趟走完，會出現在這裡": "Finish your first hike and it'll show up here",
+    "背包重量要在 0–40 公斤之間": "Pack weight should be 0–40 kg",
+    "複製": "Copy",
+    "複製好了": "Copied",
+    "走得多": "More",
+    "走得少": "Less",
+    "身高要在 100–220 公分之間": "Height should be 100–220 cm",
+    "這一趟叫什麼？": "What should we call this hike?",
+    "這個 App 在手機上佔用": "This app is using",
+    "還沒下載。步道頁按「預載此步道離線地圖」，或用下面的按鈕。": "Nothing yet. Tap “Preload this trail's offline map” on a trail page, or use the buttons below.",
+    "還沒下載任何離線地圖": "No offline maps yet",
+    "還沒有走過的路": "No trails walked yet",
+    "體重要在 20–200 公斤之間": "Weight should be 20–200 kg",
+    "這個月": "This month",
+    "走過的路": "My hikes",
+    "找找走過的步道": "Search your hikes",
+    "不看模擬": "Hide sims",
+    "雲端（要登入）": "Cloud (sign-in needed)",
+    "備份檔（不用網路）": "Backup file (no internet needed)",
+    "清除這台手機上的所有資料": "Wipe all data on this phone",
+    "已下載": "Downloaded",
+    "步數和卡路里靠這些估算，填越準越接近": "Steps and calories are estimated from these — the closer, the better",
+    "背包重量（公斤）": "Pack weight (kg)",
+    "登入後每趟走完會自動備份到雲端；想自己留一份就匯出備份檔。": "Signed in, every hike backs up to the cloud on its own. Want your own copy? Export a backup file.",
+    "診斷／回報問題": "Diagnostics / report a problem",
+    "標準": "Standard",
+    "特大": "Extra large",
+    "超大": "Huge",
     "就進化": "to evolve",
     "你有": "You have",
     "三項都完成就能領": "Finish all three to claim",
@@ -1187,6 +1239,30 @@ async function _ttTranslateNet(text, target) {
 // 純 JS 產生的文字（canvas 圖卡等，不經過 DOM 觀察器）用這個包一層
 function ttT(str) { try { return (I18n.lang() !== "zh" && I18n.tx(str)) || str; } catch (e) { return str; } }
 // 顯示用日期/時間的 locale（英文介面用英文月份與 AM/PM）
+// 「N 趟／N 天」：各語言的單位＋單複數（英文 1 hike / 2 hikes；原本一律加 s 會出現「1 hikes」）
+const _TT_UNITS = {
+  trip: { zh: "趟", cn: "趟", en: ["hike", "hikes"], de: ["Tour", "Touren"], es: ["salida", "salidas"], fr: ["sortie", "sorties"], hi: "हाइक", id: "kali", it: ["uscita", "uscite"],
+    ja: "回", km: "ដង", ko: "회", mn: "удаа", ms: "kali", my: "ကြိမ်", ne: "पटक", nl: ["tocht", "tochten"], pl: ["wyjście", "wyjścia", "wyjść"], pt: ["saída", "saídas"],
+    ru: ["поход", "похода", "походов"], th: "ครั้ง", tl: "lakad", tr: "yürüyüş", uk: ["похід", "походи", "походів"], vi: "chuyến" },
+  day: { zh: "天", cn: "天", en: ["day", "days"], de: ["Tag", "Tage"], es: ["día", "días"], fr: ["jour", "jours"], hi: "दिन", id: "hari", it: ["giorno", "giorni"],
+    ja: "日", km: "ថ្ងៃ", ko: "일", mn: "өдөр", ms: "hari", my: "ရက်", ne: "दिन", nl: ["dag", "dagen"], pl: ["dzień", "dni", "dni"], pt: ["dia", "dias"],
+    ru: ["день", "дня", "дней"], th: "วัน", tl: "araw", tr: "gün", uk: ["день", "дні", "днів"], vi: "ngày" },
+};
+function ttCount(n, unit) {
+  let l = "zh"; try { l = I18n.lang(); } catch (e) { /* */ }
+  const w = (_TT_UNITS[unit] || {})[l] || (_TT_UNITS[unit] || {}).zh || "";
+  if (typeof w === "string") return `${n} ${w}`;
+  let i = n === 1 ? 0 : 1;
+  if (w.length === 3) { const m10 = n % 10, m100 = n % 100; i = (m10 === 1 && m100 !== 11) ? (l === "pl" && n !== 1 ? 2 : 0) : (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) ? 1 : 2; }
+  return `${n} ${w[i]}`;
+}
+// 「3 小時前」：交給瀏覽器的 Intl，24 種語言都對（不用自己一條條翻）
+function ttAgo(sec) {
+  if (sec < 60) return ttT("剛剛");
+  const [v, u] = sec < 3600 ? [Math.floor(sec / 60), "minute"] : sec < 86400 ? [Math.floor(sec / 3600), "hour"] : [Math.floor(sec / 86400), "day"];
+  try { return new Intl.RelativeTimeFormat(ttLocale(), { numeric: "always" }).format(-v, u); }
+  catch (e) { return v + " " + ({ minute: "分鐘前", hour: "小時前", day: "天前" })[u]; }
+}
 function ttLocale() { return ({ en: "en-US", es: "es-ES", ja: "ja-JP", ko: "ko-KR", fr: "fr-FR", de: "de-DE", cn: "zh-CN", pt: "pt-BR", it: "it-IT", ru: "ru-RU", th: "th-TH", vi: "vi-VN", id: "id-ID", tl: "fil-PH", ms: "ms-MY", nl: "nl-NL", pl: "pl-PL", tr: "tr-TR", hi: "hi-IN", my: "my-MM", km: "km-KH", ne: "ne-NP", mn: "mn-MN", uk: "uk-UA" })[I18n.lang()] || "zh-TW"; }
 // 翻譯年糕的目標語言（跟介面語言走）
 function ttTrTarget() { return ({ en: "en", es: "es", ja: "ja", ko: "ko", fr: "fr", de: "de", cn: "zh-CN", pt: "pt", it: "it", ru: "ru", th: "th", vi: "vi", id: "id", tl: "tl", ms: "ms", nl: "nl", pl: "pl", tr: "tr", hi: "hi", my: "my", km: "km", ne: "ne", mn: "mn", uk: "uk" })[I18n.lang()] || "zh-TW"; }

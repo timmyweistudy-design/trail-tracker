@@ -294,7 +294,7 @@ function openTrackReview(rec, isNew) {
   const km = rec.distanceKm || 0, t3 = rec.distance3DKm;
   const bk = (isNew && isFootRec(rec)) ? personalBestBreaks(rec) : [];   // 破紀錄清單（慶祝＋#18 升級卡共用）
   $("#trackBody").innerHTML = `
-    <h2>${rec.trailName || "自由路線"}</h2>
+    <h2>${escHtml(rec.trailName || "自由路線")}</h2>
     <div class="track-date">${new Date(rec.date).toLocaleString(ttLocale(), { month: "numeric", day: "numeric", weekday: "short", hour: "numeric", minute: "2-digit" })}</div>
     ${bk.length ? `<div class="pb-burst">${bk.map(b => `<span class="pb-badge">${b.e} <b>${b.label === "首次健行紀錄！" ? ttT(b.label) : `${ttT("破紀錄")}·${ttT(b.label)}`}</b></span>`).join("")}</div>` : ""}
     ${_maybePremiumUpsell(bk)}
@@ -319,10 +319,29 @@ function openTrackReview(rec, isNew) {
       <button class="link-btn" id="trackGpx">${ic("download")} 路線檔<span class="pro-tag">PRO</span></button>
       <button class="link-btn" id="trackShare">${ic("share")} 分享行程</button>
       ${rec.sim || socialHidden() ? "" : `<button class="link-btn social-only" id="trackSocial">${ic("megaphone")} 分享到社群</button>`}
-    </div>`;
+    </div>
+    ${isNew ? "" : `<div class="track-manage"><button class="tm-btn" id="trackRename">${ic("pencil")} ${ttT("改名稱")}</button><button class="tm-btn danger" id="trackDelete">${ic("trash")} ${ttT("刪除這一趟")}</button></div>`}`;
   $("#trackMask").classList.add("show");
   $("#trackSheet").classList.add("show");
   $("#trackSheet").scrollTop = 0;
+  // 改名：打的名字剛好是某條步道 → 順便連回那條步道（完成判定、步道頁的「走過」才對得上）
+  { const rn = $("#trackRename"); if (rn) rn.addEventListener("click", async () => {
+      const v = await askInput({ title: ttT("這一趟叫什麼？"), value: rec.trailName || "", max: 40 });
+      if (v == null || !v.trim()) return;
+      const name = v.trim(), t = TRAILS.find(x => x.name === name);
+      Store.updateRecord(rec.id, { trailName: name, trailId: t ? t.id : rec.trailId });
+      rec.trailName = name; if (t) rec.trailId = t.id;
+      const h = $("#trackBody h2"); if (h) h.textContent = name;
+      renderHistory(true); toast(t ? ttT("改好了，也連到這條步道") : ttT("改好了"));
+    }); }
+  { const dl = $("#trackDelete"); if (dl) dl.addEventListener("click", async () => {
+      const ok = await ttConfirm(`${ttT("刪除這一趟？")}\n${escHtml(rec.trailName || "自由路線")}・${(rec.distanceKm || 0).toFixed(2)} km\n${ttT("刪了就找不回來，統計也會一起扣掉。")}`, ttT("刪除"), ttT("取消"));
+      if (!ok) return;
+      Store.deleteRecord(rec.id);
+      closeTrackReview();
+      renderHistory(true); toast(ttT("刪掉了"));
+      try { if (typeof scheduleCloudBackup === "function") scheduleCloudBackup(); } catch (e) { /* */ }
+    }); }
   { const tu = $("#tuUpgrade"); if (tu) tu.addEventListener("click", () => { if (typeof Premium !== "undefined") Premium.openUpgrade(); }); const tx = $("#tuDismiss"); if (tx) tx.addEventListener("click", () => { const u = $("#trackUpsell"); if (u) u.remove(); }); }
   setTimeout(() => {
     if (!trackMap) {

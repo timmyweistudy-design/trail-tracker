@@ -72,6 +72,8 @@ const BACKUP_EXEMPT = new Set([
   "tt_native_push",                                       // 原生推播開關：綁這台裝置的 APNs token，不跨機還原
   "tt_premium", "tt_premium_since",                       // 訂閱狀態：由 Supabase 決定
   "tt_active_rec",                                        // 記錄中暫存
+  "tt_offline_sets", "tt_tiles_migrated",                  // 離線地圖清單／搬家旗標：圖磚只在這台手機，跨機還原沒意義
+  "tt_set_open", "tt_hist_hidesim",                       // 我的頁：設定展開狀態、行程列表篩選（純介面偏好）
   "tt_team", "tt_team_name", "tt_team_live",              // 目前小隊/同行開關：裝置選擇
   "tt_reported", "tt_saved", "tt_draft", "tt_prof_idx",   // 社群端另存雲端/暫存
   "tt_debug_km",                                          // 測試用
@@ -106,7 +108,7 @@ const html = read(path.join(WEB, "index.html"));
 const knownIds = new Set([...html.matchAll(/id="([\w-]+)"/g)].map(m => m[1]));
 for (const f of files) for (const m of read(f).matchAll(/id="([\w-]+)"/g)) knownIds.add(m[1]);
 for (const f of files) for (const m of read(f).matchAll(/id=\\"([\w-]+)\\"/g)) knownIds.add(m[1]);
-for (const jf of ["app.js", "explore.js", "record.js"]) {   // explore.js、record.js 是從 app.js 拆出來的，同一條規則
+for (const jf of ["app.js", "explore.js", "record.js", "me.js"]) {   // explore.js、record.js、me.js 是從 app.js 拆出來的，同一條規則
   read(path.join(WEB, "js", jf)).split("\n").forEach((l, i) => {
     for (const m of l.matchAll(/\$\("#([\w-]+)"\)/g)) {
       if (!knownIds.has(m[1])) err(`[HTML] web/js/${jf}:${i + 1} 取用 #${m[1]}，但 index.html 與 JS 模板都沒有這個 id（可能打錯字）`);

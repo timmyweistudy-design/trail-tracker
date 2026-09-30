@@ -416,6 +416,25 @@ const PORT = 8899;
       await p3.evaluate(() => document.querySelector('.tab[data-view="me"]').click());
       await p3.waitForTimeout(900);
       ok("當月健行月曆有渲染", await p3.locator("#meMonth .cal-grid").count() === 1);
+      // 我的頁：個人資料驗證、行程搜尋、刪除行程
+      await p3.evaluate(() => { document.getElementById("pfWeight").value = "5"; document.getElementById("btnSaveProfile").click(); });
+      ok("個人資料亂填會擋下並提示", await p3.evaluate(() => !document.getElementById("pfErr").hidden));
+      const delRes = await p3.evaluate(async () => {
+        Store.addRecord({ id: "e2e-del", date: new Date().toISOString(), trailName: "E2E刪除測試", distanceKm: 1, elapsedMs: 600e3, track: [] });
+        renderHistory(true);
+        document.getElementById("histSearch").value = "E2E刪除"; document.getElementById("histSearch").dispatchEvent(new Event("input"));
+        await new Promise(r => setTimeout(r, 400));
+        const n = document.querySelectorAll("#historyList .hist-card").length;
+        document.querySelector("#historyList .hist-card").click();
+        await new Promise(r => setTimeout(r, 600));
+        return { n, hasDel: !!document.getElementById("trackDelete") };
+      });
+      ok("行程搜尋找得到", delRes.n === 1);
+      ok("舊行程結算頁有刪除鈕", delRes.hasDel);
+      await p3.click("#trackDelete"); await p3.click(".ttdlg .btn.primary", { timeout: 3000 }).catch(() => {});
+      await p3.waitForTimeout(500);
+      ok("刪除行程後紀錄真的消失", await p3.evaluate(() => !Store.getRecords().some(r => r.id === "e2e-del")));
+      await p3.evaluate(() => { const h = document.getElementById("histSearch"); h.value = ""; h.dispatchEvent(new Event("input")); });
       // 記錄頁改版：天氣提示「今天可能有雨」已移除；新順序 天氣卡→上次→地圖→開始鈕→開始文字
       const recOrder = await p3.evaluate(() => {
         const v = document.getElementById("view-record"); const kids = [...v.children];
