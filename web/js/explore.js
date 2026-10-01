@@ -208,26 +208,6 @@ $("#fsAsc").addEventListener("click", e => { const c = e.target.closest("[data-a
 $("#fsGrade").addEventListener("click", openGradeInfo);
 $("#fsReset").addEventListener("click", () => { curSort = "default"; setExploreState(EXPLORE_DEFAULT, { clearScope: true }); });
 $("#btnFilter").addEventListener("click", () => { updateFilterDot(); $("#filterMask").classList.add("show"); $("#filterSheet").classList.add("show"); $("#closeFilterBtn").focus({ preventScroll: true }); });
-// #6 驚喜推薦：依目前篩選結果隨機挑一條步道開詳情，解決選擇困難
-// 幫我選一條：從目前篩選結果裡，優先挑「還沒走過、難度跟你平常走的差不多」的（沒紀錄就不限難度）
-function pickForMe() {
-  const pool = (curList && curList.length) ? curList : TRAILS;
-  if (!pool.length) return null;
-  const walked = new Set(Store.getRecords().map(r => String(r.trailId)).filter(Boolean));
-  const diffs = TRAILS.filter(t => walked.has(String(t.id))).map(t => t.difficulty || 0).sort((a, b) => a - b);
-  const usual = diffs.length ? diffs[Math.floor(diffs.length / 2)] : null;
-  const fresh = pool.filter(t => !walked.has(String(t.id)) && !logC(t.id).done && !isClosed(t));
-  const fit = usual == null ? fresh : fresh.filter(t => Math.abs((t.difficulty || 0) - usual) <= 1);
-  const pick = fit.length ? fit : fresh.length ? fresh : pool;
-  return pick[Math.floor(Math.random() * pick.length)];
-}
-$("#btnSurprise").addEventListener("click", () => {
-  const t = pickForMe();
-  if (!t) { toast(ttT("找不到符合的步道")); return; }
-  toast(`${ttT("幫你挑了")}：${t.name}`);
-  openDetail(t.id);
-});
-
 // 篩選預設組（口袋路線）
 function getPresets() { try { return JSON.parse(localStorage.getItem("tt_presets")) || []; } catch { return []; } }
 function savePresets(a) { localStorage.setItem("tt_presets", JSON.stringify(a)); }

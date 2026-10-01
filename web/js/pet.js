@@ -356,8 +356,21 @@ function petRecommend() {
   // 走探索頁的統一入口：連地圖範圍、附近、搜尋字一起重設（直接改變數會讓篩選狀態對不起來）
   if (typeof setExploreState === "function") setExploreState({ filters }, { clearQuery: true, clearScope: true });
   toast(say);
-  const t = typeof pickForMe === "function" ? pickForMe() : null;
+  const t = petPickTrail();
   if (t) setTimeout(() => openDetail(t.id), 450);
+}
+// 「去走」挑一條：從剛套好的篩選結果裡，優先挑還沒走過、難度跟平常走的差不多的
+// （以前借用探索頁骰子的 pickForMe；骰子拿掉後搬到這裡）
+function petPickTrail() {
+  const pool = (typeof curList !== "undefined" && curList && curList.length) ? curList : TRAILS;
+  if (!pool.length) return null;
+  const walked = new Set(Store.getRecords().map(r => String(r.trailId)).filter(Boolean));
+  const diffs = TRAILS.filter(t => walked.has(String(t.id))).map(t => t.difficulty || 0).sort((a, b) => a - b);
+  const usual = diffs.length ? diffs[Math.floor(diffs.length / 2)] : null;
+  const fresh = pool.filter(t => !walked.has(String(t.id)) && !logC(t.id).done && !isClosed(t));
+  const fit = usual == null ? fresh : fresh.filter(t => Math.abs((t.difficulty || 0) - usual) <= 1);
+  const pick = fit.length ? fit : fresh.length ? fresh : pool;
+  return pick[Math.floor(Math.random() * pick.length)];
 }
 // 成就（徽章資料、解鎖、成就步道全螢幕頁、分享圖卡）已拆到 js/achievements.js，緊接在 pet.js 之後載入
 // 夥伴手冊：進化圖鑑 + 成就徽章

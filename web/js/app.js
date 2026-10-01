@@ -236,7 +236,6 @@ const ICON = {
   sprout: '<path d="M12 21v-9"/><path d="M12 12c0-4 3-6 7-6 0 4-3 6-7 6ZM12 14c0-3-2.4-5-6-5 0 3 2.4 5 6 5Z"/>',
   lake: '<path d="M3 16c3 2 6 2 9 0s6-2 9 0"/><path d="m5 12 4-6 3 4 2-2 5 4"/>',
   gate: '<path d="M4 21V9l8-5 8 5v12"/><path d="M9 21v-6h6v6"/>',
-  dice: '<rect x="4" y="4" width="16" height="16" rx="3.5"/><circle cx="9" cy="9" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="9" r="1.2" fill="currentColor" stroke="none"/><circle cx="9" cy="15" r="1.2" fill="currentColor" stroke="none"/>',
   chevron: '<path d="m9 6 6 6-6 6"/>',
   trophy: '<path d="M7 4h10v4a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M10 14h4l-.5 4h-3L10 14ZM8 21h8"/>',
   download: '<path d="M12 4v10m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/>',

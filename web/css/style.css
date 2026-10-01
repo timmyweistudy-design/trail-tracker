@@ -2693,12 +2693,11 @@ body.hdr-compact .brand-mark { width: 36px; height: 36px; }
 /* 快速篩選列：右緣淡出＝還能往右滑 */
 .chips { -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent); mask-image: linear-gradient(90deg, #000 88%, transparent); padding-right: 24px; }
 
-/* 工具列一排：數量｜列表/地圖｜幫我選｜篩選（大字才允許換行） */
+/* 工具列一排：數量｜列表/地圖｜篩選（大字才允許換行） */
 .toolbar { flex-wrap: nowrap; gap: 6px; }
 .toolbar .count { order: 0; }
 .toolbar .grow { order: 1; }
 .toolbar .seg { order: 2; }
-.toolbar #btnSurprise { order: 3; }
 .toolbar #btnFilter { order: 4; }
 .toolbar .seg-btn { padding: 8px 10px; min-height: 38px; }
 .btn-filter.btn-icon { padding: 8px 9px; }
