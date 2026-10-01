@@ -3177,9 +3177,7 @@ html .hero-cap .badge.ghost, html .hero-cap .badge.family, html[data-theme="dark
 .map-compass.nav-compass.navon svg circle:first-child { fill: var(--brand-mid); stroke: #fff; }
 .map-compass.nav-compass { cursor: pointer; }
 /* 縮放鈕、比例尺放右下，不跟右上的鈕擠 */
-#recMap .leaflet-bottom.leaflet-right .leaflet-control-zoom { margin-bottom: 8px; border: none; box-shadow: 0 2px 8px rgba(0,0,0,.18); }
 #recMap .leaflet-control-zoom a { width: 36px; height: 36px; line-height: 36px; font-size: 20px; }
-#recMap .leaflet-control-scale { margin-bottom: 4px; }
 #recMap .leaflet-control-scale-line { font-size: 10px; background: rgba(255,255,255,.75); }
 /* 隨手拍：拍好時按鈕跳一下 */
 #btnSnap.pop { animation: heartPop .45s cubic-bezier(.2,.8,.2,1); }
@@ -3211,4 +3209,10 @@ html .hero-cap .badge.ghost, html .hero-cap .badge.family, html[data-theme="dark
 .trb-chip .ic { width: 12px; height: 12px; vertical-align: -1px; margin-left: 3px; }
 .trb-all { border: 1px solid var(--line); background: var(--surface); border-radius: var(--r-pill); padding: 5px 12px; font-weight: 700; font-size: calc(12px * var(--fs, 1)); color: var(--brand-deep); cursor: pointer; }
 .trb-all.on { background: var(--brand-soft); }
-#recMap .leaflet-bottom.leaflet-right .leaflet-control-scale { margin-bottom: 10px; }
+
+
+/* 記錄地圖：縮放鈕左上、比例尺左下（在地形/衛星切換上方） */
+#recMap .leaflet-top.leaflet-left .leaflet-control-zoom { border: none; box-shadow: 0 2px 8px rgba(0,0,0,.18); margin: 10px 0 0 10px; }
+#recMap .leaflet-bottom.leaflet-left .leaflet-control-scale { margin: 0 0 4px 12px; }
+/* 地圖來源文字：窄螢幕或大字時別和左下的切換鈕疊在一起 */
+.leaflet-container .leaflet-control-attribution { max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 10px; }

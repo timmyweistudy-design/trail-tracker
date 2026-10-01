@@ -543,6 +543,8 @@ const AGTOK = _AGKEY ? `?token=${encodeURIComponent(_AGKEY)}` : "";
 // detectRetina：高 DPR 手機（如 iPhone 3x）改抓深一階圖磚縮小顯示→更清晰不糊
 // 地形底圖：Esri 授權端點(ibasemaps-api)沒有 World_Topo_Map raster（已移到向量圖服務），
 // 改用 NLSC 台灣官方電子地圖（免費政府開放資料、可商用、對台灣更詳細）；立體感靠 Esri hillshade 疊上。座標 z/y/x。
+// 地圖右下的來源只留圖資單位（拿掉「Leaflet」字樣）：小地圖空間有限，要讓「© 內政部國土測繪中心」完整顯示
+if (typeof L !== "undefined" && L.Control && L.Control.Attribution) L.Control.Attribution.prototype.options.prefix = false;
 function baseTopo() { return L.tileLayer("https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}", { attribution: "© 內政部國土測繪中心", maxZoom: 19, maxNativeZoom: 18, detectRetina: true }); }
 function baseSat() { return L.tileLayer(`${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}${AGTOK}`, { attribution: "© Esri、Maxar 衛星影像", maxZoom: 19, maxNativeZoom: 18, detectRetina: true }); }
 // 2.5D 地形陰影（hillshade）：疊在底圖上、以 multiply 混色壓暗坡面陰影→山勢立體。
