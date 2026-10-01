@@ -64,13 +64,15 @@ const Media = (() => {
   function validateSize(bytes, maxMB) { return bytes <= maxMB * 1024 * 1024; }
 
   // 影片驗證：大小 + 長度。回傳 { ok, msg?, dur? }
+  // 訊息直接給翻好的字（以前是「影片需小於 50MB」整句樣板，翻譯器對不到）
   function validateVideo(file, maxSec = 60, maxMB = 50) {
+    const T = s => (typeof ttT === "function" ? ttT(s) : s);
     return new Promise(res => {
-      if (!validateSize(file.size, maxMB)) return res({ ok: false, msg: `影片需小於 ${maxMB}MB` });
+      if (!validateSize(file.size, maxMB)) return res({ ok: false, msg: `${T("影片太大了，上限")} ${maxMB} MB` });
       const v = document.createElement("video");
       v.preload = "metadata";
-      v.onloadedmetadata = () => { const d = v.duration; URL.revokeObjectURL(v.src); res(d > maxSec ? { ok: false, msg: `影片需短於 ${maxSec} 秒` } : { ok: true, dur: d }); };
-      v.onerror = () => { URL.revokeObjectURL(v.src); res({ ok: false, msg: "無法讀取影片" }); };
+      v.onloadedmetadata = () => { const d = v.duration; URL.revokeObjectURL(v.src); res(d > maxSec ? { ok: false, msg: `${T("影片太長了，上限")} ${maxSec} ${T("秒")}` } : { ok: true, dur: d }); };
+      v.onerror = () => { URL.revokeObjectURL(v.src); res({ ok: false, msg: T("這支影片讀不到，換一支試試") }); };
       v.src = URL.createObjectURL(file);
     });
   }

@@ -91,15 +91,15 @@ const Auth = (() => {
 
   function renderLogin(render) {
     const google = window.SOCIAL_GOOGLE
-      ? `<button class="btn primary" id="authGoogle">使用 Google 繼續</button><div class="auth-or">或</div>` : "";
+      ? `<button class="btn primary" id="authGoogle">${T("使用 Google 繼續")}</button><div class="auth-or">${T("或")}</div>` : "";
     render(`
       <div class="social-auth">
         <div class="auth-logo"><img src="icons/icon-192.png" alt="" width="64" height="64"></div>
-        <h3>加入山友社群</h3>
-        <p class="auth-sub">分享你的步道旅行，看看好友走過哪裡。</p>
+        <h3>${T("加入山友社群")}</h3>
+        <p class="auth-sub">${T("分享你的步道旅行，看看好友走過哪裡。")}</p>
         ${google}
-        <input type="email" id="authEmail" class="auth-input" placeholder="輸入 Email" inputmode="email" autocapitalize="off" autocomplete="email" enterkeyhint="send">
-        <button class="btn ghost" id="authEmailBtn">寄驗證碼給我</button>
+        <input type="email" id="authEmail" class="auth-input" placeholder="${T("輸入 Email")}" inputmode="email" autocapitalize="off" autocomplete="email" enterkeyhint="send">
+        <button class="btn ghost" id="authEmailBtn">${T("寄驗證碼給我")}</button>
         <div class="auth-msg" id="authMsg" role="alert"></div>
       </div>`);
     if (window.SOCIAL_GOOGLE) document.getElementById("authGoogle").addEventListener("click", signInGoogle);
@@ -123,12 +123,12 @@ const Auth = (() => {
   function renderCode(render, email) {
     render(`
       <div class="social-auth">
-        <h3>輸入驗證碼</h3>
+        <h3>${T("輸入驗證碼")}</h3>
         <p class="auth-sub">${T("驗證碼寄出去了，收到後在這裡輸入就好。")}<br><b>${esc(email)}</b></p>
         <input id="authCode" class="auth-input auth-code" inputmode="numeric" autocomplete="one-time-code" placeholder="000000" maxlength="10" enterkeyhint="go">
-        <button class="btn primary" id="authVerify">登入</button>
+        <button class="btn primary" id="authVerify">${T("登入")}</button>
         <div class="auth-msg" id="authMsg" role="alert"></div>
-        <div class="auth-links"><button class="link-btn" id="authResend">重新寄送</button><button class="link-btn" id="authBack">換 Email</button></div>
+        <div class="auth-links"><button class="link-btn" id="authResend">${T("重新寄送")}</button><button class="link-btn" id="authBack">${T("換 Email")}</button></div>
       </div>`);
     const vb = document.getElementById("authVerify"), codeEl = document.getElementById("authCode");
     const verify = async () => {
@@ -148,7 +148,7 @@ const Auth = (() => {
     const rs = document.getElementById("authResend");
     const cool = sec => {
       rs.disabled = true;
-      const tick = () => { if (!document.body.contains(rs)) return; if (sec <= 0) { rs.disabled = false; rs.textContent = T("重新寄送"); return; } rs.textContent = `${T("重新寄送")}（${sec}）`; sec--; setTimeout(tick, 1000); };
+      const tick = () => { if (!document.body.contains(rs)) return; if (sec <= 0) { rs.disabled = false; rs.textContent = T("重新寄送"); return; } rs.textContent = `${T("重新寄送")}${ttParen(sec)}`; sec--; setTimeout(tick, 1000); };
       tick();
     };
     cool(60);
@@ -195,21 +195,22 @@ const Auth = (() => {
     });
     render(`
       <div class="social-auth">
-        <h3>建立你的山友檔案</h3>
-        <label class="ob-l">帳號（朋友用這個找到你）</label>
-        <input id="obHandle" class="auth-input" placeholder="例如 hiker_tim" autocapitalize="off" autocomplete="off" maxlength="20">
+        <h3>${T("建立你的山友檔案")}</h3>
+        <label class="ob-l" for="obHandle">${T("帳號（朋友用這個找到你）")}</label>
+        <input id="obHandle" class="auth-input" placeholder="${T("例如 hiker_tim")}" autocapitalize="off" autocomplete="off" maxlength="20">
         <div class="auth-msg" id="obHandleMsg"></div>
-        <label class="ob-l">顯示名稱</label>
-        <input id="obName" class="auth-input" placeholder="你的名字" maxlength="40">
-        <label class="ob-l">簡介（選填）</label>
-        <input id="obBio" class="auth-input" placeholder="一句話介紹自己" maxlength="150">
-        <button class="btn primary" id="obSave">完成，開始使用</button>
+        <label class="ob-l" for="obName">${T("顯示名稱")}</label>
+        <input id="obName" class="auth-input" placeholder="${T("你的名字")}" maxlength="40">
+        <label class="ob-l" for="obBio">${T("簡介（選填）")}</label>
+        <input id="obBio" class="auth-input" placeholder="${T("一句話介紹自己")}" maxlength="150">
+        <button class="btn primary" id="obSave">${T("完成，開始使用")}</button>
         <div class="auth-msg" id="obMsg"></div>
       </div>`);
     const hEl = document.getElementById("obHandle");
     const hMsg = document.getElementById("obHandleMsg");
     let t = null, lastOk = false, seq = 0;
     hEl.addEventListener("input", () => {
+      if (/[A-Z]/.test(hEl.value)) { const p0 = hEl.selectionStart; hEl.value = hEl.value.toLowerCase(); try { hEl.setSelectionRange(p0, p0); } catch (e) { /* */ } }   // 大寫自動轉小寫
       clearTimeout(t); lastOk = false;
       const v = Handle.validate(hEl.value);
       if (!v.ok) { hMsg.textContent = T(v.msg); hMsg.className = "auth-msg bad"; return; }

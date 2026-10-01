@@ -25,10 +25,6 @@ const Profiles = (() => {
       else if (navigator.clipboard) { await navigator.clipboard.writeText(link ? text + "\n" + link : text); say("已複製邀請"); }
     } catch (e) { /* 使用者取消分享不算錯 */ }
   }
-  function petLine(ps) {
-    if (!ps) return "";
-    return `<div class="pf-pet">${typeof PET_ART !== "undefined" ? PET_ART.svg((ps.level || 1) - 1) : ps.emoji} ${esc(ps.name)} <span class="lv-chip lvt-${Math.min(ps.level, 7)}">Lv.${ps.level}</span>　·　已走 ${ps.km} km</div>`;
-  }
 
   function renderMe(render, prof) {
     if (prof.avatar_url) window.__meAvatar = prof.avatar_url;   // 地圖「我」標記＝社群頭像（換頭像後也同步）
@@ -91,8 +87,8 @@ const Profiles = (() => {
 
   // 刪除帳號（App Store 5.1.1(v) 要求）：兩段確認 → 呼叫 delete-account Edge Function（連 storage＋auth＋DB cascade 全清）→ 登出重載
   async function deleteAccount(render, prof) {
-    if (!(await ttConfirm("確定要刪除帳號嗎？你的個人檔案、貼文、留言、追蹤、小隊與雲端備份都會永久刪除，無法復原。", "繼續刪除", "取消"))) return;
-    if (!(await ttConfirm("最後確認：帳號與所有資料將永久刪除，真的要刪除嗎？", "永久刪除", "取消"))) return;
+    if (!(await ttConfirm(T("確定要刪除帳號嗎？你的個人檔案、貼文、留言、追蹤、小隊與雲端備份都會永久刪除，無法復原。"), T("下一步"), T("取消")))) return;
+    if (!(await ttConfirm(T("最後確認：帳號與所有資料將永久刪除，真的要刪除嗎？"), T("永久刪除"), T("取消"), { danger: true }))) return;
     const del = document.getElementById("stDelete");
     if (del) { del.disabled = true; del.textContent = ttT("刪除中…"); }
     try {
@@ -105,7 +101,7 @@ const Profiles = (() => {
       }
       try { ["tt_records", "tt_profile", "tt_favs", "tt_log", "tt_life", "tt_data_uid", "tt_last_sync", "tt_backup_pending"].forEach(k => localStorage.removeItem(k)); } catch (e) { /* */ }
       try { await Auth.signOut(); } catch (e) { /* */ }
-      if (typeof toast === "function") toast("帳號已刪除");
+      if (typeof toast === "function") toast(T("帳號已刪除"));
       setTimeout(() => location.reload(), 900);
     } catch (e) {
       if (del) { del.disabled = false; del.textContent = ttT("刪除帳號"); }
@@ -118,29 +114,29 @@ const Profiles = (() => {
     const approval = prof.follow_approval !== false;   // 預設開啟：別人追蹤需我同意
     render(`<div class="pf"><div class="pf-sub-head"><button class="sub-back" id="stBack" aria-label="${T("返回")}">${ic("chevron")}</button><b>${ic("sliders")} ${T("隱私與設定")}</b></div>
       <div class="set-group"><div class="set-label">${T("追蹤")}</div>
-        <label class="set-row"><span>${T("別人追蹤我要先經過我同意")}<small>${T("關掉的話，任何人都能直接追蹤你")}</small></span><input type="checkbox" id="stApprove" ${approval ? "checked" : ""}></label>
+        <label class="set-row"><span>${T("別人追蹤我要先經過我同意")}<small>${T("關掉的話，任何人都能直接追蹤你")}</small></span><input type="checkbox" class="tt-switch" id="stApprove" ${approval ? "checked" : ""}></label>
       </div>
       <div class="set-group" id="stPushGroup" hidden><div class="set-label">${T("通知")}</div>
-        <label class="set-row"><span>${T("有人按讚、留言、追蹤時推播通知我")}</span><input type="checkbox" id="stPush"></label>
+        <label class="set-row"><span>${T("有人按讚、留言、追蹤時推播通知我")}</span><input type="checkbox" class="tt-switch" id="stPush"></label>
       </div>
-      <div class="set-group"><div class="set-label">預設發文可見度</div>
-        <label class="set-row"><span>只給好友</span><input type="radio" name="dvis" value="friends" ${defVis === "friends" ? "checked" : ""}></label>
-        <label class="set-row"><span>公開</span><input type="radio" name="dvis" value="public" ${defVis === "public" ? "checked" : ""}></label>
+      <div class="set-group"><div class="set-label">${T("預設發文可見度")}</div>
+        <label class="set-row"><span>${T("只給好友")}</span><input type="radio" name="dvis" value="friends" ${defVis === "friends" ? "checked" : ""}></label>
+        <label class="set-row"><span>${T("公開")}</span><input type="radio" name="dvis" value="public" ${defVis === "public" ? "checked" : ""}></label>
       </div>
-      <div class="set-group"><div class="set-label">封鎖名單</div><div id="stBlocks"><div class="feed-loading"><span class="spin"></span></div></div></div>
-      <div class="set-group"><div class="set-label">我的檢舉</div><div id="stReports"><div class="feed-loading"><span class="spin"></span></div></div></div>
+      <div class="set-group"><div class="set-label">${T("封鎖名單")}</div><div id="stBlocks"><div class="feed-loading"><span class="spin"></span></div></div></div>
+      <div class="set-group"><div class="set-label">${T("我的檢舉")}</div><div id="stReports"><div class="feed-loading"><span class="spin"></span></div></div></div>
       <div class="set-group"><div class="set-label">${T("帳號")}</div>
         <button class="set-row set-btn" id="stShare"><span>${ic("share")} ${T("分享我的帳號")}</span></button>
         <button class="set-row set-btn" id="stSignout"><span>${ic("logout")} ${T("登出")}</span></button>
       </div>
-      <div class="set-group"><div class="set-label">${T("刪除帳號")}</div>
+      <div class="set-group st-danger-zone">
         <button class="btn ghost st-danger" id="stDelete">${T("刪除帳號")}</button>
         <div class="set-empty">${T("帳號和所有資料（貼文、追蹤、小隊、雲端備份）會永久刪除，救不回來。")}</div>
       </div>
       </div>`);
     document.getElementById("stShare").addEventListener("click", () => shareHandle(prof));
     document.getElementById("stSignout").addEventListener("click", async () => {
-      if (!(await ttConfirm(T("要登出嗎？這台手機上的行程不會刪掉。"), T("登出"), T("取消")))) return;
+      if (!(await ttConfirm(T("要登出嗎？這台手機上的行程不會刪掉。"), T("登出"), T("取消")))) return;   // 登出可以再登入，不算破壞性
       const btn = document.getElementById("stSignout"); if (btn) btn.disabled = true;
       try { window.__meAvatar = null; if (typeof TeamLive !== "undefined") TeamLive.stop(); } catch (e) { }
       await Auth.signOut();
@@ -172,14 +168,17 @@ const Profiles = (() => {
     const bb = document.getElementById("stBlocks");
     const people = (typeof Safety !== "undefined") ? await Safety.blockedProfiles() : [];
     if (bb) {
-      if (!people.length) bb.innerHTML = `<div class="set-empty">沒有封鎖任何人。</div>`;
+      if (!people.length) bb.innerHTML = `<div class="set-empty">${T("沒有封鎖任何人。")}</div>`;
       else {
         bb.innerHTML = people.map(p => `<div class="set-block-row" data-id="${p.id}">
-          ${p.avatar_url ? `<img class="fc-av" src="${esc(p.avatar_url)}">` : `<div class="fc-av fc-av-ph">${esc((p.display_name || p.handle).slice(0, 1))}</div>`}
+          ${p.avatar_url ? `<img class="fc-av" src="${esc(p.avatar_url)}" alt="">` : `<div class="fc-av fc-av-ph">${esc((p.display_name || p.handle).slice(0, 1))}</div>`}
           <div class="disc-id"><b>${esc(p.display_name || p.handle)}</b><span>@${esc(p.handle)}</span></div>
-          <button class="btn ghost st-unblock" data-id="${p.id}">解除</button></div>`).join("");
+          <button class="btn ghost st-unblock" data-id="${p.id}">${T("解除封鎖")}</button></div>`).join("");
         bb.querySelectorAll(".st-unblock").forEach(b => b.addEventListener("click", async () => {
-          await Safety.unblock(b.dataset.id); if (typeof toast === "function") toast("已解除封鎖"); renderSettings(render, prof);
+          b.disabled = true;
+          const r = await Safety.unblock(b.dataset.id);
+          if (r && r.error) { b.disabled = false; say(Supa.errText(r.error)); return; }
+          say("已解除封鎖"); renderSettings(render, prof);
         }));
       }
     }
@@ -191,21 +190,21 @@ const Profiles = (() => {
     const rb = document.getElementById("stReports");
     if (!rb || typeof Safety === "undefined" || !Safety.myReports) return;
     const rows = await Safety.myReports();
-    if (!rows.length) { rb.innerHTML = `<div class="set-empty">沒有檢舉任何內容。</div>`; return; }
+    if (!rows.length) { rb.innerHTML = `<div class="set-empty">${T("沒有檢舉任何內容。")}</div>`; return; }
     rb.innerHTML = rows.map(r => {
       // 貼文可能已被刪除（post_id 會被設成 null 或查不到內容）→ 據實說明，不要顯示空白
       const what = r.post_id
-        ? (r.postText == null ? "（貼文已刪除）" : `「${esc(String(r.postText).slice(0, 40))}${String(r.postText).length > 40 ? "…" : ""}」`)
-        : (r.userName ? `@${esc(r.userName)}` : "（對象已不存在）");
+        ? (r.postText == null ? T("（貼文已刪除）") : ttQuote(`${esc(String(r.postText).slice(0, 40))}${String(r.postText).length > 40 ? "…" : ""}`))
+        : (r.userName ? `@${esc(r.userName)}` : T("（對象已不存在）"));
       const when = new Date(r.created_at).toLocaleDateString(typeof ttLocale === "function" ? ttLocale() : "zh-TW");
       return `<div class="set-block-row rp-row" data-id="${r.id}">
-        <div class="rp-what"><b>${what}</b><span>${esc(r.reason || "")} · ${when}</span></div>
-        <button class="btn ghost rp-undo" data-id="${r.id}" data-post="${esc(r.post_id || "")}">撤回</button></div>`;
+        <div class="rp-what"><b>${what}</b><span><span>${esc(T(r.reason || ""))}</span> · ${when}</span></div>
+        <button class="btn ghost rp-undo" data-id="${r.id}" data-post="${esc(r.post_id || "")}">${T("撤回")}</button></div>`;
     }).join("");
     rb.querySelectorAll(".rp-undo").forEach(b => b.addEventListener("click", async () => {
       b.disabled = true;
       const ok = await Safety.unreport(b.dataset.id, b.dataset.post || null);
-      if (typeof toast === "function") toast(ok ? (b.dataset.post ? "已撤回檢舉，貼文回到動態牆" : "已撤回檢舉") : "撤回失敗，等一下再試試");
+      say(ok ? (b.dataset.post ? "已撤回檢舉，貼文回到動態牆" : "已撤回檢舉") : "撤回失敗，等一下再試試");
       if (ok) renderMyReports(render, prof); else b.disabled = false;
     }));
   }
@@ -217,20 +216,20 @@ const Profiles = (() => {
       : `<div class="pf-av pf-av-ph" id="edAvImg">${esc((prof.display_name || prof.handle || "?").slice(0, 1))}</div>`;
     render(`
       <div class="social-auth">
-        <h3>編輯檔案</h3>
+        <h3>${T("編輯檔案")}</h3>
         <div class="pf-av-edit">${avHtml}
-          <label class="comp-add">更換頭像<input type="file" id="edAvFile" accept="image/*" hidden></label></div>
-        <label class="ob-l">封面照</label>
+          <label class="btn ghost ed-av-btn">${ic("camera")} <span>${T("更換頭像")}</span><input type="file" id="edAvFile" accept="image/*" hidden></label></div>
+        <label class="ob-l">${T("封面照")}</label>
         <label class="ed-cover${prof.cover_url ? "" : " empty"}" id="edCoverImg" style="${prof.cover_url ? `background-image:url('${esc(prof.cover_url)}')` : ""}"><span class="ed-cover-t">${ic("camera")} ${T(prof.cover_url ? "更換封面" : "加一張封面照")}</span><input type="file" id="edCoverFile" accept="image/*" hidden></label>
-        <label class="ob-l" for="edHandle">帳號（朋友用這個找到你）</label>
+        <label class="ob-l" for="edHandle">${T("帳號（朋友用這個找到你）")}</label>
         <input id="edHandle" class="auth-input" value="${esc(prof.handle || "")}" autocapitalize="off" autocomplete="off" maxlength="20">
         <div class="auth-msg" id="edHandleMsg"></div>
-        <label class="ob-l" for="edName">顯示名稱</label>
+        <label class="ob-l" for="edName">${T("顯示名稱")}</label>
         <input id="edName" class="auth-input" value="${esc(prof.display_name || "")}" maxlength="40">
-        <label class="ob-l" for="edBio">簡介 <small class="ed-count" id="edBioN"></small></label>
+        <label class="ob-l" for="edBio">${T("簡介")} <small class="ed-count" id="edBioN"></small></label>
         <textarea id="edBio" class="auth-input ed-bio" rows="3" maxlength="300">${esc(prof.bio || "")}</textarea>
-        <button class="btn primary" id="edSave">儲存</button>
-        <button class="btn ghost" id="edCancel">取消</button>
+        <button class="btn primary" id="edSave">${T("儲存")}</button>
+        <button class="btn ghost" id="edCancel">${T("取消")}</button>
         <div class="auth-msg" id="edMsg"></div>
       </div>`);
     const setAvatar = f => {
@@ -250,7 +249,7 @@ const Profiles = (() => {
     if (typeof NativeCam !== "undefined" && NativeCam.isNative()) {
       const tx = typeof I18n !== "undefined" ? I18n.tx : null;
       const bind = (inputId, set) => {
-        const lab = document.getElementById(inputId).closest(".comp-add, .ed-cover");
+        const lab = document.getElementById(inputId).closest(".ed-av-btn, .ed-cover");
         if (lab) lab.addEventListener("click", async ev => { ev.preventDefault(); set(await NativeCam.pickImage(tx)); });
       };
       bind("edAvFile", setAvatar);
@@ -260,6 +259,8 @@ const Profiles = (() => {
     const hEl = document.getElementById("edHandle"), hMsg = document.getElementById("edHandleMsg");
     let ht = null, hOk = true, seq = 0;
     hEl.addEventListener("input", () => {
+      // 大寫自動轉小寫（帳號名稱只收小寫，以前打大寫就直接報錯）
+      if (/[A-Z]/.test(hEl.value)) { const p0 = hEl.selectionStart; hEl.value = hEl.value.toLowerCase(); try { hEl.setSelectionRange(p0, p0); } catch (e) { /* */ } }
       clearTimeout(ht); const v = Handle.validate(hEl.value); const my = ++seq;
       if (v.handle === prof.handle) { hMsg.textContent = ""; hMsg.className = "auth-msg"; hOk = true; return; }
       if (!v.ok) { hMsg.textContent = T(v.msg); hMsg.className = "auth-msg bad"; hOk = false; return; }

@@ -1,5 +1,6 @@
 // 照片全螢幕檢視：多圖左右滑動、雙擊放大、計數。點 ✕ 或背景關閉。
 const Lightbox = (() => {
+  const T = s => (typeof ttT === "function" ? ttT(s) : s);
   function openGallery(srcs, start) {
     srcs = (srcs || []).filter(Boolean);
     if (!srcs.length) return;
@@ -10,17 +11,19 @@ const Lightbox = (() => {
     const m = document.createElement("div");
     m.className = "lightbox";
     m.innerHTML = `
-      <button class="lb-x" aria-label="關閉">✕</button>
+      <button class="lb-x" aria-label="${T("關閉")}">✕</button>
       <div class="lb-count"></div>
       <img class="lb-img" alt="" draggable="false">
-      <button class="lb-nav lb-prev" aria-label="上一張">‹</button>
-      <button class="lb-nav lb-next" aria-label="下一張">›</button>`;
+      <button class="lb-nav lb-prev" aria-label="${T("上一張")}">‹</button>
+      <button class="lb-nav lb-next" aria-label="${T("下一張")}">›</button>`;
     document.body.appendChild(m);
     const img = m.querySelector(".lb-img");
     const count = m.querySelector(".lb-count");
     const prev = m.querySelector(".lb-prev");
     const next = m.querySelector(".lb-next");
-    const close = () => { m.dispatchEvent(new Event("tt-closed")); m.remove(); };   // 發事件讓 keydown 監聽即時拆掉
+    let _a11y = null;
+    const close = () => { if (_a11y) { _a11y(); _a11y = null; } m.dispatchEvent(new Event("tt-closed")); m.remove(); };   // 發事件讓 keydown 監聽即時拆掉
+    if (typeof ttModalA11y === "function") _a11y = ttModalA11y(m, null, { focus: ".lb-x" });   // Tab 鎖在看圖畫面內（Esc 由下面自己處理）
 
     function resetZoom() { zoom = 1; tx = 0; ty = 0; apply(); }
     function apply() { img.style.transform = `translate(${tx}px,${ty}px) scale(${zoom})`; img.style.cursor = zoom > 1 ? "grab" : ""; }

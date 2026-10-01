@@ -55,7 +55,7 @@ const SocialUI = (() => {
     if (sub === "friends") synced.then(() => Feed.render(into, "friends"));
     else if (sub === "explore") synced.then(() => Feed.render(into, "explore"));
     else if (sub === "search") Discover.render(into);
-    else if (sub === "notif") { if (typeof Notifs !== "undefined") Notifs.render(into).then(updateBadge); }
+    else if (sub === "notif") { if (typeof Notifs !== "undefined") Notifs.render(into); }   // 已讀與紅點更新由 Notifs 自己在標完已讀後做
     else if (sub === "me") Profiles.renderMe(into, myProf);
     updateBadge();
     // 登入後首次點開各社群分頁 → 一頁一張情境導覽小卡（導覽字串集中在 app.js）
@@ -114,5 +114,5 @@ const SocialUI = (() => {
     }, { passive: true });
   })();
 
-  return { onShow, route, render, go, refresh, setProfile };
+  return { onShow, route, render, go, refresh, setProfile, updateBadge };
 })();

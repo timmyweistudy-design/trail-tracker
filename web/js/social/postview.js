@@ -72,8 +72,11 @@ const PostView = (() => {
     const a = post.author || {};
     const text = `${a.display_name || a.handle || T("山友")}・${post.trail_name || T("自由路線")}${post.distance_km != null ? ` ${(+post.distance_km).toFixed(1)} km` : ""}`;
     const url = Supa.webLink("?post=" + post.id);   // App 裡沒有別人打得開的網址 → 只分享文字
-    if (navigator.share) navigator.share(url ? { title: "循徑拾光", text, url } : { title: "循徑拾光", text }).catch(() => { });
-    else if (navigator.clipboard) navigator.clipboard.writeText(url ? text + "\n" + url : text).then(() => say("複製好了"));
+    const full = url ? text + "\n" + url : text;
+    // 系統分享叫不出來就複製；剪貼簿也被擋（以前這裡直接報錯、使用者什麼都沒看到）就把文字秀出來讓人自己複製
+    const fallback = () => { if (navigator.clipboard) navigator.clipboard.writeText(full).then(() => say("複製好了")).catch(() => ttAlertBox(full)); else ttAlertBox(full); };
+    if (navigator.share) navigator.share(url ? { title: "循徑拾光", text, url } : { title: "循徑拾光", text }).catch(e => { if (!e || e.name !== "AbortError") fallback(); });
+    else fallback();
   }
   async function repost(post, close) {
     const quote = await ttPrompt(T("轉發這篇（想說點什麼也可以，選填）"), ""); if (quote === null) return;
@@ -100,7 +103,7 @@ const PostView = (() => {
     say("改好了");
   }
   async function del(post, close) {
-    if (!(await ttConfirm(T("刪掉這篇貼文？留言和讚也會一起不見。"), T("刪除"), T("取消")))) return;
+    if (!(await ttConfirm(T("刪掉這篇貼文？留言和讚也會一起不見。"), T("刪除"), T("取消"), { danger: true }))) return;
     const r = await Posts.remove(post.id);
     if (r.error) { say(Supa.errText(r.error)); return; }
     close(); say("刪掉了");
@@ -108,7 +111,8 @@ const PostView = (() => {
   }
   async function report(post, close) {
     const reason = await Safety.pickReason(); if (reason === null) return;
-    await Safety.reportPost(post.id, reason);
+    const rr = await Safety.reportPost(post.id, reason);
+    if (rr && rr.error) { say(Supa.errText(rr.error)); return; }   // 沒送出去就別說收到、也別藏貼文
     try { const k = "tt_reported"; const s = new Set(JSON.parse(localStorage.getItem(k) || "[]")); s.add(post.id); localStorage.setItem(k, JSON.stringify([...s])); } catch (e) { }
     say("收到，這篇先幫你藏起來了");
     close();
@@ -123,20 +127,20 @@ const PostView = (() => {
       : `${ic("mountain")} ${esc(post.trail_name || T("自由路線"))}`;
     const rp = Feed.splitRepost(post.caption), cap = rp ? rp.rest : post.caption;
     wrap.querySelector("#pvBody").innerHTML = `
-      <div class="fc-name fc-author" data-uid="${post.author_id}" style="cursor:pointer"><span class="fc-nm">${esc(a.display_name || a.handle || T("山友"))}</span>${a.pet_level ? `<span class="lv-chip lvt-${Math.min(a.pet_level,7)}">Lv.${a.pet_level}</span>` : ""}${a.is_premium ? `<span class="pro-tag pro-id">PRO</span>` : ""}<span class="fc-sub">@${esc(a.handle || "")}</span></div>
+      <div class="fc-name fc-author pv-author" data-uid="${post.author_id}" style="cursor:pointer">${a.avatar_url ? `<img class="fc-av${a.is_premium ? " pro-av" : ""}" src="${esc(a.avatar_url)}" alt="">` : `<div class="fc-av fc-av-ph${a.is_premium ? " pro-av" : ""}">${esc((a.display_name || a.handle || "?").slice(0, 1))}</div>`}<span class="fc-nm">${esc(a.display_name || a.handle || T("山友"))}</span>${a.pet_level ? `<span class="lv-chip lvt-${Math.min(a.pet_level,7)}">Lv.${a.pet_level}</span>` : ""}${a.is_premium ? `<span class="pro-tag pro-id">PRO</span>` : ""}<span class="fc-sub">@${esc(a.handle || "")}</span></div>
       <div class="fc-sub pv-when">${Supa.ago(post.created_at)}</div>
       ${rp ? `<div class="fc-repost">${ic("repeat")} ${T("轉發")}${rp.from ? ` <span class="mention" data-handle="${esc(rp.from)}">@${esc(rp.from)}</span>` : ""}</div>` : ""}
       <div class="fc-trail">${trailName}</div>
       <div class="fc-meta">${Feed.statsHtml(post)}</div>
       ${(post.track && post.track.coordinates && post.track.coordinates.length > 1) ? `<div class="pv-map"></div><button class="btn ghost pv-follow" id="pvFollow">${ic("compass")} ${T("跟著這條路線走")}</button>` : ""}
       ${cap ? `<div class="fc-cap">${Feed.richText(cap)}</div>
-      <div class="pv-tr-row"><button class="link-btn" id="pvTranslate">${ic("translate")} ${T("翻譯年糕")}</button></div>
-      <div class="fc-cap pv-cap-tr" id="pvCapTr" hidden></div>` : ""}
+      ${ttSameLang(cap) ? "" : `<div class="pv-tr-row"><button class="pv-tr-btn" id="pvTranslate">${ic("translate")} <span>${T("翻譯年糕")}</span></button></div>
+      <div class="fc-cap pv-cap-tr" id="pvCapTr" hidden></div>`}` : ""}
       ${media.map(m => {
         if (m.kind === "video") return `<video class="pv-img" controls playsinline preload="metadata" poster="${esc(Media.publicUrl(m.thumb_path || ""))}" src="${esc(Media.publicUrl(m.path))}"></video>`;
         const img = `<img class="pv-img pv-photo" loading="lazy" decoding="async" src="${esc(Media.publicUrl(m.path))}" alt="">`;
         const meta = (m.taken_at || m.km != null)
-          ? `<figcaption>${m.taken_at ? new Date(m.taken_at).toLocaleTimeString(ttLocale(), { hour: "2-digit", minute: "2-digit" }) : ""}${m.km != null ? (m.taken_at ? " · " : "") + (+m.km).toFixed(2) + " km" : ""}</figcaption>` : "";
+          ? `<figcaption>${m.taken_at ? new Date(m.taken_at).toLocaleTimeString(ttLocale(), { hour: "2-digit", minute: "2-digit" }) : ""}${m.km != null ? (m.taken_at ? " · " : "") + (+m.km).toFixed(1) + " km" : ""}</figcaption>` : "";
         return meta ? `<figure class="pv-shot">${img}${meta}</figure>` : img;
       }).join("")}
       <div class="pv-actions"><button class="fc-like ${likedByMe ? "on" : ""}" id="pvLike" aria-label="${T("讚")}">${Feed.heart(likedByMe)}<span>${likeCount}</span></button></div>
@@ -161,14 +165,15 @@ const PostView = (() => {
     const trBtn = wrap.querySelector("#pvTranslate");
     if (trBtn) trBtn.addEventListener("click", async () => {
       const out = wrap.querySelector("#pvCapTr"); if (!out) return;
-      if (!out.hidden) { out.hidden = true; trBtn.innerHTML = `${ic("translate")} ${T("翻譯年糕")}`; return; }
-      if (out.dataset.done) { out.hidden = false; trBtn.textContent = T("收合翻譯"); return; }
-      trBtn.disabled = true; trBtn.textContent = T("翻譯中…");
+      const lbl = s => { trBtn.innerHTML = `${ic("translate")} <span>${T(s)}</span>`; };   // 圖示一直留著
+      if (!out.hidden) { out.hidden = true; lbl("翻譯年糕"); return; }
+      if (out.dataset.done) { out.hidden = false; lbl("收合翻譯"); return; }
+      trBtn.disabled = true; lbl("翻譯中…");
       const t = await translateText(cap, (typeof ttTrTarget === "function") ? ttTrTarget() : "zh-TW");
       trBtn.disabled = false;
-      if (!t) { trBtn.textContent = T("翻譯失敗，點此重試"); return; }
+      if (!t) { lbl("翻譯失敗，點此重試"); return; }
       out.textContent = t; out.dataset.done = "1"; out.hidden = false;
-      trBtn.textContent = T("收合翻譯");
+      lbl("收合翻譯");
     });
     // 路線地圖
     const mapEl = wrap.querySelector(".pv-map");
@@ -219,9 +224,16 @@ const PostView = (() => {
     const counts = {}; let mine = null;
     for (const r of rows) { counts[r.emoji] = (counts[r.emoji] || 0) + 1; if (r.user_id === myId) mine = r.emoji; }
     const pro = (typeof Premium !== "undefined") && Premium.isOn();
-    // 顯示：基本表情 +（會員才有的）PRO 表情 + 任何已被使用過的表情
-    const list = [...new Set([...REACT_EMOJI, ...(pro ? REACT_PRO : []), ...rows.map(r => r.emoji)])];
-    box.innerHTML = list.map(e => `<button class="pv-react-b ${mine === e ? "on" : ""}${REACT_PRO.includes(e) ? " pro" : ""}" data-e="${e}">${e}${counts[e] ? ` <span>${counts[e]}</span>` : ""}</button>`).join("");
+    // 平常只放：有人用過的表情（依人數排）＋基本 6 個裡還沒用的；PRO 的 24 個收進「＋」展開（以前一次攤開 30 顆、佔四排）
+    const used = Object.keys(counts).sort((x, y) => counts[y] - counts[x]);
+    const all = [...new Set([...REACT_EMOJI, ...(pro ? REACT_PRO : [])])];
+    const open = !!box.dataset.open;
+    const list = open ? [...new Set([...used, ...all])] : [...new Set([...used, ...REACT_EMOJI])];
+    const moreN = all.filter(e => !list.includes(e)).length;
+    box.innerHTML = list.map(e => `<button class="pv-react-b ${mine === e ? "on" : ""}${REACT_PRO.includes(e) ? " pro" : ""}" data-e="${e}">${e}${counts[e] ? ` <span>${counts[e]}</span>` : ""}</button>`).join("")
+      + (moreN ? `<button class="pv-react-more" aria-label="${T("更多表情")}">${ic("plus")}</button>` : (open && pro ? `<button class="pv-react-more on" aria-label="${T("收合")}">${ic("chevron")}</button>` : ""));
+    const mb = box.querySelector(".pv-react-more");
+    if (mb) mb.addEventListener("click", () => { if (box.dataset.open) delete box.dataset.open; else box.dataset.open = "1"; loadReactions(wrap, postId); });
     let busy = false;
     box.querySelectorAll(".pv-react-b").forEach(b => b.addEventListener("click", async () => {
       if (busy) return; busy = true;

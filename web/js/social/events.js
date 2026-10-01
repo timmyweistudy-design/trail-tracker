@@ -10,11 +10,11 @@ const Events = (() => {
 
   async function open(presetTrail) {
     if (typeof ttBusy === "function" && ttBusy("events")) return;   // 防連點
-    if (typeof Supa === "undefined" || !Supa.ready()) { if (typeof toast === "function") toast("社群尚未啟用"); return; }
-    const sess = await Auth.session(); if (!sess) { if (typeof toast === "function") toast("請先到社群分頁登入"); return; }
+    if (typeof Supa === "undefined" || !Supa.ready()) { if (typeof toast === "function") toast(T("社群尚未啟用")); return; }
+    const sess = await Auth.session(); if (!sess) { if (typeof toast === "function") toast(T("請先到社群分頁登入")); return; }
     if (document.querySelector('[data-ov="events"]')) return;   // 防連點疊層
     const wrap = document.createElement("div"); wrap.className = "pv-mask"; wrap.dataset.ov = "events";
-    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" id="evX" aria-label="關閉">${ic("x")}</button><b>${ic("calendar")} 揪團活動</b><button class="comp-x" id="evNew" aria-label="發起揪團">${ic("plus")}</button></div>
+    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" id="evX" aria-label="${T("關閉")}">${ic("x")}</button><b>${ic("calendar")} ${T("揪團活動")}</b><button class="comp-x" id="evNew" aria-label="${T("發起揪團")}">${ic("plus")}</button></div>
       <div class="pv-body" id="evBody" aria-live="polite"><div class="feed-loading"><span class="spin"></span></div></div></div>`;
     document.body.appendChild(wrap);
     wrap.querySelector("#evX").addEventListener("click", () => wrap.remove());
@@ -30,7 +30,7 @@ const Events = (() => {
       .select("id, trail_id, trail_name, title, when_at, note, creator_id, creator:profiles!events_creator_profile_fk(handle, display_name)")
       .gte("when_at", new Date(Date.now() - 6 * 3600e3).toISOString()).order("when_at", { ascending: true }).limit(50);
     if (error) { body.innerHTML = `<div class="social-empty">${T("揪團功能暫時用不了")}</div>`; return; }
-    if (!data || !data.length) { body.innerHTML = `<div class="social-empty"><span class="ee">${ic("calendar")}</span>${T("最近沒有揪團。想找人一起走？按右上角 ＋ 發起一個")}</div>`; return; }
+    if (!data || !data.length) { body.innerHTML = `<div class="social-empty"><span class="ee">${ic("calendar")}</span>${T("最近沒有揪團。想找人一起走？按右上角的「+」發起一個")}</div>`; return; }
     const ids = data.map(e => e.id);
     const myId = await me();
     // 人數走聚合函式（只回數字）；「我有沒有報名」只查自己的列。
@@ -50,11 +50,11 @@ const Events = (() => {
     body.className = "pv-body";
     body.innerHTML = data.map(e => {
       const going = mine.has(e.id), n = counts[e.id] || 0, isMine = e.creator_id === myId;
-      const cname = (e.creator && (e.creator.display_name || e.creator.handle)) || "山友";
+      const cname = (e.creator && (e.creator.display_name || e.creator.handle)) || T("山友");
       return `<div class="ev-card" data-id="${e.id}">
         <div class="ev-when">${ic("calendar")} ${fmt(e.when_at)}</div>
         <div class="ev-title">${esc(e.title)}</div>
-        <div class="ev-meta">${ic("mountain")} ${esc(e.trail_name || "自由路線")}　·　發起人 ${esc(cname)}</div>
+        <div class="ev-meta">${ic("mountain")} <span>${esc(T(e.trail_name || "自由路線"))}</span> · <span>${T("發起人")}</span> <span>${esc(cname)}</span></div>
         ${e.note ? `<div class="ev-note">${esc(e.note)}</div>` : ""}
         <div class="ev-actions">
           <button class="btn ${going ? "ghost" : "primary"} ev-go" data-id="${e.id}" data-going="${going ? 1 : 0}">${going ? `${ic("check")} ${T("已報名")}` : T("我要參加")}</button>
@@ -74,8 +74,12 @@ const Events = (() => {
       renderList(wrap);
     }));
     body.querySelectorAll(".ev-del").forEach(b => b.addEventListener("click", async () => {
-      if (!(await ttConfirm("刪除這個活動？"))) return;
-      await c.from("events").delete().eq("id", b.dataset.id); renderList(wrap);
+      if (!(await ttConfirm(T("刪除這個揪團？報名的人也會看不到了。"), T("刪除"), T("取消"), { danger: true }))) return;
+      b.disabled = true;
+      const { error: de } = await c.from("events").delete().eq("id", b.dataset.id);
+      if (de) { b.disabled = false; if (typeof toast === "function") toast(T(Supa.errText(de.message))); return; }   // 以前刪不掉也照樣重畫，看起來像刪了
+      if (typeof toast === "function") toast(T("揪團刪掉了"));
+      renderList(wrap);
     }));
   }
 
@@ -84,26 +88,41 @@ const Events = (() => {
     const tName = presetTrail ? (presetTrail.name || "") : "";
     const tId = presetTrail ? presetTrail.id : "";
     body.className = "pv-body";
+    // 錯誤訊息放在出錯的那一格下面、格子標紅（以前掉在「取消」鈕底下，幾乎看不到）
     body.innerHTML = `<div class="ev-form">
-      <label class="ob-l">活動標題</label>
-      <input id="evTitle" class="auth-input" maxlength="120" placeholder="例：週末嘉明湖兩天一夜">
-      <label class="ob-l">步道</label>
-      <input id="evTrail" class="auth-input" maxlength="80" value="${esc(tName)}" placeholder="步道名稱（選填）">
-      <label class="ob-l">時間</label>
+      <label class="ob-l" for="evTitle">${T("活動標題")}</label>
+      <input id="evTitle" class="auth-input" maxlength="120" placeholder="${T("例：週末嘉明湖兩天一夜")}">
+      <div class="ev-err" data-for="evTitle" hidden></div>
+      <label class="ob-l" for="evTrail">${T("步道")}</label>
+      <input id="evTrail" class="auth-input" maxlength="80" value="${esc(tName)}" placeholder="${T("步道名稱（選填）")}">
+      <label class="ob-l" for="evWhen">${T("時間")}</label>
       <input id="evWhen" class="auth-input" type="datetime-local" min="${new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}">
-      <label class="ob-l">說明（集合地點、裝備、注意事項…）</label>
-      <textarea id="evNote" class="comp-cap" maxlength="1000" placeholder="選填"></textarea>
-      <button class="btn primary" id="evSave">發起揪團</button>
-      <button class="btn ghost" id="evBack">取消</button>
-      <div class="auth-msg" id="evMsg"></div></div>`;
+      <div class="ev-when-pv" id="evWhenPv"></div>
+      <div class="ev-err" data-for="evWhen" hidden></div>
+      <label class="ob-l" for="evNote">${T("說明（集合地點、裝備、注意事項…）")}</label>
+      <textarea id="evNote" class="comp-cap" maxlength="1000" placeholder="${T("選填")}"></textarea>
+      <div class="auth-msg" id="evMsg"></div>
+      <button class="btn primary" id="evSave">${T("發起揪團")}</button>
+      <button class="btn ghost" id="evBack">${T("取消")}</button></div>`;
     body.querySelector("#evBack").addEventListener("click", () => renderList(wrap));
+    // 時間欄位的格式跟著手機系統走；底下另外用 App 的語言寫一次選好的時間，看得懂選到哪天
+    const wEl = body.querySelector("#evWhen"), wPv = body.querySelector("#evWhenPv");
+    wEl.addEventListener("input", () => { wPv.textContent = wEl.value ? fmt(new Date(wEl.value).toISOString()) : ""; });
+    const fieldErr = (id, text) => {
+      body.querySelectorAll(".ev-err").forEach(e => { e.hidden = true; }); body.querySelectorAll(".auth-input.bad").forEach(e => e.classList.remove("bad"));
+      if (!id) return;
+      const e = body.querySelector(`.ev-err[data-for="${id}"]`), inp = body.querySelector("#" + id);
+      e.textContent = text; e.hidden = false; inp.classList.add("bad"); inp.focus();
+    };
+    ["evTitle", "evWhen"].forEach(id => body.querySelector("#" + id).addEventListener("input", () => fieldErr(null)));
     body.querySelector("#evSave").addEventListener("click", async () => {
       const msg = body.querySelector("#evMsg");
       const title = body.querySelector("#evTitle").value.trim();
       const whenV = body.querySelector("#evWhen").value;
-      if (!title) { msg.textContent = T("取個標題吧"); return; }
-      if (!whenV) { msg.textContent = T("選一下出發時間"); return; }
-      if (new Date(whenV).getTime() < Date.now() - 60000) { msg.textContent = T("這個時間已經過了"); return; }
+      if (!title) { fieldErr("evTitle", T("取個標題吧")); return; }
+      if (!whenV) { fieldErr("evWhen", T("選一下出發時間")); return; }
+      if (new Date(whenV).getTime() < Date.now() - 60000) { fieldErr("evWhen", T("這個時間已經過了")); return; }
+      fieldErr(null);
       const sv = body.querySelector("#evSave"); if (sv.disabled) return; sv.disabled = true;
       const c = Supa.client(); const myId = await me();
       msg.textContent = T("建立中…");

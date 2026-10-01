@@ -74,10 +74,16 @@ const Posts = (() => {
     post_media(kind, path, thumb_path, ord, taken_at, km),
     likes(count), comments(count)`;
 
-  async function followingIds() {
-    const c = Supa.client(); const { data: u } = await Supa.meUser(); if (!u || !u.user) return [];
-    const { data } = await c.from("follows").select("following_id").eq("follower_id", u.user.id);
+  async function followingIds(uid) {
+    const c = Supa.client(); if (!uid) { const { data: u } = await Supa.meUser(); if (!u || !u.user) return []; uid = u.user.id; }
+    const { data } = await c.from("follows").select("following_id").eq("follower_id", uid);
     return (data || []).map(r => r.following_id);
+  }
+  // 某人一共發了幾篇（個人頁的「N 篇」；以前直接拿抓回來的貼文數，最多只會顯示 40）
+  async function postCount(uid) {
+    const c = Supa.client(); if (!c) return null;
+    const { count, error } = await c.from("posts").select("id", { count: "exact", head: true }).eq("author_id", uid);
+    return error ? null : (count || 0);
   }
 
   // mode: "friends"（我追蹤的人）| "explore"（公開）。beforeISO 供分頁。
@@ -88,11 +94,11 @@ const Posts = (() => {
     if (mode === "explore") {
       q = q.eq("visibility", "public");
     } else {
-      // 動態＝我追蹤的人 + 我自己（首頁也看得到自己發的貼文）
-      const ids = await followingIds();
+      // 動態＝我追蹤的人 + 我自己（首頁也看得到自己發的貼文）；登入者只查一次
       const { data: u } = await Supa.meUser();
-      if (u && u.user) ids.push(u.user.id);
-      if (!ids.length) return [];
+      if (!u || !u.user) return [];
+      const ids = await followingIds(u.user.id);
+      ids.push(u.user.id);
       q = q.in("author_id", ids);
     }
     const { data, error } = await q;
@@ -122,18 +128,27 @@ const Posts = (() => {
 
   // 熱門探索：抓近期公開貼文，依「互動數＋時間衰減」排序（趨勢牆）
   // filter：先篩再排（探索頁的難度篩選），篩選時多抓一些
+  // 先用輕量欄位（id、步道、時間、讚數、留言數、內文）排序篩選，只對最後要顯示的 30 篇抓完整資料（含照片）
+  // ——以前開難度篩選會一次抓 200 篇完整貼文。抓到的內文順便給熱門標籤用，不必再查一次。
+  let _recentCaps = null, _recentAt = 0;
   async function trending(filter) {
     const c = Supa.client(); if (!c) return [];
-    const { data: raw, error } = await c.from("posts").select(SELECT).eq("visibility", "public")
+    const { data: raw, error } = await c.from("posts").select("id, trail_id, created_at, caption, likes(count), comments(count)").eq("visibility", "public")
       .order("created_at", { ascending: false }).limit(filter ? 200 : 60);
-    const data = filter ? (raw || []).filter(filter) : raw;
     if (error) { console.warn("trending", error.message); return []; }
+    _recentCaps = (raw || []).slice(0, 120).map(p => p.caption); _recentAt = Date.now();
+    const data = filter ? (raw || []).filter(filter) : (raw || []);
     const score = p => {
       const eng = count(p.likes) + 2 * count(p.comments);
       const hrs = (Date.now() - new Date(p.created_at).getTime()) / 3600000;
       return (eng + 1) / Math.pow(hrs + 2, 0.6);   // 新且互動高 → 分數高
     };
-    return (data || []).slice().sort((a, b) => score(b) - score(a)).slice(0, 30);
+    const top = data.slice().sort((a, b) => score(b) - score(a)).slice(0, 30).map(p => p.id);
+    if (!top.length) return [];
+    const { data: full, error: e2 } = await c.from("posts").select(SELECT).in("id", top);
+    if (e2) { console.warn("trending", e2.message); return []; }
+    const order = new Map(top.map((id, i) => [id, i]));
+    return (full || []).sort((a, b) => order.get(a.id) - order.get(b.id));
   }
   function count(arr) { return (arr && arr[0] && arr[0].count) || 0; }
 
@@ -204,10 +219,14 @@ const Posts = (() => {
   let _hotCache = null, _hotAt = 0;
   async function hotTags(limit) {
     if (_hotCache && Date.now() - _hotAt < 120000) return _hotCache.slice(0, limit || 12);
-    const c = Supa.client(); if (!c) return [];
-    const { data } = await c.from("posts").select("caption").eq("visibility", "public").order("created_at", { ascending: false }).limit(120);
+    let caps = (_recentCaps && Date.now() - _recentAt < 120000) ? _recentCaps : null;   // 探索頁剛抓過就直接用
+    if (!caps) {
+      const c = Supa.client(); if (!c) return [];
+      const { data } = await c.from("posts").select("caption").eq("visibility", "public").order("created_at", { ascending: false }).limit(120);
+      caps = (data || []).map(p => p.caption);
+    }
     const counts = {};
-    for (const p of (data || [])) for (const t of parseTags(p.caption)) counts[t] = (counts[t] || 0) + 1;
+    for (const cap of caps) for (const t of parseTags(cap)) counts[t] = (counts[t] || 0) + 1;
     const sorted = Object.keys(counts).sort((a, b) => counts[b] - counts[a]).map(t => ({ tag: t, n: counts[t] }));
     _hotCache = sorted; _hotAt = Date.now();
     return sorted.slice(0, limit || 12);
@@ -304,7 +323,12 @@ const Posts = (() => {
   async function savedPosts() {
     const ids = savedIds(); if (!ids.length) return [];
     const c = Supa.client(); if (!c) return [];
-    const { data } = await c.from("posts").select(SELECT).in("id", ids);
+    const { data, error } = await c.from("posts").select(SELECT).in("id", ids);
+    // 被刪掉（或已看不到）的貼文從收藏清單移掉，不再每次都去查
+    if (!error && data) {
+      const alive = new Set(data.map(p => p.id));
+      if (alive.size < ids.length) try { localStorage.setItem("tt_saved", JSON.stringify(ids.filter(id => alive.has(id)))); } catch (e) { /* */ }
+    }
     const order = new Map(ids.map((id, i) => [id, i]));   // 維持收藏順序
     return (data || []).sort((a, b) => (order.get(a.id) ?? 99) - (order.get(b.id) ?? 99));
   }
@@ -317,7 +341,7 @@ const Posts = (() => {
     return data || [];
   }
 
-  return { createFromRecord, feed, userPosts, byTrail, byTag, trending, suggestions, hotTags, searchHandles, one, likedSet, toggleLike, likeCount, followingIds, remove, followCounts,
+  return { createFromRecord, feed, userPosts, postCount, byTrail, byTag, trending, suggestions, hotTags, searchHandles, one, likedSet, toggleLike, likeCount, followingIds, remove, followCounts,
     parseTags, notifyMentions, reactions, setReaction, clearReaction, commentLikes, toggleCommentLike, createRepost,
     savedIds, isSaved, toggleSaved, savedPosts };
 })();

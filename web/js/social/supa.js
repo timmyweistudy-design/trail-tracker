@@ -51,6 +51,8 @@ const Supa = (() => {
     if (/failed to fetch|network|timeout|逾時/i.test(m)) return "連不上網路，檢查一下再試";
     if (/duplicate|unique/i.test(m)) return "這個已經有了";
     if (/payload too large|too large|size/i.test(m)) return "檔案太大了";
+    if (/not-signed-in|no-user|jwt|not authenticated/i.test(m)) return "先登入才能用這個功能";   // 程式內部錯誤碼別直接秀出來
+    if (/no-client/i.test(m)) return "社群暫時用不了。";
     return "出了點問題，等一下再試試";
   }
   return { ready, client: client_, user, meUser, uid, esc, ago, webLink, errText };

@@ -28,11 +28,15 @@ const Safety = (() => {
   // 檢舉理由選單（取代純文字輸入）。回傳所選理由字串，取消則 null。
   function pickReason() {
     return new Promise(resolve => {
-      const reasons = ["騷擾或霸凌", "不實或詐騙", "色情或不雅", "暴力或危險", "垃圾訊息 / 廣告", "其他"];
-      const m = document.createElement("div"); m.className = "pv-mask report-mask";
-      m.innerHTML = `<div class="report-sheet"><h3>${(typeof ttT === "function" ? ttT : x => x)("哪裡有問題？")}</h3>${reasons.map(r => `<button class="report-opt" data-r="${r}">${r}</button>`).join("")}<button class="btn ghost" id="reportCancel">取消</button></div>`;
+      const T = s => (typeof ttT === "function" ? ttT(s) : s);
+      const reasons = ["騷擾或霸凌", "不實或詐騙", "色情或不雅", "暴力或危險", "垃圾訊息或廣告", "其他"];
+      const m = document.createElement("div"); m.className = "pv-mask report-mask"; m.dataset.ov = "report";
+      m.innerHTML = `<div class="report-sheet"><h3>${(typeof ttT === "function" ? ttT : x => x)("哪裡有問題？")}</h3>${reasons.map(r => `<button class="report-opt" data-r="${r}">${T(r)}</button>`).join("")}<button class="btn ghost" id="reportCancel">${T("取消")}</button></div>`;
       document.body.appendChild(m);
-      const done = v => { m.remove(); resolve(v); };
+      // 無障礙：Tab 鎖在選單內、Esc 關閉、關掉後焦點回原處（以前 Tab 會跑到底下被蓋住的頁面）
+      let _a11y = null;
+      const done = v => { if (_a11y) { _a11y(); _a11y = null; } m.remove(); resolve(v); };
+      if (typeof ttModalA11y === "function") _a11y = ttModalA11y(m, () => done(null), { focus: ".report-opt" });
       m.querySelectorAll(".report-opt").forEach(b => b.addEventListener("click", () => done(b.dataset.r)));
       m.querySelector("#reportCancel").addEventListener("click", () => done(null));
       m.addEventListener("click", e => { if (e.target === m) done(null); });

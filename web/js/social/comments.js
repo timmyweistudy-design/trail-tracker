@@ -46,7 +46,7 @@ const PostComments = (() => {
         <div class="pv-cm-act">
           <span class="pv-cm-time">${Supa.ago(cm.created_at)}</span>
           <button class="cm-like ${liked ? "on" : ""}" data-id="${cm.id}" aria-label="${T("讚")}">${Feed.heart(liked)}<span>${n || ""}</span></button>
-          <button class="cm-tr" data-id="${cm.id}" aria-label="${T("翻譯")}">${ic("translate")}</button>
+          ${ttSameLang(cm.body) ? "" : `<button class="cm-tr" data-id="${cm.id}" aria-label="${T("翻譯")}">${ic("translate")}</button>`}
           ${!isReply ? `<button class="cm-reply" data-id="${cm.id}" data-name="${esc(name(cm))}">${T("回覆")}</button>` : ""}
           ${canDel ? `<button class="cm-del" data-id="${cm.id}" aria-label="${T("刪除")}">${ic("trash")}</button>` : ""}
         </div></div></div>`;
@@ -77,7 +77,7 @@ const PostComments = (() => {
       b.disabled = true;
       const t = await PostView.translateText(_bodies[b.dataset.id] || "", (typeof ttTrTarget === "function") ? ttTrTarget() : "zh-TW");
       b.disabled = false;
-      if (!t) { say("翻譯失敗，稍後再試"); return; }
+      if (!t) { say("翻譯失敗，等一下再試"); return; }
       out.textContent = t; out.dataset.done = "1"; out.hidden = false;
     }));
     box.querySelectorAll(".pv-cm .mention").forEach(b => b.addEventListener("click", () => { if (typeof Discover !== "undefined") Discover.openByHandle(b.dataset.handle); }));

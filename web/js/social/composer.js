@@ -3,14 +3,15 @@ const Composer = (() => {
   let files = [];
   let video = null;
   let rating = 0;
+  const T = s => (typeof ttT === "function" ? ttT(s) : s);
 
   function open(rec, presetFiles, presetCaption) {
     if (typeof ttBusy === "function" && ttBusy("composer")) return;   // 防連點
-    if (typeof Supa === "undefined" || !Supa.ready()) { toast("社群尚未啟用"); return; }
+    if (typeof Supa === "undefined" || !Supa.ready()) { toast(T("社群尚未啟用")); return; }
     Auth.session().then(async (s) => {
-      if (!s) { toast("請先到「社群」分頁登入"); return; }
+      if (!s) { toast(T("請先到「社群」分頁登入")); return; }
       const prof = await Auth.myProfile();
-      if (!prof) { toast("請先到「社群」分頁完成註冊"); return; }
+      if (!prof) { toast(T("請先到「社群」分頁完成註冊")); return; }
       mount(rec, presetFiles, presetCaption);
     });
   }
@@ -19,20 +20,20 @@ const Composer = (() => {
     if (document.querySelector(".composer-mask")) return;   // 防連點疊層
     files = (presetFiles && presetFiles.length) ? presetFiles.slice(0, 9) : []; video = null; rating = 0;
     const wrap = document.createElement("div");
-    wrap.className = "composer-mask";
+    wrap.className = "composer-mask"; wrap.dataset.ov = "composer";   // data-ov：Esc／返回鍵會關它（以前關不掉）
     wrap.innerHTML = `
       <div class="composer">
-        <div class="composer-head"><button class="comp-x" aria-label="關閉" id="compX">${ic("x")}</button><b>分享到社群</b><button class="btn primary comp-post" id="compPost">發布</button></div>
-        <div class="comp-trail">${ic("mountain")} <b>${esc(rec.trailName || "自由路線")}</b><span>${(rec.distanceKm || 0).toFixed(2)} km · ↑${Math.round(rec.ascent || 0)} m</span></div>
+        <div class="composer-head"><button class="comp-x" aria-label="${T("關閉")}" id="compX">${ic("x")}</button><b>${T("分享到社群")}</b><button class="btn primary comp-post" id="compPost">${T("發布")}</button></div>
+        <div class="comp-trail">${ic("mountain")} <b>${esc(rec.trailName || "自由路線")}</b><span>${(rec.distanceKm || 0).toFixed(1)} km · ↑${Math.round(rec.ascent || 0)} m</span></div>
         ${rec.trailId ? `<div class="comp-rate"><span>${(typeof ttT === "function" ? ttT : x => x)("給這條步道幾顆星")}</span><span class="comp-stars" id="compStars" role="radiogroup">${[1, 2, 3, 4, 5].map(n => `<button type="button" class="cs" data-r="${n}" aria-label="${n}">${typeof STAR_SVG !== "undefined" ? STAR_SVG : "★"}</button>`).join("")}</span></div>` : ""}
-        <textarea id="compCaption" class="comp-cap" placeholder="寫下這趟的心得…" maxlength="2000"></textarea>
+        <textarea id="compCaption" class="comp-cap" placeholder="${T("寫下這趟的心得…")}" maxlength="2000"></textarea>
         <div class="comp-photos" id="compPhotos"></div>
-        <div class="comp-adds"><label class="comp-add">${ic("camera")} 加照片<input type="file" id="compFiles" accept="image/*" multiple hidden></label>
-        <label class="comp-add">${ic("video")} 加影片<input type="file" id="compVideo" accept="video/*" hidden></label></div>
+        <div class="comp-adds"><label class="comp-add">${ic("camera")} <span>${T("加照片")}</span><input type="file" id="compFiles" accept="image/*" multiple hidden></label>
+        <label class="comp-add">${ic("video")} <span>${T("加影片")}</span><input type="file" id="compVideo" accept="video/*" hidden></label></div>
         <div id="compVideoName" class="comp-trail"></div>
-        <div class="comp-vis">
-          <label><input type="radio" name="compVis" value="friends"${(localStorage.getItem("tt_default_vis") || "friends") === "friends" ? " checked" : ""}> 只給好友</label>
-          <label><input type="radio" name="compVis" value="public"${localStorage.getItem("tt_default_vis") === "public" ? " checked" : ""}> 公開</label>
+        <div class="comp-vis seg" role="radiogroup">
+          <label><input type="radio" name="compVis" value="friends"${(localStorage.getItem("tt_default_vis") || "friends") === "friends" ? " checked" : ""}><span>${ic("users")} ${T("只給好友")}</span></label>
+          <label><input type="radio" name="compVis" value="public"${localStorage.getItem("tt_default_vis") === "public" ? " checked" : ""}><span>${ic("globe")} ${T("公開")}</span></label>
         </div>
         <div class="comp-msg" id="compMsg"></div>
       </div>`;
@@ -46,7 +47,9 @@ const Composer = (() => {
     if (typeof Autocomplete !== "undefined") Autocomplete.attach(cap);
     const stars = wrap.querySelectorAll("#compStars .cs");
     stars.forEach(s => s.addEventListener("click", () => { rating = (rating === +s.dataset.r) ? 0 : +s.dataset.r; stars.forEach(x => x.classList.toggle("on", +x.dataset.r <= rating)); }));   // 再按同一顆＝取消
-    const close = () => { _urls.forEach(u => URL.revokeObjectURL(u)); _urls = []; wrap.remove(); };
+    let _a11y = null;
+    const close = () => { if (_a11y) _a11y(); _urls.forEach(u => URL.revokeObjectURL(u)); _urls = []; wrap.remove(); };
+    if (typeof ttModalA11y === "function") _a11y = ttModalA11y(wrap, close, { focus: "#compCaption" });
     wrap.querySelector("#compX").addEventListener("click", close);
     wrap.querySelector("#compFiles").addEventListener("change", e => {
       for (const f of e.target.files) if (files.length < 9) files.push({ file: f });   // 額外加的照片無時間/里程
@@ -65,7 +68,7 @@ const Composer = (() => {
     }
     wrap.querySelector("#compVideo").addEventListener("change", async e => {
       const f = e.target.files[0]; if (!f) return;
-      const msg = wrap.querySelector("#compMsg"); msg.textContent = (typeof ttT === "function" ? ttT : x => x)("檢查影片…");
+      const msg = wrap.querySelector("#compMsg"); msg.textContent = T("檢查影片…");
       const r = await Media.validateVideo(f);
       if (!r.ok) { msg.textContent = r.msg; video = null; wrap.querySelector("#compVideoName").textContent = ""; return; }
       video = { file: f, dur: r.dur }; msg.textContent = "";
@@ -79,7 +82,7 @@ const Composer = (() => {
   function renderPhotos(wrap) {
     _urls.forEach(u => URL.revokeObjectURL(u)); _urls = [];   // 回收上一輪的物件 URL
     const box = wrap.querySelector("#compPhotos");
-    box.innerHTML = files.map((it, i) => { const u = URL.createObjectURL(it.file || it); _urls.push(u); return `<div class="comp-thumb"><img src="${u}" alt=""><button data-i="${i}" class="comp-del" aria-label="移除">${ic("x")}</button>${(it.km != null) ? `<span class="comp-thumb-km">${(+it.km).toFixed(1)}km</span>` : ""}</div>`; }).join("");
+    box.innerHTML = files.map((it, i) => { const u = URL.createObjectURL(it.file || it); _urls.push(u); return `<div class="comp-thumb"><img src="${u}" alt=""><button data-i="${i}" class="comp-del" aria-label="${T("移除")}">${ic("x")}</button>${(it.km != null) ? `<span class="comp-thumb-km">${(+it.km).toFixed(1)}km</span>` : ""}</div>`; }).join("");
     box.querySelectorAll(".comp-del").forEach(b => b.addEventListener("click", () => { files.splice(+b.dataset.i, 1); renderPhotos(wrap); }));
   }
 

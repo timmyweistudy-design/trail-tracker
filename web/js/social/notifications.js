@@ -20,9 +20,12 @@ const Notifs = (() => {
     const { data } = await q;
     return data || [];
   }
-  async function markAllRead() {
+  // ids：只標這一批（畫面上看得到的）；不給就全部
+  async function markAllRead(ids) {
     const c = Supa.client(); const uid = await me(); if (!uid) return;
-    await c.from("notifications").update({ read: true }).eq("user_id", uid).eq("read", false);
+    let q = c.from("notifications").update({ read: true }).eq("user_id", uid).eq("read", false);
+    if (ids && ids.length) q = q.in("id", ids);
+    await q;
   }
   function label(n) {
     const name = esc((n.actor && (n.actor.display_name || n.actor.handle)) || "有人");
@@ -161,7 +164,10 @@ const Notifs = (() => {
       wirePush(into, () => render(into));
     };
     paint();
-    await markAllRead();
+    // 已讀：停留 2.5 秒才標，而且只標這次載入的那些（以前一打開就全部標掉，看的當下新通知又進來也一起被吞）。
+    // 這次畫面上的未讀圓點保留，下次進來才消失。
+    const ids = items.filter(n => !n.read).map(n => n.id);
+    if (ids.length) setTimeout(() => { markAllRead(ids).then(() => { if (typeof SocialUI !== "undefined" && SocialUI.updateBadge) SocialUI.updateBadge(); }); }, 2500);
   }
 
   function subscribe(onChange) {

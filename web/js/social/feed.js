@@ -12,7 +12,7 @@ const Feed = (() => {
   // 里程/爬升/星等：「6.42 km · ↑512 m」，星等顯示滿 5 顆（空的淡色）
   function statsHtml(p) {
     const parts = [];
-    if (p.distance_km != null) parts.push(`${(+p.distance_km).toFixed(2)} km`);
+    if (p.distance_km != null) parts.push(`${(+p.distance_km).toFixed(1)} km`);   // 一位小數，跟 App 其他地方一致
     if (p.ascent != null) parts.push(`↑${Math.round(p.ascent)} m`);
     const stars = p.rating ? `<span class="fc-rate" aria-label="${p.rating}/5">${"★".repeat(p.rating)}<i>${"★".repeat(5 - p.rating)}</i></span>` : "";
     return (parts.length ? `<span class="fc-stats">${parts.join(" · ")}</span>` : "") + stars;
@@ -53,7 +53,7 @@ const Feed = (() => {
           const more = (idx === 3 && extra > 0) ? `<span class="fc-more">+${extra}</span>` : "";
           return m.kind === "video"
             ? `<div class="fc-vid" data-vsrc="${esc(Media.publicUrl(m.path))}"><img loading="lazy" decoding="async" src="${esc(Media.publicUrl(m.thumb_path || ""))}" alt=""><span class="fc-play">▶</span>${more}</div>`
-            : `<div class="fc-shot"><img loading="lazy" decoding="async" src="${esc(Media.publicUrl(m.thumb_path || m.path))}" alt="">${m.km != null ? `<span class="fc-shot-km">${(+m.km).toFixed(1)}km</span>` : ""}${more}</div>`;
+            : `<div class="fc-shot"><img loading="lazy" decoding="async" src="${esc(Media.publicUrl(m.thumb_path || m.path))}" alt="">${m.km != null ? `<span class="fc-shot-km">${(+m.km).toFixed(1)} km</span>` : ""}${more}</div>`;
         }).join("")}</div>` : "";
     // 沒照片的貼文：畫路線形狀（原本 routeSvg 寫好了卻沒用上）
     const route = (!media.length && post.track_thumb) ? routeSvg(post.track_thumb) : "";
@@ -232,7 +232,7 @@ const Feed = (() => {
   async function openTag(tag) {
     if (document.querySelector(`[data-ov="tag-${CSS.escape(tag)}"]`)) return;   // 防連點疊層
     const wrap = document.createElement("div"); wrap.className = "pv-mask"; wrap.dataset.ov = "tag-" + tag;   // data-ov：全域 Esc 會關它
-    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" id="tagX" aria-label="關閉">${ic("x")}</button><b>#${esc(tag)}</b><span></span></div>
+    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" id="tagX" aria-label="${T("關閉")}">${ic("x")}</button><b>#${esc(tag)}</b><span></span></div>
       <div class="pv-body" id="tagBody"><div class="feed-loading"><span class="spin"></span></div></div></div>`;
     document.body.appendChild(wrap);
     wrap.querySelector("#tagX").addEventListener("click", () => wrap.remove());

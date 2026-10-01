@@ -4,6 +4,24 @@
 // 步道名稱/介紹等資料內容維持中文。要補翻譯：加 DICT 詞條或 PATTERNS 規則即可。
 const I18n = (() => {
   const DICT = {
+    "或": "or",
+    "翻譯": "Translate",
+    "翻譯失敗，等一下再試": "Couldn't translate — try again in a bit",
+    "加照片": "Add photos",
+    "加影片": "Add video",
+    "最近沒有揪團。想找人一起走？按右上角的「+」發起一個": "No group hikes coming up. Want company? Tap “+” at the top right to start one",
+    "發起人": "Organizer",
+    "刪除這個揪團？報名的人也會看不到了。": "Delete this group hike? People who signed up won't see it either.",
+    "揪團刪掉了": "Group hike deleted",
+    "影片太大了，上限": "Video too large — max",
+    "影片太長了，上限": "Video too long — max",
+    "這支影片讀不到，換一支試試": "Can't read this video — try another one",
+    "更多表情": "More reactions",
+    "不追蹤了": "Unfollow",
+    "收回請求": "Withdraw request",
+    "先登入才能用這個功能": "Sign in to use this",
+    "垃圾訊息或廣告": "Spam or ads",
+    "帳號": "Account",
     "放大地圖": "Zoom in",
     "縮小地圖": "Zoom out",
     "最遠的一條": "Longest one",
@@ -1521,7 +1539,21 @@ function ttColon() { return ttCJK() ? "：" : ": "; }
 function ttQuote(s) { return ttCJK() ? `「${s}」` : `“${s}”`; }
 function ttParen(s) { return ttCJK() ? `（${s}）` : ` (${s})`; }
 function ttUnknown() { return ttCJK() ? "？？？" : "???"; }
-function ttSp() { return ttCJK() ? "" : " "; }   // 拼句子時的字間空白（中日文不空格）
+function ttSp() { return ttCJK() ? "" : " "; }
+// 這段文字看起來已經是介面語言了嗎？（是的話就不用顯示翻譯鈕——以前中文介面看中文貼文也有翻譯鈕，按了翻出一模一樣的字）
+// 只用文字系統判斷：中文介面＋全是漢字、日文介面＋有假名、韓文介面＋有諺文、英文介面＋只有拉丁字母
+function ttSameLang(text) {
+  const t = String(text || "").replace(/[#@][^\s#@]+/g, "").replace(/https?:\S+/g, "");
+  if (!/\p{L}/u.test(t)) return true;   // 只有表情、數字、標籤 → 不用翻
+  let l = "zh"; try { l = I18n.lang(); } catch (e) { /* */ }
+  const han = /[\u4e00-\u9fff]/.test(t), kana = /[\u3040-\u30ff]/.test(t), hangul = /[\uac00-\ud7af]/.test(t);
+  const latin = /[A-Za-z]/.test(t), other = /[^\x00-\u024f\u3000-\u30ff\u4e00-\u9fff\uac00-\ud7af\uff00-\uffef\s\p{P}\p{S}\p{N}]/u.test(t);
+  if (l === "zh" || l === "cn") return han && !kana && !hangul && !latin && !other;
+  if (l === "ja") return kana && !hangul;
+  if (l === "ko") return hangul && !kana;
+  if (l === "en") return latin && !han && !kana && !hangul && !other;
+  return false;
+}   // 拼句子時的字間空白（中日文不空格）
 // 顯示用日期/時間的 locale（英文介面用英文月份與 AM/PM）
 // 「N 趟／N 天」：各語言的單位＋單複數（英文 1 hike / 2 hikes；原本一律加 s 會出現「1 hikes」）
 const _TT_UNITS = {

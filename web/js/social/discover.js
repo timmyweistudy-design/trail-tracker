@@ -8,14 +8,16 @@ const Discover = (() => {
   // 一列山友（搜尋、推薦、粉絲名單共用）；withFollow：右邊放追蹤鈕
   function personRow(p, fstate) {
     const btn = fstate ? `<button class="btn ${fstate === "no" ? "primary" : "ghost"} disc-follow" data-id="${p.id}" data-name="${esc(p.display_name || p.handle)}" data-fstate="${fstate}">${T(FOLLOW_LBL[fstate] || "追蹤")}</button>` : "";
-    return `<div class="disc-row" data-id="${p.id}">${avatar(p)}<div class="disc-id"><b><span class="fc-nm">${esc(p.display_name || p.handle)}</span>${tags(p)}</b><span>@${esc(p.handle)}</span></div>${btn}</div>`;
+    // 名字自己一行拿滿寬度；等級和 PRO 移到 @帳號那行（以前標籤擠在名字旁，名字被截成五個字）
+    return `<div class="disc-row" data-id="${p.id}">${avatar(p)}<div class="disc-id"><b><span class="fc-nm">${esc(p.display_name || p.handle)}</span></b><span class="disc-sub"><span class="disc-h">@${esc(p.handle)}</span>${tags(p)}</span></div>${btn}</div>`;
   }
   // 追蹤鈕：按「已追蹤／已申請」會先問一下再取消（以前一按就取消）
   function wireFollow(root) {
     root.querySelectorAll(".disc-follow").forEach(b => { if (b._tb) return; b._tb = 1; b.addEventListener("click", async e => {
       e.stopPropagation();
       const st = b.dataset.fstate || "no", on = st === "no";
-      if (!on && !(await ttConfirm(st === "requested" ? T("收回追蹤請求？") : `${T("不再追蹤")} ${b.dataset.name || ""}？`, T("確定"), T("取消")))) return;
+      const nm = (b.dataset.name || "").length > 16 ? b.dataset.name.slice(0, 16) + "…" : (b.dataset.name || "");   // 名字太長會把整句撐爆
+      if (!on && !(await ttConfirm(st === "requested" ? T("收回追蹤請求？") : `${T("不再追蹤")}${ttSp()}${nm}${ttCJK() ? "？" : "?"}`, T(st === "requested" ? "收回請求" : "不追蹤了"), T("取消")))) return;
       b.disabled = true;
       const r = await follow(b.dataset.id, on);
       b.disabled = false;
@@ -34,7 +36,7 @@ const Discover = (() => {
 
   function render(renderInto) {
     renderInto(`<div class="disc">
-      <input id="discQ" class="auth-input" type="search" placeholder="搜尋名字、@帳號或 #標籤" autocapitalize="off" enterkeyhint="search">
+      <input id="discQ" class="auth-input" type="search" placeholder="${T("搜尋名字、@帳號或 #標籤")}" autocapitalize="off" enterkeyhint="search">
       <div id="discResults"></div></div>`);
     const q = document.getElementById("discQ"); let t = null;
     q.addEventListener("input", () => { clearTimeout(t); t = setTimeout(() => { const v = q.value.trim(); v.length < 2 ? showSuggestions() : search(v); }, 300); });
@@ -123,29 +125,35 @@ const Discover = (() => {
     // 先出框和轉圈，再抓資料（以前要等 3 個查詢跑完才有畫面）
     const wrap = document.createElement("div");
     wrap.className = "pv-mask"; wrap.dataset.ov = "profile-" + userId;
-    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" aria-label="關閉" id="dpX">${ic("x")}</button><b id="dpTitle"></b><span></span></div>
+    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" aria-label="${T("關閉")}" id="dpX">${ic("x")}</button><b id="dpTitle"></b><span></span></div>
       <div class="pv-body" id="dpBody"><div class="feed-loading"><span class="spin"></span></div></div></div>`;
     document.body.appendChild(wrap);
     let tabMap = null;
     const close = () => { if (tabMap) { try { tabMap.remove(); } catch (e) { } } wrap.remove(); };
     wrap.querySelector("#dpX").addEventListener("click", close);
     const c = Supa.client();
-    const [{ data: prof }, me, posts, counts] = await Promise.all([
-      c.from("profiles").select("*").eq("id", userId).maybeSingle(), Supa.uid(), Posts.userPosts(userId), Posts.followCounts(userId)]);
+    // 全部一起發出去，但個人資料一回來就先把頭像、名字畫上（以前要等貼文、追蹤數、追蹤狀態全部跑完才有畫面）
+    const profP = c.from("profiles").select("*").eq("id", userId).maybeSingle(), meP = Supa.uid();
+    const postsP = Posts.userPosts(userId), countsP = Posts.followCounts(userId), totalP = Posts.postCount(userId);
+    const [{ data: prof }, me] = await Promise.all([profP, meP]);
     if (!document.body.contains(wrap)) return;
     if (!prof) { close(); say("找不到這位山友"); return; }
     const isMe = me === userId;
-    const [fstate, liked, blocked] = await Promise.all([isMe ? "no" : followState(userId), Posts.likedSet(posts.map(p => p.id)), isMe ? false : Safety.isBlocked(userId)]);
-    if (!document.body.contains(wrap)) return;
+    const fstateP = isMe ? "no" : followState(userId), blockedP = isMe ? false : Safety.isBlocked(userId);
     wrap.querySelector("#dpTitle").textContent = "@" + prof.handle;
     const body = wrap.querySelector("#dpBody");
     if (prof.cover_url) body.classList.add("has-cover");
-    body.innerHTML = `
+    const top = () => `
         ${prof.cover_url ? `<div class="pf-cover" style="background-image:url('${esc(prof.cover_url)}')"></div>` : ""}
         <div class="pf-top">${avatar(prof, "pf-av" + (prof.is_premium ? " pro-av" : ""))}
           <div class="pf-id"><div class="pf-name"><span class="fc-nm">${esc(prof.display_name || prof.handle)}</span>${prof.is_premium ? `<span class="pro-tag pro-id">PRO</span>` : ""}</div><div class="pf-handle">@${esc(prof.handle)}</div></div></div>
-        ${petLineFor(prof)}
-        <div class="pf-counts"><span class="cnt"><b>${posts.length}</b> ${T("篇")}</span><button class="cnt-link" data-mode="followers"><b>${counts.followers}</b> ${T("粉絲")}</button><button class="cnt-link" data-mode="following"><b>${counts.following}</b> ${T("追蹤中")}</button></div>
+        ${petLineFor(prof)}`;
+    body.innerHTML = top() + `${prof.bio ? `<div class="pf-bio">${esc(prof.bio)}</div>` : ""}<div class="feed-loading"><span class="spin"></span></div>`;
+    const [posts, counts, total, fstate, blocked] = await Promise.all([postsP, countsP, totalP, fstateP, blockedP]);
+    const liked = await Posts.likedSet(posts.map(p => p.id));
+    if (!document.body.contains(wrap)) return;
+    body.innerHTML = `${top()}
+        <div class="pf-counts"><span class="cnt"><b>${total == null ? posts.length : total}</b> ${T("篇")}</span><button class="cnt-link" data-mode="followers"><b>${counts.followers}</b> ${T("粉絲")}</button><button class="cnt-link" data-mode="following"><b>${counts.following}</b> ${T("追蹤中")}</button></div>
         ${prof.bio ? `<div class="pf-bio">${esc(prof.bio)}</div>` : ""}
         ${isMe ? "" : `<div class="dp-acts"><button class="btn ${fstate === "no" ? "primary" : "ghost"} disc-follow" id="dpFollow" data-id="${userId}" data-name="${esc(prof.display_name || prof.handle)}" data-fstate="${fstate}">${T(FOLLOW_LBL[fstate])}</button>
           <button class="btn ghost dp-more" id="dpMore" aria-label="${T("更多")}">${ic("more")}</button></div>`}
@@ -163,11 +171,14 @@ const Discover = (() => {
         { label: T("取消"), value: null, cls: "primary" }]);
       if (act === "report") {
         const reason = await Safety.pickReason(); if (reason === null) return;
-        await Safety.reportUser(userId, reason); say("收到，謝謝你回報");
+        const rr = await Safety.reportUser(userId, reason);
+        say(rr && rr.error ? Supa.errText(rr.error) : "收到，謝謝你回報");
       } else if (act === "block") {
-        if (isBlocked) { await Safety.unblock(userId); isBlocked = false; say("解除封鎖了"); return; }
-        if (!(await ttConfirm(T("封鎖之後你們看不到彼此的貼文，互相追蹤也會解除。"), T("封鎖"), T("取消")))) return;
-        await Safety.block(userId); say("封鎖了"); close(); if (typeof SocialUI !== "undefined") SocialUI.refresh();
+        // 封鎖／解除都看結果再講（以前沒成功也說「封鎖了」）
+        if (isBlocked) { const ur = await Safety.unblock(userId); if (ur && ur.error) { say(Supa.errText(ur.error)); return; } isBlocked = false; say("解除封鎖了"); return; }
+        if (!(await ttConfirm(T("封鎖之後你們看不到彼此的貼文，互相追蹤也會解除。"), T("封鎖"), T("取消"), { danger: true }))) return;
+        const br = await Safety.block(userId); if (br && br.error) { say(Supa.errText(br.error)); return; }
+        say("封鎖了"); close(); if (typeof SocialUI !== "undefined") SocialUI.refresh();
       }
     });
     const photos = [];
@@ -231,21 +242,23 @@ const Discover = (() => {
     const { data } = await c.from("follows").select("following_id").eq("follower_id", uid);
     return profilesByIds((data || []).map(r => r.following_id));
   }
-  const userRow = p => personRow(p);
   // 粉絲 / 追蹤中 名單覆蓋層
   async function openUserList(uid, mode) {
     if (typeof ttBusy === "function" && ttBusy("ulist")) return;   // 防連點
     const title = T(mode === "followers" ? "粉絲" : "追蹤中");
     if (document.querySelector('[data-ov="ulist"]')) return;   // 防連點疊層
     const wrap = document.createElement("div"); wrap.className = "pv-mask"; wrap.dataset.ov = "ulist";
-    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" aria-label="關閉" id="ulX">${ic("x")}</button><b>${title}</b><span></span></div>
+    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" aria-label="${T("關閉")}" id="ulX">${ic("x")}</button><b>${title}</b><span></span></div>
       <div class="pv-body" id="ulBody"><div class="feed-loading"><span class="spin"></span></div></div></div>`;
     document.body.appendChild(wrap);
     wrap.querySelector("#ulX").addEventListener("click", () => wrap.remove());
-    const people = mode === "followers" ? await listFollowers(uid) : await listFollowing(uid);
+    // 每一列都有追蹤鈕：粉絲名單可以直接回追（以前只能點進個人頁再按）
+    const [people, me, following] = await Promise.all([mode === "followers" ? listFollowers(uid) : listFollowing(uid), Supa.uid(), Posts.followingIds()]);
     const body = wrap.querySelector("#ulBody"); if (!body) return;
-    body.innerHTML = people.length ? people.map(userRow).join("") : `<div class="social-empty">${T(mode === "followers" ? "還沒有粉絲。" : "還沒追蹤任何人。")}</div>`;
-    body.querySelectorAll(".disc-row").forEach(r => r.addEventListener("click", () => { wrap.remove(); openProfile(r.dataset.id); }));
+    const fset = new Set(following);
+    body.innerHTML = people.length ? people.map(p => personRow(p, p.id === me ? null : (fset.has(p.id) ? "following" : "no"))).join("") : `<div class="social-empty">${T(mode === "followers" ? "還沒有粉絲。" : "還沒追蹤任何人。")}</div>`;
+    body.querySelectorAll(".disc-row").forEach(r => r.addEventListener("click", e => { if (e.target.closest(".disc-follow")) return; wrap.remove(); openProfile(r.dataset.id); }));
+    wireFollow(body);
   }
 
   return { render, openProfile, openByHandle, follow, isFollowing, followState, openUserList };
