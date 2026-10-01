@@ -199,6 +199,15 @@ const ICON = {
   more: '<circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/>',
   video: '<rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10.5 5-3v9l-5-3"/>',
   snow: '<path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9"/><path d="m9.5 4.5 2.5 2 2.5-2M9.5 19.5l2.5-2 2.5 2"/>',
+  cloudsun: '<path d="M12 3.5V5M5.8 6.3l1 1M3.5 12H5"/><path d="M8.6 11.3a3.6 3.6 0 0 1 6.7-1.9"/><path d="M8 19.5h9.5a3.5 3.5 0 0 0 .3-7 5 5 0 0 0-9.6 1.6A2.8 2.8 0 0 0 8 19.5Z"/>',
+  fog: '<path d="M5 8h14M3 12h18M6 16h12M8 20h8"/>',
+  storm: '<path d="M7 15a4 4 0 0 1 .4-8 5 5 0 0 1 9.6 1.6 3.4 3.4 0 0 1 .5 6.4"/><path d="m12.5 12-2.5 4.5h4L11.5 21"/>',
+  bird: '<path d="M3 13c3.5.5 6-1 7.5-4.5C11.7 5.6 13.6 4 16 4a3 3 0 0 1 3 3l2 1.2-2 .8c0 5.6-4 9.5-9.5 9.5H6"/><path d="M10 18v3M13.5 17.5l1 3"/><circle cx="16" cy="7" r=".6" fill="currentColor"/>',
+  bug: '<ellipse cx="12" cy="14" rx="4.5" ry="6"/><path d="M12 8V4.5M9.5 4 12 5.8 14.5 4M7.5 11.5H4M7.6 15.5H4.5M16.5 11.5H20M16.4 15.5h3.1M12 10v10"/>',
+  frog: '<path d="M4 15.5c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5-3.6 4.5-8 4.5-8-.5-8-4.5Z"/><circle cx="8.5" cy="8.5" r="2.2"/><circle cx="15.5" cy="8.5" r="2.2"/><path d="M9 15.5c1.7 1 4.3 1 6 0"/>',
+  parking: '<rect x="4" y="4" width="16" height="16" rx="3.5"/><path d="M10 17V7.5h3.2a2.7 2.7 0 0 1 0 5.4H10"/>',
+  toilet: '<circle cx="7.5" cy="5" r="1.7"/><circle cx="16.5" cy="5" r="1.7"/><path d="M5.5 9h4v5.5H8.6V20H6.4v-5.5h-.9ZM16.5 9l2.8 6.5h-1.8V20h-2v-4.5h-1.8Z"/><path d="M12 3v18"/>',
+  store: '<path d="M4 9 5.5 4h13L20 9"/><path d="M4 9h16v1.5a2.7 2.7 0 0 1-5.3 0 2.7 2.7 0 0 1-5.4 0 2.7 2.7 0 0 1-5.3 0Z"/><path d="M5.5 12.5V20h13v-7.5M10 20v-4.5h4V20"/>',
   heart: '<path d="M12 20S4 14.5 4 9.2A3.8 3.8 0 0 1 12 7a3.8 3.8 0 0 1 8 2.2C20 14.5 12 20 12 20Z"/>',
   bookmark: '<path d="M6 4h12v17l-6-4-6 4V4Z"/>',
   calendar: '<rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 9h16M8 3v4M16 3v4"/>',
@@ -282,10 +291,11 @@ function tagsOf(t) {
 if (window.L && L.Icon && L.Icon.Default) L.Icon.Default.imagePath = "vendor/leaflet/images/";
 
 // 分級說明面板
-function openGradeInfo() {
+function openGradeInfo(cur) {
+  if (typeof cur !== "number") cur = null;   // 也會被當成事件處理函式呼叫（收到 Event）
   const rows = Object.entries(GRADES).map(([n, g]) => `
-    <div class="grade-row">
-      <span class="grade-chip" style="background:${g.color}">${n}級·${g.name}</span>
+    <div class="grade-row${+n === cur ? " cur" : ""}">
+      <span class="grade-chip" style="background:${g.color}">${n}級·${g.name}</span>${+n === cur ? `<span class="grade-cur">${ttT("這條步道")}</span>` : ""}
       <div class="grade-text">
         <div class="grade-plain">${g.plain}</div>
         <div class="grade-meta"><span><i>適合</i>${g.who}</span><span><i>時間</i>${g.time}</span><span><i>裝備</i>${g.gear}</span></div>
@@ -298,11 +308,12 @@ function openGradeInfo() {
     <div class="grade-note" style="margin-top:14px">
       「親子友善」不是難度，是另外貼的標籤：路短、好走、坡緩，帶小孩去剛剛好。
     </div>
-    <p style="font-size:11.5px;color:var(--ink-soft);line-height:1.6;margin-top:14px">標「估」的是 OpenStreetMap 社群步道，等級是照長度推估的，參考就好；林業署的步道才是官方分級。出門前記得再看一下路況和天氣。</p>
+    <p class="grade-foot">難度前面有「≈」的是 OpenStreetMap 社群步道，等級是照長度和爬升推估的，參考就好；林業署的步道才是官方分級。出門前記得再看一下路況和天氣。</p>
     <button class="btn ghost" id="btnGradeClose" style="margin-top:8px">好，知道了</button>`;
   $("#gradeMask").classList.add("show");
   $("#gradeSheet").classList.add("show");
   $("#gradeSheet").scrollTop = 0;                 // 浮到最上層並回到頂部
+  if (cur != null) setTimeout(() => { const r = document.querySelector("#gradeBody .grade-row.cur"); if (r) r.scrollIntoView({ block: "center", behavior: "smooth" }); }, 250);
   $("#btnGradeClose").addEventListener("click", closeGradeInfo);
 }
 function closeGradeInfo() {
@@ -987,7 +998,7 @@ function fmtYmd(s) { return s && s.length === 8 ? `${s.slice(0, 4)}/${s.slice(4,
 function condStamp() {
   const u = (typeof Conditions !== "undefined" && Conditions.lastUpdated()) || 0;
   if (!u) return "";
-  return `　·　即時更新於 ${new Date(u).toLocaleString(ttLocale(), { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}`;
+  return new Date(u).toLocaleString(ttLocale(), { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 // 外部來源的字串插進 innerHTML 前一律跳脫：Google Places 的店名/簡介是店家可自訂的欄位、
 // 林業署公告也是外部資料，直接插入會破版（最壞情況是 stored XSS）。
@@ -997,32 +1008,34 @@ function escHtml(v) {
 }
 function conditionBanner(t) {
   const c = t.condition;
+  const src = (txt, time) => `<div class="cond-meta">${txt}</div>${time ? `<div class="cond-meta">${ttT("更新於")} ${time}</div>` : ""}`;
   // 有官方公告（落石／坍方／崩塌／封閉等）→ 紅/黃警示橫幅
   if (c && c.status) {
     const closed = /暫停|封閉|關閉/.test(c.status);
+    // 「部分封閉（全線）」這種官方寫法自相矛盾 → 全線時就不再括號標示
+    const sec = c.section && !(c.section === "全線" && /部分/.test(c.status)) ? `（${escHtml(c.section)}）` : "";
     return `<div class="cond-banner ${closed ? "danger" : "warn"}">
-      <div class="cond-h">${closed ? "⛔" : "⚠️"} ${escHtml(c.status)}${c.section ? `（${escHtml(c.section)}）` : ""}</div>
+      <div class="cond-h">${ic("alert")}<span>${escHtml(c.status)}</span>${sec}</div>
       ${c.title ? `<div class="cond-body">${escHtml(c.title)}</div>` : ""}
-      ${(c.title && typeof I18n !== "undefined" && I18n.lang() !== "zh") ? `<div class="pv-tr-row"><button class="link-btn" id="condTranslate">${ic("translate")} ${ttT("翻譯年糕")}</button></div><div class="cond-body pv-cap-tr" id="condTr" style="display:none"></div>` : ""}
-      ${c.reopen ? `<div class="cond-meta">預計重新開放：${fmtYmd(c.reopen)}　${escHtml(c.dep || "")}</div>` : ""}
-      <div class="cond-meta">資料來源：林業及自然保育署（請以官方公告為準）${condStamp()}</div>
+      ${(c.title && typeof I18n !== "undefined" && I18n.lang() !== "zh") ? `<div class="pv-tr-row"><button class="link-btn" id="condTranslate">${ic("translate")} ${ttT("翻譯年糕")}</button></div><div class="cond-body pv-cap-tr" id="condTr" hidden></div>` : ""}
+      ${c.reopen ? `<div class="cond-meta">${ttT("預計重新開放")}：${fmtYmd(c.reopen)}${c.dep ? `・${escHtml(c.dep)}` : ""}</div>` : ""}
+      ${src(`${ttT("資料來源：林業及自然保育署")}（${ttT("以官方公告為準")}）`, condStamp())}
     </div>`;
   }
-  // 林業署步道、無公告 → 綠色「通行正常」（給每條步道明確即時狀態）
+  // 林業署步道、無公告 → 綠色「通行正常」
   if (t.source === "forestry") {
     return `<div class="cond-banner ok">
-      <div class="cond-h">✅ 目前無封閉公告，通行正常</div>
-      <div class="cond-meta">資料來源：林業及自然保育署即時路況${condStamp()}　·　出發前仍請留意現場天候與狀況</div>
+      <div class="cond-h">${ic("check")}<span>${ttT("目前無封閉公告，通行正常")}</span></div>
+      ${src(`${ttT("資料來源：林業及自然保育署即時路況")}・${ttT("出發前仍請留意現場天候與狀況")}`, condStamp())}
     </div>`;
   }
   // OSM 步道：無官方即時路況來源 → 中性提示，誠實告知
   return `<div class="cond-banner note">
-    <div class="cond-h">ℹ️ 無官方即時路況資料</div>
-    <div class="cond-meta">這條不歸林業署管，我們拿不到即時封閉公告。出發前查一下當地公告，或看看最近的山友回報。</div>
+    <div class="cond-h">${ic("info")}<span>${ttT("無官方即時路況資料")}</span></div>
+    <div class="cond-meta">${ttT("這條不歸林業署管，我們拿不到即時封閉公告。出發前查一下當地公告，或看看最近的山友回報。")}</div>
   </div>`;
 }
 
-// 詳情頁的分級白話說明（含資料來源註記）
 // 同名步道的其他路段：OSM 常把一條步道切成好幾筆（草嶺古道 2.06 km 只是其中一段、另有「草嶺古道福隆路線」），
 // 詳情頁列出來讓人知道「這可能只是一段」，點了直接跳過去。只比同縣市，最多 4 筆。
 function _sibCore(n) { return String(n || "").replace(/(國家步道|自然步道|親山步道|登山步道|環狀步道|生態步道|步道|古道|越嶺道).*$/, ""); }
@@ -1036,28 +1049,25 @@ function siblingTrails(t) {
 function siblingHtml(t) {
   const sib = siblingTrails(t); if (!sib.length) return "";
   return `<div class="sib-box"><div class="sib-h">${ttT("同名的其他路段")}</div>
-    <div class="sib-row">${sib.map(o => `<button class="sib-chip" data-sib="${o.id}">${o.name}<span>${o.length_km ? o.length_km + " km" : ""}</span></button>`).join("")}</div></div>`;
+    <div class="sib-row">${sib.map(o => `<button class="sib-chip" data-sib="${o.id}">${escHtml(o.name)}<span>${o.length_km ? fmtKm(o.length_km) + " km" : ""}</span></button>`).join("")}</div></div>`;
 }
 function gradeExplain(t) {
   const g = GRADES[t.difficulty];
-  if (!g) return `<div class="grade-note">此步道尚無分級資料。</div>`;
-  const basis = t.source === "forestry"
-    ? "林業署官方分級"
-    : "照長度推估的，參考就好";
+  if (!g) return t.difficulty === 6
+    ? `<div class="grade-note">${ttT("這條在雪季才會有積雪，需要冰攀裝備與經驗；其他季節的難度沒有官方分級。")}</div>`
+    : `<div class="grade-note">${ttT("此步道尚無分級資料。")}</div>`;
+  const basis = t.source === "forestry" ? ttT("林業署官方分級") : ttT("照長度推估的，參考就好");
   return `<div class="grade-note">
     <b>${t.difficulty}級·${g.name}</b>：${g.plain}
     <div class="grade-note-meta"><span><i>適合</i>${g.who}</span><span><i>裝備</i>${g.gear}</span>
-      <span class="gn-basis">${basis}・<a href="#" id="lnkGradeAll">看完整分級說明</a></span></div>
+      <span class="gn-basis">${basis}・<a href="#" id="lnkGradeAll">${ttT("看完整分級說明")}</a></span></div>
   </div>`;
 }
 
-function myLogHtml() { return ""; }   // 我的步記已移除（完成→圖卡勾勾、分享→記錄總結頁）
-
 // ---------- 詳情面板 ----------
-let _detailTrail = null;
-// 詳情頁「生態」區塊：小黑蚊/蚊蟲警示 + 這個海拔帶常見動植物（離線）+ 選配的 iNaturalist 真實目擊。
-// 介面文案翻 25 語言；物種名維持中文（比照步道資料，收在 i18n-ignore）。
-// 每段可翻文字都獨立成一個文字節點——複合節點（emoji/等級黏在同一節點）字典查不到會漏翻。
+let _detailTrail = null, _detailBack = null;
+// 生態：小黑蚊/蚊蟲警示 + 這個海拔帶常見動植物（離線）+ 選配的 iNaturalist 真實目擊。
+// 每段可翻文字都獨立成一個文字節點——複合節點字典查不到會漏翻。
 function ecologyHtml(t) {
   if (typeof Ecology === "undefined") return "";
   const r = Ecology.speciesFor(t);
@@ -1066,220 +1076,302 @@ function ecologyHtml(t) {
   const risk = Ecology.biteRisk(alt, t.region, new Date(), env);
   const LV = { high: ["風險高", "eco-hi"], mid: ["風險中", "eco-mid"], low: ["風險低", "eco-lo"], none: ["幾乎無", "eco-no"] };
   const [lvTxt, lvCls] = LV[risk.level] || LV.none;
-  const CATN = { mammal: ["🦌", "哺乳類"], bird: ["🐦", "鳥類"], insect: ["🦋", "昆蟲"], herp: ["🐸", "兩棲爬蟲"] };
+  const CATN = { mammal: ["paw", "哺乳類"], bird: ["bird", "鳥類"], insect: ["bug", "昆蟲"], herp: ["frog", "兩棲爬蟲"] };
+  const SHOW = 6;   // 每類先列 6 個，其餘收起來（以前 30 多顆一次攤開）
   const cats = Ecology.CATS.map(k => {
     const arr = r.species[k] || []; if (!arr.length) return "";
-    const [emo, nm] = CATN[k];
-    const chips = arr.map(sp => `<span class="eco-sp${Ecology.isPoison(sp) ? " eco-poison" : ""}">${Ecology.isPoison(sp) ? "⚠️" : ""}${sp}</span>`).join("");
-    return `<div class="eco-cat"><span class="eco-cat-h"><span class="eco-emo">${emo}</span><span>${nm}</span></span><span class="eco-chips">${chips}</span></div>`;
+    const [icon, nm] = CATN[k];
+    const chip = sp => `<span class="eco-sp${Ecology.isPoison(sp) ? " eco-poison" : ""}">${Ecology.isPoison(sp) ? ic("alert") : ""}${escHtml(sp)}</span>`;
+    const more = arr.length > SHOW ? `<button class="eco-more" type="button">+${arr.length - SHOW}</button><span class="eco-rest" hidden>${arr.slice(SHOW).map(chip).join("")}</span>` : "";
+    return `<div class="eco-cat"><span class="eco-cat-h">${ic(icon)}<span>${nm}</span></span><span class="eco-chips">${arr.slice(0, SHOW).map(chip).join("")}${more}</span></div>`;
   }).join("");
   return `
-    <div class="section-title collapsible" id="secEco">${ic("leaf")}<span>生態</span></div>
     <div id="ecoBox" class="eco-box">
       <div class="eco-bite ${lvCls}">
-        <div class="eco-bite-h"><span class="eco-emo">🦟</span><span>小黑蚊・蚊蟲</span><span class="eco-lv">${lvTxt}</span></div>
+        <div class="eco-bite-h">${ic("bug")}<span>小黑蚊・蚊蟲</span><span class="eco-lv">${lvTxt}</span></div>
         <ul class="eco-tips">${risk.tips.map(x => `<li>${x}</li>`).join("")}</ul>
       </div>
       <div class="eco-src">這個海拔常碰到的傢伙（不是這條步道的實際紀錄）</div>
       ${cats}
-      <button class="link-btn eco-nearby-btn" id="ecoNearbyBtn">${ic("search")}<span>看這附近的真實目擊</span></button>
-      <div id="ecoNearbyBox" class="eco-nearby"></div>
+      <button class="btn ghost eco-nearby-btn" id="ecoNearbyBtn">${ic("search")}<span>看這附近的真實目擊</span></button>
+      <div id="ecoNearbyBox" class="eco-nearby" hidden></div>
     </div>`;
 }
+function bindEcology(t) {
+  document.querySelectorAll("#detailBody .eco-more").forEach(b => b.addEventListener("click", () => { const r = b.nextElementSibling; if (r) r.hidden = false; b.remove(); }));
+  const enb = $("#ecoNearbyBtn");
+  if (enb) enb.addEventListener("click", async () => {
+    const box = $("#ecoNearbyBox"); if (!box) return;
+    if (enb.dataset.done) { box.hidden = !box.hidden; return; }
+    box.hidden = false;
+    if (!navigator.onLine) { box.innerHTML = `<div class="eco-src">${ttT("需要網路才能看真實目擊")}</div>`; return; }
+    enb.disabled = true;
+    box.innerHTML = `<div class="food-loading"><span class="spin"></span>${ttT("查詢附近目擊中…")}</div>`;
+    const obs = (typeof Ecology !== "undefined") ? await Ecology.nearbyObservations(t.lat, t.lon) : null;
+    enb.disabled = false;
+    if (!obs) { box.innerHTML = `<div class="eco-src">${ttT("這附近暫時沒有可顯示的目擊記錄")}</div>`; return; }
+    enb.dataset.done = "1";
+    box.innerHTML = `<div class="eco-src">${ttT("iNaturalist 附近 5 公里的真實觀察")}</div><div class="eco-obs">`
+      + obs.map(o => `<div class="eco-ob">${o.thumb ? `<img src="${escHtml(o.thumb)}" loading="lazy" alt="">` : `<span class="eco-ob-noimg">${ic("search")}</span>`}<span>${escHtml(o.name)}</span></div>`).join("")
+      + `</div>`;
+  });
+}
 function currentDetailTrail() { return $("#detailSheet").classList.contains("show") ? _detailTrail : null; }
-async function openDetail(id) {
+
+// 分享連結：只有真的是網站才給網址（iOS App 裡 location 是 capacitor://localhost，別人打不開）
+function ttShareLink(query) {
+  try {
+    if (!/^https?:$/.test(location.protocol) || /^(localhost|127\.)/.test(location.hostname)) return null;
+    return location.origin + location.pathname + (query || "");
+  } catch (e) { return null; }
+}
+
+// ── 詳情頁各區塊 ──
+function detailHeroHtml(t) {
+  const fav = Store.isFav(t.id);
+  return `<div class="detail-hero noimg" id="heroWrap">
+      <div class="hero-cap">
+        <h2>${escHtml(t.name)}</h2>
+        <div class="badges">
+          ${diffBadgeHtml(t)}
+          ${t.family_friendly ? `<span class="badge family">${ttT("親子友善")}</span>` : ""}
+          ${t.region ? `<span class="badge ghost">${escHtml(t.region)}</span>` : ""}
+        </div>
+      </div>
+      <button class="hero-fav${fav ? " on" : ""}" id="favDetail" aria-pressed="${fav}" aria-label="${ttT("收藏")}">${STAR_SVG}</button>
+    </div>`;
+}
+// 重點數字：固定 4 格（長度／爬升／時間／海拔或陡度），難度和縣市已在上方，不再重複
+function detailStatsHtml(t) {
+  const ascCached = (typeof Profile !== "undefined" && Profile.cachedGain) ? Profile.cachedGain(t.id) : null;
+  const asc = ascCached != null ? ascCached : (t.ascent != null ? Math.round(t.ascent) : null);
+  const ascEst = t.source !== "forestry" && ascCached == null;   // OSM 沿線推估、還沒用地形算過 → ≈
+  const cells = [
+    ["ruler", "長度", `${fmtKm(t.length_km)} km`],
+    ["up", "累積爬升", `<span id="kvAscent">${asc != null ? `${ascEst ? `<span class="approx">≈</span>` : ""}${asc} m` : (geoOf(t) ? ttT("計算中…") : "—")}</span>`],
+    ["clock", "所需時間", timeHtml(t)],
+  ];
+  if (t.alt_high != null && t.alt_low != null) cells.push(["mountain", "海拔範圍", `${t.alt_low}–${t.alt_high} m`]);
+  else { const sl = slopeInfo(t); if (sl && sl.word) cells.push(["mountain", "坡度", `${ttT(sl.word)}<small> ${Math.round(sl.perKm)} m/km</small>`]); }
+  return `<div class="statcard">${cells.map(([ico, l, v]) =>
+    `<div class="stat"><div class="stat-h">${ic(ico)}<span>${ttT(l)}</span></div><div class="stat-v">${v}</div></div>`).join("")}</div>
+    <div class="len-note" id="lenNote" hidden></div>`;
+}
+function detailMetaHtml(t) {
+  const bits = [];
+  if (t.pave) bits.push(escHtml(t.pave));
+  if (t.best_season) bits.push(escHtml(t.best_season));
+  if (t.transport?.car) bits.push(ttT("可開車"));
+  if (t.transport?.m_bus || t.transport?.l_bus) bits.push(ttT("有公車"));
+  return bits.length ? `<div class="det-meta"><div class="det-meta-l">${ttT("路面・季節・交通")}</div><div class="det-meta-v">${bits.map(b => `<span>${b}</span>`).join("・")}</div></div>` : "";
+}
+function detailGuideHtml(t) {
+  if (!t.guide) return "";
+  const g = String(t.guide).trim();
+  // OSM 的「介紹」常只有一句「步道系統：地方級」→ 當成小註記，不當正文
+  if (g.length < 40 && !/\n/.test(g)) return `<div class="det-meta det-meta-sm"><div class="det-meta-v">${escHtml(g)}</div></div>`;
+  const tr = (typeof I18n !== "undefined" && I18n.lang() !== "zh")
+    ? `<div class="pv-tr-row"><button class="link-btn" id="guideTranslate">${ic("translate")} ${ttT("翻譯年糕")}</button></div><div class="guide pv-cap-tr" id="guideTr" hidden></div>` : "";
+  return `<div class="guide">${escHtml(g).replace(/\n/g, "<br>")}</div>${tr}`;
+}
+function detailOverviewHtml(t) {
+  const nav = t.lat ? `https://www.google.com/maps/dir/?api=1&destination=${t.lat},${t.lon}` : "";
+  const moreSearch = `https://www.google.com/search?q=${encodeURIComponent(t.name + " 步道")}`;
+  // 標籤：「親子」上面已經有「親子友善」，不再重複
+  const tags = tagsOf(t).filter(g => !(t.family_friendly && /親子/.test(g)));
+  return `<div id="condLive">${conditionBanner(t)}</div>
+    ${detailStatsHtml(t)}
+    ${tags.length ? `<div class="tag-row">${tags.map(g => `<span class="tag">${escHtml(g)}</span>`).join("")}</div>` : ""}
+    ${gradeExplain(t)}
+    ${detailMetaHtml(t)}
+    ${siblingHtml(t)}
+    ${detailGuideHtml(t)}
+    <div class="link-row flow det-acts">
+      ${nav ? `<a class="link-btn" href="${nav}" target="_blank" rel="noopener">${ic("compass")} ${ttT("導航")}</a>` : ""}
+      <a class="link-btn" href="${moreSearch}" target="_blank" rel="noopener">${ic("search")} ${ttT("查資訊")}</a>
+      <button class="link-btn" id="btnShareTrail">${ic("share")} ${ttT("分享")}</button>
+      <button class="link-btn social-only" id="btnEventTrail">${ic("calendar")} ${ttT("揪團")}</button>
+      <button class="link-btn" id="btnDetMore">${ic("more")} ${ttT("更多")}</button>
+    </div>
+    <div id="activityBox" hidden></div>
+    <div id="trailFeedBox"></div>`;
+}
+function detailRouteHtml(t) {
+  const done = typeof offlineSets === "function" && offlineSets()["trail:" + t.id];
+  return `<div class="section-title" id="secWx">${ic("sun")}${ttT("天氣（步道所在地）")}</div>
+    <div id="weatherBox"><div class="food-loading"><span class="spin"></span>${ttT("查詢天氣中…")}</div></div>
+    ${geoOf(t) ? `<div class="section-title" id="secElev">${ic("mountain")}${ttT("海拔剖面")}</div><div id="profileBox"><div class="food-loading"><span class="spin"></span>${ttT("計算海拔剖面中…")}</div></div>` : ""}
+    ${wpListHtml(t)}
+    <button class="btn ghost" id="btnOffline" style="margin-top:14px">${done ? `${ic("check")} ${ttT("已預載離線地圖")}<small>・${ttT("再按一次會補齊")}</small>` : `${ic("download")} ${ttT("預載此步道離線地圖")}`}</button>
+    <div id="offlineBox" class="offline-box" hidden></div>`;
+}
+function detailNearbyHtml(t) {
+  return `<div id="amenBox" class="amen-box"></div>
+    <div class="section-title" id="secPoi">${ic("landmark")}${ttT("附近人文景點")}</div>
+    <div id="poiBox">${skelCards(3)}</div>
+    <div class="section-title" id="secFood">${ic("food")}${ttT("步道周邊美食")}</div>
+    <div id="foodBox">${skelCards(3)}</div>
+    ${nearbyStripHtml(t)}`;
+}
+
+// opts.from：從詳情頁裡的「同名路段／附近步道」跳過來 → 顯示「回到上一條」
+async function openDetail(id, opts) {
   const t = TRAILS.find(x => x.id === id);
   if (!t) return;
+  _detailBack = (opts && opts.from && _detailTrail && _detailTrail.id !== id) ? _detailTrail : null;
   _detailTrail = t;
   clearDetailObs();
   // 先開面板給回饋，再（首次）載入幾何
   $("#detailHero").innerHTML = "";
-  $("#detailBody").innerHTML = `<div style="padding:54px 20px;text-align:center;color:var(--ink-soft)"><span class="spin"></span>載入中…</div>`;
+  $("#detailBody").innerHTML = `<div class="det-loading"><span class="spin"></span>${ttT("載入中…")}</div>`;
   $("#sheetMask").classList.add("show");
   $("#detailSheet").classList.add("show");
   $("#detailSheet").scrollTop = 0;
   $("#closeDetailBtn").focus({ preventScroll: true });
   await Promise.all([ensureGeo(t.region), ensureDetail()]);   // 幾何只載這條步道的縣市分片
+  if (_detailTrail !== t) return;
   mergeDetail(t);                       // 併入 guide/entrances/交通等詳情欄位
-  const d = t.difficulty || 0;
-  const ascCached = (typeof Profile !== "undefined" && Profile.cachedGain) ? Profile.cachedGain(t.id) : null;
-  const ascInit = ascCached != null ? ascCached : (t.ascent != null ? Math.round(t.ascent) : null);
-  const ascEst = (t.source === "osm" && ascCached == null) ? "（估）" : "";   // OSM 沿線推估、非實走→標示估算
-  // 重點數據卡：難度／長度／累積爬升／預估時間／海拔（只列有值的，OSM 步道欄位少時自動少格）
-  const stat = [["target", "難度", `<span class="badge diff d${d}"><span class="lvl">${d}</span>${t.difficulty_label}</span>`]];
-  if (t.length_km != null) stat.push(["ruler", "長度", `${t.length_km} km${t.source === "osm" ? "（估）" : ""}`]);
-  if (ascInit != null || geoOf(t)) stat.push(["up", "累積爬升", `<span id="kvAscent">${ascInit != null ? ascInit + " m" + ascEst : "計算中…"}</span>`]);
-  if (t.tour) stat.push(["clock", "預估時間", t.tour]);
-  if (t.alt_high != null || t.alt_low != null) stat.push(["mountain", "海拔範圍", `${t.alt_low ?? "?"}–${t.alt_high ?? "?"} m`]);
-  if (t.region) stat.push(["map", "地區", t.region]);   // 補第六格，湊成對稱的偶數格
-  const statHtml = `<div class="statcard">${stat.map(([ico, l, v]) =>
-    `<div class="stat"><div class="stat-h">${ic(ico)}<span>${l}</span></div><div class="stat-v">${v}</div></div>`).join("")}</div>`;
-
-  const metaBits = [];
-  if (t.pave) metaBits.push(t.pave);
-  if (t.best_season) metaBits.push(t.best_season);
-  if (t.transport?.car) metaBits.push("可開車");
-  if (t.transport?.m_bus || t.transport?.l_bus) metaBits.push("有公車");
-  const metaHtml = metaBits.length
-    ? `<div class="item" style="background:var(--bg);border-radius:12px;padding:10px 12px;margin-bottom:12px">
-         <div class="l" style="font-size:11.5px;color:var(--ink-soft)">路面・季節・交通</div>
-         <div style="font-size:13.5px;margin-top:4px">${metaBits.map(b => `<span>${b}</span>`).join("・")}</div></div>`
-    : "";
-
-  const nav = t.lat ? `https://www.google.com/maps/dir/?api=1&destination=${t.lat},${t.lon}` : "";
-  const moreSearch = `https://www.google.com/search?q=${encodeURIComponent(t.name + " 步道")}`;
-  const credit = t.source === "forestry"
-    ? "資料來源：林業及自然保育署 開放資料"
-    : "資料來源：OpenStreetMap 貢獻者（社群步道，詳細資料有限）";
-
-  $("#detailHero").innerHTML = `
-    <div class="detail-hero noimg" id="heroWrap">
-      <div class="hero-cap">
-        <h2>${t.name}</h2>
-        <div class="badges">
-          <span class="badge diff d${d}"><span class="lvl">${d}</span>${t.difficulty_label}</span>
-          ${t.family_friendly ? `<span class="badge family">親子友善</span>` : ""}
-          <span class="badge ghost">${t.region || ""}</span>
-          <button class="fav-star detail${Store.isFav(t.id) ? " on" : ""}" id="favDetail">${Store.isFav(t.id) ? "★ 已收藏" : "☆ 收藏"}</button>
-        </div>
-      </div>
-    </div>`;
-  const hasGeo = !!geoOf(t);
+  const credit = t.source === "forestry" ? ttT("資料來源：林業及自然保育署 開放資料") : ttT("資料來源：OpenStreetMap 貢獻者（社群步道，詳細資料有限）");
+  $("#detailHero").innerHTML = detailHeroHtml(t);
+  // 生態、周邊兩頁點到才建（以前一打開就把 4 頁 600 個元素全建好）
   $("#detailBody").innerHTML = `
+    ${_detailBack ? `<button class="det-back" id="detBack">${ic("chevron")}<span>${ttT("回到")} ${escHtml(_detailBack.name)}</span></button>` : ""}
     <div class="detail-tabs" id="detailNav" role="tablist">
-      <button data-tab="ov" class="on" role="tab">概覽</button>
-      <button data-tab="rt" role="tab">路線</button>
-      <button data-tab="ec" role="tab">生態</button>
-      <button data-tab="nb" role="tab">周邊</button>
+      <button data-tab="ov" class="on" role="tab">${ttT("概覽")}</button>
+      <button data-tab="rt" role="tab">${ttT("路線")}</button>
+      <button data-tab="ec" role="tab">${ttT("生態")}</button>
+      <button data-tab="nb" role="tab">${ttT("周邊")}</button>
     </div>
     <div class="tabwrap">
-      <section class="tabpane" data-pane="ov" role="tabpanel">
-        <div id="condLive">${conditionBanner(t)}</div>
-        ${statHtml}
-        ${tagsOf(t).length ? `<div class="tag-row">${tagsOf(t).map(g => `<span class="tag">${g}</span>`).join("")}</div>` : ""}
-        ${gradeExplain(t)}
-        ${metaHtml}
-        ${siblingHtml(t)}
-        ${t.guide ? `<div class="guide">${t.guide.replace(/\n/g, "<br>")}</div>${(typeof I18n !== "undefined" && I18n.lang() !== "zh") ? `<div class="pv-tr-row"><button class="link-btn" id="guideTranslate">${ic("translate")} ${ttT("翻譯年糕")}</button></div><div class="guide pv-cap-tr" id="guideTr" style="display:none"></div>` : ""}` : ""}
-        <div class="link-row flow">
-          ${nav ? `<a class="link-btn" href="${nav}" target="_blank" rel="noopener">${ic("compass")} 導航</a>` : ""}
-          <a class="link-btn" href="${moreSearch}" target="_blank" rel="noopener">${ic("search")} 查資訊</a>
-          <button class="link-btn" id="btnShareTrail">${ic("share")} 分享</button>
-          <button class="link-btn social-only" id="btnEventTrail">${ic("calendar")} 揪團</button>
-          <button class="link-btn" id="btnCompare">${ic("compare")} ${compareSet.has(t.id) ? "移出比較" : "加入比較"}</button>
-          ${t.url ? `<a class="link-btn" href="${t.url}" target="_blank" rel="noopener">${ic("external")} 原始頁</a>` : ""}
-        </div>
-        ${myLogHtml(t)}
-        <div id="trailFeedBox"></div>
-        <div id="activityBox" hidden></div>
-      </section>
-      <section class="tabpane" data-pane="rt" role="tabpanel" hidden>
-        <div class="section-title" id="secWx">${ic("sun")}天氣（步道所在地）</div>
-        <div id="weatherBox"><div class="food-loading"><span class="spin"></span>查詢天氣中…</div></div>
-        ${hasGeo ? `<div class="section-title" id="secElev">${ic("mountain")}海拔剖面</div><div id="profileBox"><div class="food-loading"><span class="spin"></span>計算海拔剖面中…</div></div>` : ""}
-        ${wpListHtml(t)}
-        <button class="btn ghost" id="btnOffline" style="margin-top:14px">${ic("download")} 預載此步道離線地圖</button>
-        <div id="offlineBox" class="offline-box" style="display:none"></div>
-      </section>
-      <section class="tabpane" data-pane="ec" role="tabpanel" hidden>
-        ${ecologyHtml(t)}
-      </section>
-      <section class="tabpane" data-pane="nb" role="tabpanel" hidden>
-        <div id="amenBox" class="amen-box"></div>
-        <div class="section-title" id="secPoi">${ic("landmark")}附近人文景點</div>
-        <div id="poiBox">${skelCards(3)}</div>
-        <div class="section-title" id="secFood">${ic("food")}步道周邊美食</div>
-        <div id="foodBox">${skelCards(3)}</div>
-        ${nearbyStripHtml(t)}
-      </section>
+      <section class="tabpane" data-pane="ov" role="tabpanel">${detailOverviewHtml(t)}</section>
+      <section class="tabpane" data-pane="rt" role="tabpanel" hidden>${detailRouteHtml(t)}</section>
+      <section class="tabpane" data-pane="ec" role="tabpanel" hidden></section>
+      <section class="tabpane" data-pane="nb" role="tabpanel" hidden></section>
     </div>
     <div class="detail-credit">${credit}</div>
     <div class="detail-actionbar">
-      <button class="btn primary" id="btnGoRecord">${ic("pin")}在此步道開始記錄</button>
-    </div>
-  `;
-  document.querySelectorAll("#detailBody .sib-chip").forEach(b => b.addEventListener("click", () => openDetail(b.dataset.sib)));
-  // 生態：連網才載 iNaturalist 附近真實目擊；離線/失敗安靜降級（不影響離線的規則式內容）
-  const enb = $("#ecoNearbyBtn");
-  if (enb) enb.addEventListener("click", async () => {
-    const box = $("#ecoNearbyBox"); if (!box) return;
-    if (enb.dataset.done) { box.style.display = box.style.display === "none" ? "block" : "none"; return; }
-    if (!navigator.onLine) { box.innerHTML = `<div class="eco-src">需要網路才能看真實目擊</div>`; box.style.display = "block"; return; }
-    enb.disabled = true; box.style.display = "block";
-    box.innerHTML = `<div class="food-loading"><span class="spin"></span>查詢附近目擊中…</div>`;
-    const obs = (typeof Ecology !== "undefined") ? await Ecology.nearbyObservations(t.lat, t.lon) : null;
-    enb.disabled = false;
-    if (!obs) { box.innerHTML = `<div class="eco-src">這附近暫時沒有可顯示的目擊記錄</div>`; return; }
-    enb.dataset.done = "1";
-    box.innerHTML = `<div class="eco-src">iNaturalist 附近 5 公里的真實觀察</div><div class="eco-obs">`
-      + obs.map(o => `<div class="eco-ob">${o.thumb ? `<img src="${o.thumb}" loading="lazy" alt="">` : `<span class="eco-ob-noimg">🔍</span>`}<span>${o.name}</span></div>`).join("")
-      + `</div>`;
-  });
-  // 路況公告翻譯年糕（非中文介面）：官方公告原文翻成介面語言
-  const ctr = $("#condTranslate");
-  if (ctr) ctr.addEventListener("click", async () => {
-    const out = $("#condTr"); if (!out) return;
-    if (out.style.display !== "none") { out.style.display = "none"; ctr.innerHTML = `${ic("translate")} ${ttT("翻譯年糕")}`; return; }
-    if (out.dataset.done) { out.style.display = "block"; ctr.innerHTML = `${ic("translate")} ${ttT("收合翻譯")}`; return; }
-    ctr.disabled = true; ctr.textContent = ttT("翻譯中…");
-    const src = (t.condition && [t.condition.title, t.condition.content].filter(Boolean).join("\n")) || "";
-    const tr = (typeof ttTranslate === "function" && src) ? await ttTranslate(src, ttTrTarget()) : null;
-    ctr.disabled = false;
-    if (!tr) { ctr.textContent = ttT("翻譯失敗，點此重試"); return; }
-    out.textContent = tr; out.dataset.done = "1"; out.style.display = "block";
-    ctr.innerHTML = `${ic("translate")} ${ttT("收合翻譯")}`;
-  });
-  // 介紹文翻譯年糕（英文介面）：翻成英文、可收合
-  const gtr = $("#guideTranslate");
-  if (gtr) gtr.addEventListener("click", async () => {
-    const out = $("#guideTr"); if (!out) return;
-    if (out.style.display !== "none") { out.style.display = "none"; gtr.innerHTML = `${ic("translate")} ${ttT("翻譯年糕")}`; return; }
-    if (out.dataset.done) { out.style.display = "block"; gtr.innerHTML = `${ic("translate")} ${ttT("收合翻譯")}`; return; }
-    gtr.disabled = true; gtr.textContent = ttT("翻譯中…");
-    const tr = (typeof ttTranslate === "function") ? await ttTranslate(t.guide, ttTrTarget()) : null;
-    gtr.disabled = false;
-    if (!tr) { gtr.textContent = ttT("翻譯失敗，點此重試"); return; }
-    out.textContent = tr; out.dataset.done = "1"; out.style.display = "block";
-    gtr.innerHTML = `${ic("translate")} ${ttT("收合翻譯")}`;
-  });
-  // 詳情分頁：點頁籤切換內容（一次只顯示一頁）
-  const navBtns = $("#detailNav").querySelectorAll("button");
-  const panes = $("#detailBody").querySelectorAll(".tabpane");
-  const showTab = (tab) => {
-    navBtns.forEach(b => b.classList.toggle("on", b.dataset.tab === tab));
-    panes.forEach(p => { p.hidden = p.dataset.pane !== tab; });
-    // 對齊頁籤（不重看 hero，也避免切到較短分頁時捲過頭露白）
-    const sheet = $("#detailSheet"), navTop = $("#detailNav").offsetTop;
-    if (sheet.scrollTop > navTop) sheet.scrollTop = navTop;
-  };
-  navBtns.forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
-  // 區塊可收合
-  $("#detailBody").querySelectorAll(".section-title.collapsible").forEach(hd => hd.addEventListener("click", () => {
-    const collapsed = hd.classList.toggle("collapsed");
-    const box = hd.nextElementSibling;
-    if (box) box.style.display = collapsed ? "none" : "";
-  }));
-  // 附近其他步道：點卡片切換到該步道詳情
-  $("#detailBody").querySelectorAll(".nearby-card").forEach(el => el.addEventListener("click", () => {
-    const nid = el.dataset.id; if (nid) openDetail(nid);
-  }));
-  // 沿線地標：點清單一列 → 地圖跳到該地標並開泡泡
-  $("#detailBody").querySelectorAll(".wp-row").forEach(b => b.addEventListener("click", () => {
-    const la = +b.dataset.wplat, lo = +b.dataset.wplon;
-    if (detailMap) { detailMap.setView([la, lo], 16); const mp = $("#detailMap"); if (mp) mp.scrollIntoView({ block: "center", behavior: "smooth" }); }
-    detailWpLayer && detailWpLayer.eachLayer(m => { try { const ll = m.getLatLng(); if (Math.abs(ll.lat - la) < 1e-5 && Math.abs(ll.lng - lo) < 1e-5) setTimeout(() => m.openPopup(), 350); } catch (e) { /* */ } });
-  }));
+      <button class="btn primary" id="btnGoRecord">${ic("pin")}${ttT("在此步道開始記錄")}</button>
+    </div>`;
+  bindDetail(t);
   loadPhoto(t);
   loadWeather(t);
   loadElevation(t);
   loadTrailFeed(t);
   loadTrailActivity(t);
-  // Places 查詢（設施/美食/景點）較耗額度 → 滑到該區塊才查，省 Google 每日配額
-  whenVisible($("#amenBox"), () => loadAmenities(t));
-  whenVisible($("#poiBox"), () => loadAttractions(t));
-  whenVisible($("#foodBox"), () => loadFood(t));
+  drawDetailMap(t);
+  // 首次點開步道詳情 → 情境導覽（等面板滑入穩定再跳；已關閉就不跳）
+  if (typeof window.ttCoachTrail === "function") setTimeout(() => window.ttCoachTrail(!!geoOf(t)), 550);
+}
 
+function bindDetail(t) {
+  const body = $("#detailBody");
+  const back = $("#detBack"); if (back) back.addEventListener("click", () => openDetail(back._id || _detailBack.id));
+  if (back) back._id = _detailBack.id;
+  body.querySelectorAll(".sib-chip").forEach(b => b.addEventListener("click", () => openDetail(b.dataset.sib, { from: true })));
+  // 翻譯年糕：路況公告、介紹文（非中文介面）
+  const trBtn = (btnId, outId, getSrc) => {
+    const btn = $(btnId); if (!btn) return;
+    btn.addEventListener("click", async () => {
+      const out = $(outId); if (!out) return;
+      if (!out.hidden) { out.hidden = true; btn.innerHTML = `${ic("translate")} ${ttT("翻譯年糕")}`; return; }
+      if (out.dataset.done) { out.hidden = false; btn.innerHTML = `${ic("translate")} ${ttT("收合翻譯")}`; return; }
+      btn.disabled = true; btn.textContent = ttT("翻譯中…");
+      const src = getSrc();
+      const tr = (typeof ttTranslate === "function" && src) ? await ttTranslate(src, ttTrTarget()) : null;
+      btn.disabled = false;
+      if (!tr) { btn.textContent = ttT("翻譯失敗，點此重試"); return; }
+      out.textContent = tr; out.dataset.done = "1"; out.hidden = false;
+      btn.innerHTML = `${ic("translate")} ${ttT("收合翻譯")}`;
+    });
+  };
+  trBtn("#condTranslate", "#condTr", () => (t.condition && [t.condition.title, t.condition.content].filter(Boolean).join("\n")) || "");
+  trBtn("#guideTranslate", "#guideTr", () => t.guide || "");
+  // 分頁：生態／周邊第一次點到才建內容
+  const navBtns = $("#detailNav").querySelectorAll("button");
+  const panes = body.querySelectorAll(".tabpane");
+  const built = {};
+  const build = tab => {
+    if (built[tab]) return; built[tab] = true;
+    const pane = body.querySelector(`.tabpane[data-pane="${tab}"]`);
+    if (tab === "ec") { pane.innerHTML = ecologyHtml(t); bindEcology(t); }
+    if (tab === "nb") {
+      pane.innerHTML = detailNearbyHtml(t);
+      pane.querySelectorAll(".nearby-card").forEach(el => el.addEventListener("click", () => { if (el.dataset.id) openDetail(el.dataset.id, { from: true }); }));
+      // Places 查詢（設施/美食/景點）較耗額度 → 滑到該區塊才查
+      whenVisible($("#amenBox"), () => loadAmenities(t));
+      whenVisible($("#poiBox"), () => loadAttractions(t));
+      whenVisible($("#foodBox"), () => loadFood(t));
+    }
+  };
+  const showTab = tab => {
+    build(tab);
+    navBtns.forEach(b => { b.classList.toggle("on", b.dataset.tab === tab); b.setAttribute("aria-selected", b.dataset.tab === tab); });
+    panes.forEach(p => { p.hidden = p.dataset.pane !== tab; });
+    const sheet = $("#detailSheet"), navTop = $("#detailNav").offsetTop;
+    if (sheet.scrollTop > navTop) sheet.scrollTop = navTop;   // 對齊頁籤，避免切到較短分頁時捲過頭露白
+  };
+  navBtns.forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
+  // 區塊可收合（沿線地標）
+  body.querySelectorAll(".section-title.collapsible").forEach(hd => hd.addEventListener("click", () => {
+    const collapsed = hd.classList.toggle("collapsed");
+    hd.setAttribute("aria-expanded", !collapsed);
+    const box = hd.nextElementSibling; if (box) box.hidden = collapsed;
+  }));
+  // 沿線地標：點清單一列 → 地圖跳到該地標並開泡泡
+  body.querySelectorAll(".wp-row").forEach(b => b.addEventListener("click", () => {
+    const la = +b.dataset.wplat, lo = +b.dataset.wplon;
+    if (detailMap) { detailMap.setView([la, lo], 16); const mp = $("#detailMap"); if (mp) mp.scrollIntoView({ block: "center", behavior: "smooth" }); }
+    detailWpLayer && detailWpLayer.eachLayer(m => { try { const ll = m.getLatLng(); if (Math.abs(ll.lat - la) < 1e-5 && Math.abs(ll.lng - lo) < 1e-5) setTimeout(() => m.openPopup(), 350); } catch (e) { /* */ } });
+  }));
+  $("#btnGoRecord").addEventListener("click", () => {
+    closeDetail();
+    document.querySelector('.tab[data-view="record"]').click();   // 會先清空 selectedTrailGeo
+    selectTrailForRecord(t);                 // 路線疊圖、偏離判斷、沿線地標、行前小卡、可取消的選定列
+  });
+  const lnk = $("#lnkGradeAll");
+  if (lnk) lnk.addEventListener("click", e => { e.preventDefault(); openGradeInfo(t.difficulty); });
+  const offBtn = $("#btnOffline");
+  if (offBtn) offBtn.addEventListener("click", () => downloadOffline(t, offBtn));
+  const favD = $("#favDetail");
+  if (favD) favD.addEventListener("click", () => {
+    if (!Store.isFav(t.id) && !favAddAllowed()) return;
+    const added = Store.toggleFav(t.id);
+    favD.classList.toggle("on", added); favD.setAttribute("aria-pressed", added);
+    if (added) { favD.classList.remove("pop"); void favD.offsetWidth; favD.classList.add("pop"); }
+    toast(ttT(added ? "已加入收藏" : "已移除收藏"));
+    const star = document.querySelector(`#trailList .fav-star[data-fav="${CSS.escape(t.id)}"]`);   // 列表上的星星同步
+    if (star) { star.classList.toggle("on", added); star.setAttribute("aria-pressed", added); }
+  });
+  const shareT = $("#btnShareTrail");
+  if (shareT) shareT.addEventListener("click", () => {
+    const url = ttShareLink(`?trail=${encodeURIComponent(t.id)}`);
+    const text = `${t.name}（${diffLabel(t)}${t.length_km ? " · " + fmtKm(t.length_km) + " km" : ""}）— 循徑拾光`;
+    if (navigator.share) navigator.share(url ? { title: t.name, text, url } : { title: t.name, text }).catch(() => {});
+    else if (navigator.clipboard) navigator.clipboard.writeText(url ? text + "\n" + url : text).then(() => toast(ttT("複製好了")));
+  });
+  const evT = $("#btnEventTrail");
+  if (evT) evT.addEventListener("click", () => { if (typeof Events !== "undefined") Events.open(t); else toast(ttT("社群尚未啟用")); });
+  // 「更多」：加入比較、林業署原始頁（不常用，收起來）
+  const more = $("#btnDetMore");
+  if (more) more.addEventListener("click", async () => {
+    const inSet = compareSet.has(t.id);
+    const opts = [{ label: ttT(inSet ? "移出比較" : "加入比較"), value: "cmp", cls: "ghost" }];
+    if (t.url) opts.push({ label: ttT("看官方原始頁"), value: "src", cls: "ghost" });
+    opts.push({ label: ttT("取消"), value: null, cls: "primary" });
+    const act = await ttChoice(escHtml(t.name), opts);
+    if (act === "src") window.open(t.url, "_blank", "noopener");
+    if (act === "cmp") {
+      if (compareSet.has(t.id)) compareSet.delete(t.id);
+      else { if (compareSet.size >= 3) { toast(ttT("最多比較 3 條")); return; } compareSet.add(t.id); }
+      toast(ttT(compareSet.has(t.id) ? "已加入比較" : "已移出比較"));
+      updateCompareBar();
+    }
+  });
+}
+
+function drawDetailMap(t) {
   setTimeout(() => {
+    if (_detailTrail !== t) return;
     if (!detailMap) {
       detailMap = L.map("detailMap", { zoomControl: false });
       addBaseWithToggle(detailMap);
@@ -1296,79 +1388,39 @@ async function openDetail(id) {
     if (geom && geom.length) {
       const lines = geom.map(seg => L.polyline(seg, { color: "#d2542e", weight: 4, opacity: .9 }));
       lines.forEach(l => l.addTo(detailOverlay));
-      // #8 起點/終點標示（用最長段的端點；判斷環狀）
+      // 起點/終點標示（用最長段的端點；判斷環狀）
       const main = geom.reduce((a, b) => (b.length > a.length ? b : a), geom[0]);
       const start = main[0], end = main[main.length - 1];
       const loop = haversine({ lat: start[0], lon: start[1] }, { lat: end[0], lon: end[1] }) < 120;
       L.circleMarker(start, { radius: 7, color: "#fff", weight: 2, fillColor: "#2f7d4f", fillOpacity: 1 })
-        .addTo(detailOverlay).bindPopup(loop ? "起／終點（環狀）" : "起點");
+        .addTo(detailOverlay).bindPopup(ttT(loop ? "起／終點（環狀）" : "起點"));
       if (!loop) L.circleMarker(end, { radius: 7, color: "#fff", weight: 2, fillColor: "#d2542e", fillOpacity: 1 })
-        .addTo(detailOverlay).bindPopup("終點");
-      const grp = L.featureGroup(lines);
-      detailMap.fitBounds(grp.getBounds(), { padding: [20, 20] });
+        .addTo(detailOverlay).bindPopup(ttT("終點"));
+      detailMap.fitBounds(L.featureGroup(lines).getBounds(), { padding: [20, 20] });
     } else if (t.lat) {
       detailMap.setView([t.lat, t.lon], 14);
-      (t.entrances || []).forEach(e => L.marker([e.lat, e.lon]).addTo(detailOverlay).bindPopup(e.memo || "步道入口"));
+      (t.entrances || []).forEach(e => L.marker([e.lat, e.lon]).addTo(detailOverlay).bindPopup(escHtml(e.memo || ttT("步道入口"))));
     } else {
       detailMap.setView([23.7, 121], 7);
     }
     detailMap.invalidateSize();
   }, 120);
-
-  $("#btnGoRecord").addEventListener("click", () => {
-    closeDetail();
-    const g = geoOf(t), nm = t.name;
-    document.querySelector('.tab[data-view="record"]').click();   // 會先清空 selectedTrailGeo
-    selectTrailForRecord(t);                 // 路線疊圖、偏離判斷、沿線地標、行前小卡、可取消的選定列
-  });
-  const lnk = $("#lnkGradeAll");
-  if (lnk) lnk.addEventListener("click", e => { e.preventDefault(); openGradeInfo(); });
-
-  const offBtn = $("#btnOffline");
-  if (offBtn) offBtn.addEventListener("click", () => downloadOffline(t, offBtn));
-
-  const favD = $("#favDetail");
-  if (favD) favD.addEventListener("click", () => {
-    if (!Store.isFav(t.id) && !favAddAllowed()) return;
-    const added = Store.toggleFav(t.id);
-    favD.classList.toggle("on", added); favD.textContent = added ? "★ 已收藏" : "☆ 收藏";
-    toast(added ? "已加入收藏" : "已移除收藏");
-  });
-
-  // 分享步道（含深連結 ?trail=id）
-  const shareT = $("#btnShareTrail");
-  if (shareT) shareT.addEventListener("click", () => {
-    const url = `${location.origin}${location.pathname}?trail=${encodeURIComponent(t.id)}`;
-    const text = `${t.name}（${t.difficulty_label}${t.length_km ? " · " + t.length_km + "km" : ""}）— 循徑拾光`;
-    if (navigator.share) navigator.share({ title: t.name, text, url }).catch(() => {});
-    else if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => toast("步道連結已複製"));
-    else window.open(url, "_blank");
-  });
-  const evT = $("#btnEventTrail");
-  if (evT) evT.addEventListener("click", () => { if (typeof Events !== "undefined") Events.open(t); else toast("社群尚未啟用"); });
-  const cmp = $("#btnCompare");
-  if (cmp) cmp.addEventListener("click", () => {
-    if (compareSet.has(t.id)) compareSet.delete(t.id);
-    else { if (compareSet.size >= 3) { toast("最多比較 3 條"); return; } compareSet.add(t.id); }
-    const inSet = compareSet.has(t.id);
-    cmp.innerHTML = `${ic("compare")} ${inSet ? "移出比較" : "加入比較"}`;   // 動作格內 2 行自動換行
-    toast(inSet ? "已加入比較" : "已移出比較");
-    updateCompareBar();
-  });
-
-  // 首次點開步道詳情 → 情境導覽（等面板滑入穩定再跳；已關閉就不跳）
-  if (typeof window.ttCoachTrail === "function") setTimeout(() => window.ttCoachTrail(!!geoOf(t)), 550);
 }
+
 async function loadAmenities(t) {
   const box = $("#amenBox");
   if (!box) return;
   try {
     const items = await Amenities.nearby(t);
     if (_detailTrail !== t) return;                    // 使用者已切到別條步道 → 這批資料不是他要看的
-    if (!items || !items.length) { box.style.display = "none"; return; }
-    box.innerHTML = `<div class="amen-row">` + items.map(a =>
-      `<span class="amen"><b>${a.label}</b> ${(a.dist / 1000).toFixed(1)} km</span>`).join("") + `</div>`;
-  } catch { box.style.display = "none"; }
+    if (!items || !items.length) { box.hidden = true; return; }
+    // 舊快取的分類名帶 emoji（🅿️ 停車）→ 拿掉，改用 SVG 圖示
+    const AIC = { "停車": "parking", "廁所": "toilet", "超商": "store" };
+    box.innerHTML = `<div class="amen-row">` + items.map(a => {
+      const lb = String(a.label || "").replace(/^\S+\s+/, "");
+      return `<span class="amen">${ic(AIC[lb] || "pin")}<b>${ttT(lb)}</b> ${(a.dist / 1000).toFixed(1)} km</span>`;
+    }).join("") + `</div>`;
+  } catch { box.hidden = true; }
 }
 
 async function loadPhoto(t) {
@@ -1382,7 +1434,7 @@ async function loadPhoto(t) {
     hero.classList.remove("noimg");
     const car = document.createElement("div");
     car.className = "hero-carousel";
-    car.innerHTML = items.map(it => `<img alt="${t.name}" src="${it.url}" loading="lazy" decoding="async">`).join("")
+    car.innerHTML = items.map(it => `<img alt="${escHtml(t.name)}" src="${escHtml(it.url)}" loading="lazy" decoding="async">`).join("")
       + (items.length > 1 ? `<div class="hero-dots">${items.map((_, i) => `<span class="${i ? "" : "on"}"></span>`).join("")}</div>` : "");
     hero.insertBefore(car, hero.firstChild);
     // CC 授權要求標作者＋授權：隨輪播顯示當張照片的 credit
@@ -1430,17 +1482,22 @@ async function loadElevation(t) {
   try {
     const p = await Profile.build(t.id, geoOf(t));
     if (_detailTrail !== t) return;                    // 已切換步道
-    if (!p) { box.style.display = "none"; return; }
+    if (!p) { box.hidden = true; return; }
+    // 地圖畫出來的路線和官方記載的長度差很多 → 說清楚為什麼兩個數字不一樣
+    if (t.length_km && p.distKm && Math.abs(p.distKm - t.length_km) / t.length_km > 0.25) {
+      const ln = $("#lenNote");
+      if (ln) { ln.hidden = false; ln.innerHTML = `${ic("info")}<span>${ttT("地圖上的路線約")} ${fmtKm(p.distKm)} km，${ttT("和記載的")} ${fmtKm(t.length_km)} km ${ttT("不一樣：記載的常只算主線，地圖可能含支線或來回。")}</span>`; }
+    }
     if (p.gain != null) {
-      const kvA = $("#kvAscent"); if (kvA) kvA.textContent = p.gain + " m";   // 詳情頁即時覆蓋
+      const kvA = $("#kvAscent"); if (kvA) kvA.textContent = p.gain + " m";   // 詳情頁即時覆蓋（用地形算的，比資料準）
       // 同步更新探索列表中該步道卡的累積爬升（不必重開 App）
       const sel = (window.CSS && CSS.escape) ? CSS.escape(t.id) : t.id;
       document.querySelectorAll(`#trailList .card[data-id="${sel}"] [data-card-asc]`).forEach(el => { el.textContent = "↑" + p.gain; });
     }
     box.innerHTML = `<div class="profile-wrap" id="profWrap">${p.svg}
         <div class="prof-cursor" id="profCursor"></div><div class="prof-tip" id="profTip"></div></div>
-      <div class="profile-stat"><span>最低 <b>${p.min} m</b></span><span>最高 <b>${p.max} m</b></span><span>累積爬升 <b>↑${p.gain} m</b></span><span>全長約 <b>${p.distKm.toFixed(1)} km</b></span></div>
-      <div class="profile-legend"><span style="color:#4a8f55">●</span>緩　<span style="color:#c39327">●</span>中　<span style="color:#c0542f">●</span>陡　<span style="color:var(--ink-faint)">·滑過看各點海拔</span></div>`;
+      <div class="profile-stat"><span>${ttT("最低")}<b>${p.min} m</b></span><span>${ttT("最高")}<b>${p.max} m</b></span><span>${ttT("累積爬升")}<b>↑${p.gain} m</b></span><span>${ttT("路線長")}<b>${fmtKm(p.distKm)} km</b></span></div>
+      <div class="profile-legend"><span><i style="background:#4a8f55"></i>${ttT("緩")}</span><span><i style="background:#c39327"></i>${ttT("中")}</span><span><i style="background:#c0542f"></i>${ttT("陡")}</span><span class="pl-hint">${ttT("滑過看各點海拔")}</span></div>`;
     // 滑過/觸控顯示該點距離與海拔
     const wrap = $("#profWrap"), cur = $("#profCursor"), tip = $("#profTip");
     const move = clientX => {
@@ -1457,21 +1514,20 @@ async function loadElevation(t) {
     wrap.addEventListener("pointerdown", e => move(e.clientX));
     wrap.addEventListener("pointerleave", () => { cur.style.display = "none"; tip.style.display = "none"; });
   } catch {
-    box.innerHTML = `<div class="food-empty">海拔剖面計算失敗（需網路）</div>`;
+    box.innerHTML = `<div class="food-empty">${ttT("海拔剖面算不出來，要有網路")}</div>`;
   }
 }
 
 async function loadWeather(t) {
   const box = $("#weatherBox");
   if (!box) return;
-  if (!t.lat) { box.innerHTML = `<div class="food-empty">無座標，無法查天氣</div>`; return; }
+  if (!t.lat) { box.innerHTML = `<div class="food-empty">${ttT("這條步道沒有座標，查不了天氣")}</div>`; return; }
   try {
     const d = await Weather.get(t.lat, t.lon);
     if (_detailTrail !== t) return;                    // 已切換步道 → 不要把舊步道的天氣寫進新面板
     const c = d.current, dd = d.daily;
-    const [emo, txt] = Weather.desc(c.weather_code);
-    const days = ["日", "一", "二", "三", "四", "五", "六"];
-    const wd = i => i === 0 ? "今天" : `週${days[new Date(dd.time[i]).getDay()]}`;
+    const [, txt] = Weather.desc(c.weather_code);
+    const wd = i => i === 0 ? ttT("今天") : new Date(dd.time[i] + "T12:00").toLocaleDateString(ttLocale(), { weekday: "short" });
     // 最適出發日：降雨機率低 + 體感舒適(均溫近 22°C)
     let best = 0, bestScore = Infinity;
     for (let i = 0; i < dd.time.length; i++) {
@@ -1488,26 +1544,38 @@ async function loadWeather(t) {
     const xy = tmax.map((v, i) => [pad + (W - 2 * pad) * i / (n - 1), pad + (H - 2 * pad) * (1 - (v - lo) / span)]);
     const line = xy.map((p, i) => `${i ? "L" : "M"}${p[0].toFixed(0)},${p[1].toFixed(0)}`).join(" ");
     const dots = xy.map((p, i) => `<circle cx="${p[0].toFixed(0)}" cy="${p[1].toFixed(0)}" r="${i === best ? 4 : 2.5}" fill="${i === best ? "#e8893b" : "var(--brand-mid)"}"/>`).join("");
-    const fc = dd.time.map((t2, i) => {
-      const [e2] = Weather.desc(dd.weather_code[i]);
-      return `<div class="wx-day${i === best ? " best" : ""}"><div class="wx-d">${wd(i)}</div><div class="wx-e">${e2}</div>
+    const allWet = dd.precipitation_probability_max.every(v => (v ?? 0) >= 60);   // 整週都很可能下雨 → 不硬挑「最適合」的一天
+    const fc = dd.time.map((t2, i) => `<div class="wx-day${i === best && !allWet ? " best" : ""}"><div class="wx-d">${wd(i)}</div><div class="wx-e">${wxIcon(dd.weather_code[i])}</div>
         <div class="wx-t">${Math.round(dd.temperature_2m_min[i])}°/${Math.round(dd.temperature_2m_max[i])}°</div>
-        <div class="wx-p">💧${dd.precipitation_probability_max[i] ?? "—"}%</div></div>`;
-    }).join("");
+        <div class="wx-p">${ic("drop")}${dd.precipitation_probability_max[i] ?? "—"}%</div></div>`).join("");
     box.innerHTML = `<div class="wx-now">
-        <span class="wx-now-e">${emo}</span>
+        <span class="wx-now-e">${wxIcon(c.weather_code)}</span>
         <span class="wx-now-t">${Math.round(c.temperature_2m)}°C</span>
-        <span class="wx-now-d">${txt}　濕度 ${c.relative_humidity_2m}%　風 ${Math.round(c.wind_speed_10m)} km/h</span>
+        <span class="wx-now-d"><span>${ttT(txt)}</span><span>${ttT("濕度")} ${c.relative_humidity_2m}%</span><span>${ttT("風")} ${Math.round(c.wind_speed_10m)} km/h</span></span>
       </div>
-      <div class="wx-best">🌤 最適合出發：<b>${wd(best)}</b>（降雨 ${dd.precipitation_probability_max[best] ?? "—"}%、${Math.round(dd.temperature_2m_min[best])}–${Math.round(dd.temperature_2m_max[best])}°）</div>
+      ${allWet ? `<div class="wx-best wet">${ic("rain")}<span>${ttT("這週每天降雨機率都在 6 成以上，沒有特別適合的一天")}</span></div>`
+        : `<div class="wx-best">${ic("calendar")}<span>${ttT("最適合出發")}：<b>${wd(best)}</b>（${ttT("降雨")} ${dd.precipitation_probability_max[best] ?? "—"}%・${Math.round(dd.temperature_2m_min[best])}–${Math.round(dd.temperature_2m_max[best])}°）</span></div>`}
       <svg class="wx-curve" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><path d="${line}" fill="none" stroke="var(--brand-mid)" stroke-width="2"/>${dots}</svg>
       <div class="wx-fc">${fc}</div>
-      <div class="food-credit">天氣資料：Open-Meteo · 7 日預報</div>`;
+      <div class="food-credit">${ttT("天氣資料：Open-Meteo · 7 日預報")}</div>`;
   } catch {
-    box.innerHTML = `<div class="food-empty">天氣查詢失敗（需網路）</div>`;
+    box.innerHTML = `<div class="food-empty">${ttT("天氣查不到，要有網路")}</div>`;
   }
 }
 
+// Google 回的分類名（中文）：中文介面照用；其他語言查字典，查不到就用通稱，不讓中文混在外文介面裡
+function placeKind(kind, generic) {
+  const k = String(kind || generic);
+  if (typeof I18n === "undefined" || I18n.lang() === "zh") return escHtml(k);
+  const tr = I18n.tx(k);
+  return escHtml(tr || ttT(generic));
+}
+// 天氣代碼 → SVG 圖示（以前是 emoji，部分裝置顯示成方框）
+function wxIcon(code) {
+  const c = +code;
+  const name = c === 0 ? "sun" : c <= 2 ? "cloudsun" : c === 3 ? "cloud" : c <= 48 ? "fog" : (c >= 71 && c <= 77) || c === 85 || c === 86 ? "snow" : c >= 95 ? "storm" : "rain";
+  return ic(name, "wx-ic wx-" + name);
+}
 let _foodItems = [], _foodSort = "distance", _foodAll = false;
 async function loadFood(t) {
   const box = $("#foodBox");
@@ -1533,7 +1601,7 @@ function renderFood() {
   if (!box) return;
   if (!_foodItems.length) { box.innerHTML = `<div class="food-empty">附近 8 公里內查無餐飲（山區步道常見）</div>`; return; }
   const all = Food.sortItems(_foodItems, _foodSort);
-  const items = _foodAll ? all : all.slice(0, 8);   // 一次 20 筆太長，先給 8 筆
+  const items = _foodAll ? all : all.slice(0, 5);   // 先給 5 筆，周邊頁才不會長到滑不完
   box.innerHTML = `
     <div class="food-sort">排序
       <button class="food-sort-btn${_foodSort === "distance" ? " on" : ""}" data-fsort="distance">${ic("pin")}距離</button>
@@ -1541,7 +1609,7 @@ function renderFood() {
     </div>
     <div class="food-list">${items.map(f => `
       <a class="food-item" href="${f.uri || "#"}" target="_blank" rel="noopener">
-        <span class="food-kind">${f.kind}</span>
+        <span class="food-kind">${placeKind(f.kind, "餐飲")}</span>
         <span class="food-name">${escHtml(f.name)}</span>
         ${foodStars(f)}
         <span class="food-dist">${(f.dist / 1000).toFixed(1)} km</span>
@@ -1574,7 +1642,7 @@ function renderAttractions() {
   if (!box) return;
   if (!_poiItems.length) { box.innerHTML = `<div class="food-empty">附近 12 公里內查無人文景點</div>`; return; }
   const all = Attractions.sortItems(_poiItems, _poiSort);
-  const items = _poiAll ? all : all.slice(0, 8);
+  const items = _poiAll ? all : all.slice(0, 5);
   box.innerHTML = `
     <div class="food-sort">排序
       <button class="food-sort-btn${_poiSort === "distance" ? " on" : ""}" data-psort="distance">${ic("pin")}距離</button>
@@ -1583,7 +1651,7 @@ function renderAttractions() {
     <div class="poi-list">${items.map(p => `
       <a class="poi-item" href="${p.uri || "#"}" target="_blank" rel="noopener">
         <div class="poi-top">
-          <span class="poi-kind">${p.kind}</span>
+          <span class="poi-kind">${placeKind(p.kind, "景點")}</span>
           <span class="poi-name">${escHtml(p.name)}</span>
           ${p.rating ? `<span class="poi-rating">★ ${p.rating.toFixed(1)}</span>` : ""}
         </div>
@@ -1679,26 +1747,27 @@ async function downloadFavOffline() {
   }
 }
 async function downloadOffline(t, btn) {
-  if (!t.lat) { toast("此步道無座標，無法下載地圖"); return; }
+  if (!t.lat) { toast(ttT("這條步道沒有座標，下載不了地圖")); return; }
   const box = $("#offlineBox");
   // 底圖 + 高程圖磚（z13–14）：高程一起抓，山上沒訊號時爬升/下降校正與坡度著色才算得出來。
   // 高程圖磚數量比底圖少一個數量級（同範圍只需低倍），對額度影響很小。
   const tiles = trailTiles(t);
   if (!offlineAllow(tiles)) return;   // 非會員：MB 額度制
-  box.style.display = "block";
-  box.innerHTML = `準備下載約 ${tiles.length} 張圖磚（約 ${(tiles.length * 0.02).toFixed(1)} MB）…`;
-  btn.disabled = true; btn.textContent = "下載中…";
+  box.hidden = false;
+  box.innerHTML = `${ttT("準備下載")} ${tiles.length} ${ttT("張圖磚")}（≈ ${(tiles.length * 0.02).toFixed(1)} MB）…`;
+  btn.disabled = true; btn.textContent = ttT("下載中…");
   try {
     const r = await Offline.download(tiles, (done, total) => {
-      box.innerHTML = `下載離線地圖中… ${done}/${total}
+      box.innerHTML = `${ttT("下載離線地圖中…")} ${done}/${total}
         <div class="offline-bar"><i style="width:${Math.round(done / total * 100)}%"></i></div>`;
     });
     addOfflineMb(r.mb); saveOfflineSet("trail:" + t.id, { name: t.name });
-    box.innerHTML = `✅ 已下載 ${r.ok}/${r.total} 張圖磚，此步道範圍可離線看地圖了。`;
-    btn.textContent = "✓ 已預載離線地圖";
+    const miss = r.total - r.ok;
+    box.innerHTML = miss ? `${ic("alert")} ${ttT("有些圖磚沒抓到")}（${miss}）・${ttT("再按一次會補齊")}` : `${ic("check")} ${ttT("好了，這條步道沒訊號也看得到地圖")}`;
+    btn.disabled = false; btn.innerHTML = `${ic("check")} ${ttT("已預載離線地圖")}<small>・${ttT("再按一次會補齊")}</small>`;
   } catch {
-    box.innerHTML = "下載失敗，請確認網路後再試。";
-    btn.disabled = false; btn.innerHTML = `${ic("download")} 預載此步道離線地圖`;
+    box.innerHTML = `${ic("alert")} ${ttT("沒下載完：網路斷了或手機空間不夠。再按一次會從斷掉的地方接著下載。")}`;
+    btn.disabled = false; btn.innerHTML = `${ic("download")} ${ttT("預載此步道離線地圖")}`;
   }
 }
 
@@ -1760,14 +1829,14 @@ function openCompareSheet() {
     <button class="sheet-close" id="cmpClose" aria-label="關閉">✕</button>
     <h2>步道比較</h2>
     <div class="cmp-wrap"><table class="cmp-table">
-      ${row("步道", t => `<b>${t.name}</b>`)}
-      ${row("難度", t => `<span class="badge diff d${t.difficulty || 0}" style="font-size:10px">${t.difficulty_label}</span>`)}
-      ${row("長度", t => t.length_km != null ? t.length_km + " km" : "—")}
-      ${row("累積爬升", t => t.ascent != null ? "↑" + Math.round(t.ascent) + " m" : "—")}
-      ${row("預估時間", t => t.tour || "—")}
+      ${row("步道", t => `<b class="cmp-nm">${escHtml(t.name)}</b>`)}
+      ${row("難度", t => diffBadgeHtml(t))}
+      ${row("長度", t => `<span class="nw">${fmtKm(t.length_km)} km</span>`)}
+      ${row("累積爬升", t => t.ascent != null ? `<span class="nw">↑${Math.round(t.ascent)} m</span>` : "—")}
+      ${row("所需時間", t => timeHtml(t))}
       ${row("親子友善", t => t.family_friendly ? "✓" : "—")}
       ${row("地區", t => t.region || "—")}
-      ${row("主題", t => tagsOf(t).slice(0, 3).join("、") || "—")}
+      ${row("主題", t => escHtml(tagsOf(t).slice(0, 3).join("、")) || "—")}
     </table></div>
   </div>`;
   document.body.appendChild(ov);

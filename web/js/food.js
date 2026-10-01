@@ -45,8 +45,10 @@ const Food = (() => {
   async function nearby(trail) {
     if (!trail.lat) return [];
     if (!KEY) { const e = new Error("nokey"); e.nokey = true; throw e; }
+    // 餐飲查詢偶爾混進「服務業」「農場」「公司」這類不是吃飯的地方 → 濾掉
+    const isFood = x => !/服務業|農場|公司|商店|超市|加油|旅行社|批發/.test(x.kind || "");
     const cached = cacheGet(trail.id);
-    if (cached) return cached;
+    if (cached) return cached.filter(isFood);
     const places = await query(trail.lat, trail.lon);
     const items = places.map(p => ({
       name: p.displayName?.text || "（無名）",
@@ -59,7 +61,7 @@ const Food = (() => {
         { lat: p.location.latitude, lon: p.location.longitude }) : 9e9,
     }));
     cacheSet(trail.id, items);
-    return items;
+    return items.filter(isFood);
   }
 
   // 星級排序要把評論數算進去：1 則評論的 ★5.0 不該排在 1,200 則的 ★4.6 前面。

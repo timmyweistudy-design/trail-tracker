@@ -217,11 +217,8 @@ async function loadTrailFeed(t) {
     if (!$("#trailFeedBox") || _detailTrail !== t) return;   // 已切換步道
     if (!posts.length) { box.innerHTML = ""; return; }
     const liked = await Posts.likedSet(posts.map(p => p.id));
-    box.innerHTML = `<div class="section-title">${ic("megaphone")}山友走過這條（${posts.length}）</div><div class="feed-list">${posts.map(p => Feed.card(p, liked.has(p.id))).join("")}</div>`;
-    box.querySelectorAll(".feed-card").forEach(card => card.addEventListener("click", e => {
-      if (e.target.closest(".fc-author") || e.target.closest(".fc-traillink") || e.target.closest(".fc-like")) return;
-      if (typeof PostView !== "undefined") PostView.open(card.dataset.id);
-    }));
+    box.innerHTML = `<div class="section-title">${ic("megaphone")}${ttT("山友走過這條")}（${posts.length}）</div><div class="feed-list">${posts.map(p => Feed.card(p, liked.has(p.id))).join("")}</div>`;
+    Feed.bindCards(box);   // 以前只綁點卡片，按讚沒反應
   } catch (e) { box.innerHTML = ""; }
 }
 // #1 個人紀錄突破：把這趟和過往的健行紀錄（排除自己）比，回傳打破的項目

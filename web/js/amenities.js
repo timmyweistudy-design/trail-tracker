@@ -5,13 +5,13 @@ const Amenities = (() => {
   const ENDPOINT = "https://places.googleapis.com/v1/places:searchNearby";
   const TTL = 7 * 864e5;
   const CKEY = "amen_";
-  const ORDER = ["🅿️ 停車", "🚻 廁所", "🏪 超商"];
+  const ORDER = ["停車", "廁所", "超商"];   // 圖示交給畫面用 SVG（以前 emoji 在部分裝置是方框）
   // Google 回的 primaryType 是子類型（parking_lot 等），用模糊對應分類
   function categoryOf(ty) {
     ty = ty || "";
-    if (/parking/.test(ty)) return "🅿️ 停車";
-    if (/bathroom|restroom|toilet/.test(ty)) return "🚻 廁所";
-    if (/convenience/.test(ty)) return "🏪 超商";
+    if (/parking/.test(ty)) return "停車";
+    if (/bathroom|restroom|toilet/.test(ty)) return "廁所";
+    if (/convenience/.test(ty)) return "超商";
     return null;
   }
 

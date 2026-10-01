@@ -15,9 +15,9 @@ const Attractions = (() => {
 
   // tourist_attraction 會把 SUP 俱樂部、自行車出租、旅行社也算進來——這裡只要「人文景點」，店家類剔除。
   // 健行區（hiking_area）多半就是步道本身或隔壁步道，也不算景點。
-  const DENY_TYPE = /club|rental|store|shop|agency|lodging|hotel|restaurant|cafe|parking|gym|hiking_area|campground|spa/;
-  const DENY_KIND = /俱樂部|出租|租借|商店|旅行社|民宿|飯店|旅館|停車|健行區|露營|用品/;
-  const isCultural = (x, trail) => !DENY_TYPE.test(x.type || "") && !DENY_KIND.test(x.kind || "") && x.name !== trail.name;
+  const DENY_TYPE = /club|rental|store|shop|agency|lodging|hotel|restaurant|cafe|parking|gym|hiking_area|campground|spa|police|government|city_hall|courthouse|school|university|hospital|doctor|bank|atm|post_office|insurance|real_estate|car_|gas_station|farm|corporate|service/;
+  const DENY_KIND = /俱樂部|出租|租借|商店|旅行社|民宿|飯店|旅館|停車|健行區|露營|用品|警察|派出所|分局|公所|政府|學校|國小|國中|醫院|診所|銀行|郵局|農場|公司|服務業|加油|汽車/;
+  const isCultural = (x, trail) => !DENY_TYPE.test(x.type || "") && !DENY_KIND.test(x.kind || "") && !/警察|派出所|分駐所|消防/.test(x.name || "") && x.name !== trail.name;   // 有的派出所分類是「觀光景點」，連名字一起擋
   function cacheGet(id) {
     try { const c = JSON.parse(localStorage.getItem(CKEY + id)); if (c && Date.now() - c.ts < TTL) return c.items; } catch { /* */ }
     return null;

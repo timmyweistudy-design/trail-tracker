@@ -429,6 +429,17 @@ function walkedTimes(id) {
   if (!_walkCount) { _walkCount = {}; Store.getRecords().forEach(r => { if (r.trailId != null && !r.sim) _walkCount[r.trailId] = (_walkCount[r.trailId] || 0) + 1; }); }
   return _walkCount[id] || 0;
 }
+// 難度字（去掉「(估)」）與徽章：卡片、詳情頁、附近步道、比較表共用同一套
+function diffEst(t) { return /[（(]估[)）]/.test(t.difficulty_label || ""); }
+function diffLabel(t) { return escHtml(String(t.difficulty_label || "").replace(/\s*[（(]估[)）]/, "")); }
+// 估算的難度加 ≈（≈ 和難度字分開，翻譯才對得到）；雪季不是難度，另外用季節標籤
+function diffBadgeHtml(t) {
+  const d = t.difficulty || 0, est = diffEst(t);
+  if (d === 6) return `<span class="badge snow">${ic("snow")} ${ttT("雪季限定")}</span>`;
+  return `<span class="badge diff d${d}${est ? " est" : ""}"${est ? ` title="${ttT("難度是依長度和爬升估的")}"` : ""}><span class="lvl">${d}</span>${est ? `<span class="approx">≈</span>` : ""}<span>${diffLabel(t)}</span></span>`;
+}
+// 所需時間：官方短時程，否則用估算（加 ≈）
+function timeHtml(t) { const tour = shortTour(t); return tour ? escHtml(tour) : `<span class="approx">≈</span>${fmtHours(estHours(t))}`; }
 function trailCard(t) {
   const d = t.difficulty || 0, closed = isClosed(t), snow = d === 6;
   const fav = isFavC(t.id), lg = logC(t.id), times = walkedTimes(t.id), done = lg.done || times > 0;
@@ -445,12 +456,7 @@ function trailCard(t) {
   // 地點：跨縣市的只顯示第一個＋「+1」，完整的放 title
   const pos = String(t.position || "—"), posParts = pos.split(/[；;]/).map(x => x.trim()).filter(Boolean);
   const posShow = posParts.length > 1 ? `${escHtml(posParts[0])} <b class="jloc-more">+${posParts.length - 1}</b>` : escHtml(pos);
-  // 難度：資料裡大多是估的「(估)」→ 用 ≈ 標出來；雪季不是難度，另外用季節標籤
-  const est = /[（(]估[)）]/.test(t.difficulty_label || "");
-  const dLabel = escHtml(String(t.difficulty_label || "").replace(/\s*[（(]估[)）]/, ""));
-  const diffBadge = snow
-    ? `<span class="badge snow">${ic("snow")} ${ttT("雪季限定")}</span>`
-    : `<span class="badge diff d${d}${est ? " est" : ""}"${est ? ` title="${ttT("難度是依長度和爬升估的")}"` : ""}><span class="lvl">${d}</span>${est ? `<span class="approx">≈</span>` : ""}<span>${dLabel}</span></span>`;   // ≈ 和難度字分開，翻譯才對得到
+  const dLabel = diffLabel(t), diffBadge = diffBadgeHtml(t);
   const sl = slopeInfo(t);
   const mine = done ? `<span class="badge mine">${ic("check")} ${times > 1 ? `${ttT("走過")} ${times} ${ttT("次")}` : ttT("走過")}${lg.rating ? ` · ${"★".repeat(lg.rating)}` : ""}</span>` : "";
   const nm = escHtml(t.name);
@@ -509,8 +515,8 @@ function nearbyStripHtml(t) {
   if (!list.length) return "";
   const cards = list.map(x => {
     const d = x.difficulty || 0;
-    const bits = [x.difficulty_label];
-    if (x.length_km != null) bits.push(`${x.length_km} km`);
+    const bits = [x.difficulty === 6 ? `<span>${ttT("雪季限定")}</span>` : `${diffEst(x) ? `<span class="approx">≈</span>` : ""}<span>${diffLabel(x)}</span>`];
+    if (x.length_km != null) bits.push(`${fmtKm(x.length_km)} km`);
     const dist = x._distKm != null ? `<span class="nb-dist">${ic("compass")}${x._distKm.toFixed(x._distKm < 10 ? 1 : 0)} km</span>` : "";
     return `<button class="nearby-card" data-id="${x.id}"><span class="nb-bar d${d}"></span><span class="nb-name">${escHtml(x.name)}</span><span class="nb-meta">${bits.join(" · ")}</span>${dist}</button>`;
   }).join("");
