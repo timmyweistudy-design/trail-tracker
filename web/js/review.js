@@ -173,16 +173,7 @@ async function paintSlope(segs, plainLine) {
   addSlopeLegend(trackMap);
 }
 // 存照片到相簿：優先系統分享單（iOS/Android 可「儲存影像」），否則下載
-async function saveImageFile(file) {
-  try {
-    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); return; }
-  } catch (e) { if (e && e.name === "AbortError") return; }
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(file);
-  a.download = file.name || ("循徑拾光_" + Date.now() + ".jpg");
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-}
+async function saveImageFile(file) { return saveBlob(file, file.name || ("循徑拾光_" + Date.now() + ".jpg"), ""); }   // 共用存圖（App 內走長按預覽）
 // #1 個人紀錄突破：把這趟和過往的健行紀錄（排除自己）比，回傳打破的項目
 function personalBestBreaks(rec) {
   const km = rec.distanceKm || 0;
@@ -432,7 +423,7 @@ async function shareHikeCard(rec) {
       const file = new File([blob], nm, { type: "image/png" });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         try { await navigator.share({ files: [file], title: ttT("我的健行紀錄") }); } catch (e) { /* 取消分享 */ }
-      } else { await saveBlob(blob, nm, ttT("我的健行紀錄")); toast(ttT("圖卡存好了")); }
+      } else if (await saveBlob(blob, nm, ttT("我的健行紀錄")) === "saved") toast(ttT("圖卡存好了"));
       close();
     }));
   } catch (e) { close(); toast(ttT("圖卡沒做出來，再試一次")); }

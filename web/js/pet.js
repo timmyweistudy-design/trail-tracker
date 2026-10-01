@@ -75,7 +75,7 @@ function feedCooldownMs() { return Math.max(0, FEED_COOLDOWN - (Date.now() - (+(
 function canFeedNow() { return berriesBalance() >= 3 && feedCooldownMs() === 0; }   // 「現在能不能餵」（看 8h 冷卻，非每日）
 function feedPet() {
   if (feedCooldownMs() > 0) { toast(`${ttT("牠還飽著，約")} ${Math.ceil(feedCooldownMs() / 3600e3)} ${ttT("小時後再餵")}`); return; }
-  if (berriesBalance() < 3) { toast("果實不夠，再多走一點就有"); return; }
+  if (berriesBalance() < 3) { toast(ttT("果實不夠，再多走一點就有")); return; }
   const heartsBefore = petHearts();
   localStorage.setItem("tt_pet_berry_spent", String((+(localStorage.getItem("tt_pet_berry_spent") || 0)) + 3));
   bumpAffinity(15);
@@ -117,7 +117,7 @@ function openHatPicker() {
     const id = btn.dataset.hat, own = hatsOwned();
     if (!own.has(id)) {
       if (berriesBalance() < HAT_COST) { toast(`${ttT("果實還差")} ${HAT_COST - berriesBalance()}`); return; }
-      const ok = typeof ttConfirm === "function" ? await ttConfirm(`${ttT("換上")}「${ttT(PET_ART.HAT_LABEL[id])}」？（${HAT_COST} ${ttT("顆果實")}）`, ttT("換上"), ttT("再想想")) : true;
+      const ok = typeof ttConfirm === "function" ? await ttConfirm(`${ttT("換上")}${ttSp()}${ttQuote(ttT(PET_ART.HAT_LABEL[id]))}${ttCJK() ? "？" : "?"}${ttParen(`${HAT_COST} ${ttT("顆果實")}`)}`, ttT("換上"), ttT("再想想")) : true;
       if (!ok) return;
       localStorage.setItem("tt_pet_berry_spent", String((+(localStorage.getItem("tt_pet_berry_spent") || 0)) + HAT_COST));
       own.add(id); localStorage.setItem("tt_pet_hats_owned", JSON.stringify([...own]));
@@ -249,9 +249,9 @@ function renderQuests() {
   const nextMile = QUEST_MILES.find(m => m.day > streak);
   const streakChip = streak >= 2 ? ` <span class="streak-chip">${ic("flame")} ${ttT("連續健行")} ${ttCount(streak, "day")}</span>` : "";
   const btnLabel = claimed ? `${ic("check")} ${ttT("今天的獎勵領過了")}` : (allDone ? `${ttT("領取")} +${reward.total} ${BERRY_SVG}` : `${ttT("三項都完成就能領")} ${BERRY_SVG}`);
-  const mileHint = (!claimed && nextMile) ? `<div class="quest-mile">${ic("flame")} ${ttT("下個連續里程碑")}：${ttCount(nextMile.day, "day")} +${nextMile.bonus} ${BERRY_SVG}</div>` : "";
+  const mileHint = (!claimed && nextMile) ? `<div class="quest-mile">${ic("flame")} ${ttT("下個連續里程碑")}${ttColon()}${ttCount(nextMile.day, "day")} +${nextMile.bonus} ${BERRY_SVG}</div>` : "";
   const fmtQ = q => q.unit ? `${q.dec ? Math.min(q.cur, 999).toFixed(q.dec) : Math.round(q.cur)} / ${q.goal} ${q.unit}` : `${Math.min(q.cur, q.goal)} / ${q.goal}`;
-  box.innerHTML = `<div class="section-title">${ic("calendar")}每日任務${streakChip}</div>
+  box.innerHTML = `<div class="section-title">${ic("calendar")}${ttT("每日任務")}${streakChip}</div>
     <div class="quest-list">${quests.map(q => { const done = q.cur >= q.goal, pc = Math.min(100, q.cur / q.goal * 100).toFixed(0); return `<div class="quest ${done ? "done" : ""}"><span class="q-ic">${ic(q.icon)}</span><div class="q-body"><div class="q-l">${q.label}</div><div class="q-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pc}"><i style="width:${pc}%"></i></div></div><span class="q-chk">${done ? ic("check") : fmtQ(q)}</span></div>`; }).join("")}</div>
     <button class="btn ${allDone && !claimed ? "primary" : "ghost"}" id="qClaim"${allDone && !claimed ? "" : " disabled"}>${btnLabel}</button>${mileHint}`;
   const cb = $("#qClaim");
@@ -283,20 +283,20 @@ function renderPet() {
     const pct = Math.max(2, Math.min(100, Math.round((km - st.km) / (next.km - st.km) * 100)));
     // 下一階不劇透：剪影＋「？？？」（手冊也是這樣）
     const nextArt = (typeof PET_ART !== "undefined") ? `<span class="pet-evo-sil">${PET_ART.svg(i + 1)}</span>` : "";
-    evoTop = `<span>${ttT("再走")} <b>${(next.km - km).toFixed(1)}</b> km ${ttT("就進化")}</span><span class="pet-evo-next">${nextArt}<span>？？？</span></span>`;
+    evoTop = `<span>${ttT("再走")} <b>${(next.km - km).toFixed(1)}</b> km ${ttT("就進化")}</span><span class="pet-evo-next">${nextArt}<span>${ttUnknown()}</span></span>`;
     prog = `<div class="pet-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>`;
   } else evoTop = `<span>${ic("sparkle")} ${ttT("已經是最終型態了")}</span>`;
   const lovePct = Math.round(h / 5 * 100);
   const need = Math.max(0, 3 - berries);
   const feedLbl = cd > 0 ? `${cd >= 3600e3 ? `${Math.ceil(cd / 3600e3)} ${ttT("小時後可餵")}` : `${Math.ceil(cd / 6e4)} ${ttT("分鐘後可餵")}`}`
-    : need > 0 ? `${ttT("還差")} ${need}` : `${ttT("餵食")}`;
+    : need > 0 ? `${ttT("還差")} ${need} ${ttT("顆果實")}` : `${ttT("餵食")}`;
   box.innerHTML = `<div class="pet-card${i >= 6 ? " final" : ""}" style="--habitat:${PET_BG[i]}">
     <div class="pet-habitat">${(typeof PET_ART !== "undefined" && PET_ART.habitat) ? PET_ART.habitat(i) : ""}<span class="pet-ff" style="left:16%;top:24%"></span><span class="pet-ff" style="left:78%;top:18%;animation-delay:2.1s;animation-duration:7.5s"></span><span class="pet-ff" style="left:60%;top:40%;animation-delay:3.4s;animation-duration:5.5s"></span></div>
     <div class="pet-stage">
       <div class="pet-bubble">${ttT(mood.t)}</div>
-      <div id="petEmoji" class="pet-m-${mood.k || "content"}" role="button" tabindex="0" aria-label="${ttT("摸摸")} ${escHtml(nm || st.n)}">${art}${petHatSvg(i)}${petMoodFx(mood.k)}</div>
+      <div id="petEmoji" class="pet-m-${mood.k || "content"}" role="button" tabindex="0" aria-label="${ttT("摸摸")} ${escHtml(nm || ttT(st.n))}">${art}${petHatSvg(i)}${petMoodFx(mood.k)}</div>
       <div class="pet-shadow"></div>
-      <div class="pet-idline"><span class="pet-name">${escHtml(nm || st.n)}</span><span class="lv-chip lvt-${Math.min(i + 1, 7)} pet-lv-chip">Lv.${i + 1}</span></div>
+      <div class="pet-idline"><span class="pet-name">${escHtml(nm || ttT(st.n))}</span><span class="lv-chip lvt-${Math.min(i + 1, 7)} pet-lv-chip">Lv.${i + 1}</span></div>
       <div class="pet-tools"><button class="pet-tool" id="petDress">${ic("sparkle")}${ttT("裝扮")}</button>${(typeof Premium !== "undefined" && Premium.isOn()) ? `<button class="pet-tool" id="petRename">${ic("pencil")}${ttT("改名")}</button>` : ""}</div>
       <div class="pet-evo"><div class="pet-evo-top">${evoTop}</div>${prog}</div>
     </div>
@@ -311,7 +311,7 @@ function renderPet() {
       <div class="pet-chip"><div class="cv">${streak}<small> ${ttT("週")}</small></div><div class="cl">${ttT("週週有走")}</div></div>
     </div>
     <div class="pet-acts">
-      <button class="pet-btn feed" id="petFeed"${canFeed ? "" : " disabled"}>${BERRY_SVG}<span>${feedLbl}</span>${need > 0 ? "" : `<b class="feed-bal">${berries}</b>`}</button>
+      <button class="pet-btn feed" id="petFeed"${canFeed ? "" : " disabled"}>${BERRY_SVG}<span>${feedLbl}</span>${need > 0 || cd > 0 ? "" : `<b class="feed-bal">${berries}</b>`}</button>
       <button class="pet-btn" id="petDex">${ic("book")} ${ttT("手冊")}</button>
       <button class="pet-btn" id="petRec">${ic("compass")} ${ttT("去走")}</button>
     </div>
@@ -333,29 +333,36 @@ function renderPet() {
   { const dr = $("#petDress"); if (dr) dr.addEventListener("click", openHatPicker); }
   const ren = $("#petRename");   // Premium：為夥伴命名
   if (ren) ren.addEventListener("click", () => {
-    askInput({ title: "幫你的山林夥伴取個名字", value: petName() || st.n, max: 12 }).then(v => {
+    askInput({ title: ttT("幫你的山林夥伴取個名字"), value: petName() || ttT(st.n), max: 12 }).then(v => {
       if (v != null) { localStorage.setItem("tt_pet_name", v.trim().slice(0, 12)); renderPet(); }
     });
   });
 }
 
 
-// 夥伴推薦一條主題
-// 夥伴推薦：依心情挑（太久沒出門→先來條輕鬆的；最近常走→挑你常走的主題），直接幫你翻到一條
+// 夥伴推薦：依心情挑（太久沒出門→先來條輕鬆的；有偏好的主題→就走那個；
+// 都沒有→挑你最少走的主題，同一天按幾次都是同一個主題），再直接幫你翻到一條
+const PET_THEMES = ["瀑布", "古道", "海景", "森林", "湖泊"];
 function petRecommend() {
   const mood = petMood().k;
   let filters, say;
   if (mood === "sleepy" || mood === "longing") { filters = ["d1"]; say = ttT("好久沒出門了，先來條輕鬆的"); }
   else {
-    const ft = typeof favoriteTag === "function" ? favoriteTag() : null;
-    const picks = [["tag:瀑布", "瀑布"], ["tag:古道", "古道"], ["tag:海景", "海景"], ["tag:森林", "森林"], ["tag:湖泊", "湖泊"]];
-    const [f, label] = ft ? ["tag:" + ft, ft] : picks[Math.floor(Math.random() * picks.length)];
-    filters = [f]; say = `${ttT("夥伴想去走")}「${ttT(label)}」`;
+    let tag = typeof favoriteTag === "function" ? favoriteTag() : null;
+    if (!tag) {
+      const walked = new Set(realRecords().map(r => String(r.trailId)));
+      const cnt = {}; PET_THEMES.forEach(g => cnt[g] = 0);
+      if (typeof tagsOf === "function") TRAILS.forEach(t => { if (walked.has(String(t.id))) tagsOf(t).forEach(g => { if (g in cnt) cnt[g]++; }); });
+      const least = Math.min(...PET_THEMES.map(g => cnt[g]));
+      const cands = PET_THEMES.filter(g => cnt[g] === least);
+      const d = new Date(); tag = cands[(d.getFullYear() * 400 + d.getMonth() * 31 + d.getDate()) % cands.length];
+    }
+    filters = ["tag:" + tag]; say = `${ttT("夥伴想去走")}${ttSp()}${ttQuote(ttT(tag))}`;
   }
   document.querySelector('.tab[data-view="explore"]').click();
   // 走探索頁的統一入口：連地圖範圍、附近、搜尋字一起重設（直接改變數會讓篩選狀態對不起來）
   if (typeof setExploreState === "function") setExploreState({ filters }, { clearQuery: true, clearScope: true });
-  toast(say);
+  toast(say, { top: true });   // 放上面：放底下會蓋住接著打開的步道詳情數據格
   const t = petPickTrail();
   if (t) setTimeout(() => openDetail(t.id), 450);
 }
@@ -377,28 +384,29 @@ function petPickTrail() {
 function openPetDex() {
   if (document.querySelector('[data-ov="petdex"]')) return;   // 防連點疊層
   const km = totalKm(), reached = petStageIndex(km), next = PET_STAGES[reached + 1];
+  const Q = ttUnknown();
   const stages = PET_STAGES.map((s, i) => {
     const unlocked = i <= reached, isNow = i === reached;
     return `<div class="dex-row${unlocked ? "" : " locked"}${isNow ? " now" : ""}">
       <div class="dex-e">${unlocked && typeof PET_ART !== "undefined" ? PET_ART.svg(i) : (unlocked ? s.e : `<svg class="ic dex-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`)}</div>
       <div class="dex-body">
-        <div class="dex-h"><b>${unlocked ? s.n : "？？？"}</b><span class="lv-chip lvt-${Math.min(i + 1, 7)}">Lv.${i + 1}</span>${isNow ? `<span class="dex-now">目前</span>` : ""}</div>
-        <div class="dex-k">${i === 0 ? "起始型態" : `成長里程 ${s.km} km 解鎖`}</div>
-        <div class="dex-d">${unlocked ? s.d : "還沒見過牠。多走幾趟就碰得到"}</div>
+        <div class="dex-h"><b>${unlocked ? ttT(s.n) : Q}</b><span class="lv-chip lvt-${Math.min(i + 1, 7)}">Lv.${i + 1}</span>${isNow ? `<span class="dex-now">${ttT("目前")}</span>` : ""}</div>
+        <div class="dex-k">${i === 0 ? ttT("起始型態") : ttT(`成長里程 ${s.km} km 解鎖`)}</div>
+        <div class="dex-d">${unlocked ? ttT(s.d) : ttT("還沒見過牠。多走幾趟就碰得到")}</div>
       </div>
     </div>`;
   }).join("");
-  const tip = next ? `再走 <b>${(next.km - km).toFixed(1)}</b> km 進化成 ？？？` : "已經是最終型態了，接下來就一起走吧";
+  const tip = next ? `${ttT("再走")} <b>${(next.km - km).toFixed(1)}</b> ${ttT(`km 進化成 ${Q}`)}` : ttT("已經是最終型態了，接下來就一起走吧");
+  const sp = ttSp();   // 「成長里程」要粗體，三段分開翻；外文要自己補空白（以前英文黏成 "footsteps.growth kmcomes"）
   const ov = document.createElement("div");
   ov.className = "pet-modal"; ov.dataset.ov = "petdex";
   ov.innerHTML = `<div class="pet-modal-card">
-    <button class="sheet-close" id="petDexClose" aria-label="關閉"><svg class="ic" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
-    <h2>夥伴手冊</h2>
-    <p class="dex-intro">牠靠你的腳程長大。<b>成長里程</b>主要來自你走的路，餵食和每日任務也會偷偷加一點。</p>
+    <button class="sheet-close" id="petDexClose" aria-label="${ttT("關閉")}"><svg class="ic" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    <h2>${ttT("夥伴手冊")}</h2>
+    <p class="dex-intro">${ttT("牠靠你的腳程長大。")}${sp}<b>${ttCJK() ? ttT("成長里程") : ttT("成長里程").replace(/^\p{Ll}/u, c => c.toUpperCase())}</b>${sp}${ttT("主要來自你走的路，餵食和每日任務也會偷偷加一點。")}</p>
     <div class="dex-tip"><span class="inline-ic">${ic("footprints")}</span> ${tip}</div>
-    <div class="dex-sec">進化圖鑑（共 ${PET_STAGES.length} 階）</div>
+    <div class="dex-sec">${ttT(`進化圖鑑（共 ${PET_STAGES.length} 階）`)}</div>
     <div class="dex-list">${stages}</div>
-    <p class="dex-foot">成就勳章在「夥伴」頁最下面。</p>
   </div>`;
   document.body.appendChild(ov);
   let _a11y = null;
@@ -424,8 +432,8 @@ function celebrateEvolve(st, lv) {
     <div class="evolve-spark"></div>
     ${stageHtml}
     <div class="evolve-h">${ttT("進化了！")}</div>
-    <div class="evolve-n">${petName() || st.n} <span class="lv-chip lvt-${Math.min(lv, 7)}">Lv.${lv}</span></div>
-    <div class="evolve-d">${st.d}</div>
+    <div class="evolve-n">${escHtml(petName() || ttT(st.n))} <span class="lv-chip lvt-${Math.min(lv, 7)}">Lv.${lv}</span></div>
+    <div class="evolve-d">${ttT(st.d)}</div>
     <button class="btn primary" id="evolveOk">${ttT("太棒了")}</button>
   </div>`;
   document.body.appendChild(ov);
@@ -460,14 +468,14 @@ function renderRecIdle() {
     `<button class="ridle-pick" data-pick="${t.id}">${ic(i)}<span>${escHtml(t.name)}</span></button>`).join("")}</div>`;
   // #4 臨門提醒：離下一個成就還差多少
   try {
-    const nu = petBadges().filter(b => !b.got && b.p && b.p[1] > 0).map(b => ({ b, r: Math.min(1, b.p[0] / b.p[1]) })).sort((a, b) => b.r - a.r)[0];
-    if (nu && nu.r >= 0.35) {   // 已接近才提醒，免洗版
+    const nu = achNextUp()[0];
+    if (nu && nu.ratio >= 0.35) {   // 已接近才提醒，免洗版
       const [cur, goal, unit] = nu.b.p, remain = goal - cur;
       const rn = unit === "km" ? Math.round(remain * 10) / 10 : Math.ceil(remain);
       // 單位：天走 ttCount（各語言單複數）；其他單位英文 1 時去掉複數 s（以前「In 1 weeks」）
       let ut = unit === "天" ? ttCount(rn, "day").replace(/^\S+\s/, "") : ttT(unit);
       if (rn === 1 && typeof I18n !== "undefined" && I18n.lang() === "en") ut = ut.replace(/s$/, "");
-      html += `<div class="ridle-row ridle-ach"><span class="inline-ic">${ic("trophy")}</span><span class="ra-n">「${ttT(nu.b.n)}」</span><span class="ra-r"><span>${ttT("還差")}</span> <b>${unit === "km" ? rn.toFixed(1) : rn}</b> <span>${ut}</span></span></div>`;
+      html += `<div class="ridle-row ridle-ach"><span class="inline-ic">${ic("trophy")}</span><span class="ra-n">${ttQuote(ttT(nu.b.n))}</span><span class="ra-r"><span>${ttT("還差")}</span> <b>${unit === "km" ? rn.toFixed(1) : rn}</b> <span>${ut}</span></span></div>`;
     }
   } catch (e) { /* */ }
   box.innerHTML = html;
@@ -481,10 +489,10 @@ async function openFootprintMap() {
   if (document.querySelector('[data-ov="footmap"]')) return;   // 防連點疊層
   if (typeof ttBusy === "function" && ttBusy("footmap")) return;   // 同步鎖：讀封存的空窗期連點也擋
   const recs = (await Store.allFull()).filter(r => isFootRec(r) && r.track && r.track.length > 1);
-  if (!recs.length) { toast("地圖還空空的，走完第一趟就畫上去了"); return; }
+  if (!recs.length) { toast(ttT("地圖還空空的，走完第一趟就畫上去了")); return; }
   const ov = document.createElement("div");
   ov.className = "foot-modal"; ov.dataset.ov = "footmap";
-  ov.innerHTML = `<button class="lb-close" id="footClose" aria-label="關閉">✕</button><div id="footMap"></div><div class="foot-cap">我的足跡 · ${recs.length} 段軌跡</div>`;
+  ov.innerHTML = `<button class="lb-close" id="footClose" aria-label="${ttT("關閉")}">✕</button><div id="footMap"></div><div class="foot-cap"><span>${ttT("足跡地圖")}</span> · <b>${recs.length}</b> <span>${ttT("段軌跡")}</span></div>`;
   document.body.appendChild(ov);
   const close = () => ov.remove();
   $("#footClose").addEventListener("click", close);

@@ -4,6 +4,9 @@
 // 步道名稱/介紹等資料內容維持中文。要補翻譯：加 DICT 詞條或 PATTERNS 規則即可。
 const I18n = (() => {
   const DICT = {
+    "登山口": "Trailhead",
+    "段軌跡": "tracks",
+    "長按圖片就能存到相簿": "Press and hold the image to save it to Photos",
     "之後由他按開始和結束。": "They'll start and end hikes from now on.",
     "交給他": "Hand over",
     "位置連結複製好了，貼給家人就行": "Location link copied — send it to family",
@@ -565,7 +568,7 @@ const I18n = (() => {
     "公尺": "m", "用時": "Time", "開始記錄": "Recording started", "繼續記錄": "Recording resumed", "完成": "Done", "前方": "Ahead", "升級 PRO": "Upgrade to PRO", "這一刻，值得更多": "This moment deserves more", "升級 PRO：進階分析・無限離線地圖・專屬主題・3D 地形": "PRO: advanced stats, unlimited offline maps, themes & 3D terrain",
     "四年一會": "Once in Four Years", "在閏日 2/29 記錄一次": "Record a hike on Feb 29 (leap day)",
     "拔升五百": "500m Ascent", "單次爬升 ≥ 500 m": "500 m ascent in one hike", "凌晨出擊": "Small Hours Start", "凌晨 2–4 點出發": "Start between 2–4 AM", "離島山旅": "Island Trek", "在離島記錄一次健行": "Record a hike on an outlying island",
-    "破曉行者": "Dawn Walker", "十萬步": "100K Steps", "假日山友": "Weekend Warrior", "兩百K": "200K", "走遍五縣": "Five Counties", "午夜山行": "Midnight Hike", "一日千升": "1000m in a Day", "四季行者": "Four Seasons", "清晨 6 點前出發": "Start before 6 AM", "累積 10 萬步": "100,000 steps total", "週末出行 5 次": "5 weekend outings", "總里程 200 km": "200 km total", "完成 5 個縣市": "Complete 5 counties", "單次爬升 ≥ 1000 m": "1000 m ascent in one hike", "春夏秋冬都走過": "Hike in all four seasons", "神秘": "Secret", "神秘成就，達成後揭曉": "Secret achievement — revealed when unlocked", "季": "seasons",
+    "破曉行者": "Dawn Walker", "十萬步": "100K Steps", "假日山友": "Weekend Warrior", "兩百K": "200K", "走遍五縣": "Five Counties", "午夜山行": "Midnight Hike", "一日千升": "1000m in a Day", "四季行者": "Four Seasons", "清晨 6 點前出發": "Start before 6 AM", "累積 10 萬步": "100,000 steps total", "週末出行 5 次": "5 weekend outings", "總里程 200 km": "200 km total", "完成 5 個縣市": "Trails in 5 counties", "單次爬升 ≥ 1000 m": "1000 m ascent in one hike", "春夏秋冬都走過": "Hike in all four seasons", "神秘": "Secret", "神秘成就，達成後揭曉": "Secret achievement — revealed when unlocked", "季": "seasons",
     "山腳新手": "Trailhead Novice", "入山山友": "Forest Hiker", "登高好手": "Ridge Walker", "縱走達人": "Traverse Expert", "攻頂勇者": "Summit Hero", "傳說山神": "Legendary Spirit", "成就分數": "Score", "切換檢視": "Switch view", "解鎖": "unlock", "這個類別還沒有成就": "No achievements in this category yet",
     "成就": "Achievements", "解鎖成就": "Achievement unlocked", "解鎖於": "Unlocked", "又解鎖": "Unlocked", "項成就": "more",
     "繼續往上": "Climb higher", "回下方": "Go lower",
@@ -986,7 +989,7 @@ const I18n = (() => {
     "外觀": "Appearance", "語言": "Language", "個人資料": "Profile", "用於估算步數與卡路里": "Used to estimate steps & calories",
     "成就樹": "Achievement Tree", "縣": "counties",
     "啟程": "Departure", "入山": "Into the Hills", "登高": "Climbing High", "縱走": "Traverse", "攻頂": "Summit", "傳說": "Legend",
-    "週末山友": "Weekend Hiker", "週週不斷": "Two Weeks Strong", "走遍三縣": "Three Counties", "挑戰征服": "Challenge Conqueror", "走遍十縣": "Ten Counties", "月月不休": "A Month Nonstop", "千里健行": "1000K Walker", "萬米爬升": "10,000m Climber", "環島達人": "Island Explorer", "超馬腳力": "Ultra Legs", "兩百次山旅": "200 Trips",
+    "週末山友": "Weekend Hiker", "週週不斷": "Two Weeks Strong", "走遍三縣": "Three Counties", "挑戰征服": "Challenge Conqueror", "走遍十縣": "Ten Counties", "月月不休": "A Month Nonstop", "千里健行": "1000K Walker", "萬米爬升": "10,000m Climber", "環島達人": "Round-Taiwan Hiker", "超馬腳力": "Ultra Legs", "兩百次山旅": "200 Trips",
     "累積 3 次出行": "3 trips total", "連續 2 週都有走": "2 weeks in a row", "完成 3 個縣市的步道": "Trails in 3 counties", "完成 5 條挑戰級以上步道": "5 challenge-grade+ trails", "完成 10 個縣市": "Trails in 10 counties", "連續 30 天健行": "30-day streak", "總里程 1000 km": "1000 km total", "總爬升 10000 m": "10,000 m total ascent", "完成 20 個縣市": "Trails in 20 counties", "單次步行 ≥ 42 km": "Single hike ≥ 42 km", "累積 200 次出行": "200 trips total",
     "和你平常差不多": "About the same as usual", "比平常快": "Faster than usual", "比平常慢": "Slower than usual",
     "建議裝備": "Suggested gear", "今日日落": "Sunset today", "天已黑": "It's dark now", "剩不到 3 小時天黑": "Under 3h to dark",
@@ -1014,7 +1017,7 @@ const I18n = (() => {
     "🍖 餵食 (3🍓": "🍖 Feed (3🍓", "活力": "Energy", "命名": "Rename",
     "已走": "Walked", "・同行": "· together", "天": "days", "成長里程": "growth km",
     "已是最終型態 ✨ 繼續同行！": "Final form ✨ Keep walking together!",
-    "已經是最終型態了，接下來就一起走吧": "Final form  walking on with you",
+    "已經是最終型態了，接下來就一起走吧": "Fully evolved — let's keep walking together",
     "已達最終型態！與你一同騰雲駕霧": "Final form! Soaring the clouds with you",
     "幫你的山林夥伴取個名字": "Name your trail buddy",
     "果實不夠，再多走一點就有": "Not enough berries — walk more",
@@ -1346,7 +1349,14 @@ const I18n = (() => {
       else if (last === "：") { base = base.slice(0, -1); tail = ":" + tail; }
       else break;
       hit = T.D[base];
-      if (hit) return hit + (tail === "." ? "" : tail);
+      if (hit) {
+        // 譯文自己已經收了括號／冒號就不要再補（以前「（玉山）」變成「(Yushan))」）
+        const opens = (hit.match(/[(（]/g) || []).length, closes = (hit.match(/[)）]/g) || []).length;
+        let add = tail === "." ? "" : tail;
+        if (add.includes(")") && closes >= opens) add = add.replace(/\)/g, "");
+        if (add.includes(":") && /[:：]\s*$/.test(hit)) add = add.replace(/:/g, "");
+        return hit + add;
+      }
     }
     // 地名字典（i18n-names.js 延遲載入）：步道名/縣市/鄉鎮的英文名，各語言共用（專有名詞用羅馬拼音）
     if (!["ja", "cn"].includes(lang()) && typeof window !== "undefined" && window.TT_NAMES && window.TT_NAMES[k]) return window.TT_NAMES[k];   // 日文/簡中：漢字名直接可讀，不用拼音
@@ -1473,6 +1483,13 @@ async function _ttTranslateNet(text, target) {
 }
 // 純 JS 產生的文字（canvas 圖卡等，不經過 DOM 觀察器）用這個包一層
 function ttT(str) { try { return (I18n.lang() !== "zh" && I18n.tx(str)) || str; } catch (e) { return str; } }
+// 標點跟著語言走：中日文用全形「」：？（），其他語言用半形（以前英文介面會冒出「：」「？？？」）
+function ttCJK() { try { return ["zh", "cn", "ja"].includes(I18n.lang()); } catch (e) { return true; } }
+function ttColon() { return ttCJK() ? "：" : ": "; }
+function ttQuote(s) { return ttCJK() ? `「${s}」` : `“${s}”`; }
+function ttParen(s) { return ttCJK() ? `（${s}）` : ` (${s})`; }
+function ttUnknown() { return ttCJK() ? "？？？" : "???"; }
+function ttSp() { return ttCJK() ? "" : " "; }   // 拼句子時的字間空白（中日文不空格）
 // 顯示用日期/時間的 locale（英文介面用英文月份與 AM/PM）
 // 「N 趟／N 天」：各語言的單位＋單複數（英文 1 hike / 2 hikes；原本一律加 s 會出現「1 hikes」）
 const _TT_UNITS = {

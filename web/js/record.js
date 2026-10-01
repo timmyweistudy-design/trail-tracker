@@ -878,18 +878,34 @@ function _teamOnResumeCb() {
 // 檔案匯出的存檔：iOS App 的 WKWebView 不認 <a download>（點了沒下載）→ 匯出的 GPX／備份檔／
 // KML／CSV／離線地圖包在 App 裡會靜默失敗。先試 Web Share（原生開系統分享單，可存到「檔案」App
 // 或傳給別人），不支援才退回傳統下載（網頁版行為完全不變）。圖片分享早就是這個 pattern。
+// 回傳值：shared＝叫出系統分享單（含按取消）、preview＝App 內長按存圖、saved＝瀏覽器下載
 window.saveBlob = async function saveBlob(blob, filename, title) {
   try {
     const file = new File([blob], filename, { type: blob.type || "application/octet-stream" });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({ files: [file], title: title || filename });
-      return true;
+      return "shared";
     }
-  } catch (e) { if (e && e.name === "AbortError") return true; }   // 使用者在分享單按取消→別再彈一次下載
+  } catch (e) { if (e && e.name === "AbortError") return "shared"; }   // 使用者在分享單按取消→別再彈一次下載
+  // iOS App（WKWebView）裡 <a download> 完全沒反應：圖片改開全螢幕預覽，長按就能存到相簿
+  const C = window.Capacitor;
+  if (C && C.isNativePlatform && C.isNativePlatform() && /^image\//.test(blob.type || "")) { ttImagePreview(blob); return "preview"; }
   const url = URL.createObjectURL(blob), a = document.createElement("a");
   a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1500);
-  return true;
+  return "saved";
+};
+window.ttImagePreview = function ttImagePreview(blob) {
+  if (document.querySelector('[data-ov="imgprev"]')) return;
+  const url = URL.createObjectURL(blob);
+  const ov = document.createElement("div"); ov.className = "img-prev"; ov.dataset.ov = "imgprev";
+  ov.innerHTML = `<button class="sheet-close" aria-label="${ttT("關閉")}">✕</button><img src="${url}" alt=""><div class="img-prev-hint">${ttT("長按圖片就能存到相簿")}</div>`;
+  document.body.appendChild(ov);
+  let _a11y = null;
+  const close = () => { if (_a11y) _a11y(); ov.remove(); URL.revokeObjectURL(url); };
+  if (typeof ttModalA11y === "function") _a11y = ttModalA11y(ov, close, { focus: ".sheet-close" });
+  ov.querySelector(".sheet-close").addEventListener("click", close);
+  ov.addEventListener("click", e => { if (e.target === ov) close(); });
 };
 // 收尾步驟安全執行：吞例外、記進 tt_errors（診斷／自動上傳 client_errors），回成功與否。
 // 記錄結束的收尾是一條 async 鏈（校正→存檔→完成判定→結算頁→成就/寵物/備份）。任一步 throw

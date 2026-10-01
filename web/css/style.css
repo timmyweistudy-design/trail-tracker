@@ -1750,7 +1750,7 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 .lv-chip.lvt-4 { background: linear-gradient(135deg, #4f8ae6, #2f63c8); }
 .lv-chip.lvt-5 { background: linear-gradient(135deg, #9a64db, #7740bf); }
 .lv-chip.lvt-6 { background: linear-gradient(135deg, #d44fa2, #a8327a); box-shadow: 0 1px 6px rgba(168,50,122,.4); }
-.lv-chip.lvt-7 { background: linear-gradient(135deg, #ffe07a, #f0a91e); color: #5a3a00; text-shadow: none; font-weight: 800; box-shadow: 0 0 0 1px rgba(255,205,70,.7), 0 1px 8px rgba(240,169,30,.6); }
+.lv-chip.lvt-7 { background: linear-gradient(135deg, #f7cd45, #df8f12); color: #4a2e00; text-shadow: none; font-weight: 800; box-shadow: 0 0 0 1px rgba(255,205,70,.7), 0 1px 8px rgba(240,169,30,.6); }
 
 /* 隨手拍照片在社群標時間/里程 */
 .fc-shot { position: relative; }
@@ -1809,7 +1809,7 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 .dex-list { display: flex; flex-direction: column; gap: 8px; }
 .dex-row { display: flex; gap: 12px; align-items: flex-start; background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 11px 13px; }
 .dex-row.now { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-soft); }
-.dex-row.locked { opacity: .62; }
+.dex-row.locked .dex-e, .dex-row.locked .dex-h b, .dex-row.locked .dex-k, .dex-row.locked .dex-d { opacity: .62; }   /* 等級徽章不跟著變淡，Lv.6/7 才看得清楚 */
 /* 槽寬要跟得上裡面的 .pet-critter（44px）：手繪 SVG 是後來才換上的，槽還停在 emoji 時代的 40px，
    SVG 會左右各溢出 2px 壓到旁邊的文字。 */
 .dex-row .dex-e { font-size: calc(32px * var(--fs, 1)); line-height: 1; flex: 0 0 auto; width: 44px; text-align: center; }
@@ -1934,9 +1934,9 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 @keyframes ach3dDrift { to { transform: translateX(calc(100vw + 260px)); } }
 /* 五段攀登分頁：膠捲軌道（五頁預建堆疊、拖動只做 transform） */
 .ach-pager { position: absolute; left: 0; right: 0; top: 0; bottom: calc(58px + env(safe-area-inset-bottom, 0px)); z-index: 1; overflow: hidden; touch-action: none; }
-.ach-track { position: absolute; left: 0; right: 0; top: 0; height: 500%; will-change: transform; transform: translateY(calc(var(--d, 4) * -20% + var(--drag, 0px))); }
+.ach-track { position: absolute; left: 0; right: 0; top: 0; height: calc(var(--n, 6) * 100%); will-change: transform; transform: translateY(calc(var(--d, 5) * -100% / var(--n, 6) + var(--drag, 0px))); }
 .ach-track.anim { transition: transform .42s cubic-bezier(.33, 0, .2, 1); }
-.ach-page { position: relative; width: 100%; height: 20%; overflow: hidden; }
+.ach-page { position: relative; width: 100%; height: calc(100% / var(--n, 6)); overflow: hidden; }
 /* 開場：從山腳往上看，鏡頭沿步道上升定格 */
 .ach-page.intro { animation: achIntroUp .95s cubic-bezier(.2,.7,.2,1) both; transform-origin: 50% 100%; }
 @keyframes achIntroUp { 0% { opacity: 0; transform: translateY(13%) scale(1.1); } 55% { opacity: 1; } 100% { opacity: 1; transform: none; } }
@@ -1967,10 +1967,10 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 @keyframes achBug { 0% { transform: translate(0, 0) rotate(-8deg); } 25% { transform: translate(64px, -44px) rotate(10deg); } 50% { transform: translate(150px, -8px) rotate(-6deg); } 75% { transform: translate(96px, 42px) rotate(9deg); } 100% { transform: translate(0, 0) rotate(-8deg); } }
 @media (prefers-reduced-motion: reduce) { .ach-sway, .ach-flag, .ach-bird, .ach-bird-svg, .ach-bug { animation: none; } }
 /* 跳到你在這 */
-.ach-jump { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 10; display: inline-flex; align-items: center; gap: 5px; border: none; background: rgba(20,30,20,.6); color: #fff; font-family: var(--serif); font-weight: 700; font-size: calc(12px * var(--fs, 1)); padding: 7px 15px; border-radius: 999px; box-shadow: 0 3px 10px rgba(0,0,0,.3); backdrop-filter: blur(3px); cursor: pointer; animation: achJumpIn .4s ease; }
+.ach-jump { position: absolute; left: 14px; bottom: 12px; transform: none;   /* 靠左下：放正中間會壓到步道起點的「登山口」 */ z-index: 10; display: inline-flex; align-items: center; gap: 5px; border: none; background: rgba(20,30,20,.6); color: #fff; font-family: var(--serif); font-weight: 700; font-size: calc(12px * var(--fs, 1)); padding: 7px 15px; border-radius: 999px; box-shadow: 0 3px 10px rgba(0,0,0,.3); backdrop-filter: blur(3px); cursor: pointer; animation: achJumpIn .4s ease; }
 .ach-jump[hidden] { display: none; }
 .ach-jump .ic { width: 15px; height: 15px; }
-@keyframes achJumpIn { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translateX(-50%); } }
+@keyframes achJumpIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 /* 登頂慶祝彩帶 */
 .ach-cheer { position: absolute; inset: 0; z-index: 12; pointer-events: none; overflow: hidden; }
 .ach-cheer span { position: absolute; top: -20px; width: 9px; height: 14px; border-radius: 2px; opacity: .95; animation: achFall 1.9s cubic-bezier(.3,.5,.5,1) forwards; }
@@ -2788,7 +2788,7 @@ body.hdr-compact .brand-mark { width: 36px; height: 36px; }
 body[data-view="record"] .toast { bottom: auto; top: calc(var(--hdr-h, 60px) + 10px + env(safe-area-inset-top, 0px)); transform: translateX(-50%) translateY(-12px); }
 body[data-view="record"] .toast.show { transform: translateX(-50%) translateY(0); }
 /* 大字時狀態列不要被分頁列蓋住 */
-.view { padding-bottom: calc(60px + 36px * var(--fs, 1) + var(--safe-b, 0px)); }
+.view { padding-bottom: calc(104px + 36px * var(--fs, 1) + var(--safe-b, 0px)); }   /* 捲到底時最後一張卡要高過「回到頂部」浮鈕（84+44px） */
 /* 深色：里程卡原本是淺色漸層，淡綠數字幾乎看不到 */
 html[data-theme="dark"] .rec-hero { background-image: linear-gradient(155deg, #1f2a1d, var(--surface)); }
 html[data-theme="dark"] .rh-num { color: #d7ecd9; }
@@ -2870,7 +2870,7 @@ html[data-theme="dark"] .rh-num { color: #d7ecd9; }
 .anx-sug .ic { width: 13px; height: 13px; margin: 0; }
 /* 好友的夥伴（未登入）：一行就好 */
 .fp-login { width: 100%; text-align: left; margin: 14px 0 6px; padding: 12px 14px; border: 1px dashed var(--line); border-radius: var(--r-sm); background: transparent;
-  color: var(--brand-deep); font-weight: 700; font-size: calc(13px * var(--fs, 1)); cursor: pointer; }
+  color: var(--brand-deep); font-family: inherit; font-weight: 700; font-size: calc(13px * var(--fs, 1)); cursor: pointer; }
 /* 進化：新型態的棲息地當背景 */
 .evolve-bg { position: absolute; inset: 0; background: var(--habitat, #16301f); opacity: .9; }
 .evolve-bg svg { width: 100%; height: 100%; opacity: .55; }
@@ -3216,3 +3216,18 @@ html .hero-cap .badge.ghost, html .hero-cap .badge.family, html[data-theme="dark
 #recMap .leaflet-bottom.leaflet-left .leaflet-control-scale { margin: 0 0 4px 12px; }
 /* 地圖來源文字：窄螢幕或大字時別和左下的切換鈕疊在一起 */
 .leaflet-container .leaflet-control-attribution { max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 10px; }
+
+/* —— 夥伴頁／成就頁細修 —— */
+.pet-btn { min-width: 0; }
+.dex-d { overflow-wrap: anywhere; }
+.fp-gift { display: inline-flex; align-items: center; gap: 3px; }
+.fp-gift .berry { width: 1.05em; height: 1.05em; }
+.toast.top { bottom: auto; top: calc(10px + env(safe-area-inset-top, 0px)); z-index: 1250;   /* 貼最上緣：底下是剛打開的面板，壓在標題上會擋字 */ transform: translateX(-50%) translateY(-12px); }
+.toast.top.show { transform: translateX(-50%) translateY(0); }
+.ach-fchips.more { -webkit-mask-image: linear-gradient(90deg, #000 82%, transparent); mask-image: linear-gradient(90deg, #000 82%, transparent); }
+.ach-pgnav-t { font-family: var(--num); letter-spacing: 0; color: var(--ink-soft); }
+html[data-theme="dark"] .ach-modal .sheet-close { background: rgba(255,255,255,.14); color: #fff; }
+.img-prev { position: fixed; inset: 0; z-index: 1300; background: rgba(10,14,10,.92); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: calc(56px + env(safe-area-inset-top, 0px)) 16px calc(24px + env(safe-area-inset-bottom, 0px)); }
+.img-prev img { max-width: 100%; max-height: 74vh; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,.5); -webkit-touch-callout: default; user-select: auto; }
+.img-prev-hint { color: #eae6d8; font-size: calc(14px * var(--fs, 1)); font-weight: 600; }
+.img-prev .sheet-close { top: calc(12px + env(safe-area-inset-top, 0px)); background: rgba(255,255,255,.16); }

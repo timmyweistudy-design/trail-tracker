@@ -335,8 +335,8 @@ function fmtDur(ms) {
   const h = Math.floor(m / 60), mm = m % 60;
   return mm ? `${h} ${ttT("小時")} ${mm} ${ttT("分")}` : `${h} ${ttT("小時")}`;
 }
-function toast(msg) {
-  const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+function toast(msg, opts) {
+  const t = $("#toast"); t.textContent = msg; t.classList.toggle("top", !!(opts && opts.top)); t.classList.add("show");   // top：底部會蓋住內容時改從上方出現
   clearTimeout(t._tm); t._tm = setTimeout(() => t.classList.remove("show"), 2200);
 }
 // 內嵌輸入框（取代原生 prompt），回傳 Promise<string|null>
