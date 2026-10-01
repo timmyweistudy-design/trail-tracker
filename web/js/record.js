@@ -992,7 +992,7 @@ async function ensureMeAvatar() {
   if (_meAvFetched || typeof Supa === "undefined" || !Supa.ready()) return;
   _meAvFetched = true;
   try {
-    const c = Supa.client(); const { data: u } = await c.auth.getUser();
+    const c = Supa.client(); const { data: u } = await Supa.meUser();
     if (!u || !u.user) { _meAvFetched = false; return; }   // 未登入：保留可重試
     const meta = u.user.user_metadata || {};
     const { data: p } = await c.from("profiles").select("avatar_url").eq("id", u.user.id).maybeSingle();

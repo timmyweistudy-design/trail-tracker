@@ -1,14 +1,15 @@
 // 社群分頁外殼與路由：未啟用 / 登入 / 註冊 / （登入後）動態·探索·搜尋·我的 子分頁。
 const SocialUI = (() => {
   const $ = s => document.querySelector(s);
-  let mounted = false, sub = "friends", myProf = null, subscribed = false;
+  let mounted = false, sub = "friends", myProf = null, subscribed = false, _profAt = 0;
+  const T = s => (typeof ttT === "function" ? ttT(s) : s);
   let pendingPost = null, _renderGen = 0;   // 渲染世代碼：擋掉切分頁後晚回來的非同步渲染（否則會蓋掉現在這頁）
   try { pendingPost = new URLSearchParams(location.search).get("post"); } catch (e) { }
 
   function render(html) { const b = $("#socialBody"); if (b) b.innerHTML = html; }
 
   async function onShow() {
-    if (typeof Supa === "undefined" || !Supa.ready()) { render(`<div class="social-empty">社群暫時用不了。</div>`); return; }
+    if (typeof Supa === "undefined" || !Supa.ready()) { render(`<div class="social-empty">${T("社群暫時用不了。")}</div>`); return; }
     if (!mounted) { mounted = true; if (typeof Auth !== "undefined") Auth.init(route); }
     route();
   }
@@ -16,18 +17,22 @@ const SocialUI = (() => {
   function withTimeout(p, ms) { return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error("連線逾時")), ms))]); }
 
   async function route() {
-    if (typeof Auth === "undefined") { render(`<div class="social-empty">社群模組載入失敗，請下拉重新整理。</div>`); return; }
+    if (typeof Auth === "undefined") { render(`<div class="social-empty">${T("社群模組載入失敗，請下拉重新整理。")}</div>`); return; }
     try {
       const sess = await withTimeout(Auth.session(), 10000);
-      if (!sess) { window.__meAvatar = null; if (typeof TeamLive !== "undefined") TeamLive.stop(); Auth.renderLogin(render); return; }
-      myProf = await withTimeout(Auth.myProfile(), 10000);
+      if (!sess) { myProf = null; window.__meAvatar = null; if (typeof TeamLive !== "undefined") TeamLive.stop(); Auth.renderLogin(render); return; }
+      // 個人檔案 2 分鐘內抓過、同一個人 → 直接用（以前每次點社群分頁都重抓一次）
+      if (!myProf || myProf.id !== sess.user.id || Date.now() - _profAt > 120000) {
+        myProf = await withTimeout(Auth.myProfile(), 10000); _profAt = Date.now();
+      }
       if (!myProf) { Auth.renderOnboarding(render); return; }
       const m = (sess.user && sess.user.user_metadata) || {};
       window.__meAvatar = myProf.avatar_url || m.avatar_url || m.picture || null;   // 供記錄地圖的「我」標記（沒頭像退用 Google 照片）
-      if (typeof Profiles !== "undefined") Profiles.syncMyStats(myProf.id);   // 上線即同步寵物進度供好友看
+      if (typeof Profiles !== "undefined") Profiles.syncMyStats(myProf.id);   // 上線即同步寵物進度供好友看（內部有節流）
       shell();
     } catch (e) {
-      render(`<div class="social-empty">載入失敗：${(e && e.message) || e}<br><br><button class="btn ghost" id="socialRetry">重試</button></div>`);
+      const msg = Supa.errText(e && e.message);
+      render(`<div class="social-empty">${Supa.esc(T(msg))}<br><br><button class="btn ghost" id="socialRetry">${T("重試")}</button></div>`);
       const r = document.getElementById("socialRetry"); if (r) r.addEventListener("click", route);
     }
   }
@@ -66,7 +71,7 @@ const SocialUI = (() => {
     const badge = id === "notif" ? `<span class="nbadge" id="notifBadge"></span>` : "";
     return `<button class="sub-tab ${sub === id ? "on" : ""}" data-sub="${id}">${label}${badge}</button>`;
   }
-  function setBadge(id, n) { const b = document.getElementById(id); if (b) { b.textContent = n > 0 ? (n > 9 ? "9+" : n) : ""; b.style.display = n > 0 ? "inline-block" : "none"; } }
+  function setBadge(id, n) { const b = document.getElementById(id); if (b) { b.textContent = n > 0 ? (n > 9 ? "9+" : n) : ""; b.hidden = !(n > 0); } }
   function updateBadge() {
     if (typeof Notifs === "undefined") return;
     Notifs.unreadCount().then(n => { setBadge("notifBadge", n); setBadge("socialNavBadge", n); });
@@ -80,5 +85,34 @@ const SocialUI = (() => {
   }
   setTimeout(bootBadge, 1500);
 
-  return { onShow, route, render };
+  // 給其他模組用：切到某個子分頁、重畫目前子分頁、更新快取的個人檔案（改完名字/頭像後）
+  function go(s) { sub = s; shell(); }
+  function refresh() { if (myProf) shell(); else route(); }
+  function setProfile(p) { if (p) { myProf = p; _profAt = Date.now(); if (p.avatar_url) window.__meAvatar = p.avatar_url; } }
+
+  // 下拉重新整理：每個子分頁都能拉（原本只有動態牆可以）
+  (function attachPTR() {
+    const sc = document.getElementById("view-social"); if (!sc || sc._ptr) return; sc._ptr = true;
+    const TH = 72;
+    let startY = 0, pulling = false, dy = 0;
+    const ind = document.createElement("div"); ind.id = "ptrInd"; ind.className = "ptr-ind";
+    ind.innerHTML = `<svg class="ic ptr-arrow" viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg><span class="spin ptr-spin"></span>`;
+    sc.prepend(ind);
+    const atTop = () => (window.scrollY || document.documentElement.scrollTop || 0) <= 2;
+    const reset = () => { ind.style.height = "0px"; ind.classList.remove("ready", "loading"); };
+    sc.addEventListener("touchstart", e => { pulling = atTop() && !!document.getElementById("subBody") && !document.querySelector(".pv-mask, .composer-mask"); startY = e.touches[0].clientY; dy = 0; }, { passive: true });
+    sc.addEventListener("touchmove", e => {
+      if (!pulling) return;
+      dy = Math.max(0, e.touches[0].clientY - startY);
+      ind.style.height = Math.min(dy * 0.5, 64) + "px";
+      ind.classList.toggle("ready", dy > TH);
+    }, { passive: true });
+    sc.addEventListener("touchend", () => {
+      if (pulling && dy > TH) { ind.classList.add("loading"); ind.style.height = "44px"; _profAt = 0; route(); setTimeout(reset, 700); }
+      else reset();
+      pulling = false;
+    }, { passive: true });
+  })();
+
+  return { onShow, route, render, go, refresh, setProfile };
 })();

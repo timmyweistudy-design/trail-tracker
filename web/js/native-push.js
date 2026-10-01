@@ -29,7 +29,7 @@ const NativePush = (() => {
     try {
       if (typeof Supa === "undefined" || !Supa.ready()) return;
       const c = Supa.client(); if (!c) return;
-      const { data: u } = await c.auth.getUser(); if (!u || !u.user) return;
+      const { data: u } = await Supa.meUser(); if (!u || !u.user) return;
       const platform = (window.Capacitor.getPlatform && window.Capacitor.getPlatform()) || "ios";
       await c.from("native_push_tokens").upsert(
         { user_id: u.user.id, token, platform, updated_at: new Date().toISOString() },
@@ -63,7 +63,7 @@ const NativePush = (() => {
       localStorage.removeItem("tt_native_push");
       if (typeof Supa !== "undefined" && Supa.ready()) {
         const c = Supa.client();
-        const { data: u } = await c.auth.getUser();
+        const { data: u } = await Supa.meUser();
         if (u && u.user && _lastToken) await c.from("native_push_tokens").delete().eq("user_id", u.user.id).eq("token", _lastToken);
       }
       say("已關閉推播通知");

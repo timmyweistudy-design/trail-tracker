@@ -136,7 +136,7 @@ $("#btnFavOffline").addEventListener("click", downloadFavOffline);
 // Premium：雲端備份 / 還原（跨裝置）
 async function cloudClient() {
   if (typeof Supa === "undefined" || !Supa.ready()) { toast("社群尚未啟用"); return null; }
-  const c = Supa.client(); const { data: u } = await c.auth.getUser();
+  const c = Supa.client(); const { data: u } = await Supa.meUser();
   if (!u || !u.user) {
     // 自用模式把社群分頁藏起來了，直接帶去登入畫面，別叫人去找一個看不到的分頁
     if (socialHidden()) { toast(ttT("先登入，才能備份到雲端")); const t = document.querySelector('.tab[data-view="social"]'); if (t) t.click(); }
@@ -168,7 +168,7 @@ async function cloudBackupNow(silent) {
 async function autoCloudBackup() {
   try {
     if (typeof Supa === "undefined" || !Supa.ready()) return;
-    const c = Supa.client(); const { data: u } = await c.auth.getUser();
+    const c = Supa.client(); const { data: u } = await Supa.meUser();
     if (!u || !u.user) return;   // 沒登入就沒雲端備份（改用匯出備份檔）
     // 離線送出佇列：離線或失敗→標記待備份，回線自動補送（資料安全不因當下沒網路而漏）
     if (typeof navigator !== "undefined" && navigator.onLine === false) { try { localStorage.setItem("tt_backup_pending", "1"); } catch (e) { } return; }
@@ -183,7 +183,7 @@ if (typeof window !== "undefined") { window.addEventListener("online", _retryPen
 async function syncMyStatsToCloud() {
   try {
     if (typeof Supa === "undefined" || !Supa.ready() || typeof Profiles === "undefined") return;
-    const c = Supa.client(); const { data: u } = await c.auth.getUser();
+    const c = Supa.client(); const { data: u } = await Supa.meUser();
     if (u && u.user) await Profiles.syncMyStats(u.user.id);
   } catch (e) { /* 靜默；社群模組未載入或未登入就略過 */ }
 }
@@ -197,7 +197,7 @@ async function cloudAutoSync() {
   if (_cloudSyncDone) return;
   try {
     if (typeof Supa === "undefined" || !Supa.ready()) return;   // 社群未載入/未設定 → 之後再試
-    const c = Supa.client(); const { data: u } = await c.auth.getUser();
+    const c = Supa.client(); const { data: u } = await Supa.meUser();
     if (!u || !u.user) return;                                   // 未登入 → 不標記完成，登入後會再觸發
     const uid = u.user.id;
     const owner = (() => { try { return localStorage.getItem("tt_data_uid"); } catch (e) { return null; } })();
@@ -333,7 +333,7 @@ async function reportClientErrors() {
     const lastSent = localStorage.getItem("tt_errors_sent") || "";
     const fresh = errs.filter(e => e.t > lastSent).slice(0, 10);
     if (!fresh.length) return;
-    const c = Supa.client(); const { data: u } = await c.auth.getUser();
+    const c = Supa.client(); const { data: u } = await Supa.meUser();
     if (!u || !u.user) return;
     let ver = "";
     try { ver = ((await (await fetch("sw.js")).text()).match(/trail-tracker-(v\d+)/) || [])[1] || ""; } catch (e) { /* 離線 */ }

@@ -1,23 +1,23 @@
 // 通知：列出別人對你的追蹤/讚/留言，未讀計數，標記已讀，Realtime 即時。
 const Notifs = (() => {
-  function esc(s) { return (s || "").replace(/[<>&"]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c])); }
-  function ago(iso) {
-    const d = (Date.now() - new Date(iso).getTime()) / 1000;
-    if (d < 60) return "剛剛"; if (d < 3600) return Math.floor(d / 60) + " 分前";
-    if (d < 86400) return Math.floor(d / 3600) + " 小時前"; return Math.floor(d / 86400) + " 天前";
-  }
-  async function me() { const c = Supa.client(); if (!c) return null; const { data } = await c.auth.getUser(); return data && data.user ? data.user.id : null; }
+  const esc = s => Supa.esc(s);
+  const ago = iso => Supa.ago(iso);
+  const T = s => (typeof ttT === "function" ? ttT(s) : s);
+  const PAGE = 40;
+  async function me() { const c = Supa.client(); if (!c) return null; const { data } = await Supa.meUser(); return data && data.user ? data.user.id : null; }
 
   async function unreadCount() {
     const c = Supa.client(); const uid = await me(); if (!uid) return 0;
     const { count } = await c.from("notifications").select("*", { count: "exact", head: true }).eq("user_id", uid).eq("read", false);
     return count || 0;
   }
-  async function list() {
+  async function list(beforeISO) {
     const c = Supa.client(); const uid = await me(); if (!uid) return [];
-    const { data } = await c.from("notifications")
+    let q = c.from("notifications")
       .select("id, type, post_id, actor_id, read, created_at, actor:profiles!notif_actor_profile_fk(handle, display_name, avatar_url)")
-      .eq("user_id", uid).order("created_at", { ascending: false }).limit(50);
+      .eq("user_id", uid).order("created_at", { ascending: false }).limit(PAGE);
+    if (beforeISO) q = q.lt("created_at", beforeISO);   // 看更早的
+    const { data } = await q;
     return data || [];
   }
   async function markAllRead() {
@@ -36,7 +36,7 @@ const Notifs = (() => {
     if (n.type === "mention") return name + " 在貼文中提到你";
     return name;
   }
-  function icon(t) { return (t === "follow" || t === "follow_req" || t === "follow_ok") ? ic("plus") : t === "like" ? ic("heart") : t === "team" ? ic("users") : t === "gift" ? "🍓" : t === "mention" ? ic("megaphone") : ic("chat"); }
+  function icon(t) { return (t === "follow" || t === "follow_req" || t === "follow_ok") ? ic("plus") : t === "like" ? ic("heart") : t === "team" ? ic("users") : t === "gift" ? (typeof BERRY_SVG !== "undefined" ? BERRY_SVG : "🍓") : t === "mention" ? ic("megaphone") : ic("chat"); }
 
   // 我收到、還沒處理的追蹤請求（phase18；未升級回空集合）
   async function pendingRequestIds() {
@@ -48,23 +48,25 @@ const Notifs = (() => {
     } catch (e) { return new Set(); }
   }
 
+  // 推播還沒開才在最下面放一行小提示（以前最上面一顆大按鈕，每次打開都佔一大塊）；關閉改到「設定」
   async function pushBar() {
-    // 網頁走 Web Push；原生 App（WKWebView 無 Web Push）走 Capacitor 原生推播
-    if (typeof Push !== "undefined" && Push.supported()) {
-      const on = await Push.isOn();
-      return `<button class="btn ${on ? "ghost" : "primary"} notif-push" id="notifPush">${ic("bell")} ${on ? "關閉推播通知" : "開啟推播通知"}</button>`;
-    }
-    if (typeof NativePush !== "undefined" && NativePush.available()) {
-      const on = await NativePush.isOn();
-      return `<button class="btn ${on ? "ghost" : "primary"} notif-push" id="notifPushNative">${ic("bell")} ${on ? "關閉推播通知" : "開啟推播通知"}</button>`;
-    }
-    return "";
+    try {
+      if (localStorage.getItem("tt_push_hint_off") === "1") return "";
+      if (typeof Push !== "undefined" && Push.supported()) { if (await Push.isOn()) return ""; }
+      else if (typeof NativePush !== "undefined" && NativePush.available()) { if (await NativePush.isOn()) return ""; }
+      else return "";
+    } catch (e) { return ""; }
+    return `<div class="notif-push-hint">${ic("bell")}<span>${T("有人按讚、留言時要通知你嗎？")}</span><button class="link-btn" id="notifPushOn">${T("開啟")}</button><button class="comp-x" id="notifPushX" aria-label="${T("關閉")}">${ic("x")}</button></div>`;
   }
   function wirePush(into, redraw) {
-    const b = document.getElementById("notifPush");
-    if (b) b.addEventListener("click", async () => { b.disabled = true; await Push.toggle(); redraw(); });
-    const bn = document.getElementById("notifPushNative");
-    if (bn) bn.addEventListener("click", async () => { bn.disabled = true; await NativePush.toggle(); redraw(); });
+    const b = document.getElementById("notifPushOn");
+    if (b) b.addEventListener("click", async () => {
+      b.disabled = true;
+      if (typeof Push !== "undefined" && Push.supported()) await Push.enable(); else await NativePush.toggle();
+      redraw();
+    });
+    const x = document.getElementById("notifPushX");
+    if (x) x.addEventListener("click", () => { try { localStorage.setItem("tt_push_hint_off", "1"); } catch (e) { } const h = x.closest(".notif-push-hint"); if (h) h.remove(); });
   }
 
   // 把同型別／同貼文的通知收合成一列（如「小明 讚了你的貼文」＋👥3），減少洗版
@@ -94,7 +96,7 @@ const Notifs = (() => {
     if (t >= startToday - 6 * 86400000) return 1;
     return 2;
   }
-  const SEC_LABEL = ["今天", "本週", "更早"];
+  const SEC_LABEL = ["今天", "這週", "更早"];
 
   let _filter = "all";
   const GROUPS = [["all", "全部"], ["like", "讚"], ["comment", "留言"], ["follow", "追蹤"]];
@@ -108,9 +110,9 @@ const Notifs = (() => {
 
   async function render(into) {
     into(`<div class="feed-loading"><span class="spin"></span></div>`);
-    const bar = await pushBar();
-    const [items, pending] = await Promise.all([list(), pendingRequestIds()]);
-    const tabs = `<div class="notif-tabs">${GROUPS.map(([k, l]) => `<button class="notif-tab ${k === _filter ? "on" : ""}" data-g="${k}">${l}</button>`).join("")}</div>`;
+    const [bar, items, pending] = await Promise.all([pushBar(), list(), pendingRequestIds()]);
+    let more = items.length >= PAGE;
+    const tabs = `<div class="notif-tabs">${GROUPS.map(([k, l]) => `<button class="notif-tab ${k === _filter ? "on" : ""}" data-g="${k}">${T(l)}</button>`).join("")}</div>`;
     const paint = () => {
       const list2 = groupNotifs(items.filter(n => inGroup(n, _filter)));
       let _curSec = -1;
@@ -119,17 +121,25 @@ const Notifs = (() => {
           const n = g.rep;
           let sec = "";
           const b = timeBucket(n.created_at);
-          if (b !== _curSec) { _curSec = b; sec = `<div class="notif-sec">${SEC_LABEL[b]}</div>`; }
+          if (b !== _curSec) { _curSec = b; sec = `<div class="notif-sec">${T(SEC_LABEL[b])}</div>`; }
           const askBtns = (n.type === "follow_req" && n.actor_id && pending.has(n.actor_id))
-            ? `<div class="notif-acts"><button class="btn primary nf-ok" data-uid="${n.actor_id}">同意</button><button class="btn ghost nf-no" data-uid="${n.actor_id}">拒絕</button></div>` : "";
-          const countChip = g.count > 1 ? `<span class="notif-count">${ic("users")}${g.count}</span>` : "";
+            ? `<div class="notif-acts"><button class="btn primary nf-ok" data-uid="${n.actor_id}">${T("同意")}</button><button class="btn ghost nf-no" data-uid="${n.actor_id}">${T("拒絕")}</button></div>` : "";
+          // 合併的通知：「＋2」＝另外還有 2 個人（以前顯示總數 👥3，看不出是誰加誰）
+          const countChip = g.count > 1 ? `<span class="notif-count" title="${T("還有其他人")}">${ic("users")}+${g.count - 1}</span>` : "";
           return `${sec}<div class="notif ${g.unread ? "unread" : ""}" data-type="${n.type}" data-post="${n.post_id || ""}" data-uid="${n.actor_id || ""}">
             <span class="notif-ic">${icon(n.type)}</span>
             <div class="notif-body"><div class="notif-line">${label(n)}${countChip}</div><div class="fc-sub">${ago(n.created_at)}</div>${askBtns}</div>
           </div>`;
         }).join("")}</div>`
-        : `<div class="social-empty"><span class="ee">🔔</span>${_filter === "all" ? "還沒有通知。" : "這個分類還沒有通知。"}</div>`;
-      into(`${bar}${items.length ? tabs : ""}${body}`);
+        : `<div class="social-empty"><span class="ee">${ic("bell")}</span>${T(_filter === "all" ? "還沒有通知。" : "這個分類還沒有通知。")}</div>`;
+      const moreBtn = more && list2.length ? `<button class="btn ghost" id="notifMore">${T("看更早的")}</button>` : "";
+      into(`${items.length ? tabs : ""}${body}${moreBtn}${bar}`);
+      const mb = document.getElementById("notifMore");
+      if (mb) mb.addEventListener("click", async () => {
+        mb.disabled = true; mb.innerHTML = `<span class="spin"></span>`;
+        const older = await list(items[items.length - 1].created_at);
+        items.push(...older); more = older.length >= PAGE; paint();
+      });
       document.querySelectorAll(".notif-tab").forEach(b => b.addEventListener("click", () => { _filter = b.dataset.g; paint(); }));
       // 同意 / 拒絕追蹤請求
       document.querySelectorAll(".nf-ok, .nf-no").forEach(b => b.addEventListener("click", async e => {
@@ -137,8 +147,8 @@ const Notifs = (() => {
         const c = Supa.client(); const ok = b.classList.contains("nf-ok");
         b.disabled = true;
         const { error } = await c.rpc(ok ? "approve_follow" : "decline_follow", { p_requester: b.dataset.uid });
-        if (error) { b.disabled = false; if (typeof toast === "function") toast("操作失敗，等一下再試試"); return; }
-        if (typeof toast === "function") toast(ok ? "已同意，對方現在追蹤你了" : "已拒絕請求");
+        if (error) { b.disabled = false; if (typeof toast === "function") toast(T("沒成功，等一下再試試")); return; }
+        if (typeof toast === "function") toast(T(ok ? "同意了，對方現在追蹤你了" : "婉拒了"));
         pending.delete(b.dataset.uid);
         paint();
       }));

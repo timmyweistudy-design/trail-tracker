@@ -339,7 +339,7 @@ async function openCompare() {
   if (document.querySelector('[data-ov="cmpfriends"]')) return;   // 防連點疊層
   if (typeof ttBusy === "function" && ttBusy("cmpfriends")) return;   // 同步鎖
   if (typeof Supa === "undefined" || !Supa.ready()) { toast("社群尚未啟用"); return; }
-  const c = Supa.client(); const { data: u } = await c.auth.getUser();
+  const c = Supa.client(); const { data: u } = await Supa.meUser();
   if (!u || !u.user) { toast("請先到社群分頁登入"); return; }
   const ov = document.createElement("div"); ov.className = "pet-modal";
   ov.dataset.ov = "cmpfriends";

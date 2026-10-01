@@ -23,7 +23,7 @@ const Posts = (() => {
   async function createFromRecord(rec, opts) {
     const { caption, visibility, files, video, rating } = opts || {};
     const c = Supa.client(); if (!c) return { error: "no-client" };
-    const { data: u } = await c.auth.getUser(); if (!u || !u.user) return { error: "not-signed-in" };
+    const { data: u } = await Supa.meUser(); if (!u || !u.user) return { error: "not-signed-in" };
     const uid = u.user.id, postId = uuid();
     const { error: pe } = await c.from("posts").insert({
       id: postId, author_id: uid,
@@ -31,7 +31,8 @@ const Posts = (() => {
       distance_km: rec.distanceKm != null ? rec.distanceKm : null,
       duration_ms: rec.elapsedMs != null ? rec.elapsedMs : null,
       ascent: rec.ascent != null ? rec.ascent : null,
-      hiked_on: (rec.date || new Date().toISOString()).slice(0, 10),
+      // 本地日期：rec.date 是 UTC 時間字串，直接切前 10 碼的話，台灣早上 8 點前出發的行程會記成前一天
+      hiked_on: new Date(rec.date || Date.now()).toLocaleDateString("sv-SE"),
       caption: caption || null,
       visibility: visibility === "public" ? "public" : "friends",
       track: toGeo(rec.track),
@@ -40,29 +41,31 @@ const Posts = (() => {
     });
     if (pe) return { error: pe.message };
 
-    const media = [];
-    const list = (files || []).slice(0, 9);
-    for (let i = 0; i < list.length; i++) {
+    // 照片一次傳 3 張（原本一張一張傳，9 張要等很久）；失敗的算出來告訴使用者，不再默默少掉
+    const list = (files || []).slice(0, 9), slots = new Array(list.length).fill(null);
+    let failed = 0, next = 0;
+    const one = async i => {
       const item = list[i], file = (item && item.file) || item;   // 相容：{file,t,km} 或純 File
       try {
         const { main, thumb, w, h } = await Media.compressImage(file);
         const base = uuid();
-        const path = await Media.upload(uid, postId, main, base + ".jpg");
-        const thumb_path = await Media.upload(uid, postId, thumb, base + "_thumb.jpg");
-        media.push({ post_id: postId, kind: "photo", path, thumb_path, w, h, ord: i,
+        const [path, thumb_path] = await Promise.all([Media.upload(uid, postId, main, base + ".jpg"), Media.upload(uid, postId, thumb, base + "_thumb.jpg")]);
+        slots[i] = { post_id: postId, kind: "photo", path, thumb_path, w, h, ord: i,
           taken_at: (item && item.t) ? new Date(item.t).toISOString() : null,
-          km: (item && item.km != null) ? item.km : null });
-      } catch (e) { console.warn("media upload failed", e && e.message); }
-    }
+          km: (item && item.km != null) ? item.km : null };
+      } catch (e) { failed++; console.warn("media upload failed", e && e.message); }
+    };
+    await Promise.all([0, 1, 2].map(async () => { while (next < list.length) await one(next++); }));
+    const media = slots.filter(Boolean);
     if (video && video.file) {
       try {
         const v = await Media.uploadVideo(uid, postId, video.file, video.dur);
-        media.push({ post_id: postId, kind: "video", path: v.path, thumb_path: v.thumb_path, dur: v.dur, ord: media.length });
-      } catch (e) { console.warn("video upload failed", e && e.message); }
+        media.push({ post_id: postId, kind: "video", path: v.path, thumb_path: v.thumb_path, dur: v.dur, ord: list.length });
+      } catch (e) { failed++; console.warn("video upload failed", e && e.message); }
     }
-    if (media.length) { const { error: me } = await c.from("post_media").insert(media); if (me) console.warn(me.message); }
+    if (media.length) { const { error: me } = await c.from("post_media").insert(media); if (me) { failed = list.length + (video ? 1 : 0); console.warn(me.message); } }
     notifyMentions(caption, postId);   // @提及通知（migration 未跑則靜默）
-    return { id: postId };
+    return { id: postId, failed };
   }
 
   const SELECT = `
@@ -72,7 +75,7 @@ const Posts = (() => {
     likes(count), comments(count)`;
 
   async function followingIds() {
-    const c = Supa.client(); const { data: u } = await c.auth.getUser(); if (!u || !u.user) return [];
+    const c = Supa.client(); const { data: u } = await Supa.meUser(); if (!u || !u.user) return [];
     const { data } = await c.from("follows").select("following_id").eq("follower_id", u.user.id);
     return (data || []).map(r => r.following_id);
   }
@@ -87,7 +90,7 @@ const Posts = (() => {
     } else {
       // 動態＝我追蹤的人 + 我自己（首頁也看得到自己發的貼文）
       const ids = await followingIds();
-      const { data: u } = await c.auth.getUser();
+      const { data: u } = await Supa.meUser();
       if (u && u.user) ids.push(u.user.id);
       if (!ids.length) return [];
       q = q.in("author_id", ids);
@@ -118,10 +121,12 @@ const Posts = (() => {
   }
 
   // 熱門探索：抓近期公開貼文，依「互動數＋時間衰減」排序（趨勢牆）
-  async function trending() {
+  // filter：先篩再排（探索頁的難度篩選），篩選時多抓一些
+  async function trending(filter) {
     const c = Supa.client(); if (!c) return [];
-    const { data, error } = await c.from("posts").select(SELECT).eq("visibility", "public")
-      .order("created_at", { ascending: false }).limit(60);
+    const { data: raw, error } = await c.from("posts").select(SELECT).eq("visibility", "public")
+      .order("created_at", { ascending: false }).limit(filter ? 200 : 60);
+    const data = filter ? (raw || []).filter(filter) : raw;
     if (error) { console.warn("trending", error.message); return []; }
     const score = p => {
       const eng = count(p.likes) + 2 * count(p.comments);
@@ -135,7 +140,7 @@ const Posts = (() => {
   // 推薦追蹤：近期活躍且我還沒追蹤的山友
   async function suggestions() {
     const c = Supa.client(); if (!c) return [];
-    const { data: u } = await c.auth.getUser(); if (!u || !u.user) return [];
+    const { data: u } = await Supa.meUser(); if (!u || !u.user) return [];
     const me = u.user.id;
     const { data: recent } = await c.from("posts").select("author_id, created_at")
       .eq("visibility", "public").order("created_at", { ascending: false }).limit(120);
@@ -160,14 +165,15 @@ const Posts = (() => {
 
   // 我對哪些 postId 按過讚 → Set
   async function likedSet(postIds) {
-    const c = Supa.client(); const { data: u } = await c.auth.getUser();
-    if (!u || !u.user || !postIds.length) return new Set();
+    if (!postIds || !postIds.length) return new Set();
+    const c = Supa.client(); const { data: u } = await Supa.meUser();
+    if (!u || !u.user) return new Set();
     const { data } = await c.from("likes").select("post_id").eq("user_id", u.user.id).in("post_id", postIds);
     return new Set((data || []).map(r => r.post_id));
   }
 
   async function toggleLike(postId, on) {
-    const c = Supa.client(); const { data: u } = await c.auth.getUser(); if (!u || !u.user) return { error: "not-signed-in" };
+    const c = Supa.client(); const { data: u } = await Supa.meUser(); if (!u || !u.user) return { error: "not-signed-in" };
     if (on) { const { error } = await c.from("likes").insert({ post_id: postId, user_id: u.user.id }); return { error: error && error.message }; }
     const { error } = await c.from("likes").delete().eq("post_id", postId).eq("user_id", u.user.id);
     return { error: error && error.message };
@@ -225,19 +231,19 @@ const Posts = (() => {
     catch (e) { return []; }
   }
   async function setReaction(postId, emoji) {
-    const c = Supa.client(); const { data: u } = await c.auth.getUser(); if (!u || !u.user) return { error: "not-signed-in" };
+    const c = Supa.client(); const { data: u } = await Supa.meUser(); if (!u || !u.user) return { error: "not-signed-in" };
     const { error } = await c.from("reactions").upsert({ post_id: postId, user_id: u.user.id, emoji }, { onConflict: "post_id,user_id" });
     return { error: error && error.message };
   }
   async function clearReaction(postId) {
-    const c = Supa.client(); const { data: u } = await c.auth.getUser(); if (!u || !u.user) return;
+    const c = Supa.client(); const { data: u } = await Supa.meUser(); if (!u || !u.user) return;
     await c.from("reactions").delete().eq("post_id", postId).eq("user_id", u.user.id);
   }
 
   // ===== 留言按讚（需 phase11；失敗回空） =====
   async function commentLikes(commentIds) {
     try {
-      const c = Supa.client(); const { data: u } = await c.auth.getUser();
+      const c = Supa.client(); const { data: u } = await Supa.meUser();
       if (!commentIds.length) return { counts: {}, mine: new Set() };
       const { data } = await c.from("comment_likes").select("comment_id, user_id").in("comment_id", commentIds);
       const counts = {}, mine = new Set();
@@ -246,14 +252,14 @@ const Posts = (() => {
     } catch (e) { return { counts: {}, mine: new Set() }; }
   }
   async function toggleCommentLike(commentId, on) {
-    const c = Supa.client(); const { data: u } = await c.auth.getUser(); if (!u || !u.user) return;
+    const c = Supa.client(); const { data: u } = await Supa.meUser(); if (!u || !u.user) return;
     if (on) await c.from("comment_likes").insert({ comment_id: commentId, user_id: u.user.id });
     else await c.from("comment_likes").delete().eq("comment_id", commentId).eq("user_id", u.user.id);
   }
 
   // ===== 轉發（需 phase11 的 repost_of 欄位） =====
   async function createRepost(original, quote) {
-    const c = Supa.client(); const { data: u } = await c.auth.getUser(); if (!u || !u.user) return { error: "not-signed-in" };
+    const c = Supa.client(); const { data: u } = await Supa.meUser(); if (!u || !u.user) return { error: "not-signed-in" };
     const id = uuid();
     const handle = original.author && original.author.handle;
     const head = handle ? `🔁 轉發 @${handle}` : "🔁 轉發";
@@ -280,8 +286,9 @@ const Posts = (() => {
   // 追蹤數（我追蹤幾人）與粉絲數（幾人追蹤我）
   async function followCounts(uid) {
     const c = Supa.client(); if (!c) return { followers: 0, following: 0 };
-    const fr = await c.from("follows").select("*", { count: "exact", head: true }).eq("following_id", uid);
-    const fg = await c.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", uid);
+    const [fr, fg] = await Promise.all([   // 兩個數字同時查
+      c.from("follows").select("*", { count: "exact", head: true }).eq("following_id", uid),
+      c.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", uid)]);
     return { followers: fr.count || 0, following: fg.count || 0 };
   }
 

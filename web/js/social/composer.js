@@ -22,13 +22,13 @@ const Composer = (() => {
     wrap.className = "composer-mask";
     wrap.innerHTML = `
       <div class="composer">
-        <div class="composer-head"><button class="comp-x" aria-label="關閉" id="compX">✕</button><b>分享到社群</b><button class="btn primary comp-post" id="compPost">發布</button></div>
-        <div class="comp-trail">⛰️ ${esc(rec.trailName || "自由路線")}　${(rec.distanceKm || 0).toFixed(2)}km　↑${rec.ascent || 0}m</div>
-        <div class="comp-rate">這條步道評分　<span class="comp-stars" id="compStars">${[1, 2, 3, 4, 5].map(n => `<span class="cs" data-r="${n}">☆</span>`).join("")}</span></div>
+        <div class="composer-head"><button class="comp-x" aria-label="關閉" id="compX">${ic("x")}</button><b>分享到社群</b><button class="btn primary comp-post" id="compPost">發布</button></div>
+        <div class="comp-trail">${ic("mountain")} <b>${esc(rec.trailName || "自由路線")}</b><span>${(rec.distanceKm || 0).toFixed(2)} km · ↑${Math.round(rec.ascent || 0)} m</span></div>
+        ${rec.trailId ? `<div class="comp-rate"><span>${(typeof ttT === "function" ? ttT : x => x)("給這條步道幾顆星")}</span><span class="comp-stars" id="compStars" role="radiogroup">${[1, 2, 3, 4, 5].map(n => `<button type="button" class="cs" data-r="${n}" aria-label="${n}">${typeof STAR_SVG !== "undefined" ? STAR_SVG : "★"}</button>`).join("")}</span></div>` : ""}
         <textarea id="compCaption" class="comp-cap" placeholder="寫下這趟的心得…" maxlength="2000"></textarea>
         <div class="comp-photos" id="compPhotos"></div>
-        <label class="comp-add">＋ 加照片<input type="file" id="compFiles" accept="image/*" multiple hidden></label>
-        <label class="comp-add">＋ 加影片<input type="file" id="compVideo" accept="video/*" hidden></label>
+        <div class="comp-adds"><label class="comp-add">${ic("camera")} 加照片<input type="file" id="compFiles" accept="image/*" multiple hidden></label>
+        <label class="comp-add">${ic("video")} 加影片<input type="file" id="compVideo" accept="video/*" hidden></label></div>
         <div id="compVideoName" class="comp-trail"></div>
         <div class="comp-vis">
           <label><input type="radio" name="compVis" value="friends"${(localStorage.getItem("tt_default_vis") || "friends") === "friends" ? " checked" : ""}> 只給好友</label>
@@ -38,12 +38,14 @@ const Composer = (() => {
       </div>`;
     document.body.appendChild(wrap);
     const cap = wrap.querySelector("#compCaption");
+    // 草稿綁在這一趟行程上：以前只有一份草稿，分享別趟時會跑出上一趟沒寫完的心得
+    const rid = String(rec.id || rec.date || "");
     if (presetCaption) cap.value = presetCaption;
-    else { const d = localStorage.getItem("tt_draft"); if (d) cap.value = d; }   // 還原草稿
-    cap.addEventListener("input", () => { try { localStorage.setItem("tt_draft", cap.value); } catch (e) { } });
+    else { try { const d = JSON.parse(localStorage.getItem("tt_draft") || "null"); if (d && d.rid === rid && d.text) cap.value = d.text; } catch (e) { } }
+    cap.addEventListener("input", () => { try { localStorage.setItem("tt_draft", JSON.stringify({ rid, text: cap.value })); } catch (e) { } });
     if (typeof Autocomplete !== "undefined") Autocomplete.attach(cap);
     const stars = wrap.querySelectorAll("#compStars .cs");
-    stars.forEach(s => s.addEventListener("click", () => { rating = +s.dataset.r; stars.forEach(x => x.textContent = (+x.dataset.r <= rating) ? "★" : "☆"); }));
+    stars.forEach(s => s.addEventListener("click", () => { rating = (rating === +s.dataset.r) ? 0 : +s.dataset.r; stars.forEach(x => x.classList.toggle("on", +x.dataset.r <= rating)); }));   // 再按同一顆＝取消
     const close = () => { _urls.forEach(u => URL.revokeObjectURL(u)); _urls = []; wrap.remove(); };
     wrap.querySelector("#compX").addEventListener("click", close);
     wrap.querySelector("#compFiles").addEventListener("change", e => {
@@ -63,11 +65,11 @@ const Composer = (() => {
     }
     wrap.querySelector("#compVideo").addEventListener("change", async e => {
       const f = e.target.files[0]; if (!f) return;
-      const msg = wrap.querySelector("#compMsg"); msg.textContent = "檢查影片…";
+      const msg = wrap.querySelector("#compMsg"); msg.textContent = (typeof ttT === "function" ? ttT : x => x)("檢查影片…");
       const r = await Media.validateVideo(f);
       if (!r.ok) { msg.textContent = r.msg; video = null; wrap.querySelector("#compVideoName").textContent = ""; return; }
       video = { file: f, dur: r.dur }; msg.textContent = "";
-      wrap.querySelector("#compVideoName").textContent = "🎬 " + f.name;
+      wrap.querySelector("#compVideoName").innerHTML = ic("video") + " " + esc(f.name);
     });
     wrap.querySelector("#compPost").addEventListener("click", () => submit(wrap, rec, close));
     if (files.length) renderPhotos(wrap);   // 顯示隨手拍預載的照片（可刪可加）
@@ -77,7 +79,7 @@ const Composer = (() => {
   function renderPhotos(wrap) {
     _urls.forEach(u => URL.revokeObjectURL(u)); _urls = [];   // 回收上一輪的物件 URL
     const box = wrap.querySelector("#compPhotos");
-    box.innerHTML = files.map((it, i) => { const u = URL.createObjectURL(it.file || it); _urls.push(u); return `<div class="comp-thumb"><img src="${u}" alt=""><button data-i="${i}" class="comp-del">✕</button>${(it.km != null) ? `<span class="comp-thumb-km">${(+it.km).toFixed(1)}km</span>` : ""}</div>`; }).join("");
+    box.innerHTML = files.map((it, i) => { const u = URL.createObjectURL(it.file || it); _urls.push(u); return `<div class="comp-thumb"><img src="${u}" alt=""><button data-i="${i}" class="comp-del" aria-label="移除">${ic("x")}</button>${(it.km != null) ? `<span class="comp-thumb-km">${(+it.km).toFixed(1)}km</span>` : ""}</div>`; }).join("");
     box.querySelectorAll(".comp-del").forEach(b => b.addEventListener("click", () => { files.splice(+b.dataset.i, 1); renderPhotos(wrap); }));
   }
 
@@ -86,20 +88,22 @@ const Composer = (() => {
     const caption = wrap.querySelector("#compCaption").value.trim();
     const visibility = wrap.querySelector('input[name="compVis"]:checked').value;
     wrap.querySelector("#compPost").disabled = true;
-    msg.textContent = "發布中…（上傳照片可能需要一點時間）";
+    const T = typeof ttT === "function" ? ttT : x => x;
+    msg.textContent = T(files.length || video ? "發布中…照片上傳要一點時間" : "發布中…");
     const r = await Posts.createFromRecord(rec, { caption, visibility, files, video, rating });
-    if (r.error) { msg.textContent = "發布失敗：" + r.error; wrap.querySelector("#compPost").disabled = false; return; }
-    msg.textContent = "已發布！";
+    if (r.error) { msg.textContent = T(Supa.errText(r.error)); wrap.querySelector("#compPost").disabled = false; return; }
+    msg.textContent = T("發好了！");
     // 貼文星星 → 回寫本機步道評分，讓「我評 4★+」篩選連動（自由路線無 trailId 不算）
     if (rec.trailId && rating > 0 && typeof Store !== "undefined") {
       try { Store.setTrailLog(String(rec.trailId), { rating }); } catch (e) { /* */ }
     }
     try { localStorage.removeItem("tt_draft"); } catch (e) { }   // 發布成功清草稿
-    if (typeof toast === "function") toast("已分享到社群");
-    if (typeof SocialUI !== "undefined") SocialUI.route();   // 刷新動態牆，立即看到新貼文
+    // 有照片沒傳上去要講（以前默默少掉）
+    if (typeof toast === "function") toast(r.failed ? `${T("發好了，不過有檔案沒傳上去：")}${r.failed}` : T("分享到社群了"));
+    if (typeof SocialUI !== "undefined") SocialUI.refresh();   // 刷新動態牆，立即看到新貼文
     setTimeout(close, 600);
   }
 
-  function esc(s) { return (s || "").replace(/[<>&"]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c])); }
+  const esc = s => Supa.esc(s);
   return { open };
 })();

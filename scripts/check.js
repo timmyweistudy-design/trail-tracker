@@ -73,6 +73,7 @@ const BACKUP_EXEMPT = new Set([
   "tt_premium", "tt_premium_since",                       // 訂閱狀態：由 Supabase 決定
   "tt_active_rec",                                        // 記錄中暫存
   "tt_offline_sets", "tt_tiles_migrated",                  // 離線地圖清單／搬家旗標：圖磚只在這台手機，跨機還原沒意義
+  "tt_push_hint_off",                                     // 社群通知頁的推播提示關掉了（裝置偏好）
   "tt_set_open", "tt_hist_hidesim",                       // 我的頁：設定展開狀態、行程列表篩選（純介面偏好）
   "tt_team", "tt_team_name", "tt_team_live",              // 目前小隊/同行開關：裝置選擇
   "tt_reported", "tt_saved", "tt_draft", "tt_prof_idx",   // 社群端另存雲端/暫存

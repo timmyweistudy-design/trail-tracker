@@ -1,6 +1,6 @@
 // @提及 / #標籤 輸入自動完成：附掛到 textarea/input，打 @ 或 # 跳出建議清單。
 const Autocomplete = (() => {
-  function esc(s) { return (s || "").replace(/[<>&"]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c])); }
+  const esc = s => Supa.esc(s);
 
   function attach(input) {
     if (!input || input._ac) return; input._ac = true;

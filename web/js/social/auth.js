@@ -49,7 +49,7 @@ const Auth = (() => {
     if (NATIVE) {
       // 原生：Google 擋 WebView 內登入，改用系統瀏覽器(Chrome Custom Tab)開，登完 deep link 回來
       const { data, error } = await c.auth.signInWithOAuth({ provider: "google", options: { redirectTo: REDIRECT, skipBrowserRedirect: true } });
-      if (error || !data || !data.url) { if (typeof toast === "function") toast("Google 登入啟動失敗"); return; }
+      if (error || !data || !data.url) { if (typeof toast === "function") toast(T("Google 登入開不起來，等一下再試")); return; }
       const Browser = _cap("Browser");
       if (Browser) await Browser.open({ url: data.url, presentationStyle: "popover" });
       else window.open(data.url, "_system");
@@ -83,31 +83,39 @@ const Auth = (() => {
     try { await c.auth.signOut({ scope: "local" }); } catch (e) { /* 仍視為已登出 */ }
   }
 
-  function esc(s) { return (s || "").replace(/[<>&"]/g, ch => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[ch])); }
+  const esc = s => Supa.esc(s);
+
+  const T = s => (typeof ttT === "function" ? ttT(s) : s);
+  const onEnter = (el, fn) => el && el.addEventListener("keydown", e => { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); fn(); } });
 
   function renderLogin(render) {
     const google = window.SOCIAL_GOOGLE
       ? `<button class="btn primary" id="authGoogle">使用 Google 繼續</button><div class="auth-or">或</div>` : "";
     render(`
       <div class="social-auth">
-        <div class="auth-logo">⛰️</div>
+        <div class="auth-logo"><img src="icons/icon-192.png" alt="" width="64" height="64"></div>
         <h3>加入山友社群</h3>
         <p class="auth-sub">分享你的步道旅行，看看好友走過哪裡。</p>
         ${google}
-        <input type="email" id="authEmail" class="auth-input" placeholder="輸入 Email" inputmode="email" autocapitalize="off">
-        <button class="btn ghost" id="authEmailBtn">寄送驗證碼</button>
-        <div class="auth-msg" id="authMsg"></div>
+        <input type="email" id="authEmail" class="auth-input" placeholder="輸入 Email" inputmode="email" autocapitalize="off" autocomplete="email" enterkeyhint="send">
+        <button class="btn ghost" id="authEmailBtn">寄驗證碼給我</button>
+        <div class="auth-msg" id="authMsg" role="alert"></div>
       </div>`);
     if (window.SOCIAL_GOOGLE) document.getElementById("authGoogle").addEventListener("click", signInGoogle);
-    document.getElementById("authEmailBtn").addEventListener("click", async () => {
+    const btn = document.getElementById("authEmailBtn");
+    const go = async () => {
+      if (btn.disabled) return;
       const email = (document.getElementById("authEmail").value || "").trim();
       const msg = document.getElementById("authMsg");
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg.textContent = "請輸入有效的 Email"; return; }
-      msg.textContent = "寄送中…";
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg.textContent = T("Email 好像打錯了"); msg.className = "auth-msg bad"; return; }
+      btn.disabled = true; msg.className = "auth-msg"; msg.textContent = T("寄送中…");
       const { error } = await signInEmail(email);
-      if (error) { msg.textContent = "寄送失敗：" + error; return; }
+      btn.disabled = false;
+      if (error) { msg.textContent = T(Supa.errText(error)); msg.className = "auth-msg bad"; return; }
       renderCode(render, email);
-    });
+    };
+    btn.addEventListener("click", go);
+    onEnter(document.getElementById("authEmail"), go);
   }
 
   // 第二步：輸入收到的 6 位數驗證碼
@@ -115,26 +123,39 @@ const Auth = (() => {
     render(`
       <div class="social-auth">
         <h3>輸入驗證碼</h3>
-        <p class="auth-sub">驗證碼已寄到 ${esc(email)}。<b>直接在這個 App 輸入</b>就能登入這裡，不必切到瀏覽器。</p>
-        <input id="authCode" class="auth-input" inputmode="numeric" autocomplete="one-time-code" placeholder="輸入驗證碼" maxlength="10">
+        <p class="auth-sub">${T("驗證碼寄出去了，收到後在這裡輸入就好。")}<br><b>${esc(email)}</b></p>
+        <input id="authCode" class="auth-input auth-code" inputmode="numeric" autocomplete="one-time-code" placeholder="000000" maxlength="10" enterkeyhint="go">
         <button class="btn primary" id="authVerify">登入</button>
-        <button class="btn ghost" id="authResend">重新寄送</button>
-        <button class="btn ghost" id="authBack">換 Email</button>
-        <div class="auth-msg" id="authMsg"></div>
+        <div class="auth-msg" id="authMsg" role="alert"></div>
+        <div class="auth-links"><button class="link-btn" id="authResend">重新寄送</button><button class="link-btn" id="authBack">換 Email</button></div>
       </div>`);
-    document.getElementById("authVerify").addEventListener("click", async () => {
-      const token = (document.getElementById("authCode").value || "").trim();
+    const vb = document.getElementById("authVerify"), codeEl = document.getElementById("authCode");
+    const verify = async () => {
+      if (vb.disabled) return;
+      const token = (codeEl.value || "").replace(/\s/g, "");
       const msg = document.getElementById("authMsg");
-      if (!/^\d{4,10}$/.test(token)) { msg.textContent = "請輸入驗證碼（數字）"; return; }
-      msg.textContent = "驗證中…";
+      if (!/^\d{4,10}$/.test(token)) { msg.textContent = T("驗證碼是一串數字"); msg.className = "auth-msg bad"; return; }
+      vb.disabled = true; msg.className = "auth-msg"; msg.textContent = T("驗證中…");
       const { error } = await verifyEmailCode(email, token);
-      if (error) { msg.textContent = "驗證失敗：" + error; return; }
-      msg.textContent = "登入成功！";   // onAuthStateChange 會觸發 route() 進入註冊/個人頁
-    });
-    document.getElementById("authResend").addEventListener("click", async () => {
-      const msg = document.getElementById("authMsg"); msg.textContent = "重新寄送中…";
+      vb.disabled = false;
+      if (error) { msg.textContent = T(Supa.errText(error)); msg.className = "auth-msg bad"; return; }
+      msg.className = "auth-msg ok"; msg.textContent = T("登入成功！");   // onAuthStateChange 會觸發 route() 進入註冊/個人頁
+    };
+    vb.addEventListener("click", verify);
+    onEnter(codeEl, verify);
+    // 重新寄送：60 秒冷卻（連按會被 Supabase 擋，還會回一串英文錯誤）
+    const rs = document.getElementById("authResend");
+    const cool = sec => {
+      rs.disabled = true;
+      const tick = () => { if (!document.body.contains(rs)) return; if (sec <= 0) { rs.disabled = false; rs.textContent = T("重新寄送"); return; } rs.textContent = `${T("重新寄送")}（${sec}）`; sec--; setTimeout(tick, 1000); };
+      tick();
+    };
+    cool(60);
+    rs.addEventListener("click", async () => {
+      const msg = document.getElementById("authMsg"); msg.className = "auth-msg"; msg.textContent = T("重新寄送中…");
       const { error } = await signInEmail(email);
-      msg.textContent = error ? ("失敗：" + error) : "已重新寄出。";
+      msg.textContent = error ? T(Supa.errText(error)) : T("寄出去了，看一下信箱");
+      if (!error) cool(60);
     });
     document.getElementById("authBack").addEventListener("click", () => renderLogin(render));
   }
@@ -142,7 +163,7 @@ const Auth = (() => {
   async function myProfile() { return await _fetchMyProfile(); }
   async function _fetchMyProfile() {
     const c = Supa.client(); if (!c) return null;
-    const { data: u } = await c.auth.getUser(); if (!u || !u.user) return null;
+    const { data: u } = await Supa.meUser(); if (!u || !u.user) return null;
     const { data } = await c.from("profiles").select("*").eq("id", u.user.id).maybeSingle();
     return data || null;
   }
@@ -150,13 +171,14 @@ const Auth = (() => {
   // 檢查 handle 是否已被使用（RLS 允許登入者讀所有 profiles）
   async function handleTaken(h) {
     const c = Supa.client(); if (!c) return false;
-    const { data } = await c.from("profiles").select("id").eq("handle", h).maybeSingle();
+    const { data, error } = await c.from("profiles").select("id").eq("handle", h).maybeSingle();
+    if (error) return null;   // 查不到（離線等）→ 不知道，不能當成「可以用」
     return !!data;
   }
 
   async function createProfile({ handle, display_name, avatar_url, bio }) {
     const c = Supa.client(); if (!c) return { error: "no-client" };
-    const { data: u } = await c.auth.getUser(); if (!u || !u.user) return { error: "no-user" };
+    const { data: u } = await Supa.meUser(); if (!u || !u.user) return { error: "no-user" };
     const { error } = await c.from("profiles").insert({
       id: u.user.id, handle, display_name: display_name || null, avatar_url: avatar_url || null, bio: bio || null,
     });
@@ -166,7 +188,7 @@ const Auth = (() => {
   function renderOnboarding(render) {
     const c = Supa.client();
     let meta = {};
-    if (c) c.auth.getUser().then(({ data }) => {
+    if (c) Supa.meUser().then(({ data }) => {
       meta = (data && data.user && data.user.user_metadata) || {};
       const dn = document.getElementById("obName"); if (dn && !dn.value) dn.value = meta.full_name || meta.name || "";
     });
@@ -174,42 +196,46 @@ const Auth = (() => {
       <div class="social-auth">
         <h3>建立你的山友檔案</h3>
         <label class="ob-l">帳號（朋友用這個找到你）</label>
-        <input id="obHandle" class="auth-input" placeholder="例如 hiker_tim" autocapitalize="off" autocomplete="off">
+        <input id="obHandle" class="auth-input" placeholder="例如 hiker_tim" autocapitalize="off" autocomplete="off" maxlength="20">
         <div class="auth-msg" id="obHandleMsg"></div>
         <label class="ob-l">顯示名稱</label>
-        <input id="obName" class="auth-input" placeholder="你的名字">
+        <input id="obName" class="auth-input" placeholder="你的名字" maxlength="40">
         <label class="ob-l">簡介（選填）</label>
-        <input id="obBio" class="auth-input" placeholder="一句話介紹自己">
+        <input id="obBio" class="auth-input" placeholder="一句話介紹自己" maxlength="150">
         <button class="btn primary" id="obSave">完成，開始使用</button>
         <div class="auth-msg" id="obMsg"></div>
       </div>`);
     const hEl = document.getElementById("obHandle");
     const hMsg = document.getElementById("obHandleMsg");
-    let t = null, lastOk = false;
+    let t = null, lastOk = false, seq = 0;
     hEl.addEventListener("input", () => {
       clearTimeout(t); lastOk = false;
       const v = Handle.validate(hEl.value);
-      if (!v.ok) { hMsg.textContent = v.msg; hMsg.className = "auth-msg bad"; return; }
-      hMsg.textContent = "檢查中…"; hMsg.className = "auth-msg";
+      if (!v.ok) { hMsg.textContent = T(v.msg); hMsg.className = "auth-msg bad"; return; }
+      hMsg.textContent = T("檢查中…"); hMsg.className = "auth-msg";
+      const my = ++seq;   // 打字很快時，晚回來的舊結果不能蓋掉新的（以前會把有人用的名字標成可以用）
       t = setTimeout(async () => {
         const taken = await handleTaken(v.handle);
-        if (taken) { hMsg.textContent = "這個帳號名稱有人用了"; hMsg.className = "auth-msg bad"; }
-        else { hMsg.textContent = "可以使用 ✓"; hMsg.className = "auth-msg ok"; lastOk = true; }
+        if (my !== seq) return;
+        if (taken === null) { hMsg.textContent = T("現在查不到，等一下再試"); hMsg.className = "auth-msg bad"; }
+        else if (taken) { hMsg.textContent = T("這個帳號名稱有人用了"); hMsg.className = "auth-msg bad"; }
+        else { hMsg.textContent = T("可以用"); hMsg.className = "auth-msg ok"; lastOk = true; }
       }, 350);
     });
     document.getElementById("obSave").addEventListener("click", async () => {
       const v = Handle.validate(hEl.value);
       const msg = document.getElementById("obMsg");
-      if (!v.ok) { msg.textContent = v.msg; return; }
-      if (!lastOk) { msg.textContent = "先確認帳號名稱能用"; return; }
-      msg.textContent = "建立中…";
+      if (!v.ok) { msg.textContent = T(v.msg); return; }
+      if (!lastOk) { msg.textContent = T("帳號名稱還沒確認可以用"); return; }
+      const sb = document.getElementById("obSave"); if (sb.disabled) return; sb.disabled = true;
+      msg.textContent = T("建立中…");
       const r = await createProfile({
         handle: v.handle,
         display_name: (document.getElementById("obName").value || "").trim(),
         avatar_url: ((meta && (meta.avatar_url || meta.picture)) || null),
         bio: (document.getElementById("obBio").value || "").trim(),
       });
-      if (r.error) { msg.textContent = "建立失敗：" + (/duplicate|unique/i.test(r.error) ? "handle 已被使用" : r.error); return; }
+      if (r.error) { sb.disabled = false; msg.textContent = /duplicate|unique/i.test(r.error) ? T("這個帳號名稱有人用了") : T(Supa.errText(r.error)); return; }
       onChange();   // profile 建好 → 重新路由到個人頁
     });
   }

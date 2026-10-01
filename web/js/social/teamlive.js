@@ -15,7 +15,7 @@ const TeamLive = (() => {
   let onPauseCb = null, onResumeCb = null, lastPauseSyncAt = 0;   // 隊長控制暫停/繼續：全隊跟隨
 
   const ttx = s => (typeof ttT === "function" ? ttT(s) : s);
-  function esc(s) { return (s || "").replace(/[<>&"]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c])); }
+  const esc = s => Supa.esc(s);
   function isOn() { return active; }
   function isLeader() { return !!me && me === leaderId; }
   function recordingNow() { return typeof Recorder !== "undefined" && Recorder.getState && Recorder.getState() === "running"; }
@@ -270,7 +270,7 @@ const TeamLive = (() => {
     map = leafletMap; myInfo = info || { name: "我" };
     leaderId = (opts && opts.leader) || null;
     const c = Supa.client(); if (!c || !leafletMap) return;
-    const { data: u } = await c.auth.getUser(); me = u && u.user ? u.user.id : null; if (!me) return;
+    const { data: u } = await Supa.meUser(); me = u && u.user ? u.user.id : null; if (!me) return;
     if (!leaderId) {
       try { const { data: t } = await c.from("teams").select("owner").eq("id", teamId).maybeSingle(); leaderId = (t && t.owner) || null; } catch (e) { /* */ }
     }

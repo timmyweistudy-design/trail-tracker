@@ -1,11 +1,23 @@
 // 動態牆：渲染好友/探索貼文清單與卡片；按讚切換；點卡片進詳情。
 const Feed = (() => {
-  function esc(s) { return (s || "").replace(/[<>&"]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c])); }
-  function fmtAgo(iso) {
-    const d = (Date.now() - new Date(iso).getTime()) / 1000;
-    if (d < 60) return "剛剛"; if (d < 3600) return Math.floor(d / 60) + " 分鐘前";
-    if (d < 86400) return Math.floor(d / 3600) + " 小時前"; return Math.floor(d / 86400) + " 天前";
+  const esc = s => Supa.esc(s);
+  const fmtAgo = iso => Supa.ago(iso);
+  const T = s => (typeof ttT === "function" ? ttT(s) : s);
+  // 轉發：舊資料把「🔁 轉發 @誰」寫在內文開頭 → 拆出來另外畫成一行（emoji 在部分裝置是方框，也不能翻譯）
+  const REPOST_RE = /^🔁 轉發(?: @([a-z0-9_]{3,20}))?\n?/i;
+  function splitRepost(cap) {
+    const m = (cap || "").match(REPOST_RE);
+    return m ? { from: m[1] || "", rest: cap.slice(m[0].length) } : null;
   }
+  // 里程/爬升/星等：「6.42 km · ↑512 m」，星等顯示滿 5 顆（空的淡色）
+  function statsHtml(p) {
+    const parts = [];
+    if (p.distance_km != null) parts.push(`${(+p.distance_km).toFixed(2)} km`);
+    if (p.ascent != null) parts.push(`↑${Math.round(p.ascent)} m`);
+    const stars = p.rating ? `<span class="fc-rate" aria-label="${p.rating}/5">${"★".repeat(p.rating)}<i>${"★".repeat(5 - p.rating)}</i></span>` : "";
+    return (parts.length ? `<span class="fc-stats">${parts.join(" · ")}</span>` : "") + stars;
+  }
+  function heart(on) { return `<svg class="ic ic-heart${on ? " on" : ""}" viewBox="0 0 24 24">${typeof ICON !== "undefined" ? ICON.heart : ""}</svg>`; }
   function count(arr) { return (arr && arr[0] && arr[0].count) || 0; }
   // 內文：先轉義，再把 #標籤 / @提及 變成可點的連結
   function richText(s) {
@@ -43,19 +55,24 @@ const Feed = (() => {
             ? `<div class="fc-vid" data-vsrc="${esc(Media.publicUrl(m.path))}"><img loading="lazy" decoding="async" src="${esc(Media.publicUrl(m.thumb_path || ""))}" alt=""><span class="fc-play">▶</span>${more}</div>`
             : `<div class="fc-shot"><img loading="lazy" decoding="async" src="${esc(Media.publicUrl(m.thumb_path || m.path))}" alt="">${m.km != null ? `<span class="fc-shot-km">${(+m.km).toFixed(1)}km</span>` : ""}${more}</div>`;
         }).join("")}</div>` : "";
-    const stats = `${(post.distance_km != null ? post.distance_km.toFixed(2) + "km" : "")}${post.ascent != null ? "　↑" + post.ascent + "m" : ""}`;
+    // 沒照片的貼文：畫路線形狀（原本 routeSvg 寫好了卻沒用上）
+    const route = (!media.length && post.track_thumb) ? routeSvg(post.track_thumb) : "";
+    const rp = splitRepost(post.caption), cap = rp ? rp.rest : post.caption;
     const trailName = post.trail_id
       ? `<span class="fc-traillink" data-trail="${esc(post.trail_id)}">${ic("mountain")} ${esc(post.trail_name || "自由路線")}</span>`
       : `${ic("mountain")} ${esc(post.trail_name || "自由路線")}`;
+    if (liked == null) liked = !!post._liked;   // 快取裡記著上次的讚，第一眼不會全部變空心再跳回來
     return `<article class="feed-card" data-id="${post.id}">
-      <div class="fc-top fc-author" data-uid="${post.author_id}">${av}<div><div class="fc-name">${esc(a.display_name || a.handle || "山友")}${a.pet_level ? ` <span class="lv-chip lvt-${Math.min(a.pet_level,7)}">Lv.${a.pet_level}</span>` : ""}${a.is_premium ? ` <span class="pro-tag pro-id">PRO</span>` : ""}</div>
-        <div class="fc-sub">${fmtAgo(post.created_at)}${post.visibility === "friends" ? " · 好友" : ""}</div></div></div>
-      <div class="fc-trail">${trailName}　<span class="fc-stats">${stats}</span>${post.rating ? ` <span class="fc-rate">${"★".repeat(post.rating)}</span>` : ""}</div>
-      ${post.caption ? `<div class="fc-cap">${richText(post.caption)}</div>` : ""}
-      ${imgs}
+      <div class="fc-top fc-author" data-uid="${post.author_id}">${av}<div class="fc-who"><div class="fc-name"><span class="fc-nm">${esc(a.display_name || a.handle || "山友")}</span>${a.pet_level ? `<span class="lv-chip lvt-${Math.min(a.pet_level,7)}">Lv.${a.pet_level}</span>` : ""}${a.is_premium ? `<span class="pro-tag pro-id">PRO</span>` : ""}</div>
+        <div class="fc-sub">${fmtAgo(post.created_at)}${post.visibility === "friends" ? ` · ${T("好友")}` : ""}</div></div></div>
+      ${rp ? `<div class="fc-repost">${ic("repeat")} ${T("轉發")}${rp.from ? ` <span class="mention" data-handle="${esc(rp.from)}">@${esc(rp.from)}</span>` : ""}</div>` : ""}
+      <div class="fc-trail">${trailName}</div>
+      <div class="fc-meta">${statsHtml(post)}</div>
+      ${cap ? `<div class="fc-cap">${richText(cap)}</div>` : ""}
+      ${imgs}${route}
       <div class="fc-actions">
-        <button class="fc-like ${liked ? "on" : ""}" data-id="${post.id}">${liked ? "❤️" : "🤍"} <span>${count(post.likes)}</span></button>
-        <button class="fc-comment" data-id="${post.id}">${ic("chat")} ${count(post.comments)}</button>
+        <button class="fc-like ${liked ? "on" : ""}" data-id="${post.id}" aria-label="${T("讚")}">${heart(liked)}<span>${count(post.likes)}</span></button>
+        <button class="fc-comment" data-id="${post.id}" aria-label="${T("留言")}">${ic("chat")}<span>${count(post.comments)}</span></button>
       </div>
     </article>`;
   }
@@ -80,15 +97,18 @@ const Feed = (() => {
   // 離線快取：存下最近一次的動態，下次秒開（再背景更新）
   function cacheKey(mode) { return "tt_feedcache_" + mode; }
   function readCache(mode) { try { return JSON.parse(localStorage.getItem(cacheKey(mode))) || []; } catch { return []; } }
-  function writeCache(mode, posts) { try { localStorage.setItem(cacheKey(mode), JSON.stringify(posts.slice(0, 20))); } catch (e) { } }
+  function writeCache(mode, posts, liked) {
+    try { localStorage.setItem(cacheKey(mode), JSON.stringify(posts.slice(0, 20).map(p => Object.assign({}, p, { _liked: !!(liked && liked.has(p.id)) })))); } catch (e) { }
+  }
+  const box = () => document.getElementById("subBody");
 
   async function render(renderInto, mode) {
     const g = ++_gen;   // 世代：切分頁/刷新後，舊查詢結果作廢
     _into = renderInto; _mode = mode; _posts = [];
     const cached = readCache(mode);
     if (cached.length) {   // 先用快取秒開，背景再更新
-      renderInto(`<div class="feed-list">${cached.map(p => card(p, false)).join("")}</div>`);
-      bind();
+      renderInto(`<div class="feed-list">${cached.map(p => card(p)).join("")}</div>`);
+      bindCards(box());
     } else renderInto(skeletonCards(3));
     if (mode === "explore") await loadTrending(g);
     else await loadMore(true, g);
@@ -105,133 +125,125 @@ const Feed = (() => {
 
   async function loadTrending(g) {
     if (g == null) g = _gen;
-    let batch = dropReported(await Posts.trending());
+    // 難度篩選交給 trending 在排序前做（原本先取 30 篇再篩，常常篩到只剩 0～2 篇）
+    const want = _exDiff ? (p => { const d = trailDiff(p.trail_id); return _exDiff === 4 ? (d >= 4) : d === _exDiff; }) : null;
+    const batch = dropReported(await Posts.trending(want));
     if (g !== _gen) return;
-    if (_exDiff) batch = batch.filter(p => { const d = trailDiff(p.trail_id); return _exDiff === 4 ? (d >= 4) : d === _exDiff; });
     _posts = batch;
-    const refresh = `<button class="feed-refresh" id="feedRefresh">${ic("refresh")} 重新整理</button>`;
+    const refresh = `<button class="feed-refresh" id="feedRefresh">${ic("refresh")} ${T("重新整理")}</button>`;
     const diffRow = `<div class="ex-diff">${DIFFS.map(([v, l]) => `<button class="ex-diff-b ${v === _exDiff ? "on" : ""}" data-d="${v}">${l}</button>`).join("")}</div>`;
     const wireCommon = () => {
       wireRefresh();
       document.querySelectorAll(".ex-diff-b").forEach(b => b.addEventListener("click", () => { _exDiff = +b.dataset.d; loadTrending(); }));
     };
     if (!_posts.length) {
-      _into(`${refresh}<div class="feed-trending-h">${ic("flame")} 熱門趨勢</div>${diffRow}<div class="social-empty"><span class="ee">🏔️</span>${_exDiff ? "這個難度還沒有公開貼文。" : "目前還沒有公開貼文。"}</div>`);
+      _into(`${refresh}<div class="feed-trending-h">${ic("flame")} ${T("熱門趨勢")}</div>${diffRow}<div class="social-empty"><span class="ee">${ic("mountain")}</span>${_exDiff ? T("這個難度還沒有公開貼文。") : T("目前還沒有公開貼文。")}</div>`);
       wireCommon(); return;
     }
-    const liked = await Posts.likedSet(_posts.map(p => p.id));
-    const hot = await Posts.hotTags(10);
+    const [liked, hot] = await Promise.all([Posts.likedSet(_posts.map(p => p.id)), Posts.hotTags(10)]);   // 兩個查詢同時跑
+    if (g !== _gen) return;
     const hotRow = hot.length ? `<div class="hot-tags">${hot.map(h => `<button class="hot-tag" data-tag="${esc(h.tag)}">#${esc(h.tag)}</button>`).join("")}</div>` : "";
-    _into(`${refresh}<div class="feed-trending-h">${ic("flame")} 熱門趨勢</div>${hotRow}${diffRow}<div class="feed-list">${_posts.map(p => card(p, liked.has(p.id))).join("")}</div>`);
-    bind(); wireCommon(); writeCache(_mode, _posts);
+    _into(`${refresh}<div class="feed-trending-h">${ic("flame")} ${T("熱門趨勢")}</div>${hotRow}${diffRow}<div class="feed-list">${_posts.map(p => card(p, liked.has(p.id))).join("")}</div>`);
+    bindCards(box()); wireCommon(); writeCache(_mode, _posts, liked);
     document.querySelectorAll(".hot-tag").forEach(b => b.addEventListener("click", () => openTag(b.dataset.tag)));
   }
 
   async function loadMore(first, g) {
     if (g == null) g = _gen;
     const before = (!first && _posts.length) ? _posts[_posts.length - 1].created_at : null;
-    const batch = dropReported(await Posts.feed(_mode, before));
+    const raw = await Posts.feed(_mode, before);
     if (g !== _gen) return;   // 已切到別的分頁/刷新 → 丟棄
-    _posts = _posts.concat(batch);
-    const refresh = `<button class="feed-refresh" id="feedRefresh">${ic("refresh")} 重新整理</button>`;
+    const batch = dropReported(raw);
+    const refresh = `<button class="feed-refresh" id="feedRefresh">${ic("refresh")} ${T("重新整理")}</button>`;
+    const moreBtn = raw.length >= 20 ? `<button class="btn ghost" id="feedMore">${T("載入更多")}</button>` : "";   // 用過濾前的數量判斷還有沒有下一頁
+    if (!first) {   // 載入更多：只把新的接在後面，不重畫整串（原本整串重畫，圖片全部重載、捲動位置會跳）
+      const old = _posts.map(p => p.id);
+      _posts = _posts.concat(batch);
+      const liked = await Posts.likedSet(batch.map(p => p.id));
+      if (g !== _gen) return;
+      const list = document.querySelector("#subBody .feed-list"), mb = document.getElementById("feedMore");
+      if (list) list.insertAdjacentHTML("beforeend", batch.filter(p => !old.includes(p.id)).map(p => card(p, liked.has(p.id))).join(""));
+      if (mb) { if (moreBtn) { mb.disabled = false; mb.textContent = T("載入更多"); } else mb.remove(); }
+      bindCards(box());
+      return;
+    }
+    _posts = batch;
     if (!_posts.length) {
-      _into(`${refresh}<div class="social-empty"><span class="ee">🏞️</span>追蹤山友後，這裡會出現他們的步道旅行（你自己的也會在這）。</div>`);
+      _into(`${refresh}<div class="social-empty"><span class="ee">${ic("users")}</span>${T("追蹤山友後，這裡會出現他們的步道旅行（你自己的也會在這）。")}<br><button class="btn primary feed-find" id="feedFind">${ic("search")} ${T("去找山友")}</button></div>`);
       wireRefresh();
+      const ff = document.getElementById("feedFind"); if (ff) ff.addEventListener("click", () => { if (typeof SocialUI !== "undefined" && SocialUI.go) SocialUI.go("search"); });
       return;
     }
     const liked = await Posts.likedSet(_posts.map(p => p.id));
-    const more = batch.length >= 20 ? `<button class="btn ghost" id="feedMore">載入更多</button>` : "";
+    if (g !== _gen) return;
+    const more = moreBtn;
     // 新動態分隔線：比上次看到還新的貼文歸為「新」
     const seen = first ? lastSeen(_mode) : "__skip__";
     let newCount = 0;
     if (first && seen) newCount = _posts.filter(p => p.created_at > seen).length;
     const items = _posts.map((p, i) => {
-      const div = (first && newCount && i === newCount) ? `<div class="feed-divider">— 以上為新動態 —</div>` : "";
+      const div = (first && newCount && i === newCount) ? `<div class="feed-divider">${T("以上是新的")}</div>` : "";
       return div + card(p, liked.has(p.id));
     }).join("");
     _into(`${refresh}<div class="feed-list">${items}</div>${more}`);
-    bind(); wireRefresh();
-    if (first) writeCache(_mode, _posts);
-    if (first && _posts.length) markSeen(_mode, _posts[0].created_at);   // 記住這次最新
-    const mb = document.getElementById("feedMore"); if (mb) mb.addEventListener("click", () => loadMore(false));
+    bindCards(box()); wireRefresh();
+    writeCache(_mode, _posts, liked);
+    if (_posts.length) markSeen(_mode, _posts[0].created_at);   // 記住這次最新
+    const mb = document.getElementById("feedMore"); if (mb) mb.addEventListener("click", () => { mb.disabled = true; mb.innerHTML = `<span class="spin"></span>`; loadMore(false); });
   }
 
   function wireRefresh() {
     const rb = document.getElementById("feedRefresh"); if (rb) rb.addEventListener("click", () => render(_into, _mode));
-    attachPTR();
   }
 
-  // 下拉刷新：列表捲到頂時往下拉——跟手的視覺指示器（箭頭→轉圈），超過門檻放開即重整
-  function attachPTR() {
-    const sc = document.getElementById("view-social"); if (!sc || sc._ptr) return; sc._ptr = true;
-    const TH = 72;   // 觸發門檻
-    let startY = 0, pulling = false, dy = 0;
-    let ind = document.getElementById("ptrInd");
-    if (!ind) {
-      ind = document.createElement("div"); ind.id = "ptrInd"; ind.className = "ptr-ind";
-      ind.innerHTML = `<svg class="ic ptr-arrow" viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg><span class="spin ptr-spin"></span>`;
-      sc.prepend(ind);
-    }
-    const active = () => _into && document.getElementById("feedRefresh");   // 只在動態牆畫面
-    const atTop = () => (window.scrollY || document.documentElement.scrollTop || 0) <= 2;   // 頁面捲到最頂（window 才是捲動容器）
-    const reset = () => { ind.style.height = "0px"; ind.classList.remove("ready", "loading"); };
-    sc.addEventListener("touchstart", e => { pulling = atTop() && active(); startY = e.touches[0].clientY; dy = 0; }, { passive: true });
-    sc.addEventListener("touchmove", e => {
-      if (!pulling) return;
-      dy = Math.max(0, e.touches[0].clientY - startY);
-      const h = Math.min(dy * 0.5, 64);              // 阻尼：拉一半、上限 64px
-      ind.style.height = h + "px";
-      ind.classList.toggle("ready", dy > TH);        // 達門檻：箭頭轉向、提示可放開
-    }, { passive: true });
-    sc.addEventListener("touchend", () => {
-      if (pulling && dy > TH) { ind.classList.add("loading"); ind.style.height = "44px"; render(_into, _mode); setTimeout(reset, 600); }
-      else reset();
-      pulling = false;
-    }, { passive: true });
-  }
-
-  function bind() {
-    document.querySelectorAll(".feed-card .fc-like").forEach(b => b.addEventListener("click", async (e) => {
+  // 綁定一批貼文卡片的互動（讚、留言、作者、步道、影片、#標籤、@提及、點卡片看詳情）。
+  // 動態牆、個人頁、收藏、#標籤、別人的個人頁都用這一個——以前只有動態牆有綁，其他地方按讚沒反應、影片放不出來。
+  // 只綁 root 裡「還沒綁過」的元素，所以載入更多後可以再呼叫一次。
+  function bindCards(root) {
+    if (!root) return;
+    const once = (sel, ev, fn) => root.querySelectorAll(sel).forEach(el => { if (el._tb) return; el._tb = 1; el.addEventListener(ev, fn); });
+    once(".feed-card .fc-like", "click", async function (e) {
       e.stopPropagation();
-      const on = !b.classList.contains("on");
-      b.classList.toggle("on", on);
-      const span = b.querySelector("span"); const n = +span.textContent + (on ? 1 : -1); span.textContent = Math.max(0, n);
-      b.firstChild.textContent = on ? "❤️ " : "🤍 ";
+      const b = this; if (b._busy) return;   // 連點會送出多個 insert/delete，回應順序不保證
+      b._busy = true;
+      const on = !b.classList.contains("on"), span = b.querySelector("span");
+      const paint = v => { b.classList.toggle("on", v); const h = b.querySelector(".ic-heart"); if (h) h.classList.toggle("on", v); };
+      paint(on); span.textContent = Math.max(0, +span.textContent + (on ? 1 : -1));
       if (on && window.ttFloat) window.ttFloat(b, "❤️");
-      await Posts.toggleLike(b.dataset.id, on);
-    }));
+      const r = await Posts.toggleLike(b.dataset.id, on).catch(e2 => ({ error: e2 && e2.message }));
+      if (r && r.error) { paint(!on); span.textContent = Math.max(0, +span.textContent + (on ? -1 : 1)); if (typeof toast === "function") toast(T("沒按到，等一下再試")); }
+      b._busy = false;
+    });
     const openDetail = id => { if (typeof PostView !== "undefined") PostView.open(id); };
-    document.querySelectorAll(".feed-card .fc-comment").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); openDetail(b.dataset.id); }));
-    document.querySelectorAll(".feed-card .fc-author").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); if (typeof Discover !== "undefined") Discover.openProfile(b.dataset.uid); }));
-    document.querySelectorAll(".feed-card .fc-traillink").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); if (typeof window.openDetail === "function") window.openDetail(b.dataset.trail); }));
-    document.querySelectorAll(".feed-card .fc-vid").forEach(v => v.addEventListener("click", e => {
+    once(".feed-card .fc-comment", "click", function (e) { e.stopPropagation(); openDetail(this.dataset.id); });
+    once(".feed-card .fc-author", "click", function (e) { e.stopPropagation(); if (typeof Discover !== "undefined") Discover.openProfile(this.dataset.uid); });
+    once(".feed-card .fc-traillink", "click", function (e) { e.stopPropagation(); if (typeof window.openDetail === "function") window.openDetail(this.dataset.trail); });
+    once(".feed-card .fc-vid", "click", function (e) {
       e.stopPropagation();
-      const src = v.dataset.vsrc; if (!src) return;
-      v.innerHTML = `<video controls autoplay playsinline preload="metadata" src="${esc(src)}"></video>`;
-    }));
-    document.querySelectorAll(".feed-card .ht").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); openTag(b.dataset.tag); }));
-    document.querySelectorAll(".feed-card .mention").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); if (typeof Discover !== "undefined") Discover.openByHandle(b.dataset.handle); }));
-    document.querySelectorAll(".feed-card").forEach(c => c.addEventListener("click", () => openDetail(c.dataset.id)));
+      const src = this.dataset.vsrc; if (!src) return;
+      this.innerHTML = `<video controls autoplay playsinline preload="metadata" src="${esc(src)}"></video>`;
+    });
+    once(".feed-card .ht", "click", function (e) { e.stopPropagation(); openTag(this.dataset.tag); });
+    once(".feed-card .mention", "click", function (e) { e.stopPropagation(); if (typeof Discover !== "undefined") Discover.openByHandle(this.dataset.handle); });
+    once(".feed-card", "click", function () { openDetail(this.dataset.id); });
   }
 
   // #標籤 動態：列出含此標籤的公開貼文
   async function openTag(tag) {
-    const wrap = document.createElement("div"); wrap.className = "pv-mask";
-    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" id="tagX" aria-label="關閉">✕</button><b>#${esc(tag)}</b><span></span></div>
+    if (document.querySelector(`[data-ov="tag-${CSS.escape(tag)}"]`)) return;   // 防連點疊層
+    const wrap = document.createElement("div"); wrap.className = "pv-mask"; wrap.dataset.ov = "tag-" + tag;   // data-ov：全域 Esc 會關它
+    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" id="tagX" aria-label="關閉">${ic("x")}</button><b>#${esc(tag)}</b><span></span></div>
       <div class="pv-body" id="tagBody"><div class="feed-loading"><span class="spin"></span></div></div></div>`;
     document.body.appendChild(wrap);
     wrap.querySelector("#tagX").addEventListener("click", () => wrap.remove());
     const posts = await Posts.byTag(tag);
     const body = wrap.querySelector("#tagBody"); if (!body) return;
-    if (!posts.length) { body.innerHTML = `<div class="social-empty">還沒有 #${esc(tag)} 的公開貼文。</div>`; return; }
+    if (!posts.length) { body.innerHTML = `<div class="social-empty">${T("還沒有這個標籤的公開貼文。")}</div>`; return; }
     const liked = await Posts.likedSet(posts.map(p => p.id));
     body.className = "pv-body feed-list";
     body.innerHTML = posts.map(p => card(p, liked.has(p.id))).join("");
-    body.querySelectorAll(".feed-card").forEach(cd => cd.addEventListener("click", e => {
-      if (e.target.closest(".fc-author") || e.target.closest(".fc-traillink") || e.target.closest(".ht") || e.target.closest(".mention") || e.target.closest(".fc-like")) return;
-      if (typeof PostView !== "undefined") PostView.open(cd.dataset.id);
-    }));
+    bindCards(body);
   }
 
-  return { render, card, richText, openTag, _fmtAgo: fmtAgo };
+  return { render, card, bindCards, richText, openTag, splitRepost, statsHtml, heart, _fmtAgo: fmtAgo };
 })();

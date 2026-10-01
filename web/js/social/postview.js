@@ -1,143 +1,174 @@
-// 貼文詳情：路線地圖 + 照片/影片 + 按讚 + 留言(Realtime) + 步道連結 + 作者編輯/刪文/刪留言。
+// 貼文詳情：路線地圖 + 照片/影片 + 按讚 + 表情 + 步道連結 + 作者操作（置頂/編輯/刪除）。留言在 comments.js。
 const PostView = (() => {
-  function esc(s) { return (s || "").replace(/[<>&"]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c])); }
+  const esc = s => Supa.esc(s);
+  const T = s => (typeof ttT === "function" ? ttT(s) : s);
+  const say = s => { if (typeof toast === "function") toast(T(s)); };
 
   async function open(postId) {
     if (document.querySelector(`[data-ov="post-${postId}"]`)) return;   // 防連點疊層
     if (typeof ttBusy === "function" && ttBusy("pv-open-" + postId)) return;   // 同步鎖：抓資料的空窗期連點也擋
-    const post = await Posts.one(postId);
-    if (!post) { if (typeof toast === "function") toast("貼文不存在或無權限"); return; }
-    const c = Supa.client();
-    const { data: u } = await c.auth.getUser();
-    const myId = u && u.user ? u.user.id : "";
-    const isMine = myId && post.author_id === myId;
-    const likeCount = (post.likes && post.likes[0] && post.likes[0].count) || 0;
-    const likedByMe = (await Posts.likedSet([postId])).has(postId);
-
+    // 先把外框和轉圈圈放上去，再去抓資料——以前要等 3～4 個查詢跑完畫面才有反應，點了像沒點到
     const wrap = document.createElement("div");
     wrap.className = "pv-mask"; wrap.dataset.ov = "post-" + postId;
-    wrap.dataset.me = myId; wrap.dataset.author = post.author_id;
-    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" aria-label="關閉" id="pvX">✕</button><b>貼文</b><span class="pv-head-r"><button class="comp-x ${Posts.isSaved(postId) ? "on" : ""}" id="pvSave" title="收藏" aria-label="收藏">${ic("bookmark")}</button><button class="comp-x" id="pvRepost" title="轉發" aria-label="轉發">${ic("repeat")}</button><button class="comp-x" id="pvShare" title="分享" aria-label="分享">${ic("share")}</button>${isMine ? `<button class="comp-x ${post.pinned ? "on" : ""}" id="pvPin" title="置頂" aria-label="置頂">${ic("pin")}</button><button class="comp-x" id="pvEdit" title="編輯" aria-label="編輯">${ic("pencil")}</button><button class="comp-x" id="pvDel" title="刪除" aria-label="刪除">${ic("trash")}</button>` : ""}</span></div>
-      <div class="pv-body" id="pvBody"></div>
-      <div class="pv-add"><input id="pvInput" class="auth-input" placeholder="留言…" maxlength="1000"><button class="btn primary" id="pvSend">送出</button></div></div>`;
+    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" aria-label="關閉" id="pvX">${ic("x")}</button><b>${T("貼文")}</b><span class="pv-head-r"></span></div>
+      <div class="pv-body" id="pvBody"><div class="feed-loading"><span class="spin"></span></div></div></div>`;
     document.body.appendChild(wrap);
-
-    const channel = c.channel("post-" + postId)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "comments", filter: `post_id=eq.${postId}` }, () => loadComments(wrap, postId))
-      .on("postgres_changes", { event: "*", schema: "public", table: "likes", filter: `post_id=eq.${postId}` }, () => refreshLikes(wrap, postId))
-      .subscribe();
-    const close = () => { try { c.removeChannel(channel); } catch (e) { } if (wrap._map) { try { wrap._map.remove(); } catch (e) { } wrap._map = null; } wrap.remove(); };
+    let alive = true, channel = null;
+    const c = Supa.client();
+    const close = () => {
+      alive = false;
+      try { if (channel) c.removeChannel(channel); } catch (e) { }
+      if (wrap._map) { try { wrap._map.remove(); } catch (e) { } wrap._map = null; }
+      wrap.remove();
+    };
+    wrap._close = close;
     wrap.querySelector("#pvX").addEventListener("click", close);
+
+    const [post, myId, liked] = await Promise.all([Posts.one(postId), Supa.uid(), Posts.likedSet([postId])]);   // 同時抓
+    if (!alive) return;
+    if (!post) { close(); say("這篇貼文不見了，可能被刪掉了"); return; }
+    const isMine = !!(myId && post.author_id === myId);
+    wrap.dataset.me = myId || ""; wrap.dataset.author = post.author_id;
+    const likeCount = (post.likes && post.likes[0] && post.likes[0].count) || 0;
+
+    // 頂列：收藏、分享、⋯（轉發/置頂/編輯/刪除/檢舉收進去，不再一排 6 顆圖示）
+    wrap.querySelector(".pv-head-r").innerHTML = `<button class="comp-x ${Posts.isSaved(postId) ? "on" : ""}" id="pvSave" aria-label="${T("收藏")}">${ic("bookmark")}</button>`
+      + `<button class="comp-x" id="pvShare" aria-label="${T("分享")}">${ic("share")}</button>`
+      + `<button class="comp-x" id="pvMore" aria-label="${T("更多")}">${ic("more")}</button>`;
+    wrap.querySelector(".pv").insertAdjacentHTML("beforeend", `<div class="pv-add"><input id="pvInput" class="auth-input" placeholder="${T("留言…")}" maxlength="1000" enterkeyhint="send"><button class="btn primary" id="pvSend">${T("送出")}</button></div>`);
+
     wrap.querySelector("#pvSave").addEventListener("click", () => {
       const on = Posts.toggleSaved(postId);
       wrap.querySelector("#pvSave").classList.toggle("on", on);
-      if (typeof toast === "function") toast(on ? "已收藏" : "已取消收藏");
+      say(on ? "收進收藏了" : "從收藏拿掉了");
     });
-    wrap.querySelector("#pvRepost").addEventListener("click", async () => {
-      const quote = await ttPrompt("轉發這篇貼文（可加上你的想法，選填）：", ""); if (quote === null) return;
-      const r = await Posts.createRepost(post, quote.trim());
-      if (r.error) { if (typeof toast === "function") toast("轉發失敗：" + r.error); return; }
-      if (typeof toast === "function") toast("已轉發到你的動態");
-      close(); if (typeof SocialUI !== "undefined") SocialUI.route();
-    });
-    wrap.querySelector("#pvShare").addEventListener("click", () => {
-      const url = location.origin + location.pathname + "?post=" + postId;
-      if (navigator.share) navigator.share({ title: "循徑拾光 · 步道旅行", url }).catch(() => { });
-      else if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => { if (typeof toast === "function") toast("已複製貼文連結"); });
-      else if (typeof toast === "function") toast(url);
+    wrap.querySelector("#pvShare").addEventListener("click", () => share(post));
+    wrap.querySelector("#pvMore").addEventListener("click", async () => {
+      const opts = [{ label: T("轉發到我的動態"), value: "repost", cls: "ghost" }];
+      if (isMine) opts.push({ label: T(post.pinned ? "取消置頂" : "置頂到個人頁"), value: "pin", cls: "ghost" },
+        { label: T("編輯內文"), value: "edit", cls: "ghost" }, { label: T("刪除貼文"), value: "del", cls: "ghost danger" });
+      else opts.push({ label: T("檢舉這篇"), value: "report", cls: "ghost" });
+      opts.push({ label: T("取消"), value: null, cls: "primary" });
+      const act = await ttChoice(T("這篇貼文"), opts);
+      if (act === "repost") repost(post, close);
+      else if (act === "pin") pin(post);
+      else if (act === "edit") edit(post, wrap);
+      else if (act === "del") del(post, close);
+      else if (act === "report") report(post, close);
     });
 
-    if (isMine) {
-      wrap.querySelector("#pvPin").addEventListener("click", async () => {
-        const np = !post.pinned;
-        const { error } = await c.from("posts").update({ pinned: np }).eq("id", postId);
-        if (error) { if (typeof toast === "function") toast("置頂失敗：" + error.message); return; }
-        post.pinned = np; wrap.querySelector("#pvPin").classList.toggle("on", np);
-        if (typeof toast === "function") toast(np ? "已置頂到個人頁" : "已取消置頂");
-      });
-      wrap.querySelector("#pvDel").addEventListener("click", async () => {
-        if (!(await ttConfirm("確定刪除這篇貼文？"))) return;
-        const r = await Posts.remove(postId);
-        if (r.error) { if (typeof toast === "function") toast("刪除失敗：" + r.error); return; }
-        close(); if (typeof toast === "function") toast("已刪除");
-        if (typeof SocialUI !== "undefined") SocialUI.route();
-      });
-      wrap.querySelector("#pvEdit").addEventListener("click", async () => {
-        const v = await ttPrompt("編輯內文：", post.caption || ""); if (v === null) return;
-        const { error } = await c.from("posts").update({ caption: v.trim() || null }).eq("id", postId);
-        if (error) { if (typeof toast === "function") toast("更新失敗：" + error.message); return; }
-        post.caption = v.trim();
-        const lb = wrap.querySelector("#pvLike");
-        renderBody(wrap, post, lb.classList.contains("on"), +lb.querySelector("span").textContent, isMine);
-        bindLike(wrap, postId); loadComments(wrap, postId);
-      });
-    }
+    renderBody(wrap, post, liked.has(postId), likeCount);
+    if (typeof PostComments !== "undefined") PostComments.mount(wrap, postId);
 
-    renderBody(wrap, post, likedByMe, likeCount, isMine);
-    bindLike(wrap, postId);
-    if (typeof Autocomplete !== "undefined") Autocomplete.attach(wrap.querySelector("#pvInput"));
-    wrap.querySelector("#pvSend").addEventListener("click", () => send(wrap, postId));
-    loadComments(wrap, postId);
+    // 即時：新留言、讚數變動（等半秒再抓，一次進來很多則時不會連續重抓）
+    let tc = null, tl = null;
+    channel = c.channel("post-" + postId)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "comments", filter: `post_id=eq.${postId}` }, () => { clearTimeout(tc); tc = setTimeout(() => { if (alive && typeof PostComments !== "undefined") PostComments.load(wrap, postId); }, 500); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "likes", filter: `post_id=eq.${postId}` }, () => { clearTimeout(tl); tl = setTimeout(() => { if (alive) refreshLikeCount(wrap, postId); }, 500); })
+      .subscribe();
   }
 
-  function renderBody(wrap, post, likedByMe, likeCount, isMine) {
+  function share(post) {
+    const a = post.author || {};
+    const text = `${a.display_name || a.handle || T("山友")}・${post.trail_name || T("自由路線")}${post.distance_km != null ? ` ${(+post.distance_km).toFixed(1)} km` : ""}`;
+    const url = Supa.webLink("?post=" + post.id);   // App 裡沒有別人打得開的網址 → 只分享文字
+    if (navigator.share) navigator.share(url ? { title: "循徑拾光", text, url } : { title: "循徑拾光", text }).catch(() => { });
+    else if (navigator.clipboard) navigator.clipboard.writeText(url ? text + "\n" + url : text).then(() => say("複製好了"));
+  }
+  async function repost(post, close) {
+    const quote = await ttPrompt(T("轉發這篇（想說點什麼也可以，選填）"), ""); if (quote === null) return;
+    const r = await Posts.createRepost(post, quote.trim());
+    if (r.error) { say(Supa.errText(r.error)); return; }
+    say("轉發到你的動態了");
+    close(); if (typeof SocialUI !== "undefined") SocialUI.refresh();
+  }
+  async function pin(post) {
+    const np = !post.pinned;
+    const { error } = await Supa.client().from("posts").update({ pinned: np }).eq("id", post.id);
+    if (error) { say(Supa.errText(error.message)); return; }
+    post.pinned = np;
+    say(np ? "置頂到個人頁了" : "取消置頂了");
+  }
+  async function edit(post, wrap) {
+    const v = await ttPrompt(T("編輯內文"), post.caption || ""); if (v === null) return;
+    const { error } = await Supa.client().from("posts").update({ caption: v.trim() || null }).eq("id", post.id);
+    if (error) { say(Supa.errText(error.message)); return; }
+    post.caption = v.trim();
+    const lb = wrap.querySelector("#pvLike");
+    renderBody(wrap, post, lb.classList.contains("on"), +lb.querySelector("span").textContent);
+    if (typeof PostComments !== "undefined") PostComments.load(wrap, post.id);
+    say("改好了");
+  }
+  async function del(post, close) {
+    if (!(await ttConfirm(T("刪掉這篇貼文？留言和讚也會一起不見。"), T("刪除"), T("取消")))) return;
+    const r = await Posts.remove(post.id);
+    if (r.error) { say(Supa.errText(r.error)); return; }
+    close(); say("刪掉了");
+    if (typeof SocialUI !== "undefined") SocialUI.refresh();
+  }
+  async function report(post, close) {
+    const reason = await Safety.pickReason(); if (reason === null) return;
+    await Safety.reportPost(post.id, reason);
+    try { const k = "tt_reported"; const s = new Set(JSON.parse(localStorage.getItem(k) || "[]")); s.add(post.id); localStorage.setItem(k, JSON.stringify([...s])); } catch (e) { }
+    say("收到，這篇先幫你藏起來了");
+    close();
+    if (typeof SocialUI !== "undefined") SocialUI.refresh();
+  }
+
+  function renderBody(wrap, post, likedByMe, likeCount) {
     const a = post.author || {};
     const media = (post.post_media || []).slice().sort((x, y) => x.ord - y.ord);
     const trailName = post.trail_id
-      ? `<span class="fc-traillink" data-trail="${esc(post.trail_id)}">${ic("mountain")} ${esc(post.trail_name || "自由路線")}</span>`
-      : `${ic("mountain")} ${esc(post.trail_name || "自由路線")}`;
+      ? `<span class="fc-traillink" data-trail="${esc(post.trail_id)}">${ic("mountain")} ${esc(post.trail_name || T("自由路線"))}</span>`
+      : `${ic("mountain")} ${esc(post.trail_name || T("自由路線"))}`;
+    const rp = Feed.splitRepost(post.caption), cap = rp ? rp.rest : post.caption;
     wrap.querySelector("#pvBody").innerHTML = `
-      <div class="fc-name fc-author" data-uid="${post.author_id}" style="cursor:pointer">${esc(a.display_name || a.handle || "山友")}${a.pet_level ? ` <span class="lv-chip lvt-${Math.min(a.pet_level,7)}">Lv.${a.pet_level}</span>` : ""}${a.is_premium ? ` <span class="pro-tag pro-id">PRO</span>` : ""} <span class="fc-sub">@${esc(a.handle || "")}</span></div>
-      <div class="fc-trail">${trailName}　<span class="fc-stats">${post.distance_km != null ? post.distance_km.toFixed(2) + "km" : ""}${post.ascent != null ? "　↑" + post.ascent + "m" : ""}</span>${post.rating ? ` <span class="fc-rate">${"★".repeat(post.rating)}</span>` : ""}</div>
-      ${(post.track && post.track.coordinates && post.track.coordinates.length > 1) ? `<div class="pv-map"></div><button class="btn ghost pv-follow" id="pvFollow">${ic("compass")} 跟著這條路線走</button>` : ""}
-      ${post.caption ? `<div class="fc-cap">${(typeof Feed !== "undefined" && Feed.richText) ? Feed.richText(post.caption) : esc(post.caption)}</div>
-      <div class="pv-tr-row"><button class="link-btn" id="pvTranslate">${ic("translate")} 翻譯年糕</button></div>
-      <div class="fc-cap pv-cap-tr" id="pvCapTr" style="display:none"></div>` : ""}
+      <div class="fc-name fc-author" data-uid="${post.author_id}" style="cursor:pointer"><span class="fc-nm">${esc(a.display_name || a.handle || T("山友"))}</span>${a.pet_level ? `<span class="lv-chip lvt-${Math.min(a.pet_level,7)}">Lv.${a.pet_level}</span>` : ""}${a.is_premium ? `<span class="pro-tag pro-id">PRO</span>` : ""}<span class="fc-sub">@${esc(a.handle || "")}</span></div>
+      <div class="fc-sub pv-when">${Supa.ago(post.created_at)}</div>
+      ${rp ? `<div class="fc-repost">${ic("repeat")} ${T("轉發")}${rp.from ? ` <span class="mention" data-handle="${esc(rp.from)}">@${esc(rp.from)}</span>` : ""}</div>` : ""}
+      <div class="fc-trail">${trailName}</div>
+      <div class="fc-meta">${Feed.statsHtml(post)}</div>
+      ${(post.track && post.track.coordinates && post.track.coordinates.length > 1) ? `<div class="pv-map"></div><button class="btn ghost pv-follow" id="pvFollow">${ic("compass")} ${T("跟著這條路線走")}</button>` : ""}
+      ${cap ? `<div class="fc-cap">${Feed.richText(cap)}</div>
+      <div class="pv-tr-row"><button class="link-btn" id="pvTranslate">${ic("translate")} ${T("翻譯年糕")}</button></div>
+      <div class="fc-cap pv-cap-tr" id="pvCapTr" hidden></div>` : ""}
       ${media.map(m => {
-        if (m.kind === "video") return `<video class="pv-img" controls preload="metadata" poster="${esc(Media.publicUrl(m.thumb_path || ""))}" src="${esc(Media.publicUrl(m.path))}"></video>`;
+        if (m.kind === "video") return `<video class="pv-img" controls playsinline preload="metadata" poster="${esc(Media.publicUrl(m.thumb_path || ""))}" src="${esc(Media.publicUrl(m.path))}"></video>`;
         const img = `<img class="pv-img pv-photo" loading="lazy" decoding="async" src="${esc(Media.publicUrl(m.path))}" alt="">`;
         const meta = (m.taken_at || m.km != null)
-          ? `<figcaption>${m.taken_at ? new Date(m.taken_at).toLocaleTimeString(ttLocale(), { hour: "2-digit", minute: "2-digit" }) : ""}${m.km != null ? (m.taken_at ? " · " : "") + (+m.km).toFixed(2) + "km" : ""}</figcaption>` : "";
+          ? `<figcaption>${m.taken_at ? new Date(m.taken_at).toLocaleTimeString(ttLocale(), { hour: "2-digit", minute: "2-digit" }) : ""}${m.km != null ? (m.taken_at ? " · " : "") + (+m.km).toFixed(2) + " km" : ""}</figcaption>` : "";
         return meta ? `<figure class="pv-shot">${img}${meta}</figure>` : img;
       }).join("")}
-      <div class="pv-actions"><button class="fc-like ${likedByMe ? "on" : ""}" id="pvLike">${likedByMe ? "❤️" : "🤍"} <span>${likeCount}</span></button>${isMine ? "" : `<button class="link-btn" id="pvReport">檢舉</button>`}</div>
+      <div class="pv-actions"><button class="fc-like ${likedByMe ? "on" : ""}" id="pvLike" aria-label="${T("讚")}">${Feed.heart(likedByMe)}<span>${likeCount}</span></button></div>
       <div class="pv-react" id="pvReact"></div>
       <div class="pv-comments" id="pvComments"><div class="feed-loading"><span class="spin"></span></div></div>`;
     loadReactions(wrap, post.id);
+    bindLike(wrap, post.id);
     const photoEls = [...wrap.querySelectorAll(".pv-photo")];
     const photoSrcs = photoEls.map(el => el.src);
     photoEls.forEach((el, idx) => el.addEventListener("click", () => { if (typeof Lightbox !== "undefined") Lightbox.openGallery(photoSrcs, idx); }));
-    wrap.querySelectorAll(".fc-cap .ht").forEach(b => b.addEventListener("click", () => { const x = wrap.querySelector("#pvX"); if (x) x.click(); if (typeof Feed !== "undefined") Feed.openTag(b.dataset.tag); }));
-    wrap.querySelectorAll(".fc-cap .mention").forEach(b => b.addEventListener("click", () => { if (typeof Discover !== "undefined") Discover.openByHandle(b.dataset.handle); }));
+    wrap.querySelectorAll("#pvBody > .fc-cap .ht").forEach(b => b.addEventListener("click", () => { if (wrap._close) wrap._close(); Feed.openTag(b.dataset.tag); }));
+    wrap.querySelectorAll("#pvBody > .fc-cap .mention, #pvBody > .fc-repost .mention").forEach(b => b.addEventListener("click", () => { if (typeof Discover !== "undefined") Discover.openByHandle(b.dataset.handle); }));
     const au = wrap.querySelector(".fc-author"); if (au) au.addEventListener("click", () => { if (typeof Discover !== "undefined") Discover.openProfile(au.dataset.uid); });
     const tl = wrap.querySelector(".fc-traillink"); if (tl) tl.addEventListener("click", () => { if (typeof window.openDetail === "function") window.openDetail(tl.dataset.trail); });
     const fl = wrap.querySelector("#pvFollow"); if (fl) fl.addEventListener("click", () => {
       const coords = (post.track && post.track.coordinates) ? post.track.coordinates.map(p => [p[1], p[0]]) : [];
-      const x = wrap.querySelector("#pvX"); if (x) x.click(); else wrap.remove();   // 走正常關閉流程（清掉地圖/頻道）
+      if (wrap._close) wrap._close();   // 走正常關閉流程（清掉地圖/頻道）
       const tab = document.querySelector('.tab[data-view="record"]'); if (tab) tab.click();
       setTimeout(() => { if (typeof window.followRoute === "function") window.followRoute(coords); }, 250);
     });
-    // 🍡 翻譯年糕：把內文翻成使用者的介面語言（原文保留、翻譯顯示在下方，可收合）
+    // 翻譯年糕：把內文翻成介面語言（原文保留、翻譯顯示在下方，可收合）
     const trBtn = wrap.querySelector("#pvTranslate");
     if (trBtn) trBtn.addEventListener("click", async () => {
       const out = wrap.querySelector("#pvCapTr"); if (!out) return;
-      const T = (typeof ttT === "function") ? ttT : (x => x);
-      if (out.style.display !== "none") { out.style.display = "none"; trBtn.innerHTML = `${ic("translate")} ${T("翻譯年糕")}`; return; }
-      if (out.dataset.done) { out.style.display = "block"; trBtn.textContent = T("收合翻譯"); return; }
+      if (!out.hidden) { out.hidden = true; trBtn.innerHTML = `${ic("translate")} ${T("翻譯年糕")}`; return; }
+      if (out.dataset.done) { out.hidden = false; trBtn.textContent = T("收合翻譯"); return; }
       trBtn.disabled = true; trBtn.textContent = T("翻譯中…");
-      const t = await translateText(post.caption, (typeof ttTrTarget === "function") ? ttTrTarget() : "zh-TW");
+      const t = await translateText(cap, (typeof ttTrTarget === "function") ? ttTrTarget() : "zh-TW");
       trBtn.disabled = false;
       if (!t) { trBtn.textContent = T("翻譯失敗，點此重試"); return; }
-      out.textContent = t; out.dataset.done = "1"; out.style.display = "block";
+      out.textContent = t; out.dataset.done = "1"; out.hidden = false;
       trBtn.textContent = T("收合翻譯");
-    });
-    const rep = wrap.querySelector("#pvReport"); if (rep) rep.addEventListener("click", async () => {
-      const reason = await Safety.pickReason(); if (reason === null) return;
-      await Safety.reportPost(post.id, reason);
-      try { const k = "tt_reported"; const s = new Set(JSON.parse(localStorage.getItem(k) || "[]")); s.add(post.id); localStorage.setItem(k, JSON.stringify([...s])); } catch (e) { }
-      if (typeof toast === "function") toast("已檢舉並隱藏，感謝回報");
-      const x = wrap.querySelector("#pvX"); if (x) x.click();
-      if (typeof SocialUI !== "undefined") SocialUI.route();
     });
     // 路線地圖
     const mapEl = wrap.querySelector(".pv-map");
@@ -159,25 +190,22 @@ const PostView = (() => {
   function bindLike(wrap, postId) {
     const b = wrap.querySelector("#pvLike"); if (!b) return;
     let busy = false;
+    const paint = on => { b.classList.toggle("on", on); const h = b.querySelector(".ic-heart"); if (h) h.classList.toggle("on", on); };
     b.addEventListener("click", async () => {
       if (busy) return;                       // 連點會送出多個 insert/delete，回應順序不保證→最後狀態可能與畫面相反
       busy = true;
-      const on = !b.classList.contains("on");
-      b.classList.toggle("on", on);
-      const span = b.querySelector("span"); span.textContent = Math.max(0, +span.textContent + (on ? 1 : -1));
-      b.firstChild.textContent = on ? "❤️ " : "🤍 ";
+      const on = !b.classList.contains("on"), span = b.querySelector("span");
+      paint(on); span.textContent = Math.max(0, +span.textContent + (on ? 1 : -1));
       if (on && window.ttFloat) window.ttFloat(b, "❤️");
-      try { await Posts.toggleLike(postId, on); } finally { busy = false; }
+      const r = await Posts.toggleLike(postId, on).catch(e => ({ error: e && e.message }));
+      if (r && r.error) { paint(!on); span.textContent = Math.max(0, +span.textContent + (on ? -1 : 1)); say("沒按到，等一下再試"); }
+      busy = false;
     });
   }
-
-  async function refreshLikes(wrap, postId) {
+  // 別人按讚：只更新數字（自己的讚已在畫面上），一個查詢就好
+  async function refreshLikeCount(wrap, postId) {
     const b = wrap.querySelector("#pvLike"); if (!b) return;
-    const count = await Posts.likeCount(postId);
-    const liked = (await Posts.likedSet([postId])).has(postId);
-    b.classList.toggle("on", liked);
-    b.querySelector("span").textContent = count;
-    b.firstChild.textContent = liked ? "❤️ " : "🤍 ";
+    b.querySelector("span").textContent = await Posts.likeCount(postId);
   }
 
   // 表情回應列（需 phase11；無資料則只顯示可點的表情）
@@ -194,10 +222,13 @@ const PostView = (() => {
     // 顯示：基本表情 +（會員才有的）PRO 表情 + 任何已被使用過的表情
     const list = [...new Set([...REACT_EMOJI, ...(pro ? REACT_PRO : []), ...rows.map(r => r.emoji)])];
     box.innerHTML = list.map(e => `<button class="pv-react-b ${mine === e ? "on" : ""}${REACT_PRO.includes(e) ? " pro" : ""}" data-e="${e}">${e}${counts[e] ? ` <span>${counts[e]}</span>` : ""}</button>`).join("");
+    let busy = false;
     box.querySelectorAll(".pv-react-b").forEach(b => b.addEventListener("click", async () => {
+      if (busy) return; busy = true;
       const e = b.dataset.e;
       if (mine === e) { await Posts.clearReaction(postId); }
-      else { const r = await Posts.setReaction(postId, e); if (r && r.error) { if (typeof toast === "function") toast("回應失敗，請先更新資料庫"); return; } if (window.ttFloat) window.ttFloat(b, e); }
+      else { const r = await Posts.setReaction(postId, e); if (r && r.error) { busy = false; say("回應沒送出，等一下再試"); return; } if (window.ttFloat) window.ttFloat(b, e); }
+      busy = false;
       loadReactions(wrap, postId);
     }));
   }
@@ -205,97 +236,5 @@ const PostView = (() => {
   // 翻譯內文：共用 i18n.js 的全域 ttTranslate
   function translateText(text, target) { return (typeof ttTranslate === "function") ? ttTranslate(text, target) : Promise.resolve(null); }
 
-  function cmName(cm) { return esc((cm.author && (cm.author.display_name || cm.author.handle)) || "山友"); }
-  function cmBody(b) { return (typeof Feed !== "undefined" && Feed.richText) ? Feed.richText(b) : esc(b); }
-
-  const _cmBodies = {};   // 留言原文（翻譯年糕用）
-  async function loadComments(wrap, postId) {
-    const c = Supa.client();
-    const me = wrap.dataset.me, postAuthor = wrap.dataset.author;
-    let data, threaded = true;
-    let res = await c.from("comments")
-      .select("id, body, author_id, parent_id, created_at, author:profiles!comments_author_profile_fk(handle, display_name)")
-      .eq("post_id", postId).order("created_at", { ascending: true }).limit(300);
-    if (res.error) {   // phase11 未跑（無 parent_id）→ 退回基本留言
-      threaded = false;
-      res = await c.from("comments")
-        .select("id, body, author_id, created_at, author:profiles!comments_author_profile_fk(handle, display_name)")
-        .eq("post_id", postId).order("created_at", { ascending: true }).limit(300);
-    }
-    data = res.data || [];
-    const box = wrap.querySelector("#pvComments"); if (!box) return;
-    if (!data.length) { box.innerHTML = `<div class="social-empty">還沒有留言，當第一個。</div>`; return; }
-
-    const cl = await Posts.commentLikes(data.map(cm => cm.id));
-    const tops = threaded ? data.filter(cm => !cm.parent_id) : data;
-    const childrenOf = id => threaded ? data.filter(cm => cm.parent_id === id) : [];
-    const row = (cm, isReply) => {
-      const canDel = cm.author_id === me || postAuthor === me;
-      const n = cl.counts[cm.id] || 0, liked = cl.mine.has(cm.id);
-      _cmBodies[cm.id] = cm.body || "";
-      return `<div class="pv-cm ${isReply ? "pv-cm-reply" : ""}" data-id="${cm.id}">
-        <div class="pv-cm-main"><b>${cmName(cm)}</b> ${cmBody(cm.body)}</div>
-        <div class="pv-cm-tr" data-for="${cm.id}" style="display:none"></div>
-        <div class="pv-cm-act">
-          <button class="cm-like ${liked ? "on" : ""}" data-id="${cm.id}">${liked ? "❤️" : "🤍"}<span>${n || ""}</span></button>
-          <button class="cm-tr" data-id="${cm.id}" title="翻譯" aria-label="翻譯">${ic("translate")}</button>
-          ${!isReply ? `<button class="cm-reply" data-id="${cm.id}" data-name="${cmName(cm)}">回覆</button>` : ""}
-          ${canDel ? `<button class="cm-del" data-id="${cm.id}" aria-label="刪除">✕</button>` : ""}
-        </div></div>`;
-    };
-    box.innerHTML = tops.map(cm => row(cm, false) + childrenOf(cm.id).map(r => row(r, true)).join("")).join("");
-
-    box.querySelectorAll(".cm-del").forEach(b => b.addEventListener("click", async () => {
-      await c.from("comments").delete().eq("id", b.dataset.id); loadComments(wrap, postId);
-    }));
-    box.querySelectorAll(".cm-like").forEach(b => b.addEventListener("click", async () => {
-      const on = !b.classList.contains("on");
-      b.classList.toggle("on", on); b.firstChild.textContent = on ? "❤️" : "🤍";
-      const span = b.querySelector("span"); span.textContent = Math.max(0, (+span.textContent || 0) + (on ? 1 : -1)) || "";
-      await Posts.toggleCommentLike(b.dataset.id, on);
-    }));
-    box.querySelectorAll(".cm-reply").forEach(b => b.addEventListener("click", () => setReplyTarget(wrap, b.dataset.id, b.dataset.name)));
-    // 留言翻譯年糕：翻成介面語言、再點收合
-    box.querySelectorAll(".cm-tr").forEach(b => b.addEventListener("click", async () => {
-      const out = box.querySelector(`.pv-cm-tr[data-for="${b.dataset.id}"]`); if (!out) return;
-      if (out.style.display !== "none") { out.style.display = "none"; return; }
-      if (out.dataset.done) { out.style.display = "block"; return; }
-      b.disabled = true;
-      const t = await translateText(_cmBodies[b.dataset.id] || "", (typeof ttTrTarget === "function") ? ttTrTarget() : "zh-TW");
-      b.disabled = false;
-      if (!t) { if (typeof toast === "function") toast((typeof ttT === "function") ? ttT("翻譯失敗，稍後再試") : "翻譯失敗，稍後再試"); return; }
-      out.textContent = t; out.dataset.done = "1"; out.style.display = "block";
-    }));
-    box.querySelectorAll(".pv-cm .mention").forEach(b => b.addEventListener("click", () => { if (typeof Discover !== "undefined") Discover.openByHandle(b.dataset.handle); }));
-    box.querySelectorAll(".pv-cm .ht").forEach(b => b.addEventListener("click", () => { const x = wrap.querySelector("#pvX"); if (x) x.click(); if (typeof Feed !== "undefined") Feed.openTag(b.dataset.tag); }));
-  }
-
-  function setReplyTarget(wrap, parentId, name) {
-    wrap.dataset.reply = parentId || "";
-    const add = wrap.querySelector(".pv-add"); if (!add) return;
-    let hint = wrap.querySelector("#pvReplyHint");
-    if (parentId) {
-      if (!hint) { hint = document.createElement("div"); hint.id = "pvReplyHint"; hint.className = "pv-reply-hint"; add.parentNode.insertBefore(hint, add); }
-      hint.innerHTML = `回覆 <b>${esc(name || "")}</b> <button id="pvReplyX">✕</button>`;
-      hint.querySelector("#pvReplyX").addEventListener("click", () => setReplyTarget(wrap, "", ""));
-      const input = wrap.querySelector("#pvInput"); if (input) input.focus();
-    } else if (hint) hint.remove();
-  }
-
-  async function send(wrap, postId) {
-    const input = wrap.querySelector("#pvInput"); const body = input.value.trim();
-    if (!body) return;
-    const c = Supa.client(); const { data: u } = await c.auth.getUser(); if (!u || !u.user) { toast("請先登入"); return; }
-    const parent = wrap.dataset.reply || null;
-    input.disabled = true;
-    const rec = { post_id: postId, author_id: u.user.id, body };
-    if (parent) rec.parent_id = parent;
-    let { error } = await c.from("comments").insert(rec);
-    if (error && parent) { delete rec.parent_id; ({ error } = await c.from("comments").insert(rec)); }   // 無 parent_id 欄位→當一般留言
-    input.disabled = false;
-    if (error) { if (typeof toast === "function") toast("留言失敗：" + error.message); return; }
-    input.value = ""; setReplyTarget(wrap, "", ""); Posts.notifyMentions(body, postId); loadComments(wrap, postId);
-  }
-
-  return { open };
+  return { open, translateText };
 })();

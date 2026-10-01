@@ -1,7 +1,7 @@
 // 社群寵物互動：看好友的夥伴、送果實、領取別人送的果實。
 const Pets = (() => {
-  function esc(s) { return (s || "").replace(/[<>&"]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c])); }
-  async function me() { const c = Supa.client(); if (!c) return null; const { data } = await c.auth.getUser(); return data && data.user ? data.user.id : null; }
+  const esc = s => Supa.esc(s);
+  async function me() { const c = Supa.client(); if (!c) return null; const { data } = await Supa.meUser(); return data && data.user ? data.user.id : null; }
 
   async function friendsPets() {
     const c = Supa.client(); const uid = await me(); if (!uid) return [];

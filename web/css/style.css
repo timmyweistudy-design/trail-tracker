@@ -2952,3 +2952,113 @@ button.cal-c:active { transform: scale(.92); }
 .tm-btn.danger { color: var(--danger, #b3322a); border-color: color-mix(in srgb, var(--danger, #b3322a) 35%, transparent); }
 .tm-btn .ic { width: 14px; height: 14px; margin: 0; }
 #btnDiag .ic { width: 15px; height: 15px; vertical-align: -3px; }
+
+/* ══ 社群頁整理（2026-10-01）══ */
+/* 子分頁：字多的語言（英文 Notifications）也塞得下，不再被切掉 */
+.social-subnav .sub-tab { flex: 1 1 auto; min-width: 0; padding: 9px 7px; }
+.nbadge:not([hidden]):not(:empty), .nav-badge:not([hidden]):not(:empty) { display: inline-block; }
+/* 名字＋Lv＋PRO：長名字自己省略，標籤不被擠出卡片 */
+.fc-top { min-width: 0; }
+.fc-who { min-width: 0; flex: 1; }
+.fc-name { flex-wrap: nowrap; min-width: 0; gap: 5px; }
+.fc-name .fc-nm, .disc-id .fc-nm, .pf-name .fc-nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.fc-name .lv-chip, .fc-name .pro-tag, .disc-id .lv-chip, .disc-id .pro-tag, .pf-name .pro-tag { flex: none; }
+.disc-id { min-width: 0; flex: 1; }
+.disc-id b { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.disc-id > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-name { display: flex; align-items: center; gap: 6px; min-width: 0; }
+/* 卡片：步道名一行、里程星等一行 */
+.fc-trail { overflow-wrap: anywhere; }
+.fc-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 0 0 4px; }
+.fc-rate i { font-style: normal; opacity: .28; }
+.fc-repost { display: inline-flex; align-items: center; gap: 5px; font-size: calc(12.5px * var(--fs, 1)); color: var(--ink-soft); background: var(--surface-2); border-radius: var(--r-pill); padding: 3px 10px; margin: 6px 0 2px; }
+.fc-repost .ic { width: 13px; height: 13px; }
+.fc-like .ic-heart { width: 17px; height: 17px; }
+.ic-heart.on { fill: currentColor; }
+.fc-comment .ic { width: 16px; height: 16px; }
+.fc-route { height: 64px; background: var(--surface-2); border-radius: var(--r-sm); margin: 8px 0 6px; }
+.feed-find { width: auto; display: inline-flex; align-items: center; gap: 6px; margin: 16px auto 0; padding: 10px 20px; }
+.social-empty .ee .ic { width: 40px; height: 40px; color: var(--ink-faint); stroke-width: 1.5; }
+.feed-divider { font-weight: 600; }
+/* 登入頁 */
+.auth-logo img { width: 64px; height: 64px; border-radius: 16px; display: block; margin: 0 auto; box-shadow: 0 6px 18px rgba(22,48,31,.18); }
+.auth-msg:empty { min-height: 0; margin: 0; }
+.auth-code { text-align: center; letter-spacing: .3em; font-family: var(--num); font-size: calc(20px * var(--fs, 1)); }
+.auth-links { display: flex; justify-content: center; gap: 22px; margin-top: 10px; }
+.auth-links .link-btn { width: auto; color: var(--ink-soft); }
+.auth-links .link-btn:disabled { opacity: .5; }
+/* 貼文詳情：留言列（以前輸入框吃掉整列，送出鈕被擠到下面看不到） */
+.pv-add { align-items: center; }
+.pv-add .auth-input { min-width: 0; margin: 0; }
+.pv-add .btn { flex: none; width: auto; margin: 0; padding: 11px 16px; }
+.pv-when { margin: 4px 0 6px; display: block; }
+#pvBody > .fc-name { flex-wrap: wrap; row-gap: 2px; }
+.pv-head-r .comp-x .ic { width: 19px; height: 19px; }
+.pv-cm { display: flex; gap: 9px; align-items: flex-start; }
+.pv-cm-col { flex: 1; min-width: 0; }
+.pv-cm-av { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex: none; margin-top: 2px; }
+.pv-cm-av.ph { display: grid; place-items: center; background: var(--brand-soft); color: var(--brand-deep); font-weight: 700; font-size: calc(12px * var(--fs, 1)); }
+.pv-cm-who { cursor: pointer; }
+.pv-cm-time { color: var(--ink-faint); font-size: calc(11.5px * var(--fs, 1)); }
+.pv-cm-act .ic { width: 14px; height: 14px; }
+.pv-cm-act .cm-like.on .ic-heart { fill: currentColor; }
+.pv-cm-empty { padding: 18px 0; }
+/* 多選項的對話框（⋯ 選單）直排 */
+.ttdlg-btns:has(> :nth-child(4)) { flex-direction: column; }
+.ttdlg-btns .btn.danger { color: var(--danger, #b3322a); }
+/* 發文視窗 */
+.composer-head b { flex: 1; text-align: center; white-space: nowrap; }
+.composer-head .comp-post { flex: none; width: auto; margin: 0; padding: 9px 18px; }
+.comp-trail { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.comp-trail .ic { width: 16px; height: 16px; color: var(--brand-mid); }
+.comp-trail span { color: var(--accent); font-family: var(--num); font-weight: 600; }
+.comp-rate { justify-content: space-between; }
+.comp-stars { display: inline-flex; gap: 2px; }
+.comp-stars .cs { background: none; border: none; padding: 2px; width: 34px; height: 34px; color: var(--line); cursor: pointer; }
+.comp-stars .cs svg { width: 100%; height: 100%; fill: currentColor; }
+.comp-stars .cs.on { color: #e8a127; }
+.comp-adds { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0; }
+.comp-add .ic { width: 16px; height: 16px; }
+.comp-del .ic { width: 12px; height: 12px; }
+/* 我的個人頁：4 顆動作鈕一排，登出移到設定 */
+.pf-actions4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 14px 0; background: var(--surface-2); border-radius: var(--r); padding: 6px; }
+.pf-act { display: flex; flex-direction: column; align-items: center; gap: 4px; border: none; background: none; padding: 9px 2px; border-radius: var(--r-sm); color: var(--brand-deep); font-size: calc(12px * var(--fs, 1)); font-weight: 600; cursor: pointer; }
+.pf-act:active { background: var(--surface); }
+.pf-act .ic { width: 19px; height: 19px; }
+.pf-counts .cnt, .pf-counts .cnt-link { font-size: calc(13.5px * var(--fs, 1)); color: var(--ink-soft); }
+button.cnt-link { border: none; background: none; padding: 0; font: inherit; cursor: pointer; }
+.pf-fc { display: inline-flex; gap: 14px; }
+/* 子頁返回 */
+.sub-back { width: 36px; height: 36px; flex: none; border-radius: 50%; border: 1px solid var(--line-soft); background: var(--surface); display: grid; place-items: center; color: var(--ink-soft); cursor: pointer; }
+.sub-back .ic { width: 18px; height: 18px; transform: rotate(180deg); margin: 0; }
+.set-row > span small { display: block; color: var(--ink-faint); font-weight: 500; font-size: calc(12px * var(--fs, 1)); margin-top: 2px; }
+.set-btn { width: 100%; border: none; background: none; text-align: left; font: inherit; color: var(--ink); cursor: pointer; }
+.set-btn .ic { width: 16px; height: 16px; vertical-align: -3px; margin-right: 6px; color: var(--ink-soft); }
+/* 編輯檔案 */
+.ed-cover { display: flex; align-items: flex-end; justify-content: flex-end; padding: 8px; cursor: pointer; }
+.ed-cover.empty { align-items: center; justify-content: center; border-style: dashed; }
+.ed-cover-t { display: inline-flex; align-items: center; gap: 5px; background: rgba(0,0,0,.45); color: #fff; border-radius: var(--r-pill); padding: 5px 11px; font-size: calc(12.5px * var(--fs, 1)); font-weight: 600; }
+.ed-cover.empty .ed-cover-t { background: none; color: var(--ink-soft); }
+.ed-cover-t .ic { width: 14px; height: 14px; }
+.ed-bio { resize: vertical; min-height: 72px; line-height: 1.5; font: inherit; }
+.ed-count { float: right; font-weight: 500; color: var(--ink-faint); font-family: var(--num); }
+/* 別人的個人頁：追蹤＋⋯ */
+.dp-acts { display: flex; gap: 8px; margin: 12px 0 4px; }
+.dp-acts .disc-follow { flex: 1; width: auto; margin: 0; padding: 11px; }
+.dp-acts .dp-more { flex: none; width: 46px; margin: 0; padding: 0; display: grid; place-items: center; }
+.dp-acts .dp-more .ic { width: 20px; height: 20px; }
+/* 搜尋 */
+.disc-sec .ic { width: 14px; height: 14px; vertical-align: -2px; color: var(--accent); }
+.disc-row .disc-follow { flex: none; }
+/* 通知：推播提示改成底部一行 */
+.notif-push-hint { display: flex; align-items: center; gap: 8px; background: var(--surface-2); border-radius: var(--r-sm); padding: 8px 6px 8px 12px; margin: 14px 0 4px; font-size: calc(13px * var(--fs, 1)); color: var(--ink-soft); }
+.notif-push-hint > .ic { width: 16px; height: 16px; flex: none; color: var(--accent); }
+.notif-push-hint span { flex: 1; min-width: 0; }
+.notif-push-hint .link-btn { width: auto; font-weight: 700; color: var(--brand-mid); }
+.notif-push-hint .comp-x .ic { width: 14px; height: 14px; }
+.notif-ic .berry { width: 18px; height: 18px; }
+#notifMore, #feedMore { margin-top: 10px; }
+/* 揪團 */
+.ev-go .ic { width: 14px; height: 14px; vertical-align: -2px; }
+.auth-links .link-btn, .notif-push-hint .link-btn { border: none; background: none; box-shadow: none; padding: 6px 4px; font-size: calc(13.5px * var(--fs, 1)); text-decoration: underline; text-underline-offset: 3px; }
+.notif-push-hint .link-btn { text-decoration: none; }

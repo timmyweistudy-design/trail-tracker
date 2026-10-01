@@ -28,7 +28,7 @@ const Push = (() => {
     let sub = await reg.pushManager.getSubscription();
     if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8Array(window.VAPID_PUBLIC_KEY) });
     const c = (typeof Supa !== "undefined") ? Supa.client() : null;
-    const { data: u } = c ? await c.auth.getUser() : { data: null };
+    const { data: u } = c ? await Supa.meUser() : { data: null };
     if (!c || !u || !u.user) { if (typeof toast === "function") toast("請先登入社群"); return false; }
     const j = sub.toJSON();
     const { error } = await c.from("push_subscriptions").upsert({

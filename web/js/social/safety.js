@@ -1,6 +1,6 @@
 // 內容安全：封鎖/解除封鎖、是否已封鎖、檢舉貼文/使用者。
 const Safety = (() => {
-  async function me() { const c = Supa.client(); if (!c) return null; const { data } = await c.auth.getUser(); return data && data.user ? data.user.id : null; }
+  async function me() { const c = Supa.client(); if (!c) return null; const { data } = await Supa.meUser(); return data && data.user ? data.user.id : null; }
 
   async function isBlocked(uid) {
     const c = Supa.client(); const m = await me(); if (!m) return false;
@@ -30,7 +30,7 @@ const Safety = (() => {
     return new Promise(resolve => {
       const reasons = ["騷擾或霸凌", "不實或詐騙", "色情或不雅", "暴力或危險", "垃圾訊息 / 廣告", "其他"];
       const m = document.createElement("div"); m.className = "pv-mask report-mask";
-      m.innerHTML = `<div class="report-sheet"><h3>檢舉原因</h3>${reasons.map(r => `<button class="report-opt" data-r="${r}">${r}</button>`).join("")}<button class="btn ghost" id="reportCancel">取消</button></div>`;
+      m.innerHTML = `<div class="report-sheet"><h3>${(typeof ttT === "function" ? ttT : x => x)("哪裡有問題？")}</h3>${reasons.map(r => `<button class="report-opt" data-r="${r}">${r}</button>`).join("")}<button class="btn ghost" id="reportCancel">取消</button></div>`;
       document.body.appendChild(m);
       const done = v => { m.remove(); resolve(v); };
       m.querySelectorAll(".report-opt").forEach(b => b.addEventListener("click", () => done(b.dataset.r)));
@@ -96,9 +96,12 @@ const Safety = (() => {
   // 以資料庫的檢舉紀錄為準，重建本機的隱藏清單。
   // 本機清單只在「檢舉當下那台裝置」寫入，所以換裝置、或在別台撤回時，兩邊會對不上
   // （撤回了卻還是看不到貼文）。開社群時同步一次即可。
-  async function syncReportedCache() {
+  let _syncAt = 0, _syncUid = null;
+  async function syncReportedCache(force) {
     const c = Supa.client(), m = await me();
     if (!c || !m) return;
+    if (!force && m === _syncUid && Date.now() - _syncAt < 300000) return;
+    _syncAt = Date.now(); _syncUid = m;
     const { data, error } = await c.from("reports").select("post_id").eq("reporter_id", m).not("post_id", "is", null);
     if (error || !data) return;   // 查不到（RLS 未更新/離線）→ 保留本機清單，不動它
     try { localStorage.setItem("tt_reported", JSON.stringify(data.map(r => r.post_id))); } catch (e) { /* */ }

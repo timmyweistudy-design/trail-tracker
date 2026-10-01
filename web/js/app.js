@@ -196,6 +196,8 @@ const ICON = {
   // ── 擴充：統一墨線圖示，取代功能性 emoji ──
   bell: '<path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6Z"/><path d="M10 19a2 2 0 0 0 4 0"/>',
   chat: '<path d="M4 5h16v11H8l-4 4V5Z"/>',
+  more: '<circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/>',
+  video: '<rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10.5 5-3v9l-5-3"/>',
   heart: '<path d="M12 20S4 14.5 4 9.2A3.8 3.8 0 0 1 12 7a3.8 3.8 0 0 1 8 2.2C20 14.5 12 20 12 20Z"/>',
   bookmark: '<path d="M6 4h12v17l-6-4-6 4V4Z"/>',
   calendar: '<rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 9h16M8 3v4M16 3v4"/>',
@@ -1895,7 +1897,7 @@ if (typeof window !== "undefined") window.ttModalA11y = ttModalA11y;
 // 全域 Escape：關掉最上層的 [data-ov] 動態面板（成就 modal 自己已 preventDefault，這裡略過已處理的）
 document.addEventListener("keydown", e => {
   if (e.key !== "Escape" || e.defaultPrevented) return;
-  const ovs = [...document.querySelectorAll("[data-ov]")].filter(m => m.offsetParent !== null);
+  const ovs = [...document.querySelectorAll("[data-ov]")].filter(m => m.getClientRects().length > 0);   // 不能用 offsetParent：覆蓋層是 position:fixed，offsetParent 永遠是 null，以前 Esc 一個都關不掉
   if (!ovs.length) return;
   const top = ovs[ovs.length - 1];
   const btn = top.querySelector('.sheet-close, .lb-close, .lb-x, .comp-x, [id$="Close"], button[aria-label="關閉"], button[aria-label="Close"]');

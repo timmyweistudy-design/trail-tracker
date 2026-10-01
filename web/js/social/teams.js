@@ -1,6 +1,6 @@
 // 小隊：建立/加入小隊、選定目前小隊、成員清單、開關「與小隊同行」（連動 TeamLive）。
 const Team = (() => {
-  function esc(s) { return (s || "").replace(/[<>&"]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c])); }
+  const esc = s => Supa.esc(s);
   function genCode() { const ch = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; let s = ""; for (let i = 0; i < 6; i++) s += ch[Math.floor(Math.random() * ch.length)]; return s; }
   function activeId() { return localStorage.getItem("tt_team") || null; }
   function activeName() { return localStorage.getItem("tt_team_name") || ""; }
@@ -23,7 +23,7 @@ const Team = (() => {
     return { id: data };
   }
   async function myTeams() {
-    const c = Supa.client(); const { data: u } = await c.auth.getUser(); if (!u || !u.user) return [];
+    const c = Supa.client(); const { data: u } = await Supa.meUser(); if (!u || !u.user) return [];
     const { data } = await c.from("team_members").select("team:teams(id,name,join_code,owner)").eq("user_id", u.user.id);
     return (data || []).map(r => r.team).filter(Boolean);
   }
@@ -33,7 +33,7 @@ const Team = (() => {
     return data || [];
   }
   async function leave(teamId) {
-    const c = Supa.client(); const { data: u } = await c.auth.getUser();
+    const c = Supa.client(); const { data: u } = await Supa.meUser();
     await c.from("team_members").delete().eq("team_id", teamId).eq("user_id", u.user.id);
     if (activeId() === teamId) setActive(null);
   }
@@ -55,7 +55,7 @@ const Team = (() => {
 
   // 互相追蹤的好友
   async function friends() {
-    const c = Supa.client(); const { data: u } = await c.auth.getUser(); if (!u || !u.user) return [];
+    const c = Supa.client(); const { data: u } = await Supa.meUser(); if (!u || !u.user) return [];
     const me = u.user.id;
     const { data: fo } = await c.from("follows").select("following_id").eq("follower_id", me);
     const { data: fr } = await c.from("follows").select("follower_id").eq("following_id", me);

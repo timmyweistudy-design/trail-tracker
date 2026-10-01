@@ -1,11 +1,12 @@
 // 揪團活動：列出即將到來的揪團、建立活動、報名/取消。需 phase13。
 const Events = (() => {
-  function esc(s) { return (s || "").replace(/[<>&"]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c])); }
+  const esc = s => Supa.esc(s);
   function fmt(iso) {
     const d = new Date(iso);
     return d.toLocaleString(ttLocale(), { month: "numeric", day: "numeric", weekday: "short", hour: "2-digit", minute: "2-digit" });
   }
-  async function me() { const c = Supa.client(); if (!c) return null; const { data } = await c.auth.getUser(); return data && data.user ? data.user.id : null; }
+  const T = s => (typeof ttT === "function" ? ttT(s) : s);
+  async function me() { const c = Supa.client(); if (!c) return null; const { data } = await Supa.meUser(); return data && data.user ? data.user.id : null; }
 
   async function open(presetTrail) {
     if (typeof ttBusy === "function" && ttBusy("events")) return;   // 防連點
@@ -13,8 +14,8 @@ const Events = (() => {
     const sess = await Auth.session(); if (!sess) { if (typeof toast === "function") toast("請先到社群分頁登入"); return; }
     if (document.querySelector('[data-ov="events"]')) return;   // 防連點疊層
     const wrap = document.createElement("div"); wrap.className = "pv-mask"; wrap.dataset.ov = "events";
-    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" id="evX" aria-label="關閉">✕</button><b>${ic("calendar")} 揪團活動</b><button class="comp-x" id="evNew" title="建立">${ic("plus")}</button></div>
-      <div class="pv-body" id="evBody"><div class="feed-loading"><span class="spin"></span></div></div></div>`;
+    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" id="evX" aria-label="關閉">${ic("x")}</button><b>${ic("calendar")} 揪團活動</b><button class="comp-x" id="evNew" aria-label="發起揪團">${ic("plus")}</button></div>
+      <div class="pv-body" id="evBody" aria-live="polite"><div class="feed-loading"><span class="spin"></span></div></div></div>`;
     document.body.appendChild(wrap);
     wrap.querySelector("#evX").addEventListener("click", () => wrap.remove());
     wrap.querySelector("#evNew").addEventListener("click", () => renderForm(wrap, presetTrail));
@@ -28,8 +29,8 @@ const Events = (() => {
     const { data, error } = await c.from("events")
       .select("id, trail_id, trail_name, title, when_at, note, creator_id, creator:profiles!events_creator_profile_fk(handle, display_name)")
       .gte("when_at", new Date(Date.now() - 6 * 3600e3).toISOString()).order("when_at", { ascending: true }).limit(50);
-    if (error) { body.innerHTML = `<div class="social-empty">揪團功能暫時用不了。</div>`; return; }
-    if (!data || !data.length) { body.innerHTML = `<div class="social-empty"><span class="ee">📅</span>目前沒有揪團活動，點右上角 ＋ 發起一個！</div>`; return; }
+    if (error) { body.innerHTML = `<div class="social-empty">${T("揪團功能暫時用不了")}</div>`; return; }
+    if (!data || !data.length) { body.innerHTML = `<div class="social-empty"><span class="ee">${ic("calendar")}</span>${T("最近沒有揪團。想找人一起走？按右上角 ＋ 發起一個")}</div>`; return; }
     const ids = data.map(e => e.id);
     const myId = await me();
     // 人數走聚合函式（只回數字）；「我有沒有報名」只查自己的列。
@@ -56,15 +57,20 @@ const Events = (() => {
         <div class="ev-meta">${ic("mountain")} ${esc(e.trail_name || "自由路線")}　·　發起人 ${esc(cname)}</div>
         ${e.note ? `<div class="ev-note">${esc(e.note)}</div>` : ""}
         <div class="ev-actions">
-          <button class="btn ${going ? "ghost" : "primary"} ev-go" data-id="${e.id}">${going ? "已報名 ✓" : "我要參加"}</button>
-          <span class="ev-count">${n} 人參加</span>
-          ${isMine ? `<button class="link-btn ev-del" data-id="${e.id}">刪除</button>` : ""}
+          <button class="btn ${going ? "ghost" : "primary"} ev-go" data-id="${e.id}" data-going="${going ? 1 : 0}">${going ? `${ic("check")} ${T("已報名")}` : T("我要參加")}</button>
+          <span class="ev-count">${n} ${T("人參加")}</span>
+          ${isMine ? `<button class="link-btn ev-del" data-id="${e.id}">${T("刪除")}</button>` : ""}
         </div></div>`;
     }).join("");
     body.querySelectorAll(".ev-go").forEach(b => b.addEventListener("click", async () => {
-      const id = b.dataset.id, going = b.textContent.includes("已報名");
-      if (going) await c.from("event_rsvps").delete().eq("event_id", id).eq("user_id", myId);
-      else await c.from("event_rsvps").insert({ event_id: id, user_id: myId });
+      // 報名狀態看 data-going，不讀按鈕文字（翻成英文後 includes("已報名") 永遠 false → 一直重複報名）
+      if (b.disabled) return;
+      const id = b.dataset.id, going = b.dataset.going === "1";
+      if (going && !(await ttConfirm(T("不去了？會取消報名。"), T("取消報名"), T("先留著")))) return;
+      b.disabled = true;
+      const { error: err } = going ? await c.from("event_rsvps").delete().eq("event_id", id).eq("user_id", myId)
+        : await c.from("event_rsvps").insert({ event_id: id, user_id: myId });
+      if (err && typeof toast === "function") toast(T(Supa.errText(err.message)));
       renderList(wrap);
     }));
     body.querySelectorAll(".ev-del").forEach(b => b.addEventListener("click", async () => {
@@ -84,7 +90,7 @@ const Events = (() => {
       <label class="ob-l">步道</label>
       <input id="evTrail" class="auth-input" maxlength="80" value="${esc(tName)}" placeholder="步道名稱（選填）">
       <label class="ob-l">時間</label>
-      <input id="evWhen" class="auth-input" type="datetime-local">
+      <input id="evWhen" class="auth-input" type="datetime-local" min="${new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}">
       <label class="ob-l">說明（集合地點、裝備、注意事項…）</label>
       <textarea id="evNote" class="comp-cap" maxlength="1000" placeholder="選填"></textarea>
       <button class="btn primary" id="evSave">發起揪團</button>
@@ -95,19 +101,21 @@ const Events = (() => {
       const msg = body.querySelector("#evMsg");
       const title = body.querySelector("#evTitle").value.trim();
       const whenV = body.querySelector("#evWhen").value;
-      if (!title) { msg.textContent = "請填活動標題"; return; }
-      if (!whenV) { msg.textContent = "請選時間"; return; }
+      if (!title) { msg.textContent = T("取個標題吧"); return; }
+      if (!whenV) { msg.textContent = T("選一下出發時間"); return; }
+      if (new Date(whenV).getTime() < Date.now() - 60000) { msg.textContent = T("這個時間已經過了"); return; }
+      const sv = body.querySelector("#evSave"); if (sv.disabled) return; sv.disabled = true;
       const c = Supa.client(); const myId = await me();
-      msg.textContent = "建立中…";
+      msg.textContent = T("建立中…");
       const { data, error } = await c.from("events").insert({
         creator_id: myId, title, trail_id: tId || null,
         trail_name: body.querySelector("#evTrail").value.trim() || null,
         when_at: new Date(whenV).toISOString(),
         note: body.querySelector("#evNote").value.trim() || null,
       }).select("id").maybeSingle();
-      if (error) { msg.textContent = "建立失敗：" + error.message; return; }
+      if (error) { sv.disabled = false; msg.textContent = T(Supa.errText(error.message)); return; }
       if (data && data.id) await c.from("event_rsvps").insert({ event_id: data.id, user_id: myId });   // 發起人自動報名
-      if (typeof toast === "function") toast("已發起揪團");
+      if (typeof toast === "function") toast(T("揪團發出去了"));
       renderList(wrap);
     });
   }
