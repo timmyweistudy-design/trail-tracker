@@ -425,12 +425,13 @@ function wpIcon(type, dim) {
   return L.divIcon({ className: "wp-pin" + (dim ? " dim" : ""), html: `<span style="background:${m.c}"><svg viewBox="0 0 24 24">${m.svg}</svg></span>`, iconSize: [24, 24], iconAnchor: [12, 12], popupAnchor: [0, -13] });
 }
 // 把地標畫到某圖層；reached=已通過的地標名集合（記錄中變灰）
+function wpKey(w) { return `${w.name || ""}@${(+w.lat).toFixed(5)},${(+w.lon).toFixed(5)}`; }   // 同名地標（兩個三角點）用座標分開
 function drawWaypoints(layer, wps, reached) {
   if (!layer) return;
   layer.clearLayers();
   (wps || []).forEach(w => {
     const m = WP_META[w.type] || WP_META.view;
-    const done = reached && reached.has(w.name);
+    const done = reached && reached.has(wpKey(w));
     const lbl = ttT(m.label), nm = (w.name || "").replace(/[<>&]/g, "");
     L.marker([w.lat, w.lon], { icon: wpIcon(w.type, done), keyboard: false }).addTo(layer)
       .bindPopup(`<b>${nm}</b><br>${nm && nm !== lbl ? lbl + " · " : ""}${w.ele ? w.ele + " m · " : ""}${ttT("距起點")} ${(w.distM / 1000).toFixed(1)} km`);
@@ -779,11 +780,38 @@ function addNavToggle(map) {
   };
   c.addTo(map);
 }
+// 震動＋提示音：iPhone 不支援 navigator.vibrate（以前偏離路線、每公里提醒在 iPhone 上都沒感覺）
+// → 原生 App 用 Capacitor Haptics；網頁用 navigator.vibrate；重要提醒（loud）另外響提示音。
+let _audioCtx = null;
+function ttAudioUnlock() {   // iOS 要在使用者手勢裡先啟動音訊，之後才能自己響（在「開始」按鈕呼叫）
+  try { if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (_audioCtx.state === "suspended") _audioCtx.resume(); } catch (e) { /* */ }
+}
+function ttBeep(times) {
+  try {
+    if (!_audioCtx) return;
+    const c = _audioCtx;
+    for (let i = 0; i < (times || 2); i++) {
+      const o = c.createOscillator(), g = c.createGain(), t0 = c.currentTime + i * 0.3;
+      o.type = "sine"; o.frequency.value = 880;
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.3, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.22);
+      o.connect(g); g.connect(c.destination); o.start(t0); o.stop(t0 + 0.24);
+    }
+  } catch (e) { /* */ }
+}
+function ttBuzz(pattern, loud) {
+  const arr = Array.isArray(pattern) ? pattern : [pattern];
+  const C = window.Capacitor, H = C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins.Haptics;
+  if (H) { let t = 0; arr.forEach((ms, i) => { if (i % 2 === 0) setTimeout(() => { try { H.vibrate({ duration: Math.max(60, ms) }); } catch (e) { /* */ } }, t); t += ms; }); }
+  else if (navigator.vibrate) { try { navigator.vibrate(arr); } catch (e) { /* */ } }
+  if (loud) ttBeep(loud === true ? 2 : loud);
+}
 // 指北針：讀裝置方位，轉動手機時指針跟著轉、指向實際北方
 let _compassOn = false, _heading = 0, _gpsHeading = null, _navUp = false, _navUserOff = false;
 function rotateCompasses() { document.querySelectorAll(".compass-rose").forEach(r => r.style.transform = `rotate(${-_heading}deg)`); }
 // 導航模式（heading-up）：只旋轉「地圖圖層面板」(tiles/markers)，控制鈕在外層不轉→四顆鈕固定、縮放正常、小隊照常。
-const NAV_SCALE = 1.8;   // 放大面板以蓋住旋轉後的角落空缺（縮放仍可用，只是視覺基準放大）
+// 放大面板以蓋住旋轉後的角落空缺：倍率＝對角線／短邊（剛好蓋滿，不多放大）。以前固定 1.8 倍，圖磚放大後會糊
+let NAV_SCALE = 1.5;
+function _navScaleCalc() { try { const s = recMap.getSize(); NAV_SCALE = Math.min(1.8, Math.hypot(s.x, s.y) / Math.max(1, Math.min(s.x, s.y)) + 0.02); } catch (e) { /* */ } }
 function navHeading() { const h = (_compassOn && _heading != null) ? _heading : _gpsHeading; return (h != null && isFinite(h)) ? h : 0; }
 // 平滑後的導航方位＋每幀緩動：GPS/羅盤方位有雜訊，直接用會讓地圖轉動時抖動；用低通濾波順順跟隨
 let _navHeadingSm = 0, _navRAF = null, _navLastT = 0;
@@ -806,6 +834,7 @@ function applyPaneRotation() {
   // 導航關閉、或使用者滑開地圖（暫停跟隨）＝不旋轉：只在還殘留 rotate 時清一次，避免每幀重寫和 Leaflet 拖曳打架＝抖動
   if (!_navUp || !_recFollow) { if (/rotate/.test(t)) { pane.style.transform = base; pane.style.transformOrigin = ""; } return; }
   const size = recMap.getSize();
+  _navScaleCalc();
   pane.style.transformOrigin = `${size.x / 2}px ${size.y / 2}px`;   // 繞畫面中心旋轉
   pane.style.transform = `rotate(${-_navHeadingSm}deg) scale(${NAV_SCALE}) ${base}`;   // 用平滑方位→不抖
 }
@@ -860,9 +889,9 @@ function enableCompass(silent) {   // silent：開機預熱權限時別跳 toast
   const start = () => { _compassOn = true; window.addEventListener("deviceorientationabsolute", onOrient, true); window.addEventListener("deviceorientation", onOrient, true); document.querySelectorAll(".map-compass").forEach(c => c.classList.add("on")); if (!silent) toast("指北針已啟用，轉動手機看看"); };
   const DOE = window.DeviceOrientationEvent;
   if (DOE && typeof DOE.requestPermission === "function") {
-    DOE.requestPermission().then(p => p === "granted" ? start() : toast("需允許「動作與方向」權限")).catch(() => toast("此裝置無法啟用指北針"));
+    DOE.requestPermission().then(p => p === "granted" ? start() : toast(ttT("需允許「動作與方向」權限"))).catch(() => toast(ttT("此裝置無法啟用指北針")));
   } else if (window.DeviceOrientationEvent) start();
-  else toast("此裝置不支援方位感測");
+  else toast(ttT("此裝置不支援方位感測"));
 }
 // 一次問完定位＋方位權限（iOS 方位必須由使用者手勢觸發，故綁在「進 App 的第一次點擊」）
 let _entryPermAsked = false;
@@ -887,14 +916,23 @@ async function requestEntryPerms() {
   }
   _warmUpPerms();
 }
-function addCompass(map) {
+// opts.nav：記錄地圖的指北針兼「導航／自由」切換（以前兩顆鈕功能重疊，右上角疊了 5 顆）
+function addCompass(map, opts) {
   const c = L.control({ position: "topright" });
   c.onAdd = () => {
-    const d = L.DomUtil.create("div", "map-compass" + (_compassOn ? " on" : ""));
-    d.title = "指北針（點一下啟用）";
+    const d = L.DomUtil.create("div", "map-compass" + (_compassOn ? " on" : "") + (opts && opts.nav ? " nav-compass" : ""));
+    d.title = ttT(opts && opts.nav ? "點一下切換：地圖跟著方向轉／北方朝上" : "指北針（點一下啟用）");
     d.innerHTML = `<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="18.5" fill="rgba(255,253,248,.94)" stroke="rgba(0,0,0,.15)"/><g class="compass-rose" style="transform-origin:20px 20px;transform:rotate(${-_heading}deg)"><polygon points="20,4 24.5,21 15.5,21" fill="#c0392b"/><polygon points="20,36 24.5,19 15.5,19" fill="#9aa0a6"/><text x="20" y="13.5" text-anchor="middle" font-size="8" font-weight="700" fill="#fff">N</text></g></svg>`;
     L.DomEvent.disableClickPropagation(d);
-    d.addEventListener("click", enableCompass);
+    if (opts && opts.nav) {
+      const paint = () => { d.classList.toggle("navon", _navUp); d.setAttribute("aria-pressed", _navUp); };
+      d.addEventListener("click", () => {
+        enableCompass(true);
+        setNavUp(!_navUp); _navUserOff = !_navUp; paint();
+        toast(_navUp ? ttT("導航模式：地圖跟著你的方向轉") : ttT("北方朝上，可以雙指縮放"));
+      });
+      map._navBtnPaint = paint; paint();
+    } else d.addEventListener("click", enableCompass);
     _a11yCtrl(d);
     return d;
   };
@@ -908,7 +946,7 @@ function addFullscreen(map) {
   const c = L.control({ position: "topright" });
   c.onAdd = () => {
     const d = L.DomUtil.create("div", "map-fs-btn");
-    d.innerHTML = SVG_EXPAND; d.title = "全螢幕";
+    d.innerHTML = SVG_EXPAND; d.title = ttT("全螢幕");
     L.DomEvent.disableClickPropagation(d);
     d.addEventListener("click", () => {
       const el = map.getContainer();

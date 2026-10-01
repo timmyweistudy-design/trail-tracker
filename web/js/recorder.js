@@ -51,6 +51,7 @@ const Recorder = (() => {
   let overSpeedHits = 0;       // 連續偵測到超速(>20km/h)的次數
   let stillHits = 0;           // 連續低速（近乎靜止）讀數次數，供漂移過濾
   let autoStopping = false;    // 已觸發自動結束，避免重複
+  let overSpeedSince = 0;      // 第一次超速的時間：要「持續」超速才算上車
 
   function onUpdate(fn) { cb = fn; }
   function onAutoStop(fn) { autoStopCb = fn; }   // 偵測到車輛速度自動結束時通知前端
@@ -172,7 +173,10 @@ const Recorder = (() => {
       if (gpsSpeed == null) blendSpeed(segSpeed);        // 無 GPS 速度→用估算(夠長的時間窗才採信)
       if (segSpeed > MAX_FOOT_MS) {                      // 超過步行/跑步上限(像騎車/開車)
         overSpeedHits++;
-        if (overSpeedHits >= 2 && !autoStopping) {       // 連續 2 次→確認是車輛速度→直接斷掉(自動結束)
+        if (overSpeedHits === 1) overSpeedSince = now;
+        // 要連續 3 次、而且超速持續 15 秒以上才算上車：以前連續 2 次就結束整趟，
+        // 出隧道/密林後 GPS 跳點很容易湊出 2 次，走路的人被當成上車、整趟被收掉
+        if (overSpeedHits >= 3 && now - overSpeedSince >= 15000 && !autoStopping) {
           autoStopping = true; stopSources();
           cb({ ...snapshot(), vehicleStop: true });
           autoStopCb();
@@ -227,7 +231,7 @@ const Recorder = (() => {
   }
   let _bgWatcherId = null;
   function _startWebGPS() {
-    if (!navigator.geolocation) { if (typeof ttAlertBox === "function") ttAlertBox("此裝置不支援定位，請改用模擬模式"); return false; }
+    if (!navigator.geolocation) { if (typeof ttAlertBox === "function") ttAlertBox(typeof ttT === "function" ? ttT("此裝置不支援定位，請改用模擬模式") : "此裝置不支援定位，請改用模擬模式"); return false; }
     watchId = navigator.geolocation.watchPosition(
       pos => push(pos.coords.latitude, pos.coords.longitude, pos.coords.altitude, pos.coords.accuracy, false, pos.coords.speed, pos.coords.altitudeAccuracy, pos.coords.heading),
       err => { errCode = (err && err.code) || 2; cb({ ...snapshot(), error: true }); },
@@ -241,8 +245,8 @@ const Recorder = (() => {
     const bg = _bgPlugin();
     if (bg) {
       bg.addWatcher({
-        backgroundMessage: "記錄路徑中（可鎖螢幕）",
-        backgroundTitle: "循徑拾光 · 記錄中",
+        backgroundMessage: (typeof ttT === "function" ? ttT("記錄路徑中（可以鎖螢幕）") : "記錄路徑中（可以鎖螢幕）"),
+        backgroundTitle: (typeof ttT === "function" ? ttT("循徑拾光 · 記錄中") : "循徑拾光 · 記錄中"),
         requestPermissions: true,
         stale: false,
         distanceFilter: lowPower ? 12 : 4,   // 移動幾公尺才回報一點

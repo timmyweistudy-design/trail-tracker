@@ -344,7 +344,7 @@ async function reportClientErrors() {
 }
 setTimeout(reportClientErrors, 6000);
 // 舊版的離線地圖和瀏覽快取混在一起：第一次開新版時整批搬到「下載的離線地圖」獨立快取（只做一次）
-setTimeout(() => { try { if (typeof Offline !== "undefined" && Offline.migrate) Offline.migrate(); } catch (e) { /* */ } }, 5000);
+setTimeout(() => { try { if (typeof Offline !== "undefined" && Offline.migrate) Offline.migrate().then(() => Offline.cleanupPreload && Offline.cleanupPreload()); } catch (e) { /* */ } }, 5000);
 
 // 進階分析：整頁 PRO（與年度回顧一致）
 const _aBtn = $("#btnAnalytics");

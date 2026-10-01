@@ -155,7 +155,7 @@ const PostView = (() => {
       const coords = (post.track && post.track.coordinates) ? post.track.coordinates.map(p => [p[1], p[0]]) : [];
       if (wrap._close) wrap._close();   // 走正常關閉流程（清掉地圖/頻道）
       const tab = document.querySelector('.tab[data-view="record"]'); if (tab) tab.click();
-      setTimeout(() => { if (typeof window.followRoute === "function") window.followRoute(coords); }, 250);
+      setTimeout(() => { if (typeof window.followRoute === "function") window.followRoute(coords, post.trail_name); }, 250);
     });
     // 翻譯年糕：把內文翻成介面語言（原文保留、翻譯顯示在下方，可收合）
     const trBtn = wrap.querySelector("#pvTranslate");

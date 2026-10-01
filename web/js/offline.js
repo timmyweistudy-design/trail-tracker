@@ -57,9 +57,12 @@ const Offline = (() => {
   }
 
   // 併發下載（Esri 商用圖磚伺服器，5 併發沒問題）：全台 6000 張從 ~15 分鐘縮到 1–2 分鐘
-  async function download(tiles, onProgress) {
-    const cache = await caches.open(SAVED_CACHE);
-    const browse = await caches.open(TILE_CACHE).catch(() => null);
+  // opts.temp：記錄時順手預載的周邊／3D 圖磚 → 放瀏覽快取（有上限、會汰舊）。
+  // 以前一律放進「已下載」區：每分鐘預載一次衛星圖，沒有上限、清單也看不到，手機空間被默默吃掉。
+  async function download(tiles, onProgress, opts) {
+    const temp = !!(opts && opts.temp);
+    const cache = await caches.open(temp ? TILE_CACHE : SAVED_CACHE);
+    const browse = temp ? null : await caches.open(TILE_CACHE).catch(() => null);
     let done = 0, ok = 0, bytes = 0, idx = 0;
     async function worker() {
       while (idx < tiles.length) {
@@ -81,6 +84,7 @@ const Offline = (() => {
       }
     }
     await Promise.all(Array.from({ length: Math.min(5, tiles.length || 1) }, worker));
+    if (temp) enforceCap().catch(() => { });
     return { total: tiles.length, ok, bytes, mb: bytes / 1048576 };
   }
 
@@ -115,6 +119,22 @@ const Offline = (() => {
       for (const req of await src.keys()) { const r = await src.match(req); if (r) await dst.put(req, r); }
       await caches.delete(TILE_CACHE);
       localStorage.setItem("tt_tiles_migrated", "1");
+    } catch { /* 下次再試 */ }
+  }
+  // 一次性清理：之前背景預載誤存進「已下載」區的衛星圖（只有 3D 預載會抓衛星圖；使用者下載的步道地圖不含衛星）
+  // → 搬回瀏覽快取並套上限
+  async function cleanupPreload() {
+    try {
+      if (localStorage.getItem("tt_tiles_clean1") === "1") return;
+      const src = await caches.open(SAVED_CACHE), dst = await caches.open(TILE_CACHE);
+      let moved = 0;
+      for (const req of await src.keys()) {
+        if (!/World_Imagery/.test(req.url)) continue;
+        const r = await src.match(req); if (r) await dst.put(req, r);
+        await src.delete(req); moved++;
+      }
+      localStorage.setItem("tt_tiles_clean1", "1");
+      if (moved) enforceCap().catch(() => { });
     } catch { /* 下次再試 */ }
   }
 
@@ -162,5 +182,5 @@ const Offline = (() => {
     return done;
   }
 
-  return { tileList, tileListUrl, planZoom, bboxFor, download, cachedCount, savedCount, clear, removeTiles, usageMB, migrate, enforceCap, exportPack, importPack };
+  return { tileList, tileListUrl, planZoom, bboxFor, download, cachedCount, savedCount, clear, removeTiles, usageMB, migrate, cleanupPreload, enforceCap, exportPack, importPack };
 })();

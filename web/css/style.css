@@ -3164,3 +3164,51 @@ html .hero-cap .badge.ghost, html .hero-cap .badge.family, html[data-theme="dark
 /* 比較表：難度徽章縮小不斷字 */
 .cmp-table .badge { white-space: nowrap; font-size: calc(10.5px * var(--fs, 1)); padding: 2px 6px; }
 .cmp-table .badge .lvl { display: none; }
+
+/* ══ 記錄頁整理（2026-10-01）══ */
+/* 全螢幕地圖的小數字板：只有放大時出現（以前放大就看不到里程和時間） */
+.fs-hud { display: none; }
+.map-fs .fs-hud { display: flex; position: absolute; z-index: 1000; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top, 0px) + 12px);
+  gap: 14px; align-items: center; background: rgba(22,30,20,.82); color: #fff; border-radius: var(--r-pill); padding: 8px 16px; font-family: var(--num);
+  font-size: calc(13px * var(--fs, 1)); box-shadow: 0 4px 14px rgba(0,0,0,.25); pointer-events: none; white-space: nowrap; }
+.fs-hud b { font-size: calc(17px * var(--fs, 1)); margin-right: 2px; }
+.fs-hud .ic { width: 14px; height: 14px; vertical-align: -2px; margin-right: 3px; }
+/* 指北針兼導航切換：導航開著時亮起 */
+.map-compass.nav-compass.navon svg circle:first-child { fill: var(--brand-mid); stroke: #fff; }
+.map-compass.nav-compass { cursor: pointer; }
+/* 縮放鈕、比例尺放右下，不跟右上的鈕擠 */
+#recMap .leaflet-bottom.leaflet-right .leaflet-control-zoom { margin-bottom: 8px; border: none; box-shadow: 0 2px 8px rgba(0,0,0,.18); }
+#recMap .leaflet-control-zoom a { width: 36px; height: 36px; line-height: 36px; font-size: 20px; }
+#recMap .leaflet-control-scale { margin-bottom: 4px; }
+#recMap .leaflet-control-scale-line { font-size: 10px; background: rgba(255,255,255,.75); }
+/* 隨手拍：拍好時按鈕跳一下 */
+#btnSnap.pop { animation: heartPop .45s cubic-bezier(.2,.8,.2,1); }
+/* 待機：成就提示 */
+.ridle-ach { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; }
+.ridle-ach .ra-n { font-weight: 700; }
+.ridle-ach .ra-r { color: var(--accent); }
+/* 分享圖卡：挑版型 */
+.card-pick .pv-body { padding-bottom: 20px; }
+.cp-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.cp-item { border: 2px solid var(--line-soft); border-radius: var(--r); padding: 6px; background: var(--surface); cursor: pointer; display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.cp-item:active { border-color: var(--accent); }
+.cp-item img { width: 100%; border-radius: var(--r-sm); display: block; }
+.cp-item span { font-weight: 700; font-size: calc(13px * var(--fs, 1)); color: var(--ink-soft); }
+@media (min-width: 520px) { .cp-grid { grid-template-columns: repeat(3, 1fr); } }
+/* 小隊 */
+.team-code { display: flex; align-items: center; gap: 6px; }
+.team-code .tc-v { font-family: var(--num); font-weight: 700; letter-spacing: 1px; color: var(--ink); }
+.tc-copy { border: none; background: var(--surface-2); border-radius: 50%; width: 30px; height: 30px; display: grid; place-items: center; cursor: pointer; color: var(--brand-mid); }
+.tc-copy .ic { width: 14px; height: 14px; margin: 0; }
+.team-rule { display: flex; gap: 6px; align-items: flex-start; }
+.team-rule .ic { width: 15px; height: 15px; flex: none; margin-top: 2px; color: #c99a1d; }
+.tm-mgr { border: none; background: none; padding: 0 0 0 4px; cursor: pointer; color: var(--ink-faint); display: inline-grid; place-items: center; }
+.tm-mgr .ic { width: 16px; height: 16px; }
+.tm-danger { display: flex; justify-content: center; gap: 24px; margin: 14px 0 4px; }
+.tm-danger .link-btn { width: auto; color: var(--ink-faint); font-weight: 600; border: none; background: none; }
+.tm-danger #tmDissolve { color: var(--danger, #b3322a); }
+.trb-chip .trb-st { font-style: normal; font-weight: 500; font-size: .85em; opacity: .75; margin-left: 4px; }
+.trb-chip .ic { width: 12px; height: 12px; vertical-align: -1px; margin-left: 3px; }
+.trb-all { border: 1px solid var(--line); background: var(--surface); border-radius: var(--r-pill); padding: 5px 12px; font-weight: 700; font-size: calc(12px * var(--fs, 1)); color: var(--brand-deep); cursor: pointer; }
+.trb-all.on { background: var(--brand-soft); }
+#recMap .leaflet-bottom.leaflet-right .leaflet-control-scale { margin-bottom: 10px; }

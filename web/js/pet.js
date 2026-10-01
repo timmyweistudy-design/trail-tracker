@@ -82,7 +82,7 @@ function feedPet() {
   localStorage.setItem("tt_pet_fed_t", String(Date.now()));
   const gain = heartsBefore >= 5 ? 0.5 : 0.3;                  // 親密度滿時照顧獎勵更多
   localStorage.setItem("tt_pet_feedkm", String(+(feedBonusKm() + gain).toFixed(2)));
-  if (navigator.vibrate) navigator.vibrate([20, 30, 20]);
+  ttBuzz([20, 30, 20]);
   toast(`${ttT("牠吃得好開心")}・${ttT("成長")} +${gain} km`);
   checkPetEvolve();
   renderPet();
@@ -127,7 +127,7 @@ function openHatPicker() {
     localStorage.setItem("tt_pet_hat", id);
     ov.querySelectorAll(".hat-opt").forEach(b => b.classList.toggle("on", b === btn));
     renderPet();
-    if (navigator.vibrate) navigator.vibrate(15);
+    ttBuzz(15);
   }));
 }
 // 供社群同步：寵物名字/等級/成長里程，讓好友看到你的進度
@@ -259,7 +259,7 @@ function renderQuests() {
     const r = questReward(daysStreak());
     addBerryBonus(r.total); localStorage.setItem("tt_quest_claim", todayStr()); bumpAffinity(5);
     toast(`${ttT(r.mile ? "連續達成獎勵！" : "今天的任務都完成了")} +${r.total} ${ttT("顆果實")}`);
-    if (navigator.vibrate) navigator.vibrate(r.mile ? [120, 60, 120] : 40);
+    ttBuzz(r.mile ? [120, 60, 120] : 40);
     confetti && confetti(); renderQuests(); renderPet();
   });
 }
@@ -319,7 +319,7 @@ function renderPet() {
   const em = $("#petEmoji");
   const poke = () => {
     em.classList.remove("tap"); void em.offsetWidth; em.classList.add("tap");
-    if (navigator.vibrate) navigator.vibrate(20);
+    ttBuzz(20);
     petBurst("❤️", 1);
     toast(petTapLine(mood.k));
   };
@@ -429,7 +429,7 @@ function celebrateEvolve(st, lv) {
     <button class="btn primary" id="evolveOk">${ttT("太棒了")}</button>
   </div>`;
   document.body.appendChild(ov);
-  if (navigator.vibrate) navigator.vibrate([40, 60, 30, 40, 120]);
+  ttBuzz([40, 60, 30, 40, 120]);
   const close = () => ov.remove();
   ov.querySelector("#evolveOk").addEventListener("click", close);
   ov.addEventListener("click", e => { if (e.target === ov) close(); });
@@ -454,7 +454,8 @@ function renderRecIdle() {
   for (const t of TRAILS) { if (picks.length >= 5) break; if (Store.isFav(t.id) && !seen.has(String(t.id))) { seen.add(String(t.id)); picks.push([t, "star"]); } }
   if (!last && !picks.length) { box.hidden = true; return; }
   box.hidden = false;
-  let html = last ? `<div class="ridle-row"><span class="inline-ic">${ic("pin")}</span><span>${ttT("上次")}：${escHtml(last.trailName || "自由路線")}・<b>${(last.distanceKm || 0).toFixed(2)}</b> km</span></div>` : "";
+  // 步道名獨立成一個文字節點，外文介面才翻得到（以前「上次：南澳古道・」整句黏在一起）
+  let html = last ? `<div class="ridle-row"><span class="inline-ic">${ic("pin")}</span><span><span>${ttT("上次")}</span>：<span>${escHtml(last.trailName || ttT("自由路線"))}</span>・<b>${(last.distanceKm || 0).toFixed(2)}</b> km</span></div>` : "";
   if (picks.length) html += `<div class="ridle-picks-h">${ttT("今天走這條？")}</div><div class="ridle-picks">${picks.map(([t, i]) =>
     `<button class="ridle-pick" data-pick="${t.id}">${ic(i)}<span>${escHtml(t.name)}</span></button>`).join("")}</div>`;
   // #4 臨門提醒：離下一個成就還差多少
@@ -462,8 +463,11 @@ function renderRecIdle() {
     const nu = petBadges().filter(b => !b.got && b.p && b.p[1] > 0).map(b => ({ b, r: Math.min(1, b.p[0] / b.p[1]) })).sort((a, b) => b.r - a.r)[0];
     if (nu && nu.r >= 0.35) {   // 已接近才提醒，免洗版
       const [cur, goal, unit] = nu.b.p, remain = goal - cur;
-      const rtxt = unit === "km" ? remain.toFixed(1) : String(Math.ceil(remain));
-      html += `<div class="ridle-row ridle-ach"><span class="ach-emo">${nu.b.e}</span> ${ttT("再")} <b>${rtxt} ${ttT(unit)}</b> ${ttT("解鎖")}「${ttT(nu.b.n)}」</div>`;
+      const rn = unit === "km" ? Math.round(remain * 10) / 10 : Math.ceil(remain);
+      // 單位：天走 ttCount（各語言單複數）；其他單位英文 1 時去掉複數 s（以前「In 1 weeks」）
+      let ut = unit === "天" ? ttCount(rn, "day").replace(/^\S+\s/, "") : ttT(unit);
+      if (rn === 1 && typeof I18n !== "undefined" && I18n.lang() === "en") ut = ut.replace(/s$/, "");
+      html += `<div class="ridle-row ridle-ach"><span class="inline-ic">${ic("trophy")}</span><span class="ra-n">「${ttT(nu.b.n)}」</span><span class="ra-r"><span>${ttT("還差")}</span> <b>${unit === "km" ? rn.toFixed(1) : rn}</b> <span>${ut}</span></span></div>`;
     }
   } catch (e) { /* */ }
   box.innerHTML = html;

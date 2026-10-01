@@ -13,6 +13,7 @@ const TeamLive = (() => {
   // 一起開始：時間戳去重（同一次只觸發一次，新的一次必觸發）
   let onStartCb = null, onStopCb = null, lastHandledAt = 0, lastStopHandled = 0, joinedAt = 0, myStartAt = null, myStopAt = null, myStartSim = false;
   let onPauseCb = null, onResumeCb = null, lastPauseSyncAt = 0;   // 隊長控制暫停/繼續：全隊跟隨
+  let showAll = false;   // 記錄中「全部隊友都顯示在地圖上」
 
   const ttx = s => (typeof ttT === "function" ? ttT(s) : s);
   const esc = s => Supa.esc(s);
@@ -30,8 +31,9 @@ const TeamLive = (() => {
   }
 
   // 目前在線名單（含準備狀態）：自己以本地 myReady 為準（輪詢有延遲，別把自己誤判成未準備）
+  // 隊長按「開始」本身就代表準備好了 → 隊長一律算已準備（以前隊長也要先按準備，準備列還寫「等待按準備：自己」）
   function roster() {
-    const out = members.map(m => ({ id: m.id, name: m.name, ready: m.me ? myReady : m.ready, me: m.me, leader: m.leader, recording: m.recording }));
+    const out = members.map(m => ({ id: m.id, name: m.name, ready: m.leader ? true : (m.me ? myReady : m.ready), me: m.me, leader: m.leader, recording: m.recording }));
     return out.sort((a, b) => (b.leader - a.leader) || (b.me - a.me));
   }
   // 記錄中且有座標的隊友（供 3D 顯示 / 點名字看定位）
@@ -185,6 +187,7 @@ const TeamLive = (() => {
   function isPinned(uid) { return !!peekMarkers[uid]; }
   // 每次輪詢：釘著的隊友位置跟著更新；他停止記錄/離線就自動收起（不必使用者再點一次）
   function refreshPins() {
+    if (showAll) for (const m of members) if (!m.me && m.online && m.recording && m.lat != null) pin(m.id, m);
     for (const uid of Object.keys(peekMarkers)) {
       const m = members.find(x => x.id === uid);
       if (!m || !m.online || !m.recording || m.lat == null) { unpin(uid); continue; }
@@ -226,10 +229,12 @@ const TeamLive = (() => {
     const meTag = m.me ? ttx("（我）") : "";
     const tap = tappable && !m.me;
     const on = tap && isPinned(m.id);
-    const mark = tap ? (on ? " ✕" : " 📍") : "";           // 已定位→再點一次收起
+    const mark = tap ? (typeof ic === "function" ? ic(on ? "x" : "pin") : "") : "";   // 已定位→再點一次收起（以前用 📍 emoji）
     const attr = (!m.me) ? ` data-peek="${esc(m.id)}"${tap ? ` role="button" tabindex="0" aria-pressed="${on}"` : ""}` : "";
     const cls = `trb-chip ${m.ready ? "ok" : ""}${tap ? " tappable" : ""}${on ? " pinned" : ""}`;
-    return `<span class="${cls}"${attr}>${crown}${esc(m.name)}${meTag} ${m.ready ? "✓" : "…"}${mark}</span>`;
+    // 狀態用字講清楚（以前「…」看不懂是沒準備）
+    const st = tappable ? "" : `<em class="trb-st">${m.ready ? ttx("已準備") : ttx("還沒準備")}</em>`;
+    return `<span class="${cls}"${attr}>${crown}${esc(m.name)}${meTag}${st}${mark}</span>`;
   }
   function renderReadyBar() {
     if (typeof window !== "undefined" && typeof window.syncTeamRecBtns === "function") window.syncTeamRecBtns();   // 隊員隱藏開始鈕
@@ -240,25 +245,32 @@ const TeamLive = (() => {
     // 記錄中：顯示隊伍狀態＋可點名字看定位
     if (recordingNow()) {
       const chips = r.map(m => chipHtml(m, true)).join("");
-      el.innerHTML = `<div class="trb-top"><b>${typeof ic === "function" ? ic("users") : ""} ${ttx("小隊記錄中")}</b><span class="trb-chip ok">${ttx("在線")} ${onlineN}</span></div>
+      el.innerHTML = `<div class="trb-top"><b>${typeof ic === "function" ? ic("users") : ""} ${ttx("小隊記錄中")}</b><button class="trb-all ${showAll ? "on" : ""}" id="trbAll">${ttx(showAll ? "收起全部" : "全部顯示")}</button></div>
         <div class="trb-chips">${chips}</div>
-        <div class="trb-hint">${ttx("點隊友名字看他位置，再點一次收起（記錄中才有）")}</div>`;
+        <div class="trb-hint">${ttx("點隊友名字看他的位置，再點一次收起")}</div>`;
+      const ab = el.querySelector("#trbAll");
+      if (ab) ab.addEventListener("click", () => {
+        showAll = !showAll;
+        if (!showAll) for (const uid of Object.keys(peekMarkers)) unpin(uid);
+        refreshPins(); renderReadyBar();
+        if (showAll && map && Object.keys(peekMarkers).length) { try { map.fitBounds(L.featureGroup(Object.values(peekMarkers)).getBounds().pad(0.3)); } catch (e) { /* */ } }
+      });
       return;
     }
     // 準備階段
     const chips = r.map(m => chipHtml(m, false)).join("");
     const nr = notReadyNames();
     const hint = isLeader()
-      ? (allReady() ? ttx("✅ 全員已準備！按下面的「▶ 開始」，全隊一起記錄") : `${ttx("等待按準備")}：${nr.join("、") || "…"}`)
-      : (leaderId == null ? ttx("⚠️ 讀不到隊長資訊，請隊長重開「與小隊同行」")
-        : (myReady ? (allReady() ? ttx("✅ 全員已準備，等隊長按開始…") : ttx("已準備，等其他隊員…")) : ttx("按「準備」告訴隊長你就緒")));
+      ? (allReady() ? ttx("大家都準備好了，按下面的「開始」全隊一起記錄") : `${ttx("等這幾位按準備")}：${nr.join("、") || "…"}`)
+      : (leaderId == null ? ttx("讀不到隊長資訊，請隊長重開「與小隊同行」")
+        : (myReady ? (allReady() ? ttx("大家都準備好了，等隊長按開始") : ttx("你準備好了，等其他人")) : ttx("準備好就按「準備」，讓隊長知道")));
     const icn = n => (typeof ic === "function" ? ic(n) : "");
     let guide = "";
     if (onlineN <= 1) {
-      const diag = `<div class="trb-diag">${pollOk ? "🟢" : "🔴"} sync · ${ttx("在線")} ${onlineN}</div>`;
-      guide = `<div class="trb-guide">${ttx("還沒看到隊友？請隊友也在記錄頁開啟「與小隊同行」")}${diag}</div>`;
+      // 以前這裡還顯示「🟢 sync · 在線 1」這種除錯字 → 改成只在連線失敗時講人話
+      guide = `<div class="trb-guide">${ttx("還沒看到隊友？請隊友也在記錄頁打開「與小隊同行」")}${pollOk ? "" : `<br>${ttx("連不上小隊，檢查一下網路")}`}</div>`;
     }
-    el.innerHTML = `<div class="trb-top"><b>${icn("users")} ${ttx("小隊同行")}${isLeader() ? `・${ttx("我是隊長")} ${icn("crown")}` : ""}</b><button class="trb-ready ${myReady ? "on" : ""}" id="trbReady">${myReady ? ttx("✓ 已準備") : `${icn("hand")} ${ttx("準備")}`}</button></div>
+    el.innerHTML = `<div class="trb-top"><b>${icn("users")} ${ttx("小隊同行")}${isLeader() ? `・${ttx("我是隊長")} ${icn("crown")}` : ""}</b>${isLeader() ? "" : `<button class="trb-ready ${myReady ? "on" : ""}" id="trbReady">${myReady ? `${icn("check")} ${ttx("已準備")}` : `${icn("hand")} ${ttx("準備")}`}</button>`}</div>
       <div class="trb-chips">${chips || `<span class='trb-chip'>${ttx("等待隊友上線…")}</span>`}</div>
       <div class="trb-hint">${hint}</div>${guide}`;
     const b = el.querySelector("#trbReady");

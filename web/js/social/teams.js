@@ -1,5 +1,6 @@
 // 小隊：建立/加入小隊、選定目前小隊、成員清單、開關「與小隊同行」（連動 TeamLive）。
 const Team = (() => {
+  const ttT = s => (typeof window.ttT === "function" ? window.ttT(s) : s);
   const esc = s => Supa.esc(s);
   function genCode() { const ch = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; let s = ""; for (let i = 0; i < 6; i++) s += ch[Math.floor(Math.random() * ch.length)]; return s; }
   function activeId() { return localStorage.getItem("tt_team") || null; }
@@ -19,7 +20,7 @@ const Team = (() => {
   async function joinByCode(code) {
     const c = Supa.client(); const { data, error } = await c.rpc("join_team_by_code", { p_code: code });
     if (error) return { error: error.message };
-    if (!data) return { error: "找不到這個小隊代碼" };
+    if (!data) return { error: ttT("找不到這個加入碼，再確認一下") };
     return { id: data };
   }
   async function myTeams() {
@@ -40,13 +41,13 @@ const Team = (() => {
 
   async function openSheet() {
     if (typeof ttBusy === "function" && ttBusy("teamsheet")) return;   // 防連點（登入/建檔查詢的空窗）
-    if (typeof Supa === "undefined" || !Supa.ready()) { toast("社群尚未啟用"); return; }
-    const sess = await Auth.session(); if (!sess) { toast("請先到「社群」分頁登入"); return; }
-    const prof = await Auth.myProfile(); if (!prof) { toast("請先到「社群」分頁完成註冊"); return; }
+    if (typeof Supa === "undefined" || !Supa.ready()) { toast(ttT("社群尚未啟用")); return; }
+    const sess = await Auth.session(); if (!sess) { toast(ttT("先到「社群」分頁登入")); return; }
+    const prof = await Auth.myProfile(); if (!prof) { toast(ttT("先到「社群」分頁建好帳號")); return; }
     const info = { name: prof.display_name || prof.handle || "我", avatar: prof.avatar_url || null, pet: (typeof petStats === "function" ? petStats().emoji : null) };
     if (document.querySelector('[data-ov="team"]')) return;   // 防連點疊層
     const wrap = document.createElement("div"); wrap.className = "pv-mask"; wrap.dataset.ov = "team";
-    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" aria-label="關閉" id="tmX">✕</button><b>小隊</b><span></span></div>
+    wrap.innerHTML = `<div class="pv"><div class="pv-head"><button class="comp-x" aria-label="關閉" id="tmX">${ic("x")}</button><b>${ttT("小隊")}</b><span></span></div>
       <div class="pv-body" id="tmBody"><div class="feed-loading"><span class="spin"></span></div></div></div>`;
     document.body.appendChild(wrap);
     wrap.querySelector("#tmX").addEventListener("click", () => wrap.remove());
@@ -91,12 +92,12 @@ const Team = (() => {
         t = row;
       }
       await TeamLive.start(aId, map, info, { leader: t.owner || null });
-      if (typeof toast === "function") toast(`已自動開啟小隊同行（${t.name}）`);
+      if (typeof toast === "function") toast(`${ttT("小隊同行已連上")}：${t.name}`);
     } catch (e) { /* 自動開啟失敗不影響記錄 */ }
   }
 
   async function renderSheet(wrap, info) {
-    const myName = info.name;
+    const myName = info.name, myId = await Supa.uid();
     const body = wrap.querySelector("#tmBody"); if (!body) return;
     body.innerHTML = `<div class="feed-loading"><span class="spin"></span></div>`;
     const teams = await myTeams();
@@ -107,7 +108,7 @@ const Team = (() => {
       for (const t of teams) {
         const on = t.id === aId;
         html += `<div class="team-row ${on ? "on" : ""}">
-          <div class="team-row-info"><b>${esc(t.name)}</b><div class="team-code">加入碼 ${esc(t.join_code)}</div></div>
+          <div class="team-row-info"><b>${esc(t.name)}</b><div class="team-code">${ttT("加入碼")} <span class="tc-v">${esc(t.join_code)}</span><button class="tc-copy" data-code="${esc(t.join_code)}" data-name="${esc(t.name)}" aria-label="${ttT("分享加入碼")}">${ic("share")}</button></div></div>
           ${on ? `<span class="team-now">目前</span>` : `<button class="btn ghost team-pick" data-id="${esc(t.id)}" data-name="${esc(t.name)}">設為目前</button>`}
         </div>`;
       }
@@ -118,16 +119,16 @@ const Team = (() => {
     if (aId) {
       const liveOn = (typeof TeamLive !== "undefined" && TeamLive.isOn());
       html += `<label class="sim-toggle team-live"><input type="checkbox" id="tmLive" ${liveOn ? "checked" : ""}> ${ic("users")} 與小隊同行（記錄地圖上看到彼此定位）</label>
-        <div class="team-rule">👑 隊長（小隊建立者）才能開始記錄；全員在記錄頁按「✋ 準備」後，隊長按開始即全隊一起記錄。</div>
+        <div class="team-rule">${ic("crown")}<span>${ttT("隊長按「開始」，全隊一起記錄；隊員先在記錄頁按「準備」。隊長沒訊號時，隊員也能自己按「結束」。")}</span></div>
         <div id="tmMembers"></div>
-        <div class="ob-l">邀請好友</div><div id="tmInvite"><div class="feed-loading"><span class="spin"></span></div></div>
-        <button class="btn ghost" id="tmLeave" style="margin-top:8px">退出目前小隊</button>`;
+        <div class="ob-l">${ttT("邀請好友")}</div><div id="tmInvite"><div class="feed-loading"><span class="spin"></span></div></div>
+        <div class="tm-danger">${activeTeam && activeTeam.owner === myId ? `<button class="link-btn" id="tmDissolve">${ttT("解散小隊")}</button>` : ""}<button class="link-btn" id="tmLeave">${ttT("退出這個小隊")}</button></div>`;
     }
     html += `<hr class="tm-hr">
-      <div class="ob-l">建立小隊</div>
-      <div class="tm-create"><input id="tmName" class="auth-input" placeholder="小隊名稱"><button class="btn primary" id="tmCreate">建立</button></div>
-      <div class="ob-l">用加入碼加入</div>
-      <div class="tm-create"><input id="tmCode" class="auth-input" placeholder="6 碼" autocapitalize="characters"><button class="btn ghost" id="tmJoin">加入</button></div>
+      <div class="ob-l">${ttT("建立小隊")}</div>
+      <div class="tm-create"><input id="tmName" class="auth-input" placeholder="${ttT("小隊名稱")}" maxlength="30"><button class="btn primary" id="tmCreate">${ttT("建立")}</button></div>
+      <div class="ob-l">${ttT("用加入碼加入")}</div>
+      <div class="tm-create"><input id="tmCode" class="auth-input" placeholder="${ttT("6 碼")}" autocapitalize="characters" maxlength="8" autocomplete="off"><button class="btn ghost" id="tmJoin">${ttT("加入")}</button></div>
       <div class="auth-msg" id="tmMsg"></div>`;
     body.innerHTML = html;
 
@@ -136,7 +137,22 @@ const Team = (() => {
 
     body.querySelectorAll(".team-pick").forEach(b => b.addEventListener("click", () => { setActive(b.dataset.id, b.dataset.name); renderSheet(wrap, info); }));
     const leaveBtn = body.querySelector("#tmLeave");
-    if (leaveBtn) leaveBtn.addEventListener("click", async () => { if (!(await ttConfirm("退出目前小隊？"))) return; if (typeof TeamLive !== "undefined") TeamLive.stop(); await leave(aId); renderSheet(wrap, info); });
+    if (leaveBtn) leaveBtn.addEventListener("click", async () => { if (!(await ttConfirm(ttT("退出這個小隊？"), ttT("退出"), ttT("取消")))) return; if (typeof TeamLive !== "undefined") TeamLive.stop(); await leave(aId); renderSheet(wrap, info); });
+    // 加入碼：一鍵分享／複製（以前只能用看的自己抄）
+    body.querySelectorAll(".tc-copy").forEach(b => b.addEventListener("click", async () => {
+      const text = `${ttT("來加入我的小隊")}「${b.dataset.name}」，${ttT("加入碼")}：${b.dataset.code}`;
+      try { if (navigator.share) { await navigator.share({ text }); return; } } catch (e) { return; }
+      if (navigator.clipboard) navigator.clipboard.writeText(b.dataset.code).then(() => toast(ttT("加入碼複製好了")));
+    }));
+    // 解散小隊（隊長）
+    const dis = body.querySelector("#tmDissolve");
+    if (dis) dis.addEventListener("click", async () => {
+      if (!(await ttConfirm(ttT("解散這個小隊？所有人都會被移出，沒辦法復原。"), ttT("解散"), ttT("取消")))) return;
+      const { error } = await Supa.client().from("teams").delete().eq("id", aId);
+      if (error) { toast(ttT(Supa.errText(error.message))); return; }
+      if (typeof TeamLive !== "undefined") TeamLive.stop();
+      setActive(null); toast(ttT("小隊解散了")); renderSheet(wrap, info);
+    });
 
     const live = body.querySelector("#tmLive");
     if (live) {
@@ -145,7 +161,30 @@ const Team = (() => {
         const ownerId = activeTeam ? activeTeam.owner : null;
         // 隊長排在最前面並掛皇冠，讓「加入別人小隊」的人也一眼看到誰是隊長（修：設為目前的小隊看不到隊長）
         const sorted = ms.slice().sort((a, b) => (b.user_id === ownerId) - (a.user_id === ownerId));
-        el.innerHTML = `<div class="team-members">${sorted.map(m => { const u = m.user || {}; const isLead = m.user_id === ownerId; return `<span class="team-chip${isLead ? " leader" : ""}">${isLead ? `${ic("crown")} ` : ""}${u.avatar_url ? `<img src="${esc(u.avatar_url)}">` : `<i>${esc((u.display_name || u.handle || "?").slice(0, 1))}</i>`}${esc(u.display_name || u.handle || "隊友")}</span>`; }).join("")}</div>`;
+        const iAmLead = ownerId && ownerId === myId;
+        el.innerHTML = `<div class="team-members">${sorted.map(m => { const u = m.user || {}; const isLead = m.user_id === ownerId; const nm = u.display_name || u.handle || ttT("隊友");
+          const mgr = iAmLead && !isLead ? `<button class="tm-mgr" data-uid="${esc(m.user_id)}" data-name="${esc(nm)}" aria-label="${ttT("管理")}">${ic("more")}</button>` : "";
+          return `<span class="team-chip${isLead ? " leader" : ""}">${isLead ? `${ic("crown")} ` : ""}${u.avatar_url ? `<img src="${esc(u.avatar_url)}" alt="">` : `<i>${esc(nm.slice(0, 1))}</i>`}${esc(nm)}${mgr}</span>`; }).join("")}</div>`;
+        // 隊長管理成員：移出小隊、把隊長交給他（需資料庫 phase29；沒跑會講清楚）
+        el.querySelectorAll(".tm-mgr").forEach(b => b.addEventListener("click", async () => {
+          const act = await ttChoice(esc(b.dataset.name), [
+            { label: ttT("把隊長交給他"), value: "lead", cls: "ghost" },
+            { label: ttT("移出小隊"), value: "kick", cls: "ghost danger" },
+            { label: ttT("取消"), value: null, cls: "primary" }]);
+          const c = Supa.client();
+          if (act === "kick") {
+            if (!(await ttConfirm(`${b.dataset.name}：${ttT("移出小隊？")}`, ttT("移出"), ttT("取消")))) return;
+            const { error, count } = await c.from("team_members").delete({ count: "exact" }).eq("team_id", aId).eq("user_id", b.dataset.uid);
+            if (error || count === 0) { toast(ttT("資料庫還沒開放隊長移人（要先跑 phase29）")); return; }
+            toast(ttT("移出了")); renderSheet(wrap, info);
+          } else if (act === "lead") {
+            if (!(await ttConfirm(`${ttT("把隊長交給")} ${b.dataset.name}？${ttT("之後由他按開始和結束。")}`, ttT("交給他"), ttT("取消")))) return;
+            const { data, error } = await c.rpc("transfer_team", { p_team: aId, p_user: b.dataset.uid });
+            if (error || !data) { toast(ttT("資料庫還沒開放交接隊長（要先跑 phase29）")); return; }
+            if (typeof TeamLive !== "undefined" && TeamLive.isOn()) { TeamLive.stop(); }
+            toast(ttT("隊長交出去了")); renderSheet(wrap, info);
+          }
+        }));
       });
       // 邀請好友（互相追蹤、且尚未在隊上的）
       (async () => {
@@ -153,13 +192,13 @@ const Team = (() => {
         const inTeam = new Set(ms.map(m => m.user_id));
         const box = body.querySelector("#tmInvite"); if (!box) return;
         const list = fr.filter(f => !inTeam.has(f.id));
-        if (!list.length) { box.innerHTML = `<div class="social-empty" style="padding:10px">沒有可邀請的好友（互相追蹤才算好友）。</div>`; return; }
+        if (!list.length) { box.innerHTML = `<div class="social-empty" style="padding:10px">${ttT("沒有可以邀請的好友（要互相追蹤才算）")}</div>`; return; }
         box.innerHTML = list.map(f => `<div class="disc-row"><div class="disc-id"><b>${esc(f.display_name || f.handle)}</b><span>@${esc(f.handle)}</span></div><button class="btn ghost team-invite" data-id="${esc(f.id)}" data-name="${esc(f.display_name || f.handle)}">邀請</button></div>`).join("");
         box.querySelectorAll(".team-invite").forEach(b => b.addEventListener("click", async () => {
-          b.disabled = true; b.textContent = "邀請中…";
+          b.disabled = true; b.textContent = ttT("邀請中…");
           const r = await invite(aId, b.dataset.id);
-          if (r.ok) { b.textContent = "已邀請"; if (typeof toast === "function") toast("已邀請 " + b.dataset.name); }
-          else { b.disabled = false; b.textContent = "邀請"; if (typeof toast === "function") toast("邀請失敗：" + (r.error || "")); }
+          if (r.ok) { b.textContent = ttT("已邀請"); if (typeof toast === "function") toast(`${ttT("邀請了")} ${b.dataset.name}`); }
+          else { b.disabled = false; b.textContent = ttT("邀請"); if (typeof toast === "function") toast(ttT(Supa.errText(r.error))); }
         }));
       })();
       live.addEventListener("change", e => {
@@ -167,30 +206,30 @@ const Team = (() => {
         if (e.target.checked) {
           localStorage.setItem("tt_team_live", "1");   // 之後進記錄頁自動開啟
           const m = (typeof recMap !== "undefined") ? recMap : null;
-          if (!m) { if (typeof toast === "function") toast("請先到記錄頁開啟地圖"); e.target.checked = false; return; }
+          if (!m) { if (typeof toast === "function") toast(ttT("先到記錄頁打開地圖")); e.target.checked = false; return; }
           TeamLive.start(aId, m, info, { leader: activeTeam ? activeTeam.owner : null });
-          if (typeof toast === "function") toast("已開啟小隊同行，回記錄頁按「準備」等隊長開始");
+          if (typeof toast === "function") toast(ttT("小隊同行開了，回記錄頁按「準備」等隊長開始"));
         } else { localStorage.setItem("tt_team_live", "0"); TeamLive.stop(); if (window.syncTeamRecBtns) window.syncTeamRecBtns(); }
       });
     }
 
     body.querySelector("#tmCreate").addEventListener("click", async () => {
       const name = (body.querySelector("#tmName").value || "").trim(); const msg = body.querySelector("#tmMsg");
-      if (name.length < 1) { msg.textContent = "請輸入小隊名稱"; return; }
-      msg.textContent = "建立中…";
+      if (name.length < 1) { msg.textContent = ttT("取個小隊名稱"); return; }
+      msg.textContent = ttT("建立中…");
       const r = await create(name);
-      if (r.error) { msg.textContent = "建立失敗：" + r.error; return; }
+      if (r.error) { msg.textContent = ttT(Supa.errText(r.error)); return; }
       setActive(r.id, name); renderSheet(wrap, info);
-      if (typeof toast === "function") toast("小隊已建立，加入碼 " + r.code);
+      if (typeof toast === "function") toast(`${ttT("小隊建好了，加入碼")} ${r.code}`);
     });
     body.querySelector("#tmJoin").addEventListener("click", async () => {
-      const code = (body.querySelector("#tmCode").value || "").trim(); const msg = body.querySelector("#tmMsg");
-      if (code.length < 4) { msg.textContent = "請輸入加入碼"; return; }
-      msg.textContent = "加入中…";
+      const code = (body.querySelector("#tmCode").value || "").replace(/\s/g, "").toUpperCase(); const msg = body.querySelector("#tmMsg");
+      if (code.length < 4) { msg.textContent = ttT("輸入 6 碼的加入碼"); return; }
+      msg.textContent = ttT("加入中…");
       const r = await joinByCode(code);
       if (r.error) { msg.textContent = r.error; return; }
       setActive(r.id); renderSheet(wrap, info);
-      if (typeof toast === "function") toast("已加入小隊");
+      if (typeof toast === "function") toast(ttT("加入小隊了"));
     });
   }
 
