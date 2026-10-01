@@ -34,10 +34,11 @@
       if (first) first.focus({ preventScroll: true });
     });
   }
-  function ttConfirm(msg, okLabel, cancelLabel) {
+  // opts.danger：刪除／清除這類收不回來的動作，確定鈕改紅色
+  function ttConfirm(msg, okLabel, cancelLabel, opts) {
     return ttChoice(msg, [
       { label: cancelLabel || "取消", value: false, cls: "ghost" },
-      { label: okLabel || "確定", value: true, cls: "primary" },
+      { label: okLabel || "確定", value: true, cls: opts && opts.danger ? "danger-solid" : "primary" },
     ]).then(v => v === true);
   }
   function ttAlertBox(msg) {

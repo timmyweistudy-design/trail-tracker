@@ -3231,3 +3231,38 @@ html[data-theme="dark"] .ach-modal .sheet-close { background: rgba(255,255,255,.
 .img-prev img { max-width: 100%; max-height: 74vh; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,.5); -webkit-touch-callout: default; user-select: auto; }
 .img-prev-hint { color: #eae6d8; font-size: calc(14px * var(--fs, 1)); font-weight: 600; }
 .img-prev .sheet-close { top: calc(12px + env(safe-area-inset-top, 0px)); background: rgba(255,255,255,.16); }
+
+/* —— 我的頁細修 —— */
+.ttdlg-btns .btn.danger-solid { background: var(--danger, #b3322a); color: #fff; border-color: transparent; box-shadow: none; }
+.field.bad input { border-color: var(--danger, #b3322a); box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger, #b3322a) 18%, transparent); }
+.field.bad + .pf-err { margin-top: -4px; }
+/* 搜尋框的清除鈕：換掉瀏覽器預設的藍色 ✕ */
+input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; cursor: pointer; background: var(--ink-faint);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm-2.8 5.8-1.4 1.4 2.8 2.8-2.8 2.8 1.4 1.4 2.8-2.8 2.8 2.8 1.4-1.4-2.8-2.8 2.8-2.8-1.4-1.4-2.8 2.8Z'/%3E%3C/svg%3E") center / contain no-repeat; }
+input[type="search"]::-webkit-search-cancel-button { -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm-2.8 5.8-1.4 1.4 2.8 2.8-2.8 2.8 1.4 1.4 2.8-2.8 2.8 2.8 1.4-1.4-2.8-2.8 2.8-2.8-1.4-1.4-2.8 2.8Z'/%3E%3C/svg%3E") center / contain no-repeat; }
+/* 設定裡的說明小字跟欄位一樣靠左 */
+#view-me .set-body .offline-hint { text-align: left; }
+.offline-panel .offline-quota { text-align: left; }
+/* 選中樣式統一：外圈＋勾勾 */
+.proc-sw.on { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink); transform: translateY(-1px); }
+.acc-sw.frame-sw.on { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink) !important; }
+.frame-sw .ic { width: 16px; height: 16px; stroke-width: 3; }
+/* 年度回顧：年份左右切、路線縮圖放大 */
+.yr-yearrow { display: flex; align-items: center; justify-content: center; gap: 14px; }
+.yr-nav, .yr-nav-sp { width: 34px; height: 34px; flex: none; }
+.yr-nav { border: none; border-radius: 50%; background: rgba(255,255,255,.12); color: #f3efe4; display: grid; place-items: center; cursor: pointer; }
+.yr-nav .ic { width: 18px; height: 18px; transform: rotate(180deg); }
+.yr-nav.next .ic { transform: none; }
+.yr-route-svg { width: 80%; max-width: 260px; height: 78px; }
+.yr-route-l b { color: #e0b15a; margin-left: 4px; }
+.social-empty, .yr-empty { text-wrap: balance; }
+/* 足跡地圖縮放鈕：跟記錄地圖同一套樣式 */
+#footMap .leaflet-control-zoom { border: none; box-shadow: 0 2px 8px rgba(0,0,0,.18); margin: calc(12px + env(safe-area-inset-top, 0px)) 0 0 12px; }
+#footMap .leaflet-control-zoom a { width: 36px; height: 36px; line-height: 36px; font-size: 20px; }
+/* 紀錄卡四個數字排一行（以前大卡常單獨掉到第二行）；字放大時改兩欄兩列，排得整齊 */
+.hist-card .row { display: grid; grid-template-columns: repeat(4, max-content); justify-content: space-between; gap: 6px 8px; white-space: nowrap; font-size: calc(12.5px * var(--fs, 1)); }
+.hist-card .row .ic { margin-right: 2px; }
+[data-fs-mid] .hist-card .row { grid-template-columns: repeat(2, max-content); justify-content: start; column-gap: 22px; }
+@media (max-width: 380px) { .hist-card .row { grid-template-columns: repeat(2, max-content); justify-content: start; column-gap: 22px; } }
+.op-io .btn:disabled, .op-btn:disabled { opacity: .45; cursor: default; }
+.yr-btns .btn { white-space: nowrap; }

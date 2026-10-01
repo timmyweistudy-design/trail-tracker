@@ -38,7 +38,8 @@ const Store = (() => {
     async function get(id) { const d = await db(); if (!d) return null; try { return (await req(d.transaction("records").objectStore("records").get(id))) || null; } catch { return null; } }
     async function all() { const d = await db(); if (!d) return []; try { return (await req(d.transaction("records").objectStore("records").getAll())) || []; } catch { return []; } }
     async function del(id) { const d = await db(); if (!d) return; try { d.transaction("records", "readwrite").objectStore("records").delete(id); } catch (e) { /* */ } }
-    async function clear() { const d = await db(); if (!d) return; try { d.transaction("records", "readwrite").objectStore("records").clear(); } catch (e) { /* */ } }
+    // 等交易真的寫完才回來：以前沒等，清除資料後馬上重整，封存還沒清掉就被「自動救援」整批救回來
+    async function clear() { const d = await db(); if (!d) return; try { await new Promise(res => { const tx = d.transaction("records", "readwrite"); tx.objectStore("records").clear(); tx.oncomplete = tx.onerror = tx.onabort = () => res(); }); } catch (e) { /* */ } }
     return { put, get, all, del, clear };
   })();
 
@@ -111,7 +112,7 @@ const Store = (() => {
     Archive.del(id);
     _saveRecords(getRecords().filter(r => r.id !== id));
   }
-  function clearRecords() { localStorage.removeItem(RK); _recCache = null; _lifeSave({ km: 0, asc: 0, kcal: 0, steps: 0, ms: 0, trips: 0 }); Archive.clear(); }
+  function clearRecords() { localStorage.removeItem(RK); _recCache = null; _lifeSave({ km: 0, asc: 0, kcal: 0, steps: 0, ms: 0, trips: 0 }); return Archive.clear(); }
   // 自動救援：若 localStorage 紀錄被清空（如 iOS 只清了 localStorage、或快取被清），
   // 但 IndexedDB 封存正本還在 → 從封存回填，讓紀錄自動回來。回傳救回的筆數。
   async function recoverFromArchive() {

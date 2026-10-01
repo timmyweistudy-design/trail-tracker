@@ -420,21 +420,25 @@ const PORT = 8899;
       await p3.evaluate(() => { document.getElementById("pfWeight").value = "5"; document.getElementById("btnSaveProfile").click(); });
       ok("個人資料亂填會擋下並提示", await p3.evaluate(() => !document.getElementById("pfErr").hidden));
       const delRes = await p3.evaluate(async () => {
+        // 搜尋框要 6 筆以上紀錄才會出現（少於 6 筆時搜尋不生效），先補幾筆讓工具列出來，跟真人用的情況一樣
+        for (let i = 0; i < 6; i++) Store.addRecord({ id: "e2e-fill" + i, date: new Date(Date.now() - (i + 1) * 864e5).toISOString(), trailName: "E2E填充" + i, distanceKm: 1, elapsedMs: 600e3, track: [] });
         Store.addRecord({ id: "e2e-del", date: new Date().toISOString(), trailName: "E2E刪除測試", distanceKm: 1, elapsedMs: 600e3, track: [] });
         renderHistory(true);
+        const toolsShown = !document.getElementById("histTools").hidden;
         document.getElementById("histSearch").value = "E2E刪除"; document.getElementById("histSearch").dispatchEvent(new Event("input"));
         await new Promise(r => setTimeout(r, 400));
         const n = document.querySelectorAll("#historyList .hist-card").length;
         document.querySelector("#historyList .hist-card").click();
         await new Promise(r => setTimeout(r, 600));
-        return { n, hasDel: !!document.getElementById("trackDelete") };
+        return { n, toolsShown, hasDel: !!document.getElementById("trackDelete") };
       });
+      ok("紀錄多時出現搜尋工具列", delRes.toolsShown);
       ok("行程搜尋找得到", delRes.n === 1);
       ok("舊行程結算頁有刪除鈕", delRes.hasDel);
       await p3.click("#trackDelete"); await p3.click(".ttdlg .btn.primary", { timeout: 3000 }).catch(() => {});
       await p3.waitForTimeout(500);
       ok("刪除行程後紀錄真的消失", await p3.evaluate(() => !Store.getRecords().some(r => r.id === "e2e-del")));
-      await p3.evaluate(() => { const h = document.getElementById("histSearch"); h.value = ""; h.dispatchEvent(new Event("input")); });
+      await p3.evaluate(() => { const h = document.getElementById("histSearch"); h.value = ""; h.dispatchEvent(new Event("input")); for (let i = 0; i < 6; i++) Store.deleteRecord("e2e-fill" + i); renderHistory(); });
       // 記錄頁改版：天氣提示「今天可能有雨」已移除；新順序 天氣卡→上次→地圖→開始鈕→開始文字
       const recOrder = await p3.evaluate(() => {
         const v = document.getElementById("view-record"); const kids = [...v.children];

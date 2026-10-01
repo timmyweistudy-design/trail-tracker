@@ -81,6 +81,7 @@ const Auth = (() => {
     try { if (typeof NativePush !== "undefined" && NativePush.available() && await NativePush.isOn()) await NativePush.disable(); } catch (e) { /* 不擋登出 */ }
     try { if (typeof Premium !== "undefined" && Premium.clearCache) Premium.clearCache(); } catch (e) { /* */ }   // 會員快取不可留給下一個人
     try { await c.auth.signOut({ scope: "local" }); } catch (e) { /* 仍視為已登出 */ }
+    try { if (window._meUserReset) window._meUserReset(); } catch (e) { /* */ }   // 「我的」頁快取的登入者也要清掉
   }
 
   const esc = s => Supa.esc(s);

@@ -13,17 +13,17 @@ ${pts}
 </gpx>`;
     const blob = new Blob([xml], { type: "application/gpx+xml" });
     // 原生 App 用 Web Share（<a download> 在 WKWebView 不作用）；網頁走傳統下載
-    if (typeof window !== "undefined" && window.saveBlob) window.saveBlob(blob, `${name}_${(rec.date || "").slice(0, 10)}.gpx`, name);
+    if (typeof window !== "undefined" && window.saveBlob) window.saveBlob(blob, `${name}_${localDay(rec.date)}.gpx`, name);
   }
 
-  // 把所有行程匯成單一 GPX（多個 <trk>）
+  // 把所有行程匯成單一 GPX（多個 <trk>）；回傳 false（沒行程）或 saveBlob 的結果（shared/preview/saved）
   function exportAll(records) {
     if (!records || !records.length) return false;
     const trks = records.map(rec => {
       const name = (rec.trailName || "自由路線").replace(/[<>&]/g, "");
       const pts = (rec.track || []).map(p =>
         `   <trkpt lat="${p.lat}" lon="${p.lon}">${p.t ? `<time>${new Date(p.t).toISOString()}</time>` : ""}</trkpt>`).join("\n");
-      return ` <trk><name>${name}（${(rec.date || "").slice(0, 10)}）</name><trkseg>\n${pts}\n </trkseg></trk>`;
+      return ` <trk><name>${name}（${localDay(rec.date)}）</name><trkseg>\n${pts}\n </trkseg></trk>`;
     }).join("\n");
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="循徑拾光 Gather the Trail" xmlns="http://www.topografix.com/GPX/1/1">
@@ -32,8 +32,7 @@ ${trks}
 </gpx>`;
     const blob = new Blob([xml], { type: "application/gpx+xml" });
     const fn = `循徑拾光_全部行程_${(d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`)(new Date())}.gpx`;   // 本地日期
-    if (typeof window !== "undefined" && window.saveBlob) window.saveBlob(blob, fn, "Gather the Trail routes");
-    return true;
+    return window.saveBlob(blob, fn, "Gather the Trail routes");
   }
 
   // 解析 GPX → [{lat, lon}]（支援 trkpt 與 rtept）

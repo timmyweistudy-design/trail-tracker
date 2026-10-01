@@ -286,7 +286,7 @@ function initRecMap() {
     addBaseWithToggle(recMap);   // 地形／衛星可切（以前記錄頁只有地形）
     addCompass(recMap, { nav: true }); addRecenter(recMap); addThreeD(recMap, open3DRecording); addFullscreen(recMap);   // 指北針兼導航切換：右上 5 顆 → 4 顆
     // 縮放鈕放左上、比例尺放左下：沒記錄時地圖只有 260 高，放右下會疊到右上那排的全螢幕鈕
-    L.control.zoom({ position: "topleft", zoomInTitle: ttT("放大"), zoomOutTitle: ttT("縮小") }).addTo(recMap);   // 戴手套、單手也能縮放
+    L.control.zoom({ position: "topleft", zoomInTitle: ttT("放大地圖"), zoomOutTitle: ttT("縮小地圖") }).addTo(recMap);   // 戴手套、單手也能縮放
     L.control.scale({ position: "bottomleft", imperial: false, maxWidth: 80 }).addTo(recMap);
     addFsHud(recMap);
     locateIdleMap();

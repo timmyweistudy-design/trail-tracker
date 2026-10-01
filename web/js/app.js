@@ -326,6 +326,8 @@ function fmtTime(ms) {
   const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
   return (h ? `${h}:` : "") + `${String(m).padStart(2, "0")}:${String(ss).padStart(2, "0")}`;
 }
+// 紀錄卡用的短時長 h:mm（2:10）：卡片窄，「2 小時 10 分」會把大卡擠到第二行
+function fmtDurShort(ms) { const m = Math.round((ms || 0) / 60000); return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`; }
 // 人看得懂的時長：「00:19」到底是 19 秒還 19 分？結算與紀錄一律寫清楚（記錄中的碼表仍用 fmtTime）
 function fmtDur(ms) {
   const s = Math.round((ms || 0) / 1000);
@@ -1745,45 +1747,49 @@ async function downloadAllTaiwan() {
   while (zmax > 9 && Offline.tileList(bbox, 7, zmax).length > 6000) zmax--;
   const tiles = Offline.tileList(bbox, 7, zmax);
   const btn = $("#btnAllOffline"), box = $("#allOfflineBox");
-  if (!(await ttConfirm(`下載全台離線地圖（縮放 7–${zmax}）約 ${tiles.length} 張圖磚、約 ${(tiles.length * 0.02).toFixed(0)} MB？\n\n可離線看全島概覽；個別步道細節請另在步道詳情按「預載離線地圖」。\n下載需幾分鐘，請保持開啟。`))) return;
+  // 確認文字講人話（以前寫「縮放 7–13」，而且整段沒翻譯）；按鈕文字分段翻譯、圖示不再被「下載中…」吃掉
+  const mbTxt = (tiles.length * 0.02).toFixed(0);
+  if (!(await ttConfirm(`${ttT("下載全台概覽地圖？")}\n${tiles.length} ${ttT("張圖磚")} · ≈ ${mbTxt} MB\n\n${ttT("離線也能看整個台灣的大範圍地圖；步道細節請到步道頁另外按「預載離線地圖」。下載要幾分鐘，請讓 App 開著。")}`, ttT("下載"), ttT("取消")))) return;
   if (!offlineAllow(tiles)) return;   // 非會員：MB 額度制
-  box.style.display = "block";
-  btn.disabled = true; btn.textContent = "下載中…";
+  box.hidden = false; box.style.display = "block";
+  const label = btn.innerHTML;
+  btn.disabled = true; btn.innerHTML = `${ic("globe")} ${ttT("下載中…")}`;
   try {
     const r = await Offline.download(tiles, (done, total) => {
-      box.innerHTML = `下載全台地圖中… ${done}/${total}<div class="offline-bar"><i style="width:${Math.round(done / total * 100)}%"></i></div>`;
+      box.innerHTML = `${ttT("下載全台地圖中…")} ${done}/${total}<div class="offline-bar"><i style="width:${Math.round(done / total * 100)}%"></i></div>`;
     });
     addOfflineMb(r.mb); saveOfflineSet("taiwan", { name: "全台概覽" });
-    box.innerHTML = `✅ 已下載 ${r.ok}/${r.total} 張圖磚，全台概覽地圖可離線看了。`;
-    btn.textContent = "✓ 已下載全台離線地圖";
+    box.innerHTML = `${ic("check")} <span>${ttT("全台概覽地圖可以離線看了")}</span>${ttParen(`${r.ok}/${r.total} ${ttT("張圖磚")}`)}`;
+    btn.innerHTML = `${ic("check")} ${ttT("已下載全台離線地圖")}`;
     refreshOfflineStatus();
   } catch {
-    box.innerHTML = "下載失敗，請確認網路後再試。";
-    btn.disabled = false; btn.innerHTML = `${ic("globe")} 一鍵下載全台離線地圖（概覽）`;
+    box.innerHTML = ttT("下載失敗，請確認網路後再試。");
+    btn.disabled = false; btn.innerHTML = label;
   }
 }
 // 一鍵預載所有收藏步道的離線地圖
 async function downloadFavOffline() {
   const favs = TRAILS.filter(t => Store.isFav(t.id) && t.lat);
   const btn = $("#btnFavOffline"), box = $("#favOfflineBox");
-  if (!favs.length) { toast("尚無含座標的收藏步道"); return; }
+  if (!favs.length) { toast(ttT("還沒有收藏步道：先到步道頁按星星收藏，再回來一次預載")); return; }
   const seen = new Set(); let tiles = [];
   for (const t of favs) for (const k of trailTiles(t)) if (!seen.has(k)) { seen.add(k); tiles.push(k); }
   if (!offlineAllow(tiles)) return;   // 非會員：MB 額度制
-  box.style.display = "block";
-  box.innerHTML = `準備下載 ${favs.length} 條收藏、約 ${tiles.length} 張圖磚（約 ${(tiles.length * 0.02).toFixed(1)} MB）…`;
-  btn.disabled = true; btn.textContent = "下載中…";
+  box.hidden = false; box.style.display = "block";
+  box.innerHTML = `${ttT("準備下載")} ${tiles.length} ${ttT("張圖磚")}（≈ ${(tiles.length * 0.02).toFixed(1)} MB）…`;
+  const label = btn.innerHTML;
+  btn.disabled = true; btn.innerHTML = `${ic("download")} ${ttT("下載中…")}`;
   try {
     const r = await Offline.download(tiles, (done, total) => {
-      box.innerHTML = `下載中… ${done}/${total}<div class="offline-bar"><i style="width:${Math.round(done / total * 100)}%"></i></div>`;
+      box.innerHTML = `${ttT("下載中…")} ${done}/${total}<div class="offline-bar"><i style="width:${Math.round(done / total * 100)}%"></i></div>`;
     });
     addOfflineMb(r.mb); favs.forEach(t => saveOfflineSet("trail:" + t.id, { name: t.name }));
-    box.innerHTML = `✅ 已下載 ${r.ok}/${r.total} 張圖磚，${favs.length} 條收藏步道可離線看地圖了。`;
-    btn.textContent = "✓ 已預載收藏";
+    box.innerHTML = `${ic("check")} <span>${ttT("收藏的步道可以離線看地圖了")}</span>${ttParen(`${favs.length} ${ttT("條")} · ${r.ok}/${r.total} ${ttT("張圖磚")}`)}`;
+    btn.innerHTML = `${ic("check")} ${ttT("已預載收藏")}`;
     refreshOfflineStatus();
   } catch {
-    box.innerHTML = "下載失敗，請確認網路後再試。";
-    btn.disabled = false; btn.innerHTML = `${ic("download")} 預載所有收藏步道的離線地圖`;
+    box.innerHTML = ttT("下載失敗，請確認網路後再試。");
+    btn.disabled = false; btn.innerHTML = label;
   }
 }
 async function downloadOffline(t, btn) {
@@ -1889,8 +1895,10 @@ $("#gradeMask").addEventListener("click", closeGradeInfo);
 $("#closeGradeBtn").addEventListener("click", closeGradeInfo);
 
 // ---------- 外觀主題 ----------
+// mode：light / dark / auto（跟隨系統）
+const _darkMQ = window.matchMedia ? matchMedia("(prefers-color-scheme: dark)") : null;
 function applyTheme(mode) {
-  const dark = mode === "dark";
+  const dark = mode === "dark" || (mode === "auto" && !!(_darkMQ && _darkMQ.matches));
   document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", dark ? "#13160f" : "#16301f");
@@ -1937,17 +1945,18 @@ function renderProColor() {
   const el = $("#proColorWrap"); if (!el) return;
   if (!(typeof Premium !== "undefined" && Premium.isOn())) { el.innerHTML = ""; return; }
   const cb = +(localStorage.getItem("tt_pro_color") || 0), cf = +(localStorage.getItem("tt_pro_frame") || 0);
-  el.innerHTML = `<div class="accent-head">PRO 徽章配色</div>
-    <div class="proc-row">${PRO_STYLES.map((s, i) => `<button class="proc-sw${i === cb ? " on" : ""}" data-b="${i}" title="${s[3]}" style="background:linear-gradient(135deg,${s[0]},${s[1]});color:${s[2]}">PRO</button>`).join("")}</div>
-    <div class="accent-head">頭像框配色</div>
-    <div class="proc-row">${PRO_FRAMES.map((s, i) => `<button class="acc-sw frame-sw${i === cf ? " on" : ""}" data-f="${i}" title="${s[1]}" style="box-shadow:0 0 0 3px ${s[0]} inset">${i === cf ? "✓" : ""}</button>`).join("")}</div>`;
+  // 選中：兩排都用同一種外圈＋勾勾圖示（以前一個是細框、一個是文字「✓」）
+  el.innerHTML = `<div class="accent-head">${ttT("PRO 徽章配色")}</div>
+    <div class="proc-row">${PRO_STYLES.map((s, i) => `<button class="proc-sw${i === cb ? " on" : ""}" data-b="${i}" title="${ttT(s[3])}" aria-label="${ttT(s[3])}" aria-pressed="${i === cb}" style="background:linear-gradient(135deg,${s[0]},${s[1]});color:${s[2]}">PRO</button>`).join("")}</div>
+    <div class="accent-head">${ttT("頭像框配色")}</div>
+    <div class="proc-row">${PRO_FRAMES.map((s, i) => `<button class="acc-sw frame-sw${i === cf ? " on" : ""}" data-f="${i}" title="${ttT(s[1])}" aria-label="${ttT(s[1])}" aria-pressed="${i === cf}" style="box-shadow:0 0 0 3px ${s[0]} inset;color:${s[0]}">${i === cf ? ic("check") : ""}</button>`).join("")}</div>`;
   el.querySelectorAll(".proc-sw[data-b]").forEach(b => b.addEventListener("click", () => {
     localStorage.setItem("tt_pro_color", b.dataset.b); applyProColor(); renderProColor();
-    if (typeof toast === "function") toast("已套用徽章配色");
+    if (typeof toast === "function") toast(ttT("已套用徽章配色"));
   }));
   el.querySelectorAll(".frame-sw[data-f]").forEach(b => b.addEventListener("click", () => {
     localStorage.setItem("tt_pro_frame", b.dataset.f); applyProColor(); renderProColor();
-    if (typeof toast === "function") toast("已套用頭像框配色");
+    if (typeof toast === "function") toast(ttT("已套用頭像框配色"));
   }));
 }
 // 共用個人卡頭部（「我的」頁與社群頁同一設計；chip 會 flex-wrap，放大字級也不跑版）
@@ -2041,7 +2050,7 @@ async function renderMeProfileCard() {
     return;
   }
   const prof = await Auth.myProfile().catch(() => null);
-  if (!prof) { el.innerHTML = `<div class="me-card me-card-guest" id="meCardLogin">完成社群註冊以顯示個人檔案 ›</div>`; const b = $("#meCardLogin"); if (b) b.addEventListener("click", () => { const t = document.querySelector('.tab[data-view="social"]'); if (t) t.click(); }); return; }
+  if (!prof) { el.innerHTML = `<div class="me-card me-card-guest" id="meCardLogin">${ttT("完成社群註冊以顯示個人檔案 ›")}</div>`; const b = $("#meCardLogin"); if (b) b.addEventListener("click", () => { const t = document.querySelector('.tab[data-view="social"]'); if (t) t.click(); }); return; }
   el.innerHTML = `<div class="me-card">${ttProfileHero(prof)}</div>`;
   bindProfAch(el);
 }
@@ -2095,7 +2104,9 @@ let _themeBound = false;   // .theme-opt / .fs-opt 是靜態元素：initTheme �
 function initTheme() {
   applyPalette();
   applyProColor();
-  const mode = localStorage.getItem("tt_theme") === "dark" ? "dark" : "light";   // 預設淺色，只有明確選深色才深色
+  const saved = localStorage.getItem("tt_theme");
+  const mode = saved === "dark" || saved === "auto" ? saved : "light";   // 預設淺色；選「跟隨系統」就照手機設定
+  if (!_themeBound && _darkMQ) { const onSys = () => { if (localStorage.getItem("tt_theme") === "auto") applyTheme("auto"); }; if (_darkMQ.addEventListener) _darkMQ.addEventListener("change", onSys); else if (_darkMQ.addListener) _darkMQ.addListener(onSys); }
   applyTheme(mode);
   document.querySelectorAll("[data-theme-opt]").forEach(b => {
     b.classList.toggle("on", b.dataset.themeOpt === mode);

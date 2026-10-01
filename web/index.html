@@ -10,7 +10,8 @@
     // 主題＋字體大小：在繪製前套用，避免閃白/閃字級
     (function () {
       try {
-        if (localStorage.getItem("tt_theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");
+        var th = localStorage.getItem("tt_theme");   // auto＝跟隨系統
+        if (th === "dark" || (th === "auto" && window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches)) document.documentElement.setAttribute("data-theme", "dark");
         // 字級四檔 1.2/1.35/1.5/1.65（整體再放大一級）。舊值遷移到最近的新檔，
         // 否則舊使用者會停在已不存在的字級、設定頁選項都不亮。
         var fs = localStorage.getItem("tt_fontscale");
@@ -236,6 +237,7 @@
         <div class="theme-row" id="themeRow">
           <button class="theme-opt" data-theme-opt="light"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19"/></svg>淺色</button>
           <button class="theme-opt" data-theme-opt="dark"><svg class="ic" viewBox="0 0 24 24"><path d="M21 13A8.5 8.5 0 0 1 11 3a7 7 0 1 0 10 10Z"/></svg>深色</button>
+          <button class="theme-opt" data-theme-opt="auto"><svg class="ic" viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M12 7a5 5 0 0 0 0 10Z" fill="currentColor"/></svg>跟隨系統</button>
         </div>
         <div class="accent-head">字體大小</div>
         <div class="theme-row" id="fontRow">

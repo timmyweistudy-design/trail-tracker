@@ -70,6 +70,9 @@ function bumpAffinity(amt) {
 function localDayOf(d) { const t = new Date(d); if (isNaN(t)) return ""; return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`; }
 function todayStr() { return localDayOf(new Date()); }
 function localDay(iso) { return localDayOf(iso); }
+// 本地年月／年份（分析、年度回顧、匯出用）：以前直接切 ISO 字串＝UTC，月初 8 點前那趟會算到上個月
+function localYM(iso) { return localDayOf(iso).slice(0, 7); }
+function localYear(iso) { return localDayOf(iso).slice(0, 4); }
 const FEED_COOLDOWN = 8 * 3600e3;   // 餵食冷卻 8 小時
 function feedCooldownMs() { return Math.max(0, FEED_COOLDOWN - (Date.now() - (+(localStorage.getItem("tt_pet_fed_t") || 0)))); }
 function canFeedNow() { return berriesBalance() >= 3 && feedCooldownMs() === 0; }   // 「現在能不能餵」（看 8h 冷卻，非每日）
@@ -497,15 +500,17 @@ async function openFootprintMap() {
   const close = () => ov.remove();
   $("#footClose").addEventListener("click", close);
   setTimeout(() => {
-    const m = L.map("footMap", { zoomControl: true });
+    const m = L.map("footMap", { zoomControl: false });
+    L.control.zoom({ position: "topleft", zoomInTitle: ttT("放大地圖"), zoomOutTitle: ttT("縮小地圖") }).addTo(m);   // 跟記錄地圖同一套縮放鈕
     baseTopo().addTo(m);
     const all = [];
     recs.forEach(r => {
       const pts = r.track.map(p => [p.lat, p.lon]);
-      L.polyline(trackSegments(r.track).map(s => s.map(p => [p.lat, p.lon])), { color: "#e8893b", weight: 5, opacity: .35 }).addTo(m);   // 疊加＝熱力（gap 分段）
+      // 疊加＝熱力（gap 分段）；趟數少時透明度提高，不然只有一兩趟時淡到看不見
+      L.polyline(trackSegments(r.track).map(s => s.map(p => [p.lat, p.lon])), { color: "#e8590c", weight: 5, opacity: Math.max(.35, Math.min(.9, 2 / recs.length)) }).addTo(m);
       all.push(...pts);
     });
-    if (all.length) m.fitBounds(all, { padding: [30, 30] });
+    if (all.length) m.fitBounds(all, { padding: [40, 40] });
     m.invalidateSize();
   }, 90);
 }
