@@ -4,6 +4,11 @@
 // 步道名稱/介紹等資料內容維持中文。要補翻譯：加 DICT 詞條或 PATTERNS 規則即可。
 const I18n = (() => {
   const DICT = {
+    "平緩": "Gentle",
+    "所需時間": "Time",
+    "走過": "Walked",
+    "難度是依長度和爬升估的": "Difficulty estimated from length and ascent",
+    "雪季限定": "Snow season",
     "Email 好像打錯了": "That email doesn't look right",
     "Google 登入開不起來，等一下再試": "Couldn't start Google sign-in — try again soon",
     "不再追蹤": "Unfollow",

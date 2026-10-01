@@ -405,47 +405,71 @@ function estHours(t) {
 function fmtHours(h) {
   if (h == null) return "—";
   if (h < 1) return `${Math.round(h * 60 / 5) * 5} ${ttT("分鐘")}`;
+  if (h > 10) return `${Math.max(2, Math.round(h / 8))} ${ttT("天")}`;   // 55 km 的林道不再寫「21 小時」，一天抓 8 小時
   return `${(Math.round(h * 2) / 2).toString()} ${ttT("小時")}`;
 }
+// 公里數：1 位小數、不到 1 公里給 2 位（原本 0.263、55.06、1.5 混在一起）
+function fmtKm(km) {
+  if (km == null) return "—";
+  const v = km < 1 ? km.toFixed(2) : km < 100 ? km.toFixed(1) : String(Math.round(km));
+  return v.replace(/\.0+$/, "").replace(/(\.\d)0$/, "$1");
+}
+// 官方「建議時程」只在是短短一個時長時才用（有 2 條資料把整段路線說明塞在這欄）
+function shortTour(t) { return t.tour && t.tour.length <= 8 && !/[，,。；]/.test(t.tour) ? t.tour : null; }
+// 陡度（每公里爬升）：卡片和詳情頁共用同一套說法。超過 400 m/km 的多半是資料錯（例如 0.26 km 爬 240 m），不顯示
+function slopeInfo(t) {
+  if (t.ascent == null || !t.length_km) return null;
+  const perKm = t.ascent / t.length_km;
+  if (perKm > 400) return { perKm, word: null, bad: true };
+  const word = perKm < 40 ? "平緩" : perKm < 100 ? "有點坡" : perKm < 200 ? "會喘" : "很陡";
+  return { perKm, word, level: perKm < 100 ? 0 : perKm < 200 ? 1 : 2 };
+}
+// 我走過幾次（render 期間共用 popularityScore 的快取）
+function walkedTimes(id) {
+  if (!_walkCount) { _walkCount = {}; Store.getRecords().forEach(r => { if (r.trailId != null && !r.sim) _walkCount[r.trailId] = (_walkCount[r.trailId] || 0) + 1; }); }
+  return _walkCount[id] || 0;
+}
 function trailCard(t) {
-  const d = t.difficulty || 0;
-  const closed = isClosed(t);
-  // 陡度條：每公里爬升（≈400 m/km 視為極陡）
-  let slope = "";
-  if (t.ascent != null && t.length_km) {
-    const perKm = t.ascent / t.length_km;
-    const w = Math.max(6, Math.min(100, Math.round(perKm / 4)));
-    // 光一條沒刻度的色條看不出意思 → 補一個白話形容＋每公里爬升
-    const word = perKm < 40 ? "平平的" : perKm < 100 ? "有點坡" : perKm < 200 ? "會喘" : "很陡";
-    slope = `<div class="slope-row" title="${ttT("陡度")}"><div class="slope-bar"><i style="width:${w}%"></i></div><span class="slope-v">${word}<small>・${Math.round(perKm)} m/km</small></span></div>`;
-  }
-  const fav = isFavC(t.id), done = logC(t.id).done;
-  const distKm = (myLoc && t.lat) ? (haversine(myLoc, { lat: t.lat, lon: t.lon }) / 1000).toFixed(1) : null;
-  // 山誌式 hero 數據（襯線數字當主角，最多三格）
-  const stats = [`<div class="jstat"><div class="jnum">${t.length_km != null ? t.length_km : "—"}</div><div class="jlbl">公里</div></div>`];
+  const d = t.difficulty || 0, closed = isClosed(t), snow = d === 6;
+  const fav = isFavC(t.id), lg = logC(t.id), times = walkedTimes(t.id), done = lg.done || times > 0;
+  const distKm = (myLoc && t.lat) ? haversine(myLoc, { lat: t.lat, lon: t.lon }) / 1000 : null;
   const gainC = (typeof Profile !== "undefined" && Profile.cachedGain) ? Profile.cachedGain(t.id) : null;
-  const ascShow = gainC != null ? gainC : (t.ascent != null ? Math.round(t.ascent) : null);
-  if (ascShow != null) stats.push(`<div class="jstat"><div class="jnum" data-card-asc>↑${ascShow}</div><div class="jlbl">累積爬升 m</div></div>`);
-  if (t.tour) stats.push(`<div class="jstat"><div class="jnum jnum-sm">${escHtml(t.tour)}</div><div class="jlbl">建議時程</div></div>`);
-  else stats.push(`<div class="jstat"><div class="jnum jnum-sm">${fmtHours(estHours(t))}</div><div class="jlbl">預估時間</div></div>`);
-  const locExtra = distKm ? `<span class="jloc-dot">·</span>${ic("compass")}<span>${distKm} km</span>` : "";
+  const asc = gainC != null ? gainC : (t.ascent != null ? Math.round(t.ascent) : null);
+  const tour = shortTour(t);
+  // 三格永遠都在（沒資料就「—」），卡片高度才一致；單位跟著數字走
+  const stats = [
+    `<div class="jstat"><div class="jnum">${fmtKm(t.length_km)}<small>km</small></div><div class="jlbl">${ttT("距離")}</div></div>`,
+    `<div class="jstat"><div class="jnum" data-card-asc>${asc != null ? `↑${asc}<small>m</small>` : "—"}</div><div class="jlbl">${ttT("爬升")}</div></div>`,
+    `<div class="jstat"><div class="jnum jnum-sm">${tour ? escHtml(tour) : `<span class="approx">≈</span>${fmtHours(estHours(t))}`}</div><div class="jlbl">${ttT("所需時間")}</div></div>`,
+  ];
+  // 地點：跨縣市的只顯示第一個＋「+1」，完整的放 title
+  const pos = String(t.position || "—"), posParts = pos.split(/[；;]/).map(x => x.trim()).filter(Boolean);
+  const posShow = posParts.length > 1 ? `${escHtml(posParts[0])} <b class="jloc-more">+${posParts.length - 1}</b>` : escHtml(pos);
+  // 難度：資料裡大多是估的「(估)」→ 用 ≈ 標出來；雪季不是難度，另外用季節標籤
+  const est = /[（(]估[)）]/.test(t.difficulty_label || "");
+  const dLabel = escHtml(String(t.difficulty_label || "").replace(/\s*[（(]估[)）]/, ""));
+  const diffBadge = snow
+    ? `<span class="badge snow">${ic("snow")} ${ttT("雪季限定")}</span>`
+    : `<span class="badge diff d${d}${est ? " est" : ""}"${est ? ` title="${ttT("難度是依長度和爬升估的")}"` : ""}><span class="lvl">${d}</span>${est ? `<span class="approx">≈</span>` : ""}<span>${dLabel}</span></span>`;   // ≈ 和難度字分開，翻譯才對得到
+  const sl = slopeInfo(t);
+  const mine = done ? `<span class="badge mine">${ic("check")} ${times > 1 ? `${ttT("走過")} ${times} ${ttT("次")}` : ttT("走過")}${lg.rating ? ` · ${"★".repeat(lg.rating)}` : ""}</span>` : "";
   const nm = escHtml(t.name);
-  // 卡片可以用鍵盤 Tab 選到、Enter／空白鍵打開；螢幕閱讀器也會唸出它可以點
-  return `<div class="card jcard" data-id="${t.id}" role="button" tabindex="0" aria-label="${nm}">
+  const aria = `${t.name}，${fmtKm(t.length_km)} ${ttT("公里")}，${snow ? ttT("雪季限定") : dLabel}${closed ? "，" + t.condition.status : ""}${done ? "，" + ttT("走過") : ""}`;
+  return `<div class="card jcard${closed ? " is-closed" : ""}" data-id="${t.id}" role="button" tabindex="0" aria-label="${escHtml(aria)}">
     <span class="jbar d${d}"></span>
+    ${closed ? `<div class="jclosed">${ic("alert")} ${escHtml(t.condition.status)}</div>` : ""}
     <button class="fav-star${fav ? " on" : ""}" data-fav="${t.id}" aria-pressed="${fav}" aria-label="${ttT("收藏")} ${nm}">${STAR_SVG}</button>
-    ${done ? `<span class="done-badge" title="${ttT("已完成")}">✓</span>` : ""}
-    <h3>${nm}</h3>
-    <div class="jloc">${ic("pin")}<span class="jloc-t">${escHtml(t.position || "—")}</span>${locExtra}</div>
+    <h3 title="${nm}">${nm}</h3>
+    <div class="jloc" title="${escHtml(pos)}">${ic("pin")}<span class="jloc-t">${posShow}</span></div>
     <div class="jstats">${stats.join('<span class="jstats-div"></span>')}</div>
     <div class="badges">
-      <span class="badge diff d${d}"><span class="lvl">${d}</span>${escHtml(String(t.difficulty_label || "").replace(/\s*[（(]估[)）]/, ""))}</span>
-      ${closed ? `<span class="badge closed">${ic("alert")} ${escHtml(t.condition.status)}</span>` : ""}
-      ${t.family_friendly ? `<span class="badge family">親子友善</span>` : ""}
-      ${t.permit && t.permit !== "無" ? `<span class="badge ghost">需入山證</span>` : ""}
-      ${t.source === "forestry" ? `<span class="badge src">林業署</span>` : ""}
+      ${distKm != null ? `<span class="badge near">${ic("compass")} ${distKm < 10 ? distKm.toFixed(1) : Math.round(distKm)} km</span>` : ""}
+      ${diffBadge}
+      ${mine}
+      ${closed || !t.condition ? "" : `<span class="badge warn">${ic("alert")} ${escHtml(t.condition.status)}</span>`}
+      ${sl && sl.level ? `<span class="badge slope s${sl.level}" title="${Math.round(sl.perKm)} m/km">${ttT(sl.word)}</span>` : ""}
+      ${t.family_friendly ? `<span class="badge family">${ttT("親子友善")}</span>` : ""}
     </div>
-    ${slope}
   </div>`;
 }
 
@@ -455,8 +479,7 @@ let _walkCount = null;
 function popularityScore(t) {
   let s = 0;
   // 自己的偏好優先：評分、走過幾次、有沒有收藏（沒有全站熱門資料，這是「推薦」的主要依據）
-  if (!_walkCount) { _walkCount = {}; Store.getRecords().forEach(r => { if (r.trailId != null) _walkCount[r.trailId] = (_walkCount[r.trailId] || 0) + 1; }); }
-  s += (logC(t.id).rating || 0) * 1.5 + Math.min(3, _walkCount[t.id] || 0) + (isFavC(t.id) ? 2 : 0);
+  s += (logC(t.id).rating || 0) * 1.5 + Math.min(3, walkedTimes(t.id)) + (isFavC(t.id) ? 2 : 0);
   if (t.source === "forestry") s += 4;
   if (t.condition) s += 1;
   if (t.family_friendly) s += 2;
@@ -562,24 +585,24 @@ function ensureObserver() {
   if (!_io) _io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) renderMore(); }, { rootMargin: "700px" });
   return _io;
 }
+// 卡片互動：整個清單只綁一次（事件委派），不再每張卡各綁 2～3 個監聽
 function bindCards() {
-  $("#trailList").querySelectorAll(".card:not([data-bound])").forEach(c => {
-    c.setAttribute("data-bound", "1");
-    c.addEventListener("click", e => {
-      if (e.target.closest(".fav-star")) return;
-      openDetail(c.dataset.id);
-    });
-    c.addEventListener("keydown", e => {
-      if ((e.key === "Enter" || e.key === " ") && e.target === c) { e.preventDefault(); openDetail(c.dataset.id); }
-    });
-    const star = c.querySelector(".fav-star");
-    if (star) star.addEventListener("click", () => {
+  const L = $("#trailList"); if (!L || L._bound) return; L._bound = true;
+  L.addEventListener("click", e => {
+    const star = e.target.closest(".fav-star");
+    if (star && L.contains(star)) {
       if (!Store.isFav(star.dataset.fav) && !favAddAllowed()) return;
       const added = Store.toggleFav(star.dataset.fav);
       star.classList.toggle("on", added); star.setAttribute("aria-pressed", added);
       if (added) { star.classList.remove("pop"); void star.offsetWidth; star.classList.add("pop"); }
-      toast(added ? "已加入收藏" : "已移除收藏");
-    });
+      toast(ttT(added ? "已加入收藏" : "已移除收藏"));
+      return;
+    }
+    const c = e.target.closest(".jcard"); if (c && L.contains(c)) openDetail(c.dataset.id);
+  });
+  L.addEventListener("keydown", e => {
+    const c = e.target.closest && e.target.closest(".jcard");
+    if (c && e.target === c && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openDetail(c.dataset.id); }
   });
 }
 function renderMore() {
@@ -613,7 +636,7 @@ function showBrowseMap() {
       const d = L.DomUtil.create("div", "map-legend");
       const rows = [[1, "輕鬆"], [2, "一般"], [3, "進階"], [4, "挑戰"], [5, "困難"]]
         .map(([n, l]) => `<span><i style="background:${DIFF_COLOR[n]}"></i>${l}</span>`).join("");
-      d.innerHTML = `<b>難度</b>${rows}<span><i style="background:#b3322a"></i>封閉</span>`;
+      d.innerHTML = `<b>難度</b>${rows}<span><i style="background:${DIFF_COLOR[6]}"></i>雪季</span><span><i style="background:#b3322a"></i>封閉</span>`;
       return d;
     };
     lg.addTo(browseMap);

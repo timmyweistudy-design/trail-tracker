@@ -198,6 +198,7 @@ const ICON = {
   chat: '<path d="M4 5h16v11H8l-4 4V5Z"/>',
   more: '<circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/>',
   video: '<rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10.5 5-3v9l-5-3"/>',
+  snow: '<path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9"/><path d="m9.5 4.5 2.5 2 2.5-2M9.5 19.5l2.5-2 2.5 2"/>',
   heart: '<path d="M12 20S4 14.5 4 9.2A3.8 3.8 0 0 1 12 7a3.8 3.8 0 0 1 8 2.2C20 14.5 12 20 12 20Z"/>',
   bookmark: '<path d="M6 4h12v17l-6-4-6 4V4Z"/>',
   calendar: '<rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 9h16M8 3v4M16 3v4"/>',
@@ -518,7 +519,7 @@ document.querySelectorAll(".tab").forEach(btn => {
 // 地圖瀏覽模式
 let browseMap = null, browseLayer = null, mapOn = false;
 let browseMarkers = new Map(), browseMoveBound = false, browseMoveTimer = null;   // 視野虛擬化用
-const DIFF_COLOR = { 0: "#3aa3a0", 1: "#46a24f", 2: "#6aa83e", 3: "#d8a127", 4: "#e07a2c", 5: "#d2542e", 6: "#b3322a" };
+const DIFF_COLOR = { 0: "#3aa3a0", 1: "#46a24f", 2: "#6aa83e", 3: "#d8a127", 4: "#e07a2c", 5: "#d2542e", 6: "#5d6b7c" };   // 6＝雪季：冷灰藍（以前和「封閉」同一個紅）
 // 底圖：Esri 地形(含立體陰影) / 衛星影像 — 比 OpenTopoMap 精緻
 // 商用授權：config.js 設 window.ARCGIS_API_KEY → 走 Esri 授權端點 ibasemaps-api（帶 token）；
 // 沒設 → 暫回免費公開端點（開始收費前務必填金鑰，見 docs/map-licensing.md）。

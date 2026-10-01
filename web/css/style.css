@@ -244,7 +244,6 @@ body[data-view]:not([data-view="explore"]) .app-header::before { opacity: .5; }
 .d4{background:var(--d4)} .d5{background:var(--d5)} .d6{background:var(--d6)} .d0{background:var(--d0)}
 .badge.family { background: var(--brand-soft); color: var(--brand-deep); }
 .badge.ghost { background: var(--surface-2); color: var(--ink-soft); }
-.badge.src { background: #eef1ec; color: #788173; font-weight: 500; }
 .badge.closed { background: #f8e3df; color: var(--danger); }
 @media (prefers-color-scheme: dark) { .badge.closed { background: color-mix(in srgb, var(--danger) 24%, transparent); } }
 :root[data-theme="dark"] .badge.closed { background: color-mix(in srgb, var(--danger) 24%, transparent); }
@@ -1256,7 +1255,6 @@ html[data-theme="dark"][data-palette="amber"]   { --brand: #d9ad4f; --brand-deep
 html[data-theme="dark"][data-palette="rose"]    { --brand: #e07aa0; --brand-deep: #f5c9db; --brand-mid: #e096b3; --brand-soft: #38222b; --accent: #8aa8d8; --accent-soft: #26303a; }
 html[data-theme="dark"][data-palette="slate"]   { --brand: #7d8ea3; --brand-deep: #d3dae2; --brand-mid: #94a3b5; --brand-soft: #262d36; --accent: #d98a5b; --accent-soft: #38271b; }
 html[data-theme="dark"] .tabbar { background: rgba(20,24,15,.92); }
-html[data-theme="dark"] .badge.src { background: #262d1f; color: #9aa090; }
 html[data-theme="dark"] .badge.closed { background: #3a211d; }
 html[data-theme="dark"] .badge.family { color: #cfe6d4; }
 html[data-theme="dark"] .wx-now { background: linear-gradient(135deg, #232c1e, var(--surface-2)); }
@@ -1416,12 +1414,6 @@ html[lang="de"] .chip, html[lang="nl"] .chip, html[lang="ru"] .chip, html[lang="
 /* ---------- 步道卡：難度級數 + 陡度條 ---------- */
 .badge.diff .lvl { display: inline-grid; place-items: center; width: 15px; height: 15px; border-radius: 50%;
   background: rgba(255,255,255,.28); font-size: calc(9.5px * var(--fs, 1)); font-weight: 800; margin-right: 4px; font-family: var(--num); }
-.slope-row { display: flex; align-items: center; gap: 8px; margin: 11px 6px 0; }
-.slope-label { font-size: calc(10.5px * var(--fs, 1)); font-weight: 600; color: var(--ink-faint); letter-spacing: .5px; flex: 0 0 auto; }
-.slope-v { flex: 0 0 auto; font-size: calc(11.5px * var(--fs, 1)); font-weight: 700; color: var(--ink-soft); white-space: nowrap; }
-.slope-v small { font-weight: 500; color: var(--ink-faint); margin-left: 5px; font-family: var(--num); }
-.slope-bar { flex: 1; height: 4px; border-radius: 4px; background: var(--line-soft); overflow: hidden; }
-.slope-bar i { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--d1), var(--d3), var(--d5)); }
 
 /* ---------- 重播進度條 ---------- */
 /* 「最近有人走過」人氣卡：低調但有存在感，放在「開始記錄」按鈕上方（決策位置） */
@@ -1809,7 +1801,6 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 
 /* 步道圖卡：標記完成勾勾（在收藏星左側） */
 /* 已完成徽章（自動判定，不可點）：綠底白勾，明確表示這條走過了 */
-.done-badge { position: absolute; top: 13px; right: 44px; background: none; border: none; font-size: calc(19px * var(--fs, 1)); line-height: 1; color: var(--brand); padding: 2px 4px; font-weight: 700; }
 
 /* 夥伴手冊：進化圖鑑（詳細） */
 .dex-intro { font-size: calc(13px * var(--fs, 1)); color: var(--ink-soft); line-height: 1.7; margin: 4px 0 10px; }
@@ -2306,7 +2297,6 @@ html[data-theme="dark"] .disc-sec, html[data-theme="dark"] .feed-trending-h { co
 .jlbl { font-size: calc(10px * var(--fs, 1)); color: var(--ink-faint); letter-spacing: 1px; margin-top: 4px; white-space: nowrap; }   /* 放大字級時「累積爬升 m」不斷行、單位不落單 */
 .jstats-div { width: 1px; background: var(--line-soft); margin: 2px 0; }
 .jcard .badges { margin: 11px 0 0; padding: 0 18px 15px; }
-.jcard .slope-row { margin: 0 18px 15px; }
 .jcard .badge.closed { display: inline-flex; align-items: center; gap: 3px; }
 .jcard .badge.closed .ic { width: 12px; height: 12px; }
 
@@ -2718,7 +2708,6 @@ body.hdr-compact .brand-mark { width: 36px; height: 36px; }
 /* 卡片：地點只佔一行、陡度列精簡 */
 .jloc-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .jloc { min-width: 0; }
-.slope-row .slope-v small { margin-left: 0; }
 /* 無限捲動上千張卡：畫面外的卡交給瀏覽器跳過排版與繪製（DOM 還在但幾乎不花成本） */
 .card.jcard { content-visibility: auto; contain-intrinsic-size: auto 230px; }
 .card.jcard:focus-visible { outline: 3px solid var(--brand-mid); outline-offset: 2px; }
@@ -3061,3 +3050,38 @@ button.cnt-link { border: none; background: none; padding: 0; font: inherit; cur
 .ev-go .ic { width: 14px; height: 14px; vertical-align: -2px; }
 .auth-links .link-btn, .notif-push-hint .link-btn { border: none; background: none; box-shadow: none; padding: 6px 4px; font-size: calc(13.5px * var(--fs, 1)); text-decoration: underline; text-underline-offset: 3px; }
 .notif-push-hint .link-btn { text-decoration: none; }
+
+/* ══ 步道卡細修（2026-10-01）══ */
+/* 數字＋小單位（1.5 km、↑100 m），標籤只寫「距離／爬升／所需時間」 */
+.jnum small { font-size: .5em; font-weight: 600; color: var(--ink-soft); margin-left: 2px; letter-spacing: 0; align-self: flex-end; padding-bottom: .18em; }
+.jnum .approx { font-size: .8em; color: var(--ink-faint); margin-right: 1px; }
+.jlbl { letter-spacing: .5px; }
+/* 名字最多兩行，完整的放 title（最長 34 字的會把卡片撐很高） */
+.jcard h3 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.jloc-more { font-weight: 700; color: var(--ink-soft); font-family: var(--num); margin-left: 2px; }
+/* 暫停開放：卡片最上面一條紅帶＋整張淡一點，滑過去不會沒注意到 */
+.jcard.is-closed > :not(.jclosed):not(.fav-star):not(.jbar) { opacity: .62; }
+.jcard.is-closed .jbar { background: var(--danger, #b3322a); }
+.jclosed { display: flex; align-items: center; gap: 5px; background: color-mix(in srgb, var(--danger, #b3322a) 12%, var(--surface)); color: var(--danger, #b3322a);
+  font-size: calc(12px * var(--fs, 1)); font-weight: 700; padding: 6px 64px 6px 18px; }
+.jclosed .ic { width: 13px; height: 13px; }
+.jcard.is-closed h3 { padding-top: 10px; }
+/* 標籤 */
+.jcard .badge .ic { width: 12px; height: 12px; vertical-align: -2px; }
+.badge.diff.est { box-shadow: inset 0 0 0 1px rgba(255,255,255,.35); }
+.badge.snow { background: color-mix(in srgb, var(--d6) 16%, var(--surface)); color: var(--d6); font-weight: 700; }
+.badge.mine { background: var(--brand-soft); color: var(--brand-deep); font-weight: 700; }
+.badge.near { background: color-mix(in srgb, var(--accent) 14%, var(--surface)); color: var(--accent); font-weight: 700; font-family: var(--num); }
+.badge.warn { background: #fbefd9; color: #9a6a12; }
+.badge.slope { font-weight: 700; }
+.badge.slope.s1 { background: color-mix(in srgb, var(--d4) 16%, var(--surface)); color: var(--d4); }
+.badge.slope.s2 { background: color-mix(in srgb, var(--d5) 16%, var(--surface)); color: var(--d5); }
+html[data-theme="dark"] .badge.warn { background: #3a2f17; color: #e5c072; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .badge.warn { background: #3a2f17; color: #e5c072; } }
+.jbar.d6 { background: var(--d6); }
+/* 大字／特大：三格數字縮一級，不然「50 m≈25 分鐘」會黏在一起 */
+[data-fs-mid] .jcard .jnum { font-size: calc(21px * var(--fs, 1)); }
+[data-fs-big] .jcard .jnum { font-size: calc(18px * var(--fs, 1)); }
+[data-fs-mid] .jcard .jnum-sm, [data-fs-big] .jcard .jnum-sm { font-size: calc(13.5px * var(--fs, 1)); }
+[data-fs-big] .jcard .jstats { padding-left: 10px; padding-right: 10px; }
+.jcard .fav-star { z-index: 2; }   /* 封閉卡片的內容半透明會自成圖層，蓋住星星點不到 */

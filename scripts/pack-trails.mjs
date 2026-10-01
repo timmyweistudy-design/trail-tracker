@@ -18,6 +18,15 @@ if (src.includes("window.TRAILS = [")) {
 }
 if (!Array.isArray(arr) || arr.length < 100) { console.error("讀不到 TRAILS 陣列"); process.exit(1); }
 
+// OSM 原始名稱的錯字／黏字修正（中文介面直接顯示原文，錯字很顯眼）
+const NAME_FIX = {
+  "To camp trial and Tianluanchi lake": "To Camp Trail and Tianluanchi Lake",
+  "TheDarkSideoftheSword": "The Dark Side of the Sword",
+};
+let fixed = 0;
+for (const t of arr) if (NAME_FIX[t.name]) { t.name = NAME_FIX[t.name]; fixed++; }
+if (fixed) console.error(`名稱修正 ${fixed} 筆`);
+
 // 欄位清單（穩定順序）；condition 是稀疏物件欄位，單獨存
 const keys = [...new Set(arr.flatMap(t => Object.keys(t)))].filter(k => k !== "condition");
 const DICT_MAX = 200;          // 相異值 ≤200 的欄位做字典編碼

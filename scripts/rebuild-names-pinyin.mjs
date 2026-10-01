@@ -3,9 +3,9 @@
 //
 // 讀 data/trails.json（永遠是原格式）而非 web/js/trails-data.js —— 後者跑過 pack-trails.mjs
 // 之後是欄式打包格式，直接 JSON.parse 會失敗。
-// 預設「只補缺的」：資料擴充後只翻新步道，不動既有譯名也不重打幾千次 API。
-//   node scripts/rebuild-names-pinyin.mjs          # 只補缺的（資料更新後跑這個）
-//   node scripts/rebuild-names-pinyin.mjs --all    # 全部重翻（改了規則才需要）
+// 離線、可重現：每次都全部重算（不打網路）。
+//   node scripts/rebuild-names-pinyin.mjs           # 重建
+//   node scripts/rebuild-names-pinyin.mjs --diff    # 順便印出前 60 筆變動
 import fs from "fs";
 
 const ALL = process.argv.includes("--all");
@@ -40,73 +40,102 @@ const SUF = [["環狀步道", "Loop Trail"], ["自然步道", "Nature Trail"], [
   ["步徑", "Path"], ["小徑", "Path"], ["山徑", "Trail"], ["主峰線", "Main Peak Route"], ["林道", "Forest Road"],
   ["縱走", "Ridge Traverse"], ["路線", "Route"], ["路徑", "Route"], ["線", "Route"]];
 
-async function rawRom(text) {
-  const r = await fetch("https://translate.googleapis.com/translate_a/single?client=gtx&sl=zh-TW&tl=en&dt=t&dt=rm&q=" + encodeURIComponent(text), { signal: AbortSignal.timeout(8000) });
-  const j = await r.json();
-  return (j && j[0] || []).map(seg => seg && (seg[3] || "")).filter(Boolean).join(" ");
+// ── 離線拼音（pinyin-pro）＋類型詞英譯 ──
+// 以前用 Google 翻譯的羅馬拼音：常把中文當日文唸（「藤枝段」→ Fujiedadan），類型詞也黏在拼音裡
+// （「小關山林道後段」→ Xiaoguanshan Lindaohouduan）。改成離線標準漢語拼音，林道/段/縱走…翻成英文。
+import { pinyin, customPinyin } from "pinyin-pro";
+// 地名的破音字：pinyin-pro 預設讀法不對的（都蘭讀 du，不是 dou）
+customPinyin({ "都蘭": "du lan", "都歷": "du li", "大武": "da wu", "六龜": "liu gui", "龜山": "gui shan", "禪寺": "chan si", "禪": "chan" });
+const TERMS = Object.entries({
+  "國家森林遊樂區": "National Forest Recreation Area", "森林遊樂區": "Forest Recreation Area", "國家公園": "National Park",
+  "自然保護區": "Nature Reserve", "風景區": "Scenic Area", "遊樂區": "Recreation Area",
+  "大縱走": "Grand Traverse", "縱走": "Traverse", "環狀步道": "Loop Trail", "自然步道": "Nature Trail", "國家步道": "National Trail",
+  "親山步道": "Trail", "登山步道": "Hiking Trail", "健行步道": "Hiking Trail", "森林步道": "Forest Trail", "觀光步道": "Scenic Trail",
+  "景觀步道": "Scenic Trail", "觀景步道": "Scenic Trail", "海岸步道": "Coastal Trail", "環山步道": "Circular Trail", "步道群": "Trail Network",
+  "越嶺古道": "Historic Crossing Trail", "越嶺道": "Cross-Ridge Trail", "懷古步道": "Historic Trail", "古道": "Historic Trail",
+  "步道": "Trail", "步徑": "Path", "小徑": "Path", "山徑": "Trail", "林道": "Forest Road", "警備道": "Patrol Road", "保線道": "Maintenance Path",
+  "產業道路": "Farm Road", "登山口": "Trailhead", "主峰線": "Main Peak Route", "主峰": "Main Peak", "吊橋": "Suspension Bridge",
+  "瀑布": "Waterfall", "越道": "Crossing Trail", "健走步道": "Walking Trail", "國小": "Elementary School", "原始林": "Primeval Forest",
+  "樹木園": "Arboretum", "越嶺國家步道": "Cross-Ridge National Trail", "越嶺步道": "Crossing Trail", "巨木群": "Giant Trees", "巨木": "Giant Tree",
+  "療癒步道": "Healing Trail",
+  // 縣市與常見地名用官方拼法（不是漢語拼音的 Taibei、Gaoxiong）
+  "臺北": "Taipei", "台北": "Taipei", "臺中": "Taichung", "台中": "Taichung", "臺南": "Tainan", "台南": "Tainan", "高雄": "Kaohsiung",
+  "基隆": "Keelung", "新竹": "Hsinchu", "嘉義": "Chiayi", "花蓮": "Hualien", "臺東": "Taitung", "台東": "Taitung", "宜蘭": "Yilan",
+  "屏東": "Pingtung", "南投": "Nantou", "雲林": "Yunlin", "苗栗": "Miaoli", "彰化": "Changhua", "桃園": "Taoyuan", "澎湖": "Penghu",
+  "金門": "Kinmen", "馬祖": "Matsu", "淡水": "Tamsui", "南區": "South", "北區": "North", "森林浴": "Forest Bathing", "自行車道": "Bike Path", "公園": "Park", "支線": "Branch", "路線": "Route", "參拜道": "Pilgrimage Path",
+}).sort((a, b) => b[0].length - a[0].length);
+const CN_NUM = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9, 十: 10 };
+const SEC_DIR = { 前: "Front", 後: "Rear", 上: "Upper", 下: "Lower", 中: "Middle", 東: "East", 西: "West", 南: "South", 北: "North" };
+const isHan = c => /[\u4e00-\u9fff]/.test(c);
+// 長串中文在「地名尾字」後面斷字（綠島阿眉山 → Ludao Ameishan），不再每 3 個音節硬切
+const GEO_END = "山嶺湖溪園寺宮林谷峰坑崙岩尖洞埔里村社港灣島池潭嘴坪坡寮厝橋莊路";
+function romWord(run) {   // 一段連續中文 → 拼音字，首字大寫、a/e/o 開頭的音節前加 '
+  const chars = [...run];
+  const pieces = [];
+  // 在地名尾字後面斷（前後都至少 2 字、下一字不是另一個地名尾字，例如「烏山嶺」不拆）
+  let cur = [];
+  chars.forEach((c, i) => { cur.push(c); if (GEO_END.includes(c) && cur.length >= 2 && chars.length - 1 - i >= 2 && !GEO_END.includes(chars[i + 1])) { pieces.push(cur); cur = []; } });
+  if (cur.length) pieces.push(cur);
+  return pieces.map(pc => {
+    const syl = pinyin(pc.join(""), { toneType: "none", type: "array" }).map(x => x.toLowerCase().replace(/ü|v/g, "u"));
+    let out = ""; syl.forEach((t, k) => { out += (k > 0 && /^[aeo]/.test(t)) ? "'" + t : t; });
+    return out ? out[0].toUpperCase() + out.slice(1) : "";
+  }).filter(Boolean).join(" ");
 }
-
-async function rom(text) {
-  let raw = await rawRom(text);
-  // 有些名稱 Google 就是不回 romanization（實測 51 個，如「面天山」「保線道」「大崎棟古道」——
-  // 語言偵測誤判成日文時整段沒有 rm 欄位）。逐字查則正常，所以退而求其次逐字拼。
-  if (!raw) {
-    const out = [];
-    for (const c of [...text]) {
-      if (!/[一-鿿]/.test(c)) { out.push(c); continue; }
-      out.push(await rawRom(c));
+function segEn(seg) {
+  // 結尾的「段」：第六段→Section 6、後段→(Rear Section)、藤枝段→Tengzhi Section
+  let tail = "", m;
+  if ((m = seg.match(/第?([一二三四五六七八九十\d]+)段$/))) { const n = /\d/.test(m[1]) ? m[1] : (CN_NUM[m[1]] || m[1]); seg = seg.slice(0, -m[0].length); tail = ` Section ${n}`; }
+  else if ((m = seg.match(/^([前後上下中東西南北])段$/))) return `${SEC_DIR[m[1]]} Section`;   // 冒號後單獨的「西段」
+  else if ((m = seg.match(/([前後上下中東西南北])段$/)) && seg.length > 2) { seg = seg.slice(0, -2); tail = ` (${SEC_DIR[m[1]]} Section)`; }
+  else if (/段$/.test(seg) && seg.length > 1) { seg = seg.slice(0, -1); tail = " Section"; }
+  else if (/[^路]線$/.test(seg) && seg.length > 2) { seg = seg.slice(0, -1); tail = " Route"; }   // 苗圃線 → Miaopu Route
+  if (N[seg] && !names.has(seg)) return N[seg] + tail;   // 整段是縣市鄉鎮 → 用官方拼音
+  const out = []; let run = "", lat = "", i = 0;
+  const flush = () => { if (run) { out.push(romWord(run)); run = ""; } if (lat.trim()) out.push(lat.trim()); lat = ""; };
+  while (i < seg.length) {
+    const hit = TERMS.find(([zh]) => seg.startsWith(zh, i));
+    if (hit) {
+      flush();
+      // 「古道親山步道」→ 不要 Historic Trail Trail：前一個已經是 …Trail/Road/Path 就略過純「Trail」
+      if (!(/^(Hiking )?Trail$/.test(hit[1]) && out.length && /(Trail|Road|Path)$/.test(out[out.length - 1]))) out.push(hit[1]);
+      i += hit[0].length; continue;
     }
-    raw = out.filter(Boolean).join(" ");
+    const c = seg[i];
+    if (isHan(c)) { if (lat) flush(); run += c; } else { if (run) { out.push(romWord(run)); run = ""; } lat += c; }   // 英數字整串保留，不拆成單字母
+    i++;
   }
-  const syl = raw.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z' ]/g, "").split(/\s+/).filter(Boolean);
-  if (!syl.length) return "";
-  // 分組：>4 音節取 3、剩 4 取 2+2、否則整組；組內母音開頭音節加 '
-  const words = [];
-  let i = 0;
-  while (i < syl.length) {
-    const left = syl.length - i;
-    const take = left > 4 ? 3 : (left === 4 ? 2 : left);
-    words.push(syl.slice(i, i + take)); i += take;
-  }
-  return words.map(w => {
-    let out = "";
-    for (let k = 0; k < w.length; k++) {
-      const t = w[k];
-      out += (k > 0 && /^[aeou]/.test(t) && !out.endsWith("'")) ? "'" + t : t;
-    }
-    return out[0].toUpperCase() + out.slice(1);
-  }).join(" ");
+  flush();
+  let s = out.join(" ").replace(/\s+/g, " ").trim();
+  if (!s) return tail.trim();
+  return s + tail;
 }
-
-const todo = [...names].filter(n => ALL || !N[n]);
-console.error(`步道名 ${names.size} 個；待處理 ${todo.length} 個${ALL ? "（全部重翻）" : "（只補缺的）"}`);
-let idx = 0, done = 0, failed = 0;
-async function worker() {
-  while (idx < todo.length) {
-    const zh = todo[idx++];
-    done++;
-    if (FAMOUS[zh]) { N[zh] = FAMOUS[zh]; continue; }
-    let base = zh, sufEn = "Trail", matched = false;
-    for (const [cs, es] of SUF) { if (zh.endsWith(cs) && zh.length > cs.length) { base = zh.slice(0, -cs.length); sufEn = es; matched = true; break; } }
-    if (!matched && /山$/.test(zh) && zh.length > 1) { base = zh.slice(0, -1); sufEn = "Mountain"; matched = true; }
-    if (!matched) { base = zh; sufEn = ""; }
-    // 基底含非中文分隔（- / （） 等）：逐段 romanize
-    const parts = base.split(/[-‧·／/()（）]+/).filter(Boolean);
-    try {
-      const roms = [];
-      for (const p of parts) roms.push(/[一-鿿]/.test(p) ? await rom(p) : p);
-      const r = roms.filter(Boolean).join(" ");
-      if (r) N[zh] = (r + (sufEn ? " " + sufEn : "")).replace(/\s+/g, " ").trim();
-      else failed++;
-    } catch (e) { failed++; }
-    if (done % 300 === 0) console.error("...", done, "/", todo.length);
-  }
+function toEn(zh) {
+  if (FAMOUS[zh]) return FAMOUS[zh];
+  if (!/[\u4e00-\u9fff]/.test(zh)) return zh;
+  // 括號內容先抽出來另外翻（常是縣市或段落：丹大林道（南投縣）、(第六段+第七段)），避免裡面的 + 被當分隔符
+  const paren = [];
+  let s = zh.replace(/[（(]([^）)]+)[）)]/g, (_, x) => { paren.push(toEn(x)); return `\u0001${paren.length - 1}\u0001`; });
+  const parts = s.split(/(\s*[：:]\s*|\s*[-－—–~～]\s*|\s*[+＋]\s*|\s*[、／/‧·．•]\s*)/);
+  s = parts.map(p => {
+    const t = p.trim();
+    if (/^[：:]$/.test(t)) return ": ";
+    if (/^[-－—–~～]$/.test(t)) return " – ";
+    if (/^[+＋]$/.test(t)) return " + ";
+    if (/^[、／/‧·．•]$/.test(t)) return " / ";
+    return t.split(/(\u0001\d+\u0001)/).map(q => /^\u0001/.test(q) ? q : (q.trim() ? segEn(q.trim()) : "")).join(" ");
+  }).join("");
+  return s.replace(/\u0001(\d+)\u0001/g, (_, n) => ` (${paren[+n]}) `).replace(/\s+/g, " ").replace(/\s+([:)])/g, "$1").replace(/\(\s+/g, "(").trim();
 }
-await Promise.all(Array.from({ length: 8 }, worker));
+const before = {};
+let done = 0;
+for (const zh of names) { before[zh] = N[zh]; N[zh] = toEn(zh); done++; }
+const failed = 0;
+if (process.argv.includes("--diff")) { let k = 0; for (const zh of names) if (before[zh] !== N[zh] && k++ < 60) console.error(zh, "|", before[zh], "→", N[zh]); }
 // 專有名詞一律首字大寫：曾有 "nantou county"、"kaohsiung city" 小寫混進來，地區篩選英文版看起來很怪
 for (const k of Object.keys(N)) if (/^[a-z]/.test(N[k])) N[k] = N[k].replace(/\b[a-z]/g, c => c.toUpperCase());
 fs.writeFileSync("web/js/i18n-names.js",
   "// 自動產生（scripts/rebuild-names-pinyin.mjs）：步道名＝拼音+類型詞（知名步道用官方英譯）；縣市鄉鎮＝官方/標準拼音。非中文介面才載入。\n"
   + "window.TT_NAMES = " + JSON.stringify(N) + ";\n");
 const still = [...names].filter(n => !N[n]).length;
-console.error(`完成：處理 ${done}、失敗 ${failed}；字典 ${Object.keys(N).length} 條；仍缺 ${still} 條`);
+console.error(`完成：處理 ${done}；字典 ${Object.keys(N).length} 條；仍缺 ${still} 條`);
