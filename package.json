@@ -17,7 +17,8 @@
     "audit:center": "node scripts/audit-center.js",
     "test:all": "node scripts/tests/run-all.js",
     "test:quick": "node scripts/tests/run-all.js --quick",
-    "test:sql": "node scripts/tests/run-all.js --sql"
+    "test:sql": "node scripts/tests/run-all.js --sql",
+    "store:shots": "node scripts/store-shots.js"
   },
   "dependencies": {
     "@capacitor-community/background-geolocation": "^1.2.26",

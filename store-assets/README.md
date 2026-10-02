@@ -1,6 +1,12 @@
 # 上架素材 store-assets
 
-## ios-screenshots/
+## ios-6.9/（新版，建議用這組）
+行銷版：上方標語＋手機框，1290×2796（6.9／6.7 吋共用），繁中 `zh/`、英文 `en/` 各 6 張：
+1. 一句話找步道　2. 路況／地形／山頂天氣　3. 安全功能全免費（記錄中）　4. 夥伴　5. 登頂收集冊　6. 山社
+重新產生：`npm run store:shots`（只拍一種語言：`-- --lang=en`；只改標語不重拍：`-- --frame-only`）。
+標語寫在 `scripts/store-shots.js` 的 SCENES。社群畫面用測試假資料，不碰正式資料庫。
+
+## ios-screenshots/（舊版，無標語）
 App Store 螢幕截圖，已是 **6.7 吋 iPhone 需求尺寸 1290×2796**，可直接上傳（Apple 現在只要 6.7 吋一組即可）。
 - `01-explore.png` — 探索步道列表
 - `02-detail.png` — 步道詳情＋地形地圖

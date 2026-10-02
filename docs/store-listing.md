@@ -18,77 +18,95 @@
 ## App Store
 
 **副標題（Subtitle，30 字內）**
-- 中：登山步道搜尋・GPS 路徑記錄
-- 英：Hike trails, GPS tracking & stats
+- 中：台灣步道搜尋・安全登山記錄
+- 英：Taiwan trails & safe hiking
 
-**宣傳文字（Promotional Text，170 字內）**
-- 中：搜尋全台登山與親子步道，記錄你的每一步——里程、爬升、步數、卡路里，還有陪你成長的山林夥伴。
-- 英：Find hiking & family trails across Taiwan, and track every step—distance, ascent, calories, and a trail buddy that grows with you.
+**宣傳文字（Promotional Text，170 字內，可隨時改、不用送審）**
+- 中：一句話找步道，出發前看清路況與山頂天氣。留守人、求救卡、原路返回全部免費。還有陪你越走越大的山林夥伴，和一起爬的山社。
+- 英：Find trails by just describing them, check closures and summit weather before you go. Check-in contacts, SOS card and backtrack are free for everyone. Plus a buddy that grows as you hike, and clubs to hike with.
 
 **描述（Description）**
 ```
-循徑拾光，是為台灣山友打造的登山步道 App。
+循徑拾光，是為台灣山友做的登山 App。
 
-搜尋步道
-・全台登山步道與親子友善步道，依難度、主題、地區篩選
-・步道詳情：里程、爬升、路況、周邊設施與交通
-・3D 地形地圖，出發前先看清楚地勢
+一句話找步道
+・全台 2,900 多條步道，打「台北 3 小時內 有瀑布 不要太陡」就幫你篩好
+・依難度、主題、地區、親子友善篩選，也能在地圖上找
 
-記錄你的足跡
-・GPS 路徑記錄，即時里程、爬升、步數、卡路里
-・導航模式（地圖跟著你的方向轉）
-・背景記錄，鎖螢幕也不中斷
-・離線地圖，山區沒訊號也能看
+出發前看清楚
+・林業署封閉／坍方公告，收藏的步道路況變了會提醒
+・依海拔修正的山頂天氣，雷雨、低溫、強陣風先警告
+・山友即時回報路況、近期人氣
+・地形地圖、3D 地形、海拔剖面
 
-山林夥伴與社群
-・養一隻陪你登山的夥伴，越走越進化
-・成就樹：從初心者到傳說，一步步解鎖
-・小隊同行，記錄時看到隊友的即時位置
-・分享你的健行成果
+安全功能，全部免費
+・留守人：設好預計下山時間，超時自動通知家人
+・求救卡：經緯度、TWD97 座標、一鍵撥 112
+・原路返回：沿你走來的軌跡帶你回去
+・天黑倒數、偏離路線提醒、離線地圖
 
-資料安全
-・雲端備份，換手機也救得回
-・可隨時匯出自己的紀錄
+記錄每一步
+・GPS 記錄里程、爬升、步數、卡路里，鎖螢幕也不中斷
+・鎖定畫面與動態島即時顯示
+・登頂收集冊：走到百岳、小百岳山頂自動蓋章
 
-開始你的第一條步道吧。
+山林夥伴與山友
+・養一隻陪你登山的夥伴，從一顆蛋走到神龍
+・每日任務、每月挑戰、成就
+・小隊同行看彼此位置；山社每週排行；拜訪好友的夥伴
+
+PRO 會員（可免費試用 7 天）
+無限離線地圖、進階分析、年度回顧與山行故事、3D 地形、軌跡坡度著色、GPX 匯入匯出、主畫面小工具、夥伴裝扮、建立山社等。
+安全相關功能永遠免費。
+
+開始你的下一條步道吧。
 ```
 **Description（English）**
 ```
-Gather the Trail is a hiking companion built for Taiwan's mountains.
+Gather the Trail is a hiking app made for Taiwan's mountains.
 
-Find trails
-・Hiking and family-friendly trails across Taiwan, filtered by difficulty, theme and region
-・Trail details: distance, ascent, path conditions, nearby amenities and transport
-・3D terrain maps, so you can read the landscape before you set out
+Find trails by describing them
+・2,900+ trails across Taiwan. Type "Taipei waterfall under 3 hours, not too steep" and get a filtered list
+・Filter by difficulty, theme, region or family-friendly, or browse the map
+
+Know before you go
+・Official Forestry Agency closures and landslide notices, with alerts when a saved trail changes
+・Summit forecasts corrected for elevation, with storm, cold and gust warnings
+・Live trail reports from other hikers, recent crowd levels
+・Terrain maps, 3D terrain and elevation profiles
+
+Safety tools, free for everyone
+・Check-in contact: set your expected return and they're notified if you're late
+・SOS card: coordinates (incl. TWD97) and one-tap call to 112
+・Backtrack: follow your own track back out
+・Sunset countdown, off-route alerts, offline maps
 
 Track every step
-・GPS route recording with live distance, ascent, steps and calories
-・Navigation mode (the map turns with your heading)
-・Background recording — keeps going with the screen off
-・Offline maps for areas with no signal
+・GPS distance, ascent, steps and calories, even with the screen locked
+・Live Activity on the Lock Screen and Dynamic Island
+・Summit log: reach a Top 100 or Hundred Hills peak and it's stamped automatically
 
-Trail buddy & community
-・Raise a buddy that hikes with you and evolves the more you walk
-・Achievement tree: unlock your way from beginner to legend, step by step
-・Team live-tracking — see your teammates' positions while recording
-・Share your hikes
+A buddy and a crew
+・Raise a trail buddy that grows from an egg into a dragon
+・Daily quests, monthly challenges, achievements
+・Team live-tracking, club weekly rankings, visit friends' buddies
 
-Your data, safe
-・Cloud backup, so a new phone won't lose your trails
-・Export your records any time
+PRO (7-day free trial)
+Unlimited offline maps, advanced stats, year in review and hike stories, 3D terrain, slope-colored tracks, GPX import/export, Home Screen widgets, buddy outfits, creating clubs and more.
+Safety features always stay free.
 
-Set out on your first trail today.
-```
-（App 內已內建英文介面，App Store 英文語系可直接用上面這份。）
-
-**關鍵字（Keywords，100 字內，逗號分隔）**
-```
-登山,健行,步道,爬山,親子步道,GPS,路徑記錄,里程,爬升,離線地圖,台灣,hiking,trail,tracker
+Find your next trail.
 ```
 
-**What's New（版本更新說明，首版）**
-- 中：首次推出！搜尋步道、GPS 記錄、3D 地形、山林夥伴與小隊同行。
-- 英：First release! Trail search, GPS tracking, 3D terrain, trail buddy and team live-tracking.
+**關鍵字（Keywords，100 字元內，逗號分隔，不要重複 App 名稱與副標題已有的字）**
+- 中：登山,健行,爬山,百岳,小百岳,郊山,親子步道,GPS,軌跡,離線地圖,山頂天氣,林道,古道,瀑布,求救,留守,集章
+- 英：hiking,hike,trail,trek,Taiwan,GPS,tracker,offline map,peak,summit,mountain,walk,outdoor,SOS,route
+
+**What's New（這一版）**
+- 中：新增一句話找步道、山社、拜訪好友的夥伴與合照；山友路況可檢舉；更新更順暢。
+- 英：New: describe-a-trail search, clubs, visiting friends' buddies with photos; trail reports can be flagged; smoother overall.
+
+**截圖**：`store-assets/ios-6.9/zh/`（繁中）、`store-assets/ios-6.9/en/`（英文），各 6 張，1290×2796。
 
 ---
 

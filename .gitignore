@@ -49,3 +49,6 @@ scratchpad/
 
 # 自動化測試的截圖輸出
 scripts/tests/out/
+
+# 上架截圖的原始畫面（npm run store:shots 產生）
+store-assets/ios-6.9/raw/
