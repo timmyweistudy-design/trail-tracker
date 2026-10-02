@@ -46,7 +46,7 @@ const TrailReports = (() => {
         <div class="trp-top"><b>${T(label)}</b>${km != null ? `<span class="trp-km">${ic("pin")} ${km.toFixed(1)} km</span>` : ""}</div>
         ${r.note ? `<div class="trp-note">${escHtml(r.note)}</div>` : ""}
         ${r.photo_url ? `<img class="trp-photo" src="${escHtml(r.photo_url)}" alt="" loading="lazy">` : ""}
-        <div class="trp-meta"><span>${escHtml(r.author_name || T("山友"))}</span> · <span>${ago}</span>${r.is_mine ? ` · <button class="trp-del" data-id="${r.id}">${T("刪除")}</button>` : ""}</div>
+        <div class="trp-meta"><span>${escHtml(r.author_name || T("山友"))}</span> · <span>${ago}</span>${r.is_mine ? ` · <button class="trp-del" data-id="${r.id}">${T("刪除")}</button>` : ` · <button class="trp-flag" data-id="${r.id}">${T("檢舉")}</button>`}</div>
       </div></div>`;
   }
   async function load(t, force) {
@@ -65,6 +65,22 @@ const TrailReports = (() => {
       <button class="btn ghost trp-add" id="trpAdd">${ic("plus")} ${T("回報路況")}</button>`;
     box.querySelector("#trpAdd").addEventListener("click", () => openForm(t));
     box.querySelectorAll(".trp-photo").forEach(img => img.addEventListener("click", () => { if (typeof Lightbox !== "undefined") Lightbox.open(img.src); }));
+    // 檢舉別人的回報（schema-phase33）：3 個人檢舉就先自動藏起來，等管理員看
+    box.querySelectorAll(".trp-flag").forEach(b => b.addEventListener("click", async () => {
+      const uid = await me();
+      if (!uid) { toast(T("先登入才能檢舉")); return; }
+      const reason = await ttChoice(T("這則回報哪裡有問題？"), [
+        { label: T("取消"), value: null, cls: "ghost" },
+        { label: T("內容不實"), value: "false", cls: "ghost" },
+        { label: T("廣告或洗版"), value: "spam", cls: "ghost" },
+        { label: T("不當內容"), value: "abuse", cls: "danger-solid" },
+      ]);
+      if (!reason) return;
+      b.disabled = true;
+      const { error } = await Supa.client().from("trail_report_flags").insert({ report_id: b.dataset.id, reporter_id: uid, reason });
+      if (error && !/duplicate|unique/i.test(error.message || "")) { b.disabled = false; toast(/trail_report_flags|does not exist|schema cache/i.test(error.message || "") ? T("資料庫還沒開這個功能") : T(Supa.errText(error.message))); return; }
+      b.textContent = T("已檢舉"); toast(T("謝謝，我們會看一下"));
+    }));
     box.querySelectorAll(".trp-del").forEach(b => b.addEventListener("click", async () => {
       if (!(await ttConfirm(T("刪掉這則回報？"), T("刪除"), T("取消"), { danger: true }))) return;
       const { error } = await Supa.client().from("trail_reports").delete().eq("id", b.dataset.id);

@@ -99,14 +99,17 @@ function petStageIndex(km) { let i = 0; for (let k = 0; k < PET_STAGES.length; k
 function petName() { return localStorage.getItem("tt_pet_name") || ""; }
 function petHat() { return localStorage.getItem("tt_pet_hat") || "none"; }   // A5 配件（Premium 裝扮）
 function petHatSvg(i) { return (typeof PET_ART !== "undefined" && PET_ART.hat) ? PET_ART.hat(petHat(), i) : ""; }
-// Premium 裝扮選擇器：戴帽子在夥伴頭上
+// 裝扮選擇器：戴帽子在夥伴頭上。
+// 免費版也能打開：自己掙來的（每月挑戰的登山頭巾）和以前換過的照樣能戴；用果實換新配件是 PRO 福利。
+const FREE_HATS = new Set(["none", "bandana"]);
 function openHatPicker() {
-  if (typeof Premium !== "undefined" && Premium.gate && !Premium.gate()) return;   // 非會員→開升級面板
   if (document.querySelector('[data-ov="pethat"]')) return;
+  const pro = typeof Premium !== "undefined" && Premium.isOn();
   const i = petStageIndex(totalKm()), cur = petHat(), owned = hatsOwned();
   const opts = PET_ART.HAT_IDS.map(id => {
     const has = owned.has(id), quest = id === "bandana";   // 登山頭巾：完成每月挑戰才拿得到，不能買
-    return `<button class="hat-opt${id === cur ? " on" : ""}${has ? "" : " locked"}${quest && !has ? " quest" : ""}" data-hat="${id}"><div class="hat-prev">${PET_ART.svg(i)}${PET_ART.hat(id, i)}</div><div class="hat-lbl">${ttT(PET_ART.HAT_LABEL[id])}</div>${has ? "" : quest ? `<div class="hat-cost hat-quest">${ic("flag")} ${ttT("每月挑戰")}</div>` : `<div class="hat-cost">${BERRY_SVG}${HAT_COST}</div>`}</button>`;
+    const proLock = !pro && !FREE_HATS.has(id) && !has;   // 以前當會員時換到的照樣能戴；新換的才要 PRO
+    return `<button class="hat-opt${id === cur ? " on" : ""}${has && !proLock ? "" : " locked"}${quest && !has ? " quest" : ""}" data-hat="${id}"><div class="hat-prev">${PET_ART.svg(i)}${PET_ART.hat(id, i)}</div><div class="hat-lbl">${ttT(PET_ART.HAT_LABEL[id])}</div>${proLock ? `<div class="hat-cost"><span class="pro-tag">PRO</span></div>` : has ? "" : quest ? `<div class="hat-cost hat-quest">${ic("flag")} ${ttT("每月挑戰")}</div>` : `<div class="hat-cost">${BERRY_SVG}${HAT_COST}</div>`}</button>`;
   }).join("");
   const ov = document.createElement("div"); ov.className = "pet-modal"; ov.dataset.ov = "pethat";
   ov.innerHTML = `<div class="pet-modal-card"><button class="sheet-close" id="hatClose" aria-label="${ttT("關閉")}">${ic("x")}</button><h2>${ic("sparkle")} ${ttT("幫夥伴裝扮")}</h2><p class="dex-intro">${ttT("用果實換新配件，換過的就一直是你的。")}</p><div class="hat-bal">${ttT("你有")} ${BERRY_SVG}<b>${berriesBalance()}</b></div><div class="hat-grid">${opts}</div></div>`;
@@ -118,6 +121,7 @@ function openHatPicker() {
   ov.querySelector("#hatClose").addEventListener("click", close);
   ov.querySelectorAll(".hat-opt").forEach(btn => btn.addEventListener("click", async () => {
     const id = btn.dataset.hat, own = hatsOwned();
+    if (!FREE_HATS.has(id) && !own.has(id) && !_proGate()) return;   // 用果實換新配件：PRO（已擁有的照樣能戴）
     if (!own.has(id) && id === "bandana") { toast(ttT("完成一次每月挑戰就會解鎖，在夥伴頁看進度")); return; }
     if (!own.has(id)) {
       if (berriesBalance() < HAT_COST) { toast(`${ttT("果實還差")} ${HAT_COST - berriesBalance()}`); return; }

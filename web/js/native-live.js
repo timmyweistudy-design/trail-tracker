@@ -86,7 +86,8 @@ const NativeLive = (() => {
       monthKm: month, goalKm: goal,
       petName: ps ? ps.name : "", petLevel: ps ? ps.level : 1,
       hikedToday: hikedToday(),
-      labels: { streak: T("連續"), days: T("天"), week: T("本週"), challenge: T("本月挑戰"), done: T("今天走過了"), nudge: T("今天出門走走吧") },
+      locked: !(typeof Premium !== "undefined" && Premium.isOn()),   // 主畫面小工具是 PRO 福利；鎖定畫面的記錄卡片（Live Activity）免費
+      labels: { streak: T("連續"), days: T("天"), week: T("本週"), challenge: T("本月挑戰"), done: T("今天走過了"), nudge: T("今天出門走走吧"), locked: T("PRO 會員專屬小工具"), unlock: T("打開 App 升級") },
     };
     const sig = JSON.stringify(data);
     const petSig = ps ? `${ps.level}|${typeof petStageIndex === "function" ? petStageIndex(totalKm()) : 0}` : "";

@@ -14,6 +14,8 @@ struct WidgetData: Codable {
     var petName: String = ""
     var petLevel: Int = 1
     var hikedToday: Bool = false
+    /// 非 PRO：小工具只顯示「PRO 會員專屬」（舊版 App 寫的資料沒有這欄 → 視為沒鎖）
+    var locked: Bool? = nil
     var labels: [String: String] = [:]
 
     func t(_ key: String, _ fallback: String) -> String { labels[key] ?? fallback }
@@ -67,6 +69,24 @@ struct HomeWidgetView: View {
     private func km(_ v: Double) -> String { v >= 100 ? String(format: "%.0f", v) : String(format: "%.1f", v) }
 
     var body: some View {
+        if d.locked == true { lockedView } else { content }
+    }
+
+    @ViewBuilder private var lockedView: some View {
+        switch family {
+        case .accessoryCircular, .accessoryRectangular:
+            Label(d.t("locked", "PRO 會員專屬小工具"), systemImage: "lock.fill").font(.caption)
+        default:
+            VStack(spacing: 6) {
+                Image(systemName: "lock.fill").font(.title3).foregroundStyle(TT.gold)
+                Text(d.t("locked", "PRO 會員專屬小工具")).font(.caption.weight(.semibold)).multilineTextAlignment(.center)
+                Text(d.t("unlock", "打開 App 升級")).font(.caption2).foregroundStyle(TT.cream.opacity(0.7))
+            }
+            .foregroundStyle(TT.cream)
+        }
+    }
+
+    @ViewBuilder private var content: some View {
         switch family {
         case .accessoryCircular:
             ZStack {

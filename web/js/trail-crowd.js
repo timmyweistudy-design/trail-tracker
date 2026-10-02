@@ -62,7 +62,13 @@ const TrailCrowd = (() => {
     const meds = [];
     if (a && a.hikers >= 3 && a.median_ms) meds.push(`<span>${T("平均耗時")} <b>${fmtTime(Number(a.median_ms))}</b></span>`);
     if (a && a.hikers >= 3 && a.median_ascent) meds.push(`<span>${T("平均爬升")} <b>↑${a.median_ascent}</b> m</span>`);
-    if (!h7 && !h30 && !grid && !meds.length) return;   // 人太少 → 整塊不顯示（隱私）
+    if (!h7 && !h30 && !grid && !meds.length) {
+      // 人太少：不給數字（隱私），但資料庫已經開了 → 留一行小字，讓人知道走完會幫忙累積（冷啟動）
+      if (!cr) return;
+      box.hidden = false; box.className = "activity-card crowd-card crowd-empty";
+      box.innerHTML = `<div class="act-h">${ic("users")} ${T("步道人氣")}</div><div class="crowd-note">${T(off() ? "這條步道的人氣資料還不夠。" : "這條步道的人氣資料還不夠。走完會匿名幫忙累積，幾個人走過就看得到哪個時段人多。")}</div>`;
+      return;
+    }
     const counts = [];
     if (h7) counts.push(`<span>${T("最近 7 天")} <b>${h7}</b> ${T("人走過")}</span>`);
     if (h30 && h30 !== h7) counts.push(`<span>${T("30 天")} <b>${h30}</b> ${T("人")}</span>`);

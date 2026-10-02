@@ -199,7 +199,7 @@ try {
   const news = new Set();
   const half = new Set();   // 半翻：tx 有回傳但英文結果仍殘留中文（如「、」切段只命中一部分）——付費牆踩過
   for (const f of files) {
-    if (f.endsWith("i18n.js") || f.endsWith("i18n-names.js") || /[\\/]i18n[\\/]/.test(f) || /geo-manifest\.js$|[\\/]geo[\\/]/.test(f) || /trails-(data|detail|geo)\.js$|peaks-data\.js$|debug\.js$/.test(f) || f.endsWith("ecology-data.js")) continue;
+    if (f.endsWith("i18n.js") || f.endsWith("i18n-names.js") || /[\\/]i18n[\\/]/.test(f) || /geo-manifest\.js$|[\\/]geo[\\/]/.test(f) || /trails-(data|detail|geo)\.js$|peaks-data\.js$|debug\.js$|admin\.js$/.test(f) || f.endsWith("ecology-data.js")) continue;
     const src2 = read(f);
     for (const m of src2.matchAll(/[>"`]([^<>`"$\\{}]*[\u4e00-\u9fff][^<>`"$\\{}]*)[<"`$]/g)) {
       const t = m[1].trim();

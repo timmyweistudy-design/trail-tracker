@@ -283,6 +283,10 @@ async function toggleDebugPanel() {
       ["📱模擬動態島", () => ttDebug.notch()], ["🎨切外觀", () => ttDebug.theme()],
       ["🌐重看語言選擇", closeAnd(() => { localStorage.removeItem("tt_lang"); tourReset(); langGate(true); })],
     ]],
+    ["管理", [
+      ["🛡檢舉處理", closeAnd(() => ensureScript("js/admin.js").then(() => Admin.open("queue")))],
+      ["🐞錯誤紀錄", closeAnd(() => ensureScript("js/admin.js").then(() => Admin.open("errors")))],
+    ]],
     ["導覽", [
       ["🧭導覽(中)", closeAnd(() => { tourReset(); onboarding(true, { previewLang: "zh", startAt: 0 }); })],
       ["🧭導覽(英)", closeAnd(() => { tourReset(); onboarding(true, { previewLang: "en", startAt: 0 }); })],

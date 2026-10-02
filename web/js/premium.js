@@ -64,7 +64,7 @@ const Premium = (() => {
 
   const BENEFITS = [
     ["map", "無限離線地圖", "免費共 10 MB；會員不限量，還能匯出/匯入地圖包跨裝置共用"],
-    ["target", "進階分析＋年度回顧", "個人紀錄、配速趨勢、難度雷達、每月卡路里、年度回顧圖卡、匯出 GPX/CSV/KML"],
+    ["target", "進階分析＋年度回顧", "個人紀錄、配速趨勢、難度雷達、每月卡路里、年度回顧與山行故事（每頁存成限動圖）、匯出 GPX/CSV/KML"],
     ["mountain", "3D 地形地圖", "衛星影像貼在真實地形上、可旋轉傾斜；步道詳情與行程回放都能看"],
     ["bookmark", "無限收藏", "免費上限 20 條；會員不限"],
     ["users", "足跡熱力圖＋好友比較", "所有軌跡疊成一張地圖、好友里程排行"],
@@ -73,14 +73,17 @@ const Premium = (() => {
     ["download", "路線檔匯入匯出", "跟著別人的 GPX 路線走、把自己的軌跡匯出成 GPX"],
     ["play", "模擬模式", "沒有 GPS 也能沿真實步道路線預覽整條路線"],
     ["sparkle", "專屬外觀與身分", "PRO 徽章、頭像框、名字跟色、專屬主題、夥伴命名與裝扮、PRO 表情貼"],
+    ["calendar", "主畫面小工具", "iPhone 主畫面／鎖定畫面看夥伴、連續天數、本週里程"],
   ];
+  // 永遠免費（安全相關一律不收費）：在升級面板最上面講清楚
+  const ALWAYS_FREE = ["留守人", "求救卡", "原路返回", "天黑倒數", "林業署路況", "山友路況回報", "山頂天氣", "偏離路線提醒", "離線地圖 10 MB", "記錄中鎖定畫面卡片"];
   // 免費 vs Premium 比較
   const COMPARE = [
     ["離線地圖", "10 MB", "無限"],
     ["記錄時預載周邊地圖", "縮小範圍", "完整"],
     ["地圖包匯出 / 匯入", "—", "✓"],
     ["進階分析", "—", "完整"],
-    ["年度回顧", "—", "✓"],
+    ["年度回顧＋山行故事", "—", "✓"],
     ["3D 地形地圖", "—", "✓"],
     ["收藏步道", "20 條", "無限"],
     ["足跡熱力圖", "—", "✓"],
@@ -89,7 +92,8 @@ const Premium = (() => {
     ["GPX 匯入 / 匯出", "—", "✓"],
     ["模擬模式", "—", "✓"],
     ["PRO 徽章 / 主題 / 表情貼", "—", "✓"],
-    ["夥伴命名·裝扮 / 頭像框", "—", "✓"],
+    ["夥伴命名·裝扮 / 頭像框", "挑戰獎勵", "✓"],
+    ["主畫面小工具", "—", "✓"],
   ];
   const icc = n => (typeof ic === "function" ? ic(n) : "");
 
@@ -104,6 +108,7 @@ const Premium = (() => {
       <div class="pm-crown">${icc("sparkle")}</div>
       <h2>循徑拾光 Premium</h2>
       <p class="pm-sub">支持開發，解鎖全部進階功能</p>
+      <div class="pm-free">${icc("shield")}<div><b>安全功能永遠免費</b><div class="pm-free-list">${ALWAYS_FREE.map(x => `<span>${x}</span>`).join("")}</div></div></div>
       <div class="pm-benefits">${BENEFITS.map(([i, t, d]) => `<div class="pm-b"><span class="pm-b-ic">${icc(i)}</span><div><b>${t}</b><div class="pm-b-d">${d}</div></div></div>`).join("")}</div>
       <table class="pm-compare"><thead><tr><th></th><th>免費</th><th>Premium</th></tr></thead><tbody>
         ${COMPARE.map(([a, b, c]) => `<tr><td>${a}</td><td>${b}</td><td class="pm-pro">${c}</td></tr>`).join("")}

@@ -131,7 +131,7 @@ const plan={id:"tp9",owner_id:"u1",owner_name:"阿梅",owner_avatar:null,trail_i
  // 人太少：只剩 7/30 天為 0 且沒圖 → 卡片不出現
  await p.evaluate(()=>{window.__fakeT.crowd={hikers7:0,hikers30:0,year_hikers:0,grid:null};window.__fakeT.activity=null;});
  await p.evaluate(()=>{closeDetail&&closeDetail();});await p.waitForTimeout(300);await p.evaluate(()=>openDetail("forestry-027"));await p.waitForTimeout(1500);
- ok(await p.evaluate(()=>{const b=document.getElementById("activityBox");return !b||b.hidden||!b.innerText.trim();}),"too few hikers → card hidden");
+ ok(await p.evaluate(()=>{const b=document.getElementById("activityBox");return b&&!b.hidden&&b.classList.contains("crowd-empty")&&!b.querySelector(".crowd-grid")&&!/\d+ 人走過/.test(b.innerText);}),"too few hikers → no numbers, just the cold-start hint");
  // 貢獻
  const rec={id:"r1",date:new Date().toISOString(),trailId:"forestry-004",distanceKm:3.2,elapsedMs:2*3.6e6};
  ok(await p.evaluate(r=>TrailCrowd.contribute(r),rec),"contribute real hike");

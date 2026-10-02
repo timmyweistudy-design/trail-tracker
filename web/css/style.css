@@ -2408,6 +2408,10 @@ html[data-theme="dark"] body::after { opacity: .05; }
 .pm-crown .ic { width: 34px; height: 34px; }
 .premium-card h2 { font-family: var(--serif); font-size: calc(21px * var(--fs, 1)); margin: 0; }
 .pm-sub { color: var(--ink-soft); font-size: calc(13px * var(--fs, 1)); margin: 4px 0 16px; }
+.pm-free { display: flex; gap: 10px; align-items: flex-start; text-align: left; margin: 0 0 16px; padding: 12px; border-radius: var(--r-sm); background: var(--ok-bg); border: 1px solid var(--ok-line); color: var(--ok-ink); }
+.pm-free > .ic { flex: none; width: 22px; height: 22px; color: var(--ok-ic); margin-top: 1px; }
+.pm-free-list { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.pm-free-list span { padding: 2px 8px; border-radius: var(--r-pill); background: var(--surface); border: 1px solid var(--ok-line); font-size: calc(12px * var(--fs, 1)); font-weight: 600; }
 .pm-benefits { text-align: left; display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; }
 .pm-b { display: flex; gap: 11px; align-items: flex-start; }
 .pm-b-ic { flex: 0 0 auto; color: var(--brand-mid); }
@@ -3640,6 +3644,8 @@ html[data-theme="dark"] .trp-sum { background: var(--warn-bg); color: var(--warn
 .trp-note { font-size: calc(13px * var(--fs, 1)); color: var(--ink); margin-top: 3px; line-height: 1.5; overflow-wrap: anywhere; }
 .trp-photo { display: block; margin-top: 6px; max-width: 100%; max-height: 180px; border-radius: var(--r-xs); object-fit: cover; cursor: zoom-in; }
 .trp-meta { font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-faint); margin-top: 4px; }
+.trp-flag { border: none; background: none; color: var(--ink-faint); font: inherit; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.trp-flag:disabled { text-decoration: none; cursor: default; }
 .trp-del { border: none; background: none; color: var(--danger, #b3322a); font: inherit; font-weight: 700; padding: 0; cursor: pointer; }
 .trp-empty { font-size: calc(13px * var(--fs, 1)); color: var(--ink-faint); padding: 4px 2px 8px; }
 .trp-add { margin-top: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
@@ -3846,3 +3852,16 @@ html[data-theme="dark"] .cg-c.l4 { background: #7fcf98; border-color: #8edaa6; }
 .composer-mask, .pv-mask { padding-bottom: var(--kb, 0px); }
 .pet-modal, .input-modal, .ttdlg-ov { padding-bottom: calc(var(--safe-b) + 12px + var(--kb, 0px)); }
 #footMap .leaflet-bottom { bottom: var(--safe-b); }
+/* —— 管理後台（js/admin.js，只給開發者） —— */
+.adm-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.adm-item { border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 10px 12px; background: var(--surface); display: flex; flex-direction: column; gap: 5px; }
+.adm-item.is-hidden { opacity: .7; background: var(--surface-2); }
+.adm-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: calc(13px * var(--fs, 1)); }
+.adm-top small { color: var(--ink-faint); }
+.adm-kind { padding: 1px 7px; border-radius: var(--r-pill); background: var(--brand-soft); color: var(--brand-deep); font-size: calc(11px * var(--fs, 1)); font-weight: 700; }
+.adm-flags { margin-left: auto; padding: 1px 7px; border-radius: var(--r-pill); background: var(--bad-bg); color: var(--bad-ink); font-size: calc(11px * var(--fs, 1)); font-weight: 700; }
+.adm-body { font-size: calc(13.5px * var(--fs, 1)); color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
+.adm-mono { font-family: ui-monospace, Menlo, monospace; font-size: calc(12px * var(--fs, 1)); }
+.adm-meta, .adm-note { font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-faint); overflow-wrap: anywhere; }
+.adm-item .btn { align-self: flex-end; padding: 6px 14px; font-size: calc(12.5px * var(--fs, 1)); }
+.crowd-empty .crowd-note { font-size: calc(12px * var(--fs, 1)); color: var(--ink-soft); margin-top: 2px; }
