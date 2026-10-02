@@ -19,9 +19,12 @@ const NativePush = (() => {
     P.addListener("registration", t => { _lastToken = t && t.value; if (_lastToken) storeToken(_lastToken); });
     // 註冊失敗多半是 build 沒帶 aps-environment 權限（entitlement）→ 靜默，不打擾
     P.addListener("registrationError", () => { /* no-op */ });
-    // 點推播通知 → 帶 url 就導過去
+    // 點推播通知 → 帶 url 就在 App 裡開對應頁（url 是網站網址；以前直接 location.assign 會把 App 的畫面整個換成網站）
     P.addListener("pushNotificationActionPerformed", a => {
-      try { const url = a && a.notification && a.notification.data && a.notification.data.url; if (url) location.assign(url); } catch (e) { /* */ }
+      try {
+        const url = a && a.notification && a.notification.data && a.notification.data.url; if (!url) return;
+        if (typeof window.routeDeepLink === "function") window.routeDeepLink(new URL(url).search);
+      } catch (e) { /* */ }
     });
   }
 

@@ -119,6 +119,9 @@ const Profiles = (() => {
       <div class="set-group" id="stPushGroup" hidden><div class="set-label">${T("通知")}</div>
         <label class="set-row"><span>${T("有人按讚、留言、追蹤時推播通知我")}</span><input type="checkbox" class="tt-switch" id="stPush"></label>
       </div>
+      <div class="set-group"><div class="set-label">${T("步道人氣")}</div>
+        <label class="set-row"><span>${T("走完匿名分享出發時間")}<small>${T("讓大家知道哪個時段人多。只送步道和出發時間，不送軌跡、位置和名字")}</small></span><input type="checkbox" class="tt-switch" id="stCrowd" ${localStorage.getItem("tt_crowd_off") === "1" ? "" : "checked"}></label>
+      </div>
       <div class="set-group"><div class="set-label">${T("預設發文可見度")}</div>
         <label class="set-row"><span>${T("只給好友")}</span><input type="radio" name="dvis" value="friends" ${defVis === "friends" ? "checked" : ""}></label>
         <label class="set-row"><span>${T("公開")}</span><input type="radio" name="dvis" value="public" ${defVis === "public" ? "checked" : ""}></label>
@@ -135,6 +138,7 @@ const Profiles = (() => {
       </div>
       </div>`);
     document.getElementById("stShare").addEventListener("click", () => shareHandle(prof));
+    document.getElementById("stCrowd").addEventListener("change", e => { try { if (e.target.checked) localStorage.removeItem("tt_crowd_off"); else localStorage.setItem("tt_crowd_off", "1"); } catch (er) { /* */ } say(e.target.checked ? "會匿名分享出發時間" : "不再分享出發時間"); });
     document.getElementById("stSignout").addEventListener("click", async () => {
       if (!(await ttConfirm(T("要登出嗎？這台手機上的行程不會刪掉。"), T("登出"), T("取消")))) return;   // 登出可以再登入，不算破壞性
       const btn = document.getElementById("stSignout"); if (btn) btn.disabled = true;

@@ -4,25 +4,9 @@
 // 步道詳情頁：顯示走過這條步道的山友公開貼文
 // 「最近有人走過」：只聚合使用者自己設為公開的貼文，且少於 3 人不顯示任何數字（k-匿名，
 // 否則「近 30 天 1 人走過」等於公開某個人的行蹤）。資料庫端也擋一次（schema-phase26）。
+// 第三波起改成「步道人氣」卡（js/trail-crowd.js）：近 7／30 天人數、星期×時段熱度圖、平均耗時；兩支 RPC 任一不存在都安靜略過
 async function loadTrailActivity(t) {
-  const box = $("#activityBox");
-  if (socialHidden()) return;   // 社群功能關掉時不查別人的健行統計
-  if (!box || typeof Supa === "undefined" || !Supa.ready || !Supa.ready()) return;
-  try {
-    const c = Supa.client(); if (!c) return;
-    const { data, error } = await c.rpc("trail_activity", { p_trail: String(t.id), p_days: 30 });
-    if (error || !data || !data.length) return;           // 資料庫還沒跑 phase26 → 靜默不顯示
-    if (_detailTrail !== t) return;                       // 已切換步道
-    const a = data[0];
-    if (!a.hikers || a.hikers < 3) return;                // 人太少 → 不顯示（隱私）
-    const bits = [`<span><b>${a.hikers}</b> ${ttT("人走過")}</span>`];
-    if (a.median_ms) bits.push(`<span>${ttT("平均耗時")} <b>${fmtTime(Number(a.median_ms))}</b></span>`);
-    if (a.median_ascent) bits.push(`<span>${ttT("平均爬升")} <b>↑${a.median_ascent}</b> m</span>`);
-    box.hidden = false;
-    box.className = "activity-card";
-    box.innerHTML = `<div class="act-h">${ic("users")} ${ttT("最近 30 天")}</div>
-      <div class="act-row">${bits.join(`<span class="act-dot">·</span>`)}</div>`;
-  } catch (e) { /* 沒有這個函式/離線 → 不顯示，不影響其他區塊 */ }
+  try { if (typeof TrailCrowd !== "undefined") await TrailCrowd.load(t); } catch (e) { /* 沒有這個函式/離線 → 不顯示，不影響其他區塊 */ }
 }
 
 async function loadTrailFeed(t) {
@@ -494,6 +478,7 @@ Recorder.onUpdate(s => {
   // 天黑倒數＋原路返回（outdoor.js）：日落用目前位置離線算，依走來的時間推「最晚幾點往回走」
   // （以前只在選了步道、又有網路查到天氣時，離日落 90 分鐘提醒一次）
   if (typeof Outdoor !== "undefined") { try { Outdoor.onUpdate(s); } catch (e) { /* 安全提示失敗不影響記錄 */ } }
+  if (typeof NativeLive !== "undefined") NativeLive.tick();   // 鎖定畫面／動態島：背景時計時器會被系統放慢，跟著定位更新一起送（內部有節流）
   // 休息很久：提醒一次
   if (s.state === "running" && s.resting && s.restMs > 15 * 60000 && !_restWarned) { _restWarned = true; toast(ttT("休息 15 分鐘了，要繼續走嗎？")); }
   if (s.state === "running" && !s.resting) _restWarned = false;
@@ -662,18 +647,6 @@ document.addEventListener("click", e => {
   B.open({ url: href }).catch(() => { try { window.open(href, "_blank"); } catch (_) { /* */ } });
 }, true);
 $("#btnTeam").addEventListener("click", () => { initRecMap(); if (typeof Team !== "undefined") Team.openSheet(); });
-$("#btnShareLoc").addEventListener("click", () => {
-  if (!navigator.geolocation) { toast(ttT("此裝置不支援定位")); return; }
-  toast(ttT("定位中…"));
-  navigator.geolocation.getCurrentPosition(pos => {
-    const { latitude: la, longitude: lo } = pos.coords;
-    const url = `https://www.google.com/maps?q=${la.toFixed(6)},${lo.toFixed(6)}`;
-    const text = `${ttT("我現在在這裡")}：${url}`;
-    if (navigator.share) navigator.share({ title: ttT("我現在在這裡"), text, url }).catch(() => {});
-    else if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast(ttT("位置連結複製好了，貼給家人就行")));
-    else window.open(url, "_blank");
-  }, () => toast(ttT("定位失敗，請允許定位權限")), { enableHighAccuracy: true, timeout: 10000 });
-});
 
 // 開始記錄時，背景預載當前位置周邊圖磚（保險，避免途中失去訊號）。
 // 這也是離線地圖：非會員縮小範圍（±1km、縮放 14–15）並計入 MB 額度；額度不足只跳過預載、不影響記錄。Premium 完整預載（±2km、14–16）。
@@ -807,7 +780,7 @@ function startRecordingUI() {
   }
   try {
     if (Recorder.getState() === "paused") Recorder.resume(sim());
-    else { hikePhotos = []; $("#snapCount").textContent = ""; snapStoreClear(); Recorder.start(sim()); }   // 新的一趟：清空隨手拍
+    else { hikePhotos = []; $("#snapCount").textContent = ""; snapStoreClear(); Recorder.start(sim()); if (!sim() && typeof Guardian !== "undefined") Guardian.onStart(); }   // 新的一趟：清空隨手拍；設好的留守開始生效（模擬不算）
   } catch (e) {
     if (typeof toast === "function") toast(ttT("記錄沒有開始，再按一次試試"));
     setNavUp(false);
@@ -952,6 +925,7 @@ async function finishRecording(autoVehicle) {
   setNavUp(false); _navUserOff = false;   // 結束記錄→退出導航視角、下趟恢復預設導航
   recPreloaded = false; lastKmMilestone = 0; _berryLastKm = null;   // 下次記錄重新預載/里程碑/果實錨點
   syncRecButtons("idle"); setRecLock(false);   // 結束記錄→解除口袋鎖定
+  safeRun("guardian", () => { if (typeof Guardian !== "undefined") return Guardian.onFinish(); });   // 按結束＝平安下山，留守結束
   if (rec) hikePhotosRecId = rec.id;   // 隨手拍歸屬這趟，結算頁才顯示
   safeRun("clear-markers", () => { if (recMarker) { recMap.removeLayer(recMarker); recMarker = null; } if (petMarker) { recMap.removeLayer(petMarker); petMarker = null; } if (recLine) recLine.setLatLngs([]); });
   if (autoVehicle) toast(ttT("速度一直超過時速 20 公里，看起來上車了，先幫你結束記錄"));
@@ -980,7 +954,8 @@ async function finishRecording(autoVehicle) {
     if (!saved) toast(ttT("儲存失敗"));   // 極罕見（addRecord 有多層 fallback），但失敗不靜默；詳因記進 tt_errors
     // 完成判定放在結算前（結算頁可能顯示「已完成」狀態）
     await safeRun("mark-done", () => maybeMarkTrailDone(rec));
-    safeRun("peaks", () => { if (typeof Peaks !== "undefined") Peaks.stampRecord(rec); });   // 走到百岳／小百岳山頂 → 蓋章   // 真實走過＋全程沒偏離步道超過 1km 才算完成
+    safeRun("peaks", () => { if (typeof Peaks !== "undefined") Peaks.stampRecord(rec); });
+    safeRun("crowd", () => { if (typeof TrailCrowd !== "undefined") TrailCrowd.contribute(rec); });   // 匿名送「步道＋出發時間」給步道人氣（設定可關）   // 走到百岳／小百岳山頂 → 蓋章   // 真實走過＋全程沒偏離步道超過 1km 才算完成
     safeRun("ach-unlock", () => { if (typeof achCheckUnlocks === "function") achCheckUnlocks(); });   // 跨門檻即時慶祝解鎖
     safeRun("clear-trail", () => clearSelectedTrail(true));   // 這趟走完就放開步道：以前選擇默默留著，下一趟會自動掛在同一條步道上
     setRecStatus(autoVehicle ? ttT("看起來上車了，這趟先幫你收好") : ttT("準備好就按開始"));

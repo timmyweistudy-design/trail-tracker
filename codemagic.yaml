@@ -35,6 +35,11 @@ workflows:
         script: npm ci   # 照 package-lock.json 裝，避免 ^ 範圍在雲端抓到不同版本的原生外掛
       - name: Capacitor 同步 iOS（複製最新 web/ + 外掛）
         script: npx cap sync ios
+      - name: 加入小工具擴充（主畫面小工具＋鎖定畫面／動態島）
+        # ⚠️ 要先在 Apple Developer 後台設好 App Group，才把 Codemagic 環境變數 ENABLE_WIDGETS 設成 1（步驟見 docs/ios-widgets.md）。
+        #    沒設＝跳過，建置跟以前一模一樣。設了以後：專案多一個 TrailWidgets target（scripts/ios-add-widgets.mjs）。
+        script: |
+          if [ "$ENABLE_WIDGETS" = "1" ]; then node scripts/ios-add-widgets.mjs ios/App; else echo "ENABLE_WIDGETS 沒開，跳過小工具"; fi
       - name: pod install
         script: |
           cd ios/App
@@ -51,6 +56,13 @@ workflows:
             --type IOS_APP_STORE \
             --certificate-key "@file:/tmp/cert_key.pem" \
             --create
+          # 小工具擴充有自己的 Bundle ID（.widgets），也要一份描述檔
+          if [ "$ENABLE_WIDGETS" = "1" ]; then
+            app-store-connect fetch-signing-files "$BUNDLE_ID.widgets" \
+              --type IOS_APP_STORE \
+              --certificate-key "@file:/tmp/cert_key.pem" \
+              --create
+          fi
       - name: 憑證加入 keychain（build-ipa 才簽得了）
         script: keychain add-certificates
       - name: 套用簽章描述檔到 Xcode 專案
@@ -62,7 +74,8 @@ workflows:
         script: |
           cd "$CM_BUILD_DIR/ios/App"
           agvtool new-version -all "$BUILD_NUMBER" \
-            || /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" App/Info.plist
+            || { /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" App/Info.plist; \
+                 [ -f TrailWidgets/Info.plist ] && /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" TrailWidgets/Info.plist; true; }   # 擴充的版本號必須跟 App 一樣
       - name: 編譯 IPA
         script: |
           xcode-project build-ipa \

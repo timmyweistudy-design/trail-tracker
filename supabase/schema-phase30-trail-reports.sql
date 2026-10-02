@@ -51,7 +51,7 @@ returns table (id uuid, kind text, note text, photo_url text, lat double precisi
 language sql stable security definer set search_path = public as $$
   select r.id, r.kind, r.note, r.photo_url, r.lat, r.lon, r.created_at,
          coalesce(nullif(p.display_name, ''), p.handle, '山友') as author_name,
-         (r.author_id = auth.uid()) as is_mine
+         coalesce(r.author_id = auth.uid(), false) as is_mine
   from trail_reports r left join profiles p on p.id = r.author_id
   where r.trail_id = p_trail and not r.hidden and r.created_at > now() - interval '7 days'
   order by r.created_at desc

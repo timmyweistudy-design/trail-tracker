@@ -166,6 +166,8 @@
     <!-- 天黑倒數＋原路返回：放在地圖上方，記錄中一眼看得到（放下面會被底部導覽蓋住） -->
     <div class="sun-hud" id="sunHud" hidden></div>
     <div class="back-hud" id="backHud" hidden></div>
+    <!-- 留守人：預計下山時間、延後（js/guardian.js） -->
+    <div class="guard-hud" id="guardHud" hidden></div>
     <div class="gps-sig" id="gpsSig" hidden><i class="gs-dot"></i><span class="gs-txt"></span></div>
     <div id="recElevSpark" hidden></div>
     <div class="recmap-wrap"><div id="recMap"></div></div>
@@ -184,11 +186,11 @@
     <!-- 不用 capture="environment"：該屬性在 Capacitor iOS WKWebView 常讓 file input 點了完全沒反應。
          拿掉後 WebView 會彈原生選單（拍照／相簿），較可靠，也讓使用者能選已拍好的照片。 -->
     <input type="file" id="snapInput" accept="image/*" style="display:none">
-    <!-- 工具：一排四格（隊友同行／分享位置／跟著路線走／求救卡）；以前求救卡是一顆比「開始」還搶眼的大按鈕 -->
+    <!-- 工具：一排四格（隊友同行／留守人／跟著路線走／求救卡；分享位置收進留守人面板）；以前求救卡是一顆比「開始」還搶眼的大按鈕 -->
     <div class="rec-sec-h">工具</div>
     <div class="rec-tools">
       <button class="rt-btn social-only" id="btnTeam"><span class="rt-ic"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 5.2A3 3 0 0 1 16 11M21 20a6 6 0 0 0-4-5.7"/></svg></span><span class="rt-l">隊友同行</span></button>
-      <button class="rt-btn" id="btnShareLoc"><span class="rt-ic"><svg class="ic" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg></span><span class="rt-l">分享位置</span></button>
+      <button class="rt-btn" id="btnGuard"><span class="rt-ic"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3 4.5 6v5.5c0 4.6 3.1 8.2 7.5 9.5 4.4-1.3 7.5-4.9 7.5-9.5V6L12 3Z"/><path d="m9 12 2.2 2.2L15.5 10"/></svg></span><span class="rt-l">留守人</span></button>
       <button class="rt-btn" id="btnImportGpx"><span class="rt-ic"><svg class="ic" viewBox="0 0 24 24"><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="5" r="2.2"/><path d="M8 19h6a4 4 0 0 0 0-8H10a4 4 0 0 1 0-8h6"/></svg></span><span class="rt-l">跟著路線走</span><span class="pro-tag">PRO</span></button>
       <button class="rt-btn rt-sos" id="btnSos"><span class="rt-ic"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3 2.5 19.5h19L12 3Z"/><path d="M12 10v4.5M12 17.2v.01"/></svg></span><span class="rt-l">求救卡</span></button>
     </div>
@@ -223,6 +225,7 @@
 
     <!-- 內容區：一眼看到自己的足跡與紀錄 -->
     <div class="section-title">我的足跡</div>
+    <div id="meStory"></div>
     <div id="meMonth"></div>
     <div id="meStats"></div>
     <div class="link-row flow" style="margin-top:11px">
@@ -509,6 +512,7 @@
 
 <script defer src="vendor/leaflet/leaflet.js"></script>
 <script defer src="vendor/markercluster/markercluster.js"></script>
+<script defer src="js/motion.js"></script>
 <script defer src="js/trails-data.js"></script>
 <script defer src="js/geo-manifest.js"></script>
 <script defer src="js/storage.js"></script>
@@ -573,6 +577,9 @@ window.addEventListener("load", () => {
 <script defer src="js/peaks-data.js"></script>
 <script defer src="js/peaks.js"></script>
 <script defer src="js/trail-reports.js"></script>
+<script defer src="js/guardian.js"></script>
+<script defer src="js/trail-crowd.js"></script>
+<script defer src="js/native-live.js"></script>
 <script defer src="js/review.js"></script>
 <script defer src="js/debug.js"></script>
 <script>

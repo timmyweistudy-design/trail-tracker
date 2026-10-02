@@ -11,13 +11,19 @@ const Notifs = (() => {
     const { count } = await c.from("notifications").select("*", { count: "exact", head: true }).eq("user_id", uid).eq("read", false);
     return count || 0;
   }
+  // plan_id 是 phase31（留守人）才有的欄位：資料庫還沒升級時查這欄會整個失敗 → 記住、改用舊欄位再查一次
+  let _noPlanCol = false;
   async function list(beforeISO) {
     const c = Supa.client(); const uid = await me(); if (!uid) return [];
-    let q = c.from("notifications")
-      .select("id, type, post_id, actor_id, read, created_at, actor:profiles!notif_actor_profile_fk(handle, display_name, avatar_url)")
-      .eq("user_id", uid).order("created_at", { ascending: false }).limit(PAGE);
-    if (beforeISO) q = q.lt("created_at", beforeISO);   // 看更早的
-    const { data } = await q;
+    const run = cols => {
+      let q = c.from("notifications")
+        .select(`id, type, post_id, ${cols}actor_id, read, created_at, actor:profiles!notif_actor_profile_fk(handle, display_name, avatar_url)`)
+        .eq("user_id", uid).order("created_at", { ascending: false }).limit(PAGE);
+      if (beforeISO) q = q.lt("created_at", beforeISO);   // 看更早的
+      return q;
+    };
+    let { data, error } = await run(_noPlanCol ? "" : "plan_id, ");
+    if (error && !_noPlanCol && /plan_id/.test(error.message || "")) { _noPlanCol = true; ({ data } = await run("")); }
     return data || [];
   }
   // ids：只標這一批（畫面上看得到的）；不給就全部
@@ -37,9 +43,15 @@ const Notifs = (() => {
     if (n.type === "team") return name + " 邀請你加入小隊";
     if (n.type === "gift") return name + " 送了果實給你的夥伴";
     if (n.type === "mention") return name + " 在貼文中提到你";
+    // 留守人（phase31）
+    if (n.type === "guard") return T("%s 出發了，請你當留守人").replace("%s", name);
+    if (n.type === "guard_ext") return T("%s 延後了預計下山時間").replace("%s", name);
+    if (n.type === "overdue") return T("%s 超過預計下山時間 30 分鐘還沒回報").replace("%s", name);
+    if (n.type === "safe") return T("%s 平安下山了").replace("%s", name);
     return name;
   }
-  function icon(t) { return (t === "follow" || t === "follow_req" || t === "follow_ok") ? ic("plus") : t === "like" ? ic("heart") : t === "team" ? ic("users") : t === "gift" ? (typeof BERRY_SVG !== "undefined" ? BERRY_SVG : "🍓") : t === "mention" ? ic("megaphone") : ic("chat"); }
+  const GUARD = new Set(["guard", "guard_ext", "overdue", "safe"]);
+  function icon(t) { if (GUARD.has(t)) return ic(t === "safe" ? "check" : t === "overdue" ? "alert" : "shield"); return (t === "follow" || t === "follow_req" || t === "follow_ok") ? ic("plus") : t === "like" ? ic("heart") : t === "team" ? ic("users") : t === "gift" ? (typeof BERRY_SVG !== "undefined" ? BERRY_SVG : "🍓") : t === "mention" ? ic("megaphone") : ic("chat"); }
 
   // 我收到、還沒處理的追蹤請求（phase18；未升級回空集合）
   async function pendingRequestIds() {
@@ -113,7 +125,8 @@ const Notifs = (() => {
 
   async function render(into) {
     into(`<div class="feed-loading"><span class="spin"></span></div>`);
-    const [bar, items, pending] = await Promise.all([pushBar(), list(), pendingRequestIds()]);
+    const [bar, items, pending, guardBar] = await Promise.all([pushBar(), list(), pendingRequestIds(),
+      typeof Guardian !== "undefined" ? Guardian.bannerHtml().catch(() => "") : ""]);
     let more = items.length >= PAGE;
     const tabs = `<div class="notif-tabs">${GROUPS.map(([k, l]) => `<button class="notif-tab ${k === _filter ? "on" : ""}" data-g="${k}">${T(l)}</button>`).join("")}</div>`;
     const paint = () => {
@@ -129,14 +142,15 @@ const Notifs = (() => {
             ? `<div class="notif-acts"><button class="btn primary nf-ok" data-uid="${n.actor_id}">${T("同意")}</button><button class="btn ghost nf-no" data-uid="${n.actor_id}">${T("拒絕")}</button></div>` : "";
           // 合併的通知：「＋2」＝另外還有 2 個人（以前顯示總數 👥3，看不出是誰加誰）
           const countChip = g.count > 1 ? `<span class="notif-count" title="${T("還有其他人")}">${ic("users")}+${g.count - 1}</span>` : "";
-          return `${sec}<div class="notif ${g.unread ? "unread" : ""}" data-type="${n.type}" data-post="${n.post_id || ""}" data-uid="${n.actor_id || ""}">
+          return `${sec}<div class="notif ${g.unread ? "unread" : ""}${GUARD.has(n.type) ? " nf-guard nf-" + n.type : ""}" data-type="${n.type}" data-post="${n.post_id || ""}" data-plan="${n.plan_id || ""}" data-uid="${n.actor_id || ""}">
             <span class="notif-ic">${icon(n.type)}</span>
             <div class="notif-body"><div class="notif-line">${label(n)}${countChip}</div><div class="fc-sub">${ago(n.created_at)}</div>${askBtns}</div>
           </div>`;
         }).join("")}</div>`
         : `<div class="social-empty"><span class="ee">${ic("bell")}</span>${T(_filter === "all" ? "還沒有通知。" : "這個分類還沒有通知。")}</div>`;
       const moreBtn = more && list2.length ? `<button class="btn ghost" id="notifMore">${T("看更早的")}</button>` : "";
-      into(`${items.length ? tabs : ""}${body}${moreBtn}${bar}`);
+      into(`${guardBar}${items.length ? tabs : ""}${body}${moreBtn}${bar}`);
+      if (guardBar && typeof Guardian !== "undefined") Guardian.wireBanner();
       const mb = document.getElementById("notifMore");
       if (mb) mb.addEventListener("click", async () => {
         mb.disabled = true; mb.innerHTML = `<span class="spin"></span>`;
@@ -158,6 +172,7 @@ const Notifs = (() => {
       document.querySelectorAll(".notif").forEach(el => el.addEventListener("click", () => {
         if (el.dataset.type === "follow" || el.dataset.type === "follow_req" || el.dataset.type === "follow_ok") { if (typeof Discover !== "undefined" && el.dataset.uid) Discover.openProfile(el.dataset.uid); }
         else if (el.dataset.type === "team") { if (typeof Team !== "undefined") Team.openSheet(); }
+        else if (GUARD.has(el.dataset.type)) { if (typeof Guardian !== "undefined" && el.dataset.plan) Guardian.openPlan(el.dataset.plan); }
         else if (el.dataset.type === "gift") { const b = document.querySelector('.tab[data-view="pet"]'); if (b) b.click(); }
         else if (el.dataset.post && typeof PostView !== "undefined") PostView.open(el.dataset.post);
       }));

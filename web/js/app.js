@@ -229,6 +229,7 @@ const ICON = {
   sliders: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',
   refresh: '<path d="M20 11a8 8 0 1 0-1.5 5"/><path d="M20 5v6h-6"/>',
   sparkle: '<path d="M12 3c.7 4.4 1.6 5.3 6 6-4.4.7-5.3 1.6-6 6-.7-4.4-1.6-5.3-6-6 4.4-.7 5.3-1.6 6-6Z"/>',
+  shield: '<path d="M12 3 4.5 6v5.5c0 4.6 3.1 8.2 7.5 9.5 4.4-1.3 7.5-4.9 7.5-9.5V6L12 3Z"/><path d="m9 12 2.2 2.2L15.5 10"/>',
   megaphone: '<path d="M3 10.5v3l15 5.5V5L3 10.5Z"/><path d="M7.5 15l1 4.5h3l-.8-3.4M21 9.5v5"/>',
   x: '<path d="M6 6l12 12M18 6 6 18"/>',
   check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
@@ -2322,6 +2323,14 @@ function routeDeepLink(search) {
     const q = new URLSearchParams(search || "");
     const id = q.get("trail");
     if (id && typeof TRAILS !== "undefined" && TRAILS.some(t => t.id === id)) { setTimeout(() => openDetail(id), 200); return; }
+    const view = q.get("view");   // 主畫面小工具／鎖定畫面卡片點進來：切到那個分頁
+    if (view && /^(explore|record|pet|me|social)$/.test(view)) { const b = document.querySelector(`.tab[data-view="${view}"]`); if (b) setTimeout(() => b.click(), 100); return; }
+    const guard = q.get("guard");   // 留守通知（推播）→ 開那趟行程的狀態
+    if (guard) {
+      const go = () => { if (typeof Guardian !== "undefined") Guardian.openPlan(guard); };
+      if (window.loadSocial) window.loadSocial().then(go, go); else go();
+      return;
+    }
     const post = q.get("post");
     if (post) {
       const go = () => { const b = document.querySelector('.tab[data-view="social"]'); if (b) b.click(); setTimeout(() => { if (typeof PostView !== "undefined") PostView.open(post); }, 500); };

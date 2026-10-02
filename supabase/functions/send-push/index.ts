@@ -11,7 +11,16 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 const LABEL: Record<string, string> = {
   follow: "開始追蹤你", like: "讚了你的貼文", comment: "在你的貼文留言",
   team: "邀請你加入小隊", gift: "送了果實給你的夥伴", mention: "在貼文中提到你",
+  follow_req: "請求追蹤你", follow_ok: "同意了你的追蹤請求",
+  // 留守人（schema-phase31）
+  guard: "出發了，請你當留守人", guard_ext: "延後了預計下山時間",
+  overdue: "超過預計下山時間 30 分鐘還沒回報", safe: "平安下山了",
 };
+// 留守人通知：附上步道、時間、最後位置（台灣時間）
+function hm(iso: string | null): string {
+  if (!iso) return "";
+  return new Date(iso).toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Taipei" });
+}
 
 // 固定時間字串比對（避免 timing side-channel 猜密鑰）
 function safeEqual(a: string, b: string): boolean {
@@ -80,7 +89,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     const row = body.record || body; // webhook 會包成 { record, ... }
-    const { user_id, actor_id, type, post_id } = row;
+    const { user_id, actor_id, type, post_id, plan_id } = row;
     if (!user_id) return new Response("no user", { status: 200 });
 
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -96,13 +105,29 @@ Deno.serve(async (req) => {
     }
     const origin = Deno.env.get("APP_ORIGIN") || "https://trail-tracker-0ma5.onrender.com";
     const title = "循徑拾光";
-    const bodyText = `${actorName} ${LABEL[type] || "有新動態"}`;
-    const url = post_id ? `${origin}/?post=${post_id}` : origin;
+    let bodyText = `${actorName} ${LABEL[type] || "有新動態"}`;
+    let url = post_id ? `${origin}/?post=${post_id}` : origin;
+    let pushTitle = title;
+    if (plan_id) {
+      url = `${origin}/?guard=${plan_id}`;
+      const { data: tp } = await admin.from("trip_plans").select("trail_name, expected_at, last_at").eq("id", plan_id).maybeSingle();
+      const trail = tp && tp.trail_name ? `「${tp.trail_name}」` : "";
+      if (type === "overdue") {
+        pushTitle = "留守提醒";
+        bodyText = `${actorName}${trail ? " 走" + trail : ""}，預計 ${hm(tp && tp.expected_at)} 下山，到現在還沒回報。先試著聯絡，聯絡不上請撥 112。${tp && tp.last_at ? `最後位置回報在 ${hm(tp.last_at)}。` : ""}`;
+      } else if (type === "guard") {
+        bodyText = `${actorName} 出發去${trail || "走步道"}，預計 ${hm(tp && tp.expected_at)} 下山，指定你當留守人`;
+      } else if (type === "guard_ext") {
+        bodyText = `${actorName} 把預計下山時間延到 ${hm(tp && tp.expected_at)}`;
+      } else if (type === "safe") {
+        bodyText = `${actorName} 平安下山了${trail ? "（" + trail.slice(1, -1) + "）" : ""}`;
+      }
+    }
 
     // Web Push（網頁裝置）
     const { data: subs } = await admin.from("push_subscriptions").select("*").eq("user_id", user_id);
     if (subs && subs.length) {
-      const payload = JSON.stringify({ title, body: bodyText, url, tag: type + (post_id || "") });
+      const payload = JSON.stringify({ title: pushTitle, body: bodyText, url, tag: type + (post_id || plan_id || "") });
       await Promise.all(subs.map(async (s: any) => {
         try {
           await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload);
@@ -113,7 +138,7 @@ Deno.serve(async (req) => {
     }
 
     // 原生推播（iOS APNs）——未設定 APNs secrets 則自動跳過，不影響 Web Push
-    await sendNativePush(admin, user_id, { title, body: bodyText, url });
+    await sendNativePush(admin, user_id, { title: pushTitle, body: bodyText, url });
 
     return new Response("ok", { status: 200 });
   } catch (e) {

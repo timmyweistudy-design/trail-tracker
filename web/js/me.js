@@ -491,9 +491,29 @@ function renderMonthSummary() {
     renderHistory(); const h = $("#histHead"); if (h && histDay) h.scrollIntoView({ behavior: "smooth", block: "start" });
   }));
 }
+// 年底橫幅：12 月～1 月「你的 2026 山行故事出爐了」（那一年至少 3 趟；按過 × 就收起來到明年）
+function storyYear() {
+  const d = new Date(), m = d.getMonth();
+  return m === 11 ? d.getFullYear() : m === 0 ? d.getFullYear() - 1 : null;
+}
+function openStory(year) {
+  if (!_proGate()) return;
+  ensureScript("js/analytics.js").then(() => ensureScript("js/year-story.js")).then(() => { if (typeof YearStory !== "undefined") YearStory.open(year); });
+}
+function renderStoryBanner() {
+  const box = $("#meStory"); if (!box) return;
+  const y = storyYear();
+  let hid = null; try { hid = localStorage.getItem("tt_story_x"); } catch (e) { /* */ }
+  const n = y ? realRecords().filter(r => +localYear(r.date) === y).length : 0;
+  if (!y || n < 3 || hid === String(y)) { box.innerHTML = ""; return; }
+  box.innerHTML = `<div class="story-banner"><button class="sb-open" id="sbOpen"><span class="sb-yr">${y}</span><span class="sb-t"><b>${ttT("你的 %d 山行故事出爐了").replace("%d", y)}</b><small>${ttT("一頁一頁看這一年，每頁都能存成限動圖")}</small></span><span class="sb-play">${ic("play")}</span></button><button class="sb-x" id="sbX" aria-label="${ttT("關閉")}">${ic("x")}</button></div>`;
+  $("#sbOpen").addEventListener("click", () => openStory(y));
+  $("#sbX").addEventListener("click", () => { try { localStorage.setItem("tt_story_x", String(y)); } catch (e) { /* */ } box.innerHTML = ""; });
+}
 function renderStats() {
   const box = $("#meStats");
   renderMonthSummary();
+  renderStoryBanner();
   if (!box) return;
   const recs = realRecords();   // 成就統計不計入模擬
   // 「走過的步道」＝真實紀錄裡出現過幾條不同步道（和進階分析同一個定義；自由路線不算）

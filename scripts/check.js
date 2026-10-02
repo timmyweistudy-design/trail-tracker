@@ -72,6 +72,8 @@ const BACKUP_EXEMPT = new Set([
   "tt_native_push",                                       // 原生推播開關：綁這台裝置的 APNs token，不跨機還原
   "tt_premium", "tt_premium_since",                       // 訂閱狀態：由 Supabase 決定
   "tt_active_rec",                                        // 記錄中暫存
+  "tt_story_x", "tt_story_seen",                          // 年度故事橫幅收起來了／看過了（純介面提示）
+  "tt_guard", "tt_guard_done",                            // 留守人：這一趟的預計下山時間／待補送的「平安下山」（跟著這台手機的記錄走）
   "tt_peaks_scan", "tt_cond_cache", "tt_cond_seen",       // 收集冊「以前紀錄掃過了」旗標（換機要重掃）、路況快取（每台自己抓）
   "tt_vis",                                               // 戶外顯示（陽光／紅光）：看當下環境臨時切，換手機不該一開就是紅色畫面
   "tt_offline_sets", "tt_tiles_migrated", "tt_tiles_clean1",                  // 離線地圖清單／搬家旗標：圖磚只在這台手機，跨機還原沒意義

@@ -103,6 +103,7 @@ function openYearReview(year) {
       ${lastRecs.length ? `<div><span>${ttT("較去年里程")}</span> <b>${delta >= 0 ? "+" : "−"}${Math.abs(delta).toFixed(0)} km</b></div>` : ""}
       ${asc >= 100 ? `<div class="yr-foot">↑ 累積爬升約 ${(asc / 3952).toFixed(1)} 座玉山</div>` : ""}
     </div>
+    <button class="yr-play" id="yrPlay">${ic("play")}<span><b>${ttT("播放山行故事")}</b><small>${ttT("一頁一頁看這一年，每頁都能存成限動圖")}</small></span></button>
     <div class="yr-btns"><button class="btn primary" id="yrShare">${ic("share")} 分享</button><button class="btn ghost yr-imgbtn" id="yrImg">${ic("camera")} 存成圖片</button></div>`
     : `<div class="social-empty yr-empty" style="color:#fff">${year === thisYear ? ttT("今年還沒有行程，一起多走幾趟吧！") : ttT("這一年沒有行程")}</div>`}
   </div>`;
@@ -132,6 +133,8 @@ function openYearReview(year) {
     else if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast("已複製回顧文字"));
     else toast(text);
   });
+  const pb = ov.querySelector("#yrPlay");
+  if (pb) pb.addEventListener("click", () => ensureScript("js/year-story.js").then(() => { if (typeof YearStory !== "undefined") { close(); YearStory.open(year); } }));
   const ib = ov.querySelector("#yrImg");
   const ps = (typeof petStats === "function") ? petStats() : null;
   if (ib) ib.addEventListener("click", () => drawYearImage({ year, n: recs.length, km, asc, hrs, steps, distinct, top, longest, pet: ps, avatar: window.__meAvatar }));
