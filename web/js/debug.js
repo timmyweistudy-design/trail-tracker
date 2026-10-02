@@ -136,9 +136,93 @@ window.ttDebug = (() => {
       checkPetEvolve(); refresh(); try { renderBadges(); if (typeof refreshAchTree === "function") refreshAchTree(); } catch (e) { /* */ }
       return "已清空所有行程記錄";
     },
+    // ───── 第一波：戶外安全 ─────
+    // 模擬日落：記錄中（可開模擬）時，記錄頁上方的天黑倒數會照這個時間算
+    sunset(min) { if (min == null) { delete window.__ttSunsetAt; return "日落時間恢復正常"; } window.__ttSunsetAt = Date.now() + min * 60000; return min > 0 ? `模擬 ${min} 分鐘後日落（開始記錄後看記錄頁上方）` : "模擬天已經黑了（開始記錄後看記錄頁上方）"; },
+    openSos() { if (typeof Outdoor !== "undefined") Outdoor.openSos(); return ""; },
+    // ───── 第二波 ─────
+    peaksStamp(nb = 5, nx = 8) {
+      if (typeof Peaks === "undefined") return "收集冊還沒載入";
+      const g = Peaks.got(), at = new Date().toISOString();
+      const pick = (list, n) => Peaks.LISTS[list].data.filter(p => !g[list + p[0]]).sort(() => Math.random() - .5).slice(0, n).forEach(p => { g[list + p[0]] = { at, rec: "dbg" }; });
+      pick("b", nb); pick("x", nx);
+      localStorage.setItem("tt_peaks", JSON.stringify(g)); localStorage.setItem("tt_peaks_scan", "1");
+      return `蓋了百岳 ${nb}、小百岳 ${nx} 座（日期今天）`;
+    },
+    peaksReset() { ["tt_peaks", "tt_peaks_scan"].forEach(k => localStorage.removeItem(k)); return "收集冊清空（下次打開會從紀錄重新補蓋）"; },
+    openPeaks() { if (typeof Peaks !== "undefined") Peaks.open(); return ""; },
+    // 每月挑戰：補幾筆這個月的測試行程，剛好達標（可再按「領取」測頭巾解鎖）
+    challengeDone() {
+      if (typeof Challenge === "undefined") return "每月挑戰還沒載入";
+      const p = Challenge.progress(), needKm = Math.max(0, p.g.km - p.km), needN = Math.max(1, p.g.trips - p.trips);
+      for (let i = 0; i < needN; i++) Store.addRecord({ id: "dbg-mch-" + Date.now() + i, date: new Date(Date.now() - i * 3600e3).toISOString(), dbg: true, note: "挑戰測試", distanceKm: +(needKm / needN + 0.2).toFixed(2), elapsedMs: 3600e3, ascent: 100, steps: 4000, track: [] });
+      refresh(); try { Challenge.render(); } catch (e) { /* */ }
+      return "已補到達標，去夥伴頁按「領取」";
+    },
+    challengeReset() {
+      ["tt_mch", "tt_mch_done"].forEach(k => localStorage.removeItem(k));
+      try { const own = new Set(JSON.parse(localStorage.getItem("tt_pet_hats_owned")) || ["none"]); own.delete("bandana"); localStorage.setItem("tt_pet_hats_owned", JSON.stringify([...own])); if (localStorage.getItem("tt_pet_hat") === "bandana") localStorage.removeItem("tt_pet_hat"); } catch (e) { /* */ }
+      Store.setRecords(Store.getRecords().filter(r => !String(r.id).startsWith("dbg-mch-")));
+      refresh(); try { Challenge.render(); } catch (e) { /* */ }
+      return "每月挑戰重置（目標重算、頭巾收回、測試行程刪掉）";
+    },
+    // 收藏步道路況有變：拿一條林業署步道當收藏，模擬它剛封閉
+    condAlert() {
+      const t = TRAILS.find(x => x.source === "forestry" && !x.condition) || TRAILS.find(x => x.source === "forestry");
+      if (!t) return "找不到林業署步道";
+      if (!Store.isFav(t.id)) Store.toggleFav(t.id);
+      if (typeof announceCondChanges === "function") announceCondChanges([{ t, was: "", now: "暫停開放" }]);
+      return "";
+    },
+    openSummit() { const t = TRAILS.find(x => (x.alt_high || 0) >= 3000 && x.lat) || TRAILS.find(x => (x.alt_high || 0) >= 1000); if (!t) return "找不到高山步道"; openDetail(t.id); setTimeout(() => { const b = document.querySelector('#detailNav button[data-tab="rt"]'); if (b) b.click(); }, 500); return "已開啟「" + t.name + "」→ 路線分頁看山頂天氣"; },
+    openReport() { const t = TRAILS.find(x => x.source === "forestry"); if (typeof TrailReports !== "undefined" && t) TrailReports.openForm(t); return ""; },
+    // ───── 第三波 ─────
+    // 留守：示範模式（不碰雲端）。min>0＝幾分鐘後到時間；負數＝已經超時幾分鐘
+    guard(min) {
+      if (min == null) { localStorage.removeItem("tt_guard"); if (typeof Guardian !== "undefined") Guardian.paintHud(); return "留守示範清掉了"; }
+      const rec = typeof Recorder !== "undefined" && Recorder.getState() !== "idle";
+      localStorage.setItem("tt_guard", JSON.stringify({ at: Date.now() + min * 60000, gs: [{ id: "dbg", name: "阿梅" }], trail: "測試步道", planId: "dbg", on: true, dbg: true }));
+      if (typeof Guardian !== "undefined") Guardian.paintHud();
+      return (rec ? "" : "（記錄頁上方會出現留守小條）") + (min < 0 ? `模擬已超時 ${-min} 分鐘` : `模擬 ${min} 分鐘後到預計下山時間`);
+    },
+    guardPlan(status = "overdue") {
+      if (typeof Guardian === "undefined") return "";
+      Guardian.openPlan(null, [{ id: "dbg", owner_name: "阿梅", owner_avatar: null, trail_name: "金瓜寮魚蕨步道", expected_at: new Date(Date.now() - (status === "overdue" ? 50 : -90) * 60000).toISOString(), status, last_lat: 24.93512, last_lon: 121.69876, last_at: new Date(Date.now() - 40 * 60000).toISOString() }]);
+      return "";
+    },
+    // 步道人氣：在目前開著的步道詳情畫一張範例人氣卡（沒開就先開一條）
+    crowdPreview() {
+      const show = () => { const t = typeof currentDetailTrail === "function" && currentDetailTrail(); if (!t || typeof TrailCrowd === "undefined") return; const g = Array(28).fill(0); g[21] = 4; g[25] = 3; g[20] = 2; g[5] = 1; g[11] = 1; TrailCrowd.load(t, { crowd: { hikers7: 12, hikers30: 40, year_hikers: 88, grid: g }, act: { hikers: 5, median_ms: 9e6, median_ascent: 480 } }); const b = document.getElementById("activityBox"); if (b) b.scrollIntoView({ block: "center" }); };
+      if (!(typeof currentDetailTrail === "function" && currentDetailTrail())) { const t = TRAILS.find(x => x.source === "forestry"); openDetail(t.id); setTimeout(show, 900); } else show();
+      return "範例資料（真的資料要等大家走完匿名回傳）";
+    },
+    story(y) { ensureScript("js/analytics.js").then(() => ensureScript("js/year-story.js")).then(() => { if (typeof YearStory !== "undefined") YearStory.open(y || new Date().getFullYear()); }); return ""; },
+    storyBanner() {
+      const on = localStorage.getItem("tt_story_force") !== "1";
+      if (on) localStorage.setItem("tt_story_force", "1"); else localStorage.removeItem("tt_story_force");
+      localStorage.removeItem("tt_story_x"); refresh();
+      return on ? "年底故事橫幅：強制顯示（我的頁上方；今年要有 3 趟以上）" : "年底故事橫幅：恢復只在 12 月～1 月顯示";
+    },
+    async widget() {
+      if (typeof NativeLive === "undefined") return "沒有原生橋接";
+      const a = await NativeLive.check();
+      if (!a.widget && !a.live) return "這裡不是 iOS App，或小工具還沒開通（ENABLE_WIDGETS）";
+      const ok = await NativeLive.pushWidget(true);
+      return `小工具資料${ok ? "已推送" : "推送失敗"}；即時動態${a.live ? "可用" : "被系統關掉了"}`;
+    },
+    // ───── 裝置／外觀 ─────
+    notch() {
+      const on = !document.documentElement.classList.contains("sim-notch");
+      document.documentElement.classList.toggle("sim-notch", on);
+      try { if (on) localStorage.setItem("tt_sim_notch", "1"); else localStorage.removeItem("tt_sim_notch"); } catch (e) { /* */ }
+      simNotchMarks();
+      return on ? "模擬動態島＋Home 條（iPhone 15 Pro）：打開各頁和彈窗檢查有沒有被擋" : "關掉動態島模擬";
+    },
+    theme() { const order = ["light", "dark", "sun"], cur = themeMode(), next = order[(order.indexOf(cur) + 1) % order.length]; setTheme(next); return "外觀：" + { light: "淺色", dark: "深色", sun: "陽光高對比" }[next]; },
     state() { return { 成長km: +totalKm().toFixed(2), 等級: petStageIndex(totalKm()) + 1, 果實: berriesBalance(), 愛心: petHearts(), 親密度: affinity(), 今日km: +todayKm().toFixed(1), 出行次數: realRecords().length, debug里程: debugKm() }; },
     panel() { toggleDebugPanel(); },
-    help() { console.log("ttDebug 指令：\n addKm(n) setLevel(0-6) maxLevel() evolve()\n addBerries(n) setAffinity(0-100) resetFeed() addDays(n)\n addHike(km) clearHikes()  ← 推進成就/每日環/足跡圖\n unlockAch() unlockNextAch() halfAch() resetAch()  ← 解鎖全部/下一個/一半/重置成就\n openAch() resetAchSeen()  ← 開成就頁/清解鎖提示重測 toast\n resetQuests()  ← 重置每日任務\n clearAllRecords()  ← 清空所有行程\n clearDebug() resetPet() state() panel()"); return api.state(); },
+    help() { console.log("ttDebug 新功能：sunset(分) openSos() peaksStamp(百岳,小百岳) peaksReset() challengeDone() challengeReset() condAlert() openSummit() openReport() guard(分) guardPlan() crowdPreview() story(年) storyBanner() widget() notch() theme()");
+      console.log("ttDebug 指令：\n addKm(n) setLevel(0-6) maxLevel() evolve()\n addBerries(n) setAffinity(0-100) resetFeed() addDays(n)\n addHike(km) clearHikes()  ← 推進成就/每日環/足跡圖\n unlockAch() unlockNextAch() halfAch() resetAch()  ← 解鎖全部/下一個/一半/重置成就\n openAch() resetAchSeen()  ← 開成就頁/清解鎖提示重測 toast\n resetQuests()  ← 重置每日任務\n clearAllRecords()  ← 清空所有行程\n clearDebug() resetPet() state() panel()"); return api.state(); },
   };
   return api;
 })();
@@ -152,36 +236,78 @@ async function ttIsOwner() {
     return !!(data && data.user && (data.user.email || "").toLowerCase() === TT_OWNER_EMAIL);
   } catch (e) { return false; }
 }
+// 模擬動態島：畫一顆黑色膠囊和 Home 條（只是看位置，點不到）
+function simNotchMarks() {
+  const on = document.documentElement.classList.contains("sim-notch");
+  document.querySelectorAll(".sim-island, .sim-home").forEach(e => e.remove());
+  if (on) { const a = document.createElement("div"); a.className = "sim-island"; const h = document.createElement("div"); h.className = "sim-home"; document.body.append(a, h); }
+}
+simNotchMarks();
 async function toggleDebugPanel() {
   let p = document.getElementById("debugPanel");
   if (p) { p.remove(); return; }
+  if (window.loadSocial) { try { await window.loadSocial(); } catch (e) { /* 社群模組沒載好也照樣判斷 */ } }   // 以前社群還沒載入時一律判定「不是開發者」
   if (!(await ttIsOwner())) { if (typeof toast === "function") toast("測試面板僅限開發者使用"); return; }
   p = document.createElement("div");
   p.id = "debugPanel"; p.className = "debug-panel";
-  const btns = [
-    ["+5km", () => ttDebug.addKm(5)], ["+20km", () => ttDebug.addKm(20)],
-    ["進化➡", () => ttDebug.evolve()], ["神龍🐉", () => ttDebug.maxLevel()],
-    ["+50🍓", () => ttDebug.addBerries(50)], ["❤️滿", () => ttDebug.setAffinity(100)],
-    ["可再餵", () => ttDebug.resetFeed()], ["+30天", () => ttDebug.addDays(30)],
-    ["＋行程3km", () => ttDebug.addHike(3)], ["＋行程10km", () => ttDebug.addHike(10)],
-    ["清測試行程", () => ttDebug.clearHikes()], ["清debug", () => ttDebug.clearDebug()],
-    ["🏅解全成就", () => ttDebug.unlockAch()], ["🏅解下一個", () => ttDebug.unlockNextAch()],
-    ["🏅解一半", () => ttDebug.halfAch()], ["🏅重置成就", () => ttDebug.resetAch()],
-    ["🏅開成就頁", () => ttDebug.openAch()], ["🏅清解鎖提示", () => ttDebug.resetAchSeen()],
-    ["📅重置每日任務", () => ttDebug.resetQuests()],
-    ["🗑清所有行程", async () => { if (await ttConfirm("清空全部行程記錄？")) ttDebug.clearAllRecords(); }],
-    ["重置🥚", () => ttDebug.resetPet()],
-    ["🌐重看語言選擇", () => { try { localStorage.removeItem("tt_lang"); localStorage.removeItem("tt_onboarded_v2"); } catch (e) { /* */ } const dp = document.getElementById("debugPanel"); if (dp) dp.remove(); langGate(true); }],
-    ["🧭導覽(中)", () => { try { localStorage.removeItem("tt_onboarded_v2"); localStorage.removeItem("tt_tour_resume"); } catch (e) { /* */ } const dp = document.getElementById("debugPanel"); if (dp) dp.remove(); onboarding(true, { previewLang: "zh", startAt: 0 }); }],
-    ["🧭導覽(英)", () => { try { localStorage.removeItem("tt_onboarded_v2"); localStorage.removeItem("tt_tour_resume"); } catch (e) { /* */ } const dp = document.getElementById("debugPanel"); if (dp) dp.remove(); onboarding(true, { previewLang: "en", startAt: 0 }); }],
-    ["🧭重設情境導覽", () => { try { ["tt_coach_trail", "tt_coach_team", "tt_coach_record", "tt_coach_soc_friends", "tt_coach_soc_explore", "tt_coach_soc_search", "tt_coach_soc_notif", "tt_coach_soc_me"].forEach(k => localStorage.removeItem(k)); } catch (e) { /* */ } const dp = document.getElementById("debugPanel"); if (dp) dp.remove(); toast("情境導覽已重設：重新打開步道／小隊／記錄／社群各頁就會再出現"); }],
+  const closeAnd = fn => () => { const dp = document.getElementById("debugPanel"); if (dp) dp.remove(); return fn(); };
+  const tourReset = () => { ["tt_onboarded_v2", "tt_tour_resume"].forEach(k => localStorage.removeItem(k)); };
+  const SECTIONS = [
+    ["夥伴", [
+      ["+5km", () => ttDebug.addKm(5)], ["+20km", () => ttDebug.addKm(20)], ["進化➡", () => ttDebug.evolve()], ["神龍🐉", () => ttDebug.maxLevel()],
+      ["+50🍓", () => ttDebug.addBerries(50)], ["❤️滿", () => ttDebug.setAffinity(100)], ["可再餵", () => ttDebug.resetFeed()], ["+30天", () => ttDebug.addDays(30)],
+      ["重置🥚", () => ttDebug.resetPet()], ["清debug", () => ttDebug.clearDebug()],
+    ]],
+    ["行程與成就", [
+      ["＋行程3km", () => ttDebug.addHike(3)], ["＋行程10km", () => ttDebug.addHike(10)], ["清測試行程", () => ttDebug.clearHikes()],
+      ["🏅解全成就", () => ttDebug.unlockAch()], ["🏅解下一個", () => ttDebug.unlockNextAch()], ["🏅解一半", () => ttDebug.halfAch()], ["🏅重置成就", () => ttDebug.resetAch()],
+      ["🏅開成就頁", closeAnd(() => ttDebug.openAch())], ["🏅清解鎖提示", () => ttDebug.resetAchSeen()], ["📅重置每日任務", () => ttDebug.resetQuests()],
+      ["🗑清所有行程", async () => { if (await ttConfirm("清空全部行程記錄？", "清空", "取消", { danger: true })) return ttDebug.clearAllRecords(); }],
+    ]],
+    ["第一波：安全", [
+      ["🌇30分後日落", () => ttDebug.sunset(30)], ["🌙天已經黑", () => ttDebug.sunset(-1)], ["日落恢復", () => ttDebug.sunset(null)],
+      ["🆘求救卡", closeAnd(() => ttDebug.openSos())],
+    ]],
+    ["第二波：資料", [
+      ["⛰蓋5+8座章", () => ttDebug.peaksStamp(5, 8)], ["⛰清收集冊", () => ttDebug.peaksReset()], ["⛰開收集冊", closeAnd(() => ttDebug.openPeaks())],
+      ["🚩挑戰達標", () => ttDebug.challengeDone()], ["🚩重置挑戰", () => ttDebug.challengeReset()],
+      ["⚠收藏路況變了", () => ttDebug.condAlert()], ["🌡山頂天氣", closeAnd(() => ttDebug.openSummit())], ["📣回報路況", closeAnd(() => ttDebug.openReport())],
+    ]],
+    ["第三波", [
+      ["🛡留守5分後到", () => ttDebug.guard(5)], ["🛡留守已超時", () => ttDebug.guard(-40)], ["🛡清留守", () => ttDebug.guard(null)],
+      ["🛡留守人看到的", closeAnd(() => ttDebug.guardPlan("overdue"))], ["👥人氣範例", closeAnd(() => ttDebug.crowdPreview())],
+      ["📖今年故事", closeAnd(() => ttDebug.story())], ["📖去年故事", closeAnd(() => ttDebug.story(new Date().getFullYear() - 1))], ["📖年底橫幅", () => ttDebug.storyBanner()],
+      ["📱推小工具", () => ttDebug.widget()],
+    ]],
+    ["裝置與外觀", [
+      ["📱模擬動態島", () => ttDebug.notch()], ["🎨切外觀", () => ttDebug.theme()],
+      ["🌐重看語言選擇", closeAnd(() => { localStorage.removeItem("tt_lang"); tourReset(); langGate(true); })],
+    ]],
+    ["導覽", [
+      ["🧭導覽(中)", closeAnd(() => { tourReset(); onboarding(true, { previewLang: "zh", startAt: 0 }); })],
+      ["🧭導覽(英)", closeAnd(() => { tourReset(); onboarding(true, { previewLang: "en", startAt: 0 }); })],
+      ["🧭重設情境導覽", closeAnd(() => { ["tt_coach_trail", "tt_coach_team", "tt_coach_record", "tt_coach_record_tools", "tt_coach_peaks", "tt_coach_soc_friends", "tt_coach_soc_explore", "tt_coach_soc_search", "tt_coach_soc_notif", "tt_coach_soc_me"].forEach(k => localStorage.removeItem(k)); toast("情境導覽已重設：重新打開步道／小隊／記錄／收集冊／社群各頁就會再出現"); })],
+    ]],
   ];
-  p.innerHTML = `<div class="dbg-h">🛠 測試面板 <span id="dbgState"></span><button id="dbgClose">✕</button></div><div class="dbg-grid"></div>`;
-  const grid = p.querySelector(".dbg-grid");
-  btns.forEach(([t, fn]) => { const b = document.createElement("button"); b.textContent = t; b.onclick = () => { Promise.resolve(fn()).then(r => { if (typeof r === "string" && typeof toast === "function") toast(r); }).catch(() => { }); document.getElementById("dbgState").textContent = `Lv${ttDebug.state().等級}·${ttDebug.state().成長km}km`; }; grid.appendChild(b); });
+  const stateTxt = () => { const st = ttDebug.state(); return `Lv${st.等級}·${st.成長km}km·🍓${st.果實}`; };
+  p.innerHTML = `<div class="dbg-h">🛠 測試面板 <span id="dbgState"></span><button id="dbgClose" aria-label="關閉">✕</button></div><div class="dbg-body"></div>`;
+  const body = p.querySelector(".dbg-body");
+  let open = 0; try { open = +(sessionStorage.getItem("tt_dbg_open") || 0); } catch (e) { /* */ }
+  SECTIONS.forEach(([title, btns], si) => {
+    const d = document.createElement("details"); d.className = "dbg-sec"; if (si === open) d.open = true;
+    d.innerHTML = `<summary>${title}<small>${btns.length}</small></summary><div class="dbg-grid"></div>`;
+    d.addEventListener("toggle", () => { if (d.open) { try { sessionStorage.setItem("tt_dbg_open", String(si)); } catch (e) { /* */ } body.querySelectorAll(".dbg-sec").forEach(x => { if (x !== d) x.open = false; }); } });
+    const grid = d.querySelector(".dbg-grid");
+    btns.forEach(([t, fn]) => {
+      const b = document.createElement("button"); b.textContent = t;
+      b.onclick = () => { Promise.resolve(fn()).then(r => { if (typeof r === "string" && r && typeof toast === "function") toast(r); }).catch(() => { }).finally(() => { const s = document.getElementById("dbgState"); if (s) s.textContent = stateTxt(); }); };
+      grid.appendChild(b);
+    });
+    body.appendChild(d);
+  });
   p.querySelector("#dbgClose").onclick = () => p.remove();
   document.body.appendChild(p);
-  document.getElementById("dbgState").textContent = `Lv${ttDebug.state().等級}·${ttDebug.state().成長km}km`;
+  document.getElementById("dbgState").textContent = stateTxt();
 }
 // 開啟方式：網址 ?debug=1，或連點 header 標題 5 下
 if (new URLSearchParams(location.search).get("debug") === "1") setTimeout(toggleDebugPanel, 400);

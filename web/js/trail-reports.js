@@ -11,7 +11,16 @@ const TrailReports = (() => {
   const ready = () => typeof Supa !== "undefined" && Supa.ready && Supa.ready();
   let _cur = null;
 
-  async function fetchRecent(trailId) {
+  // 3 分鐘記憶快取：來回看步道不重抓；自己新增／刪除回報後 load(t, true) 強制重抓
+  const _cache = new Map();
+  async function fetchRecent(trailId, force) {
+    const hit = _cache.get(String(trailId));
+    if (!force && hit && Date.now() - hit.at < 180000) return hit.v;
+    const v = await fetchRecentFresh(trailId);
+    if (v) _cache.set(String(trailId), { at: Date.now(), v }); else _cache.delete(String(trailId));
+    return v;
+  }
+  async function fetchRecentFresh(trailId) {
     const c = Supa.client(); if (!c) return null;
     const { data, error } = await c.rpc("trail_reports_recent", { p_trail: String(trailId) });
     if (error) return null;   // 還沒跑 phase30 → 不顯示
@@ -40,12 +49,12 @@ const TrailReports = (() => {
         <div class="trp-meta"><span>${escHtml(r.author_name || T("山友"))}</span> · <span>${ago}</span>${r.is_mine ? ` · <button class="trp-del" data-id="${r.id}">${T("刪除")}</button>` : ""}</div>
       </div></div>`;
   }
-  async function load(t) {
+  async function load(t, force) {
     const box = document.getElementById("trailReportBox"); if (!box) return;
     _cur = t;
     if (!ready() && typeof window.loadSocial === "function") { try { await window.loadSocial(); } catch (e) { /* */ } }
     if (!ready()) { box.innerHTML = ""; return; }
-    const rows = await fetchRecent(t.id).catch(() => null);
+    const rows = await fetchRecent(t.id, force).catch(() => null);
     if (_cur !== t || !document.getElementById("trailReportBox")) return;
     if (rows == null) { box.innerHTML = ""; return; }
     const bad = rows.filter(r => r.kind !== "ok").length;
@@ -60,7 +69,7 @@ const TrailReports = (() => {
       if (!(await ttConfirm(T("刪掉這則回報？"), T("刪除"), T("取消"), { danger: true }))) return;
       const { error } = await Supa.client().from("trail_reports").delete().eq("id", b.dataset.id);
       if (error) { toast(T(Supa.errText(error.message))); return; }
-      toast(T("刪掉了")); load(t);
+      toast(T("刪掉了")); load(t, true);
     }));
   }
 
@@ -129,7 +138,7 @@ const TrailReports = (() => {
         const { error } = await Supa.client().from("trail_reports").insert(row);
         if (error) throw error;
         close(); toast(T("謝謝你的回報，下一個人會更安全"));
-        if (document.getElementById("trailReportBox") && _cur && String(_cur.id) === String(t.id)) load(t);
+        if (document.getElementById("trailReportBox") && _cur && String(_cur.id) === String(t.id)) load(t, true);
       } catch (e) {
         send.disabled = false; msg.className = "auth-msg bad";
         const m = (e && e.message) || "";

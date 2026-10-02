@@ -61,6 +61,7 @@ const Outdoor = (() => {
   const BUFFER = 20 * 60000;
   let sunWarn = { soon: false, now: false, dark: false, day: "" };
   function sunsetFor(s) {
+    if (window.__ttSunsetAt) return new Date(window.__ttSunsetAt);   // 測試面板：模擬日落時間
     const p = (s && s.track && s.track.length) ? s.track[s.track.length - 1] : (typeof myLoc !== "undefined" && myLoc) ? myLoc : null;
     if (!p) return null;
     return sunsetAt(p.lat, p.lon != null ? p.lon : p.lng, new Date());
@@ -76,20 +77,20 @@ const Outdoor = (() => {
     let cls = "", line;
     if (now >= ss.getTime()) {
       cls = "dark";
-      line = `<b>${T("天已經黑了")}</b> · ${T("慢慢走，注意腳下")}`;
+      line = `<b>${T("天已經黑了")}</b><span>${T("慢慢走，注意腳下")}</span>`;
       if (!sunWarn.dark) { sunWarn.dark = true; toast(T("天黑了，頭燈拿出來，慢慢走")); ttBuzz([200, 100, 200], 2); }
     } else if (back) {
       line = `${T("日落")} <b>${hhmm(ss)}</b>`;
     } else if (now >= turn.getTime()) {
       cls = "warn";
-      line = `${T("日落")} <b>${hhmm(ss)}</b> · <b>${T("該往回走了")}</b>`;
+      line = `<span>${T("日落")} <b>${hhmm(ss)}</b></span><b>${T("該往回走了")}</b>`;
       if (!sunWarn.now) { sunWarn.now = true; toast(T("現在往回走，天黑前回得到起點")); ttBuzz([200, 100, 200, 100, 200], 2); }
     } else {
       if (turn.getTime() - now < 15 * 60000) {
         cls = "warn";
         if (!sunWarn.soon) { sunWarn.soon = true; toast(`${T("再")} ${Math.max(1, Math.round((turn.getTime() - now) / 60000))} ${T("分鐘就該往回走了")}`); ttBuzz([150, 80, 150], 2); }
       }
-      line = `${T("日落")} <b>${hhmm(ss)}</b> · ${T("最晚往回走")} <b>${hhmm(turn)}</b>`;
+      line = `<span>${T("日落")} <b>${hhmm(ss)}</b></span><span>${T("最晚往回走")} <b>${hhmm(turn)}</b></span>`;
     }
     const redBtn = cls === "dark" && themeMode() !== "dark" ? `<button class="sh-red" data-set-theme="dark">${T("切到深色")}</button>` : "";
     const html = `<span class="sh-ic">${ic(cls === "dark" ? "moon" : "sunset")}</span><span class="sh-t">${line}</span>${redBtn}`;
@@ -152,9 +153,9 @@ const Outdoor = (() => {
       <div class="sos-coord">
         <div class="sos-k">${T("座標（經緯度）")}</div>
         <div class="sos-big">${p.lat.toFixed(6)}, ${p.lon.toFixed(6)}</div>
-        <div class="sos-sub">${toDMS(p.lat, "N", "S")}　${toDMS(p.lon, "E", "W")}</div>
+        <div class="sos-sub sos-pair"><span>${toDMS(p.lat, "N", "S")}</span><span>${toDMS(p.lon, "E", "W")}</span></div>
         <div class="sos-k">TWD97 ${T("二度分帶")}</div>
-        <div class="sos-mid">X ${tw.x}　Y ${tw.y}</div>
+        <div class="sos-mid sos-pair"><span>X ${tw.x}</span><span>Y ${tw.y}</span></div>
       </div>
       <div class="sos-grid">
         <div><span>${T("海拔")}</span><b>${p.alt != null ? Math.round(p.alt) + " m" : "—"}</b></div>
@@ -166,19 +167,14 @@ const Outdoor = (() => {
         ${near ? `<div>${ic("pin")} <span>${T("最近的地標")}</span> <b>${escHtml(near.w.name || "")}</b> <span>${Math.round(near.d)} m</span></div>` : ""}
         ${fromStart != null ? `<div>${ic("route")} <span>${T("沿你走來的路，離起點")}</span> <b>${(fromStart / 1000).toFixed(1)} km</b></div>` : ""}
       </div>` : ""}
+      <a class="btn sos-call" href="tel:112">${ic("phone")} ${T("撥打 112")}</a>
       <div class="sos-acts">
-        <a class="btn sos-call" href="tel:112">${ic("phone")} ${T("撥打 112")}</a>
-        <a class="btn ghost" id="sosSms" href="sms:?&body=${encodeURIComponent(sosText(p))}">${ic("chat")} ${T("簡訊傳給家人")}</a>
-        <button class="btn ghost" id="sosShare">${ic("share")} ${T("分享位置")}</button>
-        <button class="btn ghost" id="sosRefresh">${ic("refresh")} ${T("重新定位")}</button>
+        <a class="sos-mini" id="sosSms" href="sms:?&body=${encodeURIComponent(sosText(p))}">${ic("chat")}<span>${T("簡訊傳給家人")}</span></a>
+        <button class="sos-mini" id="sosShare">${ic("share")}<span>${T("分享位置")}</span></button>
+        <button class="sos-mini" id="sosRefresh">${ic("refresh")}<span>${T("重新定位")}</span></button>
       </div>
       <div class="sos-tip">${T("只要有任何一家電信的訊號就能撥 112。打通後先說「我在山上需要救援」，再照著念上面的座標。")}</div>`;
-    body.querySelector("#sosShare").onclick = () => {
-      const txt = sosText(p);
-      if (navigator.share) navigator.share({ title: T("我需要協助"), text: txt }).catch(() => { });
-      else if (navigator.clipboard) navigator.clipboard.writeText(txt).then(() => toast(T("複製好了"))).catch(() => ttAlertBox(txt));
-      else ttAlertBox(txt);
-    };
+    body.querySelector("#sosShare").onclick = () => ttShareText(sosText(p), T("我需要協助"));
     body.querySelector("#sosRefresh").onclick = () => locate(ov, true);
   }
   function locate(ov, force) {

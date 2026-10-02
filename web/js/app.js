@@ -1087,6 +1087,17 @@ function condStamp() {
 }
 // 外部來源的字串插進 innerHTML 前一律跳脫：Google Places 的店名/簡介是店家可自訂的欄位、
 // 林業署公告也是外部資料，直接插入會破版（最壞情況是 stored XSS）。
+// 最後一次操作是鍵盤還是手指：決定彈窗打開時要不要畫焦點框
+addEventListener("keydown", e => { if (!e.metaKey && !e.ctrlKey && !e.altKey) window.__ttKbd = true; }, true);
+addEventListener("pointerdown", () => { window.__ttKbd = false; }, true);
+// 共用：分享一段文字（系統分享 → 複製 → 跳出來給人手動複製），求救卡、留守人、位置分享都用這個
+async function ttShareText(text, title) {
+  const T = typeof ttT === "function" ? ttT : (s => s);
+  if (navigator.share) { try { await navigator.share(title ? { title, text } : { text }); return "shared"; } catch (e) { if (e && e.name === "AbortError") return "cancel"; } }
+  if (navigator.clipboard) { try { await navigator.clipboard.writeText(text); toast(T("複製好了，貼給家人就行")); return "copied"; } catch (e) { /* */ } }
+  if (typeof ttAlertBox === "function") ttAlertBox(text); else toast(text);
+  return "shown";
+}
 function escHtml(v) {
   return String(v == null ? "" : v).replace(/[<>&"']/g, ch =>
     ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&#39;" }[ch]));
@@ -1103,7 +1114,7 @@ function conditionBanner(t) {
       <div class="cond-h">${ic("alert")}<span>${escHtml(c.status)}</span>${sec}</div>
       ${c.title ? `<div class="cond-body">${escHtml(c.title)}</div>` : ""}
       ${(c.title && typeof I18n !== "undefined" && I18n.lang() !== "zh") ? `<div class="pv-tr-row"><button class="link-btn" id="condTranslate">${ic("translate")} ${ttT("翻譯年糕")}</button></div><div class="cond-body pv-cap-tr" id="condTr" hidden></div>` : ""}
-      ${c.reopen ? `<div class="cond-meta">${ttT("預計重新開放")}：${fmtYmd(c.reopen)}${c.dep ? `・${escHtml(c.dep)}` : ""}</div>` : ""}
+      ${c.reopen ? `<div class="cond-meta">${ttT("預計重新開放")}${ttColon()}${fmtYmd(c.reopen)}${c.dep ? `${ttCJK() ? "・" : " · "}${escHtml(ttT(c.dep))}` : ""}</div>` : ""}
       ${src(`${ttT("資料來源：林業及自然保育署")}（${ttT("以官方公告為準")}）`, condStamp())}
     </div>`;
   }
@@ -1683,7 +1694,7 @@ async function loadSummitWeather(t) {
     box.innerHTML = `<div class="smt">
       <div class="smt-h">${ic("mountain")}<span>${ttT("山頂天氣")}</span><small>${ttT("海拔")} ${hi.toLocaleString()} m</small></div>
       ${warn.length ? `<div class="smt-warn">${warn.map(w => `<div>${ic("alert")}<span>${w}</span></div>`).join("")}</div>` : ""}
-      <div class="smt-rows">${rows.map(r => `<div class="smt-row"><span class="smt-when"><b>${dayName(r.day)}</b>${ttSp()}${ttT(r.lbl)}</span><span class="smt-ic">${wxIcon(r.code)}</span>
+      <div class="smt-rows">${rows.map(r => `<div class="smt-row"><span class="smt-when"><b>${dayName(r.day)}</b><span>${ttT(r.lbl)}</span></span><span class="smt-ic">${wxIcon(r.code)}</span>
         <span class="smt-t"><b>${r.temp}°</b><small>${ttT("體感")} ${r.feel}°</small></span><span class="smt-p">${ic("drop")}${r.pop}%</span><span class="smt-g">${ic("wind")}${r.gust}</span></div>`).join("")}</div>
       <div class="food-credit">${ttT("依山頂海拔修正的預報，僅供參考")}</div></div>`;
   } catch (e) { box.innerHTML = ""; }
@@ -2105,7 +2116,8 @@ function ttModalA11y(overlay, closeFn, opts) {
   const prev = document.activeElement;
   const focusables = () => [...overlay.querySelectorAll('button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])')].filter(el => !el.disabled && el.offsetParent !== null);
   const first = opts.focus ? overlay.querySelector(opts.focus) : focusables()[0];
-  if (first) setTimeout(() => { try { first.focus(); } catch (e) { /* */ } }, 40);
+  // 用手指／滑鼠打開的彈窗：焦點移進去但不畫焦點框（以前一打開關閉鈕就套著一圈綠框）；用鍵盤打開才畫
+  if (first) setTimeout(() => { try { first.focus({ focusVisible: !!window.__ttKbd }); } catch (e) { /* */ } }, 40);
   function onKey(e) {
     if (e.key === "Escape") { e.preventDefault(); if (closeFn) closeFn(); return; }
     if (e.key !== "Tab") return;
@@ -2297,15 +2309,17 @@ if (localStorage.getItem("tt_pet_stage") === null) localStorage.setItem("tt_pet_
 })();
 // 即時路況（若有設定代理）→ 抓最新並重繪
 // 即時路況：啟動先抓一次；之後每次回到前景且距上次更新超過 10 分鐘再抓一次，保持新鮮
+// 收藏的步道路況變了：講一聲（最多講兩條，其餘合成一句）。測試面板也用這個模擬
+function announceCondChanges(ch) {
+  ch.slice(0, 2).forEach((c, i) => setTimeout(() => toast(`${ttT("你收藏的")}${ttSp()}${ttQuote(ttT(c.t.name))}${ttColon()}${c.now ? ttT(c.now) : ttT("恢復開放了")}`), 1500 + i * 2600));
+  if (ch.length > 2) setTimeout(() => toast(`${ttT("其他收藏步道的路況也有變，到步道頁看看")} (+${ch.length - 2})`), 1500 + 2 * 2600);
+}
 function refreshConditions() {
   if (typeof Conditions === "undefined") return;
   Conditions.refresh(TRAILS).then(r => {
     if (!r || !r.ok) return;
     render();                                 // 重繪列表（解除/新增封閉標記）
-    // 收藏的步道路況變了：講一聲（最多講兩條，其餘合成一句）
-    const ch = r.changes || [];
-    ch.slice(0, 2).forEach((c, i) => setTimeout(() => toast(`${ttT("你收藏的")}${ttSp()}${ttQuote(ttT(c.t.name))}${ttColon()}${c.now ? ttT(c.now) : ttT("恢復開放了")}`), 1500 + i * 2600));
-    if (ch.length > 2) setTimeout(() => toast(`${ttT("其他收藏步道的路況也有變，到步道頁看看")} (+${ch.length - 2})`), 1500 + 2 * 2600);
+    announceCondChanges(r.changes || []);
     const t = currentDetailTrail && currentDetailTrail();
     if (t) { const el = document.getElementById("condLive"); if (el) el.innerHTML = conditionBanner(t); }   // 詳情頁開著就更新橫幅
   });
@@ -2403,6 +2417,17 @@ langGate();
 
 // #22 首次使用導覽：聚光燈式，真的帶使用者點過每個分頁、在真的按鈕上跳說明（為年長者設計）。
 // 先引導社群登入（可略過），再逐頁介紹。長句 >40 字會跳過 i18n 檢查（比照舊導覽）。
+// 導覽說明框：放在目標上方或下方「放得下」的那一邊，不蓋住正在介紹的東西；兩邊都放不下才貼螢幕邊緣
+function ttPlaceTip(tip, r) {
+  const cs = getComputedStyle(document.documentElement);
+  const st = parseFloat(cs.getPropertyValue("--safe-t")) || 0, sb = parseFloat(cs.getPropertyValue("--safe-b")) || 0;
+  const H = window.innerHeight, th = tip.offsetHeight, gap = 14;
+  const above = r.top - gap - (st + 8), below = H - sb - 8 - (r.bottom + gap);
+  if (below >= th && (below >= above || above < th)) tip.style.top = (r.bottom + gap) + "px";
+  else if (above >= th) tip.style.top = (r.top - gap - th) + "px";
+  else if (r.top + r.height / 2 < H * 0.5) tip.style.bottom = `calc(24px + var(--safe-b, 0px))`;
+  else tip.style.top = `calc(var(--safe-t, 0px) + 84px)`;   // 避開動態島
+}
 function onboarding(force, opts) {
   opts = opts || {};
   const KEY = "tt_onboarded_v2", RESUME = "tt_tour_resume";
@@ -2428,16 +2453,16 @@ function onboarding(force, opts) {
       p: "難度、路況、天氣、海拔、會遇到什麼動物、走完去哪吃，都在裡面。" },
     { view: "record", sel: "#btnStart", e: ic("pin"), h: "記錄健行",
       p: "出發按「開始」就好。鎖螢幕、山裡沒訊號，照樣記得到。" },
+    { view: "record", sel: ".rec-tools", e: ic("shield"), h: "安全工具",
+      p: "「留守人」幫你設預計下山時間，超時會通知家人朋友；「求救卡」一頁就有座標和 112。" },
     { view: "pet", sel: "#petCard", e: ic("paw"), h: "你的山林夥伴",
-      p: "一顆蛋，靠你走路長大。戳戳牠、餵牠、幫牠戴帽子，牠都會有反應。" },
-    { view: "pet", sel: "#petFeed", e: ic("leaf"), h: "餵食與果實",
-      p: "果實靠走路和每日任務賺，每天餵一次，牠就有精神。" },
+      p: "一顆蛋，靠你走路長大。果實靠走路和每日任務賺，每天餵一次，牠就有精神。" },
     { view: "pet", sel: "#petBadges", e: ic("medal"), h: "成就",
       p: "里程、爬升、連續天數達標就解鎖勳章。拿到就是你的，不會不見。" },
-    { view: "me", sel: "#meMonth", e: ic("calendar"), h: "健行日曆",
-      p: "這個月走了幾天、幾公里，一眼看完。" },
-    { view: "me", sel: "#meStats", e: ic("target"), h: "我的足跡",
-      p: "從第一趟累積到現在的里程、爬升，都在這。" },
+    { view: "me", sel: "#meMonth", e: ic("calendar"), h: "我的足跡",
+      p: "這個月走了幾天、幾公里，一眼看完；往下是全部走過的路。" },
+    { view: "me", sel: "#btnPeaks", e: ic("mountain"), h: "登頂收集冊",
+      p: "走到百岳、小百岳山頂附近，就會自動蓋章。" },
     { view: "me", sel: ".set-zone-title", e: ic("sliders"), h: "設定",
       p: "字太小、想換深色、要備份資料，往下找這裡。" },
     { center: true, e: ic("sparkle"), h: "逛完了", p: "挑一條步道，出門走走吧。", last: true },
@@ -2481,12 +2506,9 @@ function onboarding(force, opts) {
       spot.style.top = (r.top - pad) + "px"; spot.style.left = (r.left - pad) + "px";
       spot.style.width = (r.width + pad * 2) + "px"; spot.style.height = (r.height + pad * 2) + "px";
     }
-    // 說明框貼螢幕邊緣（非目標旁）：大字體也不超出、按鈕永遠可點。上半目標→框貼下緣，下半→貼上緣。
+    // 說明框放在目標上方或下方放得下的那邊（ttPlaceTip）；都放不下才貼螢幕邊緣，大字體也不超出、按鈕永遠可點
     tip.classList.toggle("center", !r); tip.style.top = tip.style.bottom = "";
-    if (r) {
-      if (r.top + r.height / 2 < window.innerHeight * 0.5) tip.style.bottom = "calc(24px + var(--safe-b, 0px))";
-      else tip.style.top = "84px";
-    }
+    if (r) ttPlaceTip(tip, r);
   }
   function renderTip(st) {
     const dots = steps.map((_, k) => `<span class="${k === i ? "on" : ""}"></span>`).join("");
@@ -2558,10 +2580,7 @@ window.ttCoach = function (flag, rawSteps, opts) {
       spot.style.width = (rr.width + pad * 2) + "px"; spot.style.height = (rr.height + pad * 2) + "px";
     }
     tip.classList.toggle("center", !rr); tip.style.top = tip.style.bottom = "";
-    if (rr) {
-      if (rr.top + rr.height / 2 < window.innerHeight * 0.5) tip.style.bottom = "calc(24px + var(--safe-b, 0px))";
-      else tip.style.top = "84px";
-    }
+    if (rr) ttPlaceTip(tip, rr);
   }
   function renderTip(st) {
     const dots = steps.map((_, k) => `<span class="${k === i ? "on" : ""}"></span>`).join("");
@@ -2635,12 +2654,29 @@ window.ttCoachSocial = function (sub) {
 };
 
 // 首次進記錄頁（閒置）：介紹即時軌跡地圖與開始鈕。
+// 看過舊版（只有地圖＋開始鈕）的人，另外補一次「安全工具」的介紹
 window.ttCoachRecord = function () {
   if (document.body.dataset.view !== "record") return;
+  const tools = [
+    { sel: "#btnGuard", e: ic("shield"), h: "留守人", p: "出發前設預計下山時間。超過還沒按結束，會通知你指定的好友，也能把行程傳給家人。" },
+    { sel: "#btnSos", e: ic("alert"), h: "求救卡", p: "迷路或受傷時打開：座標、海拔、一鍵撥 112，照著念就好。" },
+  ];
+  let seen = false; try { seen = !!localStorage.getItem("tt_coach_record"); } catch (e) { /* */ }
+  if (seen) { window.ttCoach("tt_coach_record_tools", tools, {}); return; }
   window.ttCoach("tt_coach_record", [
     { sel: "#recMap", e: ic("map"), h: "記錄地圖", p: "開始之後，走過的路會一路畫在地圖上。" },
     { sel: "#btnStart", e: ic("play"), h: "記錄健行", p: "出發按「開始」，走完按「結束」，就存成一筆紀錄。" },
+    ...tools,
   ], {});
+  try { localStorage.setItem("tt_coach_record_tools", "1"); } catch (e) { /* 新使用者一次看完，不用再補 */ }
+};
+// 第一次打開登頂收集冊
+window.ttCoachPeaks = function () {
+  if (!document.querySelector('[data-ov="peaks"]')) return;
+  window.ttCoach("tt_coach_peaks", [
+    { sel: ".pk-tabs", e: ic("mountain"), h: "百岳與小百岳", p: "兩本收集冊，上面切換。" },
+    { sel: ".pk-grid", e: ic("check"), h: "自動蓋章", p: "記錄時走到山頂附近就會蓋上；點任何一格，看登頂日期和附近步道。" },
+  ], { scope: '[data-ov="peaks"]' });
 };
 
 // 浮起的小表情（按讚/表情回應時從按鈕飄起）

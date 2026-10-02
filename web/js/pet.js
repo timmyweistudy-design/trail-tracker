@@ -468,7 +468,7 @@ function renderRecIdle() {
   if (!last && !picks.length) { box.hidden = true; return; }
   box.hidden = false;
   // 步道名獨立成一個文字節點，外文介面才翻得到（以前「上次：南澳古道・」整句黏在一起）
-  let html = last ? `<div class="ridle-row"><span class="inline-ic">${ic("pin")}</span><span><span>${ttT("上次")}</span>：<span>${escHtml(last.trailName || ttT("自由路線"))}</span>・<b>${(last.distanceKm || 0).toFixed(2)}</b> km</span></div>` : "";
+  let html = last ? `<div class="ridle-row"><span class="inline-ic">${ic("pin")}</span><span><span>${ttT("上次")}</span>${ttColon()}<span>${escHtml(last.trailName || ttT("自由路線"))}</span>・<b>${(last.distanceKm || 0).toFixed(2)}</b> km</span></div>` : "";
   if (picks.length) html += `<div class="ridle-picks-h">${ttT("今天走這條？")}</div><div class="ridle-picks">${picks.map(([t, i]) =>
     `<button class="ridle-pick" data-pick="${t.id}">${ic(i)}<span>${escHtml(t.name)}</span></button>`).join("")}</div>`;
   // #4 臨門提醒：離下一個成就還差多少

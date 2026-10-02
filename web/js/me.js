@@ -494,6 +494,7 @@ function renderMonthSummary() {
 // 年底橫幅：12 月～1 月「你的 2026 山行故事出爐了」（那一年至少 3 趟；按過 × 就收起來到明年）
 function storyYear() {
   const d = new Date(), m = d.getMonth();
+  try { if (localStorage.getItem("tt_story_force") === "1") return d.getFullYear(); } catch (e) { /* 測試面板：不分月份都顯示橫幅 */ }
   return m === 11 ? d.getFullYear() : m === 0 ? d.getFullYear() - 1 : null;
 }
 function openStory(year) {

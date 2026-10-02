@@ -26,6 +26,7 @@
         document.documentElement.toggleAttribute("data-fs-mid", +fs >= 1.35);  // 大字以上：窄格（本月摘要 4 格）改 2×2
         // 社群功能開關（我的 → 外觀）：預設顯示；關掉才收起社群分頁、小隊、揪團等入口。開機就套，免得閃一下
         if (localStorage.getItem("tt_hide_social") === "1") document.documentElement.classList.add("hide-social");
+        if (localStorage.getItem("tt_sim_notch") === "1") document.documentElement.classList.add("sim-notch");   // 測試面板：模擬動態島
       } catch (e) { /* */ }
     })();
   </script>

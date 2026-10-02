@@ -76,7 +76,8 @@ const Guardian = (() => {
     } catch (e) { s.err = "net"; save(s); return false; }
   }
   async function patchPlan(fields) {
-    const s = st(); if (!s || !s.planId || !ready()) return false;
+    const s = st(); if (s && s.dbg) return true;   // 測試面板的示範留守：不碰雲端
+    if (!s || !s.planId || !ready()) return false;
     try { const { error } = await Supa.client().from("trip_plans").update(fields).eq("id", s.planId); return !error; } catch (e) { return false; }
   }
   async function ping(force) {
@@ -99,7 +100,7 @@ const Guardian = (() => {
     const s = st(); if (!s) return;
     scheduleLocal(null);
     save(null); paintHud();
-    if (s.planId) {
+    if (s.planId && !s.dbg) {
       if (!(await finishPlan(s.planId, "done"))) { try { localStorage.setItem("tt_guard_done", s.planId); } catch (e) { /* */ } }
       else if (s.gs && s.gs.length) toast(T("已通知系統你平安下山，留守結束"));
     }
@@ -126,7 +127,7 @@ const Guardian = (() => {
     const s = st(); if (!s) return;
     if (s.gs && s.gs.length && s.on && !(await ttConfirm(T("取消留守？留守人就不會在你超時的時候收到通知。"), T("取消留守"), T("保留"), { danger: true }))) return;
     scheduleLocal(null); save(null); paintHud();
-    if (s.planId) finishPlan(s.planId, "cancelled");
+    if (s.planId && !s.dbg) finishPlan(s.planId, "cancelled");
     toast(T("留守取消了"));
   }
 
@@ -137,7 +138,7 @@ const Guardian = (() => {
       flushDone();
       const s = st(); if (!s) return;
       if (!s.on && s.at < Date.now() - 12 * 3.6e6) { save(null); return; }   // 設定了沒出發、時間早就過了 → 清掉
-      if (s.on && !recording()) { onFinish(); return; }   // 記錄已不在（例如閃退後放棄）→ 收掉
+      if (s.on && !recording() && !s.dbg) { onFinish(); return; }   // 記錄已不在（例如閃退後放棄）→ 收掉
       if (s.on && s.pend && navigator.onLine) { const ok = await createPlan(st()); if (ok) { scheduleLocal(st()); toast(T("留守行程送出去了")); } }
       if (s.on && s.pendAt && navigator.onLine && s.planId) { if (await patchPlan({ expected_at: new Date(s.at).toISOString() })) { const s2 = st(); if (s2) { s2.pendAt = false; save(s2); } } }
       if (s.on) await ping(false);
@@ -168,10 +169,10 @@ const Guardian = (() => {
     else sub = names ? `${T("留守人")}${ttColon()}${escHtml(names)}` : T("只提醒你自己（沒有雲端留守人）");
     box.className = "guard-hud " + cls;
     box.hidden = false;
+    // 按鈕包成一組：空間不夠（大字、窄螢幕）整組換到第二行靠右，不會把說明擠成一長條直排
     box.innerHTML = `<span class="gh-ic">${ic("shield")}</span>
-      <div class="gh-t"><b><span>${T("預計下山")}</span> ${whenText(s.at)}</b><small>${sub}</small></div>
-      ${s.on ? `<button class="gh-ext" id="ghExt">${T("延後 1 小時")}</button>` : ""}
-      <button class="gh-more" id="ghMore" aria-label="${T("留守人")}">${ic("more")}</button>`;
+      <div class="gh-t"><b><span>${T("預計下山")}</span> <span class="gh-when">${whenText(s.at)}</span></b><small>${sub}</small></div>
+      <div class="gh-acts">${s.on ? `<button class="gh-ext" id="ghExt">${T("延後 1 小時")}</button>` : ""}<button class="gh-more" id="ghMore" aria-label="${T("留守人")}">${ic("more")}</button></div>`;
     const ext = box.querySelector("#ghExt"); if (ext) ext.onclick = () => extend(60);
     box.querySelector("#ghMore").onclick = () => openSheet();
   }
@@ -179,15 +180,9 @@ const Guardian = (() => {
   // ───────── 設定面板 ─────────
   async function friends() {
     if (!(await ensureSocial())) return null;
-    const uid = await me(); if (!uid) return null;
     try {
-      const c = Supa.client();
-      const [{ data: fo }, { data: fr }] = await Promise.all([c.from("follows").select("following_id").eq("follower_id", uid), c.from("follows").select("follower_id").eq("following_id", uid)]);
-      const following = new Set((fo || []).map(r => r.following_id));
-      const mutual = (fr || []).map(r => r.follower_id).filter(id => following.has(id));
-      if (!mutual.length) return [];
-      const { data } = await c.from("profiles").select("id,handle,display_name,avatar_url").in("id", mutual).limit(100);
-      return (data || []).map(p => ({ id: p.id, name: p.display_name || p.handle || T("山友"), avatar: p.avatar_url || null }));
+      const list = await Supa.mutualFriends(); if (list == null) return null;
+      return list.map(p => ({ id: p.id, name: p.display_name || p.handle || T("山友"), avatar: p.avatar_url || null }));
     } catch (e) { return []; }
   }
   function shareText(at, trailName) {
@@ -196,11 +191,7 @@ const Guardian = (() => {
     const map = p ? ` ${T("我現在的位置")}${ttColon()}https://www.google.com/maps?q=${p.lat.toFixed(5)},${p.lon.toFixed(5)}` : "";
     return `${head.replace("%w", whenText(at))}${ttSp()}${T("超過時間還沒消息，先打給我；聯絡不上請撥 112。")}${map}`;
   }
-  async function shareOut(text) {
-    if (navigator.share) { try { await navigator.share({ text }); return; } catch (e) { if (e && e.name === "AbortError") return; } }
-    if (navigator.clipboard) { try { await navigator.clipboard.writeText(text); toast(T("複製好了，貼給家人就行")); return; } catch (e) { /* */ } }
-    if (typeof ttAlertBox === "function") ttAlertBox(text); else toast(text);
-  }
+  const shareOut = text => ttShareText(text);
   function shareLoc() {
     if (!navigator.geolocation) { toast(T("此裝置不支援定位")); return; }
     toast(T("定位中…"));
@@ -229,6 +220,7 @@ const Guardian = (() => {
       <div class="gd-friends" id="gdFriends"><div class="feed-loading"><span class="spin"></span></div></div>
       <div class="gd-msg auth-msg" id="gdMsg"></div>
       <button class="btn primary" id="gdGo"></button>
+      <div class="gd-hint" id="gdHint"></div>
       ${cur ? `<button class="link-btn gd-cancel" id="gdCancel">${T("取消留守")}</button>` : ""}
       <div class="gd-h gd-h2">${T("也傳給家人")}</div>
       <div class="gd-share">
@@ -248,6 +240,7 @@ const Guardian = (() => {
       const opts = [];
       if (sug) opts.push([sug, `${T("依步道估")} ${whenText(sug).split(" ").pop()}`]);
       [3, 5, 8].forEach(h => opts.push([round15(Date.now() + h * 3.6e6), `+${h} ${T("小時")}`]));
+      $o("#gdChips").style.gridTemplateColumns = `repeat(${opts.length === 4 ? 2 : opts.length}, minmax(0, 1fr))`;   // 等寬排整齊（3 個一排、4 個兩排），不再剩一顆落單
       $o("#gdChips").innerHTML = opts.map(([v, l]) => `<button class="chip${Math.abs(v - at) < 6e4 ? " active" : ""}" data-v="${v}">${l}</button>`).join("");
       $o("#gdChips").querySelectorAll(".chip").forEach(b => b.onclick = () => { at = +b.dataset.v; paintWhen(); });
     };
@@ -260,7 +253,8 @@ const Guardian = (() => {
     paintWhen();
     const paintGo = () => {
       const go = $o("#gdGo");
-      go.innerHTML = cur ? T("更新") : recording() ? `${ic("shield")} ${T("開始留守")}` : `${ic("shield")} ${T("設定好了，開始記錄時生效")}`;
+      go.innerHTML = cur ? T("更新") : recording() ? `${ic("shield")} ${T("開始留守")}` : `${ic("shield")} ${T("設定好了")}`;
+      $o("#gdHint").textContent = !recording() && !(cur && cur.on) ? T("開始記錄時才會生效") : "";   // 說明放按鈕下面，大字時按鈕不會斷成兩行
     };
     paintGo();
     // 好友清單
@@ -326,7 +320,7 @@ const Guardian = (() => {
         ${pos ? `<button class="btn ghost" data-copy="${escHtml(`${p.owner_name}｜${p.trail_name || ""}｜${pos}`)}">${ic("share")} ${T("複製位置")}</button>` : ""}</div>` : ""}
     </div>`;
   }
-  async function openPlan(id) {
+  async function openPlan(id, previewRows) {
     if (document.querySelector('[data-ov="gplan"]')) return;
     const ov = document.createElement("div"); ov.className = "pet-modal gd-modal"; ov.dataset.ov = "gplan";
     ov.innerHTML = `<div class="pet-modal-card gd-card"><button class="sheet-close" id="gpX" aria-label="${T("關閉")}">${ic("x")}</button>
@@ -337,7 +331,7 @@ const Guardian = (() => {
     if (typeof ttModalA11y === "function") _a11y = ttModalA11y(ov, close, { focus: "#gpX" });
     ov.querySelector("#gpX").onclick = close;
     ov.addEventListener("click", e => { if (e.target === ov) close(); });
-    const rows = await plans(id);
+    const rows = previewRows || await plans(id);   // previewRows：測試面板用範例資料預覽
     const body = ov.querySelector("#gpBody"); if (!body) return;
     if (rows == null) { body.innerHTML = `<div class="gd-empty">${T("載入失敗，等一下再試試")}</div>`; return; }
     if (!rows.length) { body.innerHTML = `<div class="gd-empty">${T("這趟留守已經結束了")}</div>`; return; }

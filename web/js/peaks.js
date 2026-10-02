@@ -70,8 +70,8 @@ const Peaks = (() => {
     body.innerHTML = `
       <div class="pk-tabs" role="tablist">${["b", "x"].map(k => `<button class="pk-tab${k === cur ? " on" : ""}" data-l="${k}" role="tab" aria-selected="${k === cur}">${T(LISTS[k].name)} <span>${count(k)}/${LISTS[k].data.length}</span></button>`).join("")}</div>
       <div class="pk-prog"><div class="pk-ring" style="--p:${pct}"><b>${have}</b><small>/ ${total}</small></div>
-        <div class="pk-prog-t"><b>${T(have ? "繼續收集" : "還沒蓋到章")}</b><span>${T(cur === "b" ? "臺灣 3,000 公尺以上的百座高山" : "各縣市近郊的百座代表郊山")}</span>
-        <span class="pk-hint">${T("走到山頂附近，就會自動蓋章")}</span></div></div>
+        <div class="pk-prog-t"><b>${T(have ? "繼續收集" : "還沒蓋到章")}</b><span>${T(cur === "b" ? "臺灣 3,000 公尺以上的百座高山" : "各縣市近郊的百座代表郊山")}</span></div></div>
+      <div class="pk-hint">${ic("pin")}<span>${T("走到山頂附近，就會自動蓋章")}</span></div>
       <div class="pk-grid">${L.data.map(p => { const st = g[cur + p[0]]; return `<button class="pk-stamp${st ? " got" : ""}" data-no="${p[0]}" aria-label="${escHtml(T(p[1]))}${st ? "・" + T("已登頂") : ""}"><span class="pk-no">${p[0]}</span><span class="pk-nm">${escHtml(T(p[1]))}</span><span class="pk-el">${p[2].toLocaleString()} m</span>${st ? `<span class="pk-ok">${ic("check")}</span>` : ""}</button>`; }).join("")}</div>`;
     fitNames(body);
     body.querySelectorAll(".pk-tab").forEach(b => b.addEventListener("click", () => { cur = b.dataset.l; ov.querySelector(".pk-detail").classList.remove("show"); render(ov); body.scrollTop = 0; }));
@@ -108,6 +108,7 @@ const Peaks = (() => {
     ov.querySelector("#pkClose").onclick = _close;
     ov.addEventListener("click", e => { if (e.target === ov) _close(); });
     render(ov); watch();
+    setTimeout(() => { if (typeof ttCoachPeaks === "function") ttCoachPeaks(); }, 600);
     const n = await backfill();
     if (document.body.contains(ov)) { render(ov); if (n) toast(`${T("從以前的紀錄補蓋了")}${ttColon()}${n}`); }
   }

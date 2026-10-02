@@ -25,7 +25,7 @@ const PORT = 8899;
   try {
     browser = await chromium.launch();
     const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
-    await page.addInitScript(() => { window.PERSONAL_MODE = false; try { localStorage.setItem("tt_onboarded_v2", "1"); ["tt_coach_trail", "tt_coach_team", "tt_coach_record", "tt_coach_soc_friends", "tt_coach_soc_explore", "tt_coach_soc_search", "tt_coach_soc_notif", "tt_coach_soc_me", "tt_locperm_prompted"].forEach(k => localStorage.setItem(k, "1")); } catch (e) { } });   // 跳過首次導覽浮層＋情境導覽
+    await page.addInitScript(() => { window.PERSONAL_MODE = false; try { localStorage.setItem("tt_onboarded_v2", "1"); ["tt_coach_trail", "tt_coach_team", "tt_coach_record","tt_coach_record_tools","tt_coach_peaks", "tt_coach_soc_friends", "tt_coach_soc_explore", "tt_coach_soc_search", "tt_coach_soc_notif", "tt_coach_soc_me", "tt_locperm_prompted"].forEach(k => localStorage.setItem(k, "1")); } catch (e) { } });   // 跳過首次導覽浮層＋情境導覽
     page.on("pageerror", e => errors.push("pageerror: " + e.message));
     // 忽略外部服務在無頭測試環境的網路/CORS 失敗（線上皆有 try/catch＋後備）：海拔 DEM、翻譯、Supabase、Overpass、圖磚
     const EXT_NOISE = /net::|favicon|404 \(|Failed to load resource|CORS policy|opentopodata|translate\.googleapis|mymemory|supabase|overpass|tile\.|Access to fetch/i;
@@ -192,7 +192,7 @@ const PORT = 8899;
       const p2 = await browser.newPage({ viewport: { width: 390, height: 844 } });
       await p2.addInitScript(() => {
         window.PERSONAL_MODE = false;
-        try { localStorage.setItem("tt_onboarded_v2", "1"); ["tt_coach_trail", "tt_coach_team", "tt_coach_record", "tt_coach_soc_friends", "tt_coach_soc_explore", "tt_coach_soc_search", "tt_coach_soc_notif", "tt_coach_soc_me", "tt_locperm_prompted"].forEach(k => localStorage.setItem(k, "1")); } catch (e) { }
+        try { localStorage.setItem("tt_onboarded_v2", "1"); ["tt_coach_trail", "tt_coach_team", "tt_coach_record","tt_coach_record_tools","tt_coach_peaks", "tt_coach_soc_friends", "tt_coach_soc_explore", "tt_coach_soc_search", "tt_coach_soc_notif", "tt_coach_soc_me", "tt_locperm_prompted"].forEach(k => localStorage.setItem(k, "1")); } catch (e) { }
         // 假的已登入 session：升級面板要拿 Supabase user id 當 RevenueCat 的 app_user_id 才能 configure。
         // supabase-js 直接讀這個 storage key，expires_at 給未來時間就不會去連網 refresh。
         try {
@@ -278,7 +278,7 @@ const PORT = 8899;
         window.PERSONAL_MODE = false;
         try {
           localStorage.setItem("tt_lang", "zh"); localStorage.setItem("tt_onboarded_v2", "1");
-          ["tt_coach_trail", "tt_coach_team", "tt_coach_record", "tt_coach_soc_friends", "tt_coach_soc_explore", "tt_coach_soc_search", "tt_coach_soc_notif", "tt_coach_soc_me", "tt_locperm_prompted"].forEach(k => localStorage.setItem(k, "1"));
+          ["tt_coach_trail", "tt_coach_team", "tt_coach_record","tt_coach_record_tools","tt_coach_peaks", "tt_coach_soc_friends", "tt_coach_soc_explore", "tt_coach_soc_search", "tt_coach_soc_notif", "tt_coach_soc_me", "tt_locperm_prompted"].forEach(k => localStorage.setItem(k, "1"));
           localStorage.setItem("sb-bkbkamvbczqdejrlpiqo-auth-token", JSON.stringify({
             access_token: "e2e-fake", refresh_token: "e2e-fake", token_type: "bearer",
             expires_in: 86400, expires_at: Math.floor(Date.now() / 1000) + 86400,
@@ -320,7 +320,7 @@ const PORT = 8899;
     {
       const pr = await browser.newPage({ viewport: { width: 390, height: 844 } });
       await pr.addInitScript(() => {
-        try { localStorage.setItem("tt_lang", "zh"); ["tt_onboarded_v2", "tt_coach_record", "tt_locperm_prompted"].forEach(k => localStorage.setItem(k, "1")); } catch (e) { }
+        try { localStorage.setItem("tt_lang", "zh"); ["tt_onboarded_v2", "tt_coach_record","tt_coach_record_tools","tt_coach_peaks", "tt_locperm_prompted"].forEach(k => localStorage.setItem(k, "1")); } catch (e) { }
       });
       await pr.goto(`http://localhost:${PORT}/`, { waitUntil: "domcontentloaded" });
       await pr.waitForTimeout(2600);
@@ -345,7 +345,7 @@ const PORT = 8899;
       const pa = await browser.newPage({ viewport: { width: 390, height: 844 } });
       await pa.addInitScript(() => {
         try {
-          localStorage.setItem("tt_lang", "zh"); ["tt_onboarded_v2", "tt_coach_record", "tt_locperm_prompted"].forEach(k => localStorage.setItem(k, "1"));
+          localStorage.setItem("tt_lang", "zh"); ["tt_onboarded_v2", "tt_coach_record","tt_coach_record_tools","tt_coach_peaks", "tt_locperm_prompted"].forEach(k => localStorage.setItem(k, "1"));
           localStorage.setItem("tt_badges_got", JSON.stringify(["百K俱樂部"]));
           localStorage.setItem("tt_badges_date", JSON.stringify({ "百K俱樂部": "2026-05-01T00:00:00Z" }));
         } catch (e) { }
@@ -368,7 +368,7 @@ const PORT = 8899;
     {
       const ps = await browser.newPage({ viewport: { width: 390, height: 844 } });
       await ps.addInitScript(() => {
-        try { localStorage.setItem("tt_lang", "zh"); ["tt_onboarded_v2", "tt_coach_trail", "tt_coach_record", "tt_locperm_prompted"].forEach(k => localStorage.setItem(k, "1")); } catch (e) { }
+        try { localStorage.setItem("tt_lang", "zh"); ["tt_onboarded_v2", "tt_coach_trail", "tt_coach_record","tt_coach_record_tools","tt_coach_peaks", "tt_locperm_prompted"].forEach(k => localStorage.setItem(k, "1")); } catch (e) { }
       });
       ps.on("pageerror", e => errors.push("personal pageerror: " + e.message));
       await ps.goto(`http://localhost:${PORT}/`, { waitUntil: "domcontentloaded" });
@@ -403,7 +403,7 @@ const PORT = 8899;
         window.PERSONAL_MODE = false;
         try {
           localStorage.setItem("tt_lang", "zh"); localStorage.setItem("tt_onboarded_v2", "1");
-          ["tt_coach_trail", "tt_coach_team", "tt_coach_record", "tt_coach_soc_friends", "tt_coach_soc_explore", "tt_coach_soc_search", "tt_coach_soc_notif", "tt_coach_soc_me", "tt_locperm_prompted"].forEach(k => localStorage.setItem(k, "1"));
+          ["tt_coach_trail", "tt_coach_team", "tt_coach_record","tt_coach_record_tools","tt_coach_peaks", "tt_coach_soc_friends", "tt_coach_soc_explore", "tt_coach_soc_search", "tt_coach_soc_notif", "tt_coach_soc_me", "tt_locperm_prompted"].forEach(k => localStorage.setItem(k, "1"));
           localStorage.setItem("tt_records", JSON.stringify([{ id: "e1", date: new Date().toISOString(), distanceKm: 4, ascent: 100, kcal: 200, elapsedMs: 3600000 }]));
         } catch (e) { }
       });

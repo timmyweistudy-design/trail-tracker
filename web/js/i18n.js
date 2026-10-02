@@ -4,6 +4,19 @@
 // 步道名稱/介紹等資料內容維持中文。要補翻譯：加 DICT 詞條或 PATTERNS 規則即可。
 const I18n = (() => {
   const DICT = {
+    "設定好了": "All set",
+    "開始記錄時才會生效": "Takes effect when you start recording",
+    "安全工具": "Safety tools",
+    "「留守人」幫你設預計下山時間，超時會通知家人朋友；「求救卡」一頁就有座標和 112。": "“Trip contact” sets a return time and alerts friends if you're late; the “SOS card” puts your coordinates and 112 on one page.",
+    "一顆蛋，靠你走路長大。果實靠走路和每日任務賺，每天餵一次，牠就有精神。": "It starts as an egg and grows as you walk. Earn berries by walking and daily quests — feed it once a day to keep it lively.",
+    "這個月走了幾天、幾公里，一眼看完；往下是全部走過的路。": "See this month's days and kilometres at a glance; scroll down for every hike you've done.",
+    "走到百岳、小百岳山頂附近，就會自動蓋章。": "Reach a Top 100 Peak or Hundred Hills summit and it's stamped automatically.",
+    "出發前設預計下山時間。超過還沒按結束，會通知你指定的好友，也能把行程傳給家人。": "Set a return time before you go. If you haven't finished by then, the friends you chose are alerted — you can also send the plan to family.",
+    "迷路或受傷時打開：座標、海拔、一鍵撥 112，照著念就好。": "Open it if you're lost or hurt: coordinates, elevation and one-tap 112 — just read it out.",
+    "百岳與小百岳": "Top 100 Peaks & Hundred Hills",
+    "兩本收集冊，上面切換。": "Two books — switch at the top.",
+    "自動蓋章": "Automatic stamps",
+    "記錄時走到山頂附近就會蓋上；點任何一格，看登頂日期和附近步道。": "Recording near a summit stamps it; tap any square for the date and nearby trails.",
     "留守人": "Trip contact",
     "留守": "Trip watch",
     "留守中": "Watching",
@@ -1233,7 +1246,7 @@ const I18n = (() => {
     "已改為自由路線": "Switched to free route",
     "按「開始」記錄這條步道": "Tap Start to record this trail",
     "沒選步道也行，按開始就記": "Free route — tap Start to record",
-    "人走過": "hikers", "平均耗時": "typical time", "平均爬升": "typical ascent", "最近 30 天": "Last 30 days",
+    "人走過": "hikers", "平均耗時": "Typical time", "平均爬升": "Typical ascent", "最近 30 天": "Last 30 days",
     "模擬模式": "Simulation mode",
     "隊長使用模擬模式（PRO），你將以真實記錄同行": "The leader is using Simulation (PRO) — you'll join with a real recording",
     "沒有 GPS 也能沿真實步道路線預覽整條路線": "Preview a whole trail without GPS",

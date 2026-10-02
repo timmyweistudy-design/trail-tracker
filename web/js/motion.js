@@ -10,7 +10,8 @@
   const orig = Element.prototype.remove;
   Element.prototype.remove = function () {
     try {
-      if (this.isConnected && this.parentNode && this.matches && this.matches(SEL) && !this.classList.contains("tt-leaving") && !reduce()) {
+      // 只管「直接掛在 body 底下的彈窗層」：其他元素（清單項目、卡片裡的東西…）完全照原本的 remove 走
+      if (this.parentNode === document.body && this.matches && this.matches(SEL) && !this.classList.contains("tt-leaving") && !reduce()) {
         const ghost = this.cloneNode(true);
         ghost.removeAttribute("id"); ghost.removeAttribute("data-ov");
         ghost.querySelectorAll("[id]").forEach(e => e.removeAttribute("id"));
@@ -35,4 +36,17 @@
     }, true));   // 捕獲階段：在分頁切換（app.js 的 click）之前先記下方向
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", wire); else wire();
+
+  // 鍵盤高度：iOS App 裡鍵盤跳出來時畫面不會縮，貼底的面板（留言框、加入碼）會被鍵盤蓋住。
+  // 量出鍵盤高度放進 --kb，貼底面板和置中彈窗底下多墊這麼多。
+  const vv = window.visualViewport;
+  if (vv) {
+    const upd = () => {
+      const a = document.activeElement, typing = a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName);
+      const kb = typing ? Math.max(0, Math.round(innerHeight - vv.height - vv.offsetTop)) : 0;
+      document.documentElement.style.setProperty("--kb", (kb > 120 ? kb : 0) + "px");
+    };
+    vv.addEventListener("resize", upd); vv.addEventListener("scroll", upd);
+    addEventListener("focusin", () => setTimeout(upd, 300)); addEventListener("focusout", () => setTimeout(upd, 100));
+  }
 })();

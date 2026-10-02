@@ -55,6 +55,18 @@ const Supa = (() => {
     if (/no-client/i.test(m)) return "社群暫時用不了。";
     return "出了點問題，等一下再試試";
   }
-  return { ready, client: client_, user, meUser, uid, esc, ago, webLink, errText };
+  // 共用：互相追蹤的好友（小隊邀請、留守人都用這份；以前兩邊各寫一次）。沒登入回 null
+  async function mutualFriends() {
+    const c = Supa.client(); const me = await uid(); if (!c || !me) return null;
+    const [{ data: fo }, { data: fr }] = await Promise.all([
+      c.from("follows").select("following_id").eq("follower_id", me),
+      c.from("follows").select("follower_id").eq("following_id", me)]);
+    const following = new Set((fo || []).map(r => r.following_id));
+    const mutual = (fr || []).map(r => r.follower_id).filter(id => following.has(id));
+    if (!mutual.length) return [];
+    const { data } = await c.from("profiles").select("id,handle,display_name,avatar_url").in("id", mutual).limit(100);
+    return data || [];
+  }
+  return { ready, client: client_, user, meUser, uid, esc, ago, webLink, errText, mutualFriends };
 })();
 if (typeof module !== "undefined") module.exports = Supa;

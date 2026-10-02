@@ -9,7 +9,16 @@ const TrailCrowd = (() => {
   // 星期幾：0=週一 … 6=週日（2024-01-01 是週一）
   const dayName = (i, long) => new Date(2024, 0, 1 + i).toLocaleDateString(ttLocale(), { weekday: long ? "long" : "narrow" });
 
+  // 10 分鐘記憶快取：來回切換步道不重抓（人氣是一整週的統計，幾分鐘內不會變）
+  const _cache = new Map();
   async function fetchAll(id) {
+    const hit = _cache.get(String(id));
+    if (hit && Date.now() - hit.at < 600000) return hit.v;
+    const v = await fetchFresh(id);
+    if (v.crowd || v.act) _cache.set(String(id), { at: Date.now(), v });
+    return v;
+  }
+  async function fetchFresh(id) {
     const c = Supa.client();
     const [a, b] = await Promise.all([
       c.rpc("trail_crowd", { p_trail: String(id) }).then(r => r, () => ({ error: 1 })),
@@ -37,11 +46,15 @@ const TrailCrowd = (() => {
     <div class="crowd-legend"><span>${T("人少")}</span><i class="cg-c l0"></i><i class="cg-c l1"></i><i class="cg-c l2"></i><i class="cg-c l3"></i><i class="cg-c l4"></i><span>${T("人多")}</span></div>`;
   }
 
-  async function load(t) {
+  async function load(t, preview) {
     const box = document.getElementById("activityBox"); if (!box) return;
-    if (typeof socialHidden === "function" && socialHidden()) return;   // 社群功能關掉時不查別人的健行統計
-    if (!ready()) return;
-    let r; try { r = await fetchAll(t.id); } catch (e) { return; }
+    let r;
+    if (preview) r = preview;   // 測試面板：用範例資料畫一次
+    else {
+      if (typeof socialHidden === "function" && socialHidden()) return;   // 社群功能關掉時不查別人的健行統計
+      if (!ready()) return;
+      try { r = await fetchAll(t.id); } catch (e) { return; }
+    }
     if (typeof _detailTrail !== "undefined" && _detailTrail !== t) return;   // 已切換步道
     const cr = r.crowd, a = r.act;
     const h7 = cr ? cr.hikers7 : 0, h30 = cr ? cr.hikers30 : (a && a.hikers >= 3 ? a.hikers : 0);
@@ -57,9 +70,9 @@ const TrailCrowd = (() => {
     box.hidden = false;
     box.className = "activity-card crowd-card";
     box.innerHTML = `<div class="act-h">${ic("users")} ${T("步道人氣")}</div>
-      ${counts.length ? `<div class="act-row">${counts.join(`<span class="act-dot">·</span>`)}</div>` : ""}
+      ${counts.length ? `<div class="act-row">${counts.join("")}</div>` : ""}
       ${grid ? `<div class="crowd-sum">${summary(grid)}</div>${gridHtml(grid)}` : ""}
-      ${meds.length ? `<div class="act-row act-meds">${meds.join(`<span class="act-dot">·</span>`)}</div>` : ""}
+      ${meds.length ? `<div class="act-row act-meds">${meds.join("")}</div>` : ""}
       <div class="crowd-note">${T("依山友匿名分享的出發時間統計，人數太少不顯示")}</div>`;
   }
 

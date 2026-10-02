@@ -55,17 +55,7 @@ const Team = (() => {
   }
 
   // 互相追蹤的好友
-  async function friends() {
-    const c = Supa.client(); const { data: u } = await Supa.meUser(); if (!u || !u.user) return [];
-    const me = u.user.id;
-    const { data: fo } = await c.from("follows").select("following_id").eq("follower_id", me);
-    const { data: fr } = await c.from("follows").select("follower_id").eq("following_id", me);
-    const following = new Set((fo || []).map(r => r.following_id));
-    const mutual = (fr || []).map(r => r.follower_id).filter(id => following.has(id));
-    if (!mutual.length) return [];
-    const { data } = await c.from("profiles").select("id,handle,display_name,avatar_url").in("id", mutual).limit(100);
-    return data || [];
-  }
+  async function friends() { return (await Supa.mutualFriends()) || []; }
   async function invite(teamId, userId) {
     const c = Supa.client(); const { data, error } = await c.rpc("invite_to_team", { p_team: teamId, p_user: userId });
     return { ok: !error && data, error: error && error.message };

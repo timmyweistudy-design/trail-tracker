@@ -3,7 +3,7 @@
 const ROOT=require("path").join(__dirname,"..");const {chromium}=require(ROOT+"/node_modules/playwright");const {spawn}=require("child_process");const errs=[];const R=[];const ok=(n,v)=>R.push((v?"✓ ":"✗ ")+n);
 (async()=>{const srv=spawn("python3",["-m","http.server","8897"],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));
 const b=await chromium.launch();const p=await (await b.newContext({viewport:{width:390,height:844}})).newPage();p.on("pageerror",e=>errs.push(e.message));
-await p.addInitScript(()=>{localStorage.setItem("tt_lang","zh");["tt_onboarded_v2","tt_coach_trail","tt_locperm_prompted","tt_coach_record"].forEach(k=>localStorage.setItem(k,"1"))});
+await p.addInitScript(()=>{localStorage.setItem("tt_lang","zh");["tt_onboarded_v2","tt_coach_trail","tt_locperm_prompted","tt_coach_record","tt_coach_record_tools","tt_coach_peaks"].forEach(k=>localStorage.setItem(k,"1"))});
 await p.goto("http://localhost:8897/");await p.waitForTimeout(2500);
 await p.click('.tab[data-view="record"]');await p.waitForTimeout(1200);await p.evaluate(()=>document.querySelectorAll(".tour,.coach,.ttdlg").forEach(e=>e.remove()));
 ok("記錄地圖右上 4 顆鈕（指北針兼導航）",await p.evaluate(()=>document.querySelectorAll("#recMap .leaflet-top.leaflet-right > *").length===4));

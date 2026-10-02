@@ -14,7 +14,7 @@ const EXT = /net::|favicon|404 \(|Failed to load resource|CORS|opentopodata|tran
   const b = await chromium.launch();
   const p = await b.newPage({ viewport: { width: 390, height: 844 } });
   // 跳過首次導覽、情境導覽、定位權限說明卡——不跳的話記錄頁被說明卡蓋住，開始/結束鈕點不到（環境問題，不是 bug）
-  await p.addInitScript(() => { localStorage.setItem("tt_onboarded_v2", "1"); ["tt_coach_trail", "tt_coach_team", "tt_coach_record", "tt_coach_soc_friends", "tt_coach_soc_explore", "tt_coach_soc_search", "tt_coach_soc_notif", "tt_coach_soc_me", "tt_locperm_prompted"].forEach(k => localStorage.setItem(k, "1")); });
+  await p.addInitScript(() => { localStorage.setItem("tt_onboarded_v2", "1"); ["tt_coach_trail", "tt_coach_team", "tt_coach_record","tt_coach_record_tools","tt_coach_peaks", "tt_coach_soc_friends", "tt_coach_soc_explore", "tt_coach_soc_search", "tt_coach_soc_notif", "tt_coach_soc_me", "tt_locperm_prompted"].forEach(k => localStorage.setItem(k, "1")); });
   const errs = [];
   const mark = s => `${cur} | ${s}`;
   let cur = "load";

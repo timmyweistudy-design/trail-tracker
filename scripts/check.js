@@ -72,7 +72,8 @@ const BACKUP_EXEMPT = new Set([
   "tt_native_push",                                       // 原生推播開關：綁這台裝置的 APNs token，不跨機還原
   "tt_premium", "tt_premium_since",                       // 訂閱狀態：由 Supabase 決定
   "tt_active_rec",                                        // 記錄中暫存
-  "tt_story_x", "tt_story_seen",                          // 年度故事橫幅收起來了／看過了（純介面提示）
+  "tt_coach_record_tools", "tt_coach_peaks",              // 情境導覽看過了（跟其他 tt_coach_* 一樣不備份）
+  "tt_story_x", "tt_story_seen", "tt_story_force", "tt_sim_notch",   // 年度故事橫幅狀態／測試面板的開關（模擬動態島、強制顯示橫幅）                          // 年度故事橫幅收起來了／看過了（純介面提示）
   "tt_guard", "tt_guard_done",                            // 留守人：這一趟的預計下山時間／待補送的「平安下山」（跟著這台手機的記錄走）
   "tt_peaks_scan", "tt_cond_cache", "tt_cond_seen",       // 收集冊「以前紀錄掃過了」旗標（換機要重掃）、路況快取（每台自己抓）
   "tt_vis",                                               // 戶外顯示（陽光／紅光）：看當下環境臨時切，換手機不該一開就是紅色畫面
@@ -198,7 +199,7 @@ try {
   const news = new Set();
   const half = new Set();   // 半翻：tx 有回傳但英文結果仍殘留中文（如「、」切段只命中一部分）——付費牆踩過
   for (const f of files) {
-    if (f.endsWith("i18n.js") || f.endsWith("i18n-names.js") || /[\\/]i18n[\\/]/.test(f) || /geo-manifest\.js$|[\\/]geo[\\/]/.test(f) || /trails-(data|detail|geo)\.js$|peaks-data\.js$/.test(f) || f.endsWith("ecology-data.js")) continue;
+    if (f.endsWith("i18n.js") || f.endsWith("i18n-names.js") || /[\\/]i18n[\\/]/.test(f) || /geo-manifest\.js$|[\\/]geo[\\/]/.test(f) || /trails-(data|detail|geo)\.js$|peaks-data\.js$|debug\.js$/.test(f) || f.endsWith("ecology-data.js")) continue;
     const src2 = read(f);
     for (const m of src2.matchAll(/[>"`]([^<>`"$\\{}]*[\u4e00-\u9fff][^<>`"$\\{}]*)[<"`$]/g)) {
       const t = m[1].trim();

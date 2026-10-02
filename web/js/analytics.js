@@ -89,7 +89,7 @@ function openYearReview(year) {
     </div>
     <div class="yr-sub">
       <div><b>${cuSpan(steps, "", 0)}</b><span>步</span></div>
-      <div><b>${cuSpan(kcal, "", 0)}</b><span>大卡</span></div>
+      ${kcal > 0 ? `<div><b>${cuSpan(kcal, "", 0)}</b><span>大卡</span></div>` : ""}
       <div><b>${cuSpan(distinct, "", 0)}</b><span>條步道</span></div>
     </div>
     <div class="yr-months">${mk.map((v, i) => `<div class="yr-mo"><div class="yr-mo-v">${v > 0 ? (v >= 10 ? Math.round(v) : v.toFixed(1)) : ""}</div><div class="yr-mo-bar" style="height:${Math.round(v / mkMax * 46) + 3}px;animation-delay:${(i * 0.04).toFixed(2)}s"></div><span>${i + 1}</span></div>`).join("")}</div>
@@ -97,7 +97,7 @@ function openYearReview(year) {
     ${longestRec && longestRec.track && longestRec.track.length > 1 ? `<div class="yr-route"><div class="yr-route-l"><span>${ttT("最遠的一條")}</span> · <span>${escHtml(ttT(longestRec.trailName || "自由路線"))}</span> <b>${longest.toFixed(1)} km</b></div>${routeMini(longestRec.track, "yr-route-svg", true)}</div>` : ""}
     <div class="yr-lines">
       ${longest ? `<div>單次最長 <b>${longest.toFixed(1)} km</b></div>` : ""}
-      ${maxAlt ? `<div>最高造訪海拔 <b>${maxAlt} m</b></div>` : ""}
+      ${maxAlt ? `<div>最高造訪海拔 <b>${Math.round(maxAlt).toLocaleString()} m</b></div>` : ""}
       ${busiest ? `<div><span>${ttT("最常出門")}</span> <b>${moName(+busiest)}</b></div>` : ""}
       ${top ? `<div><span>${ttT("最愛步道")}</span> <b>${escHtml(ttT(top))}</b></div>` : ""}
       ${lastRecs.length ? `<div><span>${ttT("較去年里程")}</span> <b>${delta >= 0 ? "+" : "−"}${Math.abs(delta).toFixed(0)} km</b></div>` : ""}
@@ -356,7 +356,7 @@ async function openCompare() {
   if (!u || !u.user) { toast("請先到社群分頁登入"); return; }
   const ov = document.createElement("div"); ov.className = "pet-modal";
   ov.dataset.ov = "cmpfriends";
-  ov.innerHTML = `<div class="pet-modal-card"><button class="sheet-close" id="cmpX">${ic("x")}</button><div class="cmp-head"><h2>${ic("users")} 好友里程比較</h2><button class="cmp-refresh" id="cmpRefresh" title="重新整理">${ic("refresh")}</button></div><div id="cmpBody"><div class="feed-loading"><span class="spin"></span></div></div></div>`;
+  ov.innerHTML = `<div class="pet-modal-card"><button class="sheet-close" id="cmpX" aria-label="${ttT("關閉")}">${ic("x")}</button><div class="cmp-head"><h2>${ic("users")} 好友里程比較</h2><button class="cmp-refresh" id="cmpRefresh" title="${ttT("重新整理")}" aria-label="${ttT("重新整理")}">${ic("refresh")}</button></div><div id="cmpBody"><div class="feed-loading"><span class="spin"></span></div></div></div>`;
   document.body.appendChild(ov);
   ov.querySelector("#cmpX").addEventListener("click", () => ov.remove());
   ov.addEventListener("click", e => { if (e.target === ov) ov.remove(); });
