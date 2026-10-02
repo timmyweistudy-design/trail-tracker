@@ -35,7 +35,8 @@ ALWAYS = set(
 def texts():
     """所有可能顯示中文的來源。"""
     yield (ROOT / "web" / "index.html").read_text(encoding="utf-8")
-    yield (ROOT / "web" / "css" / "style.css").read_text(encoding="utf-8")
+    for css in sorted((ROOT / "web" / "css").glob("*.css")):   # 樣式拆成好幾個檔
+        yield css.read_text(encoding="utf-8")
     for pat in ("web/js/*.js", "web/js/social/*.js", "web/js/i18n/*.js"):
         for f in sorted(ROOT.glob(pat)):
             yield f.read_text(encoding="utf-8", errors="ignore")

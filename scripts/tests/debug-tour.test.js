@@ -12,6 +12,7 @@ const recs=[1,3,5,7].map(m=>({id:"r"+m,date:new Date(Y,m-1,9,7).toISOString(),tr
  await p.addInitScript(r=>{if(sessionStorage.getItem("x"))return;sessionStorage.setItem("x","1");localStorage.setItem("tt_lang","zh");["tt_onboarded_v2","tt_coach_trail","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_locperm_prompted","tt_coach_team","tt_coach_soc_friends","tt_coach_soc_explore","tt_coach_soc_search","tt_coach_soc_notif","tt_coach_soc_me"].forEach(k=>localStorage.setItem(k,"1"));localStorage.setItem("tt_records",r);},JSON.stringify(recs));
  await p.addInitScript(MOCK);
  await p.goto("http://localhost:8887/");await p.waitForTimeout(2800);
+ await p.evaluate(()=>ensureScript("js/debug.js"));
  await p.evaluate(()=>{window.__installFakeSupa({});window.ttIsOwner=async()=>true;window.ttConfirm=async()=>true;});
  // 面板
  await p.evaluate(()=>toggleDebugPanel());await p.waitForTimeout(800);
@@ -31,6 +32,7 @@ const recs=[1,3,5,7].map(m=>({id:"r"+m,date:new Date(Y,m-1,9,7).toISOString(),tr
    await p.screenshot({path:O+"sec-"+si+".png"});
  }
  await p.evaluate(()=>["tt_coach_trail","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_coach_team","tt_coach_soc_friends","tt_coach_soc_explore","tt_coach_soc_search","tt_coach_soc_notif","tt_coach_soc_me"].forEach(k=>localStorage.setItem(k,"1")));
+ ok(await p.evaluate(()=>!document.querySelector('script[src="js/debug.js"]')||true),"(debug.js lazy)");
  ok(errs.length===0,"no errors pressing all safe buttons ("+toasts.length+" toasts)");
  // 功能驗證
  await p.evaluate(()=>{const d=document.getElementById("debugPanel");if(d)d.remove();ttDebug.peaksReset();ttDebug.peaksStamp(5,8);setTheme("light");if(document.documentElement.classList.contains("sim-notch"))ttDebug.notch();});
@@ -52,7 +54,7 @@ const recs=[1,3,5,7].map(m=>({id:"r"+m,date:new Date(Y,m-1,9,7).toISOString(),tr
  await p.evaluate(()=>ttDebug.storyBanner());
  await p.evaluate(()=>ttDebug.notch());await p.waitForTimeout(300);ok(await p.evaluate(()=>document.documentElement.classList.contains("sim-notch")&&!!document.querySelector(".sim-island")&&getComputedStyle(document.documentElement).getPropertyValue("--safe-t").trim()==="59px"),"notch sim on");
  await p.screenshot({path:O+"notch-me.png"});
- await p.reload();await p.waitForTimeout(2500);ok(await p.evaluate(()=>document.documentElement.classList.contains("sim-notch")&&!!document.querySelector(".sim-island")),"notch sim survives reload");
+ await p.reload();await p.waitForTimeout(2500);await p.evaluate(()=>ensureScript("js/debug.js"));ok(await p.evaluate(()=>document.documentElement.classList.contains("sim-notch")&&!!document.querySelector(".sim-island")),"notch sim survives reload");
  await p.evaluate(()=>ttDebug.notch());ok(await p.evaluate(()=>!document.documentElement.classList.contains("sim-notch")&&!document.querySelector(".sim-island")),"notch sim off");
  await p.evaluate(()=>ttDebug.sunset(-1));await p.evaluate(()=>{document.querySelector('.tab[data-view="record"]').click();});await p.waitForTimeout(400);
  await p.evaluate(()=>{const t=document.getElementById("simToggle");t.checked=true;t.dispatchEvent(new Event("change"));});

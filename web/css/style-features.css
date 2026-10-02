@@ -1,0 +1,1829 @@
+/* 功能頁樣式（從 style.css 拆出，2026-10）：夥伴、成就、社群、我的頁、進階分析、年度回顧、各頁細修。
+   載入順序緊接在 style.css 之後（用到 style.css 的變數）。 */
+/* =====================================================================
+   社群 — 「山林誌」編輯風一致化（精緻排版）
+   ===================================================================== */
+.social-head { padding: 16px 16px 4px; }
+.view-title { font-family: var(--serif); font-size: calc(22px * var(--fs, 1)); font-weight: 700; letter-spacing: .5px; }
+#socialBody { padding: 6px 14px 96px; }
+.social-loading, .social-empty, .pf-posts-empty { text-align: center; color: var(--ink-faint); padding: 46px 24px; font-size: calc(14px * var(--fs, 1)); line-height: 1.7; }
+
+/* 子分頁：segmented control */
+.social-subnav { display: flex; gap: 3px; padding: 5px; margin-bottom: 14px; background: var(--surface-2); border-radius: var(--r-pill); position: sticky; top: 0; z-index: 6; box-shadow: inset 0 0 0 1px var(--line-soft); }
+.sub-tab { flex: 1; padding: 9px 2px; border: none; background: none; border-radius: var(--r-pill); font-size: calc(12.5px * var(--fs, 1)); font-weight: 600; color: var(--ink-soft); cursor: pointer; font-family: var(--sans); transition: var(--dur-s); }
+.sub-tab.on { background: var(--surface); color: var(--accent); box-shadow: var(--sh-sm); }
+
+/* 動態牆卡片 */
+.feed-list { display: flex; flex-direction: column; gap: 13px; }
+.feed-loading { text-align: center; color: var(--ink-faint); padding: 36px; }
+.feed-card { position: relative; background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r); padding: 14px 15px 12px; cursor: pointer; box-shadow: var(--sh-sm); transition: transform var(--dur-s) var(--ease-out), box-shadow var(--dur-s) var(--ease-out); }
+.feed-card:active { transform: translateY(1px) scale(.995); }
+.fc-top { display: flex; align-items: center; gap: 11px; margin-bottom: 8px; }
+.fc-av { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px var(--line); }
+.fc-av-ph { display: flex; align-items: center; justify-content: center; background: linear-gradient(150deg, var(--brand-mid), var(--brand)); color: #fff; font-family: var(--serif); font-size: calc(18px * var(--fs, 1)); }
+.fc-name { font-weight: 700; font-size: calc(14.5px * var(--fs, 1)); color: var(--ink); display: flex; align-items: center; gap: 6px; }
+.fc-sub { color: var(--ink-faint); font-size: calc(11.5px * var(--fs, 1)); margin-top: 1px; }
+.fc-trail { font-family: var(--serif); font-size: calc(15.5px * var(--fs, 1)); font-weight: 600; color: var(--ink); margin: 3px 0 2px; }
+.fc-stats { font-family: var(--num); font-size: calc(12.5px * var(--fs, 1)); color: var(--accent); font-weight: 600; white-space: nowrap; }
+.fc-cap { line-height: 1.65; margin: 7px 0; white-space: pre-wrap; color: var(--ink); font-size: calc(14px * var(--fs, 1)); }
+.fc-route { width: 100%; height: 46px; display: block; margin: 8px 0 4px; }
+.fc-media { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 4px; margin-top: 9px; }
+.fc-media img, .fc-vid img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--r-xs); display: block; }
+.fc-vid { position: relative; }
+.fc-play { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: calc(30px * var(--fs, 1)); color: #fff; text-shadow: 0 1px 6px rgba(0,0,0,.7); }
+.fc-actions { display: flex; gap: 8px; margin-top: 11px; }
+.fc-like, .fc-comment { display: inline-flex; align-items: center; gap: 5px; background: var(--surface-2); border: none; cursor: pointer; font-size: calc(13px * var(--fs, 1)); color: var(--ink-soft); padding: 6px 13px; border-radius: var(--r-pill); font-family: var(--num); transition: var(--dur-s); }
+.fc-like.on { color: var(--danger); background: var(--accent-soft); }
+.fc-author { cursor: pointer; }
+.lv-chip { font-family: var(--num); font-size: calc(10px * var(--fs, 1)); font-weight: 700; letter-spacing: .3px; color: #fff; background: var(--brand-mid); border-radius: 5px; padding: 1px 5px; }
+.fc-traillink { color: var(--accent); cursor: pointer; font-weight: 600; }
+.fc-traillink::after { content: " ›"; }
+
+/* 登入 / 註冊 */
+.social-auth { max-width: 340px; margin: 30px auto; display: flex; flex-direction: column; gap: 11px; }
+.auth-logo { font-size: calc(52px * var(--fs, 1)); text-align: center; filter: drop-shadow(0 4px 10px rgba(22,48,31,.18)); }
+.social-auth h3 { font-family: var(--serif); font-size: calc(21px * var(--fs, 1)); font-weight: 700; text-align: center; letter-spacing: 1px; margin: 2px 0; }
+.auth-sub { text-align: center; color: var(--ink-soft); font-size: calc(13px * var(--fs, 1)); line-height: 1.6; margin-bottom: 6px; }
+.auth-or { text-align: center; color: var(--ink-faint); font-size: calc(11px * var(--fs, 1)); letter-spacing: 2px; margin: 4px 0; }
+.auth-input { padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--r-sm); font-size: calc(15px * var(--fs, 1)); background: var(--surface); color: var(--ink); font-family: var(--sans); }
+.auth-input:focus { outline: none; border-color: var(--brand-mid); box-shadow: 0 0 0 3px var(--brand-soft); }
+.auth-msg { font-size: calc(12px * var(--fs, 1)); color: var(--ink-soft); min-height: 16px; text-align: center; }
+.auth-msg.ok { color: var(--brand); } .auth-msg.bad { color: var(--danger); }
+.ob-l { font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-faint); margin-top: 8px; font-weight: 600; letter-spacing: .3px; }
+
+/* 個人頁 */
+.pf { max-width: 480px; margin: 8px auto; }
+.pf-top { display: flex; align-items: center; gap: 15px; }
+.pf-av { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 3px var(--surface), 0 0 0 4px var(--accent-soft); }
+.pf-av-ph { display: flex; align-items: center; justify-content: center; background: linear-gradient(150deg, var(--brand-mid), var(--brand)); color: #fff; font-size: calc(30px * var(--fs, 1)); font-family: var(--serif); }
+.pf-name { font-family: var(--serif); font-size: calc(20px * var(--fs, 1)); font-weight: 700; color: var(--ink); }
+.pf-handle { color: var(--ink-faint); font-size: calc(13px * var(--fs, 1)); margin-top: 2px; }
+.pf-pet { display: inline-flex; align-items: center; gap: 6px; margin: 13px 0 2px; padding: 6px 13px; background: var(--accent-soft); border-radius: var(--r-pill); font-size: calc(13px * var(--fs, 1)); color: var(--accent); font-weight: 600; }
+.pf-counts { margin: 10px 0 2px; font-size: calc(13.5px * var(--fs, 1)); color: var(--ink-soft); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
+.pf-counts .cnt-link { margin-right: 10px; }
+.pf-counts .cnt-link:last-child { margin-right: 0; }
+.pf-counts b { color: var(--ink); font-family: var(--num); }
+.pf-bio { margin: 10px 0; line-height: 1.7; color: var(--ink); font-size: calc(14px * var(--fs, 1)); }
+.pf-actions { margin: 14px 0; }
+.pf-av-edit { display: flex; align-items: center; gap: 14px; margin: 8px 0; }
+.pf-safety { display: flex; gap: 16px; margin: 10px 0; }
+.pf-safety .link-btn { color: var(--ink-faint); font-size: calc(13px * var(--fs, 1)); }
+
+/* 搜尋 */
+.disc { display: flex; flex-direction: column; gap: 6px; }
+.disc-row { display: flex; align-items: center; gap: 11px; padding: 9px 8px; border-radius: var(--r-sm); cursor: pointer; transition: background var(--dur-s); }
+.disc-row:active { background: var(--surface-2); }
+.disc-id { display: flex; flex-direction: column; }
+.disc-id b { font-size: calc(14.5px * var(--fs, 1)); }
+.disc-id > span { color: var(--ink-faint); font-size: calc(12px * var(--fs, 1)); }
+
+/* 通知 */
+.nbadge { display: none; min-width: 16px; height: 16px; line-height: 16px; padding: 0 4px; margin-left: 2px; font-size: calc(10px * var(--fs, 1)); font-weight: 700; color: #fff; background: var(--danger); border-radius: var(--r-pill); vertical-align: middle; font-family: var(--num); }
+.notif-list { display: flex; flex-direction: column; }
+.notif-sec { font-family: var(--serif); font-weight: 700; font-size: calc(12px * var(--fs, 1)); color: var(--ink-soft); letter-spacing: .5px; padding: 12px 2px 5px; }
+.notif-sec:first-child { padding-top: 2px; }
+.notif { display: flex; align-items: center; gap: 12px; padding: 13px 6px; border-bottom: 1px solid var(--line-soft); cursor: pointer; transition: background var(--dur-s); }
+.notif:active { background: var(--surface-2); }
+.notif.unread { position: relative; }
+.notif.unread::before { content: ""; position: absolute; left: -3px; top: 50%; transform: translateY(-50%); width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.notif-ic { width: 38px; height: 38px; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; font-size: calc(17px * var(--fs, 1)); background: var(--surface-2); border-radius: 50%; }
+.notif-body { font-size: calc(14px * var(--fs, 1)); line-height: 1.4; color: var(--ink); }
+.notif-body .fc-sub { margin-top: 2px; }
+.notif-line { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.notif-count { flex: none; display: inline-flex; align-items: center; gap: 2px; font-family: var(--num); font-size: calc(11px * var(--fs, 1)); font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: var(--r-pill); padding: 1px 7px; }
+.notif-count .ic { width: 12px; height: 12px; }
+
+/* 發文 / 詳情 覆蓋層 */
+.composer-mask, .pv-mask { position: fixed; inset: 0; z-index: 120; background: rgba(22,30,20,.5); backdrop-filter: blur(2px); display: flex; align-items: flex-end; justify-content: center; }
+.composer, .pv { background: var(--bg); width: 100%; max-width: 540px; max-height: min(92vh, calc(100dvh - var(--safe-t) - 10px)); overflow-y: auto; border-radius: var(--r-lg) 22px 0 0; padding: 4px 16px calc(20px + var(--safe-b, 0px)); box-shadow: var(--sh-lg); }
+.composer-head, .pv-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; position: sticky; top: 0; background: var(--bg); padding: 12px 0 10px; z-index: 2; }
+.composer-head b, .pv-head b { font-family: var(--serif); font-size: calc(16px * var(--fs, 1)); }
+.pv-head b .ic, .composer-head b .ic { width: 16px; height: 16px; vertical-align: -2px; margin-right: 5px; }
+.comp-x { background: none; border: none; font-size: calc(17px * var(--fs, 1)); cursor: pointer; color: var(--ink-soft); padding: 4px; }
+.comp-post { padding: 7px 18px !important; }
+.comp-trail { color: var(--ink-soft); font-size: calc(13px * var(--fs, 1)); margin: 4px 0; }
+.comp-cap { width: 100%; min-height: 90px; border: 1px solid var(--line); border-radius: var(--r-sm); padding: 12px; font: inherit; font-size: calc(15px * var(--fs, 1)); background: var(--surface); color: var(--ink); resize: vertical; line-height: 1.6; }
+.comp-cap:focus { outline: none; border-color: var(--brand-mid); box-shadow: 0 0 0 3px var(--brand-soft); }
+.comp-photos { display: flex; flex-wrap: wrap; gap: 7px; margin: 10px 0; }
+.comp-thumb { position: relative; width: 78px; height: 78px; }
+.comp-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--r-sm); }
+.comp-del { position: absolute; top: -7px; right: -7px; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--bg); background: rgba(20,20,20,.75); color: #fff; cursor: pointer; font-size: calc(11px * var(--fs, 1)); line-height: 1; }
+.comp-add { display: inline-flex; align-items: center; gap: 4px; padding: 9px 15px; border: 1px dashed var(--line); border-radius: var(--r-pill); cursor: pointer; font-size: calc(13px * var(--fs, 1)); color: var(--ink-soft); margin-right: 8px; }
+.comp-vis { display: flex; gap: 18px; margin: 14px 0; font-size: calc(14px * var(--fs, 1)); }
+.comp-msg { font-size: calc(13px * var(--fs, 1)); color: var(--ink-soft); min-height: 18px; }
+
+.pv-img { width: 100%; border-radius: var(--r-sm); margin: 7px 0; }
+.pv-photo { cursor: zoom-in; }
+.pv-map { height: 200px; border-radius: var(--r-sm); margin: 10px 0; overflow: hidden; box-shadow: inset 0 0 0 1px var(--line); }
+.pv-actions { margin: 12px 0; display: flex; align-items: center; gap: 6px; }
+.pv-actions .fc-like { font-size: calc(15px * var(--fs, 1)); }
+.pv-actions .link-btn { margin-left: auto; color: var(--ink-faint); font-size: calc(13px * var(--fs, 1)); }
+.pv-comments { margin-top: 14px; display: flex; flex-direction: column; gap: 11px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+.pv-cm { position: relative; font-size: calc(14px * var(--fs, 1)); line-height: 1.55; color: var(--ink); }
+.pv-cm b { color: var(--ink); margin-right: 3px; }
+.cm-del { background: none; border: none; color: var(--ink-faint); cursor: pointer; font-size: calc(11px * var(--fs, 1)); margin-left: 6px; }
+.pv-add { display: flex; gap: 8px; position: sticky; bottom: 0; background: var(--bg); padding: 10px 0 4px; }
+.pv-add .auth-input { flex: 1; }
+
+/* 照片燈箱 */
+.lightbox { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,.93); display: flex; align-items: center; justify-content: center; }
+.lightbox img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.lb-x { position: fixed; top: calc(12px + var(--safe-t, 0px)); right: 16px; background: rgba(0,0,0,.5); color: #fff; border: none; width: 38px; height: 38px; border-radius: 50%; font-size: calc(18px * var(--fs, 1)); cursor: pointer; }
+
+/* 載入更多 / 底部社群紅點 */
+#feedMore { width: 100%; margin: 16px 0; }
+.tabbar .tab { position: relative; }
+.nav-badge { display: none; position: absolute; top: 3px; right: 50%; transform: translateX(15px); min-width: 16px; height: 16px; line-height: 16px; padding: 0 4px; font-size: calc(10px * var(--fs, 1)); font-weight: 700; color: #fff; background: var(--danger); border-radius: var(--r-pill); font-family: var(--num); box-shadow: 0 0 0 2px var(--surface); }
+
+/* 粉絲/追蹤名單可點 + 媒體格依張數排版 */
+.cnt-link { cursor: pointer; }
+.cnt-link:active { opacity: .6; }
+.fc-media-1 { grid-template-columns: 1fr; }
+.fc-media-1 img, .fc-media-1 .fc-vid img { aspect-ratio: 16 / 10; }
+.fc-media-2 { grid-template-columns: 1fr 1fr; }
+.fc-media-3 { grid-template-columns: 1fr 1fr 1fr; }
+.fc-media-4 { grid-template-columns: 1fr 1fr; }
+
+/* 路線縮圖用主題色（深色自動適配）+ 詳情頭部按鈕群 */
+.fc-route polyline { stroke: var(--accent); }
+.fc-route .s { fill: var(--brand-mid); }
+.fc-route .e { fill: var(--accent); }
+.pv-head-r { display: inline-flex; align-items: center; gap: 2px; }
+
+/* 深色模式 toast：--brand-deep 在暗色是亮色，會與亮字撞色，改用深底亮字 */
+html[data-theme="dark"] .toast { background: #313a2a; color: #eceadb; }
+
+/* 小隊 */
+.team-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 12px; background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); margin: 6px 0; }
+.team-row.on { border-color: var(--accent); }
+.team-row .btn { padding: 6px 14px; flex: 0 0 auto; }
+.team-code { font-family: var(--num); font-size: calc(12px * var(--fs, 1)); color: var(--ink-faint); letter-spacing: 1px; margin-top: 2px; }
+.team-live { margin: 14px 0 8px; }
+.team-members { display: flex; flex-wrap: wrap; gap: 7px; margin: 4px 0 6px; }
+.team-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px 4px 4px; background: var(--surface-2); border-radius: var(--r-pill); font-size: calc(12.5px * var(--fs, 1)); color: var(--ink); }
+.team-chip img, .team-chip i { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; display: inline-flex; align-items: center; justify-content: center; background: var(--brand-mid); color: #fff; font-style: normal; font-size: calc(11px * var(--fs, 1)); }
+.tm-hr { border: none; border-top: 1px solid var(--line-soft); margin: 16px 0; }
+.team-rule { font-size: calc(12px * var(--fs, 1)); color: var(--ink-soft); background: var(--surface-2); border-radius: var(--r-xs); padding: 8px 10px; margin: 6px 0; line-height: 1.5; }
+/* 記錄頁小隊準備列 */
+.team-ready-bar { background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 10px 12px; margin: 8px 0; }
+/* 記錄時放大地圖也保留小隊面板：浮在地圖左上，右側 52px 留給地圖控制鈕（指北針/回中/3D/全螢幕，直向排一列） */
+body.map-fs-open #teamReadyBar {
+  position: fixed; z-index: 96;
+  top: calc(8px + var(--safe-t));
+  left: calc(8px + var(--safe-l));
+  right: calc(52px + var(--safe-r));
+  width: auto; max-width: 340px;            /* 平板/桌機不要橫拉成一整條 */
+  max-height: 40vh; overflow-y: auto; margin: 0;
+  padding: 8px 10px;                        /* 比頁面版緊，少擋地圖 */
+  box-shadow: var(--sh-lg); backdrop-filter: blur(8px) saturate(1.1);
+  background: rgba(255, 253, 248, .92);
+}
+html[data-theme="dark"] body.map-fs-open #teamReadyBar { background: rgba(20, 24, 15, .9); }
+/* 放大時只留「隊伍狀態＋隊友名字」，說明/診斷收掉，避免蓋住半張地圖 */
+body.map-fs-open #teamReadyBar .trb-hint,
+body.map-fs-open #teamReadyBar .trb-guide { display: none; }
+body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
+.trb-top { display: flex; align-items: center; justify-content: space-between; gap: 8px 10px; flex-wrap: wrap; font-size: calc(13.5px * var(--fs, 1)); }
+.trb-top > b { flex: 1 1 auto; min-width: 0; display: inline-flex; align-items: center; gap: 4px; }
+.trb-top > .trb-chip, .trb-top > .trb-ready { flex: 0 0 auto; }
+.trb-ready { border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); border-radius: var(--r-pill); padding: 7px 14px; font-size: calc(13px * var(--fs, 1)); font-weight: 700; cursor: pointer; }
+.trb-ready.on { background: var(--brand-mid); border-color: var(--brand-mid); color: #f6f3ea; }
+.trb-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.trb-chip { font-size: calc(11.5px * var(--fs, 1)); background: var(--surface-2); border-radius: var(--r-pill); padding: 4px 10px; color: var(--ink-soft); }
+.trb-chip.ok { background: rgba(47,125,79,.14); color: var(--brand-mid); font-weight: 700; }
+.trb-hint { font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-faint); margin-top: 7px; }
+.trb-guide { font-size: calc(11.5px * var(--fs, 1)); color: var(--brand-mid); background: rgba(47,125,79,.10); border-radius: var(--r-xs); padding: 7px 10px; margin-top: 7px; line-height: 1.45; }
+.trb-diag { margin-top: 5px; font-family: var(--num); font-size: calc(10.5px * var(--fs, 1)); color: var(--ink-faint); letter-spacing: .2px; }
+.trb-chip.tappable { cursor: pointer; border: 1px solid var(--brand-mid); background: var(--brand-soft); color: var(--brand); }
+.trb-chip.tappable:active { transform: scale(.96); }
+.trb-chip.pinned { background: var(--brand-mid); border-color: var(--brand-mid); color: #f6f3ea; font-weight: 700; }   /* 已定位在地圖上：再點一次收起 */
+.trb-chip.leader-off { background: var(--surface-2); color: var(--ink-soft); font-weight: 700; }
+.trb-chip.leader-off .ic { width: 12px; height: 12px; vertical-align: -2px; }
+.team-chip.leader { background: rgba(240,169,30,.16); font-weight: 700; }
+.team-chip.leader .ic { width: 13px; height: 13px; color: #e0972a; }
+.tm-create { display: flex; gap: 8px; margin-bottom: 4px; }
+.tm-create .auth-input { flex: 1; min-width: 0; }   /* min-width:0 讓輸入框可縮，否則會把「建立／加入」鈕擠到畫面外要往右滑 */
+.tm-create .btn { flex: none; width: auto; white-space: nowrap; }   /* .btn 預設 width:100% 會佔滿整列把輸入框擠出畫面，這裡改為隨字寬 */
+/* 地圖隊友標記 */
+.team-marker .tm-dot { width: 30px; height: 30px; border-radius: 50%; background: var(--brand); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: calc(13px * var(--fs, 1)); border: 2.5px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.35); }
+.leaflet-tooltip.team-tip { background: var(--brand-deep); color: #f2efe4; border: none; border-radius: 6px; font-size: calc(11px * var(--fs, 1)); padding: 2px 7px; box-shadow: var(--sh-sm); }
+.leaflet-tooltip.team-tip::before { display: none; }
+
+/* 小隊：目前藥丸、邀請鈕、隊友頭像+寵物標記 */
+.team-row-info { flex: 1 1 auto; min-width: 0; }
+.team-row-info b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.team-now { flex: 0 0 auto; font-size: calc(12px * var(--fs, 1)); font-weight: 700; color: #fff; background: var(--accent); border-radius: var(--r-pill); padding: 5px 13px; }
+.team-invite { margin-left: auto; flex: 0 0 auto; padding: 5px 14px; }
+.team-marker .tm-av { position: relative; width: 32px; height: 32px; }
+.team-marker .tm-av img, .team-marker .tm-av .tm-ph { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; background: var(--brand); color: #fff; font-weight: 700; font-size: calc(13px * var(--fs, 1)); box-sizing: border-box; }
+/* 寵物：在頭頂置中浮動、較小 */
+.team-marker .tm-pet { position: absolute; top: -31px; left: 50%; font-size: calc(27px * var(--fs, 1)); line-height: 1; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); animation: tmFloat 2.2s ease-in-out infinite; }
+@keyframes tmFloat { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-3px); } }
+/* 點名字看定位：脈動光圈標示（顯示 5 秒）；reduced-motion 由全域規則關成靜態環 */
+.team-marker.peek .tm-pulse { position: absolute; top: 50%; left: 50%; width: 32px; height: 32px; border-radius: 50%; border: 3px solid var(--accent); transform: translate(-50%, -50%); animation: tmPulse 1.35s ease-out infinite; pointer-events: none; }
+@keyframes tmPulse { 0% { opacity: .85; transform: translate(-50%, -50%) scale(.9); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(2.6); } }
+
+/* 記錄地圖「我」的頭像標記：赤陶外環區隔隊友(白環) */
+.team-marker.me-marker .tm-av img, .team-marker.me-marker .tm-av .tm-ph { border-color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,.45); }
+
+@media (prefers-reduced-motion: reduce) { .team-marker .tm-pet { animation: none; } }
+
+/* 隨手拍：結算頁照片條 */
+.hike-shots { display: flex; gap: 9px; overflow-x: auto; padding: 4px 2px 8px; -webkit-overflow-scrolling: touch; }
+.hike-shots .shot { flex: 0 0 auto; margin: 0; width: 116px; }
+.hike-shots .shot img { width: 116px; height: 116px; object-fit: cover; border-radius: var(--r-sm); box-shadow: var(--sh-sm); display: block; }
+.hike-shots .shot figcaption { font-family: var(--num); font-size: calc(11px * var(--fs, 1)); color: var(--ink-soft); text-align: center; margin-top: 4px; }
+#btnSnap #snapCount { font-family: var(--num); font-weight: 700; color: var(--accent); }
+
+/* 隨手拍：存相簿提示 + 可點 */
+.shot-hint { font-family: var(--sans); font-weight: 500; font-size: calc(11px * var(--fs, 1)); color: var(--ink-faint); margin-left: 8px; }
+.hike-shots .shot { cursor: pointer; }
+.hike-shots .shot:active img { opacity: .8; }
+
+/* 動態牆重新整理 */
+.feed-refresh { display: block; margin: 0 auto 12px; background: none; border: none; color: var(--ink-soft); font-size: calc(13px * var(--fs, 1)); cursor: pointer; font-family: var(--sans); padding: 4px 12px; }
+.feed-refresh:active { color: var(--accent); }
+
+/* 地圖頭像標記：面朝方向錐（融入頭像，無文字） */
+.team-marker .tm-dir { position: absolute; inset: 0; pointer-events: none; transition: transform var(--dur-m) var(--ease-out); }
+/* 方向三角形顏色＝頭像相框顏色（隊友白框、自己主題色框、PRO 跟框配色） */
+.team-marker .tm-cone { position: absolute; left: 50%; top: -8px; margin-left: -7px; width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-bottom: 10px solid #fff; filter: drop-shadow(0 1px 1px rgba(0,0,0,.35)); }
+.team-marker.me-marker .tm-cone { border-bottom-color: var(--accent); }
+.team-marker.me-marker.pro .tm-cone { border-bottom-color: var(--pro-f, #f0a91e); }
+
+/* 等級徽章：等級越高越高級（樸素 → 漸層 → 金色傳說） */
+.lv-chip { color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,.18); }
+.lv-chip.lvt-1 { background: #93a08f; }
+.lv-chip.lvt-2 { background: #5a9c5f; }
+.lv-chip.lvt-3 { background: #2f9aa4; }
+.lv-chip.lvt-4 { background: linear-gradient(135deg, #4f8ae6, #2f63c8); }
+.lv-chip.lvt-5 { background: linear-gradient(135deg, #9a64db, #7740bf); }
+.lv-chip.lvt-6 { background: linear-gradient(135deg, #d44fa2, #a8327a); box-shadow: 0 1px 6px rgba(168,50,122,.4); }
+.lv-chip.lvt-7 { background: linear-gradient(135deg, #f7cd45, #df8f12); color: #4a2e00; text-shadow: none; font-weight: 800; box-shadow: 0 0 0 1px rgba(255,205,70,.7), 0 1px 8px rgba(240,169,30,.6); }
+
+/* 隨手拍照片在社群標時間/里程 */
+.fc-shot { position: relative; }
+.fc-shot-km { position: absolute; left: 4px; bottom: 4px; background: rgba(20,24,18,.72); color: #fff; font-family: var(--num); font-size: calc(10px * var(--fs, 1)); font-weight: 700; padding: 1px 6px; border-radius: 6px; }
+.comp-thumb-km { position: absolute; left: 3px; bottom: 3px; background: rgba(20,24,18,.72); color: #fff; font-family: var(--num); font-size: calc(10px * var(--fs, 1)); padding: 1px 5px; border-radius: 5px; }
+.pv-shot { margin: 8px 0; }
+.pv-shot .pv-img { margin: 0; }
+.pv-shot figcaption { font-family: var(--num); font-size: calc(12px * var(--fs, 1)); color: var(--ink-soft); text-align: center; margin-top: 4px; }
+
+/* ===== 夥伴頁：活力、每日任務、連續天數 ===== */
+.pet-head { padding: 0 0 6px; }
+.pet-energy { display: flex; align-items: center; gap: 8px; margin: 9px 0 2px; }
+.pe-l { font-size: calc(12px * var(--fs, 1)); color: rgba(255,255,255,.92); white-space: nowrap; font-family: var(--num); }
+.pe-bar { flex: 1; height: 7px; background: rgba(255,255,255,.28); border-radius: var(--r-pill); overflow: hidden; }
+.pe-bar i { display: block; height: 100%; background: linear-gradient(90deg, #ffd66b, #ff9f43); border-radius: var(--r-pill); transition: width var(--dur-l) var(--ease-out); }
+#petQuests { margin-top: 18px; }
+.streak-chip { font-size: calc(11px * var(--fs, 1)); font-weight: 700; color: #fff; background: linear-gradient(135deg, #ff8a3d, #e8632a); padding: 2px 10px; border-radius: var(--r-pill); vertical-align: middle; margin-left: 6px; }
+.quest-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.quest-mile { display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 8px; font-size: calc(11.5px * var(--fs, 1)); font-weight: 700; color: #e8632a; }
+.quest-mile .ic { width: 13px; height: 13px; }
+.quest { display: flex; align-items: center; gap: 11px; background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 10px 13px; transition: var(--dur-s); }
+.quest.done { border-color: var(--brand-mid); background: var(--brand-soft); }
+.q-ic { font-size: calc(20px * var(--fs, 1)); flex: 0 0 auto; }
+.q-body { flex: 1; min-width: 0; }
+.q-l { font-size: calc(13.5px * var(--fs, 1)); color: var(--ink); margin-bottom: 5px; }
+.q-bar { height: 6px; background: var(--surface-2); border-radius: var(--r-pill); overflow: hidden; }
+.q-bar i { display: block; height: 100%; background: var(--brand-mid); border-radius: var(--r-pill); transition: width var(--dur-l) var(--ease-out); }
+.quest.done .q-bar i { background: var(--brand); }
+.q-chk { font-family: var(--num); font-size: calc(13px * var(--fs, 1)); font-weight: 700; color: var(--ink-soft); min-width: 24px; text-align: center; flex: 0 0 auto; }
+.quest.done .q-chk { color: var(--brand); font-size: calc(16px * var(--fs, 1)); }
+#qClaim { width: 100%; }
+
+/* 好友的夥伴 */
+#petFriends { margin-top: 18px; }
+.friend-pets { display: flex; flex-direction: column; gap: 8px; }
+.fp { display: flex; align-items: center; gap: 11px; background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 9px 12px; }
+.fp-pet { font-size: calc(26px * var(--fs, 1)); flex: 0 0 auto; }
+.fp-info { flex: 1; min-width: 0; }
+.fp-info b { font-size: calc(14px * var(--fs, 1)); display: inline-flex; align-items: center; gap: 5px; max-width: 100%; overflow: hidden; }
+.fp-info b .lv-chip { flex: 0 0 auto; }
+.fp-by { font-size: calc(11px * var(--fs, 1)); color: var(--ink-faint); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fp-gift { flex: 0 0 auto; padding: 6px 12px; }
+
+/* 發文星級 / 貼文評分顯示 */
+.comp-rate { font-size: calc(14px * var(--fs, 1)); color: var(--ink-soft); margin: 6px 0 2px; display: flex; align-items: center; gap: 8px; }
+.comp-stars .cs { font-size: calc(24px * var(--fs, 1)); color: #e8a127; cursor: pointer; line-height: 1; padding: 0 1px; }
+.fc-rate { color: #e8a127; font-size: calc(13px * var(--fs, 1)); letter-spacing: 1px; white-space: nowrap; }
+
+/* 步道圖卡：標記完成勾勾（在收藏星左側） */
+/* 已完成徽章（自動判定，不可點）：綠底白勾，明確表示這條走過了 */
+
+/* 夥伴手冊：進化圖鑑（詳細） */
+.dex-intro { font-size: calc(13px * var(--fs, 1)); color: var(--ink-soft); line-height: 1.7; margin: 4px 0 10px; }
+.dex-tip { background: var(--accent-soft); color: var(--accent); font-size: calc(13px * var(--fs, 1)); font-weight: 600; padding: 9px 13px; border-radius: var(--r-sm); margin-bottom: 14px; }
+.dex-sec { font-family: var(--serif); font-weight: 700; font-size: calc(15px * var(--fs, 1)); margin: 14px 0 8px; }
+.dex-list { display: flex; flex-direction: column; gap: 8px; }
+.dex-row { display: flex; gap: 12px; align-items: flex-start; background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 11px 13px; }
+.dex-row.now { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-soft); }
+.dex-row.locked .dex-e, .dex-row.locked .dex-h b, .dex-row.locked .dex-k, .dex-row.locked .dex-d { opacity: .62; }   /* 等級徽章不跟著變淡，Lv.6/7 才看得清楚 */
+/* 槽寬要跟得上裡面的 .pet-critter（44px）：手繪 SVG 是後來才換上的，槽還停在 emoji 時代的 40px，
+   SVG 會左右各溢出 2px 壓到旁邊的文字。 */
+.dex-row .dex-e { font-size: calc(32px * var(--fs, 1)); line-height: 1; flex: 0 0 auto; width: 44px; text-align: center; }
+.dex-body { flex: 1; min-width: 0; }
+.dex-h { display: flex; align-items: center; gap: 7px; }
+.dex-h b { font-family: var(--serif); font-size: calc(15px * var(--fs, 1)); }
+.dex-lv { font-family: var(--num); font-size: calc(11px * var(--fs, 1)); font-weight: 700; color: #fff; background: var(--brand-mid); border-radius: 5px; padding: 1px 6px; }
+.dex-now { font-size: calc(11px * var(--fs, 1)); font-weight: 700; color: #fff; background: var(--accent); border-radius: var(--r-pill); padding: 1px 8px; }
+.dex-k { font-family: var(--num); font-size: calc(12px * var(--fs, 1)); color: var(--ink-faint); margin: 3px 0; }
+.dex-d { font-size: calc(13px * var(--fs, 1)); color: var(--ink-soft); line-height: 1.6; }
+.dex-foot { font-size: calc(12px * var(--fs, 1)); color: var(--ink-faint); margin-top: 14px; line-height: 1.6; }
+
+/* 成就勳章專區（夥伴頁） */
+#petBadges { margin-top: 18px; }
+.badge-count { font-family: var(--num); font-size: calc(13px * var(--fs, 1)); font-weight: 700; color: var(--accent); margin-left: 4px; }
+/* #8 下一個成就進度 */
+/* 即將解鎖（最接近的前 3 個） */
+.ach-next-h { font-size: calc(11px * var(--fs, 1)); letter-spacing: 2px; color: var(--ink-soft); font-weight: 700; margin: 2px 2px 8px; }
+.ach-next { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+.anx { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 9px 12px; }
+.anx-e { flex: none; width: calc(24px * var(--fs, 1)); height: calc(24px * var(--fs, 1)); border-radius: 50%; background: color-mix(in srgb, var(--c, var(--brand)) 16%, transparent); color: var(--c, var(--brand)); display: grid; place-items: center; }
+.anx-e .ic { width: 15px; height: 15px; }
+.anx-body { flex: 1; min-width: 0; }
+.anx-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.anx-top b { font-size: calc(13px * var(--fs, 1)); color: var(--ink); }
+.anx-remain { font-family: var(--num); font-size: calc(11.5px * var(--fs, 1)); font-weight: 700; color: var(--c, var(--accent)); flex: none; }
+.anx-bar { height: 6px; background: var(--line-soft); border-radius: 4px; overflow: hidden; }
+.anx-bar i { display: block; height: 100%; background: var(--c, var(--accent)); border-radius: 4px; }
+
+/* 成就步道：中央蜿蜒步道＋左右交錯停靠點；階層紋章＝檢查點 */
+.ach-trail { position: relative; padding: 2px 0 8px; }
+.ach-trail::before { content: ""; position: absolute; left: 50%; top: 14px; bottom: 14px; width: 3px; transform: translateX(-50%);
+  background: repeating-linear-gradient(180deg, var(--brand-mid) 0 7px, transparent 7px 14px); opacity: .45; }
+.ach-seg { position: relative; }
+.ach-marker { display: grid; place-items: center; margin: 16px 0 0; position: relative; z-index: 2; }
+.ach-emblem { width: 46px; height: 46px; border-radius: 50%; background: var(--brand-mid); color: #fff; display: grid; place-items: center; box-shadow: 0 0 0 5px var(--bg), 0 3px 8px rgba(0,0,0,.22); }
+.ach-emblem .ic { width: 23px; height: 23px; }
+.ach-seg.cleared .ach-emblem { background: linear-gradient(135deg, #e6bd6a, #c08a2e); box-shadow: 0 0 0 5px var(--bg), 0 0 14px rgba(224,177,90,.6); animation: achGlow 2.6s ease-in-out infinite; }
+.ach-seg.tier-locked .ach-emblem { background: var(--ink-faint); box-shadow: 0 0 0 5px var(--bg); }
+@keyframes achGlow { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.12); } }
+.ach-seg-name { text-align: center; font-family: var(--serif); font-size: calc(14px * var(--fs, 1)); font-weight: 700; color: var(--brand-deep); letter-spacing: 1px; margin: 5px 0 4px; position: relative; z-index: 2; }
+.ach-seg-name span { font-family: var(--num); font-size: calc(11px * var(--fs, 1)); color: var(--ink-soft); margin-left: 7px; }
+.ach-seg.cleared .ach-seg-name span { color: #c08a2e; }
+
+.ach-stop { display: grid; grid-template-columns: 1fr 48px 1fr; align-items: center; column-gap: 10px; margin: 7px 0; position: relative; z-index: 2; }
+.ach-dot { grid-column: 2; width: 48px; height: 48px; border-radius: 50%; position: relative;
+  background: conic-gradient(var(--c) calc(var(--pct) * 1%), var(--line-soft) 0); display: grid; place-items: center; box-shadow: 0 0 0 5px var(--bg); }
+.ach-dot-in { width: 39px; height: 39px; border-radius: 50%; background: var(--surface); display: grid; place-items: center; color: var(--c); }
+.ach-dot-in .ic { width: 20px; height: 20px; }
+.ach-stop.locked .ach-dot-in { color: var(--ink-faint); }
+.ach-stop.locked .ach-dot { filter: saturate(.55); }
+.ach-stop.got .ach-dot { box-shadow: 0 0 0 5px var(--bg), 0 0 11px color-mix(in srgb, var(--c) 70%, transparent); }
+.ach-check { position: absolute; right: -3px; bottom: -3px; width: 19px; height: 19px; border-radius: 50%; background: #e0b15a; color: #fff; display: grid; place-items: center; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+.ach-check .ic { width: 12px; height: 12px; }
+/* 各徽章專屬 emoji 字符（取代同類共用線圖示，一眼可辨） */
+.ach-emo { font-size: 21px; line-height: 1; filter: saturate(1.05); font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
+.anx-e.ach-emo, .ach-emo.anx-e { font-size: 18px; background: none; }
+.ach3d-d-dot .ach-emo { font-size: 25px; }
+/* 未解鎖節點：鎖頭暗示＋略去彩度 */
+.ach-lock { position: absolute; right: -3px; bottom: -3px; width: 18px; height: 18px; border-radius: 50%; background: var(--surface-2, #e7e2d6); color: var(--ink-faint); display: grid; place-items: center; box-shadow: 0 1px 3px rgba(0,0,0,.22); }
+.ach-lock .ic { width: 11px; height: 11px; }
+.ach3d-mk.locked .ach-emo { filter: grayscale(.55) opacity(.82); }
+.ach-lbl b { display: block; font-family: var(--serif); font-weight: 700; font-size: calc(13px * var(--fs, 1)); color: var(--ink); line-height: 1.2; }
+.ach-stop.locked .ach-lbl b { color: var(--ink-soft); }
+.ach-lbl-d { font-size: calc(10.5px * var(--fs, 1)); color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+.ach-stop.got .ach-lbl-d { color: #c08a2e; }
+.ach-stop.left .ach-lbl { grid-column: 1; text-align: right; }
+.ach-stop.right .ach-lbl { grid-column: 3; text-align: left; }
+.ach-stop.here .ach-dot::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 2.5px solid var(--c); animation: achHere 1.5s ease-out infinite; }
+@keyframes achHere { 0% { transform: scale(1); opacity: .85; } 100% { transform: scale(1.55); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .ach-seg.cleared .ach-emblem, .ach-stop.here .ach-dot::after { animation: none; } }
+/* 夥伴頁成就入口按鈕 */
+.ach-entry { display: block; width: 100%; background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r); padding: 13px 15px; cursor: pointer; text-align: left; transition: var(--dur-s); margin-bottom: 16px; box-shadow: var(--sh-sm); }
+.ach-entry:active { transform: scale(.99); }
+.ach-entry-bar { height: 8px; border-radius: 999px; background: var(--line-soft); overflow: hidden; margin-bottom: 9px; }
+.ach-entry-bar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--brand-mid), #e0b15a); }
+.ach-entry-row { display: flex; align-items: center; justify-content: space-between; }
+.ach-entry-lbl { font-weight: 700; font-size: calc(14px * var(--fs, 1)); color: var(--brand-deep); }
+.ach-entry-go { width: 30px; height: 30px; border-radius: 50%; background: var(--brand-soft); color: var(--brand); display: grid; place-items: center; flex: none; }
+.ach-entry-go .ic { width: 17px; height: 17px; }
+/* 全螢幕成就步道 */
+.ach-modal { position: fixed; inset: 0; z-index: 60; background: rgba(16,28,18,.5); backdrop-filter: blur(2px); display: flex; justify-content: center; animation: tt-fade var(--dur-m) var(--ease-out); }
+.ach-modal-inner { position: relative; width: 100%; max-width: 540px; background: var(--bg); display: flex; flex-direction: column; max-height: 100%; }
+.ach-modal-head { position: sticky; top: 0; z-index: 3; padding: calc(16px + var(--safe-t)) 18px 13px; background: linear-gradient(180deg, var(--surface), color-mix(in srgb, var(--brand) 9%, var(--surface))); border-bottom: 1px solid var(--line-soft); }
+.ach-modal .sheet-close { position: absolute; top: calc(13px + var(--safe-t)); right: 13px; }
+.ach-modal-h { font-family: var(--serif); font-weight: 700; font-size: calc(19px * var(--fs, 1)); color: var(--brand-deep); display: flex; align-items: center; gap: 7px; letter-spacing: .5px; }
+.ach-modal-h .ic { width: 22px; height: 22px; }
+.ach-modal-prog { display: flex; align-items: center; gap: 12px; margin-top: 11px; }
+.amp-n { font-family: var(--num); font-weight: 800; font-size: calc(21px * var(--fs, 1)); color: var(--brand-deep); flex: none; }
+.amp-n small { font-size: calc(13px * var(--fs, 1)); color: var(--ink-soft); font-weight: 600; }
+.amp-bar { flex: 1; height: 9px; border-radius: 999px; background: var(--line-soft); overflow: hidden; }
+.amp-bar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--brand-mid), #e0b15a); }
+.ach-modal-body { flex: 1; overflow-y: auto; padding: 10px 20px calc(34px + var(--safe-b)); background: linear-gradient(180deg, color-mix(in srgb, var(--brand) 7%, var(--bg)), var(--bg) 34%); }
+/* 放大版步道（整頁空間，節點更大更好按） */
+.ach-trail.big .ach-stop { grid-template-columns: 1fr 62px 1fr; column-gap: 14px; margin: 13px 0; }
+.ach-trail.big .ach-dot { width: 58px; height: 58px; }
+.ach-trail.big .ach-dot-in { width: 47px; height: 47px; }
+.ach-trail.big .ach-dot-in .ic { width: 25px; height: 25px; }
+.ach-trail.big .ach-check { width: 22px; height: 22px; }
+.ach-trail.big .ach-check .ic { width: 14px; height: 14px; }
+.ach-trail.big .ach-emblem { width: 58px; height: 58px; }
+.ach-trail.big .ach-emblem .ic { width: 29px; height: 29px; }
+.ach-trail.big .ach-marker { margin-top: 26px; }
+.ach-trail.big .ach-seg-name { font-size: calc(16px * var(--fs, 1)); margin: 6px 0 6px; }
+.ach-trail.big .ach-lbl b { font-size: calc(14.5px * var(--fs, 1)); }
+.ach-trail.big .ach-lbl-d { font-size: calc(11.5px * var(--fs, 1)); }
+.ach-trail.big::before { top: 18px; bottom: 18px; }
+/* 直向攀登步道：山腳啟程→之字步道→穿雲海→峰頂傳說（往上滑攀登） */
+.ach3d-modal .ach-modal-body { padding: 0; overflow: hidden; position: relative; }
+/* 天空背景層（不隨捲動） */
+.ach-climb-sky { position: absolute; inset: 0; z-index: 0; overflow: hidden; }
+.ach-climb-orb { position: absolute; width: 48px; height: 48px; border-radius: 50%; transform: translate(-50%, -50%); }
+.ach-climb-orb.sun { box-shadow: 0 0 34px 14px rgba(255,220,120,.5); }
+.ach-climb-orb.moon { box-shadow: 0 0 24px 9px rgba(220,230,245,.35); }
+.ach3d-stars { position: absolute; inset: 0; pointer-events: none; }
+.ach3d-star { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: #fff; opacity: .8; animation: ach3dTwinkle 3.2s ease-in-out infinite; animation-delay: var(--dl, 0s); }
+@keyframes ach3dTwinkle { 0%, 100% { opacity: .25; } 50% { opacity: .95; } }
+.ach-climb-sky .ach3d-cloud { position: absolute; left: -35%; width: calc(160px * var(--s, 1)); height: calc(48px * var(--s, 1)); background: #fbfdff; border-radius: 60px; opacity: .55; box-shadow: 0 8px 22px rgba(70,90,110,.14); animation: ach3dDrift var(--d, 44s) linear infinite; }
+.ach3d-cloud::before, .ach3d-cloud::after { content: ""; position: absolute; background: inherit; border-radius: 50%; }
+.ach3d-cloud::before { width: 60%; height: 150%; left: 12%; top: -55%; }
+.ach3d-cloud::after { width: 45%; height: 130%; right: 14%; top: -38%; }
+@keyframes ach3dDrift { to { transform: translateX(calc(100vw + 260px)); } }
+/* 五段攀登分頁：膠捲軌道（五頁預建堆疊、拖動只做 transform） */
+.ach-pager { position: absolute; left: 0; right: 0; top: 0; bottom: calc(58px + var(--safe-b)); z-index: 1; overflow: hidden; touch-action: none; }
+.ach-track { position: absolute; left: 0; right: 0; top: 0; height: calc(var(--n, 6) * 100%); will-change: transform; transform: translateY(calc(var(--d, 5) * -100% / var(--n, 6) + var(--drag, 0px))); }
+.ach-track.anim { transition: transform var(--dur-l) var(--ease-out); }
+.ach-page { position: relative; width: 100%; height: calc(100% / var(--n, 6)); overflow: hidden; }
+/* 開場：從山腳往上看，鏡頭沿步道上升定格 */
+.ach-page.intro { animation: achIntroUp .95s var(--ease-out) both; transform-origin: 50% 100%; }
+@keyframes achIntroUp { 0% { opacity: 0; transform: translateY(13%) scale(1.1); } 55% { opacity: 1; } 100% { opacity: 1; transform: none; } }
+/* 成就由下往上依序浮現 */
+.ach-page.intro .ach3d-mk { animation: achMkRise .55s ease both; animation-delay: calc(var(--i, 0) * .09s + .34s); }
+@keyframes achMkRise { from { opacity: 0; } to { opacity: 1; } }
+.ach-page-mtn { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* 隱藏成就支線（虛線岔路） */
+.ach-spurs { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 4; pointer-events: none; }
+.ach3d-mk.spur .ach-dot { box-shadow: 0 0 0 3px rgba(255,255,255,.35), 0 2px 7px rgba(0,0,0,.25); }
+/* 微風搖擺：樹 */
+.ach-sway { transform-box: fill-box; transform-origin: 50% 100%; animation-name: achSway; animation-timing-function: ease-in-out; animation-iteration-count: infinite; animation-direction: alternate; }
+@keyframes achSway { from { transform: rotate(-2deg); } to { transform: rotate(2.6deg); } }
+/* 旗子飄逸 */
+.ach-flag { transform-box: fill-box; transform-origin: 0% 60%; animation: achFlag 1.15s ease-in-out infinite; }
+@keyframes achFlag { 0%, 100% { transform: scaleX(1) skewY(0deg); } 50% { transform: scaleX(.82) skewY(-7deg); } }
+/* 飛鳥＋蝴蝶 */
+.ach-fauna { position: absolute; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; }
+.ach-bird { position: absolute; left: 0; will-change: transform; }
+.ach-bird-svg { width: 24px; height: 11px; display: block; animation: achFlap .5s ease-in-out infinite; transform-origin: center; }
+.ach-bird.v1 { top: 12%; animation: achFly1 19s linear infinite; }
+.ach-bird.v2 { top: 19%; animation: achFly2 25s linear infinite; animation-delay: -9s; }
+.ach-bird.v3 { top: 7%; animation: achFly1 22s linear infinite; animation-delay: -13s; }
+@keyframes achFly1 { from { transform: translate(-46px, 8px); } to { transform: translate(440px, -34px); } }
+@keyframes achFly2 { from { transform: translate(440px, 4px) scaleX(-1); } to { transform: translate(-46px, -26px) scaleX(-1); } }
+@keyframes achFlap { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(.5); } }
+.ach-bug { position: absolute; top: 52%; left: 8%; font-size: 16px; will-change: transform; animation: achBug 15s ease-in-out infinite; }
+@keyframes achBug { 0% { transform: translate(0, 0) rotate(-8deg); } 25% { transform: translate(64px, -44px) rotate(10deg); } 50% { transform: translate(150px, -8px) rotate(-6deg); } 75% { transform: translate(96px, 42px) rotate(9deg); } 100% { transform: translate(0, 0) rotate(-8deg); } }
+@media (prefers-reduced-motion: reduce) { .ach-sway, .ach-flag, .ach-bird, .ach-bird-svg, .ach-bug { animation: none; } }
+/* 跳到你在這 */
+.ach-jump { position: absolute; left: 14px; bottom: 12px; transform: none;   /* 靠左下：放正中間會壓到步道起點的「登山口」 */ z-index: 10; display: inline-flex; align-items: center; gap: 5px; border: none; background: rgba(20,30,20,.6); color: #fff; font-family: var(--serif); font-weight: 700; font-size: calc(12px * var(--fs, 1)); padding: 7px 15px; border-radius: 999px; box-shadow: 0 3px 10px rgba(0,0,0,.3); backdrop-filter: blur(3px); cursor: pointer; animation: achJumpIn .4s ease; }
+.ach-jump[hidden] { display: none; }
+.ach-jump .ic { width: 15px; height: 15px; }
+@keyframes achJumpIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+/* 登頂慶祝彩帶 */
+.ach-cheer { position: absolute; inset: 0; z-index: 12; pointer-events: none; overflow: hidden; }
+.ach-cheer span { position: absolute; top: -20px; width: 9px; height: 14px; border-radius: 2px; opacity: .95; animation: achFall 1.9s cubic-bezier(.3,.5,.5,1) forwards; }
+@keyframes achFall { 0% { transform: translateY(-20px) rotate(0); opacity: 1; } 100% { transform: translateY(720px) rotate(540deg); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .ach-track.anim { transition-duration: .01ms; } .ach-page.intro, .ach-page.intro .ach3d-mk, .ach-cheer span, .ach-jump { animation: none; } }
+/* 章節標籤（本段海拔） */
+.ach-pgtag { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 6; display: flex; align-items: center; gap: 6px; font-family: var(--serif); font-weight: 800; font-size: calc(16px * var(--fs, 1)); letter-spacing: 3px; color: #fff; background: rgba(30,42,28,.42); padding: 5px 16px; border-radius: 999px; backdrop-filter: blur(3px); text-shadow: 0 1px 4px rgba(0,0,0,.4); }
+.ach-pgtag .ic { width: 19px; height: 19px; }
+.ach-pgtag, .ach-hiker { pointer-events: none; }
+.ach-pgtag i { font-style: normal; font-family: var(--num); font-weight: 700; font-size: .74em; opacity: .82; letter-spacing: 0; margin-left: 2px; }
+/* 山腳啟程 / 峰頂傳說 里程碑 */
+.ach-head, .ach-peak { position: absolute; transform: translate(-50%, -50%); z-index: 4; display: flex; flex-direction: column; align-items: center; gap: 2px; pointer-events: none; text-shadow: 0 1px 5px rgba(0,0,0,.5); }
+.ach-head b, .ach-peak b { font-family: var(--serif); font-weight: 800; font-size: calc(16px * var(--fs, 1)); color: #fff; letter-spacing: 2px; }
+.ach-head .ic, .ach-peak .ic { width: 26px; height: 26px; color: #fff; filter: drop-shadow(0 1px 3px rgba(0,0,0,.4)); }
+.ach-peak .ic { width: 34px; height: 34px; color: #f4d787; }
+.ach-peak { z-index: 6; }
+/* 右側海拔圓點 */
+.ach-pgdots { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); z-index: 8; display: flex; flex-direction: column; gap: 10px; }
+.ach-pgdot { position: relative; width: 11px; height: 11px; border-radius: 50%; border: 2px solid rgba(255,255,255,.85); background: transparent; padding: 0; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform var(--dur-s); }
+.ach-pgdot.on { background: #fff; transform: scale(1.35); }
+/* 你目前進度那頁的點：外圈光暈脈動，一眼知道爬到哪 */
+.ach-pgdot.ishere { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 55%, transparent), 0 1px 3px rgba(0,0,0,.3); animation: achDotHere 1.9s ease-in-out infinite; }
+@keyframes achDotHere { 0%, 100% { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent), 0 1px 3px rgba(0,0,0,.3); } 50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 30%, transparent), 0 1px 3px rgba(0,0,0,.3); } }
+/* 頁尾導覽 */
+.ach-pgnav { position: absolute; left: 0; right: 0; bottom: 0; height: calc(58px + var(--safe-b)); padding: 0 24px var(--safe-b); z-index: 9; display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--surface); border-top: 1px solid var(--line-soft); }
+.ach-pgnav-t { font-family: var(--serif); font-weight: 700; font-size: calc(15px * var(--fs, 1)); color: var(--ink); letter-spacing: 2px; }
+.ach-pgbtn { display: inline-flex; align-items: center; gap: 5px; border: none; background: var(--surface-2); color: var(--ink-soft); font-family: var(--serif); font-weight: 700; font-size: calc(13px * var(--fs, 1)); padding: 9px 12px; border-radius: 999px; cursor: pointer; }
+.ach-pgbtn.up { background: var(--accent); color: #fff; }
+.ach-pgbtn .ic { width: 17px; height: 17px; }
+.ach-pgbtn:disabled { opacity: .32; cursor: default; }
+/* 你在這 小腳印 */
+.ach-hiker { position: absolute; transform: translate(-50%, -100%); z-index: 7; display: flex; flex-direction: column; align-items: center; animation: achHikerBob 1.8s ease-in-out infinite; }
+.ach-hiker-b { font-family: var(--serif); font-weight: 700; font-size: calc(11px * var(--fs, 1)); color: #fff; background: var(--accent); padding: 2px 9px; border-radius: 999px; box-shadow: 0 2px 6px rgba(0,0,0,.25); white-space: nowrap; }
+.ach-hiker-pin { width: 30px; height: 30px; margin-top: -1px; display: grid; place-items: center; color: var(--accent); }
+.ach-hiker-pin .ic { width: 22px; height: 22px; filter: drop-shadow(0 2px 3px rgba(0,0,0,.3)); }
+@keyframes achHikerBob { 0%, 100% { transform: translate(-50%, -100%); } 50% { transform: translate(-50%, calc(-100% - 5px)); } }
+/* 步道節點 */
+.ach-climb-marks { position: absolute; inset: 0; z-index: 5; }
+.ach3d-mk { position: absolute; border: none; background: none; padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; transform: translate(-50%, -50%); }
+.ach3d-mk .ach-dot { width: 46px; height: 46px; }
+.ach3d-mk.locked .ach-dot { opacity: .96; }
+.ach3d-mk .ach-dot-in { width: 36px; height: 36px; }
+.ach3d-mk .ach-dot-in .ic { width: 19px; height: 19px; }
+.ach3d-mk.got .ach-dot { box-shadow: 0 0 0 2px color-mix(in srgb, var(--c) 32%, transparent), 0 2px 8px rgba(0,0,0,.16); }
+.ach3d-mk.here { transform: translate(-50%, -50%) scale(1.14); z-index: 2; }
+.ach3d-mk.here .ach-dot { animation: achHerePulse 1.9s ease-in-out infinite; }
+@keyframes achHerePulse { 0%, 100% { box-shadow: 0 0 0 4px var(--surface), 0 0 0 6px var(--c), 0 0 10px var(--c); } 50% { box-shadow: 0 0 0 4px var(--surface), 0 0 0 6px var(--c), 0 0 22px var(--c); } }
+@media (prefers-reduced-motion: reduce) { .ach3d-mk.here .ach-dot, .ach-pgdot.ishere { animation: none; } }
+.ach3d-hint { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 9; display: flex; align-items: center; gap: 5px; background: rgba(20,30,20,.55); color: #fff; font-size: calc(12px * var(--fs, 1)); font-weight: 600; padding: 6px 14px; border-radius: 999px; backdrop-filter: blur(3px); pointer-events: none; animation: achHintFade 4s ease-in-out; }
+.ach3d-hint .ic { width: 15px; height: 15px; }
+@keyframes achHintFade { 0%, 70% { opacity: 1; } 100% { opacity: .55; } }
+/* 成就詳情彈卡 */
+.ach3d-detail { position: absolute; left: 12px; right: 12px; bottom: 12px; z-index: 10; background: var(--surface); border-radius: var(--r); box-shadow: 0 -4px 24px rgba(0,0,0,.28); padding: 16px 16px 18px; transform: translateY(140%); transition: transform var(--dur-m) var(--ease-out); }
+.ach3d-detail { pointer-events: none; }
+.ach3d-detail.show { transform: none; pointer-events: auto; }
+.ach3d-dx { position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; border-radius: 50%; border: none; background: var(--surface-2); color: var(--ink-soft); font-size: 15px; cursor: pointer; }
+.ach3d-d-top { display: flex; align-items: center; gap: 13px; }
+.ach3d-d-dot { width: 52px; height: 52px; border-radius: 50%; flex: none; background: conic-gradient(var(--c) calc(var(--pct) * 1%), var(--line-soft) 0); display: grid; place-items: center; }
+.ach3d-d-dot .ach-dot-in { width: 42px; height: 42px; border-radius: 50%; background: var(--surface); display: grid; place-items: center; color: var(--c); }
+.ach3d-d-dot .ic { width: 22px; height: 22px; }
+.ach3d-d-name { font-family: var(--serif); font-weight: 700; font-size: calc(17px * var(--fs, 1)); color: var(--ink); display: flex; align-items: center; gap: 6px; }
+.ach3d-d-badge { color: #e0b15a; display: inline-grid; place-items: center; }
+.ach3d-d-badge .ic { width: 15px; height: 15px; }
+.ach3d-d-cat { font-size: calc(11.5px * var(--fs, 1)); font-weight: 700; display: inline-flex; align-items: center; gap: 4px; margin-top: 3px; }
+.ach3d-d-cat .ic { width: 13px; height: 13px; }
+.ach3d-d-desc { font-size: calc(13px * var(--fs, 1)); color: var(--ink-soft); line-height: 1.55; margin: 12px 0 10px; }
+.ach3d-d-prog { display: flex; align-items: center; gap: 10px; font-family: var(--num); font-size: calc(12.5px * var(--fs, 1)); font-weight: 700; color: var(--ink-soft); }
+.ach3d-d-bar { flex: 1; height: 8px; border-radius: 999px; background: var(--line-soft); overflow: hidden; }
+.ach3d-d-bar i { display: block; height: 100%; border-radius: 999px; background: var(--c); }
+.ach3d-d-share { margin-top: 14px; width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: none; background: var(--surface-2); color: var(--ink); font-family: var(--serif); font-weight: 700; font-size: calc(13.5px * var(--fs, 1)); padding: 11px; border-radius: 999px; cursor: pointer; }
+.ach3d-d-share .ic { width: 16px; height: 16px; }
+@media (prefers-reduced-motion: reduce) { .ach3d-cloud, .ach3d-star, .ach-hiker, .ach3d-hint { animation: none; } }
+/* 成就頁：山友稱號＋成就分數列 */
+.ach-rankrow { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.ach-rankchip, .ach-scorechip { display: inline-flex; align-items: center; gap: 5px; font-size: calc(12px * var(--fs, 1)); font-weight: 700; padding: 4px 11px; border-radius: 999px; }
+.ach-rankchip { background: color-mix(in srgb, var(--brand) 16%, var(--surface)); color: var(--brand-deep); }
+.ach-rankchip .ic { width: 14px; height: 14px; }
+/* 稱號依階級變色（低→高：石灰→森綠→湖青→靛紫→古銅→傳說金）；顏色與 --ink 混合→深淺自動配合日夜 */
+.ach-rankchip.rank-0 { background: color-mix(in srgb, #7c7768 16%, var(--surface)); color: color-mix(in srgb, #6f6a5b 72%, var(--ink)); }
+.ach-rankchip.rank-1 { background: color-mix(in srgb, #3f8a48 16%, var(--surface)); color: color-mix(in srgb, #3f8a48 72%, var(--ink)); }
+.ach-rankchip.rank-2 { background: color-mix(in srgb, #2f8593 17%, var(--surface)); color: color-mix(in srgb, #2f8593 72%, var(--ink)); }
+.ach-rankchip.rank-3 { background: color-mix(in srgb, #6155c4 17%, var(--surface)); color: color-mix(in srgb, #6155c4 74%, var(--ink)); }
+.ach-rankchip.rank-4 { background: color-mix(in srgb, #c9752e 18%, var(--surface)); color: color-mix(in srgb, #c9752e 74%, var(--ink)); }
+/* 傳說山神：金色實心＋像 PRO 標一樣掃過反光 */
+.ach-rankchip.rank-5 { position: relative; overflow: hidden; color: #5a3a00; background: linear-gradient(135deg, #ffe07a, #f0a91e); box-shadow: 0 1px 7px rgba(240,169,30,.4); }
+.ach-rankchip.rank-5 .ic { color: #5a3a00; }
+.ach-rankchip.rank-5::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.7) 50%, transparent 65%); background-size: 220% 100%; animation: lv-shine 3.4s ease-in-out infinite; }
+.ach-scorechip { background: var(--surface-2); color: var(--ink-soft); }
+.ach-scorechip b { color: var(--accent); font-family: var(--num); }
+/* 檢視切換鈕（爬山 ⟷ 清單） */
+.ach-viewtog { position: absolute; top: calc(13px + var(--safe-t)); right: 56px; width: 34px; height: 34px; border-radius: 50%; border: none; background: var(--surface-2); color: var(--ink-soft); display: grid; place-items: center; cursor: pointer; }
+.ach-viewtog .ic { width: 19px; height: 19px; }
+/* 清單檢視 */
+.ach3d-modal.list-mode .ach-pager, .ach3d-modal.list-mode .ach-pgdots, .ach3d-modal.list-mode .ach-pgnav, .ach3d-modal.list-mode .ach-climb-sky { display: none; }
+.ach-listview { position: absolute; inset: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; background: var(--bg); padding-bottom: calc(20px + var(--safe-b)); z-index: 2; }
+.ach3d-modal:not(.list-mode) .ach-listview { display: none; }
+.ach-fchips { position: sticky; top: 0; z-index: 2; display: flex; gap: 7px; overflow-x: auto; padding: 11px 14px; background: var(--bg); border-bottom: 1px solid var(--line-soft); scrollbar-width: none; }
+.ach-fchips::-webkit-scrollbar { display: none; }
+.ach-fchip { flex: none; display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--line-soft); background: var(--surface); color: var(--ink-soft); font-size: calc(12.5px * var(--fs, 1)); font-weight: 600; padding: 5px 12px; border-radius: 999px; cursor: pointer; white-space: nowrap; }
+.ach-fchip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+.ach-fchip .ic { width: 13px; height: 13px; }
+.ach-lrows { padding: 8px 12px; display: flex; flex-direction: column; gap: 8px; }
+.ach-lrow { display: flex; align-items: center; gap: 12px; text-align: left; border: 1px solid var(--line-soft); border-left: 4px solid var(--c); background: var(--surface); border-radius: var(--r-sm); padding: 11px 13px; cursor: pointer; box-shadow: var(--sh-sm); }
+.ach-lrow.locked { opacity: .62; }
+.ach-lemo { flex: none; width: 40px; height: 40px; border-radius: 50%; background: color-mix(in srgb, var(--c) 14%, var(--surface)); display: grid; place-items: center; }
+.ach-lbody { flex: 1; min-width: 0; }
+.ach-lname { display: flex; align-items: center; gap: 6px; font-family: var(--serif); font-weight: 700; font-size: calc(14.5px * var(--fs, 1)); color: var(--ink); }
+.ach-lchk { color: #e0b15a; display: inline-grid; place-items: center; }
+.ach-lchk .ic { width: 13px; height: 13px; }
+.ach-ldesc { font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-faint); margin: 2px 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ach-lbar { display: block; height: 5px; border-radius: 999px; background: var(--line-soft); overflow: hidden; margin-top: 6px; }
+.ach-lbar i { display: block; height: 100%; border-radius: 999px; background: var(--c); }
+.ach-lright { flex: none; font-family: var(--num); font-size: calc(11.5px * var(--fs, 1)); font-weight: 700; color: var(--ink-soft); text-align: right; max-width: 84px; }
+.ach-lempty { text-align: center; color: var(--ink-faint); padding: 40px 20px; font-size: calc(13px * var(--fs, 1)); }
+/* 記錄待機：臨門解鎖提醒 */
+.ridle-ach { color: var(--accent); }
+.ridle-ach .ach-emo { font-size: 15px; }
+.ridle-ach b { color: var(--accent); }
+
+/* 行程記錄分頁顯示按鈕 */
+.hist-more { width: 100%; margin: 4px 0 8px; }
+
+/* 社群強化 batch 1：趨勢/新動態分隔/推薦追蹤/跟著走 */
+.feed-trending-h { font-family: var(--serif); font-weight: 700; font-size: calc(15px * var(--fs, 1)); margin: 6px 2px 10px; color: var(--accent); }
+.feed-divider { text-align: center; font-size: calc(12px * var(--fs, 1)); color: var(--ink-faint); margin: 14px 0 8px; position: relative; }
+.feed-divider::before, .feed-divider::after { content: ""; position: absolute; top: 50%; width: 26%; height: 1px; background: var(--line-soft); }
+.feed-divider::before { left: 4%; } .feed-divider::after { right: 4%; }
+.disc-sec { font-family: var(--serif); font-weight: 700; font-size: calc(14px * var(--fs, 1)); margin: 4px 2px 8px; color: var(--ink-soft); }
+.disc-row { display: flex; align-items: center; gap: 10px; }
+.disc-follow { margin-left: auto; flex: 0 0 auto; padding: 5px 14px; font-size: calc(13px * var(--fs, 1)); }
+.pv-follow { width: 100%; margin: 4px 0 10px; }
+
+/* 社群強化 batch 2：標籤/提及/表情回應/留言互動 */
+.ht, .mention { color: var(--accent); font-weight: 600; cursor: pointer; }
+.ht:active, .mention:active { opacity: .6; }
+.pv-react { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 12px; }
+.pv-react-b { border: 1px solid var(--line-soft); background: var(--surface); border-radius: var(--r-pill); padding: 4px 10px; font-size: calc(14px * var(--fs, 1)); cursor: pointer; display: inline-flex; align-items: center; gap: 3px; }
+.pv-react-b span { font-family: var(--num); font-size: calc(12px * var(--fs, 1)); font-weight: 700; color: var(--ink-soft); }
+.pv-react-b.on { border-color: var(--accent); background: var(--accent-soft); }
+.pv-cm { padding: 8px 0; border-bottom: 1px solid var(--line-soft); }
+.pv-cm-reply { margin-left: 22px; border-left: 2px solid var(--line-soft); padding-left: 10px; }
+.pv-cm-main { line-height: 1.5; }
+.pv-cm-act { display: flex; gap: 14px; align-items: center; margin-top: 4px; }
+.pv-cm-act button { background: none; border: none; color: var(--ink-faint); font-size: calc(12px * var(--fs, 1)); cursor: pointer; padding: 0; display: inline-flex; align-items: center; gap: 3px; }
+.pv-cm-act .cm-like.on { color: #d9466b; }
+.pv-cm-act .cm-reply { font-weight: 600; }
+.pv-reply-hint { display: flex; align-items: center; gap: 6px; font-size: calc(13px * var(--fs, 1)); color: var(--ink-soft); padding: 6px 12px; background: var(--accent-soft); }
+.pv-reply-hint button { background: none; border: none; cursor: pointer; color: var(--ink-soft); font-size: calc(14px * var(--fs, 1)); margin-left: auto; }
+
+/* 推播開關按鈕 */
+.notif-push { width: 100%; margin-bottom: 12px; }
+
+/* ===== 全域點擊回饋：消除行動裝置點擊延遲 + 統一按壓手感 ===== */
+button, a, .btn, .chip, .tab, .seg-btn, .link-btn, .icon-btn, [role="button"],
+.fc-like, .fc-comment, .sub-tab, .comp-x, .pv-react-b, .cm-like, .cm-reply, .disc-follow,
+.feed-card, .disc-row, .notif, .hist-view, .hist-gpx, .feed-refresh, .map-fs-btn,
+.theme-opt, .ach, .pet-btn, .quest, .fav-star, .food-item, .poi-item,
+.coll-card, .info-link, .detail-tabs button, .cnt-link, .fc-traillink, .ht, .mention {
+  touch-action: manipulation;
+}
+/* 快速按壓動畫（個別已定義的 :active 仍會優先套用，不衝突） */
+button, .link-btn, .icon-btn, .seg-btn, .sub-tab, .comp-x, .pv-react-b,
+.cm-like, .cm-reply, .disc-follow, .feed-refresh, .map-fs-btn, .theme-opt, .fc-like, .fc-comment {
+  transition: transform var(--dur-xs) var(--ease-out), opacity var(--dur-xs) var(--ease-out), background-color var(--dur-xs) var(--ease-out);
+}
+button:active, .icon-btn:active, .seg-btn:active, .sub-tab:active, .comp-x:active,
+.pv-react-b:active, .cm-like:active, .cm-reply:active, .disc-follow:active,
+.feed-refresh:active, .map-fs-btn:active, .theme-opt:active,
+.fc-like:active, .fc-comment:active { transform: scale(.92); opacity: .88; }
+.feed-card:active, .disc-row:active, .notif:active, .food-item:active, .poi-item:active { transform: scale(.988); }
+
+/* 真·全域：所有語意可點元素都消除點擊延遲 */
+a, button, label, summary, select,
+input[type="button"], input[type="submit"], input[type="checkbox"], input[type="radio"], input[type="range"],
+[role="button"], [role="tab"], [role="link"], [onclick], [data-view], [data-sub], [data-sec], [data-id], [data-tag], [data-handle] {
+  touch-action: manipulation;
+}
+/* JS 對「任何 cursor:pointer 元素」按下時加的通用按壓回饋（個別已有的 :active 仍優先） */
+.tt-press { transform: scale(.95); opacity: .9; transition: transform var(--dur-xs) var(--ease-out), opacity var(--dur-xs) var(--ease-out); }
+
+/* 燈箱：多圖導覽 */
+.lb-img { transition: transform var(--dur-s) var(--ease-out); touch-action: none; user-select: none; -webkit-user-select: none; }
+.lb-nav { position: fixed; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,.42); color: #fff; border: none; width: 46px; height: 46px; border-radius: 50%; font-size: calc(30px * var(--fs, 1)); line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.lb-prev { left: 12px; } .lb-next { right: 12px; }
+.lb-nav:active { background: rgba(0,0,0,.7); }
+.lb-count { position: fixed; top: calc(16px + var(--safe-t, 0px)); left: 50%; transform: translateX(-50%); color: #fff; font-family: var(--num); font-size: calc(14px * var(--fs, 1)); font-weight: 700; background: rgba(0,0,0,.45); padding: 4px 12px; border-radius: var(--r-pill); }
+
+/* 動態載入骨架 + 照片 +N + 內聯影片 */
+.skel-av { width: 38px; height: 38px; border-radius: 50%; margin-bottom: 10px; }
+.skel-media { height: 150px; margin-top: 10px; border-radius: var(--r-xs); }
+.fc-more { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(12,16,10,.55); color: #fff; font-family: var(--num); font-size: calc(22px * var(--fs, 1)); font-weight: 700; border-radius: var(--r-xs); }
+.fc-vid video { width: 100%; aspect-ratio: 16 / 10; object-fit: contain; background: #000; border-radius: var(--r-xs); display: block; }
+
+/* 高等級徽章光澤掃過 */
+@keyframes lv-shine { 0% { background-position: -120% 0; } 60%, 100% { background-position: 220% 0; } }
+.lv-chip.lvt-6, .lv-chip.lvt-7 { position: relative; overflow: hidden; }
+.lv-chip.lvt-6::after, .lv-chip.lvt-7::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.6) 50%, transparent 65%); background-size: 220% 100%; animation: lv-shine 3.6s ease-in-out infinite; }
+
+/* 讚 / 表情 浮起動畫 */
+.tt-float { position: fixed; z-index: 300; pointer-events: none; font-size: calc(26px * var(--fs, 1)); transform: translate(-50%,-50%); animation: tt-float-up .8s ease-out forwards; }
+@keyframes tt-float-up { 0% { opacity: 1; transform: translate(-50%,-50%) scale(.6); } 100% { opacity: 0; transform: translate(-50%,-165%) scale(1.4); } }
+
+/* 子分頁：窄螢幕可橫向捲動，不擠壓文字 */
+.social-subnav { overflow-x: auto; scrollbar-width: none; }
+.social-subnav::-webkit-scrollbar { display: none; }
+.sub-tab { flex: 1 0 auto; min-width: 56px; white-space: nowrap; }
+
+/* 空狀態插圖 */
+.social-empty .ee, .social-loading .ee { font-size: calc(42px * var(--fs, 1)); display: block; margin-bottom: 10px; opacity: .9; }
+
+/* 深色模式：社群元件對比微調 */
+html[data-theme="dark"] .pv-react-b { background: #20271b; border-color: #39432c; }
+html[data-theme="dark"] .pv-react-b.on { background: #2f3a26; }
+html[data-theme="dark"] .feed-divider::before, html[data-theme="dark"] .feed-divider::after { background: #39432c; }
+html[data-theme="dark"] .disc-sec, html[data-theme="dark"] .feed-trending-h { color: var(--accent); }
+
+/* 個人頁分頁：貼文 / 相片 / 足跡 */
+.pf-tabs { display: flex; gap: 4px; margin: 14px 0 12px; border-bottom: 1px solid var(--line-soft); }
+.pf-tab { flex: 1; background: none; border: none; padding: 10px 0; font-size: calc(13.5px * var(--fs, 1)); font-weight: 600; color: var(--ink-faint); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.pf-tab.on { color: var(--accent); border-bottom-color: var(--accent); }
+.pf-photos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
+.pf-ph { position: relative; cursor: pointer; }
+.pf-ph img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--r-xs); display: block; }
+.pf-map { width: 100%; height: 320px; border-radius: var(--r-sm); overflow: hidden; }
+
+/* @／# 自動完成下拉 */
+.ac-box { position: fixed; z-index: 120; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); box-shadow: 0 8px 26px rgba(0,0,0,.18); overflow: hidden; max-height: 220px; overflow-y: auto; }
+.ac-item { padding: 9px 13px; font-size: calc(14px * var(--fs, 1)); cursor: pointer; display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+.ac-item:active, .ac-item:hover { background: var(--brand-soft); }
+.ac-sub { font-size: calc(12px * var(--fs, 1)); color: var(--ink-faint); }
+/* 熱門標籤 chips */
+.hot-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 2px 12px; }
+.hot-tag { background: var(--accent-soft); color: var(--accent); border: none; border-radius: var(--r-pill); padding: 5px 12px; font-size: calc(12.5px * var(--fs, 1)); font-weight: 600; cursor: pointer; }
+
+/* 通知分群分頁 */
+.notif-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.notif-tab { flex: 1; padding: 7px 0; border: 1px solid var(--line-soft); background: var(--surface); border-radius: var(--r-pill); font-size: calc(12.5px * var(--fs, 1)); font-weight: 600; color: var(--ink-soft); cursor: pointer; }
+.notif-tab.on { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+
+/* 檢舉理由選單 */
+.report-mask { align-items: flex-end; }
+.report-sheet { background: var(--surface); width: 100%; max-width: 520px; margin: 0 auto; border-radius: 18px 18px 0 0; padding: 18px 16px calc(18px + var(--safe-b, 0px)); animation: tt-sheet var(--dur-m) var(--ease-out); }
+.report-sheet h3 { margin: 2px 0 12px; font-family: var(--serif); }
+.report-opt { display: block; width: 100%; text-align: left; background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 13px 15px; margin-bottom: 8px; font-size: calc(15px * var(--fs, 1)); cursor: pointer; color: var(--ink); }
+.report-opt:active { background: var(--brand-soft); }
+
+/* 我的：子頁標題 + 設定 + 封鎖名單 */
+.pf-sub-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.pf-sub-head b { font-family: var(--serif); font-size: calc(16px * var(--fs, 1)); }
+.pf-sub-head b .ic { width: 16px; height: 16px; vertical-align: -2px; margin-right: 5px; }
+.set-group { margin: 14px 0; }
+/* ── 社群「隱私與設定」重新設計：每個 set-group 是一張「標題卡」，列與列用細分隔線隔開。
+   原本是「卡中又塞一排小卡」＋外層 overflow:hidden → 又擠又把邊角字截掉；改成單層卡＋內距＋分隔線。 */
+.pf .set-group { padding: 3px 16px 11px; overflow: visible; }
+.pf .set-group:first-of-type { margin-top: 8px; }
+.set-label { font-family: var(--serif); font-weight: 700; font-size: calc(12.5px * var(--fs, 1)); color: var(--ink-soft); letter-spacing: .3px; margin: 12px 0 2px; }
+/* 設定列：長說明文字可自由換行、控制項固定不被壓縮也不被截；列間細線分隔 */
+.set-row {
+  display: flex; justify-content: space-between; align-items: center; gap: 16px;
+  padding: 14px 0; border-top: 1px solid var(--line-soft); background: none;
+  font-size: calc(13.5px * var(--fs, 1)); line-height: 1.5; cursor: pointer; overflow-wrap: anywhere;
+}
+.set-row:first-of-type { border-top: none; }
+.set-row > span { flex: 1 1 auto; min-width: 0; }
+.set-row input { flex: 0 0 auto; width: 22px; height: 22px; accent-color: var(--brand-mid); margin: 0; }
+.set-row:active { opacity: .65; }
+.set-empty { color: var(--ink-faint); font-size: calc(13px * var(--fs, 1)); line-height: 1.55; padding: 6px 0 2px; }
+.btn.st-danger { color: var(--danger); border: 1px solid var(--danger); background: none; width: auto; padding: 10px 18px; margin: 10px 0 6px; font-weight: 700; }
+.btn.st-danger:active { background: color-mix(in srgb, var(--danger) 12%, transparent); }
+.set-block-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line-soft); }
+/* 我的檢舉：左側是被檢舉的內容摘要（可長，需截斷），右側是撤回鈕（不縮） */
+.rp-row .rp-what { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.rp-row .rp-what b { font-size: calc(13px * var(--fs, 1)); color: var(--ink); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rp-row .rp-what span { font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-faint); }
+.set-block-row .btn { width: auto; flex: 0 0 auto; padding: 6px 14px; margin: 0; font-size: calc(13px * var(--fs, 1)); }
+
+/* 探索難度過濾 */
+.ex-diff { display: flex; gap: 6px; margin: 0 2px 12px; overflow-x: auto; scrollbar-width: none; }
+.ex-diff::-webkit-scrollbar { display: none; }
+.ex-diff-b { flex: 0 0 auto; background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: var(--r-pill); padding: 5px 14px; font-size: calc(12.5px * var(--fs, 1)); font-weight: 600; color: var(--ink-soft); cursor: pointer; }
+.ex-diff-b.on { background: var(--brand-mid); color: #fff; border-color: var(--brand-mid); }
+/* 發文照片預覽橫向捲動 */
+.comp-photos { display: flex; gap: 7px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.comp-photos::-webkit-scrollbar { display: none; }
+.comp-thumb { flex: 0 0 auto; }
+
+/* 揪團活動卡 */
+.ev-card { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 13px 14px; margin-bottom: 10px; }
+.ev-when { font-family: var(--num); font-size: calc(13px * var(--fs, 1)); font-weight: 700; color: var(--accent); }
+.ev-title { font-family: var(--serif); font-size: calc(16px * var(--fs, 1)); font-weight: 700; margin: 4px 0; }
+.ev-meta { font-size: calc(12.5px * var(--fs, 1)); color: var(--ink-soft); }
+.ev-note { font-size: calc(13.5px * var(--fs, 1)); color: var(--ink-soft); line-height: 1.6; margin-top: 6px; white-space: pre-wrap; }
+.ev-actions { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+.ev-actions .btn { width: auto; flex: 0 0 auto; margin: 0; padding: 8px 18px; font-size: calc(13.5px * var(--fs, 1)); }
+.ev-count { font-size: calc(12.5px * var(--fs, 1)); color: var(--ink-faint); }
+.ev-del { margin-left: auto; color: var(--danger); }
+.ev-form { display: flex; flex-direction: column; }
+.ev-form .comp-cap { min-height: 80px; }
+
+/* 寵物等級徽章：比照社群 lv-chip，並微調對齊/尺寸 */
+.pet-lv-chip { margin-left: 8px; font-size: calc(11px * var(--fs, 1)); vertical-align: middle; }
+.evolve-n .lv-chip { font-size: calc(13px * var(--fs, 1)); vertical-align: middle; }
+.dex-h .lv-chip { vertical-align: middle; }
+
+/* ===== 山誌式步道卡（探索）— 新視覺樣板 ===== */
+.card.jcard { padding: 0; overflow: hidden; }
+.card.jcard::before { display: none; }          /* 取消舊的左緣細條 */
+.jcard .jbar { position: absolute; left: 0; top: 0; bottom: 0; width: 5px; }
+.jcard h3 { padding: 15px 64px 0 18px; margin: 0 0 2px; font-size: calc(19px * var(--fs, 1)); letter-spacing: .5px; }
+.jloc { display: flex; align-items: center; gap: 4px; padding: 0 18px; font-size: calc(12px * var(--fs, 1)); color: var(--ink-faint); }
+.jloc .ic { width: 13px; height: 13px; opacity: .65; }
+.jloc-dot { margin: 0 3px; opacity: .5; }
+/* hero 數據條：襯線數字當主角，淡淡等高線紙感 */
+.jstats {
+  display: flex; align-items: stretch; gap: 0; margin: 11px 14px 0; padding: 11px 4px;
+  border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='56'%3E%3Cg fill='none' stroke='%23c2683d' stroke-width='1' opacity='0.06'%3E%3Cpath d='M0 12 Q30 2 60 12 T120 12'/%3E%3Cpath d='M0 28 Q30 18 60 28 T120 28'/%3E%3Cpath d='M0 44 Q30 34 60 44 T120 44'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 120px 56px;
+}
+.jstat { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.jnum { font-family: var(--num); font-weight: 600; font-size: calc(24px * var(--fs, 1)); line-height: 1; color: var(--ink); letter-spacing: -.5px; min-height: 26px; display: flex; align-items: center; justify-content: center; text-align: center; }
+.jnum-sm { font-size: calc(15px * var(--fs, 1)); font-weight: 600; }
+.jlbl { font-size: calc(10px * var(--fs, 1)); color: var(--ink-faint); letter-spacing: 1px; margin-top: 4px; white-space: nowrap; }   /* 放大字級時「累積爬升 m」不斷行、單位不落單 */
+.jstats-div { width: 1px; background: var(--line-soft); margin: 2px 0; }
+.jcard .badges { margin: 11px 0 0; padding: 0 18px 15px; }
+.jcard .badge.closed { display: inline-flex; align-items: center; gap: 3px; }
+.jcard .badge.closed .ic { width: 12px; height: 12px; }
+
+/* ===== 視覺語言 rollout：區塊標題編輯式記號 + 夥伴頁圖示 ===== */
+.section-title::before { content: ""; display: inline-block; width: 3px; height: 13px; background: var(--accent); border-radius: 2px; margin-right: 9px; vertical-align: -1px; opacity: .85; }
+.streak-chip .ic { width: 12px; height: 12px; vertical-align: -2px; margin-right: 2px; }
+.q-ic .ic { width: 20px; height: 20px; opacity: .75; stroke-width: 1.8; }
+.pet-btn .ic { width: 15px; height: 15px; vertical-align: -2px; margin-right: 3px; }
+
+/* 社群內聯墨線圖示尺寸/對齊 */
+.btn .ic { width: 16px; height: 16px; vertical-align: -3px; margin-right: 5px; }
+.comp-x .ic { width: 20px; height: 20px; vertical-align: -4px; }
+.pv-head-r .comp-x.on .ic { color: var(--accent); }
+.fc-comment .ic { width: 17px; height: 17px; vertical-align: -3px; opacity: .75; }
+.notif-ic .ic { width: 18px; height: 18px; }
+.feed-trending-h .ic { width: 16px; height: 16px; vertical-align: -2px; margin-right: 3px; color: var(--accent); }
+.feed-refresh .ic { width: 14px; height: 14px; vertical-align: -2px; margin-right: 3px; }
+.ev-when .ic { width: 14px; height: 14px; vertical-align: -2px; margin-right: 3px; color: var(--accent); }
+.ev-meta .ic { width: 13px; height: 13px; vertical-align: -2px; opacity: .7; }
+
+/* 詳情/總結/歷史 link 按鈕內聯圖示 */
+.link-btn .ic { width: 15px; height: 15px; vertical-align: -3px; margin-right: 4px; }
+.hist-view .ic, .hist-gpx .ic { width: 14px; height: 14px; vertical-align: -2px; margin-right: 3px; opacity: .8; }
+
+/* ===== 紙質氛圍：全域極淡噪點 + 記錄主數據呼應步道卡等高線 ===== */
+body::after {
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 1; opacity: .035; mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+html[data-theme="dark"] body::after { opacity: .05; }
+
+/* ===== 全面 emoji→圖示 收尾：各內聯圖示尺寸 ===== */
+.inline-ic { display: inline-flex; vertical-align: -2px; }
+.inline-ic .ic { width: 13px; height: 13px; opacity: .8; }
+.near-label .ic { width: 14px; height: 14px; vertical-align: -2px; margin-right: 2px; }
+.sim-toggle .ic { width: 15px; height: 15px; vertical-align: -3px; margin: 0 1px; opacity: .8; }
+.chip .ic { width: 13px; height: 13px; vertical-align: -2px; margin-right: 3px; }
+.fc-trail .ic, .fc-traillink .ic { width: 14px; height: 14px; vertical-align: -2px; margin-right: 2px; color: var(--brand-mid); }
+.ridle-row .ic { width: 14px; height: 14px; opacity: .8; }
+.dex-tip .ic { width: 13px; height: 13px; }
+.basemap-toggle .bm .ic { width: 13px; height: 13px; flex-shrink: 0; }
+
+/* ===== Premium 付費 ===== */
+.premium-mask { align-items: center; }
+/* 內容多會超出螢幕 → 卡片限高、內部可滑動 */
+.premium-card { background: var(--surface); width: min(92%, 380px); margin: auto; border-radius: var(--r); padding: 26px 22px 20px; position: relative; text-align: center; box-shadow: var(--sh-lg); animation: tt-sheet var(--dur-m) var(--ease-out);
+  max-height: min(88dvh, 88vh); overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.oq-up-line { margin-top: 4px; }
+.pm-crown { color: var(--accent); margin-bottom: 6px; }
+.pm-crown .ic { width: 34px; height: 34px; }
+.premium-card h2 { font-family: var(--serif); font-size: calc(21px * var(--fs, 1)); margin: 0; }
+.pm-sub { color: var(--ink-soft); font-size: calc(13px * var(--fs, 1)); margin: 4px 0 16px; }
+.pm-free { display: flex; gap: 10px; align-items: flex-start; text-align: left; margin: 0 0 16px; padding: 12px; border-radius: var(--r-sm); background: var(--ok-bg); border: 1px solid var(--ok-line); color: var(--ok-ink); }
+.pm-free > .ic { flex: none; width: 22px; height: 22px; color: var(--ok-ic); margin-top: 1px; }
+.pm-free-list { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.pm-free-list span { padding: 2px 8px; border-radius: var(--r-pill); background: var(--surface); border: 1px solid var(--ok-line); font-size: calc(12px * var(--fs, 1)); font-weight: 600; }
+.pm-benefits { text-align: left; display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; }
+.pm-b { display: flex; gap: 11px; align-items: flex-start; }
+.pm-b-ic { flex: 0 0 auto; color: var(--brand-mid); }
+.pm-b-ic .ic { width: 20px; height: 20px; }
+.pm-b b { font-size: calc(14.5px * var(--fs, 1)); }
+.pm-b-d { font-size: calc(12px * var(--fs, 1)); color: var(--ink-soft); line-height: 1.5; margin-top: 1px; }
+.pm-price { margin-bottom: 14px; }
+.pm-amt { font-family: var(--num); font-size: calc(32px * var(--fs, 1)); font-weight: 700; color: var(--brand-deep); }
+.pm-per { color: var(--ink-soft); font-size: calc(14px * var(--fs, 1)); }
+.pm-later { display: block; margin: 8px auto 0; color: var(--ink-faint); }
+.pm-status { display: flex; gap: 11px; align-items: center; background: linear-gradient(135deg, var(--accent-soft), var(--surface-2)); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 14px 16px; }
+.pm-status .pm-b-ic { color: var(--accent); }
+.pm-upgrade .ic { width: 17px; height: 17px; vertical-align: -3px; margin-right: 5px; }
+.pro-tag { font-family: var(--num); font-size: calc(9.5px * var(--fs, 1)); font-weight: 800; letter-spacing: .5px; color: var(--pro-ink, #5a3a00); background: linear-gradient(135deg, var(--pro-c1, #ffe07a), var(--pro-c2, #f0a91e)); border-radius: 4px; padding: 1px 5px; margin-left: 7px; vertical-align: 1px; }
+.btn .pro-tag { vertical-align: 2px; }
+/* 進階分析 */
+.ana-list { display: flex; flex-direction: column; gap: 9px; text-align: left; }
+.ana-row { display: grid; grid-template-columns: 64px 1fr; gap: 4px 10px; align-items: center; }
+.ana-m { white-space: nowrap; font-family: var(--num); font-weight: 700; font-size: calc(13px * var(--fs, 1)); color: var(--brand-deep); grid-row: span 2; }
+.ana-bar { height: 6px; background: var(--line-soft); border-radius: 4px; overflow: hidden; }
+.ana-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--brand-mid), var(--accent)); border-radius: 4px; }
+.ana-v { font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-soft); }
+.ana-v b { font-family: var(--num); color: var(--ink); }
+
+/* 離線免費額度提示 */
+.offline-quota { font-size: calc(12px * var(--fs, 1)); color: var(--ink-soft); margin-top: 8px; text-align: center; }
+.offline-quota b { font-family: var(--num); color: var(--accent); }
+.oq-up { color: var(--accent); font-weight: 600; cursor: pointer; text-decoration: underline; }
+.oq-pro { color: var(--accent); font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+.oq-pro .ic { width: 13px; height: 13px; }
+/* 進階分析（完整版） */
+.ana-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 4px; }
+.ana-card { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 12px; text-align: center; }
+.ana-cv { font-family: var(--num); font-size: calc(22px * var(--fs, 1)); font-weight: 600; color: var(--brand-deep); line-height: 1; }
+.ana-cl { font-size: calc(11px * var(--fs, 1)); color: var(--ink-faint); margin-top: 5px; letter-spacing: .5px; }
+.ana-sec { font-family: var(--serif); font-weight: 700; font-size: calc(14px * var(--fs, 1)); margin: 16px 0 8px; }
+.ana-pbs { display: flex; flex-direction: column; gap: 7px; }
+.ana-pb { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: var(--surface-2); border-radius: var(--r-sm); padding: 10px 13px; font-size: calc(13.5px * var(--fs, 1)); color: var(--ink-soft); }
+.ana-pb b { color: var(--ink); font-family: var(--num); text-align: right; }
+.ana-exp { display: flex; gap: 8px; margin-top: 16px; }
+.ana-exp .btn { margin-top: 0; flex: 1; display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; }   /* KML 的圖示曾被擠到字上面 */
+
+/* 進階分析標題/空狀態圖示尺寸 */
+.pet-modal-card h2 .ic { width: .82em; height: .82em; vertical-align: -.08em; margin-right: .25em; }   /* 跟著標題字放大，不再是大標題旁一顆小圖示 */
+.social-empty .ee .ic { width: 38px; height: 38px; }
+/* PRO 徽章金色光澤（同 Lv.7） */
+.pro-tag { position: relative; overflow: hidden; }
+.pro-tag::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.7) 50%, transparent 65%); background-size: 220% 100%; animation: lv-shine 3.4s ease-in-out infinite; }
+
+/* 進階分析：一週節律 + PRO 鎖卡 */
+.ana-week { display: flex; align-items: flex-end; justify-content: space-between; gap: 4px; height: 80px; padding: 0 4px; }
+.aw { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 3px; }
+.aw-bar { width: 60%; max-width: 22px; background: linear-gradient(180deg, var(--brand-mid), var(--brand)); border-radius: 4px 4px 0 0; }
+.aw-l { font-size: calc(11px * var(--fs, 1)); color: var(--ink-faint); }
+.aw-v { font-size: calc(10.5px * var(--fs, 1)); font-weight: 700; color: var(--ink-soft); line-height: 1; }
+.ana-bar.kcal i { background: linear-gradient(90deg, #d8a127, #d2542e); }
+.ana-lock { text-align: center; background: linear-gradient(150deg, var(--accent-soft), var(--surface-2)); border: 1px dashed var(--line); border-radius: var(--r-sm); padding: 22px 16px; margin-top: 16px; }
+.ana-lock-ic { color: var(--accent); }
+.ana-lock-ic .ic { width: 28px; height: 28px; }
+.ana-lock b { display: block; font-family: var(--serif); font-size: calc(16px * var(--fs, 1)); margin: 6px 0 4px; }
+.ana-lock-d { font-size: calc(12.5px * var(--fs, 1)); color: var(--ink-soft); line-height: 1.6; }
+
+/* Premium 升級頁：比較表 + 方案選擇 */
+.pm-compare { width: 100%; border-collapse: collapse; margin: 4px 0 16px; font-size: calc(13px * var(--fs, 1)); }
+.pm-compare th, .pm-compare td { padding: 7px 8px; text-align: center; border-bottom: 1px solid var(--line-soft); }
+.pm-compare th:first-child, .pm-compare td:first-child { text-align: left; color: var(--ink-soft); }
+.pm-compare thead th { font-size: calc(12px * var(--fs, 1)); color: var(--ink-faint); }
+.pm-compare .pm-pro { color: var(--accent); font-weight: 700; }
+.pm-plans { display: flex; gap: 8px; margin-bottom: 12px; }
+.pm-plan { position: relative; flex: 1; background: var(--surface-2); border: 1.5px solid var(--line-soft); border-radius: var(--r-sm); padding: 12px 8px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; align-items: center; }
+.pm-plan b { font-size: calc(14px * var(--fs, 1)); }
+.pm-plan span { font-family: var(--num); font-size: calc(13px * var(--fs, 1)); color: var(--ink-soft); }
+.pm-plan.on { border-color: var(--accent); background: var(--accent-soft); }
+.pm-save { position: absolute; top: -9px; right: -6px; font-size: calc(9.5px * var(--fs, 1)); font-weight: 800; color: #5a3a00; background: linear-gradient(135deg, #ffe07a, #f0a91e); border-radius: 5px; padding: 1px 6px; font-style: normal; }
+.pm-fine { font-size: calc(11px * var(--fs, 1)); color: var(--ink-faint); margin-top: 8px; line-height: 1.5; }
+/* 訂閱購買頁的法定連結（Apple 3.1.2 要求：隱私權政策＋使用條款） */
+.pm-legal { margin-top: 6px; font-size: calc(11px * var(--fs, 1)); color: var(--ink-faint); }
+.pm-legal a { color: var(--ink-soft); text-decoration: underline; }
+.pm-manage { width: 100%; }
+.pm-manage .ic { width: 15px; height: 15px; vertical-align: -3px; margin-right: 5px; }
+
+/* Premium 主題配色：整組換色的色票（品牌色→點綴色漸層預覽 + 名稱） */
+.accent-head { font-size: calc(13px * var(--fs, 1)); color: var(--ink-soft); font-weight: 600; margin: 14px 0 8px; }
+.accent-row { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; }
+/* 主題配色色票：固定 3 欄格線 → 9 個色票永遠是整齊的 3×3（不論字級/寬度都對稱不留孤兒） */
+#accentRow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+.pal-sw { position: relative; width: 100%; height: calc(46px * var(--fs, 1)); border-radius: 12px; border: none; box-shadow: 0 0 0 1px var(--line), var(--sh-sm); cursor: pointer; overflow: hidden; padding: 0; transition: transform var(--dur-xs), box-shadow var(--dur-xs); }
+#accentRow .acc-lock { grid-column: 1 / -1; }
+.pal-sw .pal-nm { position: absolute; left: 0; right: 0; bottom: 0; padding: 3px 0 4px; font-size: calc(10.5px * var(--fs, 1)); font-weight: 700; color: #fff; text-align: center; background: linear-gradient(transparent, rgba(0,0,0,.42)); text-shadow: 0 1px 2px rgba(0,0,0,.5); letter-spacing: .3px; }
+.pal-sw:active { transform: scale(.95); }
+.pal-sw.on { box-shadow: 0 0 0 3px var(--brand), 0 4px 12px rgba(0,0,0,.22); transform: translateY(-2px); }
+.pal-sw.on::after { content: "✓"; position: absolute; top: 4px; right: 6px; color: #fff; font-size: calc(13px * var(--fs, 1)); font-weight: 800; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
+.acc-sw { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--line); cursor: pointer; color: #fff; font-size: calc(13px * var(--fs, 1)); font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.acc-sw.on { box-shadow: 0 0 0 2px var(--accent); }
+.acc-reset { background: var(--surface-2); color: var(--ink-soft); box-shadow: 0 0 0 1px var(--line); }
+.acc-lock { font-size: calc(12px * var(--fs, 1)); color: var(--ink-faint); }
+
+/* PRO 徽章自訂配色（套用在自己的 .pro-mine） */
+.pro-tag.pro-mine { background: linear-gradient(135deg, var(--pro-c1, #ffe07a), var(--pro-c2, #f0a91e)); color: var(--pro-ink, #5a3a00); }
+.proc-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.proc-sw { border: none; border-radius: 6px; padding: 4px 9px; font-size: calc(10px * var(--fs, 1)); font-weight: 800; letter-spacing: .5px; cursor: pointer; box-shadow: 0 0 0 1px var(--line); }
+.proc-sw.on { box-shadow: 0 0 0 2px var(--accent); }
+
+/* PRO 頭像框（跟隨 PRO 配色） */
+.fc-av.pro-av, .pf-av.pro-av, .me-av.pro-av, .prof-av.pro-av { box-shadow: 0 0 0 2px var(--pro-f, #f0a91e), 0 0 0 4px var(--surface); }
+
+/* 個人頁封面照 */
+.pf-cover { height: 120px; background-size: cover; background-position: center; border-radius: var(--r-sm); margin: 0 0 12px; box-shadow: var(--sh-sm); }
+.ed-cover { height: 92px; background-color: var(--surface-2); background-size: cover; background-position: center; border-radius: var(--r-sm); border: 1px solid var(--line-soft); margin: 4px 0 8px; }
+
+/* 年度回顧卡 */
+.yr-card { background: linear-gradient(160deg, #1f4730, #16301f 70%); color: #f3efe4; }
+.yr-card .sheet-close { color: #f3efe4; }
+.yr-head { text-align: center; margin: 4px 0 18px; }
+.yr-year { font-family: var(--num); font-size: calc(46px * var(--fs, 1)); font-weight: 700; line-height: 1; color: #e0b15a; }
+.yr-title { font-family: var(--serif); font-size: calc(16px * var(--fs, 1)); letter-spacing: 2px; margin-top: 4px; opacity: .9; }
+.yr-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
+.yr-stat { text-align: center; background: rgba(255,255,255,.08); border-radius: var(--r-sm); padding: 14px 8px; }
+.yr-stat b { font-family: var(--num); font-size: calc(28px * var(--fs, 1)); font-weight: 700; display: block; color: #fff; line-height: 1.15; margin-bottom: 4px; }
+.yr-stat > span { font-size: calc(11.5px * var(--fs, 1)); opacity: .8; }   /* 只管標籤：寫成 .yr-stat span 會連 <b> 裡的跳動數字 span.cu 一起縮成 11.5px */
+.yr-lines { font-size: calc(14px * var(--fs, 1)); line-height: 2; text-align: center; opacity: .95; }
+.yr-lines b { color: #e0b15a; }
+.yr-foot { margin-top: 8px; font-size: calc(12.5px * var(--fs, 1)); opacity: .8; }
+.yr-card .btn.primary { margin-top: 16px; }
+
+/* 會員資歷 + 好友里程比較 */
+.pm-tenure { font-family: var(--num); font-size: calc(11px * var(--fs, 1)); font-weight: 700; color: var(--accent); margin-left: 8px; }
+.cmp-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cmp-refresh { flex: none; width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--line-soft); background: var(--surface-2); color: var(--ink-soft); border-radius: var(--r-pill); cursor: pointer; }
+.cmp-refresh:active { transform: scale(0.92); }
+.cmp-refresh svg { width: 17px; height: 17px; }
+.cmp-refresh.spinning svg { animation: spin 0.8s linear infinite; }
+.cmp-myrank { text-align: center; font-size: calc(13px * var(--fs, 1)); color: var(--ink-soft); background: var(--surface-2); border-radius: var(--r-xs); padding: 7px 10px; margin-bottom: 10px; }
+.cmp-myrank b { font-family: var(--num); color: var(--accent); font-size: calc(15px * var(--fs, 1)); }
+.cmp-list { display: flex; flex-direction: column; gap: 8px; }
+.cmp-row { display: grid; grid-template-columns: 24px auto 1fr 70px auto; gap: 8px; align-items: center; }
+.cmp-row.me { background: var(--accent-soft); border-radius: var(--r-xs); padding: 4px 6px; margin: 0 -6px; }
+.cmp-rank { font-family: var(--num); font-weight: 700; color: var(--ink-faint); text-align: center; font-size: calc(14px * var(--fs, 1)); }
+.cmp-pet { display: flex; align-items: center; gap: 3px; font-size: calc(15px * var(--fs, 1)); line-height: 1; }
+.cmp-pet .pet-critter { width: 24px; height: 24px; filter: none; flex: 0 0 auto; }
+.cmp-pet i { font-family: var(--num); font-style: normal; font-size: calc(10px * var(--fs, 1)); font-weight: 700; color: var(--ink-faint); }
+.cmp-name { font-size: calc(13.5px * var(--fs, 1)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cmp-bar { height: 6px; background: var(--line-soft); border-radius: 4px; overflow: hidden; }
+.cmp-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--brand-mid), var(--accent)); }
+.cmp-km { font-family: var(--num); font-size: calc(13px * var(--fs, 1)); color: var(--ink); }
+.pv-react-b.pro { border-color: var(--pro-c2, #f0a91e); }
+
+/* 記錄頁地圖「我」頭像框跟隨 PRO 配色 */
+.team-marker.me-marker.pro .tm-av img, .team-marker.me-marker.pro .tm-av .tm-ph { border-color: var(--pro-f, #f0a91e); }
+/* 頭像框配色 swatch */
+.frame-sw { color: var(--ink-soft); }
+/* 我的分頁頂端個人檔案卡 */
+.me-card { background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r); padding: 16px; box-shadow: var(--sh-sm); margin-bottom: 16px; }
+.me-card-guest { display: flex; justify-content: center; color: var(--ink-soft); font-size: calc(14px * var(--fs, 1)); cursor: pointer; }
+/* 共用個人卡頭部（「我的」頁＋社群頁同一設計；全 flex/wrap，放大字級不跑版） */
+.prof-hero { display: flex; align-items: flex-start; gap: 13px; }
+.prof-av { flex: none; width: 60px; height: 60px; border-radius: 50%; object-fit: cover; background: var(--surface-2); }
+.prof-av-ph { display: grid; place-items: center; background: var(--brand-mid); color: #fff; font-family: var(--serif); font-weight: 700; font-size: calc(24px * var(--fs, 1)); }
+.prof-hero-info { flex: 1; min-width: 0; }
+.prof-name { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 6px; font-family: var(--serif); font-weight: 700; font-size: calc(17.5px * var(--fs, 1)); color: var(--ink); line-height: 1.25; }
+.prof-nm { overflow-wrap: anywhere; }
+.prof-handle { font-size: calc(12.5px * var(--fs, 1)); color: var(--ink-soft); margin-top: 2px; overflow-wrap: anywhere; }
+.prof-title { display: inline-flex; align-items: center; gap: 4px; font-family: var(--serif); font-weight: 700; font-size: calc(11.5px * var(--fs, 1)); padding: 2px 9px; border-radius: 999px; background: color-mix(in srgb, var(--brand) 15%, var(--surface)); color: var(--brand-deep); border: 1px solid color-mix(in srgb, var(--brand) 24%, transparent); white-space: nowrap; }
+.prof-title .ic { width: 13px; height: 13px; }
+/* 稱號依階級變色（與成就頁一致：石灰→森綠→湖青→靛紫→古銅→傳說金） */
+.prof-title.rkt-0 { background: color-mix(in srgb, #7c7768 15%, var(--surface)); color: color-mix(in srgb, #6f6a5b 72%, var(--ink)); border-color: color-mix(in srgb, #7c7768 34%, transparent); }
+.prof-title.rkt-1 { background: color-mix(in srgb, #3f8a48 15%, var(--surface)); color: color-mix(in srgb, #3f8a48 72%, var(--ink)); border-color: color-mix(in srgb, #3f8a48 36%, transparent); }
+.prof-title.rkt-2 { background: color-mix(in srgb, #2f8593 16%, var(--surface)); color: color-mix(in srgb, #2f8593 72%, var(--ink)); border-color: color-mix(in srgb, #2f8593 36%, transparent); }
+.prof-title.rkt-3 { background: color-mix(in srgb, #6155c4 16%, var(--surface)); color: color-mix(in srgb, #6155c4 74%, var(--ink)); border-color: color-mix(in srgb, #6155c4 38%, transparent); }
+.prof-title.rkt-4 { background: color-mix(in srgb, #c9752e 17%, var(--surface)); color: color-mix(in srgb, #c9752e 74%, var(--ink)); border-color: color-mix(in srgb, #c9752e 38%, transparent); }
+/* 傳說山神：金色實心＋掃過反光（同 PRO 標與成就頁） */
+.prof-title.rkt-5 { position: relative; overflow: hidden; background: linear-gradient(135deg, #ffe07a, #f0a91e); color: #5a3a00; border-color: #d9ad4e; box-shadow: 0 1px 6px rgba(240,169,30,.35); }
+.prof-title.rkt-5 .ic { color: #5a3a00; }
+.prof-title.rkt-5::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.7) 50%, transparent 65%); background-size: 220% 100%; animation: lv-shine 3.4s ease-in-out infinite; }
+.prof-pet { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-top: 8px; font-size: calc(12.5px * var(--fs, 1)); color: var(--ink-soft); }
+.prof-pet .pet-critter { width: 28px; height: 28px; flex: none; filter: none; }
+.prof-pet-t { min-width: 0; overflow-wrap: anywhere; }
+.prof-pet-t b { font-family: var(--num); color: var(--brand-deep); }
+/* 稱號＋成就一組 */
+.prof-achrow { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: 9px; }
+.prof-ach { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; text-align: left; border: none; background: var(--surface-2); color: var(--ink-soft); font-size: calc(12px * var(--fs, 1)); font-weight: 600; padding: 6px 12px; border-radius: 999px; cursor: pointer; max-width: 100%; }
+.prof-ach b { color: var(--accent); font-family: var(--num); }
+
+/* 進場淡入錯落（年度回顧 / 進階分析） */
+.anim-seq > * { animation: tt-rise var(--dur-l) var(--ease-out) both; }
+.anim-seq > *:nth-child(2) { animation-delay: .05s; }
+.anim-seq > *:nth-child(3) { animation-delay: .11s; }
+.anim-seq > *:nth-child(4) { animation-delay: .17s; }
+.anim-seq > *:nth-child(5) { animation-delay: .23s; }
+.anim-seq > *:nth-child(6) { animation-delay: .29s; }
+.anim-seq > *:nth-child(n+7) { animation-delay: .34s; }
+@media (prefers-reduced-motion: reduce) { .anim-seq > * { animation: none; } }
+/* 年度回顧次要統計 */
+.yr-sub { display: flex; justify-content: space-around; margin: 12px 0 2px; }
+.yr-sub div { text-align: center; }
+.yr-sub b { font-family: var(--num); font-size: calc(19px * var(--fs, 1)); font-weight: 700; display: block; color: #e0b15a; }
+.yr-sub > div > span { font-size: calc(11px * var(--fs, 1)); opacity: .8; }   /* 同上：別吃到數字的 span.cu */
+
+/* 年度回顧月份長條 + 雷達圖 + 圖片按鈕 */
+.yr-months { display: flex; align-items: flex-end; justify-content: space-between; gap: 3px; height: 74px; margin: 12px 2px 4px; }
+.yr-mo { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 3px; }
+.yr-mo-bar { width: 64%; max-width: 16px; background: linear-gradient(180deg, #e0b15a, #c2832c); border-radius: 3px 3px 0 0; transform-origin: bottom; animation: barGrow var(--dur-l) var(--ease-out) both; }
+.yr-mo span { font-size: calc(9px * var(--fs, 1)); opacity: .65; }
+.yr-mo-v { font-size: calc(8.5px * var(--fs, 1)); font-weight: 700; color: #f3efe4; opacity: .9; line-height: 1; min-height: 9px; }
+.yr-mo-cap { font-size: calc(10.5px * var(--fs, 1)); color: rgba(243,239,228,.65); text-align: center; margin: 2px 0 6px; }
+@keyframes barGrow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@media (prefers-reduced-motion: reduce) { .yr-mo-bar { animation: none; } }
+.yr-btns { display: flex; gap: 8px; }
+.yr-btns .btn { margin-top: 16px; flex: 1; }
+.yr-imgbtn { background: rgba(255,255,255,.12); color: #f3efe4; border: 1px solid rgba(255,255,255,.25); }
+.yr-imgbtn .ic { width: 15px; height: 15px; vertical-align: -3px; margin-right: 5px; }
+.ana-radar { width: 200px; max-width: 100%; display: block; margin: 4px auto 0; }
+.ana-empty-note { font-size: calc(12.5px * var(--fs, 1)); color: var(--ink-faint); text-align: center; padding: 12px; }
+
+/* 年度回顧最遠路線縮圖 + 進階分析配速折線 */
+.yr-route { margin: 14px 0 4px; text-align: center; }
+.yr-route-l { font-size: calc(12px * var(--fs, 1)); opacity: .85; margin-bottom: 4px; }
+.yr-route-svg { width: 70%; max-width: 220px; height: 56px; color: #e0b15a; }
+.ana-spark { width: 100%; height: 72px; display: block; }
+.ana-spark-cap { font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-faint); text-align: center; margin-top: 4px; line-height: 1.4; }
+/* 速度趨勢長條圖（有數字，好懂） */
+.pace-bars { display: flex; align-items: flex-end; gap: 5px; height: 96px; padding-top: 4px; }
+.pace-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+.pace-col .pace-v { font-family: var(--num); font-size: calc(9.5px * var(--fs, 1)); font-weight: 700; color: var(--ink-soft); margin-bottom: 3px; }
+.pace-col .pace-track { width: 100%; max-width: 22px; height: 100%; display: flex; align-items: flex-end; }
+.pace-col .pace-track i { width: 100%; background: var(--brand-mid); border-radius: 4px 4px 0 0; }
+.pace-col.fast .pace-track i { background: #22b473; }
+.pace-col.fast .pace-v { color: #17a06a; }
+.pace-col.last .pace-track i { outline: 2px solid var(--accent); outline-offset: 1px; }
+.pace-col.last .pace-v { color: var(--accent); }
+
+/* 自製對話框（取代原生 confirm/prompt/alert，可翻譯、樣式一致） */
+.ttdlg-ov { position: fixed; inset: 0; z-index: 9500; background: rgba(15,20,12,.45);
+  display: grid; place-items: center; padding: calc(var(--safe-t) + 12px) 24px calc(var(--safe-b) + 12px); animation: tt-fade var(--dur-m) var(--ease-out); }
+.ttdlg { width: 100%; max-width: 340px; background: var(--surface); color: var(--ink);
+  border-radius: var(--r-md, 14px); padding: 20px 18px 14px; box-shadow: 0 18px 50px rgba(0,0,0,.3); }
+.ttdlg-msg { font-size: calc(14.5px * var(--fs, 1)); line-height: 1.65; white-space: pre-wrap; }
+.ttdlg-input { width: 100%; margin-top: 12px; border: 1px solid var(--line); border-radius: var(--r-sm);
+  background: var(--surface-2); color: var(--ink); padding: 10px; font-size: calc(14px * var(--fs, 1)); font-family: inherit; resize: vertical; }
+.ttdlg-btns { display: flex; gap: 8px; margin-top: 16px; }
+.ttdlg-btns .btn { flex: 1; width: auto; margin: 0; padding: 11px 8px; font-size: calc(14px * var(--fs, 1)); }
+
+/* 社群下拉重新整理指示器（跟手的箭頭→轉圈） */
+.ptr-ind { height: 0; overflow: hidden; display: flex; align-items: center; justify-content: center;
+  color: var(--ink-faint); transition: height var(--dur-s) var(--ease-out); }
+.ptr-ind .ptr-arrow { width: 20px; height: 20px; transition: transform var(--dur-s); }
+.ptr-ind.ready .ptr-arrow { transform: rotate(180deg); color: var(--brand-mid); }
+.ptr-ind .ptr-spin { display: none; }
+.ptr-ind.loading .ptr-arrow { display: none; }
+.ptr-ind.loading .ptr-spin { display: inline-block; }
+
+/* ── 自用模式（config.js PERSONAL_MODE）：收起付費與社交入口 ── */
+/* PRO 標籤兩種：①「這是 PRO 功能」提示＝只給非會員看，會員（含自用）不必看；
+   ②身分徽章 .pro-id（社群名字旁、我的個人檔案）＝個人名譽，永遠顯示 */
+.is-pro .pro-tag:not(.pro-id), .personal .hide-personal { display: none !important; }
+/* 社群功能開關（我的 → 外觀）關掉時才收：跟自用模式分開，自用照樣可以玩社群 */
+.hide-social .social-only, .hide-social .tab[data-view="social"], .hide-social #petFriends,
+.hide-social #trailFeedBox, .hide-social #activityBox { display: none !important; }
+.hide-social .link-row.rec-links { grid-template-columns: repeat(2, 1fr); }   /* 隊友同行收起來後剩 2 顆，別留一格空位 */
+/* 同名的其他路段 */
+.sib-box { margin: 4px 0 14px; }
+.sib-h { font-size: calc(12px * var(--fs, 1)); color: var(--ink-soft); font-weight: 700; margin-bottom: 7px; }
+.sib-row { display: flex; flex-wrap: wrap; gap: 7px; }
+.sib-chip { border: 1px solid var(--line); background: var(--surface); border-radius: var(--r-pill, 999px); padding: 6px 12px;
+  font-size: calc(13px * var(--fs, 1)); font-weight: 600; color: var(--brand-deep); cursor: pointer; }
+.sib-chip span { margin-left: 6px; color: var(--ink-faint); font-weight: 500; white-space: nowrap; }
+/* 周邊清單：看更多、地圖色點圖例 */
+.more-btn { display: block; width: 100%; margin: 8px 0 2px; padding: 10px; border: 1px dashed var(--line); border-radius: var(--r-sm);
+  background: transparent; color: var(--brand-deep); font-weight: 700; font-size: calc(13.5px * var(--fs, 1)); cursor: pointer; }
+.lg-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: 0; }
+/* 分級：適合／時間／裝備 各自一行，不再用「·」串成一長條亂斷 */
+.grade-meta, .grade-note-meta { display: flex; flex-direction: column; gap: 2px; }
+.grade-meta i, .grade-note-meta i { font-style: normal; font-weight: 700; color: var(--ink-soft); margin-right: 8px; }
+.grade-note-meta .gn-basis { margin-top: 4px; }
+
+/* 品牌標記：跟 App 圖示同一張圖（兩座山＋金色山徑＋月亮），不再用 ⛰ emoji——emoji 每支手機長得不一樣 */
+.tt-logo { width: 100%; height: 100%; display: block; }
+.brand-mark .tt-logo { width: 78%; height: 78%; }
+/* 中文孤字換行：「先去走一條／吧。」這種最後一兩個字掉到下一行，交給瀏覽器排得漂亮一點 */
+body { text-wrap: pretty; }
+h1, h2, h3, .social-empty, .ana-empty-note, .food-empty { text-wrap: balance; }
+/* 海拔剖面數字：每組各自不斷行（原本「全長／約 2.1km」會被拆開） */
+.profile-stat { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.profile-stat span { white-space: nowrap; }
+.profile-stat b { font-weight: 700; }
+
+/* 深色模式：這幾處顏色寫死成淺色主題用的深灰綠，在深底上幾乎看不見 */
+html[data-theme="dark"] .grade-note-meta { color: var(--ink-soft); }
+html[data-theme="dark"] .grade-meta { color: var(--ink-soft); }
+html[data-theme="dark"] .cond-banner.note .cond-h { color: #b9c3cf; }
+
+/* 導覽卡：圖示改用線條 SVG（原本是 emoji，每支手機長得不一樣） */
+.tour-emoji .ic { width: calc(34px * var(--fs, 1)); height: calc(34px * var(--fs, 1)); color: var(--brand); margin: 0; transform: none; }
+
+
+/* ── 數字格：每種字體大小都要舒服（2026-09-30）──
+   問題：數字用固定字級，格子又被內容撐開 → 大字時「123,45612,345」黏在一起、分析/年度卡片被切出畫面、
+   「↑14,392」快頂到邊；auto-fit 在寬螢幕會變 4 欄，6 格排成 4+2 不對稱。
+   做法：①格子一律等寬 minmax(0,1fr)，欄數寫死（6 格＝3×2 或大字 2×3，永遠對稱）
+         ②每格是 container，數字字級＝min(原字級, 格寬 ÷ 字數)——短數字維持原大小，長的才縮
+         （--n＝最終字數，由 countUp 設定；沒有 --n 的即時數字用固定比例） */
+.mstat, .ana-card, .yr-stat, .yr-sub > div, .rc, .mo-cell { container-type: inline-size; min-width: 0; }
+.mstat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+[data-fs-big] .mstat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.mstat .mv, .mstat .mv.mv-lg, .mstat .mv.mv-xl {
+  font-size: min(calc(20px * var(--fs, 1)), calc(100cqw / (var(--n, 4) * 0.62))); }
+.ana-cards, .yr-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ana-cv, .yr-stat b, .yr-sub b { white-space: nowrap; }
+.ana-card .cu, .yr-stat .cu, .yr-sub .cu { font-size: min(1em, calc(100cqw / (var(--n, 4) * 0.62))); }
+.yr-sub { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.mo-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+[data-fs-mid] .mo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 12px; }
+.mo-cell .mo-v { white-space: nowrap; font-size: min(calc(19px * var(--fs, 1)), 30cqw); }
+.mo-cell .mo-l { white-space: nowrap; }
+/* 記錄頁：步數/大卡/時速 即時更新，沒有 --n → 用 7 位數（123,456）估 */
+.rc-v { white-space: nowrap; font-size: min(calc(23px * var(--fs, 1)), 23cqw); }
+.rc-l { white-space: nowrap; }
+.rh-main { flex-wrap: nowrap; }
+.rh-num { font-size: min(calc(58px * var(--fs, 1)), 19vw); }
+.rh-unit { white-space: nowrap; }
+
+/* ══ 探索頁全面整理（2026-09-30）══ */
+/* 頁首：往下捲就縮成跟內頁一樣的小版，把畫面留給步道（回到頂端再展開） */
+body.hdr-compact .app-header-inner { padding: calc(11px + var(--safe-t)) 20px 11px; }
+body.hdr-compact .app-header .sub { display: none; }
+body.hdr-compact .app-header h1 { font-size: calc(20px * var(--fs, 1)); letter-spacing: 2px; }
+body.hdr-compact .brand-en { font-size: calc(8.5px * var(--fs, 1)); letter-spacing: 3px; margin-top: 3px; }
+body.hdr-compact .brand-mark { width: 36px; height: 36px; }
+.app-header-inner, .app-header h1, .brand-mark { transition: padding var(--dur-s) var(--ease-out), font-size var(--dur-s) var(--ease-out), width var(--dur-s) var(--ease-out), height var(--dur-s) var(--ease-out); }
+
+/* 快速篩選列：右緣淡出＝還能往右滑 */
+.chips { -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent); mask-image: linear-gradient(90deg, #000 88%, transparent); padding-right: 24px; }
+
+/* 工具列一排：數量｜列表/地圖｜篩選（大字才允許換行） */
+.toolbar { flex-wrap: nowrap; gap: 6px; }
+.toolbar .count { order: 0; }
+.toolbar .grow { order: 1; }
+.toolbar .seg { order: 2; }
+.toolbar #btnFilter { order: 4; }
+.toolbar .seg-btn { padding: 8px 10px; min-height: 38px; }
+.btn-filter.btn-icon { padding: 8px 9px; }
+.btn-filter.btn-icon .ic { width: 18px; height: 18px; }
+[data-fs-mid] .toolbar { flex-wrap: wrap; }
+[data-fs-mid] .toolbar .count { flex-basis: 100%; }
+
+/* 主題卡：線條圖示（取代 emoji）＋右下角一枚放大的淡色同款圖當插畫 */
+.coll-ic .ic { width: 19px; height: 19px; color: #fff; margin: 0; transform: none; }
+.coll-art { position: absolute; right: -14px; bottom: -12px; z-index: -1; opacity: .16; pointer-events: none; }
+.coll-art .ic { width: 86px; height: 86px; color: #fff; stroke-width: 1.4; margin: 0; transform: none; }
+.coll-t { word-break: keep-all; overflow-wrap: normal; hyphens: none; }
+
+/* 收藏星：SVG */
+.fav-star svg { width: calc(24px * var(--fs, 1)); height: calc(24px * var(--fs, 1)); fill: none; stroke: #cbb35e; stroke-width: 1.7; stroke-linejoin: round; }
+.fav-star.on svg { fill: #e3a417; stroke: #e3a417; }
+
+/* 卡片：地點只佔一行、陡度列精簡 */
+.jloc-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jloc { min-width: 0; }
+/* 無限捲動上千張卡：畫面外的卡交給瀏覽器跳過排版與繪製（DOM 還在但幾乎不花成本） */
+.card.jcard { content-visibility: auto; contain-intrinsic-size: auto 230px; }
+.card.jcard:focus-visible { outline: 3px solid var(--brand-mid); outline-offset: 2px; }
+
+/* 搜尋建議：打中的字標色、鍵盤選取 */
+.sug mark { background: none; color: var(--brand); font-weight: 800; }
+.sug.on { background: var(--brand-soft); }
+
+/* 篩選面板：地區分區、長度/爬升改選項 */
+.fs-rg { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-bottom: 9px; }
+.fs-rg-h { flex: 0 0 100%; font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-faint); font-weight: 700; letter-spacing: .1em; margin-top: 2px; }
+.fs-sub { font-size: calc(12px * var(--fs, 1)); color: var(--ink-soft); font-weight: 700; margin: 4px 0 6px; }
+.chip .ic { width: 14px; height: 14px; vertical-align: -2px; margin-right: 2px; }
+.chip.preset .px { display: inline-flex; margin-left: 6px; opacity: .6; }
+.chip.preset .px .ic { width: 12px; height: 12px; margin: 0; }
+
+/* 地圖：範圍內數量＋列出這些、範圍篩選標籤、步道小卡彈窗 */
+.map-count { background: var(--surface); border-radius: var(--r-pill); box-shadow: var(--sh-md, 0 4px 12px rgba(0,0,0,.18)); padding: 5px 5px 5px 13px;
+  display: flex; align-items: center; gap: 8px; font-size: calc(12.5px * var(--fs, 1)); color: var(--ink); margin-bottom: 52px !important; }
+.map-count b { color: var(--brand); font-family: var(--num); }
+.mc-go { border: none; background: var(--brand); color: #f6f3ea; border-radius: var(--r-pill); padding: 6px 11px; font-weight: 700; font-size: calc(12px * var(--fs, 1)); cursor: pointer; }
+.map-scope { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--brand-soft); color: var(--brand-deep);
+  border-radius: var(--r-pill); padding: 5px 5px 5px 14px; margin: 0 0 10px; font-size: calc(13px * var(--fs, 1)); font-weight: 600; }
+.map-scope .ic { width: 15px; height: 15px; vertical-align: -3px; }
+.ms-x { border: none; background: var(--surface); border-radius: 50%; width: 30px; height: 30px; display: grid; place-items: center; cursor: pointer; }
+.ms-x .ic { margin: 0; }
+.trail-pop .leaflet-popup-content-wrapper { border-radius: 14px; padding: 0; }
+.trail-pop .leaflet-popup-content { margin: 12px 14px; line-height: 1.45; }
+.mp-h { display: flex; align-items: center; gap: 7px; font-size: 14.5px; }
+.mp-h b { font-weight: 800; color: var(--ink, #1b2417); }
+.mp-lv { flex: 0 0 auto; width: 20px; height: 20px; border-radius: 50%; color: #fff; font-size: 11.5px; font-weight: 800; display: grid; place-items: center; }
+.mp-loc { font-size: 12px; color: #7a7867; margin: 2px 0 4px 27px; }
+.mp-stats { font-size: 13px; font-weight: 600; margin-left: 27px; font-family: var(--num); }
+.mp-warn { font-size: 12px; color: #b3322a; margin: 4px 0 0 27px; }
+.mp-warn .ic { width: 13px; height: 13px; vertical-align: -2px; }
+.mp-go { display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 10px; background: var(--brand, #2c5d3f); color: #fff !important;
+  border-radius: 10px; padding: 8px; font-weight: 700; text-decoration: none; font-size: 13.5px; }
+.mp-go .ic { width: 15px; height: 15px; margin: 0; }
+
+/* 底部分頁：字不換行（日文「コミュニティ」曾擠成兩行） */
+.tab { white-space: nowrap; }
+/* 工具列擠不下（360px 手機、英文「Filter」會被切掉）→ 列表／地圖只留圖示，文字留給螢幕閱讀器 */
+.toolbar .seg-btn { font-size: 0; gap: 0; padding: 8px 11px; }
+.toolbar .seg-btn .ic { width: 17px; height: 17px; margin: 0; }
+.toolbar { min-width: 0; }
+.toolbar .count { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* 主題卡：預留左上角圖示的位置，標題換兩行（英文常見）也不會壓到圖示 */
+.coll-card { padding-top: 54px; }
+
+/* ══ 記錄頁整理（2026-09-30）══ */
+/* 待機：頂部一排 0 不佔版面；選步道、快捷卡、地圖、開始鈕往上 */
+#view-record[data-state="idle"] .rec-stats { display: none; }
+#view-record[data-state="idle"] #recMap { height: 260px; }
+/* 記錄中／暫停：數字精簡、地圖放大（走路時最常看的是地圖） */
+#view-record:not([data-state="idle"]) .rh-num { font-size: min(calc(46px * var(--fs, 1)), 15vw); }
+#view-record:not([data-state="idle"]) .rec-hero { padding: 12px 14px 10px; }
+#view-record:not([data-state="idle"]) .rh-time { margin-top: 4px; }
+#view-record:not([data-state="idle"]) .rec-row { padding: 9px 4px; }
+#view-record:not([data-state="idle"]) .rec-stats { display: grid; gap: 8px; }
+#view-record:not([data-state="idle"]) #recMap { height: max(300px, 46vh); }
+/* 記錄中不能改的選項收起來（模擬/省電混用會把真實和模擬混在同一趟） */
+#view-record:not([data-state="idle"]) .rec-opts { display: none; }
+/* 控制列：記錄中、暫停都黏在分頁列上方（原本只有記錄中） */
+#view-record:not([data-state="idle"]) .rec-controls {
+  position: sticky; z-index: 25; bottom: calc(26px + 40px * var(--fs, 1) + var(--safe-b, 0px));
+  background: var(--bg); padding: 8px 0; box-shadow: 0 -10px 14px -8px var(--bg);
+}
+.rec-controls .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+.rec-controls .btn .ic { width: 18px; height: 18px; margin: 0; transform: none; }
+.rec-controls .btn:not(.lock-btn) { flex: 1 1 0; }
+/* 結束：改成沉穩的外框樣式，跟暫停拉開差距，降低誤觸 */
+.btn.stop-btn { background: var(--surface); color: var(--danger, #b3322a); border: 2px solid currentColor; box-shadow: none; }
+.btn.stop-btn .ic { color: var(--danger, #b3322a); }
+/* 鎖定：控制列裡的一顆方鈕 */
+.btn.lock-btn { flex: 0 0 auto; width: auto; min-width: 58px; padding-inline: 12px; flex-direction: column; gap: 2px; font-size: calc(11px * var(--fs, 1)); }
+.btn.lock-btn .ic { width: 17px; height: 17px; }
+/* 提示訊息：在記錄頁移到上方，不要蓋住暫停／結束 */
+body[data-view="record"] .toast { bottom: auto; top: calc(var(--hdr-h, 60px) + 10px + var(--safe-t)); transform: translateX(-50%) translateY(-12px); }
+body[data-view="record"] .toast.show { transform: translateX(-50%) translateY(0); }
+/* 大字時狀態列不要被分頁列蓋住 */
+.view { padding-bottom: calc(104px + 36px * var(--fs, 1) + var(--safe-b, 0px)); }   /* 捲到底時最後一張卡要高過「回到頂部」浮鈕（84+44px） */
+/* 深色：里程卡原本是淺色漸層，淡綠數字幾乎看不到 */
+html[data-theme="dark"] .rec-hero { background-image: linear-gradient(155deg, #1f2a1d, var(--surface)); }
+html[data-theme="dark"] .rh-num { color: #d7ecd9; }
+/* 行前小卡：線條圖示 */
+.pre-hike .ph-ic { display: inline-flex; }
+.pre-hike .ph-ic .ic { width: 15px; height: 15px; color: var(--brand-mid); margin: 0; transform: translateY(2px); }
+.ph-warn { color: var(--danger, #b3322a); font-weight: 700; }
+/* 即時海拔曲線：目前位置點＋最低／最高 */
+.rec-spark-box { position: relative; }
+.rec-spark-dot { position: absolute; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 50%; background: var(--accent, #e8893b); box-shadow: 0 0 0 2px var(--surface); }
+.rec-spark-cap { display: flex; justify-content: space-between; gap: 8px; }
+.rec-spark-cap b { color: var(--brand-deep); }
+/* 狀態列 */
+.rs-warn { color: var(--danger, #b3322a); font-weight: 700; }
+.rs-warn .ic { width: 15px; height: 15px; vertical-align: -3px; }
+.rs-wait { display: inline-flex; align-items: center; gap: 7px; color: var(--ink-soft); }
+/* 待機快捷卡 */
+.ridle-picks-h { font-size: calc(12px * var(--fs, 1)); color: var(--ink-faint); font-weight: 700; margin: 10px 2px 6px; }
+.ridle-picks { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; }
+.ridle-pick { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; max-width: 220px; border: 1px solid var(--line); background: var(--surface);
+  border-radius: var(--r-pill); padding: 8px 13px; font-size: calc(13px * var(--fs, 1)); font-weight: 600; color: var(--brand-deep); cursor: pointer; }
+.ridle-pick span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ridle-pick .ic { width: 14px; height: 14px; flex: none; color: var(--brand-mid); }
+/* 結算頁 */
+.ok-mark .ic { width: 13px; height: 13px; color: var(--brand-mid); vertical-align: -2px; }
+/* 結算頁動作鈕 6 顆（開著社群時）→ 排成 3×2，不硬擠一排 */
+.link-row.flow:has(> .link-btn:nth-child(6)) { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+/* ══ 夥伴頁整理（2026-10-01）══ */
+.view-title .ic { width: 22px; height: 22px; vertical-align: -3px; margin-right: 4px; color: var(--brand-mid); }
+/* 果實：專屬 SVG（遊戲貨幣） */
+.berry { width: 1.15em; height: 1.15em; vertical-align: -0.2em; flex: none; }
+/* 裝扮／改名：有字的按鈕，看得懂也好按 */
+.pet-tools { position: relative; z-index: 2; display: flex; justify-content: center; gap: 8px; margin: 6px 0 2px; }
+.pet-tool { display: inline-flex; align-items: center; gap: 5px; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.2); color: #f3f1e6;
+  border-radius: 999px; padding: 6px 13px; font-size: calc(12px * var(--fs, 1)); font-weight: 700; cursor: pointer; min-height: 34px; }
+.pet-tool .ic { width: 14px; height: 14px; margin: 0; }
+.pet-tool:active { transform: scale(.95); }
+/* 下一階：剪影不劇透 */
+.pet-evo-next .pet-evo-sil svg, .pet-evo-next .pet-evo-sil .pet-critter { filter: brightness(0) opacity(.45); }
+/* 活力／親密：數字＋說明鈕 */
+.pet-meters { grid-template-columns: 1fr 1fr auto; align-items: center; }
+.pet-meter b { color: #fff; font-family: var(--num); }
+.pet-help { width: 26px; height: 26px; border-radius: 50%; border: 1px solid rgba(255,255,255,.3); background: rgba(255,255,255,.12); color: #fff; font-weight: 800; cursor: pointer; }
+/* 餵食鈕：果實圖示＋餘額；不夠時直接說還差幾顆 */
+.pet-btn.feed { display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
+.pet-btn.feed .feed-bal { font-family: var(--num); background: rgba(0,0,0,.18); border-radius: 999px; padding: 1px 7px; font-size: .9em; }
+.pet-btn.feed:disabled .berry { filter: grayscale(.6) opacity(.7); }
+/* 數字格大字不斷行：字級跟著格寬走 */
+.pet-chip { container-type: inline-size; min-width: 0; }
+.pet-chip .cv { white-space: nowrap; font-size: min(calc(15px * var(--fs, 1)), 17cqw); }
+.pet-chip .cl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+[data-fs-big] .pet-acts { flex-wrap: wrap; }
+[data-fs-big] .pet-btn.feed { flex-basis: 100%; }
+/* 帽子：果實解鎖、兩排都置中（5 個不再留一格空位） */
+.hat-grid { display: flex; flex-wrap: wrap; justify-content: center; }
+.hat-grid .hat-opt { flex: 0 0 calc((100% - 20px) / 3); position: relative; }
+.hat-opt.locked .hat-prev { filter: grayscale(.7) opacity(.6); }
+.hat-cost { position: absolute; top: 6px; right: 6px; display: inline-flex; align-items: center; gap: 2px; background: var(--surface); border-radius: 999px;
+  padding: 1px 7px 1px 4px; font-size: 11.5px; font-weight: 800; font-family: var(--num); box-shadow: var(--sh-sm); }
+.hat-bal { display: flex; align-items: center; justify-content: center; gap: 4px; margin: -4px 0 10px; font-weight: 800; font-family: var(--num); color: var(--brand-deep); }
+/* 每日任務：右邊顯示「目前 / 目標 單位」 */
+.q-chk { min-width: 64px; white-space: nowrap; font-size: calc(12px * var(--fs, 1)); }
+.q-chk .ic { width: 18px; height: 18px; color: var(--brand); }
+#qClaim .berry, .quest-mile .berry { margin-left: 2px; }
+/* 成就入口：稱號、分數、六階紋章 */
+.ae-top { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
+.ae-top .ach-entry-go { margin-left: auto; }
+.ae-score { font-size: calc(12px * var(--fs, 1)); color: var(--ink-soft); }
+.ae-score b { color: var(--accent, #c2683d); font-family: var(--num); }
+.ae-tiers { display: flex; justify-content: space-between; margin-top: 10px; }
+.ae-tier { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); color: var(--ink-faint); border: 1.5px dashed var(--line); }
+.ae-tier .ic { width: 16px; height: 16px; margin: 0; }
+.ae-tier.part { color: var(--brand-mid); border-style: solid; border-color: var(--brand-mid); }
+.ae-tier.full { background: var(--brand); color: #fff; border: none; }
+.anx-sug { margin-top: 6px; display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px;
+  padding: 4px 10px; font-size: calc(12px * var(--fs, 1)); font-weight: 700; color: var(--brand-deep); cursor: pointer; max-width: 100%; }
+.anx-sug span { color: var(--ink-faint); font-weight: 500; }
+.anx-sug .ic { width: 13px; height: 13px; margin: 0; }
+/* 好友的夥伴（未登入）：一行就好 */
+.fp-login { width: 100%; text-align: left; margin: 14px 0 6px; padding: 12px 14px; border: 1px dashed var(--line); border-radius: var(--r-sm); background: transparent;
+  color: var(--brand-deep); font-family: inherit; font-weight: 700; font-size: calc(13px * var(--fs, 1)); cursor: pointer; }
+/* 進化：新型態的棲息地當背景 */
+.evolve-bg { position: absolute; inset: 0; background: var(--habitat, #16301f); opacity: .9; }
+.evolve-bg svg { width: 100%; height: 100%; opacity: .55; }
+.evolve-card { z-index: 1; }
+
+/* ══ 我的頁整理（2026-10-01）══ */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* 頂部：我的年度卡＋一行登入提示 */
+.me-year { display: flex; align-items: center; gap: 14px; background: linear-gradient(135deg, #24462f, #16301f); color: #f3efe4; padding: 14px 16px; }
+.me-year .my-pet { width: 72px; height: 72px; flex: none; }
+.me-year .my-pet svg { width: 100%; height: 100%; }
+.me-year .my-h { font-size: calc(12px * var(--fs, 1)); opacity: .75; }
+.me-year .my-big { font-family: var(--num); font-size: calc(15px * var(--fs, 1)); margin: 2px 0 6px; }
+.me-year .my-big b { font-size: calc(28px * var(--fs, 1)); color: #fff; }
+.me-year .my-big span { opacity: .8; margin-left: 4px; }
+.me-year .prof-ach { background: rgba(255,255,255,.14); color: #f3efe4; border: none; }
+.me-login { display: flex; align-items: center; gap: 6px; width: 100%; border: none; background: none; color: var(--brand-mid); font-weight: 700;
+  font-size: calc(12.5px * var(--fs, 1)); padding: 8px 4px 0; cursor: pointer; }
+.me-login .ic { width: 15px; height: 15px; }
+/* 頁內跳轉 */
+.me-jump { display: flex; gap: 8px; margin: 12px 0 4px; }
+.me-jump-b { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px; border: 1px solid var(--line); background: var(--surface);
+  border-radius: 999px; padding: 8px 6px; font-size: calc(12.5px * var(--fs, 1)); font-weight: 700; color: var(--brand-deep); cursor: pointer; white-space: nowrap; }
+.me-jump-b .ic { width: 14px; height: 14px; margin: 0; }
+#histHead, #setZone, #meMonth { scroll-margin-top: calc(var(--hdr-h, 60px) + 10px); }
+/* 行程卡：整張可點、兩顆按鈕拿掉 */
+button.hist-card { display: block; width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; position: relative; padding-right: 34px; }
+button.hist-card:active { transform: scale(.99); }
+.hist-card .hist-go { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--ink-faint); }
+.hist-card .hist-go .ic { width: 16px; height: 16px; }
+.hist-card.is-sim { opacity: .75; }
+.hist-card b.strike { text-decoration: line-through; opacity: .6; }
+.hist-tools { display: flex; gap: 8px; align-items: center; margin: 8px 0 10px; }
+.hist-search { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 999px; padding: 9px 14px; background: var(--surface); color: var(--ink); font-size: calc(13.5px * var(--fs, 1)); }
+.hist-simchk { display: inline-flex; align-items: center; gap: 5px; font-size: calc(12.5px * var(--fs, 1)); color: var(--ink-soft); white-space: nowrap; }
+.hist-filter { display: flex; align-items: center; justify-content: space-between; background: var(--brand-soft); color: var(--brand-deep); border-radius: 999px;
+  padding: 5px 5px 5px 14px; margin: 0 0 10px; font-weight: 700; font-size: calc(13px * var(--fs, 1)); }
+.hist-filter .ic { width: 15px; height: 15px; vertical-align: -3px; }
+/* 月曆：有走的日子可點 */
+button.cal-c { border: none; font: inherit; cursor: pointer; padding: 0; }
+button.cal-c:active { transform: scale(.92); }
+/* 個人資料 */
+.field label small { font-weight: 500; color: var(--ink-faint); margin-left: 6px; }
+.pf-err { color: var(--danger, #b3322a); font-weight: 700; font-size: calc(13px * var(--fs, 1)); margin: 2px 0 8px; }
+#btnSaveProfile.saved { background: var(--brand-mid); }
+/* 語言：目前的＋更換 */
+.lang-cur { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.lang-cur-n { font-weight: 800; font-size: calc(15px * var(--fs, 1)); }
+.lang-cur-n small { font-weight: 500; color: var(--ink-faint); margin-left: 6px; }
+.lang-change { width: auto; margin: 0; padding: 7px 16px; }
+#langRow:not([hidden]) { margin-top: 10px; }
+/* 資料備份：雲端／檔案分組 */
+.bk-sub { font-size: calc(12px * var(--fs, 1)); font-weight: 700; color: var(--ink-soft); margin: 10px 2px 6px; }
+.bk-sub:first-child { margin-top: 0; }
+/* 離線地圖：已下載清單 */
+.op-sets { display: flex; flex-direction: column; gap: 6px; margin-bottom: 6px; }
+.op-set { display: flex; align-items: center; gap: 8px; background: var(--surface-2); border-radius: var(--r-sm); padding: 8px 8px 8px 12px; }
+.op-set-n { flex: 1; min-width: 0; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: calc(13.5px * var(--fs, 1)); }
+.op-set-m { color: var(--ink-faint); font-size: calc(12px * var(--fs, 1)); font-family: var(--num); }
+.op-set-x { border: none; background: var(--surface); border-radius: 50%; width: 32px; height: 32px; display: grid; place-items: center; color: var(--danger, #b3322a); cursor: pointer; }
+.op-set-x .ic { width: 15px; height: 15px; margin: 0; }
+.op-btn { text-wrap: balance; }
+/* 結算頁：改名／刪除 */
+.track-manage { display: flex; justify-content: space-between; gap: 10px; margin: 14px 0 4px; }
+.tm-btn { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px;
+  padding: 8px 14px; font-size: calc(13px * var(--fs, 1)); font-weight: 700; color: var(--ink-soft); cursor: pointer; }
+.tm-btn.danger { color: var(--danger, #b3322a); border-color: color-mix(in srgb, var(--danger, #b3322a) 35%, transparent); }
+.tm-btn .ic { width: 14px; height: 14px; margin: 0; }
+#btnDiag .ic { width: 15px; height: 15px; vertical-align: -3px; }
+
+/* ══ 社群頁整理（2026-10-01）══ */
+/* 子分頁：字多的語言（英文 Notifications）也塞得下，不再被切掉 */
+.social-subnav .sub-tab { flex: 1 1 auto; min-width: 0; padding: 9px 7px; }
+.nbadge:not([hidden]):not(:empty), .nav-badge:not([hidden]):not(:empty) { display: inline-block; }
+/* 名字＋Lv＋PRO：長名字自己省略，標籤不被擠出卡片 */
+.fc-top { min-width: 0; }
+.fc-who { min-width: 0; flex: 1; }
+.fc-name { flex-wrap: nowrap; min-width: 0; gap: 5px; }
+.fc-name .fc-nm, .disc-id .fc-nm, .pf-name .fc-nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.fc-name .lv-chip, .fc-name .pro-tag, .disc-id .lv-chip, .disc-id .pro-tag, .pf-name .pro-tag { flex: none; }
+.disc-id { min-width: 0; flex: 1; }
+.disc-id b { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.disc-id > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-name { display: flex; align-items: center; gap: 6px; min-width: 0; }
+/* 卡片：步道名一行、里程星等一行 */
+.fc-trail { overflow-wrap: anywhere; }
+.fc-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 0 0 4px; }
+.fc-rate i { font-style: normal; opacity: .28; }
+.fc-repost { display: inline-flex; align-items: center; gap: 5px; font-size: calc(12.5px * var(--fs, 1)); color: var(--ink-soft); background: var(--surface-2); border-radius: var(--r-pill); padding: 3px 10px; margin: 6px 0 2px; }
+.fc-repost .ic { width: 13px; height: 13px; }
+.fc-like .ic-heart { width: 17px; height: 17px; }
+.ic-heart.on { fill: currentColor; }
+.fc-comment .ic { width: 16px; height: 16px; }
+.fc-route { height: 64px; background: var(--surface-2); border-radius: var(--r-sm); margin: 8px 0 6px; }
+.feed-find { width: auto; display: inline-flex; align-items: center; gap: 6px; margin: 16px auto 0; padding: 10px 20px; }
+.social-empty .ee .ic { width: 40px; height: 40px; color: var(--ink-faint); stroke-width: 1.5; }
+.feed-divider { font-weight: 600; }
+/* 登入頁 */
+.auth-logo img { width: 64px; height: 64px; border-radius: 16px; display: block; margin: 0 auto; box-shadow: 0 6px 18px rgba(22,48,31,.18); }
+.auth-msg:empty { min-height: 0; margin: 0; }
+.auth-code { text-align: center; letter-spacing: .3em; font-family: var(--num); font-size: calc(20px * var(--fs, 1)); }
+.auth-links { display: flex; justify-content: center; gap: 22px; margin-top: 10px; }
+.auth-links .link-btn { width: auto; color: var(--ink-soft); }
+.auth-links .link-btn:disabled { opacity: .5; }
+/* 貼文詳情：留言列（以前輸入框吃掉整列，送出鈕被擠到下面看不到） */
+.pv-add { align-items: center; }
+.pv-add .auth-input { min-width: 0; margin: 0; }
+.pv-add .btn { flex: none; width: auto; margin: 0; padding: 11px 16px; }
+.pv-when { margin: 4px 0 6px; display: block; }
+#pvBody > .fc-name { flex-wrap: wrap; row-gap: 2px; }
+.pv-head-r .comp-x .ic { width: 19px; height: 19px; }
+.pv-cm { display: flex; gap: 9px; align-items: flex-start; }
+.pv-cm-col { flex: 1; min-width: 0; }
+.pv-cm-av { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex: none; margin-top: 2px; }
+.pv-cm-av.ph { display: grid; place-items: center; background: var(--brand-soft); color: var(--brand-deep); font-weight: 700; font-size: calc(12px * var(--fs, 1)); }
+.pv-cm-who { cursor: pointer; }
+.pv-cm-time { color: var(--ink-faint); font-size: calc(11.5px * var(--fs, 1)); }
+.pv-cm-act .ic { width: 14px; height: 14px; }
+.pv-cm-act .cm-like.on .ic-heart { fill: currentColor; }
+.pv-cm-empty { padding: 18px 0; }
+/* 多選項的對話框（⋯ 選單）直排 */
+.ttdlg-btns:has(> :nth-child(4)) { flex-direction: column; }
+.ttdlg-btns .btn.danger { color: var(--danger, #b3322a); }
+/* 發文視窗 */
+.composer-head b { flex: 1; text-align: center; white-space: nowrap; }
+.composer-head .comp-post { flex: none; width: auto; margin: 0; padding: 9px 18px; }
+.comp-trail { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.comp-trail .ic { width: 16px; height: 16px; color: var(--brand-mid); }
+.comp-trail span { color: var(--accent); font-family: var(--num); font-weight: 600; }
+.comp-rate { justify-content: space-between; }
+.comp-stars { display: inline-flex; gap: 2px; }
+.comp-stars .cs { background: none; border: none; padding: 2px; width: 34px; height: 34px; color: var(--line); cursor: pointer; }
+.comp-stars .cs svg { width: 100%; height: 100%; fill: currentColor; }
+.comp-stars .cs.on { color: #e8a127; }
+.comp-adds { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0; }
+.comp-add .ic { width: 16px; height: 16px; }
+.comp-del .ic { width: 12px; height: 12px; }
+/* 我的個人頁：4 顆動作鈕一排，登出移到設定 */
+.pf-actions4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 14px 0; background: var(--surface-2); border-radius: var(--r); padding: 6px; }
+.pf-act { display: flex; flex-direction: column; align-items: center; gap: 4px; border: none; background: none; padding: 9px 2px; border-radius: var(--r-sm); color: var(--brand-deep); font-size: calc(12px * var(--fs, 1)); font-weight: 600; cursor: pointer; }
+.pf-act:active { background: var(--surface); }
+.pf-act .ic { width: 19px; height: 19px; }
+.pf-counts .cnt, .pf-counts .cnt-link { font-size: calc(13.5px * var(--fs, 1)); color: var(--ink-soft); }
+button.cnt-link { border: none; background: none; padding: 0; font: inherit; cursor: pointer; }
+.pf-fc { display: inline-flex; gap: 14px; }
+/* 子頁返回 */
+.sub-back { width: 36px; height: 36px; flex: none; border-radius: 50%; border: 1px solid var(--line-soft); background: var(--surface); display: grid; place-items: center; color: var(--ink-soft); cursor: pointer; }
+.sub-back .ic { width: 18px; height: 18px; transform: rotate(180deg); margin: 0; }
+.set-row > span small { display: block; color: var(--ink-faint); font-weight: 500; font-size: calc(12px * var(--fs, 1)); margin-top: 2px; }
+.set-btn { width: 100%; border: none; background: none; text-align: left; font: inherit; color: var(--ink); cursor: pointer; }
+.set-btn .ic { width: 16px; height: 16px; vertical-align: -3px; margin-right: 6px; color: var(--ink-soft); }
+/* 編輯檔案 */
+.ed-cover { display: flex; align-items: flex-end; justify-content: flex-end; padding: 8px; cursor: pointer; }
+.ed-cover.empty { align-items: center; justify-content: center; border-style: dashed; }
+.ed-cover-t { display: inline-flex; align-items: center; gap: 5px; background: rgba(0,0,0,.45); color: #fff; border-radius: var(--r-pill); padding: 5px 11px; font-size: calc(12.5px * var(--fs, 1)); font-weight: 600; }
+.ed-cover.empty .ed-cover-t { background: none; color: var(--ink-soft); }
+.ed-cover-t .ic { width: 14px; height: 14px; }
+.ed-bio { resize: vertical; min-height: 72px; line-height: 1.5; font: inherit; }
+.ed-count { float: right; font-weight: 500; color: var(--ink-faint); font-family: var(--num); }
+/* 別人的個人頁：追蹤＋⋯ */
+.dp-acts { display: flex; gap: 8px; margin: 12px 0 4px; }
+.dp-acts .disc-follow { flex: 1; width: auto; margin: 0; padding: 11px; }
+.dp-acts .dp-more { flex: none; width: 46px; margin: 0; padding: 0; display: grid; place-items: center; }
+.dp-acts .dp-more .ic { width: 20px; height: 20px; }
+/* 搜尋 */
+.disc-sec .ic { width: 14px; height: 14px; vertical-align: -2px; color: var(--accent); }
+.disc-row .disc-follow { flex: none; }
+/* 通知：推播提示改成底部一行 */
+.notif-push-hint { display: flex; align-items: center; gap: 8px; background: var(--surface-2); border-radius: var(--r-sm); padding: 8px 6px 8px 12px; margin: 14px 0 4px; font-size: calc(13px * var(--fs, 1)); color: var(--ink-soft); }
+.notif-push-hint > .ic { width: 16px; height: 16px; flex: none; color: var(--accent); }
+.notif-push-hint span { flex: 1; min-width: 0; }
+.notif-push-hint .link-btn { width: auto; font-weight: 700; color: var(--brand-mid); }
+.notif-push-hint .comp-x .ic { width: 14px; height: 14px; }
+.notif-ic .berry { width: 18px; height: 18px; }
+#notifMore, #feedMore { margin-top: 10px; }
+/* 揪團 */
+.ev-go .ic { width: 14px; height: 14px; vertical-align: -2px; }
+.auth-links .link-btn, .notif-push-hint .link-btn { border: none; background: none; box-shadow: none; padding: 6px 4px; font-size: calc(13.5px * var(--fs, 1)); text-decoration: underline; text-underline-offset: 3px; }
+.notif-push-hint .link-btn { text-decoration: none; }
+
+/* ══ 步道卡細修（2026-10-01）══ */
+/* 數字＋小單位（1.5 km、↑100 m），標籤只寫「距離／爬升／所需時間」 */
+.jnum small { font-size: .5em; font-weight: 600; color: var(--ink-soft); margin-left: 2px; letter-spacing: 0; align-self: flex-end; padding-bottom: .18em; }
+.jnum .approx { font-size: .8em; color: var(--ink-faint); margin-right: 1px; }
+.jlbl { letter-spacing: .5px; }
+/* 名字最多兩行，完整的放 title（最長 34 字的會把卡片撐很高） */
+.jcard h3 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.jloc-more { font-weight: 700; color: var(--ink-soft); font-family: var(--num); margin-left: 2px; }
+/* 暫停開放：卡片最上面一條紅帶＋整張淡一點，滑過去不會沒注意到 */
+.jcard.is-closed > :not(.jclosed):not(.fav-star):not(.jbar) { opacity: .62; }
+.jcard.is-closed .jbar { background: var(--danger, #b3322a); }
+.jclosed { display: flex; align-items: center; gap: 5px; background: color-mix(in srgb, var(--danger, #b3322a) 12%, var(--surface)); color: var(--danger, #b3322a);
+  font-size: calc(12px * var(--fs, 1)); font-weight: 700; padding: 6px 64px 6px 18px; }
+.jclosed .ic { width: 13px; height: 13px; }
+.jcard.is-closed h3 { padding-top: 10px; }
+/* 標籤 */
+.jcard .badge .ic { width: 12px; height: 12px; vertical-align: -2px; }
+.badge.diff.est { box-shadow: inset 0 0 0 1px rgba(255,255,255,.35); }
+.badge.snow { background: color-mix(in srgb, var(--d6) 16%, var(--surface)); color: var(--d6); font-weight: 700; }
+.badge.mine { background: var(--brand-soft); color: var(--brand-deep); font-weight: 700; }
+.badge.near { background: color-mix(in srgb, var(--accent) 14%, var(--surface)); color: var(--accent); font-weight: 700; font-family: var(--num); }
+.badge.warn { background: #fbefd9; color: #9a6a12; }
+.badge.slope { font-weight: 700; }
+.badge.slope.s1 { background: color-mix(in srgb, var(--d4) 16%, var(--surface)); color: var(--d4); }
+.badge.slope.s2 { background: color-mix(in srgb, var(--d5) 16%, var(--surface)); color: var(--d5); }
+html[data-theme="dark"] .badge.warn { background: #3a2f17; color: #e5c072; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .badge.warn { background: #3a2f17; color: #e5c072; } }
+.jbar.d6 { background: var(--d6); }
+/* 大字／特大：三格數字縮一級，不然「50 m≈25 分鐘」會黏在一起 */
+[data-fs-mid] .jcard .jnum { font-size: calc(21px * var(--fs, 1)); }
+[data-fs-big] .jcard .jnum { font-size: calc(18px * var(--fs, 1)); }
+[data-fs-mid] .jcard .jnum-sm, [data-fs-big] .jcard .jnum-sm { font-size: calc(13.5px * var(--fs, 1)); }
+[data-fs-big] .jcard .jstats { padding-left: 10px; padding-right: 10px; }
+.jcard .fav-star { z-index: 2; }   /* 封閉卡片的內容半透明會自成圖層，蓋住星星點不到 */
+
+/* ══ 步道詳情頁整理（2026-10-01）══ */
+/* 照片點點移到右上，不再壓在步道名上；沒照片時 hero 縮矮，不留一大片空白 */
+.hero-dots { top: 14px; bottom: auto; left: auto; right: 54px; justify-content: flex-end; }
+.detail-hero.noimg { height: 150px; }
+.detail-hero { transition: height var(--dur-m); }
+.hero-cap { right: 74px; }
+.hero-cap .badges { display: flex; flex-wrap: wrap; gap: 5px; }
+.hero-cap .badge.ghost, .hero-cap .badge.family { background: rgba(255,255,255,.88); color: #22301f; }
+.hero-cap .badge.snow { background: rgba(236,241,247,.92); }
+.hero-fav { position: absolute; right: 14px; bottom: 14px; z-index: 3; width: 48px; height: 48px; border-radius: 50%; border: none; cursor: pointer;
+  background: rgba(255,255,255,.92); display: grid; place-items: center; box-shadow: 0 3px 10px rgba(0,0,0,.25); }
+.hero-fav svg { width: 25px; height: 25px; fill: none; stroke: #b9952e; stroke-width: 1.8; stroke-linejoin: round; }
+.hero-fav.on svg { fill: #e3a417; stroke: #e3a417; }
+.hero-fav.pop { animation: heartPop var(--dur-l) var(--ease-out); }
+.det-loading { padding: 54px 20px; text-align: center; color: var(--ink-soft); }
+.det-back { display: inline-flex; align-items: center; gap: 4px; border: none; background: var(--surface-2); color: var(--brand-deep); border-radius: var(--r-pill);
+  padding: 7px 14px 7px 8px; margin: 2px 0 10px; font-size: calc(13px * var(--fs, 1)); font-weight: 700; cursor: pointer; max-width: 100%; }
+.det-back .ic { width: 16px; height: 16px; transform: rotate(180deg); flex: none; }
+.det-back span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* 路況橫幅：SVG 圖示 */
+.cond-h { display: flex; align-items: center; gap: 6px; }
+.cond-h .ic { width: 17px; height: 17px; flex: none; }
+/* 數字卡下的「長度不一樣」說明 */
+.len-note { display: flex; gap: 6px; align-items: flex-start; font-size: calc(12px * var(--fs, 1)); color: var(--ink-soft); background: var(--surface-2); border-radius: var(--r-sm); padding: 8px 10px; margin: -6px 0 12px; line-height: 1.5; }
+.len-note .ic { width: 14px; height: 14px; flex: none; margin-top: 2px; }
+.statcard .stat-v small { font-size: .6em; color: var(--ink-faint); font-weight: 500; }
+.statcard .stat-v .approx, .profile-stat .approx { color: var(--ink-faint); font-size: .85em; margin-right: 1px; }
+/* 路面・季節・交通（原本 inline style） */
+.det-meta { background: var(--bg); border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; }
+.det-meta-l { font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-soft); }
+.det-meta-v { font-size: calc(13.5px * var(--fs, 1)); margin-top: 4px; }
+.det-meta-sm { padding: 7px 12px; }
+.det-meta-sm .det-meta-v { margin: 0; color: var(--ink-soft); font-size: calc(12.5px * var(--fs, 1)); }
+/* 可收合的標題：看得出能點 */
+.section-title.collapsible::after { content: ""; width: 9px; height: 9px; border-right: 2px solid var(--ink-soft); border-bottom: 2px solid var(--ink-soft); transform: rotate(45deg); margin: 0 6px 3px auto; }
+.section-title.collapsible.collapsed::after { transform: rotate(-45deg); margin-bottom: 0; }
+/* 天氣 */
+.wx-ic { width: 22px; height: 22px; }
+.wx-now-e .wx-ic { width: 40px; height: 40px; }
+.wx-ic.wx-sun, .wx-ic.wx-cloudsun { color: #e0952e; }
+.wx-ic.wx-rain, .wx-ic.wx-storm { color: #3d7fb8; }
+.wx-ic.wx-cloud, .wx-ic.wx-fog { color: #7b8794; }
+.wx-ic.wx-snow { color: #6c9bc4; }
+.wx-p { display: flex; align-items: center; justify-content: center; gap: 1px; }
+.wx-p .ic { width: 11px; height: 11px; color: #3d7fb8; }
+.wx-now-d { display: flex; flex-wrap: wrap; gap: 2px 10px; }
+.wx-best { display: flex; align-items: center; gap: 6px; }
+.wx-best .ic { width: 16px; height: 16px; flex: none; color: var(--brand-mid); }
+.wx-best.wet .ic { color: #3d7fb8; }
+/* 海拔剖面：數字兩兩一排、圖例色點 */
+.profile-stat { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; text-align: left; }
+.profile-stat span { display: flex; justify-content: space-between; gap: 6px; }
+.profile-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 12px; align-items: center; }
+.profile-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
+.profile-legend .pl-hint { color: var(--ink-faint); }
+/* 設施 */
+.amen { display: inline-flex; align-items: center; gap: 5px; }
+.amen .ic { width: 15px; height: 15px; color: var(--brand-mid); }
+/* 生態 */
+.eco-cat-h .ic, .eco-bite-h .ic { width: 16px; height: 16px; flex: none; color: var(--brand-mid); }
+.eco-bite-h .ic { color: currentColor; }
+.eco-sp.eco-poison .ic { width: 12px; height: 12px; vertical-align: -1px; margin-right: 2px; }
+.eco-more { border: 1px dashed var(--line); background: none; border-radius: var(--r-pill); padding: 3px 10px; color: var(--ink-soft); font-weight: 700; cursor: pointer; font-size: calc(12px * var(--fs, 1)); }
+.eco-rest { display: contents; }
+.eco-nearby-btn { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 12px; }
+.eco-ob-noimg .ic { width: 22px; height: 22px; }
+/* 分級說明：標出目前這條 */
+.grade-row.cur { background: var(--brand-soft); border-radius: var(--r-sm); box-shadow: inset 3px 0 0 var(--brand-mid); padding-left: 8px; }
+.grade-cur { display: inline-block; margin-top: 5px; font-size: calc(11px * var(--fs, 1)); font-weight: 700; color: var(--brand-deep); }
+.grade-foot { font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-soft); line-height: 1.6; margin-top: 14px; }
+/* 比較表 */
+.cmp-table .nw { white-space: nowrap; }
+.cmp-nm { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+/* 深色模式下 hero 的白底標籤也要深色字（原本被 dark 的 .badge.family 淺色字蓋過） */
+html .hero-cap .badge.ghost, html .hero-cap .badge.family, html[data-theme="dark"] .hero-cap .badge.family { background: rgba(255,255,255,.88); color: #22301f; }
+/* 比較表：難度徽章縮小不斷字 */
+.cmp-table .badge { white-space: nowrap; font-size: calc(10.5px * var(--fs, 1)); padding: 2px 6px; }
+.cmp-table .badge .lvl { display: none; }
+
+/* ══ 記錄頁整理（2026-10-01）══ */
+/* 全螢幕地圖的小數字板：只有放大時出現（以前放大就看不到里程和時間） */
+.fs-hud { display: none; }
+.map-fs .fs-hud { display: flex; position: absolute; z-index: 1000; left: 50%; transform: translateX(-50%); top: calc(var(--safe-t) + 12px);
+  gap: 14px; align-items: center; background: rgba(22,30,20,.82); color: #fff; border-radius: var(--r-pill); padding: 8px 16px; font-family: var(--num);
+  font-size: calc(13px * var(--fs, 1)); box-shadow: 0 4px 14px rgba(0,0,0,.25); pointer-events: none; white-space: nowrap; }
+.fs-hud b { font-size: calc(17px * var(--fs, 1)); margin-right: 2px; }
+.fs-hud .ic { width: 14px; height: 14px; vertical-align: -2px; margin-right: 3px; }
+/* 指北針兼導航切換：導航開著時亮起 */
+.map-compass.nav-compass.navon svg circle:first-child { fill: var(--brand-mid); stroke: #fff; }
+.map-compass.nav-compass { cursor: pointer; }
+/* 縮放鈕、比例尺放右下，不跟右上的鈕擠 */
+#recMap .leaflet-control-zoom a { width: 36px; height: 36px; line-height: 36px; font-size: 20px; }
+#recMap .leaflet-control-scale-line { font-size: 10px; background: rgba(255,255,255,.75); }
+/* 隨手拍：拍好時按鈕跳一下 */
+#btnSnap.pop { animation: heartPop var(--dur-l) var(--ease-out); }
+/* 待機：成就提示 */
+.ridle-ach { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; }
+.ridle-ach .ra-n { font-weight: 700; }
+.ridle-ach .ra-r { color: var(--accent); }
+/* 分享圖卡：挑版型 */
+.card-pick .pv-body { padding-bottom: 20px; }
+.cp-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.cp-item { border: 2px solid var(--line-soft); border-radius: var(--r); padding: 6px; background: var(--surface); cursor: pointer; display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.cp-item:active { border-color: var(--accent); }
+.cp-item img { width: 100%; border-radius: var(--r-sm); display: block; }
+.cp-item span { font-weight: 700; font-size: calc(13px * var(--fs, 1)); color: var(--ink-soft); }
+@media (min-width: 520px) { .cp-grid { grid-template-columns: repeat(3, 1fr); } }
+/* 小隊 */
+.team-code { display: flex; align-items: center; gap: 6px; }
+.team-code .tc-v { font-family: var(--num); font-weight: 700; letter-spacing: 1px; color: var(--ink); }
+.tc-copy { border: none; background: var(--surface-2); border-radius: 50%; width: 30px; height: 30px; display: grid; place-items: center; cursor: pointer; color: var(--brand-mid); }
+.tc-copy .ic { width: 14px; height: 14px; margin: 0; }
+.team-rule { display: flex; gap: 6px; align-items: flex-start; }
+.team-rule .ic { width: 15px; height: 15px; flex: none; margin-top: 2px; color: #c99a1d; }
+.tm-mgr { border: none; background: none; padding: 0 0 0 4px; cursor: pointer; color: var(--ink-faint); display: inline-grid; place-items: center; }
+.tm-mgr .ic { width: 16px; height: 16px; }
+.tm-danger { display: flex; justify-content: center; gap: 24px; margin: 14px 0 4px; }
+.tm-danger .link-btn { width: auto; color: var(--ink-faint); font-weight: 600; border: none; background: none; }
+.tm-danger #tmDissolve { color: var(--danger, #b3322a); }
+.trb-chip .trb-st { font-style: normal; font-weight: 500; font-size: .85em; opacity: .75; margin-left: 4px; }
+.trb-chip .ic { width: 12px; height: 12px; vertical-align: -1px; margin-left: 3px; }
+.trb-all { border: 1px solid var(--line); background: var(--surface); border-radius: var(--r-pill); padding: 5px 12px; font-weight: 700; font-size: calc(12px * var(--fs, 1)); color: var(--brand-deep); cursor: pointer; }
+.trb-all.on { background: var(--brand-soft); }
+
+
+/* 記錄地圖：縮放鈕左上、比例尺左下（在地形/衛星切換上方） */
+#recMap .leaflet-top.leaflet-left .leaflet-control-zoom { border: none; box-shadow: 0 2px 8px rgba(0,0,0,.18); margin: 10px 0 0 10px; }
+#recMap .leaflet-bottom.leaflet-left .leaflet-control-scale { margin: 0 0 4px 12px; }
+/* 地圖來源文字：窄螢幕或大字時別和左下的切換鈕疊在一起 */
+.leaflet-container .leaflet-control-attribution { max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 10px; }
+
+/* —— 夥伴頁／成就頁細修 —— */
+.pet-btn { min-width: 0; }
+.dex-d { overflow-wrap: anywhere; }
+.fp-gift { display: inline-flex; align-items: center; gap: 3px; }
+.fp-gift .berry { width: 1.05em; height: 1.05em; }
+.toast.top { bottom: auto; top: calc(10px + var(--safe-t)); z-index: 1250;   /* 貼最上緣：底下是剛打開的面板，壓在標題上會擋字 */ transform: translateX(-50%) translateY(-12px); }
+.toast.top.show { transform: translateX(-50%) translateY(0); }
+.ach-fchips.more { -webkit-mask-image: linear-gradient(90deg, #000 82%, transparent); mask-image: linear-gradient(90deg, #000 82%, transparent); }
+.ach-pgnav-t { font-family: var(--num); letter-spacing: 0; color: var(--ink-soft); }
+html[data-theme="dark"] .ach-modal .sheet-close { background: rgba(255,255,255,.14); color: #fff; }
+.img-prev { position: fixed; inset: 0; z-index: 1300; background: rgba(10,14,10,.92); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: calc(56px + var(--safe-t)) 16px calc(24px + var(--safe-b)); }
+.img-prev img { max-width: 100%; max-height: 74vh; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,.5); -webkit-touch-callout: default; user-select: auto; }
+.img-prev-hint { color: #eae6d8; font-size: calc(14px * var(--fs, 1)); font-weight: 600; }
+.img-prev .sheet-close { top: calc(12px + var(--safe-t)); background: rgba(255,255,255,.16); }
+
+/* —— 我的頁細修 —— */
+.ttdlg-btns .btn.danger-solid { background: var(--danger, #b3322a); color: #fff; border-color: transparent; box-shadow: none; }
+.field.bad input { border-color: var(--danger, #b3322a); box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger, #b3322a) 18%, transparent); }
+.field.bad + .pf-err { margin-top: -4px; }
+/* 搜尋框的清除鈕：換掉瀏覽器預設的藍色 ✕ */
+input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; cursor: pointer; background: var(--ink-faint);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm-2.8 5.8-1.4 1.4 2.8 2.8-2.8 2.8 1.4 1.4 2.8-2.8 2.8 2.8 1.4-1.4-2.8-2.8 2.8-2.8-1.4-1.4-2.8 2.8Z'/%3E%3C/svg%3E") center / contain no-repeat; }
+input[type="search"]::-webkit-search-cancel-button { -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm-2.8 5.8-1.4 1.4 2.8 2.8-2.8 2.8 1.4 1.4 2.8-2.8 2.8 2.8 1.4-1.4-2.8-2.8 2.8-2.8-1.4-1.4-2.8 2.8Z'/%3E%3C/svg%3E") center / contain no-repeat; }
+/* 設定裡的說明小字跟欄位一樣靠左 */
+#view-me .set-body .offline-hint { text-align: left; }
+.offline-panel .offline-quota { text-align: left; }
+/* 選中樣式統一：外圈＋勾勾 */
+.proc-sw.on { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink); transform: translateY(-1px); }
+.acc-sw.frame-sw.on { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink) !important; }
+.frame-sw .ic { width: 16px; height: 16px; stroke-width: 3; }
+/* 年度回顧：年份左右切、路線縮圖放大 */
+.yr-yearrow { display: flex; align-items: center; justify-content: center; gap: 14px; }
+.yr-nav, .yr-nav-sp { width: 34px; height: 34px; flex: none; }
+.yr-nav { border: none; border-radius: 50%; background: rgba(255,255,255,.12); color: #f3efe4; display: grid; place-items: center; cursor: pointer; }
+.yr-nav .ic { width: 18px; height: 18px; transform: rotate(180deg); }
+.yr-nav.next .ic { transform: none; }
+.yr-route-svg { width: 80%; max-width: 260px; height: 78px; }
+.yr-route-l b { color: #e0b15a; margin-left: 4px; }
+.social-empty, .yr-empty { text-wrap: balance; }
+/* 足跡地圖縮放鈕：跟記錄地圖同一套樣式 */
+#footMap .leaflet-control-zoom { border: none; box-shadow: 0 2px 8px rgba(0,0,0,.18); margin: calc(12px + var(--safe-t)) 0 0 12px; }
+#footMap .leaflet-control-zoom a { width: 36px; height: 36px; line-height: 36px; font-size: 20px; }
+/* 紀錄卡四個數字排一行（以前大卡常單獨掉到第二行）；字放大時改兩欄兩列，排得整齊 */
+.hist-card .row { display: grid; grid-template-columns: repeat(4, max-content); justify-content: space-between; gap: 6px 8px; white-space: nowrap; font-size: calc(12.5px * var(--fs, 1)); }
+.hist-card .row .ic { margin-right: 2px; }
+[data-fs-mid] .hist-card .row { grid-template-columns: repeat(2, max-content); justify-content: start; column-gap: 22px; }
+@media (max-width: 380px) { .hist-card .row { grid-template-columns: repeat(2, max-content); justify-content: start; column-gap: 22px; } }
+.op-io .btn:disabled, .op-btn:disabled { opacity: .45; cursor: default; }
+.yr-btns .btn { white-space: nowrap; }
+
+/* —— 社群頁細修 —— */
+/* 子分頁：通知紅點改浮在字的右上角，不再佔寬度（英文「Notifications」＋紅點會把「Me」擠掉） */
+.sub-tab { position: relative; }
+.sub-tab .nbadge { position: absolute; top: 1px; right: 0; margin: 0; min-width: 15px; height: 15px; line-height: 15px; padding: 0 3px; }
+.social-subnav .sub-tab { padding: 9px 5px; }
+html:not([lang^="zh"]) .social-subnav .sub-tab { font-size: calc(12px * var(--fs, 1)); }
+/* 貼文詳情：作者列有頭像 */
+.pv-author { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+.pv-author .fc-av { width: 36px; height: 36px; flex: none; }
+.pv-author .fc-sub { margin-left: 2px; }
+/* 翻譯鈕：跟留言區一樣的文字鈕（以前是外框小方塊，深色模式很刺眼） */
+.pv-tr-btn { display: inline-flex; align-items: center; gap: 4px; background: none; border: none; padding: 2px 0; color: var(--ink-soft); font: inherit; font-size: calc(12.5px * var(--fs, 1)); font-weight: 600; cursor: pointer; }
+.pv-tr-btn .ic { width: 15px; height: 15px; }
+.pv-tr-btn:disabled { opacity: .55; }
+/* 表情：多的收進「＋」 */
+.pv-react-more { border: 1px dashed var(--line); background: none; border-radius: var(--r-pill); width: 38px; display: inline-grid; place-items: center; color: var(--ink-soft); cursor: pointer; }
+.pv-react-more .ic { width: 16px; height: 16px; }
+.pv-react-more.on .ic { transform: rotate(-90deg); }
+/* 留言：名字自己一行，內容在下面 */
+.pv-cm-main .pv-cm-who { display: block; margin-bottom: 1px; font-size: calc(13px * var(--fs, 1)); }
+/* 搜尋／名單：名字一行、@帳號＋等級＋PRO 一行 */
+.disc-id > .disc-sub { display: flex; align-items: center; gap: 5px; min-width: 0; overflow: visible; white-space: nowrap; }
+.disc-sub .disc-h { overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 0 1 auto; }
+.disc-sub .lv-chip, .disc-sub .pro-tag { flex: none; font-size: calc(10px * var(--fs, 1)); }
+/* 發文可見度：分段按鈕 */
+.comp-vis.seg { display: flex; gap: 0; padding: 3px; background: var(--surface-2); border-radius: var(--r-pill); width: max-content; max-width: 100%; }
+.comp-vis.seg label { position: relative; cursor: pointer; }
+.comp-vis.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.comp-vis.seg span { display: inline-flex; align-items: center; gap: 5px; padding: 7px 14px; border-radius: var(--r-pill); color: var(--ink-soft); font-weight: 600; font-size: calc(13.5px * var(--fs, 1)); }
+.comp-vis.seg .ic { width: 15px; height: 15px; }
+.comp-vis.seg input:checked + span { background: var(--surface); color: var(--brand-deep); box-shadow: var(--sh-sm); }
+.comp-vis.seg input:focus-visible + span { outline: 2px solid var(--brand-mid); }
+/* 開關：設定裡的勾選框（社群設定、我的頁）統一成同一種開關 */
+input.tt-switch, #view-me .set-body .sim-toggle input[type="checkbox"] { -webkit-appearance: none; appearance: none; width: 42px !important; height: 25px !important; border-radius: 999px; background: var(--line); position: relative; cursor: pointer; transition: background var(--dur-s); flex: none; margin: 0; }
+input.tt-switch::after, #view-me .set-body .sim-toggle input[type="checkbox"]::after { content: ""; position: absolute; top: 3px; left: 3px; width: 19px; height: 19px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform var(--dur-s); }
+input.tt-switch:checked, #view-me .set-body .sim-toggle input[type="checkbox"]:checked { background: var(--brand-mid); }
+input.tt-switch:checked::after, #view-me .set-body .sim-toggle input[type="checkbox"]:checked::after { transform: translateX(17px); }
+input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkbox"]:focus-visible { outline: 2px solid var(--brand-mid); outline-offset: 2px; }
+.set-row input[type="radio"] { accent-color: var(--brand-mid); }
+.st-danger-zone { padding-top: 14px; }
+/* 編輯檔案：更換頭像是一顆正常按鈕 */
+.ed-av-btn { width: auto !important; display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; cursor: pointer; }
+.ed-av-btn .ic { width: 16px; height: 16px; }
+/* 揪團表單：錯誤放在欄位下面 */
+.ev-err { color: var(--danger, #b3322a); font-weight: 700; font-size: calc(12.5px * var(--fs, 1)); margin: -4px 2px 8px; }
+.auth-input.bad { border-color: var(--danger, #b3322a) !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger, #b3322a) 16%, transparent); }
+.ev-when-pv { font-size: calc(12.5px * var(--fs, 1)); color: var(--brand-deep); font-weight: 700; margin: -4px 2px 8px; }
+.ev-when-pv:empty { display: none; }
+.ev-form #evMsg:empty { display: none; }

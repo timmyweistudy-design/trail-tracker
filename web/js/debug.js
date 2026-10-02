@@ -1,4 +1,4 @@
-// ===== 後台測試面板（debug）：從 app.js 拆出。載入順序在 app.js 之後，所有全域皆已就緒；
+// ===== 後台測試面板（debug）：延遲載入（只有開發者會用到，不讓每個人開 App 都多載 26 KB）；
 // 只在使用者互動(按鈕/5連點/?debug=1)時呼叫 app 全域，無載入期依賴。 =====
 // ---------- 後台測試（debug） ----------
 window.ttDebug = (() => {
@@ -236,13 +236,6 @@ async function ttIsOwner() {
     return !!(data && data.user && (data.user.email || "").toLowerCase() === TT_OWNER_EMAIL);
   } catch (e) { return false; }
 }
-// 模擬動態島：畫一顆黑色膠囊和 Home 條（只是看位置，點不到）
-function simNotchMarks() {
-  const on = document.documentElement.classList.contains("sim-notch");
-  document.querySelectorAll(".sim-island, .sim-home").forEach(e => e.remove());
-  if (on) { const a = document.createElement("div"); a.className = "sim-island"; const h = document.createElement("div"); h.className = "sim-home"; document.body.append(a, h); }
-}
-simNotchMarks();
 async function toggleDebugPanel() {
   let p = document.getElementById("debugPanel");
   if (p) { p.remove(); return; }
@@ -313,10 +306,4 @@ async function toggleDebugPanel() {
   document.body.appendChild(p);
   document.getElementById("dbgState").textContent = stateTxt();
 }
-// 開啟方式：網址 ?debug=1，或連點 header 標題 5 下
-if (new URLSearchParams(location.search).get("debug") === "1") setTimeout(toggleDebugPanel, 400);
-(function () {
-  const brand = document.querySelector(".brand"); if (!brand) return;
-  let n = 0, tm;
-  brand.addEventListener("click", () => { n++; clearTimeout(tm); tm = setTimeout(() => n = 0, 1200); if (n >= 5) { n = 0; toggleDebugPanel(); } });
-})();
+// 開啟方式（在 app.js）：網址 ?debug=1，或連點 header 標題 5 下 → 這支檔案才載入

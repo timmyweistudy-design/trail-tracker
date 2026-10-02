@@ -4,6 +4,20 @@
 // 步道名稱/介紹等資料內容維持中文。要補翻譯：加 DICT 詞條或 PATTERNS 規則即可。
 const I18n = (() => {
   const DICT = {
+    "平到能推嬰兒車、坐輪椅，長輩走起來也輕鬆。。": "Flat enough for strollers and wheelchairs — easy going for older walkers too.",
+    "路好走、設施齊，散步等級，半天到一天就走完。。": "Easy path with good facilities — a stroll you can finish in half a day to a day.",
+    "會有幾段上坡比較喘，不過路都整理過，一天內走得完。。": "A few uphill stretches will get you breathing hard, but the path is well kept and doable in a day.",
+    "開始有點野了：比較偏遠、部分路況差、坡也陡，海拔約 2,000～3,000 公尺，可能要過夜。。": "Getting wilder: more remote, rough and steep in places, at about 2,000–3,000 m elevation — you may need to stay overnight.",
+    "高海拔、險路多、天氣說變就變，要有登山經驗和一整套裝備。。": "High altitude, many hazardous sections and fast-changing weather — you need mountaineering experience and full gear.",
+    "3,000 公尺以上的偏遠高山，路況差、險段多，三天起跳，建議跟有經驗的人一起去。。": "Remote high mountains above 3,000 m with rough paths and many dangerous sections, three days or more — go with experienced hikers.",
+    "積雪、結冰的高山路線，冰斧冰爪要會用才能去。。": "Snowy, icy high-mountain routes — only go if you know how to use an ice axe and crampons.",
+    "平到能推嬰兒車、坐輪椅，長輩走起來也輕鬆。": "Flat enough for strollers and wheelchairs — easy going for older walkers too.",
+    "路好走、設施齊，散步等級，半天到一天就走完。": "Easy path with good facilities — a stroll you can finish in half a day to a day.",
+    "會有幾段上坡比較喘，不過路都整理過，一天內走得完。": "A few uphill stretches will get you breathing hard, but the path is well kept and doable in a day.",
+    "開始有點野了：比較偏遠、部分路況差、坡也陡，海拔約 2,000～3,000 公尺，可能要過夜。": "Getting wilder: more remote, rough and steep in places, at about 2,000–3,000 m elevation — you may need to stay overnight.",
+    "高海拔、險路多、天氣說變就變，要有登山經驗和一整套裝備。": "High altitude, many hazardous sections and fast-changing weather — you need mountaineering experience and full gear.",
+    "3,000 公尺以上的偏遠高山，路況差、險段多，三天起跳，建議跟有經驗的人一起去。": "Remote high mountains above 3,000 m with rough paths and many dangerous sections, three days or more — go with experienced hikers.",
+    "積雪、結冰的高山路線，冰斧冰爪要會用才能去。": "Snowy, icy high-mountain routes — only go if you know how to use an ice axe and crampons.",
     "離線地圖 10 MB": "Offline maps 10 MB",
     "PRO 會員專屬小工具": "Widget for PRO members",
     "打開 App 升級": "Open the app to upgrade",

@@ -38,7 +38,7 @@ for (const f of files.concat([path.join(WEB, "sw.js")])) {
 }
 
 // B. 行內按鈕寬度覆蓋
-const css = read(path.join(WEB, "css", "style.css"));
+const css = ["style.css", "style-features.css", "style-waves.css"].map(f => read(path.join(WEB, "css", f))).join("\n");   // 樣式拆成三個檔（2026-10）
 const ROW_CONTAINERS = ["disc-row", "team-row", "fp", "set-block-row", "notif-acts", "im-btns", "backup-row", "rec-controls"];
 for (const f of files) {
   const s = read(f);
@@ -114,7 +114,7 @@ const html = read(path.join(WEB, "index.html"));
 const knownIds = new Set([...html.matchAll(/id="([\w-]+)"/g)].map(m => m[1]));
 for (const f of files) for (const m of read(f).matchAll(/id="([\w-]+)"/g)) knownIds.add(m[1]);
 for (const f of files) for (const m of read(f).matchAll(/id=\\"([\w-]+)\\"/g)) knownIds.add(m[1]);
-for (const jf of ["app.js", "explore.js", "record.js", "review.js", "me.js"]) {   // explore.js、record.js、review.js、me.js 是從 app.js 拆出來的，同一條規則
+for (const jf of ["app.js", "map-ui.js", "detail.js", "appearance.js", "app-boot.js", "explore.js", "record.js", "review.js", "me.js"]) {   // explore.js、record.js、review.js、me.js 是從 app.js 拆出來的，同一條規則
   read(path.join(WEB, "js", jf)).split("\n").forEach((l, i) => {
     for (const m of l.matchAll(/\$\("#([\w-]+)"\)/g)) {
       if (!knownIds.has(m[1])) err(`[HTML] web/js/${jf}:${i + 1} 取用 #${m[1]}，但 index.html 與 JS 模板都沒有這個 id（可能打錯字）`);
