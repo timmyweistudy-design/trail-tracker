@@ -36,8 +36,10 @@ const Discover = (() => {
 
   function render(renderInto) {
     renderInto(`<div class="disc">
+      ${typeof Clubs !== "undefined" ? Clubs.entryHtml() : ""}
       <input id="discQ" class="auth-input" type="search" placeholder="${T("搜尋名字、@帳號或 #標籤")}" autocapitalize="off" enterkeyhint="search">
       <div id="discResults"></div></div>`);
+    const ce = document.getElementById("clubEntry"); if (ce) ce.addEventListener("click", () => Clubs.open());
     const q = document.getElementById("discQ"); let t = null;
     q.addEventListener("input", () => { clearTimeout(t); t = setTimeout(() => { const v = q.value.trim(); v.length < 2 ? showSuggestions() : search(v); }, 300); });
     showSuggestions();   // 一進來先給「推薦追蹤」，不必空白

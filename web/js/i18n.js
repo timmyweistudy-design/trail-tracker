@@ -4,6 +4,51 @@
 // 步道名稱/介紹等資料內容維持中文。要補翻譯：加 DICT 詞條或 PATTERNS 規則即可。
 const I18n = (() => {
   const DICT = {
+    "資料庫還沒開山社功能（要先跑 schema-phase34-clubs.sql）": "Clubs aren't enabled in the database yet (run schema-phase34-clubs.sql)",
+    "每人最多建立 3 個山社": "You can create up to 3 clubs",
+    "最多加入 20 個山社": "You can join up to 20 clubs",
+    "加入後才看得到": "Join to see this",
+    "%d 人": "%d members",
+    "不公開": "Private",
+    "山社": "Clubs",
+    "山社是平常一起爬的那群人：看彼此的行程、比比這週誰走最多。": "A club is the crew you usually hike with: see each other's hikes and who walked the most this week.",
+    "找山社": "Find a club",
+    "名稱或地區": "Name or area",
+    "建立山社": "Create a club",
+    "我的山社": "My clubs",
+    "還沒加入山社。找一個附近的，或自己開一個。": "No clubs yet. Find one nearby, or start your own.",
+    "找不到符合的公開山社": "No public clubs match",
+    "還沒有其他公開山社": "No other public clubs yet",
+    "加入碼是 6 碼": "Join codes have 6 characters",
+    "加入山社了": "You joined the club",
+    "例：週六郊山小分隊": "e.g. Saturday Hill Crew",
+    "介紹": "About",
+    "多久爬一次、喜歡什麼樣的路線": "How often you hike, what trails you like",
+    "公開（大家搜得到、按一下就能加入）": "Public (anyone can find it and join with one tap)",
+    "取個名字吧": "Give it a name",
+    "山社建好了，把加入碼分享給山友吧": "Club created. Share the join code with your hiking buddies",
+    "本週排行": "This week",
+    "成員": "Members",
+    "刪除山社": "Delete club",
+    "退出山社": "Leave club",
+    "加入這個山社": "Join this club",
+    "加入後就能看到成員、本週排行和大家的行程。": "Join to see members, this week's ranking and everyone's hikes.",
+    "這個山社需要加入碼": "This club needs a join code",
+    "一起加入「%s」山社！打開循徑拾光 → 社群 → 搜尋 → 山社，輸入加入碼：": "Join the \"%s\" club! Open Gather the Trail → Social → Search → Clubs and enter the code: ",
+    "你是社長。退出後社長會交給最早加入的成員；沒有其他成員的話山社會刪掉。": "You're the organizer. If you leave, the earliest member takes over; if no one else is left, the club is deleted.",
+    "確定退出這個山社？": "Leave this club?",
+    "已退出山社": "You left the club",
+    "刪除後成員和排行都會不見，不能復原。": "Members and rankings will be gone for good.",
+    "只有社長能刪除": "Only the organizer can delete it",
+    "山社已刪除": "Club deleted",
+    "最近 7 天，成員發到社群的行程加總": "Last 7 days, from hikes members posted",
+    "%d 趟": "%d hikes",
+    "這週還沒有人發行程。走完記得發到社群，就會算進來。": "No hikes posted this week yet. Post yours after a hike and it'll count.",
+    "社長": "Organizer",
+    "把 %s 移出山社？": "Remove %s from the club?",
+    "移出失敗": "Couldn't remove",
+    "成員還沒發過貼文": "Members haven't posted yet",
+    "找同好，每週一起爬": "Find your crew, hike together every week",
     "去拜訪": "Visit",
     "拜訪夥伴": "Visit buddy",
     "%s 的夥伴": "%s's buddy",
@@ -1741,8 +1786,10 @@ const I18n = (() => {
   // 「免費額度：剩 」後面接 <b>10.0</b>，直接寫入譯文會把那個空格吃掉 → 英文版變成「left:10.0」。
   // 所以只替換 trim 後的那一段，前後空白原樣留著。
   // 值沒變絕不寫回：同形詞條（日文漢字）寫回會再觸發 observer → 無限迴圈（v241 白屏事故）。
+  // 使用者自己取的名字（山社名稱等）標 translate="no"：「週末山友會」的頭一個字「週」不會被翻成 weeks
   function txNode(n) {
     if (!n || !n.nodeValue) return;
+    const pe = n.parentElement; if (pe && pe.closest && pe.closest('[translate="no"]')) return;
     const v = tx(n.nodeValue);
     if (!v) return;
     const nv = n.nodeValue.replace(n.nodeValue.trim(), v);

@@ -272,6 +272,11 @@ async function toggleDebugPanel() {
       ["📖今年故事", closeAnd(() => ttDebug.story())], ["📖去年故事", closeAnd(() => ttDebug.story(new Date().getFullYear() - 1))], ["📖年底橫幅", () => ttDebug.storyBanner()],
       ["📱推小工具", () => ttDebug.widget()],
     ]],
+    ["第四波", [
+      ["🔎一句話搜尋", closeAnd(() => { const tab = document.querySelector('.tab[data-view="explore"]'); if (tab) tab.click(); setTimeout(() => { const i = document.getElementById("searchInput"); if (!i) return; i.value = "台北 3 小時內 有瀑布 不要太陡"; i.dispatchEvent(new Event("input", { bubbles: true })); }, 300); })],
+      ["🐾拜訪夥伴範例", closeAnd(async () => { if (window.loadSocial) await window.loadSocial(); Pets.visit({ id: "demo", handle: "mei_trail", pet_name: "毛毛", pet_level: 5, total_km: 420 }, false, null); })],
+      ["🏔山社", closeAnd(async () => { if (window.loadSocial) await window.loadSocial(); Clubs.open(); })],
+    ]],
     ["裝置與外觀", [
       ["📱模擬動態島", () => ttDebug.notch()], ["🎨切外觀", () => ttDebug.theme()],
       ["🌐重看語言選擇", closeAnd(() => { localStorage.removeItem("tt_lang"); tourReset(); langGate(true); })],

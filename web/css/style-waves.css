@@ -515,3 +515,45 @@ html[data-theme="dark"] .cg-c.l4 { background: #7fcf98; border-color: #8edaa6; }
 .fv-acts .btn .berry { width: 1.1em; height: 1.1em; }
 .fv-acts .btn .ic { width: 1.05em; height: 1.05em; }
 @media (prefers-reduced-motion: reduce) { .fv-bounce, .fv-heart { animation: none; } }
+
+/* 山社（js/social/clubs.js） */
+.club-entry, .club-row { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 11px 12px; margin: 0 0 8px; color: inherit; font: inherit; cursor: pointer; }
+.club-entry { margin-bottom: 12px; background: linear-gradient(135deg, var(--surface), color-mix(in srgb, var(--accent) 8%, var(--surface))); }
+.club-entry > .ic, .club-row > .ic { width: 18px; height: 18px; color: var(--muted); flex: 0 0 auto; }
+.club-row-t { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.club-row-t b { font-size: calc(15px * var(--fs, 1)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.club-row-t small { color: var(--muted); font-size: calc(12.5px * var(--fs, 1)); }
+.club-badge { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--accent); color: #fff; font-weight: 800; font-size: calc(18px * var(--fs, 1)); }
+.club-badge .ic { width: 22px; height: 22px; }
+.club-badge.big { width: 56px; height: 56px; border-radius: 16px; font-size: calc(24px * var(--fs, 1)); }
+.club-intro, .club-note, .club-none { color: var(--muted); font-size: calc(13px * var(--fs, 1)); margin: 4px 0 10px; }
+.club-none { text-align: center; padding: 10px 6px; }
+.club-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px; }
+.club-empty .ic { width: 28px; height: 28px; color: var(--muted); }
+.club-new { width: 100%; margin-top: 12px; display: inline-flex; justify-content: center; align-items: center; gap: 6px; }
+.club-new .ic { width: 1.1em; height: 1.1em; }
+.club-sheet select.auth-input { appearance: auto; }
+.club-sheet textarea.auth-input { resize: vertical; min-height: 72px; }
+.cl-back .ic { transform: rotate(180deg); }
+.club-hero { display: flex; align-items: center; gap: 14px; margin: 6px 0 8px; }
+.club-hero h3 { margin: 0 0 3px; font-size: calc(20px * var(--fs, 1)); overflow-wrap: anywhere; }
+.club-hero small { color: var(--muted); }
+.club-about { margin: 4px 0 10px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.club-code { margin: 6px 0 12px; }
+.club-tabs { margin-bottom: 10px; }
+.club-rank, .club-mem { display: flex; align-items: center; gap: 10px; padding: 9px 4px; border-bottom: 1px solid var(--line-soft); cursor: pointer; }
+.club-rank .fc-av, .club-mem .fc-av { width: 36px; height: 36px; flex: 0 0 auto; }
+.club-no { width: 24px; flex: 0 0 auto; text-align: center; font-weight: 800; color: var(--muted); font-variant-numeric: tabular-nums; }
+.club-rank.top1 .club-no { color: #c99a2e; } .club-rank.top2 .club-no { color: #8f9aa3; } .club-rank.top3 .club-no { color: #b0703f; }
+.club-rank-n { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.club-rank-v { flex: 0 0 auto; text-align: right; display: flex; flex-direction: column; align-items: flex-end; font-variant-numeric: tabular-nums; }
+.club-rank-v b { font-size: calc(17px * var(--fs, 1)); }
+.club-rank-v small { color: var(--muted); font-size: calc(11.5px * var(--fs, 1)); white-space: nowrap; }
+.club-owner { display: inline-flex; align-items: center; gap: 2px; font-size: calc(11px * var(--fs, 1)); color: #b8862b; font-weight: 700; vertical-align: 1px; }
+.club-owner .ic { width: 12px; height: 12px; }
+.club-kick { flex: 0 0 auto; color: var(--bad-fg, #c0392b); }
+.club-sheet .auth-input { box-sizing: border-box; max-width: 100%; }
+.club-sheet .pv-body > .auth-input { display: block; width: 100%; }
+.club-sheet .pv-body > label.ob-l { display: block; margin-top: 12px; margin-bottom: 4px; }
+.club-sheet .pv-body > .ob-l { margin-bottom: 6px; }
+.club-sheet .sim-toggle { margin-top: 12px; }

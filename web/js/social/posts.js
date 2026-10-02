@@ -117,6 +117,15 @@ const Posts = (() => {
     return data || [];
   }
 
+  // 一群人的貼文（山社動態）：RLS 會自動只回我看得到的
+  async function byAuthors(ids, limit) {
+    const c = Supa.client(); if (!c || !ids || !ids.length) return [];
+    const { data, error } = await c.from("posts").select(SELECT).in("author_id", ids.slice(0, 100))
+      .order("created_at", { ascending: false }).limit(limit || 30);
+    if (error) { console.warn("byAuthors", error.message); return []; }
+    return data || [];
+  }
+
   // 某步道的公開貼文（步道詳情頁「山友的旅行」用）
   async function byTrail(trailId, limit) {
     const c = Supa.client(); if (!c || !trailId) return [];
@@ -341,7 +350,7 @@ const Posts = (() => {
     return data || [];
   }
 
-  return { createFromRecord, feed, userPosts, postCount, byTrail, byTag, trending, suggestions, hotTags, searchHandles, one, likedSet, toggleLike, likeCount, followingIds, remove, followCounts,
+  return { createFromRecord, feed, userPosts, postCount, byTrail, byAuthors, byTag, trending, suggestions, hotTags, searchHandles, one, likedSet, toggleLike, likeCount, followingIds, remove, followCounts,
     parseTags, notifyMentions, reactions, setReaction, clearReaction, commentLikes, toggleCommentLike, createRepost,
     savedIds, isSaved, toggleSaved, savedPosts };
 })();

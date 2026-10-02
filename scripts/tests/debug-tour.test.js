@@ -17,9 +17,9 @@ const recs=[1,3,5,7].map(m=>({id:"r"+m,date:new Date(Y,m-1,9,7).toISOString(),tr
  // 面板
  await p.evaluate(()=>toggleDebugPanel());await p.waitForTimeout(800);
  const secs=await p.evaluate(()=>[...document.querySelectorAll("#debugPanel .dbg-sec summary")].map(s=>s.textContent));
- ok(secs.length===8&&/第三波/.test(secs.join()),"panel has 8 sections: "+secs.join(" / "));
+ ok(secs.length===9&&/第三波/.test(secs.join())&&/第四波/.test(secs.join()),"panel has 9 sections: "+secs.join(" / "));
  await p.screenshot({path:O+"panel.png"});
- const SKIP=/檢舉處理|錯誤紀錄|清所有行程|重置🥚|重看語言|導覽\(|開成就頁|求救卡|開收集冊|山頂天氣|回報路況|留守人看到的|人氣範例|今年故事|去年故事/;
+ const SKIP=/拜訪夥伴範例|🏔山社|檢舉處理|錯誤紀錄|清所有行程|重置🥚|重看語言|導覽\(|開成就頁|求救卡|開收集冊|山頂天氣|回報路況|留守人看到的|人氣範例|今年故事|去年故事/;
  const toasts=[];await p.exposeFunction("__t",t=>toasts.push(t));await p.evaluate(()=>{const o=window.toast;window.toast=(m,...a)=>{window.__t(String(m));return o(m,...a);};});
  for(let si=0;si<secs.length;si++){
    await p.evaluate(si=>{const d=document.querySelectorAll("#debugPanel .dbg-sec")[si];if(d&&!d.open)d.querySelector("summary").click();},si);await p.waitForTimeout(250);
@@ -34,6 +34,13 @@ const recs=[1,3,5,7].map(m=>({id:"r"+m,date:new Date(Y,m-1,9,7).toISOString(),tr
  await p.evaluate(()=>["tt_coach_trail","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_coach_team","tt_coach_soc_friends","tt_coach_soc_explore","tt_coach_soc_search","tt_coach_soc_notif","tt_coach_soc_me"].forEach(k=>localStorage.setItem(k,"1")));
  ok(await p.evaluate(()=>!document.querySelector('script[src="js/debug.js"]')||true),"(debug.js lazy)");
  ok(errs.length===0,"no errors pressing all safe buttons ("+toasts.length+" toasts)");
+ // 第四波：會開面板的鈕
+ const dbgBtn=async(l,sel)=>{if(!(await p.evaluate(()=>!!document.getElementById("debugPanel")))){await p.evaluate(()=>toggleDebugPanel());await p.waitForTimeout(500);}
+  await p.evaluate(l=>{const bt=[...document.querySelectorAll("#debugPanel button")].find(x=>x.textContent===l);bt.click();},l);await p.waitForTimeout(1200);
+  const r=await p.evaluate(sel=>!!document.querySelector(sel),sel);await p.evaluate(sel=>{const e=document.querySelector(sel);if(e)e.remove();},sel);return r;};
+ ok(await dbgBtn("🐾拜訪夥伴範例",'[data-ov="petvisit"]'),"debug: visit demo opens");
+ ok(await dbgBtn("🏔山社",'[data-ov="clubs"]'),"debug: clubs opens");
+ ok(await p.evaluate(()=>document.getElementById("searchInput").value.includes("瀑布")),"debug: NL search filled");
  // 功能驗證
  await p.evaluate(()=>{const d=document.getElementById("debugPanel");if(d)d.remove();ttDebug.peaksReset();ttDebug.peaksStamp(5,8);setTheme("light");if(document.documentElement.classList.contains("sim-notch"))ttDebug.notch();});
  ok(await p.evaluate(()=>Object.keys(Peaks.got()).length===13),"peaksStamp(5,8) stamps 13");

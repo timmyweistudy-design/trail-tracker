@@ -144,6 +144,7 @@ if (typeof window !== "undefined") window.ttModalA11y = ttModalA11y;
 // 全域 Escape：關掉最上層的 [data-ov] 動態面板（成就 modal 自己已 preventDefault，這裡略過已處理的）
 document.addEventListener("keydown", e => {
   if (e.key !== "Escape" || e.defaultPrevented) return;
+  if (document.querySelector(".ttdlg-ov")) return;   // 確認框自己會收（以前 Esc 取消確認框時，底下的面板也跟著被關／返回）
   const ovs = [...document.querySelectorAll("[data-ov]")].filter(m => m.getClientRects().length > 0);   // 不能用 offsetParent：覆蓋層是 position:fixed，offsetParent 永遠是 null，以前 Esc 一個都關不掉
   if (!ovs.length) return;
   const top = ovs[ovs.length - 1];
