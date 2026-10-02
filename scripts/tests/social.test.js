@@ -4,7 +4,7 @@ const __out=p=>{const full=__path.join(__dirname,"out",p);__fs.mkdirSync(p.endsW
 const ROOT=__path.resolve(__dirname,"../..");const {chromium}=require(ROOT+"/node_modules/playwright");const {spawn}=require("child_process");const fs=require("fs");
 const O=__out("soc5/");fs.mkdirSync(O,{recursive:true});const MOCK=fs.readFileSync(__dirname+"/soc-mock.js","utf8");const errs=[];let fails=0;const ok=(c,m)=>{console.log((c?"PASS ":"FAIL ")+m);if(!c)fails++;};
 (async()=>{const srv=spawn("python3",["-m","http.server","8884"],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
-const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:o.w||390,height:844}});const p=await ctx.newPage();p.on("pageerror",e=>errs.push(e.message));
+const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:o.w||390,height:844}});const p=await ctx.newPage();await require(__dirname+"/fake-weather")(p);p.on("pageerror",e=>errs.push(e.message));
  await p.addInitScript(o=>{localStorage.setItem("tt_lang",o.lang||"zh");["tt_onboarded_v2","tt_coach_trail","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_locperm_prompted","tt_coach_me","tt_coach_soc_friends","tt_coach_soc_explore","tt_coach_soc_search","tt_coach_soc_notif","tt_coach_soc_me","tt_coach_team"].forEach(k=>localStorage.setItem(k,"1"));if(o.dark)localStorage.setItem("tt_theme","dark");},o);
  await p.addInitScript(MOCK);await p.goto("http://localhost:8884/");await p.waitForTimeout(2200);await p.evaluate(o=>window.__installFakeSupa(o),o.mock||{});
  await p.click('.tab[data-view="social"]');await p.waitForTimeout(1500);return p;};

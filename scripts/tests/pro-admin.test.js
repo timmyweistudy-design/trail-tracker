@@ -5,7 +5,7 @@ const ROOT=__path.resolve(__dirname,"../..");const {chromium}=require(ROOT+"/nod
 const MOCK=fs.readFileSync(__dirname+"/soc-mock.js","utf8");const O=__out("pro/");
 const errs=[];let fails=0;const ok=(c,m)=>{console.log((c?"PASS ":"FAIL ")+m);if(!c)fails++;};
 (async()=>{const srv=spawn("python3",["-m","http.server","8891"],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
-const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:390,height:844},geolocation:{latitude:24.93,longitude:121.69},permissions:["geolocation"]});const p=await ctx.newPage();p.on("pageerror",e=>errs.push(e.message));
+const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:390,height:844},geolocation:{latitude:24.93,longitude:121.69},permissions:["geolocation"]});const p=await ctx.newPage();await require(__dirname+"/fake-weather")(p);p.on("pageerror",e=>errs.push(e.message));
  await p.addInitScript(o=>{if(o.free)window.PERSONAL_MODE=false;if(sessionStorage.getItem("x"))return;sessionStorage.setItem("x","1");localStorage.setItem("tt_lang",o.lang||"zh");["tt_onboarded_v2","tt_coach_trail","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_locperm_prompted","tt_coach_team","tt_coach_soc_friends","tt_coach_soc_explore","tt_coach_soc_search","tt_coach_soc_notif","tt_coach_soc_me"].forEach(k=>localStorage.setItem(k,"1"));for(const k in (o.ls||{}))localStorage.setItem(k,o.ls[k]);},o);
  await p.addInitScript(MOCK);await p.goto("http://localhost:8891/");await p.waitForTimeout(2600);
  if(o.login)await p.evaluate(m=>window.__installFakeSupa(m),o.mock||{});

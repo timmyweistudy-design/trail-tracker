@@ -6,7 +6,7 @@ const errs=[];let fails=0;const ok=(c,m)=>{console.log((c?"PASS ":"FAIL ")+m);if
 // 慢腳程紀錄：比公式慢 1.6 倍
 const R=[1,2,3,4].map(i=>({id:"s"+i,date:new Date(Date.now()-i*3*864e5).toISOString(),trailName:"x",distanceKm:5,ascent:250,elapsedMs:(5/3.5+250/500)*1.6*3.6e6,track:[]}));
 (async()=>{const srv=spawn("python3",["-m","http.server","8880"],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
-const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:o.w||390,height:844},geolocation:{latitude:24.4526,longitude:121.7517,accuracy:8},permissions:["geolocation"],timezoneId:"Asia/Taipei"});const p=await ctx.newPage();p.on("pageerror",e=>errs.push(e.message));
+const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:o.w||390,height:844},geolocation:{latitude:24.4526,longitude:121.7517,accuracy:8},permissions:["geolocation"],timezoneId:"Asia/Taipei"});const p=await ctx.newPage();await require(__dirname+"/fake-weather")(p);p.on("pageerror",e=>errs.push(e.message));
  await p.addInitScript(o=>{if(sessionStorage.getItem("seed"))return;sessionStorage.setItem("seed","1");localStorage.setItem("tt_lang",o.lang||"zh");if(o.fs)localStorage.setItem("tt_fontscale",o.fs);["tt_onboarded_v2","tt_coach_trail","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_locperm_prompted","tt_coach_team"].forEach(k=>localStorage.setItem(k,"1"));if(o.recs)localStorage.setItem("tt_records",o.recs);},Object.assign({},o));
  await p.addInitScript(MOCK);await p.goto("http://localhost:8880/");await p.waitForTimeout(2300);
  if(o.login)await p.evaluate(()=>window.__installFakeSupa({}));

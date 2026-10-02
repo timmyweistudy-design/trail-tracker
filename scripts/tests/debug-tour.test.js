@@ -8,7 +8,7 @@ const Y=new Date().getFullYear();
 const recs=[1,3,5,7].map(m=>({id:"r"+m,date:new Date(Y,m-1,9,7).toISOString(),trailName:"金瓜寮魚蕨步道",trailId:"forestry-004",distanceKm:6+m,elapsedMs:9e6,ascent:300,steps:9000,track:[]}));
 (async()=>{const srv=spawn("python3",["-m","http.server","8887"],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
  const ctx=await b.newContext({viewport:{width:390,height:844},geolocation:{latitude:24.93,longitude:121.69},permissions:["geolocation"]});
- const p=await ctx.newPage();p.on("pageerror",e=>errs.push(e.message));
+ const p=await ctx.newPage();await require(__dirname+"/fake-weather")(p);p.on("pageerror",e=>errs.push(e.message));
  await p.addInitScript(r=>{if(sessionStorage.getItem("x"))return;sessionStorage.setItem("x","1");localStorage.setItem("tt_lang","zh");["tt_onboarded_v2","tt_coach_trail","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_locperm_prompted","tt_coach_team","tt_coach_soc_friends","tt_coach_soc_explore","tt_coach_soc_search","tt_coach_soc_notif","tt_coach_soc_me"].forEach(k=>localStorage.setItem(k,"1"));localStorage.setItem("tt_records",r);},JSON.stringify(recs));
  await p.addInitScript(MOCK);
  await p.goto("http://localhost:8887/");await p.waitForTimeout(2800);
