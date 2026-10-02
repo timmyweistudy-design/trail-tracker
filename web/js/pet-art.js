@@ -194,10 +194,17 @@ window.PET_ART = (function () {
   }
   function byEmoji(e) { return EMOJI.indexOf(e); }   // 找不到回 -1
   // 給 canvas 用：帶 width/height 的獨立 SVG data URI（靜態一幀，供 new Image().src 光柵化畫進分享圖卡）
-  function dataUri(i, size) {
+  // hatId 有給就把配件一起畫進去（合照用）
+  function dataUri(i, size, hatId) {
     const s = size || 120;
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 200 200">${A[clamp(i)]}</svg>`;
+    let h = "";
+    if (hatId && HATS[hatId]) { const a = HAT_ANCHOR[clamp(i)] || [100, 46, 1]; h = `<g transform="translate(${a[0]} ${a[1]}) scale(${a[2]}) translate(-100 -45)">${HATS[hatId]}</g>`; }
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 200 200">${A[clamp(i)]}${h}</svg>`;
     return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
   }
-  return { svg, count: A.length, byEmoji, dataUri, habitat, hat, HAT_IDS, HAT_LABEL };
+  function habitatUri(i, w, h) {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w || 400}" height="${h || 150}" viewBox="0 0 400 150" preserveAspectRatio="none">${HAB[clamp(i)]}</svg>`;
+    return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+  }
+  return { svg, count: A.length, byEmoji, dataUri, habitat, habitatUri, hat, HAT_IDS, HAT_LABEL };
 })();

@@ -4,6 +4,16 @@
 // 步道名稱/介紹等資料內容維持中文。要補翻譯：加 DICT 詞條或 PATTERNS 規則即可。
 const I18n = (() => {
   const DICT = {
+    "去拜訪": "Visit",
+    "拜訪夥伴": "Visit buddy",
+    "%s 的夥伴": "%s's buddy",
+    "摸摸頭": "Pat",
+    "合照": "Photo together",
+    "%s 蹭了蹭你的手": "%s nuzzles your hand",
+    "%s 很開心，你的夥伴也跟著開心了（親密度 +2）": "%s loves it, and your buddy's happy too (affection +2)",
+    "一起去爬山吧": "Let's hike together",
+    "夥伴合照": "Buddy photo",
+    "好友夥伴合照": "Photo with friends' buddies",
     "看懂了": "Got it",
     "%d 小時內": "Under %d h",
     "中等": "Moderate",

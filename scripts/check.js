@@ -67,6 +67,7 @@ for (const f of files) {
 
 // D. 備份完整性：setItem 的 tt_* 鍵要嘛在 BACKUP_KEYS、要嘛在豁免清單
 const BACKUP_EXEMPT = new Set([
+  "tt_pet_pats",   // 今天摸過哪些好友的夥伴：隔天就沒用
   "tt_records", "tt_profile", "tt_favs", "tt_log",        // exportAll 另外處理
   "tt_offline_mb", "tt_offline_free",                     // 離線額度：綁裝置，不跨機還原
   "tt_native_push",                                       // 原生推播開關：綁這台裝置的 APNs token，不跨機還原

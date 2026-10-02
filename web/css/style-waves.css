@@ -493,3 +493,25 @@ html[data-theme="dark"] .cg-c.l4 { background: #7fcf98; border-color: #8edaa6; }
 .nl-chip { padding: 2px 9px; border-radius: var(--r-pill); background: var(--surface); border: 1px solid var(--line-soft); font-size: calc(12.5px * var(--fs, 1)); font-weight: 700; color: var(--ink); }
 .nl-word { font-weight: 600; color: var(--ink-soft); }
 .nl-x { margin-left: auto; border: none; background: none; color: var(--brand-deep); font: inherit; font-weight: 700; font-size: calc(12.5px * var(--fs, 1)); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+
+/* 拜訪好友的夥伴（js/social/petsocial.js） */
+.fp-visit { display: flex; align-items: center; gap: 11px; flex: 1 1 auto; min-width: 0; background: none; border: 0; padding: 0; text-align: left; color: inherit; font: inherit; cursor: pointer; }
+.fp-visit .fp-info { min-width: 0; }
+.fp-visit .fp-by { display: block; }
+.fp-visit:active .fp-pet { transform: scale(.92); }
+.fv-card { text-align: center; }
+.fv-stage { position: relative; height: 170px; margin: 4px -4px 10px; border-radius: var(--r-md, 14px); overflow: hidden; background: linear-gradient(#173523, #24492f); }
+.fv-stage .pet-hab { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 70%; }
+.fv-critter { position: absolute; left: 50%; bottom: 14px; width: 128px; height: 128px; transform: translateX(-50%); }
+.fv-critter .pet-critter { width: 100%; height: 100%; }
+.fv-bounce { animation: fv-bounce .55s var(--ease-spring, cubic-bezier(.3,1.5,.5,1)); }
+@keyframes fv-bounce { 0%, 100% { transform: translateX(-50%) scale(1); } 35% { transform: translateX(-50%) scale(1.12, .88); } 65% { transform: translateX(-50%) translateY(-10px) scale(.95, 1.06); } }
+.fv-heart { position: absolute; bottom: 90px; font-size: 22px; pointer-events: none; animation: fv-heart 1.4s var(--ease-out) forwards; opacity: 0; }
+@keyframes fv-heart { 0% { opacity: 0; transform: translateY(0) scale(.6); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-90px) scale(1.15); } }
+.fv-name { margin: 2px 0 2px; }
+.fv-by { color: var(--muted); font-size: calc(13px * var(--fs, 1)); margin-bottom: 14px; }
+.fv-acts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.fv-acts .btn { flex: 1 1 28%; min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 5px; white-space: nowrap; padding-inline: 10px; }
+.fv-acts .btn .berry { width: 1.1em; height: 1.1em; }
+.fv-acts .btn .ic { width: 1.05em; height: 1.05em; }
+@media (prefers-reduced-motion: reduce) { .fv-bounce, .fv-heart { animation: none; } }
