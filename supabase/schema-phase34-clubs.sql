@@ -161,12 +161,24 @@ begin
 end $$;
 
 revoke all on function public._club_join(uuid) from public, anon, authenticated;
-do $$
-declare f text;
-begin
-  foreach f in array array['club_list(text)', 'create_club(text,text,text,boolean,text)', 'join_club(uuid)', 'join_club_by_code(text)',
-                           'leave_club(uuid)', 'kick_club_member(uuid,uuid)', 'delete_club(uuid)', 'club_roster(uuid)', 'club_board(uuid,int)', 'is_club_member(uuid)'] loop
-    execute format('revoke all on function public.%s from public, anon', f);
-    execute format('grant execute on function public.%s to authenticated', f);
-  end loop;
-end $$;
+-- 只給登入的人用（逐行寫：Supabase SQL Editor 不吃 do $$ declare 迴圈）
+revoke all on function public.club_list(text) from public, anon;
+grant execute on function public.club_list(text) to authenticated;
+revoke all on function public.create_club(text,text,text,boolean,text) from public, anon;
+grant execute on function public.create_club(text,text,text,boolean,text) to authenticated;
+revoke all on function public.join_club(uuid) from public, anon;
+grant execute on function public.join_club(uuid) to authenticated;
+revoke all on function public.join_club_by_code(text) from public, anon;
+grant execute on function public.join_club_by_code(text) to authenticated;
+revoke all on function public.leave_club(uuid) from public, anon;
+grant execute on function public.leave_club(uuid) to authenticated;
+revoke all on function public.kick_club_member(uuid,uuid) from public, anon;
+grant execute on function public.kick_club_member(uuid,uuid) to authenticated;
+revoke all on function public.delete_club(uuid) from public, anon;
+grant execute on function public.delete_club(uuid) to authenticated;
+revoke all on function public.club_roster(uuid) from public, anon;
+grant execute on function public.club_roster(uuid) to authenticated;
+revoke all on function public.club_board(uuid,int) from public, anon;
+grant execute on function public.club_board(uuid,int) to authenticated;
+revoke all on function public.is_club_member(uuid) from public, anon;
+grant execute on function public.is_club_member(uuid) to authenticated;
