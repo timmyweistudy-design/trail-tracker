@@ -439,6 +439,26 @@ function diffBadgeHtml(t) {
   return `<span class="badge diff d${d}${est ? " est" : ""}"${est ? ` title="${ttT("難度是依長度和爬升估的")}"` : ""}><span class="lvl">${d}</span>${est ? `<span class="approx">≈</span>` : ""}<span>${diffLabel(t)}</span></span>`;
 }
 // 所需時間：官方短時程，否則用估算（加 ≈）
+// 個人化預估時間：拿你自己的紀錄，比「用同一套公式算出來的時間」和「你實際花的時間」，取中位數當你的腳程係數。
+// 至少 3 趟像樣的紀錄（1 km 以上、20 分鐘以上，不含模擬、上車）才給，不然寧可不說
+let _paceCache = null;
+function myPaceFactor() {
+  const recs = (typeof realRecords === "function" ? realRecords() : []).filter(r => !r.sim && !r.vehicle && (r.distanceKm || 0) >= 1 && (r.elapsedMs || 0) >= 20 * 60000);
+  const sig = recs.length + "|" + (recs[0] ? recs[0].id : "");
+  if (_paceCache && _paceCache.sig === sig) return _paceCache.f;
+  const ratios = recs.slice(0, 15).map(r => (r.elapsedMs / 3.6e6) / (r.distanceKm / 3.5 + (r.ascent || 0) / 500)).filter(x => isFinite(x) && x > 0.3 && x < 4).sort((a, b) => a - b);
+  const f = ratios.length >= 3 ? ratios[Math.floor(ratios.length / 2)] : null;
+  _paceCache = { sig, f };
+  return f;
+}
+function myHoursFor(t) { const f = myPaceFactor(), h = estHours(t); return f && h ? h * f : null; }
+// 「依你的腳程 ≈ 3 小時 20 分」：只在差距明顯（10% 以上）時顯示，差不多就不多講
+function myTimeHtml(t) {
+  const mine = myHoursFor(t), base = estHours(t);
+  if (!mine || !base || Math.abs(mine - base) / base < 0.1) return "";
+  const m = Math.round(mine * 60 / 5) * 5, txt = mine > 10 ? fmtHours(mine) : (m < 60 ? `${m} ${ttT("分鐘")}` : `${Math.floor(m / 60)} ${ttT("小時")}${m % 60 ? ` ${m % 60} ${ttT("分")}` : ""}`);
+  return `<div class="my-est">${ic("footprints")} <span>${ttT("依你的腳程")}</span> <b>≈ ${txt}</b></div>`;
+}
 function timeHtml(t) { const tour = shortTour(t); return tour ? escHtml(tour) : `<span class="approx">≈</span>${fmtHours(estHours(t))}`; }
 function trailCard(t) {
   const d = t.difficulty || 0, closed = isClosed(t), snow = d === 6;

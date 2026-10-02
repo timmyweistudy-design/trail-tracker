@@ -237,6 +237,8 @@ const ICON = {
   lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
   backpack: '<path d="M7 8a5 5 0 0 1 10 0v11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V8Z"/><path d="M10 3.5h4M9 13h6v4H9z"/>',
   sunset: '<path d="M4 18h16M7 14a5 5 0 0 1 10 0"/><path d="M12 4v4m-6.4.6 2 2m10.8-2-2 2M3 14h2m14 0h2"/>',
+  moon: '<path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8 8 0 1 0 11 11Z"/>',
+  phone: '<path d="M5 3.5h3.2l1.6 4.3-2.1 1.5a11 11 0 0 0 7 7l1.5-2.1 4.3 1.6V19a1.5 1.5 0 0 1-1.6 1.5A16.5 16.5 0 0 1 3.5 5.1 1.5 1.5 0 0 1 5 3.5Z"/>',
   cloud: '<path d="M7 18a4 4 0 0 1-.4-8 5.5 5.5 0 0 1 10.6 1.3A3.5 3.5 0 0 1 17 18H7Z"/>',
   rain: '<path d="M7 14a4 4 0 0 1-.4-8 5.5 5.5 0 0 1 10.6 1.3A3.5 3.5 0 0 1 17 14H7Z"/><path d="m9 17-1 3m5-3-1 3m5-3-1 3"/>',
   info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8h.01"/>',
@@ -326,6 +328,40 @@ function fmtTime(ms) {
   const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
   return (h ? `${h}:` : "") + `${String(m).padStart(2, "0")}:${String(ss).padStart(2, "0")}`;
 }
+// ── 戶外安全用的地理工具（全部離線可算）──
+// 日落時間：NOAA 日出日落方程式，誤差約 1 分鐘。山上沒網路也算得出來，不靠天氣 API
+function sunsetAt(lat, lon, date) {
+  const rad = Math.PI / 180, d = date || new Date();
+  const noon = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12);
+  const jd = noon.getTime() / 864e5 + 2440587.5;
+  const n = Math.round(jd - 2451545.0 + 0.0008);
+  const Js = n - lon / 360;
+  const M = (357.5291 + 0.98560028 * Js) % 360;
+  const C = 1.9148 * Math.sin(M * rad) + 0.02 * Math.sin(2 * M * rad) + 0.0003 * Math.sin(3 * M * rad);
+  const lam = (M + C + 180 + 102.9372) % 360;
+  const Jt = 2451545.0 + Js + 0.0053 * Math.sin(M * rad) - 0.0069 * Math.sin(2 * lam * rad);
+  const sd = Math.sin(lam * rad) * Math.sin(23.4397 * rad), cd = Math.cos(Math.asin(sd));
+  const cw = (Math.sin(-0.833 * rad) - Math.sin(lat * rad) * sd) / (Math.cos(lat * rad) * cd);
+  if (cw > 1 || cw < -1) return null;   // 極晝／極夜（台灣不會發生）
+  const Jset = Jt + Math.acos(cw) / rad / 360;
+  return new Date((Jset - 2440587.5) * 864e5);
+}
+// WGS84 → TWD97 二度分帶（TM2，中央經線 121°）：台灣搜救單位常用的座標
+function toTWD97(lat, lon) {
+  const a = 6378137, f = 1 / 298.257222101, k0 = 0.9999, lon0 = 121 * Math.PI / 180, dx = 250000;
+  const e2 = f * (2 - f), ep2 = e2 / (1 - e2);
+  const phi = lat * Math.PI / 180, lam = lon * Math.PI / 180;
+  const N = a / Math.sqrt(1 - e2 * Math.sin(phi) ** 2), T = Math.tan(phi) ** 2, C = ep2 * Math.cos(phi) ** 2, A = (lam - lon0) * Math.cos(phi);
+  const M = a * ((1 - e2 / 4 - 3 * e2 ** 2 / 64 - 5 * e2 ** 3 / 256) * phi - (3 * e2 / 8 + 3 * e2 ** 2 / 32 + 45 * e2 ** 3 / 1024) * Math.sin(2 * phi)
+    + (15 * e2 ** 2 / 256 + 45 * e2 ** 3 / 1024) * Math.sin(4 * phi) - (35 * e2 ** 3 / 3072) * Math.sin(6 * phi));
+  const x = dx + k0 * N * (A + (1 - T + C) * A ** 3 / 6 + (5 - 18 * T + T ** 2 + 72 * C - 58 * ep2) * A ** 5 / 120);
+  const y = k0 * (M + N * Math.tan(phi) * (A ** 2 / 2 + (5 - T + 9 * C + 4 * C ** 2) * A ** 4 / 24 + (61 - 58 * T + T ** 2 + 600 * C - 330 * ep2) * A ** 6 / 720));
+  return { x: Math.round(x), y: Math.round(y) };
+}
+// 度分秒：24°27'03.5"N
+function toDMS(v, pos, neg) { const s = v < 0 ? neg : pos; v = Math.abs(v); const d = Math.floor(v), mF = (v - d) * 60, m = Math.floor(mF), sec = (mF - m) * 60; return `${d}°${String(m).padStart(2, "0")}'${sec.toFixed(1).padStart(4, "0")}"${s}`; }
+function hhmm(dt) { return dt ? `${String(dt.getHours()).padStart(2, "0")}:${String(dt.getMinutes()).padStart(2, "0")}` : "--:--"; }
+if (typeof window !== "undefined") { window.sunsetAt = sunsetAt; window.toTWD97 = toTWD97; }
 // 紀錄卡用的短時長 h:mm（2:10）：卡片窄，「2 小時 10 分」會把大卡擠到第二行
 function fmtDurShort(ms) { const m = Math.round((ms || 0) / 60000); return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`; }
 // 人看得懂的時長：「00:19」到底是 19 秒還 19 分？結算與紀錄一律寫清楚（記錄中的碼表仍用 fmtTime）
@@ -1191,7 +1227,7 @@ function detailStatsHtml(t) {
   const cells = [
     ["ruler", "長度", `${fmtKm(t.length_km)} km`],
     ["up", "累積爬升", `<span id="kvAscent">${asc != null ? `${ascEst ? `<span class="approx">≈</span>` : ""}${asc} m` : (geoOf(t) ? ttT("計算中…") : "—")}</span>`],
-    ["clock", "所需時間", timeHtml(t)],
+    ["clock", "所需時間", timeHtml(t) + myTimeHtml(t)],   // 走過幾趟之後，多一行「依你的腳程」
   ];
   if (t.alt_high != null && t.alt_low != null) cells.push(["mountain", "海拔範圍", `${t.alt_low}–${t.alt_high} m`]);
   else { const sl = slopeInfo(t); if (sl && sl.word) cells.push(["mountain", "坡度", `${ttT(sl.word)}<small> ${Math.round(sl.perKm)} m/km</small>`]); }
@@ -1897,12 +1933,24 @@ $("#closeGradeBtn").addEventListener("click", closeGradeInfo);
 // ---------- 外觀主題 ----------
 // mode：light / dark / auto（跟隨系統）
 const _darkMQ = window.matchMedia ? matchMedia("(prefers-color-scheme: dark)") : null;
+// 戶外顯示：normal／sun（陽光下高對比，強制淺色）／red（夜間紅光，強制深色＋整頁轉紅，不傷夜視）
+function visMode() { try { const v = localStorage.getItem("tt_vis"); return v === "sun" || v === "red" ? v : "normal"; } catch (e) { return "normal"; } }
+function applyVis(v) {
+  try { if (v === "normal") localStorage.removeItem("tt_vis"); else localStorage.setItem("tt_vis", v); } catch (e) { /* */ }
+  if (v === "normal") document.documentElement.removeAttribute("data-vis"); else document.documentElement.setAttribute("data-vis", v);
+  applyTheme(localStorage.getItem("tt_theme") || "light");
+  document.querySelectorAll("[data-vis-opt]").forEach(b => { const on = b.dataset.visOpt === v; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); });
+}
+if (typeof window !== "undefined") { window.applyVis = applyVis; window.visMode = visMode; }
+document.addEventListener("click", e => { const b = e.target.closest("[data-vis-opt]"); if (!b) return; const v = b.dataset.visOpt; applyVis(v); toast(ttT(v === "sun" ? "陽光模式：字更黑、對比更高" : v === "red" ? "夜間紅光：不刺眼、保護夜視" : "回到一般顯示")); });
 function applyTheme(mode) {
-  const dark = mode === "dark" || (mode === "auto" && !!(_darkMQ && _darkMQ.matches));
+  const vis = visMode();
+  const dark = vis === "red" || (vis !== "sun" && (mode === "dark" || (mode === "auto" && !!(_darkMQ && _darkMQ.matches))));
   document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", dark ? "#13160f" : "#16301f");
-  document.querySelectorAll(".theme-opt").forEach(b => b.classList.toggle("on", b.dataset.themeOpt === mode));
+  document.querySelectorAll("[data-theme-opt]").forEach(b => b.classList.toggle("on", b.dataset.themeOpt === mode));
+  document.querySelectorAll("[data-vis-opt]").forEach(b => { const on = b.dataset.visOpt === vis; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); });
 }
 // 季節點綴色（春櫻/夏綠/秋楓/冬雪）：沒選 PRO 主題配色時的預設 --accent
 function applySeason() {

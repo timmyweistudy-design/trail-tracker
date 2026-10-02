@@ -72,6 +72,7 @@ const BACKUP_EXEMPT = new Set([
   "tt_native_push",                                       // 原生推播開關：綁這台裝置的 APNs token，不跨機還原
   "tt_premium", "tt_premium_since",                       // 訂閱狀態：由 Supabase 決定
   "tt_active_rec",                                        // 記錄中暫存
+  "tt_vis",                                               // 戶外顯示（陽光／紅光）：看當下環境臨時切，換手機不該一開就是紅色畫面
   "tt_offline_sets", "tt_tiles_migrated", "tt_tiles_clean1",                  // 離線地圖清單／搬家旗標：圖磚只在這台手機，跨機還原沒意義
   "tt_push_hint_off",                                     // 社群通知頁的推播提示關掉了（裝置偏好）
   "tt_set_open", "tt_hist_hidesim",                       // 我的頁：設定展開狀態、行程列表篩選（純介面偏好）

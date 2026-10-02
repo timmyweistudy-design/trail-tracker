@@ -21,7 +21,9 @@ ok("暫停時能隨手拍",await p.evaluate(()=>!document.getElementById("btnSna
 await p.evaluate(()=>{const fs=document.querySelector("#recMap .leaflet-top.leaflet-right > div:last-child");fs.click()});await p.waitForTimeout(600);
 ok("全螢幕地圖有數字板",await p.evaluate(()=>{const h=document.getElementById("fsHud");return h&&getComputedStyle(h).display!=="none"&&/\d/.test(h.textContent)}));
 await p.evaluate(()=>{const fs=document.querySelector(".map-fs .leaflet-top.leaflet-right > div:last-child");fs.click()});await p.waitForTimeout(400);
-await p.click("#btnStop");await p.waitForTimeout(400);await p.click(".ttdlg .btn.primary").catch(()=>{});await p.waitForTimeout(5000);await p.evaluate(()=>closeTrackReview());
+// 結束後會先做地形海拔校正（最多等 8 秒，網路慢時會用滿）→ 等結算頁真的打開，不要用固定秒數
+await p.click("#btnStop");await p.waitForTimeout(400);await p.click(".ttdlg .btn.primary").catch(()=>{});
+await p.waitForFunction(()=>{const s=document.getElementById("trackSheet");return s&&s.classList.contains("show")},null,{timeout:15000}).catch(()=>{});await p.waitForTimeout(300);await p.evaluate(()=>closeTrackReview());
 ok("結束後步道選擇清掉",await p.evaluate(()=>selectedTrailId==null&&!selectedTrailGeo));
 // GPX 參考線有取消鈕
 await p.evaluate(()=>followRoute([[24.9,121.7],[24.91,121.71],[24.92,121.72]],"測試路線"));await p.waitForTimeout(400);

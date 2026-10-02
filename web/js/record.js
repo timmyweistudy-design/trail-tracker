@@ -96,7 +96,7 @@ function sunsetWarn(hm) {
   if (hrs < 3) return `<b class="ph-warn">・${ttT("剩不到 3 小時天黑")}</b>`;
   return "";
 }
-let _sunsetHM = null, _sunsetWarned = false;   // 回程提醒用：選步道時查到的今日日落
+let _sunsetHM = null;   // 選步道時查到的今日日落（行前卡顯示用；記錄中的天黑倒數改由 outdoor.js 用位置離線算）
 async function renderPreHike(t) {
   const el = $("#preHike"); if (!el) return;
   if (!t || !t.lat) { clearPreHike(); return; }
@@ -115,7 +115,7 @@ async function renderPreHike(t) {
     const pop = d.precipitation_probability_max ? d.precipitation_probability_max[0] : null;
     const sunHM = (d.sunset && d.sunset[0]) ? d.sunset[0].slice(11, 16) : null;
     const wline = `${ttT(txt)}${tmin != null ? ` ${tmin}–${tmax}°` : ""}${pop != null ? `・${ttT("降雨")} ${pop}%` : ""}`;
-    _sunsetHM = sunHM; _sunsetWarned = false;
+    _sunsetHM = sunHM;
     el.innerHTML =
       `<div class="ph-row"><span class="ph-ic">${code == null ? ic("sun") : wxIcon(code)}</span><span>${wline}</span></div>` +   // 和詳情頁同一套天氣圖示
       (sunHM ? `<div class="ph-row"><span class="ph-ic">${ic("sunset")}</span><span>${ttT("今日日落")} ${sunHM}${sunsetWarn(sunHM)}</span></div>` : "") +
@@ -195,6 +195,8 @@ function distToSegment(lat, lon, a, b) {
 }
 // 目前可用來比對的路線：選定步道的官方路線，或使用者匯入/跟走的 GPX 參考線
 function routeSegs() {
+  const bk = (typeof Outdoor !== "undefined") ? Outdoor.backSegs() : null;   // 原路返回中：拿自己走來的路比對
+  if (bk) return bk;
   if (selectedTrailGeo && selectedTrailGeo.length) return selectedTrailGeo;
   if (guideLine) {
     const ll = guideLine.getLatLngs();
@@ -485,12 +487,9 @@ Recorder.onUpdate(s => {
       toast(`${kmDone} ${ttT("公里完成")}・${ttT("這公里")} ${mins} ${ttT("分鐘")}`);
     }
   }
-  // 回程提醒：離日落 90 分鐘就提醒一次（選步道時查到的日落時間）
-  if (s.state === "running" && _sunsetHM && !_sunsetWarned) {
-    const [hh, mm] = _sunsetHM.split(":").map(Number), ss = new Date(); ss.setHours(hh, mm, 0, 0);
-    const left = (ss - Date.now()) / 60000;
-    if (left < 90) { _sunsetWarned = true; toast(left > 0 ? `${ttT("離天黑")} ${Math.round(left)} ${ttT("分鐘，差不多該往回走了")}` : ttT("天黑了，頭燈拿出來，慢慢走")); ttBuzz([200, 100, 200], 2); }
-  }
+  // 天黑倒數＋原路返回（outdoor.js）：日落用目前位置離線算，依走來的時間推「最晚幾點往回走」
+  // （以前只在選了步道、又有網路查到天氣時，離日落 90 分鐘提醒一次）
+  if (typeof Outdoor !== "undefined") { try { Outdoor.onUpdate(s); } catch (e) { /* 安全提示失敗不影響記錄 */ } }
   // 休息很久：提醒一次
   if (s.state === "running" && s.resting && s.restMs > 15 * 60000 && !_restWarned) { _restWarned = true; toast(ttT("休息 15 分鐘了，要繼續走嗎？")); }
   if (s.state === "running" && !s.resting) _restWarned = false;
