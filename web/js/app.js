@@ -1057,6 +1057,7 @@ function addBaseWithToggle(map) {   // 底圖切換：地形(NLSC台灣官方+�
       layers[l].addTo(map);
       // 只有 Esri 地形疊陰影：衛星本身立體、NLSC 自帶樣式，疊上去會過暗
       if (l === "topo") hs.addTo(map);
+      map.getContainer().classList.toggle("sat-on", l === "sat");   // 深色模式只反相地形圖，衛星照片只壓暗
       d.querySelectorAll(".bm").forEach(x => x.classList.toggle("on", x === b));
     });
     return d;
@@ -1931,27 +1932,37 @@ $("#gradeMask").addEventListener("click", closeGradeInfo);
 $("#closeGradeBtn").addEventListener("click", closeGradeInfo);
 
 // ---------- 外觀主題 ----------
-// mode：light / dark / auto（跟隨系統）
-const _darkMQ = window.matchMedia ? matchMedia("(prefers-color-scheme: dark)") : null;
-// 戶外顯示：normal／sun（陽光下高對比，強制淺色）／red（夜間紅光，強制深色＋整頁轉紅，不傷夜視）
-function visMode() { try { const v = localStorage.getItem("tt_vis"); return v === "sun" || v === "red" ? v : "normal"; } catch (e) { return "normal"; } }
-function applyVis(v) {
-  try { if (v === "normal") localStorage.removeItem("tt_vis"); else localStorage.setItem("tt_vis", v); } catch (e) { /* */ }
-  if (v === "normal") document.documentElement.removeAttribute("data-vis"); else document.documentElement.setAttribute("data-vis", v);
-  applyTheme(localStorage.getItem("tt_theme") || "light");
-  document.querySelectorAll("[data-vis-opt]").forEach(b => { const on = b.dataset.visOpt === v; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); });
+// 只有三種：light（淺色）／dark（深色，晚上與夜爬用：地圖壓暗、畫面帶一點暖橘、不刺眼）／sun（陽光高對比：強制淺色＋加粗）
+// 以前分兩排共六個選項（淺色／深色／跟隨系統＋標準／陽光／紅光），重複又難懂 → 合併。舊設定在 themeMode() 自動換過來。
+function themeMode() {
+  let t = null, v = null;
+  try { t = localStorage.getItem("tt_theme"); v = localStorage.getItem("tt_vis"); } catch (e) { /* */ }
+  if (v) {   // 舊版的戶外顯示：紅光→深色、陽光→陽光高對比
+    t = v === "red" ? "dark" : v === "sun" ? "sun" : t;
+    try { localStorage.removeItem("tt_vis"); if (t) localStorage.setItem("tt_theme", t); } catch (e) { /* */ }
+  }
+  if (t === "auto") {   // 舊版「跟隨系統」：照當下手機的深淺色定下來
+    t = (window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light";
+    try { localStorage.setItem("tt_theme", t); } catch (e) { /* */ }
+  }
+  return t === "dark" || t === "sun" ? t : "light";
 }
-if (typeof window !== "undefined") { window.applyVis = applyVis; window.visMode = visMode; }
-document.addEventListener("click", e => { const b = e.target.closest("[data-vis-opt]"); if (!b) return; const v = b.dataset.visOpt; applyVis(v); toast(ttT(v === "sun" ? "陽光模式：字更黑、對比更高" : v === "red" ? "夜間紅光：不刺眼、保護夜視" : "回到一般顯示")); });
 function applyTheme(mode) {
-  const vis = visMode();
-  const dark = vis === "red" || (vis !== "sun" && (mode === "dark" || (mode === "auto" && !!(_darkMQ && _darkMQ.matches))));
+  if (mode !== "dark" && mode !== "sun") mode = "light";
+  const dark = mode === "dark";
   document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+  if (mode === "sun") document.documentElement.setAttribute("data-vis", "sun"); else document.documentElement.removeAttribute("data-vis");
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", dark ? "#13160f" : "#16301f");
-  document.querySelectorAll("[data-theme-opt]").forEach(b => b.classList.toggle("on", b.dataset.themeOpt === mode));
-  document.querySelectorAll("[data-vis-opt]").forEach(b => { const on = b.dataset.visOpt === vis; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); });
+  document.querySelectorAll("[data-theme-opt]").forEach(b => { const on = b.dataset.themeOpt === mode; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); });
 }
+function setTheme(mode) {
+  try { localStorage.setItem("tt_theme", mode); } catch (e) { /* */ }
+  applyTheme(mode);
+}
+if (typeof window !== "undefined") { window.setTheme = setTheme; window.themeMode = themeMode; }
+// 其他地方（例如天黑提示）放的「切到深色」鈕：data-set-theme="dark"
+document.addEventListener("click", e => { const b = e.target.closest("[data-set-theme]"); if (!b) return; setTheme(b.dataset.setTheme); toast(ttT("切到深色了：地圖變暗、畫面不刺眼")); });
 // 季節點綴色（春櫻/夏綠/秋楓/冬雪）：沒選 PRO 主題配色時的預設 --accent
 function applySeason() {
   const m = new Date().getMonth() + 1;
@@ -2152,17 +2163,11 @@ let _themeBound = false;   // .theme-opt / .fs-opt 是靜態元素：initTheme �
 function initTheme() {
   applyPalette();
   applyProColor();
-  const saved = localStorage.getItem("tt_theme");
-  const mode = saved === "dark" || saved === "auto" ? saved : "light";   // 預設淺色；選「跟隨系統」就照手機設定
-  if (!_themeBound && _darkMQ) { const onSys = () => { if (localStorage.getItem("tt_theme") === "auto") applyTheme("auto"); }; if (_darkMQ.addEventListener) _darkMQ.addEventListener("change", onSys); else if (_darkMQ.addListener) _darkMQ.addListener(onSys); }
+  const mode = themeMode();   // 預設淺色
   applyTheme(mode);
   document.querySelectorAll("[data-theme-opt]").forEach(b => {
     b.classList.toggle("on", b.dataset.themeOpt === mode);
-    if (!_themeBound) b.addEventListener("click", () => {
-      localStorage.setItem("tt_theme", b.dataset.themeOpt);
-      applyTheme(b.dataset.themeOpt);
-      document.querySelectorAll("[data-theme-opt]").forEach(x => x.classList.toggle("on", x === b));
-    });
+    if (!_themeBound) b.addEventListener("click", () => setTheme(b.dataset.themeOpt));
   });
   // 字體大小（無障礙）：四檔 1.2/1.35/1.5/1.65 → 設 --fs 倍率，只放大文字不動地圖版面
   // （舊值由 index.html 開機腳本遷移到最近的新檔）

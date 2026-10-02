@@ -4,6 +4,19 @@
 // 步道名稱/介紹等資料內容維持中文。要補翻譯：加 DICT 詞條或 PATTERNS 規則即可。
 const I18n = (() => {
   const DICT = {
+    "照這條步道的路線記錄": "Following trail route",
+    "跟著匯入的路線走": "Following an imported route",
+    "改自由路線": "Free route",
+    "切到深色": "Switch to dark",
+    "切到深色了：地圖變暗、畫面不刺眼": "Dark mode on: darker map, easy on the eyes",
+    "天黑了": "Dark now",
+    "準備出發": "Ready to go",
+    "工具": "Tools",
+    "記錄設定": "Recording settings",
+    "定位次數少一點，軌跡會粗一些": "Fewer location updates — the track will be a bit rougher",
+    "記錄中螢幕不會自己熄滅": "The screen stays on while recording",
+    "不用 GPS，沿步道路線快速走一遍看看": "No GPS needed — run through the trail route quickly to preview",
+    "深色：晚上和夜爬用，地圖跟著變暗、畫面偏暖不刺眼。陽光高對比：大太陽下也看得清楚。": "Dark: for evenings and night hikes — the map dims too and the screen turns warm and gentle. Sunlight high contrast: readable even in bright sun.",
     "還沒走多遠，記錄 30 公尺以上才能原路返回": "You haven't gone far yet — record at least 30 m to retrace your route",
     "開始原路返回：照著紫色虛線走回起點": "Retracing your route — follow the purple dashed line back to the start",
     "原路返回中": "Retracing route",

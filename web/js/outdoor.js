@@ -91,7 +91,7 @@ const Outdoor = (() => {
       }
       line = `${T("日落")} <b>${hhmm(ss)}</b> · ${T("最晚往回走")} <b>${hhmm(turn)}</b>`;
     }
-    const redBtn = cls === "dark" && visMode() !== "red" ? `<button class="sh-red" data-vis-opt="red">${T("紅光模式")}</button>` : "";
+    const redBtn = cls === "dark" && themeMode() !== "dark" ? `<button class="sh-red" data-set-theme="dark">${T("切到深色")}</button>` : "";
     const html = `<span class="sh-ic">${ic(cls === "dark" ? "moon" : "sunset")}</span><span class="sh-t">${line}</span>${redBtn}`;
     hud.hidden = false;
     hud.className = "sun-hud" + (cls ? " " + cls : "");

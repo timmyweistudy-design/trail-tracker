@@ -145,7 +145,7 @@ const PORT = 8899;
     await page.waitForTimeout(300);
     ok("非會員模擬模式被鎖住（PRO）", await page.evaluate(() => {
       const t = document.getElementById("simToggle");
-      return !!document.querySelector('.sim-toggle .pro-tag') && !t.checked;
+      return !!t.closest(".ro-row").querySelector(".pro-tag") && !t.checked;   // 記錄設定列（2026-10-02 改成清單＋開關）
     }));
     await page.evaluate(() => { const t = document.getElementById("simToggle"); if (t && !t.checked) t.click(); });
     await page.click("#btnStart");

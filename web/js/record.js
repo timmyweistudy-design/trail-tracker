@@ -118,7 +118,7 @@ async function renderPreHike(t) {
     _sunsetHM = sunHM;
     el.innerHTML =
       `<div class="ph-row"><span class="ph-ic">${code == null ? ic("sun") : wxIcon(code)}</span><span>${wline}</span></div>` +   // 和詳情頁同一套天氣圖示
-      (sunHM ? `<div class="ph-row"><span class="ph-ic">${ic("sunset")}</span><span>${ttT("今日日落")} ${sunHM}${sunsetWarn(sunHM)}</span></div>` : "") +
+      (sunHM && sunsetWarn(sunHM) ? `<div class="ph-row"><span class="ph-ic">${ic("sunset")}</span><span>${ttT("今日日落")} ${sunHM}${sunsetWarn(sunHM)}</span></div>` : "") +   // 日落平常在頁首就有，快天黑才在這裡加強提醒
       gearRow;
   } catch (e) { /* 天氣查詢失敗：保留裝備列 */ }
 }
@@ -248,8 +248,10 @@ function showSelectedTrail(name, isRoute) {
   const el = $("#selTrail");
   if (!el) return;
   el.hidden = false;
-  el.innerHTML = `<span class="st-what">${ic(isRoute ? "route" : "pin")} ${ttT(isRoute ? "跟著路線走" : "已選擇")}<b>${escHtml(name)}</b></span>
-    <button class="st-x" id="selTrailX" aria-label="${ttT("取消選擇，改為自由路線")}" title="${ttT("取消選擇，改為自由路線")}">${ic("x")}</button>`;
+  // 步道名已經在頁首大標題 → 這裡只說是哪種（官方步道／匯入路線），右邊一顆「改自由路線」
+  el.innerHTML = `<span class="st-what">${ic(isRoute ? "route" : "pin")} <span>${ttT(isRoute ? "跟著匯入的路線走" : "照這條步道的路線記錄")}</span></span>
+    <button class="st-x st-free" id="selTrailX" aria-label="${ttT("取消選擇，改為自由路線")}">${ic("x")}<span>${ttT("改自由路線")}</span></button>`;
+  if (isRoute) { el.dataset.route = name; try { renderRecHead(Recorder.getState()); } catch (e) { /* */ } }
   const x = $("#selTrailX");
   if (x) x.addEventListener("click", () => clearSelectedTrail());
   setRecStatus(ttT("按「開始」記錄這條步道"));
@@ -262,6 +264,7 @@ function clearSelectedTrail(silent) {
   if (guideLine && recMap) { recMap.removeLayer(guideLine); guideLine = null; }
   clearPreHike(); _sunsetHM = null;
   hideSelectedTrail();
+  try { renderRecHead(Recorder.getState()); } catch (e) { /* */ }
   try { renderRecIdle(); } catch (e) { /* */ }
   if (silent === true) return;
   setRecStatus(ttT("沒選步道也行，按開始就記"));
@@ -269,7 +272,7 @@ function clearSelectedTrail(silent) {
 }
 function hideSelectedTrail() {
   const el = $("#selTrail");
-  if (el) { el.hidden = true; el.innerHTML = ""; }
+  if (el) { el.hidden = true; el.innerHTML = ""; delete el.dataset.route; }
 }
 // 選一條步道來記錄（詳情頁「在此步道開始記錄」、待機頁的快捷卡、閃退復原都走這條）
 function selectTrailForRecord(t, opts) {
@@ -279,6 +282,7 @@ function selectTrailForRecord(t, opts) {
   selectedTrailWps = t.waypoints || [];
   Recorder._trailName = t.name; Recorder._trailId = t.id;
   if (!(opts && opts.quiet)) { showSelectedTrail(t.name); renderPreHike(t); }
+  try { renderRecHead(Recorder.getState()); } catch (e) { /* */ }
   setTimeout(() => { initRecMap(); drawSelectedRoute(); resetWpHud(); try { renderRecIdle(); } catch (e) { /* */ } }, 80);
 }
 
@@ -728,7 +732,31 @@ function pickSimTrail() {
 // 按鈕與版面「全部」依 Recorder 狀態決定（暫停、繼續、復原、結束、小隊訊號都不再各自手動設）。
 // #view-record[data-state] 讓 CSS 決定待機／記錄中／暫停的版面。
 let _lastRecState = null;
+// 頁首：待機寫「準備出發」（選了步道就寫步道名）＋今天日期；記錄中／暫停寫步道名＋狀態。
+// 右邊小膠囊是今天的日落（用目前位置離線算，沒有位置就用台灣中部）。有變才寫，記錄中每秒呼叫也不重畫。
+let _recHeadSig = "";
+function renderRecHead(state) {
+  const tEl = _r("recTitle"), eEl = _r("recEyebrow"), pEl = _r("recSunPill"); if (!tEl) return;
+  const selEl = _r("selTrail"), route = selEl && !selEl.hidden && selEl.dataset.route;
+  const name = (state === "idle" ? (selectedTrailId ? Recorder._trailName : (route || null)) : (Recorder._trailName || route || "自由路線"));
+  const title = name ? ttT(name) : ttT("準備出發");
+  let eyebrow;
+  if (state === "running") eyebrow = `<i class="rh-dot"></i>${ttT("記錄中")}`;
+  else if (state === "paused") eyebrow = `<i class="rh-dot paused"></i>${ttT("已暫停")}`;
+  else eyebrow = escHtml(new Date().toLocaleDateString(ttLocale(), { month: "long", day: "numeric", weekday: "short" }));
+  const last = recSnap && recSnap.track && recSnap.track.length ? recSnap.track[recSnap.track.length - 1] : null;
+  const pos = last || (typeof myLoc !== "undefined" && myLoc) || { lat: 23.97, lon: 120.97 };
+  const ss = typeof sunsetAt === "function" ? sunsetAt(pos.lat, pos.lon, new Date()) : null;
+  const dark = ss && Date.now() > ss.getTime();
+  const pill = ss ? `${ic(dark ? "moon" : "sunset")}<span>${dark ? ttT("天黑了") : `${ttT("日落")} <b>${hhmm(ss)}</b>`}</span>` : "";
+  const sig = [state, title, eyebrow, pill].join("|");
+  if (sig === _recHeadSig) return;
+  _recHeadSig = sig;
+  tEl.textContent = title; eEl.innerHTML = eyebrow;
+  if (pEl) { pEl.hidden = !pill; pEl.innerHTML = pill; pEl.classList.toggle("dark", !!dark); }
+}
 function syncRecButtons(state) {
+  try { renderRecHead(state); } catch (e) { /* 頁首失敗不影響按鈕 */ }
   const teamMember = typeof TeamLive !== "undefined" && TeamLive.isOn() && !TeamLive.isLeader();
   const start = _r("btnStart"), pause = _r("btnPause"), stop = _r("btnStop"), snap = _r("btnSnap"), lock = _r("btnLock");
   if (!start) return;
@@ -1034,3 +1062,7 @@ function restoreActiveRecording() {
 
 // ---------- 開機：有未結束的記錄就接回來 ----------
 restoreActiveRecording();
+// 頁首第一次畫＋每分鐘更新一次（跨午夜換日期、天黑後日落改「天黑了」）；切到記錄頁時也重畫
+setTimeout(() => { try { renderRecHead(Recorder.getState()); } catch (e) { /* */ } }, 0);
+setInterval(() => { if (document.body.dataset.view === "record") { _recHeadSig = ""; try { renderRecHead(Recorder.getState()); } catch (e) { /* */ } } }, 60000);
+document.addEventListener("click", e => { if (e.target.closest('.tab[data-view="record"]')) setTimeout(() => { try { renderRecHead(Recorder.getState()); } catch (er) { /* */ } }, 50); });
