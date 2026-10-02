@@ -486,3 +486,10 @@ html[data-theme="dark"] .cg-c.l4 { background: #7fcf98; border-color: #8edaa6; }
 .adm-meta, .adm-note { font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-faint); overflow-wrap: anywhere; }
 .adm-item .btn { align-self: flex-end; padding: 6px 14px; font-size: calc(12.5px * var(--fs, 1)); }
 .crowd-empty .crowd-note { font-size: calc(12px * var(--fs, 1)); color: var(--ink-soft); margin-top: 2px; }
+/* —— 一句話找步道（js/nl-search.js）：看懂的條件 —— */
+.nl-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 4px 0 10px; padding: 8px 10px; border-radius: var(--r-sm); background: var(--brand-soft); }
+.nl-h { display: inline-flex; align-items: center; gap: 4px; font-weight: 800; font-size: calc(12.5px * var(--fs, 1)); color: var(--brand-deep); }
+.nl-h .ic { width: 14px; height: 14px; }
+.nl-chip { padding: 2px 9px; border-radius: var(--r-pill); background: var(--surface); border: 1px solid var(--line-soft); font-size: calc(12.5px * var(--fs, 1)); font-weight: 700; color: var(--ink); }
+.nl-word { font-weight: 600; color: var(--ink-soft); }
+.nl-x { margin-left: auto; border: none; background: none; color: var(--brand-deep); font: inherit; font-weight: 700; font-size: calc(12.5px * var(--fs, 1)); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }

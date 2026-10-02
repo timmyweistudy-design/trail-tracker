@@ -4,6 +4,18 @@
 // 步道名稱/介紹等資料內容維持中文。要補翻譯：加 DICT 詞條或 PATTERNS 規則即可。
 const I18n = (() => {
   const DICT = {
+    "看懂了": "Got it",
+    "%d 小時內": "Under %d h",
+    "中等": "Moderate",
+    "不要太陡": "Not too steep",
+    "大眾運輸": "Public transport",
+    "神木": "Giant trees",
+    "溪流": "Streams",
+    "竹林": "Bamboo",
+    "山頂展望": "Summit views",
+    "台北 3 小時內 有瀑布": "Taipei waterfall under 3 hours",
+    "宜蘭 親子 半天": "Yilan family half day",
+    "也可以整句打": "Or type a whole sentence",
     "平到能推嬰兒車、坐輪椅，長輩走起來也輕鬆。。": "Flat enough for strollers and wheelchairs — easy going for older walkers too.",
     "路好走、設施齊，散步等級，半天到一天就走完。。": "Easy path with good facilities — a stroll you can finish in half a day to a day.",
     "會有幾段上坡比較喘，不過路都整理過，一天內走得完。。": "A few uphill stretches will get you breathing hard, but the path is well kept and doable in a day.",

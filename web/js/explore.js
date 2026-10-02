@@ -304,9 +304,13 @@ function buildSuggest(q) {
   // 空查詢＋有最近搜尋 → 顯示「最近搜尋」清單（點一下帶入並搜尋）
   if (!q) {
     const rec = _recent();
-    if (!rec.length) { _sugHide(); return; }
-    box.innerHTML = `<div class="sug-head">${ttT("最近搜尋")}<button class="sug-clear" id="sugClearRecent">${ttT("清除")}</button></div>` +
-      rec.map(r => `<button class="sug" role="option" data-q="${escHtml(r)}">${ic("clock")}<span class="sug-n">${escHtml(r)}</span></button>`).join("");
+    // 一句話搜尋的示範：沒有最近搜尋時也顯示，讓人知道可以整句打（js/nl-search.js）
+    // 一句話搜尋只聽得懂中文和英文：其他語言顯示翻好的句子，但實際搜英文版
+    const lg = typeof I18n !== "undefined" ? I18n.lang() : "zh", parsable = ["zh", "cn", "en"].includes(lg);
+    const tips = [["台北 3 小時內 有瀑布", "Taipei waterfall under 3 hours"], ["宜蘭 親子 半天", "Yilan family half day"]].map(([z, e]) => [ttT(z), parsable ? ttT(z) : e]);
+    box.innerHTML = (rec.length ? `<div class="sug-head">${ttT("最近搜尋")}<button class="sug-clear" id="sugClearRecent">${ttT("清除")}</button></div>` +
+      rec.map(r => `<button class="sug" role="option" data-q="${escHtml(r)}">${ic("clock")}<span class="sug-n">${escHtml(r)}</span></button>`).join("") : "") +
+      `<div class="sug-head">${ttT("也可以整句打")}</div>` + tips.map(([l, q]) => `<button class="sug sug-tip" role="option" data-q="${escHtml(q)}">${ic("sparkle")}<span class="sug-n">${escHtml(l)}</span></button>`).join("");
     _sugShow();
     const cb = box.querySelector("#sugClearRecent");
     if (cb) cb.addEventListener("mousedown", e => { e.preventDefault(); try { localStorage.removeItem("tt_recent"); } catch (x) { } _sugHide(); });
@@ -391,8 +395,22 @@ function matches(t) {
   // 主題標籤（複選 OR）
   const tags = [...activeFilters].filter(f => f.startsWith("tag:")).map(f => f.slice(4));
   if (tags.length) { const tt = tagsOf(t); if (!tags.some(g => tt.includes(g))) return false; }
-  if (curQuery && !hayOf(t).includes(_q)) return false;
+  if (curQuery) {
+    if (_nl) {   // 一句話搜尋（js/nl-search.js）：拆成條件比對
+      if (!NLSearch.match(t, _nl, estHours, slopeInfo)) return false;
+      if (_nl.near && myLoc && (!t.lat || haversine(myLoc, { lat: t.lat, lon: t.lon }) > 25000)) return false;
+    } else if (!hayOf(t).includes(_q)) return false;
+  }
   return true;
+}
+// 一句話搜尋看懂的條件：列成一排小標籤，讓人知道結果是怎麼篩的
+let _nl = null;
+function renderNLBar() {
+  const box = document.getElementById("nlBar"); if (!box) return;
+  if (!_nl) { box.hidden = true; box.innerHTML = ""; return; }
+  box.hidden = false;
+  box.innerHTML = `<span class="nl-h">${ic("sparkle")}${ttT("看懂了")}</span>${_nl.chips.map(([, l]) => `<span class="nl-chip">${escHtml(l)}</span>`).join("")}${_nl.words.map(w => `<span class="nl-chip nl-word">「${escHtml(w)}」</span>`).join("")}<button class="nl-x" id="nlClear">${ttT("清除")}</button>`;
+  box.querySelector("#nlClear").addEventListener("click", () => { const inp = $("#searchInput"); inp.value = ""; curQuery = ""; _toggleClear(); render(); });
 }
 
 // 沒有官方「建議時程」的步道（占 96%）用長度＋爬升估時間，卡片才都是三格、高度一致
@@ -548,11 +566,13 @@ function render() {
   refreshCardCache();
   _walkCount = null;
   _q = nz(curQuery);
+  _nl = (curQuery && typeof NLSearch !== "undefined") ? NLSearch.parse(curQuery) : null;
+  renderNLBar();
   curList = TRAILS.filter(matches);
   if (myLoc) curList.sort((a, b) =>
     (a.lat ? haversine(myLoc, { lat: a.lat, lon: a.lon }) : 9e9) -
     (b.lat ? haversine(myLoc, { lat: b.lat, lon: b.lon }) : 9e9));
-  else if (curQuery && curSort === "default") {
+  else if (curQuery && !_nl && curSort === "default") {
     // 搜尋相關度：名稱開頭命中 > 名稱包含 > 林務署官方優先 > 短的優先
     const q = _q;
     const score = t => {
