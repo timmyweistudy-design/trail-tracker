@@ -194,6 +194,7 @@ const Store = (() => {
     "tt_quest_claim", "tt_quest_hi", "tt_badges_got", "tt_badges_seen", "tt_badges_date", "tt_ach_maxkm", "tt_ach_maxasc", "tt_ach_island", "tt_life",
     "tt_theme", "tt_hide_social", "tt_accent", "tt_palette", "tt_pro_color", "tt_pro_frame",
     "tt_presets", "tt_default_vis", "tt_wakelock",
+    "tt_peaks", "tt_mch", "tt_mch_done",   // 登頂收集冊、每月挑戰
   ];
   function exportAll() {
     const pet = {};

@@ -979,7 +979,8 @@ async function finishRecording(autoVehicle) {
     const saved = await safeRun("save-record", () => Store.addRecord(rec));
     if (!saved) toast(ttT("儲存失敗"));   // 極罕見（addRecord 有多層 fallback），但失敗不靜默；詳因記進 tt_errors
     // 完成判定放在結算前（結算頁可能顯示「已完成」狀態）
-    await safeRun("mark-done", () => maybeMarkTrailDone(rec));   // 真實走過＋全程沒偏離步道超過 1km 才算完成
+    await safeRun("mark-done", () => maybeMarkTrailDone(rec));
+    safeRun("peaks", () => { if (typeof Peaks !== "undefined") Peaks.stampRecord(rec); });   // 走到百岳／小百岳山頂 → 蓋章   // 真實走過＋全程沒偏離步道超過 1km 才算完成
     safeRun("ach-unlock", () => { if (typeof achCheckUnlocks === "function") achCheckUnlocks(); });   // 跨門檻即時慶祝解鎖
     safeRun("clear-trail", () => clearSelectedTrail(true));   // 這趟走完就放開步道：以前選擇默默留著，下一趟會自動掛在同一條步道上
     setRecStatus(autoVehicle ? ttT("看起來上車了，這趟先幫你收好") : ttT("準備好就按開始"));

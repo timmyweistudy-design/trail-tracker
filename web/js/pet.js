@@ -105,8 +105,8 @@ function openHatPicker() {
   if (document.querySelector('[data-ov="pethat"]')) return;
   const i = petStageIndex(totalKm()), cur = petHat(), owned = hatsOwned();
   const opts = PET_ART.HAT_IDS.map(id => {
-    const has = owned.has(id);
-    return `<button class="hat-opt${id === cur ? " on" : ""}${has ? "" : " locked"}" data-hat="${id}"><div class="hat-prev">${PET_ART.svg(i)}${PET_ART.hat(id, i)}</div><div class="hat-lbl">${ttT(PET_ART.HAT_LABEL[id])}</div>${has ? "" : `<div class="hat-cost">${BERRY_SVG}${HAT_COST}</div>`}</button>`;
+    const has = owned.has(id), quest = id === "bandana";   // 登山頭巾：完成每月挑戰才拿得到，不能買
+    return `<button class="hat-opt${id === cur ? " on" : ""}${has ? "" : " locked"}${quest && !has ? " quest" : ""}" data-hat="${id}"><div class="hat-prev">${PET_ART.svg(i)}${PET_ART.hat(id, i)}</div><div class="hat-lbl">${ttT(PET_ART.HAT_LABEL[id])}</div>${has ? "" : quest ? `<div class="hat-cost hat-quest">${ic("flag")} ${ttT("每月挑戰")}</div>` : `<div class="hat-cost">${BERRY_SVG}${HAT_COST}</div>`}</button>`;
   }).join("");
   const ov = document.createElement("div"); ov.className = "pet-modal"; ov.dataset.ov = "pethat";
   ov.innerHTML = `<div class="pet-modal-card"><button class="sheet-close" id="hatClose" aria-label="${ttT("關閉")}">${ic("x")}</button><h2>${ic("sparkle")} ${ttT("幫夥伴裝扮")}</h2><p class="dex-intro">${ttT("用果實換新配件，換過的就一直是你的。")}</p><div class="hat-bal">${ttT("你有")} ${BERRY_SVG}<b>${berriesBalance()}</b></div><div class="hat-grid">${opts}</div></div>`;
@@ -118,6 +118,7 @@ function openHatPicker() {
   ov.querySelector("#hatClose").addEventListener("click", close);
   ov.querySelectorAll(".hat-opt").forEach(btn => btn.addEventListener("click", async () => {
     const id = btn.dataset.hat, own = hatsOwned();
+    if (!own.has(id) && id === "bandana") { toast(ttT("完成一次每月挑戰就會解鎖，在夥伴頁看進度")); return; }
     if (!own.has(id)) {
       if (berriesBalance() < HAT_COST) { toast(`${ttT("果實還差")} ${HAT_COST - berriesBalance()}`); return; }
       const ok = typeof ttConfirm === "function" ? await ttConfirm(`${ttT("換上")}${ttSp()}${ttQuote(ttT(PET_ART.HAT_LABEL[id]))}${ttCJK() ? "？" : "?"}${ttParen(`${HAT_COST} ${ttT("顆果實")}`)}`, ttT("換上"), ttT("再想想")) : true;
@@ -265,6 +266,7 @@ function renderQuests() {
     ttBuzz(r.mile ? [120, 60, 120] : 40);
     confetti && confetti(); renderQuests(); renderPet();
   });
+  if (typeof Challenge !== "undefined") { try { Challenge.render(); } catch (e) { /* */ } }   // 每月挑戰跟著每日任務一起更新
 }
 // 每日任務里程碑：連續 N 天達成的一次性大獎
 const QUEST_MILES = [{ day: 3, bonus: 5 }, { day: 7, bonus: 15 }, { day: 14, bonus: 25 }, { day: 30, bonus: 50 }];

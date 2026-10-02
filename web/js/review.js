@@ -269,6 +269,7 @@ function openTrackReview(rec, isNew) {
       <button class="link-btn" id="trackGpx">${ic("download")} ${ttT("路線檔")}${_pro() ? "" : `<span class="pro-tag">PRO</span>`}</button>
       <button class="link-btn" id="trackShare">${ic("share")} ${ttT("分享行程")}</button>
       ${rec.sim || socialHidden() ? "" : `<button class="link-btn social-only" id="trackSocial">${ic("megaphone")} ${ttT("分享到社群")}</button>`}
+      ${!rec.sim && rec.trailId && typeof TrailReports !== "undefined" ? `<button class="link-btn" id="trackReport">${ic("alert")} ${ttT("回報路況")}</button>` : ""}
     </div>
     ${isNew ? "" : `<div class="track-manage"><button class="tm-btn" id="trackRename">${ic("pencil")} ${ttT("改名稱")}</button><button class="tm-btn danger" id="trackDelete">${ic("trash")} ${ttT("刪除這一趟")}</button></div>`}`;
   $("#trackMask").classList.add("show");
@@ -321,6 +322,7 @@ function openTrackReview(rec, isNew) {
     if (!_proGate()) return;   // PRO：匯出路線檔
     GPX.exportRecord(rec); toast(ttT("路線檔存好了"));
   });
+  { const rp = $("#trackReport"); if (rp) rp.addEventListener("click", () => { const t = TRAILS.find(x => String(x.id) === String(rec.trailId)); if (t) TrailReports.openForm(t); }); }
   $("#trackShare").addEventListener("click", () => {
     const text = `${ttT("我走了")} ${rec.trailName || ttT("自由路線")}：${km.toFixed(2)} km・↑${rec.ascent || 0} m${rec.kcal ? `・${Math.round(rec.kcal)} ${ttT("大卡")}` : ""}・${fmtTime(rec.elapsedMs)} — ${ttT("循徑拾光")}`;
     if (navigator.share) navigator.share({ title: ttT("我的健行紀錄"), text }).catch(() => {});

@@ -165,6 +165,7 @@ $("#btnDiag").addEventListener("click", async () => {
   if (act === "file") saveBlob(new Blob([info], { type: "text/plain" }), `trail-tracker-diag-${new Date().toLocaleDateString("sv-SE")}.txt`, "Diagnostics");
 });
 $("#btnFootMap").addEventListener("click", () => { if (!_proGate()) return; openFootprintMap(); });
+$("#btnPeaks").addEventListener("click", () => { if (typeof Peaks !== "undefined") Peaks.open(); });
 $("#btnAllOffline").addEventListener("click", downloadAllTaiwan);
 $("#btnFavOffline").addEventListener("click", downloadFavOffline);
 

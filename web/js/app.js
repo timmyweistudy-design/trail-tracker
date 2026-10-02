@@ -229,7 +229,7 @@ const ICON = {
   sliders: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',
   refresh: '<path d="M20 11a8 8 0 1 0-1.5 5"/><path d="M20 5v6h-6"/>',
   sparkle: '<path d="M12 3c.7 4.4 1.6 5.3 6 6-4.4.7-5.3 1.6-6 6-.7-4.4-1.6-5.3-6-6 4.4-.7 5.3-1.6 6-6Z"/>',
-  megaphone: '<path d="M4 10v4l9 4V6l-9 4Z"/><path d="M13 8.5a4 4 0 0 1 0 7M4 12H3"/>',
+  megaphone: '<path d="M3 10.5v3l15 5.5V5L3 10.5Z"/><path d="M7.5 15l1 4.5h3l-.8-3.4M21 9.5v5"/>',
   x: '<path d="M6 6l12 12M18 6 6 18"/>',
   check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
   pause: '<path d="M8 5v14M16 5v14" stroke-width="3"/>',
@@ -238,6 +238,8 @@ const ICON = {
   backpack: '<path d="M7 8a5 5 0 0 1 10 0v11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V8Z"/><path d="M10 3.5h4M9 13h6v4H9z"/>',
   sunset: '<path d="M4 18h16M7 14a5 5 0 0 1 10 0"/><path d="M12 4v4m-6.4.6 2 2m10.8-2-2 2M3 14h2m14 0h2"/>',
   moon: '<path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8 8 0 1 0 11 11Z"/>',
+  flag: '<path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/>',
+  wind: '<path d="M3 8h11a3 3 0 1 0-3-3"/><path d="M3 12h16a3 3 0 1 1-3 3"/><path d="M3 16h7"/>',
   phone: '<path d="M5 3.5h3.2l1.6 4.3-2.1 1.5a11 11 0 0 0 7 7l1.5-2.1 4.3 1.6V19a1.5 1.5 0 0 1-1.6 1.5A16.5 16.5 0 0 1 3.5 5.1 1.5 1.5 0 0 1 5 3.5Z"/>',
   cloud: '<path d="M7 18a4 4 0 0 1-.4-8 5.5 5.5 0 0 1 10.6 1.3A3.5 3.5 0 0 1 17 18H7Z"/>',
   rain: '<path d="M7 14a4 4 0 0 1-.4-8 5.5 5.5 0 0 1 10.6 1.3A3.5 3.5 0 0 1 17 14H7Z"/><path d="m9 17-1 3m5-3-1 3m5-3-1 3"/>',
@@ -1074,10 +1076,13 @@ function pinIcon(color, label) {
 }
 // 步道路況/封閉警示橫幅
 function fmtYmd(s) { return s && s.length === 8 ? `${s.slice(0, 4)}/${s.slice(4, 6)}/${s.slice(6)}` : s; }
+// 路況更新時間：一小時內寫「12 分鐘前」，再久寫日期時間；不是剛剛抓的（離線用存檔）就標出來
 function condStamp() {
   const u = (typeof Conditions !== "undefined" && Conditions.lastUpdated()) || 0;
   if (!u) return "";
-  return new Date(u).toLocaleString(ttLocale(), { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+  const s = Math.max(1, Math.round((Date.now() - u) / 1000));
+  const txt = s < 6 * 3600 ? ttAgo(s) : new Date(u).toLocaleString(ttLocale(), { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+  return txt + (Conditions.ok() ? "" : `${ttSp()}${ttParen(ttT("離線，顯示上次抓到的"))}`);
 }
 // 外部來源的字串插進 innerHTML 前一律跳脫：Google Places 的店名/簡介是店家可自訂的欄位、
 // 林業署公告也是外部資料，直接插入會破版（最壞情況是 stored XSS）。
@@ -1273,6 +1278,7 @@ function detailOverviewHtml(t) {
       <button class="link-btn" id="btnDetMore">${ic("more")} ${ttT("更多")}</button>
     </div>
     <div id="activityBox" hidden></div>
+    <div id="trailReportBox"></div>
     <div id="trailFeedBox"></div>`;
 }
 function detailRouteHtml(t) {
@@ -1337,6 +1343,7 @@ async function openDetail(id, opts) {
   loadElevation(t);
   loadTrailFeed(t);
   loadTrailActivity(t);
+  if (typeof TrailReports !== "undefined") TrailReports.load(t);   // 山友路況回報（7 天內）
   drawDetailMap(t);
   // 首次點開步道詳情 → 情境導覽（等面板滑入穩定再跳；已關閉就不跳）
   if (typeof window.ttCoachTrail === "function") setTimeout(() => window.ttCoachTrail(!!geoOf(t)), 550);
@@ -1636,10 +1643,49 @@ async function loadWeather(t) {
         : `<div class="wx-best">${ic("calendar")}<span>${ttT("最適合出發")}：<b>${wd(best)}</b>（${ttT("降雨")} ${dd.precipitation_probability_max[best] ?? "—"}%・${Math.round(dd.temperature_2m_min[best])}–${Math.round(dd.temperature_2m_max[best])}°）</span></div>`}
       <svg class="wx-curve" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><path d="${line}" fill="none" stroke="var(--brand-mid)" stroke-width="2"/>${dots}</svg>
       <div class="wx-fc">${fc}</div>
-      <div class="food-credit">${ttT("天氣資料：Open-Meteo · 7 日預報")}</div>`;
+      <div class="food-credit">${ttT("天氣資料：Open-Meteo · 7 日預報")}</div>
+      <div id="summitWx"></div>`;
+    loadSummitWeather(t);
   } catch {
     box.innerHTML = `<div class="food-empty">${ttT("天氣查不到，要有網路")}</div>`;
   }
+}
+// 山頂天氣：登山口天氣跟山頂可以差到 10 度。有海拔資料、而且山頂夠高（1,000 m 以上，或比登山口高 300 m 以上）才顯示。
+// 分成清晨／中午／午後三段看接下來兩天半，並挑出要注意的：午後雷雨、體感很冷、稜線強風。
+async function loadSummitWeather(t) {
+  const box = $("#summitWx"); if (!box) return;
+  const hi = t.alt_high, lo = t.alt_low;
+  if (!hi || !(hi >= 1000 || (lo != null && hi - lo >= 300))) { box.innerHTML = ""; return; }
+  try {
+    const d = await Weather.summit(t.lat, t.lon, hi);
+    if (_detailTrail !== t || !$("#summitWx")) return;
+    const h = d.hourly, now = Date.now();
+    const SEG = [["清晨", 5, 8], ["中午", 11, 13], ["午後", 14, 17]];
+    const rows = [];
+    for (let day = 0; day < 3 && rows.length < 5; day++) {
+      for (const [lbl, a, b] of SEG) {
+        const idx = h.time.map((x, i) => [x, i]).filter(([x]) => { const dt = new Date(x); const dd = Math.round((new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()) - new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate())) / 864e5); return dd === day && dt.getHours() >= a && dt.getHours() <= b && dt.getTime() + 3600e3 > now; }).map(([, i]) => i);
+        if (!idx.length || rows.length >= 5) continue;
+        const pick = k => idx.map(i => h[k][i]).filter(v => v != null);
+        const temp = Math.round(Math.min(...pick("temperature_2m"))), feel = Math.round(Math.min(...pick("apparent_temperature")));
+        const pop = Math.max(...pick("precipitation_probability")), gust = Math.round(Math.max(...pick("wind_gusts_10m")));
+        const code = Math.max(...pick("weather_code"));
+        rows.push({ day, lbl, temp, feel, pop, gust, code });
+      }
+    }
+    if (!rows.length) { box.innerHTML = ""; return; }
+    const dayName = n => n === 0 ? ttT("今天") : n === 1 ? ttT("明天") : ttT("後天");
+    const warn = [];
+    if (rows.some(r => r.code >= 95 && r.lbl !== "清晨")) warn.push(ttT("午後可能有雷雨，早出早歸"));
+    const minFeel = Math.min(...rows.map(r => r.feel)); if (minFeel <= 5) warn.push(`${ttT("山頂體感最低")} ${minFeel}°C${ttSp()}${ttT("要帶保暖衣物")}`);
+    const maxGust = Math.max(...rows.map(r => r.gust)); if (maxGust >= 45) warn.push(`${ttT("稜線陣風可達")} ${maxGust} km/h`);
+    box.innerHTML = `<div class="smt">
+      <div class="smt-h">${ic("mountain")}<span>${ttT("山頂天氣")}</span><small>${ttT("海拔")} ${hi.toLocaleString()} m</small></div>
+      ${warn.length ? `<div class="smt-warn">${warn.map(w => `<div>${ic("alert")}<span>${w}</span></div>`).join("")}</div>` : ""}
+      <div class="smt-rows">${rows.map(r => `<div class="smt-row"><span class="smt-when"><b>${dayName(r.day)}</b>${ttSp()}${ttT(r.lbl)}</span><span class="smt-ic">${wxIcon(r.code)}</span>
+        <span class="smt-t"><b>${r.temp}°</b><small>${ttT("體感")} ${r.feel}°</small></span><span class="smt-p">${ic("drop")}${r.pop}%</span><span class="smt-g">${ic("wind")}${r.gust}</span></div>`).join("")}</div>
+      <div class="food-credit">${ttT("依山頂海拔修正的預報，僅供參考")}</div></div>`;
+  } catch (e) { box.innerHTML = ""; }
 }
 
 // Google 回的分類名（中文）：中文介面照用；其他語言查字典，查不到就用通稱，不讓中文混在外文介面裡
@@ -2255,10 +2301,16 @@ function refreshConditions() {
   Conditions.refresh(TRAILS).then(r => {
     if (!r || !r.ok) return;
     render();                                 // 重繪列表（解除/新增封閉標記）
+    // 收藏的步道路況變了：講一聲（最多講兩條，其餘合成一句）
+    const ch = r.changes || [];
+    ch.slice(0, 2).forEach((c, i) => setTimeout(() => toast(`${ttT("你收藏的")}${ttSp()}${ttQuote(ttT(c.t.name))}${ttColon()}${c.now ? ttT(c.now) : ttT("恢復開放了")}`), 1500 + i * 2600));
+    if (ch.length > 2) setTimeout(() => toast(`${ttT("其他收藏步道的路況也有變，到步道頁看看")} (+${ch.length - 2})`), 1500 + 2 * 2600);
     const t = currentDetailTrail && currentDetailTrail();
     if (t) { const el = document.getElementById("condLive"); if (el) el.innerHTML = conditionBanner(t); }   // 詳情頁開著就更新橫幅
   });
 }
+// 先套用本機存的最新一份（山上沒網路也是最後一次抓到的路況），再上網抓新的
+try { if (typeof Conditions !== "undefined" && Conditions.restore(TRAILS)) render(); } catch (e) { /* */ }
 refreshConditions();
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible" && Date.now() - (Conditions.lastUpdated() || 0) > 600000) refreshConditions();

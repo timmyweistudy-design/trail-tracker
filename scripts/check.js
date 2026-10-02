@@ -72,6 +72,7 @@ const BACKUP_EXEMPT = new Set([
   "tt_native_push",                                       // 原生推播開關：綁這台裝置的 APNs token，不跨機還原
   "tt_premium", "tt_premium_since",                       // 訂閱狀態：由 Supabase 決定
   "tt_active_rec",                                        // 記錄中暫存
+  "tt_peaks_scan", "tt_cond_cache", "tt_cond_seen",       // 收集冊「以前紀錄掃過了」旗標（換機要重掃）、路況快取（每台自己抓）
   "tt_vis",                                               // 戶外顯示（陽光／紅光）：看當下環境臨時切，換手機不該一開就是紅色畫面
   "tt_offline_sets", "tt_tiles_migrated", "tt_tiles_clean1",                  // 離線地圖清單／搬家旗標：圖磚只在這台手機，跨機還原沒意義
   "tt_push_hint_off",                                     // 社群通知頁的推播提示關掉了（裝置偏好）
@@ -116,6 +117,15 @@ for (const jf of ["app.js", "explore.js", "record.js", "review.js", "me.js"]) { 
       if (!knownIds.has(m[1])) err(`[HTML] web/js/${jf}:${i + 1} 取用 #${m[1]}，但 index.html 與 JS 模板都沒有這個 id（可能打錯字）`);
     }
   });
+}
+
+// E2. index.html 載入的每支 js 都要在 sw.js 的預先快取清單裡：漏了的話第一次離線打開 App，
+//     那支檔案根本拿不到（2026-10-02 抓到 outdoor.js——求救卡、原路返回——沒在清單裡）
+{
+  const sw = read(path.join(WEB, "sw.js"));
+  for (const m of html.matchAll(/<script[^>]+src="(js\/[^"]+\.js)"/g)) {
+    if (!sw.includes(`"./${m[1]}"`)) err(`[SW] index.html 載入 ${m[1]}，但 web/sw.js 的預先快取清單沒有它（離線第一次開會缺檔）`);
+  }
 }
 
 // I. 禁用原生對話框：confirm/prompt/alert 樣式醜、翻譯不了、擋主執行緒——
@@ -186,7 +196,7 @@ try {
   const news = new Set();
   const half = new Set();   // 半翻：tx 有回傳但英文結果仍殘留中文（如「、」切段只命中一部分）——付費牆踩過
   for (const f of files) {
-    if (f.endsWith("i18n.js") || f.endsWith("i18n-names.js") || /[\\/]i18n[\\/]/.test(f) || /geo-manifest\.js$|[\\/]geo[\\/]/.test(f) || /trails-(data|detail|geo)\.js$/.test(f) || f.endsWith("ecology-data.js")) continue;
+    if (f.endsWith("i18n.js") || f.endsWith("i18n-names.js") || /[\\/]i18n[\\/]/.test(f) || /geo-manifest\.js$|[\\/]geo[\\/]/.test(f) || /trails-(data|detail|geo)\.js$|peaks-data\.js$/.test(f) || f.endsWith("ecology-data.js")) continue;
     const src2 = read(f);
     for (const m of src2.matchAll(/[>"`]([^<>`"$\\{}]*[\u4e00-\u9fff][^<>`"$\\{}]*)[<"`$]/g)) {
       const t = m[1].trim();

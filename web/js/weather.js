@@ -34,5 +34,21 @@ const Weather = (() => {
     return data;
   }
 
-  return { get, desc };
+  // 山頂天氣：同一點用山頂的海拔去算（Open-Meteo 依海拔修正氣溫），抓逐時的體感溫度、降雨機率、陣風
+  const scache = {};
+  async function summit(lat, lon, ele) {
+    const k = ckey(lat, lon) + "@" + Math.round(ele);
+    const mem = scache[k];
+    if (mem && Date.now() - mem.ts < TTL) return mem.data;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&elevation=${Math.round(ele)}` +
+      `&hourly=temperature_2m,apparent_temperature,precipitation_probability,weather_code,wind_gusts_10m` +
+      `&timezone=Asia%2FTaipei&forecast_days=3`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("weather");
+    const data = await res.json();
+    scache[k] = { ts: Date.now(), data };
+    return data;
+  }
+
+  return { get, desc, summit };
 })();

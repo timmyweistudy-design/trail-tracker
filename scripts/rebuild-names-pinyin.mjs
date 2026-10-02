@@ -12,6 +12,9 @@ const ALL = process.argv.includes("--all");
 const trails = JSON.parse(fs.readFileSync("data/trails.json", "utf8"));
 const names = new Set();
 for (const t of trails) if (t.name) names.add(t.name);
+// 百岳／小百岳山名（登頂收集冊用）
+{ const pk = fs.readFileSync("web/js/peaks-data.js", "utf8");
+  for (const m of pk.matchAll(/\[\d+,"([^"]+)",/g)) names.add(m[1]); }
 
 const cur = fs.readFileSync("web/js/i18n-names.js", "utf8");
 const N = JSON.parse(cur.slice(cur.indexOf("{"), cur.lastIndexOf("}") + 1));
