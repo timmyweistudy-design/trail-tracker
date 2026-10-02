@@ -1,0 +1,29 @@
+name: Health check
+# 每天檢查一次「林業署路況代理」（Cloudflare Worker）：壞了 App 只會默默用舊資料，所以這裡壞了就讓工作流程失敗，
+# GitHub 會寄信通知。也可以在 Actions 頁面手動按 Run workflow。
+on:
+  schedule:
+    - cron: "30 23 * * *"   # 台灣 07:30
+  workflow_dispatch:
+
+jobs:
+  conditions-proxy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check trail conditions proxy
+        run: |
+          URL=$(grep -o 'CONDITIONS_PROXY = "[^"]*"' web/js/config.js | cut -d'"' -f2)
+          echo "Checking $URL"
+          node -e '
+            const url = process.argv[1];
+            fetch(url, { signal: AbortSignal.timeout(20000) }).then(async r => {
+              if (!r.ok) throw new Error("HTTP " + r.status);
+              const d = await r.json();
+              if (!Array.isArray(d)) throw new Error("回傳不是陣列");
+              const bad = d.filter(x => !x.TRAILID || !x.TR_TYP);
+              if (bad.length) throw new Error(bad.length + " 筆缺 TRAILID/TR_TYP，欄位可能改了");
+              console.log("OK：" + d.length + " 筆路況");
+            }).catch(e => { console.error("路況代理壞了：" + e.message); process.exit(1); });
+          ' "$URL"

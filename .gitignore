@@ -46,3 +46,6 @@ dist/
 
 # 一次性腳本與字典工作區（本機保留，不進版控）
 scratchpad/
+
+# 自動化測試的截圖輸出
+scripts/tests/out/

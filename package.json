@@ -14,7 +14,10 @@
     "data:update": "python3 data/build_data.py && python3 data/refine_geo.py && node data/apply_geo.js && python3 data/enrich_waypoints.py && node scripts/apply-detail-fields.mjs && node scripts/rebuild-names-pinyin.mjs && python3 scripts/build-font-subset.py && node scripts/pack-trails.mjs && node scripts/shard-geo.mjs && node scripts/check.js",
     "data:pack": "node scripts/pack-trails.mjs && node scripts/shard-geo.mjs",
     "audit": "node scripts/audit-ui.js",
-    "audit:center": "node scripts/audit-center.js"
+    "audit:center": "node scripts/audit-center.js",
+    "test:all": "node scripts/tests/run-all.js",
+    "test:quick": "node scripts/tests/run-all.js --quick",
+    "test:sql": "node scripts/tests/run-all.js --sql"
   },
   "dependencies": {
     "@capacitor-community/background-geolocation": "^1.2.26",
@@ -33,7 +36,9 @@
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^6.1.2",
+    "embedded-postgres": "^18.4.0-beta.17",
     "esbuild": "^0.28.1",
+    "pg": "^8.23.1",
     "pinyin-pro": "^3.29.4",
     "playwright": "^1.61.1",
     "xcode": "^3.0.1"

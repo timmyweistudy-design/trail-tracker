@@ -1,0 +1,35 @@
+const { boot, as, ROOT } = require("./harness");
+const fs = require("fs");
+let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++; };
+(async () => {
+  const { pg, c } = await boot();
+  const A = "00000000-0000-0000-0000-00000000000a", B = "00000000-0000-0000-0000-00000000000b";
+  for (const u of [A, B]) await c.query("insert into auth.users values ($1)", [u]);
+  await c.query("insert into profiles values ($1,'amei','阿梅',null),($2,'bob','',null)", [A, B]);
+  for (let i = 0; i < 2; i++) { try { await c.query(fs.readFileSync(ROOT + "schema-phase30-trail-reports.sql", "utf8")); ok(true, "phase30 runs " + (i + 1)); } catch (e) { ok(false, "phase30: " + e.message); process.exit(1); } }
+  let r = await as(c, A, "insert into trail_reports(trail_id, kind, note, lat, lon) values ('forestry-004','tree','1.2K 倒木',24.9,121.6) returning id, author_id");
+  ok(!r.err && r.rows[0].author_id === A, "insert own report " + (r.err || ""));
+  r = await as(c, A, "insert into trail_reports(trail_id, author_id, kind) values ('x',$1,'ok')", [B]);
+  ok(!!r.err, "cannot insert as someone else");
+  r = await as(c, A, "insert into trail_reports(trail_id, kind) values ('x','bogus')");
+  ok(!!r.err, "bad kind rejected");
+  r = await as(c, A, "insert into trail_reports(trail_id, kind, photo_url) values ('x','ok','javascript:alert(1)')");
+  ok(!!r.err, "non-https photo rejected");
+  r = await as(c, null, "select * from trail_reports_recent('forestry-004')");
+  ok(!r.err && r.rows.length === 1 && r.rows[0].author_name === "阿梅" && r.rows[0].is_mine === false, "anon reads via RPC with name " + (r.err || ""));
+  r = await as(c, A, "select * from trail_reports_recent('forestry-004')");
+  ok(r.rows[0] && r.rows[0].is_mine === true, "is_mine for author");
+  r = await as(c, B, "select * from trail_reports");
+  ok(!r.err && r.rows.length === 0, "others cannot select table directly");
+  r = await as(c, B, "delete from trail_reports returning id");
+  ok(!r.err && r.rows.length === 0, "others cannot delete");
+  for (let i = 0; i < 9; i++) await as(c, A, "insert into trail_reports(trail_id, kind) values ('y','ok')");
+  r = await as(c, A, "insert into trail_reports(trail_id, kind) values ('y','ok')");
+  ok(/rate limit/.test(r.err || ""), "11th report in a day rate-limited");
+  await c.query("update trail_reports set created_at = now() - interval '8 days' where note = '1.2K 倒木'");
+  r = await as(c, null, "select * from trail_reports_recent('forestry-004')");
+  ok(r.rows.length === 0, "reports older than 7 days hidden");
+  r = await as(c, A, "delete from trail_reports where trail_id='y' returning id");
+  ok(!r.err && r.rows.length === 9, "author deletes own");
+  console.log("FAILS", fails); await c.end(); await pg.stop();
+})().catch(e => { console.error(e); process.exit(1); });

@@ -1,23 +1,42 @@
 name: CI
+# 每次推上 main：語法／翻譯檢查＋冒煙測試＋各功能測試＋資料庫測試（scripts/tests/）
+# 每天凌晨（台灣 03:00）：再跑一次完整版（含 UI 巡檢、社群、記錄頁等長測試）
+# 沒過的話 GitHub 會寄信給 repo 擁有者
 on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    - cron: "0 19 * * *"
+  workflow_dispatch:
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
       - name: Install Playwright (chromium)
-        run: |
-          npm i -D playwright@1.61.1
-          npx playwright install --with-deps chromium
-      - name: Check
-        run: node scripts/check.js
-      - name: E2E
+        run: npx playwright install --with-deps chromium
+      - name: Quick tests (check + feature tests + SQL)
+        if: github.event_name != 'schedule'
+        run: npm run test:quick && npm run test:sql
+      - name: E2E smoke
+        if: github.event_name != 'schedule'
         run: node scripts/e2e.js
+      - name: Full test suite (nightly)
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: npm run test:all
+      - name: Upload screenshots when failing
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-screenshots
+          path: scripts/tests/out/
+          retention-days: 7
