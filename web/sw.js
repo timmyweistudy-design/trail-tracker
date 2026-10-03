@@ -1,5 +1,5 @@
 // 離線快取：app shell + 地圖圖磚
-const CACHE = "trail-tracker-v559";
+const CACHE = "trail-tracker-v560";
 const TILE_CACHE = "tt-tiles";
 const SAVED_CACHE = "tt-tiles-saved";   // 使用者下載的離線地圖（不隨版本清除、不受上限）   // 地圖圖磚（不隨版本清除，保留離線地圖）
 const ASSETS = [
@@ -8,7 +8,7 @@ const ASSETS = [
   "./vendor/fonts/taipei-sans.woff2",
   "./vendor/fonts/brand-serif.woff2",
   "./js/trails-data.js", "./js/geo-manifest.js", "./js/storage.js", "./js/dialog.js", "./js/moderation.js", "./js/boot-head.js", "./js/boot-social.js", "./js/boot-sw.js", "./js/i18n.js", "./js/i18n-names.js", "./js/grades.js", "./js/config.js", "./js/conditions.js",
-  "./js/photos.js", "./js/amenities.js", "./js/food.js", "./js/attractions.js", "./js/weather.js", "./js/profile.js", "./js/recorder.js", "./js/elevation.js", "./js/offline.js", "./js/gpx.js", "./js/iap.js", "./js/premium.js", "./js/pet-art.js", "./js/pet.js", "./js/achievements.js", "./js/analytics.js", "./js/year-story.js", "./js/admin.js", "./js/ecology-data.js", "./js/ecology.js", "./js/native-cam.js", "./js/native-push.js", "./js/native-review.js", "./js/native-local-notif.js", "./js/app.js", "./js/map-ui.js", "./js/detail.js", "./js/appearance.js", "./js/app-boot.js", "./js/me.js", "./js/nl-search.js", "./js/explore.js", "./js/record.js", "./js/outdoor.js", "./js/peaks-data.js", "./js/peaks.js", "./js/trail-reports.js", "./js/guardian.js", "./js/motion.js", "./js/trail-crowd.js", "./js/native-live.js", "./js/challenge.js", "./js/review.js", "./js/debug.js",
+  "./js/photos.js", "./js/amenities.js", "./js/food.js", "./js/attractions.js", "./js/weather.js", "./js/profile.js", "./js/recorder.js", "./js/elevation.js", "./js/offline.js", "./js/gpx.js", "./js/iap.js", "./js/premium.js", "./js/pet-art.js", "./js/pet-stage.js", "./js/pet.js", "./js/achievements.js", "./js/analytics.js", "./js/year-story.js", "./js/admin.js", "./js/ecology-data.js", "./js/ecology.js", "./js/native-cam.js", "./js/native-push.js", "./js/native-review.js", "./js/native-local-notif.js", "./js/app.js", "./js/map-ui.js", "./js/detail.js", "./js/appearance.js", "./js/app-boot.js", "./js/me.js", "./js/nl-search.js", "./js/explore.js", "./js/record.js", "./js/outdoor.js", "./js/peaks-data.js", "./js/peaks.js", "./js/trail-reports.js", "./js/guardian.js", "./js/motion.js", "./js/trail-crowd.js", "./js/native-live.js", "./js/challenge.js", "./js/review.js", "./js/debug.js",
   "./vendor/supabase/supabase.js",
   "./js/social/supa.js", "./js/social/handle.js", "./js/social/media.js", "./js/social/posts.js", "./js/social/composer.js", "./js/social/safety.js", "./js/social/feed.js", "./js/social/postview.js", "./js/social/comments.js", "./js/social/discover.js", "./js/social/petsocial.js", "./js/social/teamlive.js", "./js/social/teams.js", "./js/social/notifications.js", "./js/social/push.js", "./js/social/autocomplete.js", "./js/social/events.js", "./js/social/clubs.js", "./js/social/lightbox.js", "./js/social/auth.js", "./js/social/profiles.js", "./js/social/social-ui.js",
   "./manifest.webmanifest",

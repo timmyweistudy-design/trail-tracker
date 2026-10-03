@@ -304,12 +304,17 @@ function renderPet() {
   const need = Math.max(0, 3 - berries);
   const feedLbl = cd > 0 ? `${cd >= 3600e3 ? `${Math.ceil(cd / 3600e3)} ${ttT("小時後可餵")}` : `${Math.ceil(cd / 6e4)} ${ttT("分鐘後可餵")}`}`
     : need > 0 ? `${ttT("還差")} ${need} ${ttT("顆果實")}` : `${ttT("餵食")}`;
-  box.innerHTML = `<div class="pet-card${i >= 6 ? " final" : ""}" style="--habitat:${PET_BG[i]}">
-    <div class="pet-habitat">${(typeof PET_ART !== "undefined" && PET_ART.habitat) ? PET_ART.habitat(i) : ""}<span class="pet-ff" style="left:16%;top:24%"></span><span class="pet-ff" style="left:78%;top:18%;animation-delay:2.1s;animation-duration:7.5s"></span><span class="pet-ff" style="left:60%;top:40%;animation-delay:3.4s;animation-duration:5.5s"></span></div>
-    <div class="pet-stage">
+  // 2.5D 舞台（pet-stage.js）：角色那一層包在分層場景裡；沒載到就退回舊的平面棲地
+  const actorHtml = `
       <div class="pet-bubble">${ttT(mood.t)}</div>
       <div id="petEmoji" class="pet-m-${mood.k || "content"}" role="button" tabindex="0" aria-label="${ttT("摸摸")} ${escHtml(nm || ttT(st.n))}">${art}${petMoodFx(mood.k)}</div>
-      <div class="pet-shadow"></div>
+      <div class="pet-shadow"></div>`;
+  const stageHtml = (typeof PetStage !== "undefined")
+    ? PetStage.html(i, actorHtml, { wx: PetStage.cachedWx() })
+    : `<div class="pet-habitat">${(typeof PET_ART !== "undefined" && PET_ART.habitat) ? PET_ART.habitat(i) : ""}</div>${actorHtml}`;
+  box.innerHTML = `<div class="pet-card${i >= 6 ? " final" : ""}" style="--habitat:${PET_BG[i]}">
+    ${stageHtml}
+    <div class="pet-stage">
       <div class="pet-idline"><span class="pet-name">${escHtml(nm || ttT(st.n))}</span><span class="lv-chip lvt-${Math.min(i + 1, 7)} pet-lv-chip">Lv.${i + 1}</span></div>
       <div class="pet-tools"><button class="pet-tool" id="petDress">${ic("sparkle")}${ttT("裝扮")}</button>${(typeof Premium !== "undefined" && Premium.isOn()) ? `<button class="pet-tool" id="petRename">${ic("pencil")}${ttT("改名")}</button>` : ""}</div>
       <div class="pet-evo"><div class="pet-evo-top">${evoTop}</div>${prog}</div>
@@ -330,6 +335,11 @@ function renderPet() {
       <button class="pet-btn" id="petRec">${ic("compass")} ${ttT("去走")}</button>
     </div>
   </div>`;
+  if (typeof PetStage !== "undefined") {
+    PetStage.bind(box.querySelector(".ps-box"));
+    const had = PetStage.cachedWx();
+    PetStage.weather().then(w => { if (w !== had && document.body.dataset.view === "pet" && box.isConnected) renderPet(); });   // 天氣回來了才補畫（之後走快取，不會一直重畫）
+  }
   const em = $("#petEmoji");
   const poke = () => {
     em.classList.remove("tap"); void em.offsetWidth; em.classList.add("tap");

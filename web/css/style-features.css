@@ -1823,3 +1823,54 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .ev-when-pv { font-size: calc(12.5px * var(--fs, 1)); color: var(--brand-deep); font-weight: 700; margin: -4px 2px 8px; }
 .ev-when-pv:empty { display: none; }
 .ev-form #evMsg:empty { display: none; }
+
+/* ── 山林夥伴 2.5D 舞台（pet-stage.js）：天空→遠山→中景→粒子→角色→前景，以 --px/--py × 各層 --d 做視差 ── */
+.ps-box { position: relative; margin: -18px -16px 6px; padding: 16px 16px 0; overflow: hidden; border-radius: 24px 24px 0 0; isolation: isolate; --px: 0; --py: 0;
+  --sky1: #8fc7e8; --sky2: #d6ecdc; --f1: #86aea6; --f2: #5f9378; --m: #3f7a52; --m2: #4d8a5e; --g: #2c5f3e; --fr: #22513a; --rock: #8a8d90; --rock2: #6d7174; --mist: rgba(240,246,244,.55); --cloud: #f3f7f6; --floor: #1f4730;
+  background: linear-gradient(180deg, var(--sky1), var(--sky2) 78%); touch-action: pan-y; }
+.ps-box[data-tod="dawn"]  { --sky1: #f2b99a; --sky2: #b9d3cf; --f1: #b49aa7; --f2: #86918a; --m: #4a7656; --m2: #5a8664; --g: #315a40; --fr: #27503a; --cloud: #fbe9e0; }
+.ps-box[data-tod="dusk"]  { --sky1: #6b5a8c; --sky2: #eb9a68; --f1: #8a6b86; --f2: #5e5a74; --m: #3a5a48; --m2: #46664f; --g: #2a4a38; --fr: #1e3a2c; --rock: #7a6b70; --rock2: #5d5458; --mist: rgba(250,214,190,.45); --cloud: #f6d2bf; }
+.ps-box[data-tod="night"] { --sky1: #0e1a33; --sky2: #23405a; --f1: #283d58; --f2: #1f344a; --m: #1b3a33; --m2: #21423a; --g: #16322a; --fr: #0f281f; --rock: #3e4652; --rock2: #2f3640; --mist: rgba(170,190,215,.28); --cloud: #8ea2bb; }
+.ps-box[data-stage="0"] { --floor: #3d3424; } .ps-box[data-stage="1"] { --floor: #2d4828; } .ps-box[data-stage="2"] { --floor: #2f6142; } .ps-box[data-stage="3"] { --floor: #26533a; }
+.ps-box[data-stage="4"] { --floor: #4d4128; } .ps-box[data-stage="5"] { --floor: #353766; } .ps-box[data-stage="6"] { --floor: #2a5840; }
+.ps-box::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 58px; z-index: 1; pointer-events: none; background: linear-gradient(to bottom, transparent, var(--floor)); }
+.ps-l { position: absolute; inset: -14px -26px 0; pointer-events: none; translate: calc(var(--px) * var(--d) * -16px) calc(var(--py) * var(--d) * -7px); }
+.ps-svg { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; display: block; }
+.ps-fx { z-index: 1; inset: 0; overflow: hidden; translate: none; }
+.ps-actor { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; text-align: center; translate: calc(var(--px) * var(--d) * -16px) calc(var(--py) * var(--d) * -7px); }
+.ps-front { z-index: 3; }
+.ps-f1 { fill: var(--f1); } .ps-f2 { fill: var(--f2); } .ps-m { fill: var(--m); } .ps-m2 { fill: var(--m2); } .ps-g { fill: var(--g); } .ps-fr { fill: var(--fr); }
+.ps-rock { fill: var(--rock); } .ps-rock2 { fill: var(--rock2); } .ps-mist { fill: var(--mist); } .ps-cloud { fill: var(--cloud); } .ps-cloud2 { fill: var(--cloud); opacity: .7; } .ps-skycloud { fill: var(--cloud); opacity: .8; }
+.ps-fern { fill: var(--fr); } .ps-trunk { fill: var(--trunk, #5b4431); } .ps-box[data-tod="night"] { --trunk: #2b2620; } .ps-box[data-tod="dusk"] { --trunk: #4a3830; } .ps-leaf { fill: #b5742e; } .ps-nest { fill: #6b4a2a; } .ps-twig { stroke: #8a6236; } .ps-stem { stroke: var(--m); }
+.ps-moonbite { fill: var(--sky1); }
+.ps-star { fill: #f3f0d8; transform-box: fill-box; transform-origin: center; animation: psTw 3.2s ease-in-out infinite; }
+@keyframes psTw { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+.ps-drift { animation: psDrift 40s linear infinite alternate; }
+@keyframes psDrift { from { transform: translateX(-18px); } to { transform: translateX(18px); } }
+/* 角色：跟著視差微微轉身；時段打不同方向的輪廓光 */
+.ps-box #petEmoji { perspective: 700px; }
+.ps-box #petEmoji .pet-critter { rotate: y calc(var(--px) * 10deg); }
+.ps-box[data-tod="dawn"]  #petEmoji .pet-critter { filter: drop-shadow(-4px -2px 6px rgba(255,190,150,.5)) drop-shadow(0 10px 12px rgba(0,0,0,.28)); }
+.ps-box[data-tod="dusk"]  #petEmoji .pet-critter { filter: drop-shadow(4px -2px 7px rgba(255,150,80,.5)) drop-shadow(0 10px 12px rgba(0,0,0,.3)); }
+.ps-box[data-tod="night"] #petEmoji .pet-critter { filter: brightness(.92) drop-shadow(-3px -3px 7px rgba(160,190,255,.45)) drop-shadow(0 10px 12px rgba(0,0,0,.35)); }
+.pet-card.final .ps-box #petEmoji .pet-critter { filter: drop-shadow(0 0 14px rgba(232,200,122,.55)) drop-shadow(0 10px 12px rgba(0,0,0,.32)); }
+/* 影子跟著起伏：角色往上時影子變小變淡（漂浮型的週期是 3.8s） */
+.ps-box .pet-shadow { position: relative; z-index: 2; animation: psShadow 3.4s ease-in-out infinite; }
+.ps-box[data-stage="2"] .pet-shadow, .ps-box[data-stage="6"] .pet-shadow { animation-duration: 3.8s; }
+.ps-box .pet-m-sleepy + .pet-shadow { animation-duration: 5.4s; } .ps-box .pet-m-happy + .pet-shadow { animation-duration: 2.3s; }
+@keyframes psShadow { 0%, 100% { transform: scaleX(1); opacity: 1; } 50% { transform: scaleX(.84); opacity: .7; } }
+/* 粒子：季節＋天氣 */
+.ps-p { position: absolute; display: block; pointer-events: none; animation-timing-function: linear; animation-iteration-count: infinite; will-change: transform; }
+.ps-petal { width: 8px; height: 6px; background: #f6b9c9; border-radius: 6px 0 6px 0; animation-name: psFall; }
+.ps-maple { width: 9px; height: 7px; background: #e0873a; border-radius: 8px 0 8px 0; animation-name: psFall; }
+.ps-snow { width: 5px; height: 5px; border-radius: 50%; background: #fff; opacity: .9; animation-name: psFall; }
+.ps-rain { width: 1.6px; height: 15px; background: linear-gradient(transparent, rgba(225,238,255,.85)); animation-name: psRain; }
+.ps-fly { width: 4px; height: 4px; border-radius: 50%; background: #ffe6a0; box-shadow: 0 0 8px 2px #ffd873; animation-name: psFloat; animation-timing-function: ease-in-out; }
+.ps-mote { width: 3px; height: 3px; border-radius: 50%; background: rgba(255,255,240,.75); animation-name: psFloat; animation-timing-function: ease-in-out; }
+@keyframes psFall { from { transform: translate(0, 0) rotate(0); } to { transform: translate(46px, 340px) rotate(560deg); } }
+@keyframes psRain { from { transform: translate(0, 0); } to { transform: translate(-34px, 340px); } }
+@keyframes psFloat { 0%, 100% { transform: translate(0, 0); opacity: .15; } 50% { transform: translate(12px, -20px); opacity: .95; } }
+@media (prefers-reduced-motion: reduce) {
+  .ps-p { display: none; } .ps-star, .ps-drift, .ps-box .pet-shadow { animation: none; }
+  .ps-l, .ps-actor { translate: none; } .ps-box #petEmoji .pet-critter { rotate: none; }
+}
