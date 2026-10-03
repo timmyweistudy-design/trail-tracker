@@ -54,7 +54,7 @@ const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:o.w||390,he
  await p.close();}
 // ── 山頂天氣 ──
 {const p=await mk();await p.evaluate(()=>openDetail("forestry-027"));await p.waitForTimeout(500);
- await p.evaluate(()=>{const t=document.querySelector('[data-tab="rt"],.dtab[data-t="rt"]');if(t)t.click();});
+ await p.evaluate(()=>{const t=document.querySelector('[data-tab="pre"]');if(t)t.click();});
  await p.waitForFunction(()=>document.querySelector("#summitWx .smt")||document.querySelector("#weatherBox .food-empty"),null,{timeout:20000}).catch(()=>{});
  const sm=await p.evaluate(()=>{const s=document.querySelector("#summitWx .smt");return s?[s.querySelectorAll(".smt-row").length,s.innerText.slice(0,80)]:null});
  ok(sm&&sm[0]>=3,"summit weather rows for 大霸尖山: "+JSON.stringify(sm));

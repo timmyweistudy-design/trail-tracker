@@ -386,7 +386,7 @@ function matches(t) {
   if (activeFilters.has("family") && !t.family_friendly) return false;
   if (activeFilters.has("rated4") && (logC(t.id).rating || 0) < 4) return false;
   if (maxLen && (t.length_km == null || t.length_km > maxLen)) return false;
-  if (maxAsc && (t.ascent == null || t.ascent > maxAsc)) return false;
+  if (maxAsc && (ascVal(t) == null || ascVal(t) > maxAsc)) return false;
   if (nearRadius && myLoc) { if (!t.lat || haversine(myLoc, { lat: t.lat, lon: t.lon }) > nearRadius * 1000) return false; }
   if (mapScope && (!t.lat || t.lat < mapScope.s || t.lat > mapScope.n || t.lon < mapScope.w || t.lon > mapScope.e)) return false;
   // 難度（複選 OR）
@@ -413,11 +413,33 @@ function renderNLBar() {
   box.querySelector("#nlClear").addEventListener("click", () => { const inp = $("#searchInput"); inp.value = ""; curQuery = ""; _toggleClear(); render(); });
 }
 
-// 沒有官方「建議時程」的步道（占 96%）用長度＋爬升估時間，卡片才都是三格、高度一致
-// 粗估：平路 3.5 km/h、每爬 500 m 多 1 小時（台灣郊山常用的抓法）
+// 累積爬升：哪個數字最可信、它是怎麼來的（卡片、篩選、時間估算、陡度、詳情頁、比較表共用）
+//   dem   ＝ 沿路線用地形圖算的真實累積爬升（scripts/compute-gain.mjs 預先算好）
+//   range ＝ 林業署資料：其實是「最高 − 最低海拔」，不是累積爬升（路線圖不夠準時只能用這個）
+//   est   ＝ 社群步道舊的粗估（沒有路線圖時）
+// 林業署步道的路線圖是借 OSM 同名路線，長度跟官方差太多（< 0.75 或 > 1.5 倍）就可能畫到別段 → 不採用
+function demTrusted(t) {
+  if (t.dem_gain == null) return false;
+  if (t.source !== "forestry") return true;
+  const r = t.length_km && t.geo_km ? t.geo_km / t.length_km : 0;
+  return r >= 0.75 && r <= 1.5;
+}
+function trailAscent(t) {
+  if (demTrusted(t)) return { v: t.dem_gain, kind: "dem" };
+  if (t.ascent == null) return null;
+  return { v: Math.round(t.ascent), kind: t.source === "forestry" ? "range" : "est" };
+}
+function ascVal(t) { const a = trailAscent(t); return a ? a.v : null; }
+// 環狀／單程：只在路線圖可信時說（頭尾相距 < 150 m＝環狀）
+function routeShape(t) { return demTrusted(t) ? (t.loop ? "loop" : "oneway") : null; }
+// 親子友善：林業署的是官方描述；社群步道是照名稱、難度、長度推估的
+function familyLabel(t) { return t.family_friendly ? (t.source === "forestry" ? "親子友善" : "可能適合親子") : null; }
+
+// 預估時間（全部步道都用同一套算，卡片和詳情頁才一致；官方「半天／一天」太粗，只在詳情頁當參考）
+// 平路 3.5 km/h、每爬 500 m 多 1 小時（台灣郊山常用的保守抓法；Naismith 是 5 km/h＋600 m/h）
 function estHours(t) {
   if (t.length_km == null) return null;
-  const h = t.length_km / 3.5 + (t.ascent || 0) / 500;
+  const h = t.length_km / 3.5 + (ascVal(t) || 0) / 500;
   return h < 0.25 ? 0.25 : h;
 }
 function fmtHours(h) {
@@ -436,8 +458,9 @@ function fmtKm(km) {
 function shortTour(t) { return t.tour && t.tour.length <= 8 && !/[，,。；]/.test(t.tour) ? t.tour : null; }
 // 陡度（每公里爬升）：卡片和詳情頁共用同一套說法。超過 400 m/km 的多半是資料錯（例如 0.26 km 爬 240 m），不顯示
 function slopeInfo(t) {
-  if (t.ascent == null || !t.length_km) return null;
-  const perKm = t.ascent / t.length_km;
+  const asc = ascVal(t);
+  if (asc == null || !t.length_km) return null;
+  const perKm = asc / t.length_km;
   if (perKm > 400) return { perKm, word: null, bad: true };
   const word = perKm < 40 ? "平緩" : perKm < 100 ? "有點坡" : perKm < 200 ? "會喘" : "很陡";
   return { perKm, word, level: perKm < 100 ? 0 : perKm < 200 ? 1 : 2 };
@@ -477,19 +500,17 @@ function myTimeHtml(t) {
   const m = Math.round(mine * 60 / 5) * 5, txt = mine > 10 ? fmtHours(mine) : (m < 60 ? `${m} ${ttT("分鐘")}` : `${Math.floor(m / 60)} ${ttT("小時")}${m % 60 ? ` ${m % 60} ${ttT("分")}` : ""}`);
   return `<div class="my-est">${ic("footprints")} <span>${ttT("依你的腳程")}</span> <b>≈ ${txt}</b></div>`;
 }
-function timeHtml(t) { const tour = shortTour(t); return tour ? escHtml(tour) : `<span class="approx">≈</span>${fmtHours(estHours(t))}`; }
+function timeHtml(t) { return `<span class="approx">≈</span>${fmtHours(estHours(t))}`; }
 function trailCard(t) {
   const d = t.difficulty || 0, closed = isClosed(t), snow = d === 6;
   const fav = isFavC(t.id), lg = logC(t.id), times = walkedTimes(t.id), done = lg.done || times > 0;
   const distKm = (myLoc && t.lat) ? haversine(myLoc, { lat: t.lat, lon: t.lon }) / 1000 : null;
-  const gainC = (typeof Profile !== "undefined" && Profile.cachedGain) ? Profile.cachedGain(t.id) : null;
-  const asc = gainC != null ? gainC : (t.ascent != null ? Math.round(t.ascent) : null);
-  const tour = shortTour(t);
+  const asc = ascVal(t);
   // 三格永遠都在（沒資料就「—」），卡片高度才一致；單位跟著數字走
   const stats = [
     `<div class="jstat"><div class="jnum">${fmtKm(t.length_km)}<small>km</small></div><div class="jlbl">${ttT("距離")}</div></div>`,
     `<div class="jstat"><div class="jnum" data-card-asc>${asc != null ? `↑${asc}<small>m</small>` : "—"}</div><div class="jlbl">${ttT("爬升")}</div></div>`,
-    `<div class="jstat"><div class="jnum jnum-sm">${tour ? escHtml(tour) : `<span class="approx">≈</span>${fmtHours(estHours(t))}`}</div><div class="jlbl">${ttT("所需時間")}</div></div>`,
+    `<div class="jstat"><div class="jnum jnum-sm">${timeHtml(t)}</div><div class="jlbl">${ttT("預估時間")}</div></div>`,
   ];
   // 地點：跨縣市的只顯示第一個＋「+1」，完整的放 title
   const pos = String(t.position || "—"), posParts = pos.split(/[；;]/).map(x => x.trim()).filter(Boolean);
@@ -512,7 +533,7 @@ function trailCard(t) {
       ${mine}
       ${closed || !t.condition ? "" : `<span class="badge warn">${ic("alert")} ${escHtml(t.condition.status)}</span>`}
       ${sl && sl.level ? `<span class="badge slope s${sl.level}" title="${Math.round(sl.perKm)} m/km">${ttT(sl.word)}</span>` : ""}
-      ${t.family_friendly ? `<span class="badge family">${ttT("親子友善")}</span>` : ""}
+      ${familyLabel(t) ? `<span class="badge family">${ttT(familyLabel(t))}</span>` : ""}
     </div>
   </div>`;
 }
@@ -535,8 +556,10 @@ function popularityScore(t) {
   return s;
 }
 // 詳情頁「附近其他步道」：優先用座標找最近的，否則同縣市
+// 地圖上的小碎段（< 0.5 km）和叫「健行步道」這種沒名字的不推薦：點進去都是同一條路的一小截
+const _vagueName = /^(健行步道|步道|登山步道|登山路線|山徑|小徑|產業道路|林道)$/;
 function nearbyTrails(t, n = 8) {
-  const pool = TRAILS.filter(x => x.id !== t.id);
+  const pool = TRAILS.filter(x => x.id !== t.id && x.name !== t.name && !(x.length_km != null && x.length_km < 0.5) && !_vagueName.test(x.name || ""));
   if (t.lat && t.lon) {
     const near = pool.filter(x => x.lat && x.lon)
       .map(x => ({ x, d: haversine({ lat: t.lat, lon: t.lon }, { lat: x.lat, lon: x.lon }) }))
@@ -728,7 +751,7 @@ function _browseMarker(t) {
 function mapPopupHtml(t, col, closed) {
   const bits = [];
   if (t.length_km != null) bits.push(`${t.length_km} km`);
-  if (t.ascent != null) bits.push(`↑${Math.round(t.ascent)} m`);
+  if (ascVal(t) != null) bits.push(`↑${ascVal(t)} m`);
   bits.push(t.tour ? escHtml(t.tour) : fmtHours(estHours(t)));
   return `<div class="mp">
     <div class="mp-h"><span class="mp-lv" style="background:${col}">${t.difficulty ?? ""}</span><b>${escHtml(t.name)}</b></div>

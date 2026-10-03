@@ -8,7 +8,9 @@ let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); 
   for (let i = 0; i < 2; i++) { try { await c.query(fs.readFileSync(ROOT + "schema-phase32-trail-crowd.sql", "utf8")); ok(true, "phase32 runs " + (i + 1)); } catch (e) { ok(false, "phase32: " + e.message); process.exit(1); } }
   // 2 人走過 → 全部 0（k-匿名）
   // 週六 2026-09-26 09:00 台灣 = 01:00Z（用相對時間避免過期：找最近的週六上午）
-  const sat = new Date(); sat.setUTCDate(sat.getUTCDate() - ((sat.getUTCDay() + 1) % 7 || 7)); sat.setUTCHours(1, 0, 0, 0);   // 最近一個（已過去的）週六 09:00 台灣
+  // 最近一個「已經過去」的週六 09:00 台灣（01:00Z）。今天就是週六而且已過 01:00Z → 用今天；以前一律退回上週六，週六跑會超過 7 天而失敗
+  const now0 = new Date(), back = (now0.getUTCDay() + 1) % 7, todayPast = back === 0 && now0.getUTCHours() >= 1;
+  const sat = new Date(now0); sat.setUTCDate(sat.getUTCDate() - (todayPast ? 0 : (back || 7))); sat.setUTCHours(1, 0, 0, 0);
   let r = await as(c, U(1), "insert into trail_visits(trail_id, started_at, duration_min) values ('t0', now() - interval '2 hours', 120) returning user_id");
   ok(!r.err && r.rows[0].user_id === U(1), "insert own visit " + (r.err || ""));
   const seed = async (u, iso) => { await c.query("set session_replication_role = replica"); await c.query("insert into trail_visits(user_id, trail_id, started_at) values ($1,'t1',$2)", [u, iso]); await c.query("set session_replication_role = origin"); };
@@ -17,7 +19,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); 
   ok(!r.err && r.rows[0].hikers7 === 0 && r.rows[0].hikers30 === 0 && r.rows[0].grid === null, "2 hikers → all hidden " + (r.err || JSON.stringify(r.rows[0])));
   await seed(U(3), sat.toISOString());
   r = await as(c, null, "select * from trail_crowd('t1')");
-  ok(r.rows[0].hikers7 === 3 && r.rows[0].hikers30 === 3 && r.rows[0].grid === null, "3 hikers → counts shown, grid still hidden (<5)");
+  ok(r.rows[0].hikers7 === 3 && r.rows[0].hikers30 === 3 && r.rows[0].grid === null, "3 hikers → counts shown, grid still hidden (<5) " + JSON.stringify(r.rows[0]));
   // 再 2 人走週二清晨 → 5 人，給熱度圖
   const tue = new Date(sat.getTime() - 4 * 864e5); tue.setUTCHours(22 - 24 + 24, 0, 0, 0);   // 週二 22:00Z = 週三 06:00 台灣
   const tueTw = new Date(sat.getTime() - 4 * 864e5 + (6 - 9) * 3600e3);   // 週二 06:00 台灣

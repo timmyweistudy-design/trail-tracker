@@ -377,7 +377,13 @@
     <div class="grip"></div>
     <button class="sheet-close" id="closeDetailBtn" aria-label="關閉">✕</button>
     <div id="detailHero"></div>
-    <div id="detailMap"></div>
+    <div class="det-media" id="detailMedia">
+      <div class="det-photos" id="detailPhotos" hidden></div>
+      <div id="detailMap"></div>
+      <div class="det-media-tog" id="mediaTog" role="tablist" hidden>
+        <button type="button" data-m="photo" role="tab">照片</button><button type="button" data-m="map" role="tab">地圖</button>
+      </div>
+    </div>
     <div class="sheet-body" id="detailBody"></div>
   </div>
 

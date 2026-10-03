@@ -1622,14 +1622,8 @@ html[data-theme="dark"] .badge.warn { background: #3a2f17; color: #e5c072; }
 /* 數字卡下的「長度不一樣」說明 */
 .len-note { display: flex; gap: 6px; align-items: flex-start; font-size: calc(12px * var(--fs, 1)); color: var(--ink-soft); background: var(--surface-2); border-radius: var(--r-sm); padding: 8px 10px; margin: -6px 0 12px; line-height: 1.5; }
 .len-note .ic { width: 14px; height: 14px; flex: none; margin-top: 2px; }
-.statcard .stat-v small { font-size: .6em; color: var(--ink-faint); font-weight: 500; }
-.statcard .stat-v .approx, .profile-stat .approx { color: var(--ink-faint); font-size: .85em; margin-right: 1px; }
+.profile-stat .approx { color: var(--ink-faint); font-size: .85em; margin-right: 1px; }
 /* 路面・季節・交通（原本 inline style） */
-.det-meta { background: var(--bg); border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; }
-.det-meta-l { font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-soft); }
-.det-meta-v { font-size: calc(13.5px * var(--fs, 1)); margin-top: 4px; }
-.det-meta-sm { padding: 7px 12px; }
-.det-meta-sm .det-meta-v { margin: 0; color: var(--ink-soft); font-size: calc(12.5px * var(--fs, 1)); }
 /* 可收合的標題：看得出能點 */
 .section-title.collapsible::after { content: ""; width: 9px; height: 9px; border-right: 2px solid var(--ink-soft); border-bottom: 2px solid var(--ink-soft); transform: rotate(45deg); margin: 0 6px 3px auto; }
 .section-title.collapsible.collapsed::after { transform: rotate(-45deg); margin-bottom: 0; }

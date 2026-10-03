@@ -483,18 +483,7 @@ body.navup-on #recMap .leaflet-map-pane { transition: transform var(--dur-xs) li
   width: 26px; height: 3px; border-radius: 3px 3px 0 0; background: var(--brand); }
 .tabpane { animation: tt-rise-s var(--dur-s) var(--ease-out); }
 /* 重點數據卡 */
-.statcard { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; margin: 2px 0 15px;
-  background: var(--line-soft); border: 1px solid var(--line-soft); border-radius: var(--r-lg);
-  overflow: hidden; box-shadow: var(--sh-md); }
-.statcard .stat { background: var(--surface); padding: 13px 15px; min-width: 0; }
-.statcard .stat-h { display: flex; align-items: center; gap: 5px; font-size: calc(11.5px * var(--fs, 1));
-  color: var(--ink-soft); letter-spacing: .3px; }
-.statcard .stat-h .ic { width: 14px; height: 14px; flex: 0 0 auto; }
-.statcard .stat-v { font-family: var(--num); font-size: calc(18px * var(--fs, 1)); font-weight: 600;
-  margin-top: 6px; color: var(--ink); line-height: 1.2; }
-.statcard .stat-v .badge { font-family: var(--sans); }
 /* 格數為奇數時，最後一格橫跨兩欄，避免落單半格不對稱 */
-.statcard .stat:last-child:nth-child(odd) { grid-column: 1 / -1; }
 /* 底部固定主動作列 + 資料來源頁尾 */
 /* 詳情面板底部 padding 改成「只留安全區」（原 .sheet 是 22px+safe，會在按鈕下方露一條白帶且不對稱）。
    home indicator 安全區留在動作列「下方」的 sheet 底部＝連續 surface、不成獨立白帶。 */

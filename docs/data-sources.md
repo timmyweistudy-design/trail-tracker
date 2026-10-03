@@ -271,3 +271,23 @@ Google 的 romanization 端點對某些名稱不回結果（語言偵測誤判�
 實際抓到的 2 個真 bug：`.track-upsell .btn`（升級 PRO 按鈕貼左）、
 `.dex-row .dex-e`（槽寬 40px 但寵物 SVG 44px，左右各溢出 2px 壓到旁邊文字——
 手繪 SVG 是後來換上的，槽寬還停在 emoji 時代）。
+
+## 累積爬升、環狀判斷、林業署同步（2026-10-03）
+
+**問題**：林業署 118 條的「累積爬升」其實是官方「最高 − 最低海拔」，不是沿路累積；社群步道的爬升只用 12 個取樣點估；
+官方「所需時間」只有半天／一天這種粗分類（53 條寫半天的，41 條估算不到 1.2 小時）；入山證欄位 118 條全寫「無」（大霸尖山也是）不可信。
+
+**做法**
+- `node scripts/compute-gain.mjs`：沿每條步道路線（`web/js/geo/`）每 25 m 查 AWS Terrain Tiles（z14，雙線性內插、中值＋移動平均去噪、2 m 遲滯，
+  同 `web/js/elevation.js`），輸出 `data/trail_gain.json`（g 爬升、d 下降、hi/lo、km 路線長、lp 環狀）。地形圖快取在 `~/tools/terrarium-cache`，全台約 2,900 張、首次約 3 分鐘。
+  2,853 條成功、31 條因地形圖缺值失敗（沿用舊值）。社群步道新／舊爬升比中位 1.04。
+- `node scripts/pack-trails.mjs` 併入 `dem_gain / dem_loss / dem_hi / dem_lo / geo_km / loop`（也把名稱裡的分號換成「・」）。
+- 執行期 `trailAscent(t)`（explore.js）決定用哪個數字：路線圖可信（社群步道一律；林業署要路線長度在官方的 0.75–1.5 倍，68 條裡 46 條）
+  → 地形計算；否則林業署顯示「高低差」、社群步道顯示舊估算加 ≈。卡片、篩選、時間估算、陡度、詳情頁、比較表全用同一個數字。
+- 預估時間全部改用估算（平路 3.5 km/h＋每爬 500 m 加 1 小時），官方時程只在詳情頁當「官方建議」。
+- 入山證欄位不顯示；最高點 ≥ 2,000 m 的步道在「出發前」提醒到官方網站確認入山證、入園證。
+
+**林業署資料同步**：每月 `data-check.yml` 開 issue 說有變動時，跑 `node scripts/sync-forestry.mjs && node scripts/pack-trails.mjs`
+（只更新名稱、難度、長度、最高／最低海拔，其他欄位與手動修正不動；新增／下架的步道要跑完整的 build_data.py 管線）。
+
+**授權**：地形資料台灣一帶來自 SRTM、GMTED2010（USGS，公有領域）與 ETOPO1（NOAA），依規定在 3D 地圖與步道頁頁尾標註。

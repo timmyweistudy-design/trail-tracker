@@ -349,6 +349,19 @@ function sunsetAt(lat, lon, date) {
   const Jset = Jt + Math.acos(cw) / rad / 360;
   return new Date((Jset - 2440587.5) * 864e5);
 }
+// 日出：同一套 NOAA 方程式（日落往回推）。步道頁「出發前」用來算最晚出發時間
+function sunriseAt(lat, lon, date) {
+  const set = sunsetAt(lat, lon, date); if (!set) return null;
+  const rad = Math.PI / 180, d = date || new Date();
+  const noon = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12);
+  const n = Math.round(noon.getTime() / 864e5 + 2440587.5 - 2451545.0 + 0.0008), Js = n - lon / 360;
+  const M = (357.5291 + 0.98560028 * Js) % 360, C = 1.9148 * Math.sin(M * rad) + 0.02 * Math.sin(2 * M * rad) + 0.0003 * Math.sin(3 * M * rad);
+  const lam = (M + C + 180 + 102.9372) % 360, Jt = 2451545.0 + Js + 0.0053 * Math.sin(M * rad) - 0.0069 * Math.sin(2 * lam * rad);
+  const sd = Math.sin(lam * rad) * Math.sin(23.4397 * rad), cd = Math.cos(Math.asin(sd));
+  const cw = (Math.sin(-0.833 * rad) - Math.sin(lat * rad) * sd) / (Math.cos(lat * rad) * cd);
+  if (cw > 1 || cw < -1) return null;
+  return new Date((Jt - Math.acos(cw) / rad / 360 - 2440587.5) * 864e5);
+}
 // WGS84 → TWD97 二度分帶（TM2，中央經線 121°）：台灣搜救單位常用的座標
 function toTWD97(lat, lon) {
   const a = 6378137, f = 1 / 298.257222101, k0 = 0.9999, lon0 = 121 * Math.PI / 180, dx = 250000;

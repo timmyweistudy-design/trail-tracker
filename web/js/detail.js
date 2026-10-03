@@ -2,55 +2,9 @@
 // 一般 script，和 app.js 共用全域；載入順序在 map-ui.js 之後。
 // ---------- 詳情面板 ----------
 let _detailTrail = null, _detailBack = null;
-// 生態：小黑蚊/蚊蟲警示 + 這個海拔帶常見動植物（離線）+ 選配的 iNaturalist 真實目擊。
-// 每段可翻文字都獨立成一個文字節點——複合節點字典查不到會漏翻。
-function ecologyHtml(t) {
-  if (typeof Ecology === "undefined") return "";
-  const r = Ecology.speciesFor(t);
-  const alt = t.alt_low != null ? t.alt_low : t.alt_high;   // 小黑蚊在低海拔 → 用步道最低點最保守
-  const env = (t.name || "") + (t.position || "") + tagsOf(t).join("");
-  const risk = Ecology.biteRisk(alt, t.region, new Date(), env);
-  const LV = { high: ["風險高", "eco-hi"], mid: ["風險中", "eco-mid"], low: ["風險低", "eco-lo"], none: ["幾乎無", "eco-no"] };
-  const [lvTxt, lvCls] = LV[risk.level] || LV.none;
-  const CATN = { mammal: ["paw", "哺乳類"], bird: ["bird", "鳥類"], insect: ["bug", "昆蟲"], herp: ["frog", "兩棲爬蟲"] };
-  const SHOW = 6;   // 每類先列 6 個，其餘收起來（以前 30 多顆一次攤開）
-  const cats = Ecology.CATS.map(k => {
-    const arr = r.species[k] || []; if (!arr.length) return "";
-    const [icon, nm] = CATN[k];
-    const chip = sp => `<span class="eco-sp${Ecology.isPoison(sp) ? " eco-poison" : ""}">${Ecology.isPoison(sp) ? ic("alert") : ""}${escHtml(sp)}</span>`;
-    const more = arr.length > SHOW ? `<button class="eco-more" type="button">+${arr.length - SHOW}</button><span class="eco-rest" hidden>${arr.slice(SHOW).map(chip).join("")}</span>` : "";
-    return `<div class="eco-cat"><span class="eco-cat-h">${ic(icon)}<span>${nm}</span></span><span class="eco-chips">${arr.slice(0, SHOW).map(chip).join("")}${more}</span></div>`;
-  }).join("");
-  return `
-    <div id="ecoBox" class="eco-box">
-      <div class="eco-bite ${lvCls}">
-        <div class="eco-bite-h">${ic("bug")}<span>小黑蚊・蚊蟲</span><span class="eco-lv">${lvTxt}</span></div>
-        <ul class="eco-tips">${risk.tips.map(x => `<li>${x}</li>`).join("")}</ul>
-      </div>
-      <div class="eco-src">這個海拔常碰到的傢伙（不是這條步道的實際紀錄）</div>
-      ${cats}
-      <button class="btn ghost eco-nearby-btn" id="ecoNearbyBtn">${ic("search")}<span>看這附近的真實目擊</span></button>
-      <div id="ecoNearbyBox" class="eco-nearby" hidden></div>
-    </div>`;
-}
-function bindEcology(t) {
+// 物種清單「+N」展開
+function bindEcology() {
   document.querySelectorAll("#detailBody .eco-more").forEach(b => b.addEventListener("click", () => { const r = b.nextElementSibling; if (r) r.hidden = false; b.remove(); }));
-  const enb = $("#ecoNearbyBtn");
-  if (enb) enb.addEventListener("click", async () => {
-    const box = $("#ecoNearbyBox"); if (!box) return;
-    if (enb.dataset.done) { box.hidden = !box.hidden; return; }
-    box.hidden = false;
-    if (!navigator.onLine) { box.innerHTML = `<div class="eco-src">${ttT("需要網路才能看真實目擊")}</div>`; return; }
-    enb.disabled = true;
-    box.innerHTML = `<div class="food-loading"><span class="spin"></span>${ttT("查詢附近目擊中…")}</div>`;
-    const obs = (typeof Ecology !== "undefined") ? await Ecology.nearbyObservations(t.lat, t.lon) : null;
-    enb.disabled = false;
-    if (!obs) { box.innerHTML = `<div class="eco-src">${ttT("這附近暫時沒有可顯示的目擊記錄")}</div>`; return; }
-    enb.dataset.done = "1";
-    box.innerHTML = `<div class="eco-src">${ttT("iNaturalist 附近 5 公里的真實觀察")}</div><div class="eco-obs">`
-      + obs.map(o => `<a class="eco-ob" href="${escHtml(o.link || "#")}" target="_blank" rel="noopener">${o.thumb ? `<img src="${escHtml(o.thumb)}" loading="lazy" alt="">` : `<span class="eco-ob-noimg">${ic("search")}</span>`}<span>${escHtml(o.name)}</span>${o.credit ? `<small class="eco-cr" translate="no">${escHtml(o.credit)}</small>` : ""}</a>`).join("")
-      + `</div>`;
-  });
 }
 function currentDetailTrail() { return $("#detailSheet").classList.contains("show") ? _detailTrail : null; }
 
@@ -62,93 +16,209 @@ function ttShareLink(query) {
   } catch (e) { return null; }
 }
 
-// ── 詳情頁各區塊 ──
+// ── 詳情頁各區塊（2026-10 改版）──
+// 原則：先回答「能不能去、多難、要走多久」；一種卡片、一種標題，顏色只給狀態（紅＝封閉、橘＝注意、綠＝正常）；
+// 每個數字都標「怎麼來的」（點小標籤看說明）；沒資料的區塊不顯示。
+const SRC_INFO = {
+  official: ["官方", "林業及自然保育署公布的資料。"],
+  osm: ["地圖量", "OpenStreetMap 志工畫的路線，長度是照地圖量的。"],
+  dem: ["地形計算", "沿著地圖上的路線，每 25 公尺查一次地形圖（AWS Terrain Tiles）的高度累加起來，誤差大約一成。"],
+  range: ["最高減最低", "官方只公布最高和最低海拔，這是兩個相減，不是沿路上上下下加起來的累積爬升，實際要爬的通常更多。"],
+  est: ["估算", "照長度和地形粗估的，參考就好。"],
+  time: ["估算", "依長度和累積爬升估：平路每小時 3.5 公里，每爬 500 公尺多 1 小時。休息、拍照的時間另外算。"],
+};
+function srcChip(k) { const s = SRC_INFO[k]; return s ? `<button class="dv-src" type="button" data-src="${k}">${ttT(s[0])}</button>` : ""; }
+
 function detailHeroHtml(t) {
-  const fav = Store.isFav(t.id);
-  return `<div class="detail-hero noimg" id="heroWrap">
+  const fav = Store.isFav(t.id), fam = familyLabel(t), shape = routeShape(t);
+  return `<div class="detail-hero noimg dv-head" id="heroWrap">
       <div class="hero-cap">
         <h2>${escHtml(t.name)}</h2>
         <div class="badges">
           ${diffBadgeHtml(t)}
-          ${t.family_friendly ? `<span class="badge family">${ttT("親子友善")}</span>` : ""}
+          ${fam ? `<span class="badge family">${ttT(fam)}</span>` : ""}
           ${t.region ? `<span class="badge ghost">${escHtml(t.region)}</span>` : ""}
+          ${shape ? `<span class="badge ghost">${ttT(shape === "loop" ? "環狀" : "單程")}</span>` : ""}
         </div>
       </div>
       <button class="hero-fav${fav ? " on" : ""}" id="favDetail" aria-pressed="${fav}" aria-label="${ttT("收藏")}">${STAR_SVG}</button>
     </div>`;
 }
-// 重點數字：固定 4 格（長度／爬升／時間／海拔或陡度），難度和縣市已在上方，不再重複
+// 重點數字：長度／累積爬升（或高低差）／預估時間／海拔（或坡度），每格標來源
 function detailStatsHtml(t) {
-  const ascCached = (typeof Profile !== "undefined" && Profile.cachedGain) ? Profile.cachedGain(t.id) : null;
-  const asc = ascCached != null ? ascCached : (t.ascent != null ? Math.round(t.ascent) : null);
-  const ascEst = t.source !== "forestry" && ascCached == null;   // OSM 沿線推估、還沒用地形算過 → ≈
+  const asc = trailAscent(t), shape = routeShape(t), tourShort = shortTour(t);
+  const cell = (ico, label, val, src, sub) => `<div class="dv-stat"><div class="dv-stat-h">${ic(ico)}<span>${ttT(label)}</span></div>
+      <div class="dv-stat-v">${val}</div><div class="dv-stat-f">${src}${sub ? `<span class="dv-stat-sub">${sub}</span>` : ""}</div></div>`;
   const cells = [
-    ["ruler", "長度", `${fmtKm(t.length_km)} km`],
-    ["up", "累積爬升", `<span id="kvAscent">${asc != null ? `${ascEst ? `<span class="approx">≈</span>` : ""}${asc} m` : (geoOf(t) ? ttT("計算中…") : "—")}</span>`],
-    ["clock", "所需時間", timeHtml(t) + myTimeHtml(t)],   // 走過幾趟之後，多一行「依你的腳程」
+    cell("ruler", "長度", `${fmtKm(t.length_km)}<small>km</small>`, srcChip(t.source === "forestry" ? "official" : "osm"),
+      shape === "oneway" ? ttT("單程，走回原點要加倍") : shape === "loop" ? ttT("環狀一圈") : ""),
+    cell("up", asc && asc.kind === "range" ? "高低差" : "累積爬升",
+      asc ? `${asc.kind === "est" ? `<span class="approx">≈</span>` : ""}${asc.v.toLocaleString()}<small>m</small>` : "—", asc ? srcChip(asc.kind) : ""),
+    cell("clock", "預估時間", `<span class="approx">≈</span>${fmtHours(estHours(t))}`, srcChip("time"),
+      tourShort ? `${ttT("官方建議")}${ttColon()}${escHtml(ttT(tourShort))}` : ""),
   ];
-  if (t.alt_high != null && t.alt_low != null) cells.push(["mountain", "海拔範圍", `${t.alt_low}–${t.alt_high} m`]);
-  else { const sl = slopeInfo(t); if (sl && sl.word) cells.push(["mountain", "坡度", `${ttT(sl.word)}<small> ${Math.round(sl.perKm)} m/km</small>`]); }
-  return `<div class="statcard">${cells.map(([ico, l, v]) =>
-    `<div class="stat"><div class="stat-h">${ic(ico)}<span>${ttT(l)}</span></div><div class="stat-v">${v}</div></div>`).join("")}</div>
-    <div class="len-note" id="lenNote" hidden></div>`;
+  if (t.alt_high != null && t.alt_low != null) cells.push(cell("mountain", "海拔", `${t.alt_low.toLocaleString()}–${t.alt_high.toLocaleString()}<small>m</small>`, srcChip("official")));
+  else if (t.dem_hi != null && demTrusted(t)) cells.push(cell("mountain", "海拔", `${t.dem_lo.toLocaleString()}–${t.dem_hi.toLocaleString()}<small>m</small>`, srcChip("dem")));
+  else { const sl = slopeInfo(t); if (sl && sl.word) cells.push(cell("mountain", "坡度", `${ttT(sl.word)}<small>${Math.round(sl.perKm)} m/km</small>`, srcChip(asc ? asc.kind : "est"))); }
+  return `<div class="dv-stats">${cells.join("")}</div>${myTimeHtml(t)}`;
 }
-function detailMetaHtml(t) {
-  const bits = [];
-  if (t.pave) bits.push(escHtml(t.pave));
-  if (t.best_season) bits.push(escHtml(t.best_season));
-  if (t.transport?.car) bits.push(ttT("可開車"));
-  if (t.transport?.m_bus || t.transport?.l_bus) bits.push(ttT("有公車"));
-  return bits.length ? `<div class="det-meta"><div class="det-meta-l">${ttT("路面・季節・交通")}</div><div class="det-meta-v">${bits.map(b => `<span>${b}</span>`).join("・")}</div></div>` : "";
+// 難度：一行結論＋適合誰、要帶什麼（字比介紹小，不搶閱讀順序）
+function detailGradeHtml(t) {
+  const g = GRADES[t.difficulty];
+  if (!g) return `<div class="dv-grade"><div class="dv-grade-t">${t.difficulty === 6 ? ttT("這條在雪季才會有積雪，需要冰攀裝備與經驗；其他季節的難度沒有官方分級。") : ttT("此步道尚無分級資料。")}</div></div>`;
+  const basis = t.source === "forestry" ? ttT("林業署官方分級") : ttT("照長度和爬升推估的分級");
+  return `<div class="dv-grade">
+      <div class="dv-grade-t"><b>${t.difficulty}級·${g.name}</b><span>${g.plain}</span></div>
+      <div class="dv-grade-m"><span><i>${ttT("適合")}</i>${g.who}</span><span><i>${ttT("裝備")}</i>${g.gear}</span></div>
+      <div class="dv-grade-f">${basis}・<a href="#" id="lnkGradeAll">${ttT("分級說明")}</a></div>
+    </div>`;
 }
+// 介紹：超過 6 行先收起來；OSM 只有一句「步道系統：地方級」的不當正文，放進基本資料
+function guideIsNote(t) { const g = String(t.guide || "").trim(); return g.length < 40 && !/\n/.test(g); }
 function detailGuideHtml(t) {
-  if (!t.guide) return "";
+  if (!t.guide || guideIsNote(t)) return "";
   const g = String(t.guide).trim();
-  // OSM 的「介紹」常只有一句「步道系統：地方級」→ 當成小註記，不當正文
-  if (g.length < 40 && !/\n/.test(g)) return `<div class="det-meta det-meta-sm"><div class="det-meta-v">${escHtml(g)}</div></div>`;
   const tr = (typeof I18n !== "undefined" && I18n.lang() !== "zh")
     ? `<div class="pv-tr-row"><button class="link-btn" id="guideTranslate">${ic("translate")} ${ttT("翻譯年糕")}</button></div><div class="guide pv-cap-tr" id="guideTr" hidden></div>` : "";
-  return `<div class="guide">${escHtml(g).replace(/\n/g, "<br>")}</div>${tr}`;
+  return `<div class="section-title">${ic("book")}<span>${ttT("步道介紹")}</span><small class="dv-h-src">${ttT(t.source === "forestry" ? "林業署" : "OpenStreetMap")}</small></div>
+    <div class="guide dv-guide${g.length > 180 ? " clamp" : ""}" id="dvGuide">${escHtml(g).replace(/\n/g, "<br>")}</div>
+    ${g.length > 180 ? `<button class="link-btn dv-more" id="dvGuideMore">${ttT("展開全文")}</button>` : ""}${tr}`;
+}
+// 基本資料：一列一項（標籤｜內容），沒有的不列
+function detailInfoHtml(t) {
+  const rows = [];
+  const tr = t.transport || {};
+  if (t.pave) rows.push(["路面", escHtml(t.pave)]);
+  if (t.best_season) rows.push(["最佳季節", escHtml(t.best_season)]);
+  if (t.source === "forestry" || tr.car || tr.m_bus || tr.l_bus) rows.push(["交通", [tr.car ? ttT("可開車") : ttT("不能開車到"), (tr.m_bus || tr.l_bus) ? ttT("有公車") : ttT("沒有公車")].join("・")]);
+  if (t.position) rows.push(["位置", escHtml(t.position)]);
+  const ent = (t.entrances || []).map(e => e.memo).filter(m => m && !/步道範圍中心/.test(m));
+  if (ent.length) rows.push(["登山口", escHtml(ent.slice(0, 3).join("、"))]);
+  if (t.system) rows.push(["步道系統", escHtml(t.system)]);
+  if (t.admin) rows.push(["管理單位", escHtml(t.admin)]);
+  if (t.guide && guideIsNote(t) && !/OpenStreetMap/.test(t.guide)) rows.push(["備註", escHtml(String(t.guide).trim())]);   // 「此為社群（OpenStreetMap）收錄」頁尾已經寫了
+  if (t.url && /^https:\/\//.test(t.url)) rows.push(["官方頁面", `<a href="${escHtml(t.url)}" target="_blank" rel="noopener">${ttT(t.source === "forestry" ? "台灣山林悠遊網" : "相關網頁")} ›</a>`]);
+  if (!rows.length) return "";
+  return `<div class="section-title">${ic("info")}<span>${ttT("基本資料")}</span></div>
+    <dl class="dv-info">${rows.map(([k, v]) => `<div><dt>${ttT(k)}</dt><dd>${v}</dd></div>`).join("")}</dl>`;
 }
 function detailOverviewHtml(t) {
   const nav = t.lat ? `https://www.google.com/maps/dir/?api=1&destination=${t.lat},${t.lon}` : "";
-  const moreSearch = `https://www.google.com/search?q=${encodeURIComponent(t.name + " 步道")}`;
-  // 標籤：「親子」上面已經有「親子友善」，不再重複
+  // 標籤：「親子」上面已經有了，不再重複
   const tags = tagsOf(t).filter(g => !(t.family_friendly && /親子/.test(g)));
-  return `<div id="condLive">${conditionBanner(t)}</div>
+  return `<div class="dv-status" id="dvStatus"><div id="condLive">${conditionBanner(t)}</div><div class="dv-wxline" id="dvWxLine" hidden></div></div>
     ${detailStatsHtml(t)}
-    ${tags.length ? `<div class="tag-row">${tags.map(g => `<span class="tag">${escHtml(g)}</span>`).join("")}</div>` : ""}
-    ${gradeExplain(t)}
-    ${detailMetaHtml(t)}
-    ${siblingHtml(t)}
-    ${detailGuideHtml(t)}
-    <div class="link-row flow det-acts">
-      ${nav ? `<a class="link-btn" href="${nav}" target="_blank" rel="noopener">${ic("compass")} ${ttT("導航")}</a>` : ""}
-      <a class="link-btn" href="${moreSearch}" target="_blank" rel="noopener">${ic("search")} ${ttT("查資訊")}</a>
-      <button class="link-btn" id="btnShareTrail">${ic("share")} ${ttT("分享")}</button>
-      <button class="link-btn social-only" id="btnEventTrail">${ic("calendar")} ${ttT("揪團")}</button>
-      <button class="link-btn" id="btnDetMore">${ic("more")} ${ttT("更多")}</button>
+    ${detailGradeHtml(t)}
+    <div class="dv-acts">
+      ${nav ? `<a class="dv-act" href="${nav}" target="_blank" rel="noopener">${ic("compass")}<span>${ttT("導航")}</span></a>` : ""}
+      <button class="dv-act" id="btnShareTrail">${ic("share")}<span>${ttT("分享")}</span></button>
+      <button class="dv-act social-only" id="btnEventTrail">${ic("calendar")}<span>${ttT("揪團")}</span></button>
+      <a class="dv-act" href="https://www.google.com/search?q=${encodeURIComponent(t.name + " 步道")}" target="_blank" rel="noopener">${ic("search")}<span>${ttT("查資訊")}</span></a>
+      <button class="dv-act" id="btnDetMore">${ic("more")}<span>${ttT("更多")}</span></button>
     </div>
-    <div id="activityBox" hidden></div>
-    <div id="trailReportBox"></div>
-    <div id="trailFeedBox"></div>`;
+    ${tags.length ? `<div class="tag-row">${tags.map(g => `<span class="tag">${escHtml(g)}</span>`).join("")}</div>` : ""}
+    ${detailGuideHtml(t)}
+    ${detailInfoHtml(t)}
+    ${siblingHtml(t)}
+    <div class="dv-comm" id="dvComm">
+      <div id="activityBox" hidden></div>
+      <div id="trailReportBox"></div>
+      <div id="trailFeedBox"></div>
+    </div>`;
+}
+// 出發前：天氣、日照與最晚出發、申請、蚊蟲、登山口設施、離線地圖與留守人
+function detailPrepHtml(t) {
+  const done = typeof offlineSets === "function" && offlineSets()["trail:" + t.id];
+  const top = Math.max(t.alt_high || 0, demTrusted(t) ? (t.dem_hi || 0) : 0);
+  return `<div class="section-title" id="secWx">${ic("sun")}<span>${ttT("天氣")}</span><small class="dv-h-src">${ttT("登山口附近")}</small></div>
+    <div id="weatherBox"><div class="food-loading"><span class="spin"></span>${ttT("查詢天氣中…")}</div></div>
+    ${sunPlanHtml(t)}
+    ${top >= 2000 ? `<div class="dv-card dv-permit">${ic("shield")}<div><b>${ttT("高山步道多半要申請")}</b>
+      <p>${ttT("海拔 2,000 公尺以上常會進到山地管制區或國家公園，可能要入山證、入園證，山屋也要先抽籤。出發前到官方網站確認。")}</p>
+      <p class="dv-links"><a href="https://hike.taiwan.gov.tw/" target="_blank" rel="noopener">${ttT("台灣登山申請整合網")} ›</a><a href="https://nv2.npa.gov.tw/" target="_blank" rel="noopener">${ttT("警政署入山申請")} ›</a></p></div></div>` : ""}
+    ${bugHtml(t)}
+    <div id="amenBox" class="amen-box"></div>
+    <div class="section-title">${ic("backpack")}<span>${ttT("出發前準備")}</span></div>
+    <div class="dv-prep">
+      <button class="btn ghost" id="btnOffline">${done ? `${ic("check")} ${ttT("已預載離線地圖")}<small>・${ttT("再按一次會補齊")}</small>` : `${ic("download")} ${ttT("預載此步道離線地圖")}`}</button>
+      <div id="offlineBox" class="offline-box" hidden></div>
+      <button class="btn ghost" id="btnGuardSet">${ic("shield")} ${ttT("設定留守人")}<small>・${ttT("超時沒回報會通知家人")}</small></button>
+    </div>`;
+}
+// 日照：今天日出日落＋「最晚幾點出發才能天黑前走完」（預估時間＋半小時餘裕）
+function sunPlanHtml(t) {
+  if (!t.lat || typeof sunsetAt !== "function") return "";
+  const now = new Date(), rise = sunriseAt(t.lat, t.lon, now), set = sunsetAt(t.lat, t.lon, now);
+  if (!rise || !set) return "";
+  const hm = d => d.toLocaleTimeString(ttLocale(), { hour: "2-digit", minute: "2-digit", hour12: false });
+  const h = estHours(t), light = (set - rise) / 3.6e6;
+  let plan = "";
+  const multiDay = /一天以上|[二兩三四五]天|過夜|天以上/.test(t.tour || "");   // 官方寫「一天以上」的，估算時間不準（常是單程或沒算山屋那段）
+  if (h) {
+    if (multiDay || h + 0.5 > light) plan = `<div class="dv-sun-plan warn">${ic("alert")}<span>${ttT(multiDay ? "官方建議一天以上：要規劃過夜，或只走一段" : "預估時間比白天還長，一天走不完：要規劃過夜，或只走一段")}</span></div>`;
+    else {
+      const latest = new Date(set.getTime() - (h + 0.5) * 3.6e6);
+      plan = `<div class="dv-sun-plan">${ic("clock")}<span>${ttT("要在天黑前走完，最晚 %s 出發").replace("%s", `<b>${hm(latest)}</b>`)}</span><small>${ttT("預估時間＋半小時餘裕")}</small></div>`;
+    }
+  }
+  return `<div class="dv-sun"><span>${ic("sun")}${ttT("日出")} <b>${hm(rise)}</b></span><span>${ic("sunset")}${ttT("日落")} <b>${hm(set)}</b></span></div>${plan}`;
+}
+// 蚊蟲：小黑蚊在低海拔，所以用步道最低點判斷（原本在生態頁，跟安全有關所以搬到出發前）
+function bugHtml(t) {
+  if (typeof Ecology === "undefined") return "";
+  const alt = t.alt_low != null ? t.alt_low : (demTrusted(t) && t.dem_lo != null ? t.dem_lo : t.alt_high);
+  const env = (t.name || "") + (t.position || "") + tagsOf(t).join("");
+  const risk = Ecology.biteRisk(alt, t.region, new Date(), env);
+  const LV = { high: ["風險高", "eco-hi"], mid: ["風險中", "eco-mid"], low: ["風險低", "eco-lo"], none: ["幾乎無", "eco-no"] };
+  const [lvTxt, lvCls] = LV[risk.level] || LV.none;
+  return `<div class="eco-bite dv-bug ${lvCls}">
+      <div class="eco-bite-h">${ic("bug")}<span>${ttT("小黑蚊・蚊蟲")}</span><span class="eco-lv">${ttT(lvTxt)}</span></div>
+      <ul class="eco-tips">${risk.tips.map(x => `<li>${ttT(x)}</li>`).join("")}</ul>
+    </div>`;
 }
 function detailRouteHtml(t) {
-  const done = typeof offlineSets === "function" && offlineSets()["trail:" + t.id];
-  return `<div class="section-title" id="secWx">${ic("sun")}${ttT("天氣（步道所在地）")}</div>
-    <div id="weatherBox"><div class="food-loading"><span class="spin"></span>${ttT("查詢天氣中…")}</div></div>
-    ${geoOf(t) ? `<div class="section-title" id="secElev">${ic("mountain")}${ttT("海拔剖面")}</div><div id="profileBox"><div class="food-loading"><span class="spin"></span>${ttT("計算海拔剖面中…")}</div></div>` : ""}
-    ${wpListHtml(t)}
-    <button class="btn ghost" id="btnOffline" style="margin-top:14px">${done ? `${ic("check")} ${ttT("已預載離線地圖")}<small>・${ttT("再按一次會補齊")}</small>` : `${ic("download")} ${ttT("預載此步道離線地圖")}`}</button>
-    <div id="offlineBox" class="offline-box" hidden></div>`;
+  return `${geoOf(t) ? `<div class="section-title" id="secElev">${ic("mountain")}<span>${ttT("海拔剖面")}</span></div><div id="profileBox"><div class="food-loading"><span class="spin"></span>${ttT("計算海拔剖面中…")}</div></div>` : `<div class="dv-empty">${ic("map")}<span>${ttT("這條步道還沒有路線圖，地圖上只標登山口。")}</span></div>`}
+    <div class="len-note" id="lenNote" hidden></div>
+    ${wpListHtml(t)}`;
 }
+// 周邊：真實目擊（有授權照片）→ 這個海拔可能遇到的 → 人文景點 → 美食 → 附近步道
 function detailNearbyHtml(t) {
-  return `<div id="amenBox" class="amen-box"></div>
-    <div class="section-title" id="secPoi">${ic("landmark")}${ttT("附近人文景點")}</div>
+  return `<div class="section-title">${ic("leaf")}<span>${ttT("附近的真實目擊")}</span><small class="dv-h-src">iNaturalist</small></div>
+    <div id="ecoNearbyBox" class="eco-nearby"><div class="food-loading"><span class="spin"></span>${ttT("查詢附近目擊中…")}</div></div>
+    ${speciesHtml(t)}
+    <div class="section-title" id="secPoi">${ic("landmark")}<span>${ttT("附近人文景點")}</span></div>
     <div id="poiBox">${skelCards(3)}</div>
-    <div class="section-title" id="secFood">${ic("food")}${ttT("步道周邊美食")}</div>
+    <div class="section-title" id="secFood">${ic("food")}<span>${ttT("步道周邊美食")}</span></div>
     <div id="foodBox">${skelCards(3)}</div>
     ${nearbyStripHtml(t)}`;
+}
+// 這個海拔帶常見的動植物（離線清單，不是這條步道的紀錄）→ 收起來，點開才看
+function speciesHtml(t) {
+  if (typeof Ecology === "undefined") return "";
+  const r = Ecology.speciesFor(t);
+  const CATN = { mammal: ["paw", "哺乳類"], bird: ["bird", "鳥類"], insect: ["bug", "昆蟲"], herp: ["frog", "兩棲爬蟲"] };
+  const SHOW = 6;
+  const cats = Ecology.CATS.map(k => {
+    const arr = r.species[k] || []; if (!arr.length) return "";
+    const [icon, nm] = CATN[k];
+    const chip = sp => `<span class="eco-sp${Ecology.isPoison(sp) ? " eco-poison" : ""}">${Ecology.isPoison(sp) ? ic("alert") : ""}${escHtml(sp)}</span>`;
+    const more = arr.length > SHOW ? `<button class="eco-more" type="button">+${arr.length - SHOW}</button><span class="eco-rest" hidden>${arr.slice(SHOW).map(chip).join("")}</span>` : "";
+    return `<div class="eco-cat"><span class="eco-cat-h">${ic(icon)}<span>${ttT(nm)}</span></span><span class="eco-chips">${arr.slice(0, SHOW).map(chip).join("")}${more}</span></div>`;
+  }).join("");
+  if (!cats) return "";
+  return `<details class="dv-species" id="ecoBox"><summary>${ic("paw")}<span>${ttT("這個海拔可能遇到的動植物")}</span></summary>
+      <div class="eco-src">${ttT("依海拔和地區整理的常見物種，不是這條步道的實際紀錄")}</div>${cats}</details>`;
+}
+// iNaturalist 附近目擊：切到周邊頁、滑到這區才查（只抓可商用授權的照片，每張署名）
+async function loadSightings(t) {
+  const box = $("#ecoNearbyBox"); if (!box) return;
+  if (!navigator.onLine) { box.innerHTML = `<div class="eco-src">${ttT("需要網路才能看真實目擊")}</div>`; return; }
+  const obs = (typeof Ecology !== "undefined") ? await Ecology.nearbyObservations(t.lat, t.lon) : null;
+  if (_detailTrail !== t || !$("#ecoNearbyBox")) return;
+  if (!obs) { box.innerHTML = `<div class="eco-src">${ttT("這附近暫時沒有可顯示的目擊記錄")}</div>`; return; }
+  box.innerHTML = `<div class="eco-src">${ttT("附近 5 公里、研究等級的觀察紀錄")}</div><div class="eco-obs">`
+    + obs.map(o => `<a class="eco-ob" href="${escHtml(o.link || "#")}" target="_blank" rel="noopener">${o.thumb ? `<img src="${escHtml(o.thumb)}" loading="lazy" alt="">` : `<span class="eco-ob-noimg">${ic("leaf")}</span>`}<span>${escHtml(o.name)}</span>${o.credit ? `<small class="eco-cr" translate="no">${escHtml(o.credit)}</small>` : ""}</a>`).join("")
+    + `</div>`;
 }
 
 // opts.from：從詳情頁裡的「同名路段／附近步道」跳過來 → 顯示「回到上一條」
@@ -170,22 +240,24 @@ async function openDetail(id, opts) {
   mergeDetail(t);                       // 併入 guide/entrances/交通等詳情欄位
   const credit = t.source === "forestry" ? ttT("資料來源：林業及自然保育署 開放資料") : ttT("資料來源：OpenStreetMap 貢獻者（社群步道，詳細資料有限）");
   $("#detailHero").innerHTML = detailHeroHtml(t);
-  // 生態、周邊兩頁點到才建（以前一打開就把 4 頁 600 個元素全建好）
+  setMedia("map", false);   // 換步道：先回到地圖（有照片時 loadPhoto 再切回照片）
+  // 出發前（天氣）先建、周邊點到才建（以前一打開就把 4 頁 600 個元素全建好）
   $("#detailBody").innerHTML = `
     ${_detailBack ? `<button class="det-back" id="detBack">${ic("chevron")}<span>${ttT("回到")} ${escHtml(_detailBack.name)}</span></button>` : ""}
     <div class="detail-tabs" id="detailNav" role="tablist">
+      <span class="dt-name" aria-hidden="true">${escHtml(t.name)}</span>
       <button data-tab="ov" class="on" role="tab">${ttT("概覽")}</button>
+      <button data-tab="pre" role="tab">${ttT("出發前")}</button>
       <button data-tab="rt" role="tab">${ttT("路線")}</button>
-      <button data-tab="ec" role="tab">${ttT("生態")}</button>
       <button data-tab="nb" role="tab">${ttT("周邊")}</button>
     </div>
     <div class="tabwrap">
       <section class="tabpane" data-pane="ov" role="tabpanel">${detailOverviewHtml(t)}</section>
+      <section class="tabpane" data-pane="pre" role="tabpanel" hidden>${detailPrepHtml(t)}</section>
       <section class="tabpane" data-pane="rt" role="tabpanel" hidden>${detailRouteHtml(t)}</section>
-      <section class="tabpane" data-pane="ec" role="tabpanel" hidden></section>
       <section class="tabpane" data-pane="nb" role="tabpanel" hidden></section>
     </div>
-    <div class="detail-credit">${credit}</div>
+    <div class="detail-credit">${credit}${demTrusted(t) || t.dem_gain != null ? `<br>${ttT("地形計算：AWS Terrain Tiles（Mapzen）")}<br><span class="dv-terr" translate="no">SRTM &amp; GMTED2010 courtesy of the U.S. Geological Survey · ETOPO1 courtesy NOAA NCEI</span>` : ""}</div>
     <div class="detail-actionbar">
       <button class="btn primary" id="btnGoRecord">${ic("pin")}${ttT("在此步道開始記錄")}</button>
     </div>`;
@@ -231,12 +303,15 @@ function bindDetail(t) {
   const build = tab => {
     if (built[tab]) return; built[tab] = true;
     const pane = body.querySelector(`.tabpane[data-pane="${tab}"]`);
-    if (tab === "ec") { pane.innerHTML = ecologyHtml(t); bindEcology(t); }
+    if (tab === "pre") {
+      // Places 查詢（停車／廁所／超商）較耗額度 → 滑到該區塊才查
+      whenVisible($("#amenBox"), () => loadAmenities(t));
+    }
     if (tab === "nb") {
       pane.innerHTML = detailNearbyHtml(t);
+      bindEcology();
       pane.querySelectorAll(".nearby-card").forEach(el => el.addEventListener("click", () => { if (el.dataset.id) openDetail(el.dataset.id, { from: true }); }));
-      // Places 查詢（設施/美食/景點）較耗額度 → 滑到該區塊才查
-      whenVisible($("#amenBox"), () => loadAmenities(t));
+      whenVisible($("#ecoNearbyBox"), () => loadSightings(t));
       whenVisible($("#poiBox"), () => loadAttractions(t));
       whenVisible($("#foodBox"), () => loadFood(t));
     }
@@ -245,10 +320,36 @@ function bindDetail(t) {
     build(tab);
     navBtns.forEach(b => { b.classList.toggle("on", b.dataset.tab === tab); b.setAttribute("aria-selected", b.dataset.tab === tab); });
     panes.forEach(p => { p.hidden = p.dataset.pane !== tab; });
+    if (tab === "rt" && $("#mediaTog") && !$("#mediaTog").hidden) setMedia("map");   // 看路線就切到地圖
     const sheet = $("#detailSheet"), navTop = $("#detailNav").offsetTop;
     if (sheet.scrollTop > navTop) sheet.scrollTop = navTop;   // 對齊頁籤，避免切到較短分頁時捲過頭露白
   };
   navBtns.forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
+  build("pre");
+  // 數字旁的來源小標籤：點了說明這個數字怎麼來的；「看預報 ›」這類跳分頁
+  body.addEventListener("click", e => {
+    const go = e.target.closest("[data-go]"); if (go) { showTab(go.dataset.go); return; }
+    const c = e.target.closest(".dv-src"); if (!c) return;
+    const s = SRC_INFO[c.dataset.src]; if (s && typeof ttAlertBox === "function") ttAlertBox(ttT(s[1]));
+  });
+  // 介紹展開全文
+  const gm = $("#dvGuideMore");
+  if (gm) gm.addEventListener("click", () => { const g = $("#dvGuide"); const open = g.classList.toggle("clamp"); gm.textContent = ttT(open ? "展開全文" : "收合"); });
+  // 往下滑、標題離開畫面 → 頁籤列左邊出現步道名稱
+  const head = $("#heroWrap"), nav = $("#detailNav");
+  if (head && nav && "IntersectionObserver" in window) {
+    if (_dvHeadObs) _dvHeadObs.disconnect();
+    _dvHeadObs = new IntersectionObserver(es => es.forEach(en => nav.classList.toggle("mini", !en.isIntersecting)), { root: $("#detailSheet"), threshold: 0 });
+    _dvHeadObs.observe(head);
+  }
+  // 設定留守人：先把這條設成記錄的步道，再開留守人設定
+  const gs = $("#btnGuardSet");
+  if (gs) gs.addEventListener("click", () => {
+    closeDetail();
+    document.querySelector('.tab[data-view="record"]').click();
+    selectTrailForRecord(t);
+    setTimeout(() => { if (typeof Guardian !== "undefined") Guardian.openSheet(); }, 450);
+  });
   // 區塊可收合（沿線地標）
   body.querySelectorAll(".section-title.collapsible").forEach(hd => hd.addEventListener("click", () => {
     const collapsed = hd.classList.toggle("collapsed");
@@ -361,15 +462,26 @@ async function loadAmenities(t) {
   } catch { box.hidden = true; }
 }
 
+// 照片／地圖切換（同一塊位置，省掉以前「大照片＋地圖」佔掉的半個螢幕）。沒照片就只有地圖、不顯示切換鈕
+let _dvHeadObs = null;
+function setMedia(m, showTog) {
+  const media = $("#detailMedia"), ph = $("#detailPhotos"), tog = $("#mediaTog"); if (!media) return;
+  if (showTog !== undefined) tog.hidden = !showTog;
+  media.dataset.m = m;
+  ph.hidden = m !== "photo";
+  tog.querySelectorAll("button").forEach(b => { const on = b.dataset.m === m; b.classList.toggle("on", on); b.setAttribute("aria-selected", on); });
+  if (m === "map" && typeof detailMap !== "undefined" && detailMap) setTimeout(() => detailMap.invalidateSize(), 30);
+}
+document.addEventListener("click", e => { const b = e.target.closest && e.target.closest("#mediaTog button"); if (b) setMedia(b.dataset.m); });
 async function loadPhoto(t) {
-  const hero = $("#heroWrap");
+  const hero = $("#detailPhotos");
   if (!hero) return;
+  hero.innerHTML = "";
   try {
     const items = await Photos.forTrailMulti(t, 5);     // [{url, credit}]，credit = 作者 · 授權（Wikimedia CC 合規）
     if (_detailTrail !== t) return;                     // 已切換步道 → 別把舊步道的照片貼到新面板
     if (!items || !items.length) return;                // 無照片：保留漸層等高線底
     const urls = items.map(it => it.url);
-    hero.classList.remove("noimg");
     const car = document.createElement("div");
     car.className = "hero-carousel";
     car.innerHTML = items.map(it => `<img alt="${escHtml(t.name)}" src="${escHtml(it.url)}" loading="lazy" decoding="async">`).join("")
@@ -394,7 +506,8 @@ async function loadPhoto(t) {
         setCredit(i);
       }, { passive: true });
     }
-  } catch { /* 無照片就維持漸層底 */ }
+    setMedia("photo", true);
+  } catch { /* 無照片就只有地圖 */ }
 }
 
 // 照片燈箱：全螢幕放大、可左右滑
@@ -424,17 +537,12 @@ async function loadElevation(t) {
     // 地圖畫出來的路線和官方記載的長度差很多 → 說清楚為什麼兩個數字不一樣
     if (t.length_km && p.distKm && Math.abs(p.distKm - t.length_km) / t.length_km > 0.25) {
       const ln = $("#lenNote");
-      if (ln) { ln.hidden = false; ln.innerHTML = `${ic("info")}<span>${ttT("地圖上的路線約")} ${fmtKm(p.distKm)} km，${ttT("和記載的")} ${fmtKm(t.length_km)} km ${ttT("不一樣：記載的常只算主線，地圖可能含支線或來回。")}</span>`; }
+      if (ln) { ln.hidden = false; ln.innerHTML = `${ic("info")}<span>${ttT("地圖上的路線約 %1 km，記載的是 %2 km。記載的常只算主線，地圖可能多畫了支線或來回。").replace("%1", fmtKm(p.distKm)).replace("%2", fmtKm(t.length_km))}</span>`; }
     }
-    if (p.gain != null) {
-      const kvA = $("#kvAscent"); if (kvA) kvA.textContent = p.gain + " m";   // 詳情頁即時覆蓋（用地形算的，比資料準）
-      // 同步更新探索列表中該步道卡的累積爬升（不必重開 App）
-      const sel = (window.CSS && CSS.escape) ? CSS.escape(t.id) : t.id;
-      document.querySelectorAll(`#trailList .card[data-id="${sel}"] [data-card-asc]`).forEach(el => { el.textContent = "↑" + p.gain; });
-    }
+    const ta = trailAscent(t), gainShow = ta && ta.kind === "dem" ? ta.v : p.gain;   // 有預先算好的地形值就用它，跟概覽同一個數字
     box.innerHTML = `<div class="profile-wrap" id="profWrap">${p.svg}
         <div class="prof-cursor" id="profCursor"></div><div class="prof-tip" id="profTip"></div></div>
-      <div class="profile-stat"><span>${ttT("最低")}<b>${p.min} m</b></span><span>${ttT("最高")}<b>${p.max} m</b></span><span>${ttT("累積爬升")}<b>↑${p.gain} m</b></span><span>${ttT("路線長")}<b>${fmtKm(p.distKm)} km</b></span></div>
+      <div class="profile-stat"><span>${ttT("最低")}<b>${p.min} m</b></span><span>${ttT("最高")}<b>${p.max} m</b></span><span>${ttT("累積爬升")}<b>↑${gainShow} m</b></span><span>${ttT("路線長")}<b>${fmtKm(p.distKm)} km</b></span></div>
       <div class="profile-legend"><span><i style="background:#4a8f55"></i>${ttT("緩")}</span><span><i style="background:#c39327"></i>${ttT("中")}</span><span><i style="background:#c0542f"></i>${ttT("陡")}</span><span class="pl-hint">${ttT("滑過看各點海拔")}</span></div>`;
     // 滑過/觸控顯示該點距離與海拔
     const wrap = $("#profWrap"), cur = $("#profCursor"), tip = $("#profTip");
@@ -497,6 +605,13 @@ async function loadWeather(t) {
       <div class="wx-fc">${fc}</div>
       <div class="food-credit">${ttT("天氣資料：Open-Meteo · 7 日預報")}</div>
       <div id="summitWx"></div>`;
+    // 概覽「今日狀態」：一行今天天氣，點了到出發前看完整預報
+    const wl = $("#dvWxLine");
+    if (wl) {
+      const [, txt0] = Weather.desc(dd.weather_code[0]);
+      wl.hidden = false;
+      wl.innerHTML = `<div class="dv-wx-row">${wxIcon(dd.weather_code[0])}<span>${ttT("今天")} ${ttT(txt0)} ${Math.round(dd.temperature_2m_min[0])}–${Math.round(dd.temperature_2m_max[0])}°${ttCJK() ? "・" : " · "}${ttT("降雨")} ${dd.precipitation_probability_max[0] ?? "—"}%</span><button class="link-btn" type="button" data-go="pre">${ttT("看預報")} ›</button></div>`;
+    }
     loadSummitWeather(t);
   } catch {
     box.innerHTML = `<div class="food-empty">${ttT("天氣查不到，要有網路")}</div>`;
@@ -531,6 +646,8 @@ async function loadSummitWeather(t) {
     if (rows.some(r => r.code >= 95 && r.lbl !== "清晨")) warn.push(ttT("午後可能有雷雨，早出早歸"));
     const minFeel = Math.min(...rows.map(r => r.feel)); if (minFeel <= 5) warn.push(`${ttT("山頂體感最低")} ${minFeel}°C${ttSp()}${ttT("要帶保暖衣物")}`);
     const maxGust = Math.max(...rows.map(r => r.gust)); if (maxGust >= 45) warn.push(`${ttT("稜線陣風可達")} ${maxGust} km/h`);
+    const wl = $("#dvWxLine");   // 山頂的警示也放一條到概覽的今日狀態
+    if (wl && warn.length && !wl.querySelector(".dv-wx-warn")) wl.insertAdjacentHTML("beforeend", `<div class="dv-wx-warn">${ic("alert")}<span>${ttT("山頂")}${ttColon()}${warn[0]}</span></div>`);
     box.innerHTML = `<div class="smt">
       <div class="smt-h">${ic("mountain")}<span>${ttT("山頂天氣")}</span><small>${ttT("海拔")} ${hi.toLocaleString()} m</small></div>
       ${warn.length ? `<div class="smt-warn">${warn.map(w => `<div>${ic("alert")}<span>${w}</span></div>`).join("")}</div>` : ""}
@@ -813,8 +930,8 @@ function openCompareSheet() {
       ${row("步道", t => `<b class="cmp-nm">${escHtml(t.name)}</b>`)}
       ${row("難度", t => diffBadgeHtml(t))}
       ${row("長度", t => `<span class="nw">${fmtKm(t.length_km)} km</span>`)}
-      ${row("累積爬升", t => t.ascent != null ? `<span class="nw">↑${Math.round(t.ascent)} m</span>` : "—")}
-      ${row("所需時間", t => timeHtml(t))}
+      ${row("累積爬升", t => ascVal(t) != null ? `<span class="nw">↑${ascVal(t)} m</span>` : "—")}
+      ${row("預估時間", t => timeHtml(t))}
       ${row("親子友善", t => t.family_friendly ? "✓" : "—")}
       ${row("地區", t => t.region || "—")}
       ${row("主題", t => escHtml(tagsOf(t).slice(0, 3).join("、")) || "—")}

@@ -31,6 +31,6 @@ const API = "https://recreation.forest.gov.tw/mis/api/BasicInfo/Trail";
   const sec = (t, a) => a.length ? `### ${t}（${a.length}）\n${a.slice(0, 40).map(x => "- " + x).join("\n")}${a.length > 40 ? `\n- …還有 ${a.length - 40} 筆` : ""}\n` : "";
   console.log(`林業署官方 ${off.length} 條步道，跟 App 內建資料比對有 **${n}** 處不同。\n\n`
     + sec("新增的步道", out.added) + sec("官方已移除", out.removed) + sec("改名", out.renamed) + sec("難度改了", out.diff) + sec("長度差超過 0.3 公里", out.len)
-    + `\n**怎麼更新**：跟 Claude 說「更新步道資料」，或自己跑 \`python3 data/build_data.py && node scripts/pack-trails.mjs\`，跑完 \`npm run check\`。\n`);
+    + `\n**怎麼更新**：跟 Claude 說「更新步道資料」，或自己跑 \`node scripts/sync-forestry.mjs && node scripts/pack-trails.mjs\`（名稱／難度／長度／海拔）；新增或下架的步道要跑完整的 \`data/build_data.py\` 管線。\n`);
   process.exit(2);
 })();

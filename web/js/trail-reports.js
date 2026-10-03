@@ -61,7 +61,7 @@ const TrailReports = (() => {
     box.innerHTML = `<div class="section-title">${ic("megaphone")}<span>${T("山友回報")}</span><small class="trp-sub">${T("最近 7 天")}</small></div>
       ${rows.length ? `${bad ? `<div class="trp-sum">${ic("alert")}<span>${T("有路況提醒，出發前看一下")}</span><b>${bad}</b></div>` : ""}
         <div class="trp-list">${rows.slice(0, 5).map(r => itemHtml(t, r)).join("")}</div>`
-      : `<div class="trp-empty">${T("最近 7 天沒人回報。走完可以幫下一個人回報一下路況")}</div>`}
+      : `<div class="trp-empty">${T("最近 7 天沒人回報。走完可以幫下一個人回報路況，人氣也會匿名幫忙累積")}</div>`}
       <button class="btn ghost trp-add" id="trpAdd">${ic("plus")} ${T("回報路況")}</button>`;
     box.querySelector("#trpAdd").addEventListener("click", () => openForm(t));
     box.querySelectorAll(".trp-photo").forEach(img => img.addEventListener("click", () => { if (typeof Lightbox !== "undefined") Lightbox.open(img.src); }));

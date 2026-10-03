@@ -26,6 +26,27 @@ const NAME_FIX = {
 let fixed = 0;
 for (const t of arr) if (NAME_FIX[t.name]) { t.name = NAME_FIX[t.name]; fixed++; }
 if (fixed) console.error(`名稱修正 ${fixed} 筆`);
+// OSM 把兩個名字用分號黏在一起（「檜山道路;根本古道」）→ 用「・」
+let semi = 0;
+for (const t of arr) if (/\s*;\s*/.test(t.name || "")) { t.name = t.name.split(/\s*;\s*/).filter(Boolean).join("・"); semi++; }
+if (semi) console.error(`名稱分號 → ・ ${semi} 筆`);
+
+// 地形計算的累積爬升（scripts/compute-gain.mjs → data/trail_gain.json）：
+// dem_gain／dem_loss＝沿路線一趟的累積爬升／下降，dem_hi／dem_lo＝路線最高／最低點，geo_km＝路線圖長度，loop＝環狀。
+// 能不能信（路線圖跟官方長度差太多就不信）交給執行期 trailAscent() 判斷，這裡照實放。
+const GAIN_FILE = "data/trail_gain.json";
+if (fs.existsSync(GAIN_FILE)) {
+  const G = JSON.parse(fs.readFileSync(GAIN_FILE, "utf8"));
+  let n = 0;
+  for (const t of arr) {
+    for (const k of ["dem_gain", "dem_loss", "dem_hi", "dem_lo", "geo_km", "loop"]) delete t[k];
+    const r = G[t.id]; if (!r) continue;
+    Object.assign(t, { dem_gain: r.g, dem_loss: r.d, dem_hi: r.hi, dem_lo: r.lo, geo_km: r.km });
+    if (r.lp) t.loop = 1;
+    n++;
+  }
+  console.error(`地形爬升併入 ${n} 筆`);
+}
 
 // 欄位清單（穩定順序）；condition 是稀疏物件欄位，單獨存
 const keys = [...new Set(arr.flatMap(t => Object.keys(t)))].filter(k => k !== "condition");

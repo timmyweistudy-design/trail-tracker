@@ -8,7 +8,7 @@ const { chromium } = require(ROOT + "/node_modules/playwright");
 const { spawn } = require("child_process");
 const OUT = ROOT + "/store-assets/ios-6.9/";
 const MOCK = fs.readFileSync(ROOT + "/scripts/tests/soc-mock.js", "utf8");
-const PORT = 8899;
+const PORT = 8901;
 
 // 標語：主標＋副標
 const SCENES = [
@@ -62,6 +62,7 @@ async function capture(b, lang) {
 
   // 2 山頂天氣（大霸尖山）
   await p.evaluate(() => openDetail("forestry-027")); await p.waitForTimeout(800);
+  await p.evaluate(() => { const b = document.querySelector('#detailNav [data-tab="pre"]'); if (b) b.click(); });   // 2026-10 改版：天氣在「出發前」
   await p.waitForFunction(() => document.querySelector("#summitWx .smt"), null, { timeout: 20000 }).catch(() => {});
   await p.evaluate(() => { const s = document.getElementById("summitWx"); if (s) s.scrollIntoView({ block: "start" }); });
   await p.evaluate(() => { const sc = document.querySelector(".sheet-body, .detail-body, #detailSheet .sheet-scroll"); if (sc) sc.scrollTop -= 90; else window.scrollBy(0, -90); });

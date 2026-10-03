@@ -1,4 +1,4 @@
-// 海拔剖面圖：沿步道路線取樣海拔（Open-Meteo elevation，免金鑰），畫成剖面。
+// 海拔剖面圖：沿步道路線取樣海拔（AWS 地形圖；拿不到才用 Open-Meteo／OpenTopoData），畫成剖面。
 const Profile = (() => {
   const cache = {};
 
@@ -41,6 +41,11 @@ const Profile = (() => {
   }
 
   async function elevations(points) {
+    // 先用 AWS 地形圖（跟累積爬升、記錄校正同一套資料，看過或預載過的區域離線也算得出來）
+    if (typeof Elevation !== "undefined" && Elevation.profile) {
+      const e = await Elevation.profile(points.map(p => ({ lat: p[0], lon: p[1] })));
+      if (e) return e.map(v => (isFinite(v) && v > -500 && v < 4500) ? v : null);
+    }
     const lat = points.map(p => p[0].toFixed(5)).join(",");
     const lon = points.map(p => p[1].toFixed(5)).join(",");
     // 主來源 Open-Meteo；失敗(限流/錯誤)改用 OpenTopoData SRTM 備援
@@ -55,7 +60,9 @@ const Profile = (() => {
   }
 
   // 回傳 {svg, gain, min, max, distKm}
-  const LS = id => "tt_prof_v2_" + id;   // v2：取樣 90 點演算法；舊版自動失效
+  // 舊版（v2，Open-Meteo 算的）剖面快取清掉，不然會一直佔著 localStorage
+  try { for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k && k.startsWith("tt_prof_v2_")) localStorage.removeItem(k); } } catch (e) { /* */ }
+  const LS = id => "tt_prof_v3_" + id;   // v3：改用地形圖；舊版自動失效
   // 持久化快取，限 25 筆 FIFO，避免塞爆 localStorage 影響其他寫入（如記錄存檔）
   function persist(id, result) {
     try {

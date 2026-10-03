@@ -123,7 +123,7 @@ async function _open3D(name, geom, opts) {
       version: 8,
       sources: {
         sat: { type: "raster", tiles: [`${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}${AGTOK}`], tileSize: 256, maxzoom: 18, attribution: "© Esri, Maxar" },
-        terrain: { type: "raster-dem", tiles: ["https://elevation-tiles-prod.s3.amazonaws.com/terrarium/{z}/{x}/{y}.png"], tileSize: 256, encoding: "terrarium", maxzoom: 15, attribution: "Terrain: AWS/Mapzen" },
+        terrain: { type: "raster-dem", tiles: ["https://elevation-tiles-prod.s3.amazonaws.com/terrarium/{z}/{x}/{y}.png"], tileSize: 256, encoding: "terrarium", maxzoom: 15, attribution: "Terrain: Mapzen / AWS Terrain Tiles · SRTM & GMTED2010 courtesy of the U.S. Geological Survey · ETOPO1 courtesy NOAA NCEI" },
         route: { type: "geojson", data: { type: "Feature", properties: {}, geometry: { type: "MultiLineString", coordinates: coords } } },
         pts: { type: "geojson", data: { type: "FeatureCollection", features: [{ type: "Feature", properties: { k: "s" }, geometry: { type: "Point", coordinates: [start[1], start[0]] } }, { type: "Feature", properties: { k: "e" }, geometry: { type: "Point", coordinates: [end[1], end[0]] } }] } },
         me3d: { type: "geojson", data: { type: "FeatureCollection", features: [] } },
@@ -502,31 +502,39 @@ function escHtml(v) {
 }
 function conditionBanner(t) {
   const c = t.condition;
-  const src = (txt, time) => `<div class="cond-meta">${txt}</div>${time ? `<div class="cond-meta">${ttT("更新於")} ${time}</div>` : ""}`;
-  // 有官方公告（落石／坍方／崩塌／封閉等）→ 紅/黃警示橫幅
+  const dot = ttCJK() ? "・" : " · ";
+  // 有官方公告（落石／坍方／崩塌／封閉等）→ 紅（封閉）／橘（注意）
   if (c && c.status) {
     const closed = /暫停|封閉|關閉/.test(c.status);
     // 「部分封閉（全線）」這種官方寫法自相矛盾 → 全線時就不再括號標示
     const sec = c.section && !(c.section === "全線" && /部分/.test(c.status)) ? `（${escHtml(c.section)}）` : "";
-    return `<div class="cond-banner ${closed ? "danger" : "warn"}">
+    // 預計重新開放日已經過了：官方常常沒及時撤公告 → 講清楚「可能已開放，打電話確認」，不要讓人以為還封著
+    const today = (() => { const d = new Date(); return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`; })();
+    const passed = c.reopen && /^\d{8}$/.test(c.reopen) && c.reopen < today;
+    const reopen = c.reopen ? (passed
+      ? `<div class="cond-note">${ic("info")}<span>${ttT("預計重新開放日 %s 已過，可能已經開放了。出發前請向管理單位確認").replace("%s", fmtYmd(c.reopen))}${c.dep ? `（${escHtml(ttT(c.dep))}）` : ""}</span></div>`
+      : `<div class="cond-meta">${ttT("預計重新開放")}${ttColon()}${fmtYmd(c.reopen)}</div>`) : "";
+    return `<div class="cond-banner ${closed && !passed ? "danger" : "warn"}">
       <div class="cond-h">${ic("alert")}<span>${escHtml(c.status)}</span>${sec}</div>
       ${c.title ? `<div class="cond-body">${escHtml(c.title)}</div>` : ""}
       ${(c.title && typeof I18n !== "undefined" && I18n.lang() !== "zh") ? `<div class="pv-tr-row"><button class="link-btn" id="condTranslate">${ic("translate")} ${ttT("翻譯年糕")}</button></div><div class="cond-body pv-cap-tr" id="condTr" hidden></div>` : ""}
-      ${c.reopen ? `<div class="cond-meta">${ttT("預計重新開放")}${ttColon()}${fmtYmd(c.reopen)}${c.dep ? `${ttCJK() ? "・" : " · "}${escHtml(ttT(c.dep))}` : ""}</div>` : ""}
-      ${src(`${ttT("資料來源：林業及自然保育署")}（${ttT("以官方公告為準")}）`, condStamp())}
+      ${reopen}
+      <div class="cond-meta">${ttT("林業署公告")}${c.ann ? ` ${fmtYmd(c.ann)}` : ""}${c.dep ? `${dot}${escHtml(ttT(c.dep))}` : ""}${dot}${ttT("以官方公告為準")}</div>
+      ${condStamp() ? `<div class="cond-meta">${ttT("查詢於")} ${condStamp()}</div>` : ""}
     </div>`;
   }
-  // 林業署步道、無公告 → 綠色「通行正常」
+  // 林業署步道、無公告 → 綠
   if (t.source === "forestry") {
+    const st = condStamp();
     return `<div class="cond-banner ok">
-      <div class="cond-h">${ic("check")}<span>${ttT("目前無封閉公告，通行正常")}</span></div>
-      ${src(`${ttT("資料來源：林業及自然保育署即時路況")}・${ttT("出發前仍請留意現場天候與狀況")}`, condStamp())}
+      <div class="cond-h">${ic("check")}<span>${ttT("目前沒有封閉公告")}</span></div>
+      <div class="cond-meta">${ttT("林業署即時路況")}${st ? `${dot}${ttT("查詢於")} ${st}` : ""}${dot}${ttT("現場天候仍要留意")}</div>
     </div>`;
   }
-  // OSM 步道：無官方即時路況來源 → 中性提示，誠實告知
+  // 社群步道：沒有官方路況來源 → 一行講清楚就好
   return `<div class="cond-banner note">
-    <div class="cond-h">${ic("info")}<span>${ttT("無官方即時路況資料")}</span></div>
-    <div class="cond-meta">${ttT("這條不歸林業署管，我們拿不到即時封閉公告。出發前查一下當地公告，或看看最近的山友回報。")}</div>
+    <div class="cond-h">${ic("info")}<span>${ttT("這條不歸林業署管，沒有官方封閉公告")}</span></div>
+    <div class="cond-meta">${ttT("出發前查一下當地公告，或看下面的山友回報")}</div>
   </div>`;
 }
 
@@ -544,16 +552,4 @@ function siblingHtml(t) {
   const sib = siblingTrails(t); if (!sib.length) return "";
   return `<div class="sib-box"><div class="sib-h">${ttT("同名的其他路段")}</div>
     <div class="sib-row">${sib.map(o => `<button class="sib-chip" data-sib="${o.id}">${escHtml(o.name)}<span>${o.length_km ? fmtKm(o.length_km) + " km" : ""}</span></button>`).join("")}</div></div>`;
-}
-function gradeExplain(t) {
-  const g = GRADES[t.difficulty];
-  if (!g) return t.difficulty === 6
-    ? `<div class="grade-note">${ttT("這條在雪季才會有積雪，需要冰攀裝備與經驗；其他季節的難度沒有官方分級。")}</div>`
-    : `<div class="grade-note">${ttT("此步道尚無分級資料。")}</div>`;
-  const basis = t.source === "forestry" ? ttT("林業署官方分級") : ttT("照長度推估的，參考就好");
-  return `<div class="grade-note">
-    <b>${t.difficulty}級·${g.name}</b>：${g.plain}
-    <div class="grade-note-meta"><span><i>適合</i>${g.who}</span><span><i>裝備</i>${g.gear}</span>
-      <span class="gn-basis">${basis}・<a href="#" id="lnkGradeAll">${ttT("看完整分級說明")}</a></span></div>
-  </div>`;
 }
