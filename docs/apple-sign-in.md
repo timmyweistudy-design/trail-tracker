@@ -1,5 +1,8 @@
 # 開啟「使用 Apple 繼續」
 
+> **目前狀態（2026-10-03 設定完成）**：已開啟。Services ID `com.timmyweistudy.trailtracker.signin`、Key ID `76DU2688D6`、Team ID `9QVB56C5B6`。
+> ⚠️ **Supabase 的 Apple secret 在 2027-04-01 到期**，到期前要用同一個 `.p8` 重新產生並貼回 Supabase（Authentication → Providers → Apple → Secret Key），不然 Apple 登入會失敗。
+
 App Store 審核規則 4.8：App 有 Google 登入，就要再提供一個保護隱私的登入方式，最保險的是「用 Apple 登入」。
 程式已經寫好，只差 Apple 和 Supabase 的設定。設定完把 `web/js/config.js` 的 `window.SOCIAL_APPLE` 改成 `true`。
 
