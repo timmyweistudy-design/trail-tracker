@@ -64,7 +64,7 @@ iOS 專案 `ios/` **已經建好並設定完成**（Info.plist 定位權限說�
 
 ## 上架前還要處理
 - 隱私權政策網址、商店文案、螢幕截圖。
-- App 內數位付費一律要走 IAP（外部 Stripe 會被 Apple 拒審，見 `optimization-backlog.md`）。
+- App 內數位付費一律要走 IAP（外部 Stripe 會被 Apple 拒審）；已用 RevenueCat 完成，見 `iap-setup.md`。
 - 背景定位、Google deep link 兩項在 Android/iOS 都已完整（見「已處理」），但**只在網頁測過**，TestFlight/實機要各跑一次。
 
 ## 已完成（別再重做）

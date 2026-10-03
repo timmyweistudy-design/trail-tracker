@@ -1,6 +1,6 @@
 # 循徑拾光：目前進度與待辦
 
-最後更新：2026-10-03（commit `14a5d43` 之後；SW `trail-tracker-v558`）
+最後更新：2026-10-03（文件整理後；SW `trail-tracker-v558`；`test:all` 33/33 實跑通過）
 上架細節清單見 [launch-checklist.md](launch-checklist.md)。
 
 ## 現況
@@ -63,6 +63,12 @@
 - [ ] 沿途標記點：社群回報水源、營地、觀景點（從山友路況回報延伸）。
 - [ ] 主題任務／每月挑戰跟在地店家或活動合作。
 - [ ] OSM 步道重抓（上次 2026-07-30；`data/osm_crawled_at.txt`）。
+
+### 評估過、刻意不做（除非情況改變）
+- 首屏 build／minify、抽 critical CSS：跟 no-build 架構衝突（Render 直接吃 `web/`），Render 已 gzip、SW 已快取，效益小、回歸風險大。
+- 步道資料首屏拆分：搜尋需要全量資料，拆了複雜、收益低。
+- app.js 再拆、inline style 全改 class：純重構，沒有使用者價值；inline 多半是動態計算值。
+- 記錄中雲端快照：本機已有崩潰復原（`tt_active_rec` 每 4 秒存一次＋開機還原）。
 
 ## 維護備忘
 
