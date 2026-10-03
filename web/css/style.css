@@ -716,6 +716,10 @@ body.navup-on #recMap .leaflet-map-pane { transition: transform var(--dur-xs) li
 body.rec-running #recMap .pm-e .pet-critter, body.rec-running #recMap .pm-e .pet-hat-svg,
 body.rec-running #recMap .me-marker .tm-pet .pet-critter, body.rec-running #recMap .me-marker .tm-pet .pet-hat-svg { animation: petWalk .62s ease-in-out infinite; }
 @keyframes petWalk { 0%, 100% { transform: translateY(0) rotate(-5deg); } 50% { transform: translateY(-5px) rotate(5deg); } }
+/* 快走時小跑步；休息／暫停時坐下（壓低、慢慢呼吸） */
+body.rec-running.rec-fast #recMap .pm-e .pet-critter, body.rec-running.rec-fast #recMap .me-marker .tm-pet .pet-critter { animation-duration: .36s; }
+body.rec-running.rec-resting #recMap .pm-e .pet-critter, body.rec-running.rec-resting #recMap .me-marker .tm-pet .pet-critter { animation: petSit 3.4s ease-in-out infinite; transform-origin: 50% 95%; }
+@keyframes petSit { 0%, 100% { transform: scale(1.06, .9); } 50% { transform: scale(1.08, .86); } }
 @media (prefers-reduced-motion: reduce) { body.rec-running #recMap .pet-critter, body.rec-running #recMap .pet-hat-svg { animation: none !important; } }
 .rec-spark { width: 100%; height: 56px; display: block; background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: var(--r-sm); }
 .rec-spark-cap { font-size: calc(11px * var(--fs, 1)); color: var(--ink-soft); text-align: center; margin-top: 4px; font-family: var(--num); }

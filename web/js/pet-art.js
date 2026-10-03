@@ -170,8 +170,16 @@ window.PET_ART = (function () {
     // 登山頭巾：每月挑戰第一次完成才解鎖（不能用果實買）
     bandana: `<path d="M62 50 q38-26 76 0 l-3 9 q-35-16 -70 0Z" fill="#d9573f"/><path d="M66 48 q34-20 68 0" stroke="#f3c7a8" stroke-width="2.4" stroke-dasharray="3 5" fill="none" stroke-linecap="round"/><path d="M134 53 l17 -3 l-6 11 l11 6 l-18 2Z" fill="#c4452f"/><circle cx="100" cy="38" r="3" fill="#fff3d6"/><circle cx="84" cy="43" r="2.2" fill="#fff3d6"/><circle cx="116" cy="43" r="2.2" fill="#fff3d6"/>`,
   };
-  const HAT_LABEL = { none: "不戴", straw: "草帽", party: "派對帽", crown: "花冠", bow: "蝴蝶結", bandana: "登山頭巾" };
-  const HAT_IDS = ["none", "straw", "party", "crown", "bow", "bandana"];
+  // 地區配件（pet-journey.js）：走過那個地區的步道就解鎖，不用果實
+  Object.assign(HATS, {
+    silvergrass: `<path d="M84 52 q-6-20 -16-32 M100 50 q0-22 3-38 M116 52 q8-18 18-28" stroke="#b9a874" stroke-width="3" fill="none" stroke-linecap="round"/><ellipse cx="66" cy="20" rx="5.5" ry="12" transform="rotate(-36 66 20)" fill="#f1e7c9"/><ellipse cx="103" cy="12" rx="5.5" ry="12.5" fill="#f6eed6"/><ellipse cx="136" cy="22" rx="5.5" ry="12" transform="rotate(40 136 22)" fill="#f1e7c9"/><path d="M76 55 q24-9 48 0" stroke="#6f9446" stroke-width="5.5" fill="none" stroke-linecap="round"/>`,
+    maple: `<g transform="translate(110 36) rotate(-14) scale(1.25)"><path d="M0 -20 l5 9 l8 -3 l-2 9 l9 2 l-8 6 l3 7 l-9 -2 l-1 9 l-5 -6 l-5 6 l-1 -9 l-9 2 l3 -7 l-8 -6 l9 -2 l-2 -9 l8 3Z" fill="#d9532f"/><path d="M0 -14 v26" stroke="#a83a1f" stroke-width="1.6"/></g><path d="M78 56 q22-8 44 0" stroke="#8a5a32" stroke-width="4" fill="none" stroke-linecap="round"/>`,
+    pineapple: `<path d="M100 34 l-14 -22 l11 8 l3 -18 l4 17 l11 -9 l-9 22Z" fill="#4f9a3e"/><ellipse cx="100" cy="47" rx="27" ry="15" fill="#f2b632"/><path d="M80 40 l20 18 M90 34 l26 22 M104 33 l16 14 M120 40 l-20 18 M110 34 l-26 22 M96 33 l-16 14" stroke="#cf861a" stroke-width="2" stroke-linecap="round"/>`,
+    wave: `<path d="M62 54 q38-24 76 0 l-2 8 q-36-14 -72 0Z" fill="#3a86c8"/><path d="M70 50 q8-12 18-4 q6-10 16-2 q8-10 18 0 q6-6 12 2" stroke="#eaf6ff" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M122 46 q8-18 26-12 q-12 4 -11 14 q-7-6 -15-2Z" fill="#7cc0ea"/>`,
+    shell: `<g transform="translate(112 40)"><path d="M-19 9 q0-27 19-27 q19 0 19 27 q-19 6 -38 0Z" fill="#f4c7b0"/><path d="M0 -16 v22 M-9 -12 l4 19 M9 -12 l-4 19 M-15 -2 l9 9 M15 -2 l-9 9" stroke="#d99a80" stroke-width="1.8" stroke-linecap="round"/><rect x="-8" y="7" width="16" height="6" rx="3" fill="#e2a68c"/></g>`,
+  });
+  const HAT_LABEL = { none: "不戴", straw: "草帽", party: "派對帽", crown: "花冠", bow: "蝴蝶結", bandana: "登山頭巾", silvergrass: "芒草穗", maple: "楓葉", pineapple: "鳳梨帽", wave: "浪花頭巾", shell: "貝殼髮夾" };
+  const HAT_IDS = ["none", "straw", "party", "crown", "bow", "bandana", "silvergrass", "maple", "pineapple", "wave", "shell"];
   // 各階段頭頂錨點 [x, y, scale]：帽子以自身參考點(x100,y45)對到該階段頭頂。逐一調過位。
   const HAT_ANCHOR = [
     [100, 62, 1.0],   // 0 卵

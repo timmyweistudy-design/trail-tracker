@@ -117,4 +117,54 @@ const KM=[0,5,20,40,90,150,260];
  ok(await p.evaluate(b=>!document.querySelector(".ps-berry")&&berriesBalance()===b-3,bal0),"reduced motion: feed settles instantly, no berry animation");
  await p.close();}
 
+// ── 第 4 階段：夥伴的旅行（明信片、發現的生物、地區配件、棲地裝飾）＋記錄中的夥伴 ──
+{const D=k=>new Date(Date.now()-k*864e5).toISOString();
+ const recs=[["osm-13164921",1],["osm-7605213",3],["osm-7605213",9],["forestry-002",5],["forestry-198",7],["forestry-062",11],["osm-14358020",13],["osm_path-內湖山登山路線-23.7153",15]].map(([id,k],i)=>({id:"j"+i,date:D(k),trailName:"x",trailId:id,distanceKm:3,ascent:100,durationMin:60}));
+ const p=await mk({km:40,records:recs});
+ const j=await p.evaluate(()=>({w:PetJourney.walked().map(e=>e.t.id+":"+e.n),reg:[...PetJourney.regions()].sort(),hats:PetJourney.regionHats().sort(),decor:PetJourney.decor(),themes:PetJourney.walked().map(e=>PetJourney.themeOf(e.t))}));
+ console.log(JSON.stringify(j));
+ ok(j.w.length===7&&j.w.includes("osm-7605213:2"),"walked: 7 unique trails, repeat counted");
+ ok(j.reg.length===5&&j.hats.length===5,"all 5 regions → 5 regional hats");
+ ok(j.decor.includes("sea")&&j.decor.length===2&&!j.decor.includes("old"),"decor: the two most-walked themes, max 2 ("+j.decor+")");
+ ok(["fall","sea","old","lake","peak","hill"].every(t=>j.themes.includes(t)||t==="hill"),"themes cover fall/sea/old/lake/peak");
+ // 夥伴頁區塊
+ const sec=await p.evaluate(()=>{const b=document.getElementById("petJourney");return {cards:b.querySelectorAll(".pj-strip .pj-card").length,n:b.querySelector("#pjCards b").textContent,sp:+b.querySelector("#pjSpecies b").textContent,reg:b.querySelector(".pj-regs b").textContent}});
+ ok(sec.cards===7&&sec.n==="7"&&sec.sp>20&&/^5/.test(sec.reg),"journey section: 7 postcards, species, 5/5 regions "+JSON.stringify(sec));
+ ok(await p.evaluate(()=>[...document.querySelectorAll(".pj-art")].every(s=>s.querySelectorAll("path,rect,ellipse").length>2)),"every postcard has artwork");
+ // 舞台裝飾真的畫出來
+ ok(await p.evaluate(()=>{const b=document.querySelector(".ps-box");return b.dataset.decor==="sea fall"||b.dataset.decor===PetJourney.decor().join(" ")})&&await p.evaluate(()=>!!document.querySelector(".ps-box .ps-sea")),"stage shows sea decor");
+ await p.evaluate(()=>document.getElementById("petJourney").scrollIntoView({block:"start"}));await p.waitForTimeout(300);await p.screenshot({path:O+"p4-journey.png"});
+ // 相簿
+ await p.click("#pjSpecies");await p.waitForTimeout(500);
+ ok(await p.evaluate(()=>!document.querySelector('.pj-pane[data-p="species"]').hidden&&document.querySelectorAll(".pj-chip").length>20),"album opens on species tab");
+ await p.screenshot({path:O+"p4-species.png"});
+ await p.click('.pj-seg .seg-btn[data-t="cards"]');await p.waitForTimeout(300);
+ ok(await p.evaluate(()=>document.querySelectorAll(".pj-grid .pj-card").length===7&&document.querySelectorAll(".pj-reg.on").length===5),"album: 7 cards, 5 regions lit");
+ await p.screenshot({path:O+"p4-album.png"});
+ await p.click("#pjClose");await p.waitForTimeout(300);
+ // 地區配件：在裝扮裡是擁有的、可以直接戴；存檔不寫進推出來的帽子
+ await p.evaluate(()=>{document.getElementById("petCard").scrollIntoView();});await p.click("#petDress");await p.waitForTimeout(500);
+ ok(await p.evaluate(()=>["silvergrass","maple","pineapple","wave","shell"].every(h=>!document.querySelector(`.hat-opt[data-hat="${h}"]`).classList.contains("locked"))),"regional hats unlocked in picker");
+ await p.click('.hat-opt[data-hat="maple"]');await p.waitForTimeout(400);
+ ok(await p.evaluate(()=>localStorage.getItem("tt_pet_hat")==="maple"&&!!document.querySelector("#petEmoji .pc-hat")),"wear maple leaf");
+ ok(await p.evaluate(()=>!(localStorage.getItem("tt_pet_hats_owned")||"").includes("maple")),"derived hats not persisted");
+ await p.close();}
+{const p=await mk({km:40});
+ await p.click("#petDress");await p.waitForTimeout(500);
+ ok(await p.evaluate(()=>document.querySelector('.hat-opt[data-hat="wave"]').classList.contains("locked")&&!document.querySelector('.hat-opt[data-hat="wave"] .pro-tag')),"no records: regional hat locked, shows region not PRO");
+ await p.click('.hat-opt[data-hat="wave"]');await p.waitForTimeout(300);
+ ok(/東部/.test(await p.evaluate(()=>document.getElementById("toast").textContent)),"locked regional hat explains which region");
+ await p.evaluate(()=>document.getElementById("hatClose").click());
+ ok(await p.evaluate(()=>/明信片/.test(document.querySelector("#petJourney .pj-empty").textContent)),"empty state explains postcards");
+ // 記錄中：休息坐下、快走小跑
+ const cls=await p.evaluate(()=>{const b=document.body;b.classList.add("rec-running");b.classList.add("rec-resting");const a=b.className;b.classList.remove("rec-running","rec-resting","rec-fast");return a});
+ ok(/rec-resting/.test(cls),"rec-resting class usable");
+ ok(await p.evaluate(()=>{const s=document.createElement("style");return [...document.styleSheets].some(ss=>{try{return [...ss.cssRules].some(r=>/rec-resting/.test(r.selectorText||""))}catch(e){return false}})}),"sit animation CSS present");
+ await p.close();}
+{const p=await mk({km:40,lang:"en",records:[{id:"e1",date:new Date().toISOString(),trailName:"x",trailId:"forestry-002",distanceKm:3}]});
+ await p.waitForTimeout(800);
+ const t=await p.evaluate(()=>[document.getElementById("petJourney").textContent,document.querySelector("#petJourney .pj-stats").textContent]);
+ ok(/Buddy's Travels/.test(t[0])&&/Postcards/.test(t[1])&&!/[\u4e00-\u9fff]/.test(t[1]),"English journey section translated: "+t[1].replace(/\s+/g," ").slice(0,80));
+ await p.close();}
+
 console.log("ERRS",JSON.stringify(errs));console.log("FAILS",fails);await b.close();srv.kill();})();

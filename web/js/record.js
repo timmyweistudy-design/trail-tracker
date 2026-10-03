@@ -510,6 +510,9 @@ Recorder.onUpdate(s => {
   if (s.state === "running" && !s.resting) _restWarned = false;
   if (s.simDone && !_simDoneToasted) { _simDoneToasted = true; toast(ttT("模擬走完了，按「結束」看結算")); ttBuzz([60, 40, 60]); }
   if (s.state === "idle") _simDoneToasted = false;
+  // 地圖上的夥伴：休息／暫停時坐下，快走（>6.5 km/h）時小跑步
+  document.body.classList.toggle("rec-resting", s.state === "paused" || (s.state === "running" && !!s.resting));
+  document.body.classList.toggle("rec-fast", s.state === "running" && !s.resting && (s.instKmh || 0) > 6.5);
   // 狀態列（有變才寫）
   if (s.error && s.errCode) setRecStatus(`<span class="rs-warn">${ic("alert")} ${escHtml(ttT(GPS_ERR[s.errCode] || GPS_ERR[2]))}</span>`, true);
   else if (s.waiting) setRecStatus(`<span class="rs-wait"><span class="spin"></span>${ttT("正在等定位，第一次可能要十幾秒…")}</span>`, true);
@@ -1010,7 +1013,7 @@ async function safeRun(label, fn) {
 }
 async function finishRecording(autoVehicle) {
   const rec = Recorder.stop();
-  document.body.classList.remove("rec-running");   // A6：結束→寵物停止走路
+  document.body.classList.remove("rec-running", "rec-resting", "rec-fast");   // A6：結束→寵物停止走路
   setNavUp(false); _navUserOff = false;   // 結束記錄→退出導航視角、下趟恢復預設導航
   recPreloaded = false; lastKmMilestone = 0; _berryLastKm = null;   // 下次記錄重新預載/里程碑/果實錨點
   syncRecButtons("idle"); setRecLock(false);   // 結束記錄→解除口袋鎖定

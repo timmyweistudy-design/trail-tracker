@@ -75,7 +75,7 @@ const recs=[1,3,5,7].map(m=>({id:"r"+m,date:new Date(Y,m-1,9,7).toISOString(),tr
  // 導覽
  await p.keyboard.press("Escape");await p.evaluate(()=>document.querySelectorAll(".pet-modal,.tour").forEach(e=>e.remove()));
  await p.evaluate(()=>onboarding(true,{previewLang:"zh",startAt:0}));await p.waitForTimeout(900);
- const n=await p.evaluate(()=>document.querySelectorAll(".tour-dots span").length);ok(n===13,"main tour has 13 steps: "+n);
+ const n=await p.evaluate(()=>document.querySelectorAll(".tour-dots span").length);ok(n===14,"main tour has 14 steps (incl. 夥伴的旅行): "+n);
  const miss=[];
  for(let k=0;k<n;k++){
    const st=await p.evaluate(()=>{const s=document.querySelector(".tour-spot").getBoundingClientRect();const tip=document.querySelector(".tour-tip");return {w:s.width,h:s.height,title:tip.querySelector("h3").textContent,center:tip.classList.contains("center")};});

@@ -80,6 +80,15 @@ window.PetStage = (function () {
     },
   ];
   const clamp = i => Math.max(0, Math.min(SCENES.length - 1, i | 0));
+  // 棲地裝飾（pet-journey.js 依走過的步道主題決定）：放進遠景或中景，不擋角色（角色在正中間）
+  const DECOR = {
+    sea: { far: `<rect class="ps-sea" x="-10" y="226" width="420" height="34"/><path class="ps-glint" d="M40 236 h26 M120 244 h18 M250 238 h30 M330 246 h20" stroke-width="2" stroke-linecap="round"/>` },
+    fall: { far: `<path class="ps-cliff" d="M286 260 L292 150 Q318 132 344 150 L350 260Z"/><path class="ps-fallw" d="M306 152 v104 M316 150 v108 M326 152 v104" stroke-width="5" stroke-linecap="round"/><ellipse class="ps-splash" cx="316" cy="258" rx="26" ry="6"/>` },
+    old: { mid: `<g class="ps-steps"><path d="M132 262 h30 l-3 -6 h-24Z"/><path d="M140 252 h24 l-3 -5 h-18Z"/><path d="M148 244 h18 l-2 -4 h-14Z"/></g>` },
+    forest: { far: pine(170, 226, .6, "ps-f2") + pine(206, 222, .75, "ps-f2") + pine(240, 228, .55, "ps-f2") },
+    lake: { mid: `<ellipse class="ps-lake" cx="300" cy="268" rx="44" ry="9"/><path class="ps-glint" d="M282 266 h16 M306 270 h12" stroke-width="2" stroke-linecap="round"/>` },
+  };
+  function decorOf(list, stage, layer) { return stage >= 6 ? "" : (list || []).map(k => (DECOR[k] && DECOR[k][layer]) || "").join(""); }
 
   // 天空小物：太陽／月亮／星星
   function sky(t) {
@@ -113,10 +122,10 @@ window.PetStage = (function () {
     o = Object.assign({}, o, window.__ps || {});   // window.__ps＝測試／除錯面板強制指定時段、季節、天氣
     const i = clamp(stage), t = o.tod || tod(), se = o.season || season(), wx = o.wx || "";
     const sc = SCENES[i];
-    return `<div class="ps-box${o.bg ? " ps-bg" : ""}" data-stage="${i}" data-tod="${t}" data-season="${se}"${wx ? ` data-wx="${wx}"` : ""} style="--wx:${o.bg ? 0 : pos.x};--face:${o.bg ? 1 : pos.face}">
+    return `<div class="ps-box${o.bg ? " ps-bg" : ""}" data-stage="${i}"${(o.decor || []).length ? ` data-decor="${o.decor.join(" ")}"` : ""} data-tod="${t}" data-season="${se}"${wx ? ` data-wx="${wx}"` : ""} style="--wx:${o.bg ? 0 : pos.x};--face:${o.bg ? 1 : pos.face}">
       <div class="ps-l ps-sky" style="--d:.1">${sky(t)}${wx === "cloud" || wx === "rain" ? `<svg class="ps-svg ps-drift" ${VB}>${cloud(90, 70, 1.1, "ps-skycloud")}${cloud(300, 50, 1.4, "ps-skycloud")}</svg>` : ""}</div>
-      <div class="ps-l ps-far" style="--d:.28"><svg class="ps-svg" ${VB}>${sc.far}</svg></div>
-      <div class="ps-l ps-mid" style="--d:.55"><svg class="ps-svg" ${VB}>${sc.mid}</svg></div>
+      <div class="ps-l ps-far" style="--d:.28"><svg class="ps-svg" ${VB}>${sc.far}${decorOf(o.decor, i, "far")}</svg></div>
+      <div class="ps-l ps-mid" style="--d:.55"><svg class="ps-svg" ${VB}>${sc.mid}${decorOf(o.decor, i, "mid")}</svg></div>
       <div class="ps-l ps-fx" aria-hidden="true">${particles(i, t, se, wx)}</div>
       <div class="ps-actor" style="--d:.72">${actorHtml}</div>
       <div class="ps-l ps-front" style="--d:1.35"><svg class="ps-svg" ${VB}>${sc.front}</svg></div>

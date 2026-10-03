@@ -105,7 +105,11 @@ function feedPet() {
 }
 // 帽子要用果實解鎖（果實除了餵食之外多一個用途）；解過的永久擁有
 const HAT_COST = 10;
-function hatsOwned() { try { return new Set(JSON.parse(localStorage.getItem("tt_pet_hats_owned")) || ["none"]); } catch { return new Set(["none"]); } }
+function hatsOwned() {
+  let s; try { s = new Set(JSON.parse(localStorage.getItem("tt_pet_hats_owned")) || ["none"]); } catch { s = new Set(["none"]); }
+  if (typeof PetJourney !== "undefined") PetJourney.regionHats().forEach(h => s.add(h));   // 地區配件：走過那個地區就有（從紀錄推，不存）
+  return s;
+}
 function petStageIndex(km) { let i = 0; for (let k = 0; k < PET_STAGES.length; k++) if (km >= PET_STAGES[k].km) i = k; return i; }
 function petName() { return localStorage.getItem("tt_pet_name") || ""; }
 function petHat() { return localStorage.getItem("tt_pet_hat") || "none"; }   // A5 配件（Premium 裝扮）
@@ -117,9 +121,10 @@ function openHatPicker() {
   const pro = typeof Premium !== "undefined" && Premium.isOn();
   const i = petStageIndex(totalKm()), cur = petHat(), owned = hatsOwned();
   const opts = PET_ART.HAT_IDS.map(id => {
-    const has = owned.has(id), quest = id === "bandana";   // 登山頭巾：完成每月挑戰才拿得到，不能買
-    const proLock = !pro && !FREE_HATS.has(id) && !has;   // 以前當會員時換到的照樣能戴；新換的才要 PRO
-    return `<button class="hat-opt${id === cur ? " on" : ""}${has && !proLock ? "" : " locked"}${quest && !has ? " quest" : ""}" data-hat="${id}"><div class="hat-prev">${PET_ART.svg(i)}${PET_ART.hat(id, i)}</div><div class="hat-lbl">${ttT(PET_ART.HAT_LABEL[id])}</div>${proLock ? `<div class="hat-cost"><span class="pro-tag">PRO</span></div>` : has ? "" : quest ? `<div class="hat-cost hat-quest">${ic("flag")} <span>${ttT("每月挑戰")}</span></div>` : `<div class="hat-cost">${BERRY_SVG}${HAT_COST}</div>`}</button>`;
+    const reg = typeof PetJourney !== "undefined" ? PetJourney.hatRegion(id) : "";   // 地區配件：走過才有，不能買
+    const has = owned.has(id), quest = id === "bandana" || !!reg;   // 登山頭巾：完成每月挑戰才拿得到，不能買
+    const proLock = !pro && !FREE_HATS.has(id) && !has && !reg;   // 以前當會員時換到的照樣能戴；新換的才要 PRO
+    return `<button class="hat-opt${id === cur ? " on" : ""}${has && !proLock ? "" : " locked"}${quest && !has ? " quest" : ""}" data-hat="${id}"><div class="hat-prev">${PET_ART.svg(i)}${PET_ART.hat(id, i)}</div><div class="hat-lbl">${ttT(PET_ART.HAT_LABEL[id])}</div>${proLock ? `<div class="hat-cost"><span class="pro-tag">PRO</span></div>` : has ? "" : reg ? `<div class="hat-cost hat-quest">${ic("map")} <span>${ttT(reg)}</span></div>` : quest ? `<div class="hat-cost hat-quest">${ic("flag")} <span>${ttT("每月挑戰")}</span></div>` : `<div class="hat-cost">${BERRY_SVG}${HAT_COST}</div>`}</button>`;
   }).join("");
   const ov = document.createElement("div"); ov.className = "pet-modal"; ov.dataset.ov = "pethat";
   ov.innerHTML = `<div class="pet-modal-card"><button class="sheet-close" id="hatClose" aria-label="${ttT("關閉")}">${ic("x")}</button><h2>${ic("sparkle")} ${ttT("幫夥伴裝扮")}</h2><p class="dex-intro">${ttT("用果實換新配件，換過的就一直是你的。")}</p><div class="hat-bal">${ttT("你有")} ${BERRY_SVG}<b>${berriesBalance()}</b></div><div class="hat-grid">${opts}</div></div>`;
@@ -131,6 +136,8 @@ function openHatPicker() {
   ov.querySelector("#hatClose").addEventListener("click", close);
   ov.querySelectorAll(".hat-opt").forEach(btn => btn.addEventListener("click", async () => {
     const id = btn.dataset.hat, own = hatsOwned();
+    const reg = typeof PetJourney !== "undefined" ? PetJourney.hatRegion(id) : "";
+    if (reg && !own.has(id)) { toast(`${ttT(reg)}・${ttT("走過這個地區的步道就會解鎖")}`); return; }
     if (!FREE_HATS.has(id) && !own.has(id) && !_proGate()) return;   // 用果實換新配件：PRO（已擁有的照樣能戴）
     if (!own.has(id) && id === "bandana") { toast(ttT("完成一次每月挑戰就會解鎖，在夥伴頁看進度")); return; }
     if (!own.has(id)) {
@@ -138,7 +145,7 @@ function openHatPicker() {
       const ok = typeof ttConfirm === "function" ? await ttConfirm(`${ttT("換上")}${ttSp()}${ttQuote(ttT(PET_ART.HAT_LABEL[id]))}${ttCJK() ? "？" : "?"}${ttParen(`${HAT_COST} ${ttT("顆果實")}`)}`, ttT("換上"), ttT("再想想")) : true;
       if (!ok) return;
       localStorage.setItem("tt_pet_berry_spent", String((+(localStorage.getItem("tt_pet_berry_spent") || 0)) + HAT_COST));
-      own.add(id); localStorage.setItem("tt_pet_hats_owned", JSON.stringify([...own]));
+      own.add(id); localStorage.setItem("tt_pet_hats_owned", JSON.stringify([...own].filter(h => !(typeof PetJourney !== "undefined" && PetJourney.hatRegion(h)))));   // 地區配件是推出來的，不寫進存檔
       btn.classList.remove("locked"); const c = btn.querySelector(".hat-cost"); if (c) c.remove();
       const bal = ov.querySelector(".hat-bal b"); if (bal) bal.textContent = berriesBalance();
     }
@@ -315,7 +322,7 @@ function renderPet() {
       <div id="petEmoji" class="pet-m-${mood.k || "content"}" role="button" tabindex="0" aria-label="${ttT("摸摸")} ${escHtml(nm || ttT(st.n))}">${art}${petMoodFx(mood.k)}</div>
       <div class="pet-shadow"></div>`;
   const stageHtml = (typeof PetStage !== "undefined")
-    ? PetStage.html(i, actorHtml, { wx: PetStage.cachedWx() })
+    ? PetStage.html(i, actorHtml, { wx: PetStage.cachedWx(), decor: typeof PetJourney !== "undefined" ? PetJourney.decor() : [] })
     : `<div class="pet-habitat">${(typeof PET_ART !== "undefined" && PET_ART.habitat) ? PET_ART.habitat(i) : ""}</div>${actorHtml}`;
   box.innerHTML = `<div class="pet-card${i >= 6 ? " final" : ""}" style="--habitat:${PET_BG[i]}">
     ${stageHtml}
@@ -345,6 +352,7 @@ function renderPet() {
     const had = PetStage.cachedWx();
     PetStage.weather().then(w => { if (w !== had && document.body.dataset.view === "pet" && box.isConnected) renderPet(); });   // 天氣回來了才補畫（之後走快取，不會一直重畫）
   }
+  if (typeof PetJourney !== "undefined") PetJourney.render();   // 夥伴的旅行（明信片／發現的生物／地區）
   const em = $("#petEmoji");
   // 點頭＝摸摸頭（瞇眼）、點身體＝搔癢（扭一扭）、長按＝抱抱（壓扁回彈＋三顆心，每天第一次抱親密 +2）
   const S = typeof PetStage !== "undefined";

@@ -151,7 +151,7 @@ const ok = m => console.log("  ✓ " + m);
     if (!advanced) break;
     await p.waitForTimeout(700);
   }
-  step > 8 ? ok(`導覽走完 ${step} 步，每步都有聚光燈與文字`) : bad(`導覽只走了 ${step} 步（應 13 步）`);
+  step > 8 ? ok(`導覽走完 ${step} 步，每步都有聚光燈與文字`) : bad(`導覽只走了 ${step} 步（應 14 步）`);
 
   // ---------- E. 情境導覽（步道詳情/記錄）----------
   console.log("\nE. 情境導覽");
