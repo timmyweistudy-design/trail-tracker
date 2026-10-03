@@ -7,9 +7,26 @@ const Auth = (() => {
   const REDIRECT = "com.timmyweistudy.trailtracker://login-callback";
   function _cap(name) { return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins[name]) || null; }
 
+  // Google／Apple 登入失敗時，Supabase 會把錯誤放在回跳網址（?error=…&error_description=…）。
+  // 以前沒人看 → 使用者只看到「刷完臉、頁面重新整理、還是沒登入」。這裡讀出來講人話，並清掉網址。
+  function oauthError(url) {
+    try {
+      const u = new URL(url, location.href);
+      const p = new URLSearchParams(u.search), h = new URLSearchParams((u.hash || "").replace(/^#/, ""));
+      const code = p.get("error") || h.get("error"); if (!code) return false;
+      const desc = (p.get("error_description") || h.get("error_description") || "").replace(/\+/g, " ");
+      const msg = /signup|sign up|not allowed/i.test(desc) ? T("目前不開放註冊新帳號，只有已經有帳號的人能登入")
+        : /cancel|access_denied/i.test(code) && !desc ? T("登入取消了")
+        : T("登入沒有成功，等一下再試") + (desc ? `（${desc.slice(0, 80)}）` : "");
+      setTimeout(() => { if (typeof toast === "function") toast(msg); }, 600);
+      if (url === location.href) { try { history.replaceState(null, "", location.pathname); } catch (e) { /* */ } }
+      return true;
+    } catch (e) { return false; }
+  }
   function init(cb) {
     onChange = cb || (() => {});
     const c = Supa.client(); if (!c) return;
+    oauthError(location.href);
     c.auth.onAuthStateChange((_e, s) => {
       onChange();                                 // 登入/登出/回呼後重新路由
       // 原生 IAP：把 RevenueCat 的 app_user_id 綁成 Supabase user id，webhook 才對得回同一個人
@@ -29,6 +46,7 @@ const Auth = (() => {
     App.addListener("appUrlOpen", async ev => {
       try {
         const url = ev && ev.url; if (!url || url.indexOf("login-callback") < 0) return;
+        if (oauthError(url)) { const Br = _cap("Browser"); if (Br && Br.close) { try { await Br.close(); } catch (e) { /* */ } } return; }
         const q = url.split("?")[1] || ""; const code = new URLSearchParams(q).get("code");
         const c = Supa.client();
         if (code && c) await c.auth.exchangeCodeForSession(code);   // PKCE：用 code 換到 session

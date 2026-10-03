@@ -4,6 +4,9 @@
 // 步道名稱/介紹等資料內容維持中文。要補翻譯：加 DICT 詞條或 PATTERNS 規則即可。
 const I18n = (() => {
   const DICT = {
+    "目前不開放註冊新帳號，只有已經有帳號的人能登入": "New sign-ups are closed right now. Only existing accounts can sign in",
+    "登入取消了": "Sign-in canceled",
+    "登入沒有成功，等一下再試": "Sign-in didn't work. Try again shortly",
     "管理提醒：過去 24 小時有新的檢舉或錯誤，點這裡處理": "Admin: new reports or errors in the last 24 hours. Tap to review",
     "內容有不適當的字詞，改一下再送出": "This contains inappropriate words. Please edit it and try again",
     "加入前，先看一下社群規範": "Before you join, a quick look at the community rules",

@@ -71,6 +71,16 @@ const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:390,height:
  await p.click('.notif[data-type="admin"]');await p.waitForTimeout(1500);
  ok(await p.evaluate(()=>!!document.querySelector('[data-ov="admin"]')),"tap opens admin panel");
  await p.close();}
+// 第三方登入被擋（註冊關閉）回跳：要講人話、清網址
+{const ctx=await b.newContext({viewport:{width:390,height:844}});const p=await ctx.newPage();await require(__dirname+"/fake-weather")(p);p.on("pageerror",e=>errs.push(e.message));
+ await p.addInitScript(()=>{["tt_onboarded_v2","tt_coach_trail","tt_locperm_prompted","tt_coach_soc_friends"].forEach(k=>localStorage.setItem(k,"1"));localStorage.setItem("tt_social","1");});
+ await p.addInitScript(MOCK);
+ await p.goto("http://localhost:8897/?error=access_denied&error_code=signup_disabled&error_description=Signups+not+allowed+for+this+instance");await p.waitForTimeout(2300);
+ await p.evaluate(()=>{document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove());window.__installFakeSupa({loggedOut:true});});
+ await p.click('.tab[data-view="social"]');await p.waitForTimeout(2000);
+ const tt=await p.evaluate(()=>[document.getElementById("toast").textContent,location.search]);
+ ok(/不開放註冊/.test(tt[0])&&tt[1]==="","signup-disabled redirect → clear message + URL cleaned "+JSON.stringify(tt));
+ await ctx.close();}
 // 商用金鑰 → customer-api
 {const p=await mk({key:"TESTKEY"});await p.evaluate(()=>Weather.get(24.1,121.1));await p.waitForTimeout(300);
  ok(p.__seen.some(u=>/customer-api\.open-meteo\.com\/v1\/forecast\?.*apikey=TESTKEY/.test(u)),"OPEN_METEO_KEY → customer-api with apikey");await p.close();}
