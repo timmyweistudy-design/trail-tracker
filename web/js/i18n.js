@@ -4,6 +4,7 @@
 // 步道名稱/介紹等資料內容維持中文。要補翻譯：加 DICT 詞條或 PATTERNS 規則即可。
 const I18n = (() => {
   const DICT = {
+    "管理提醒：過去 24 小時有新的檢舉或錯誤，點這裡處理": "Admin: new reports or errors in the last 24 hours. Tap to review",
     "內容有不適當的字詞，改一下再送出": "This contains inappropriate words. Please edit it and try again",
     "加入前，先看一下社群規範": "Before you join, a quick look at the community rules",
     "不騷擾、不歧視、不發色情或暴力內容": "No harassment, discrimination, sexual or violent content",

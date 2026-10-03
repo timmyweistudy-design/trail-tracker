@@ -1,6 +1,8 @@
 name: Health check
-# 每天檢查一次「林業署路況代理」（Cloudflare Worker）：壞了 App 只會默默用舊資料，所以這裡壞了就讓工作流程失敗，
-# GitHub 會寄信通知。也可以在 Actions 頁面手動按 Run workflow。
+# 每天檢查一次：
+#   1. 林業署路況代理（Cloudflare Worker）：壞了 App 只會默默用舊資料，所以壞了就讓工作流程失敗，GitHub 會寄信通知。
+#   2. Supabase 喚醒：免費方案閒置 7 天會被暫停（暫停後留守人超時通知、登入、雲端備份全部失效），每天查一次資料庫保持活躍。
+# 也可以在 Actions 頁面手動按 Run workflow。
 on:
   schedule:
     - cron: "30 23 * * *"   # 台灣 07:30
@@ -27,3 +29,19 @@ jobs:
               console.log("OK：" + d.length + " 筆路況");
             }).catch(e => { console.error("路況代理壞了：" + e.message); process.exit(1); });
           ' "$URL"
+
+  supabase-keepalive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ping Supabase database
+        run: |
+          URL=$(grep -o 'SUPABASE_URL = "[^"]*"' web/js/config.js | cut -d'"' -f2)
+          KEY=$(grep -o 'SUPABASE_ANON_KEY = "[^"]*"' web/js/config.js | cut -d'"' -f2)
+          # 公開的步道人氣統計：真的會查資料庫（只查 REST 首頁不算活動）
+          CODE=$(curl -s -o /tmp/r.json -w "%{http_code}" -X POST "$URL/rest/v1/rpc/trail_crowd" \
+            -H "apikey: $KEY" -H "Content-Type: application/json" -d '{"p_trail":"forestry-002"}')
+          echo "HTTP $CODE"; head -c 300 /tmp/r.json; echo
+          if [ "$CODE" = "540" ] || [ "$CODE" = "503" ]; then echo "::error::Supabase 專案可能已暫停，到 supabase.com/dashboard 按 Restore"; exit 1; fi
+          if [ "$CODE" -ge 500 ]; then echo "::error::Supabase 回 $CODE"; exit 1; fi

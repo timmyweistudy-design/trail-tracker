@@ -63,6 +63,14 @@ const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:390,height:
  ok(await p.evaluate(()=>!document.querySelector('[data-ov="doc"]')&&!!document.querySelector(".ttdlg-ov")),"Esc closes panel, rules dialog stays");
  await p.click(".ttdlg .btn.primary");await p.waitForTimeout(300);
  await p.close();}
+// 管理提醒通知（phase36）：通知頁顯示、點了開管理頁
+{const p=await mk();await p.evaluate(()=>{window.__installFakeSupa({});window.__fakeT.notifications.unshift({id:"na",user_id:"me",type:"admin",actor_id:null,post_id:null,read:false,created_at:new Date().toISOString(),actor:null});});
+ await p.click('.tab[data-view="social"]');await p.waitForTimeout(1500);await p.evaluate(()=>SocialUI.go("notif"));await p.waitForTimeout(1200);
+ const t=await p.evaluate(()=>{const n=document.querySelector('.notif[data-type="admin"]');return n&&n.innerText});
+ ok(t&&/管理提醒/.test(t)&&!/有人/.test(t),"admin digest notification rendered: "+String(t).replace(/\n/g," "));
+ await p.click('.notif[data-type="admin"]');await p.waitForTimeout(1500);
+ ok(await p.evaluate(()=>!!document.querySelector('[data-ov="admin"]')),"tap opens admin panel");
+ await p.close();}
 // 商用金鑰 → customer-api
 {const p=await mk({key:"TESTKEY"});await p.evaluate(()=>Weather.get(24.1,121.1));await p.waitForTimeout(300);
  ok(p.__seen.some(u=>/customer-api\.open-meteo\.com\/v1\/forecast\?.*apikey=TESTKEY/.test(u)),"OPEN_METEO_KEY → customer-api with apikey");await p.close();}

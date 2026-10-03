@@ -17,7 +17,7 @@ const Admin = (() => {
     body.innerHTML = `<div class="feed-loading"><span class="spin"></span></div>`;
     const { data, error } = await Supa.client().rpc("admin_queue");
     if (error) { body.innerHTML = `<div class="gd-empty">${esc(errMsg(error))}</div>`; return; }
-    if (!data.length) { body.innerHTML = `<div class="gd-empty">沒有待處理的檢舉 🎉</div>`; return; }
+    if (!data || !data.length) { body.innerHTML = `<div class="gd-empty">沒有待處理的檢舉 🎉</div>`; return; }
     body.innerHTML = data.map(r => `<div class="adm-item${r.hidden ? " is-hidden" : ""}">
       <div class="adm-top"><span class="adm-kind">${r.kind === "post" ? "貼文" : "路況回報"}</span><b>${esc(r.author)}</b><small>${when(r.created_at)}</small><span class="adm-flags">${r.flags} 次檢舉</span></div>
       <div class="adm-body">${esc(r.body) || "（沒有文字）"}</div>
@@ -36,7 +36,7 @@ const Admin = (() => {
     body.innerHTML = `<div class="feed-loading"><span class="spin"></span></div>`;
     const { data, error } = await Supa.client().rpc("admin_errors", { p_days: 7 });
     if (error) { body.innerHTML = `<div class="gd-empty">${esc(errMsg(error))}</div>`; return; }
-    if (!data.length) { body.innerHTML = `<div class="gd-empty">最近 7 天沒有錯誤回報</div>`; return; }
+    if (!data || !data.length) { body.innerHTML = `<div class="gd-empty">最近 7 天沒有錯誤回報</div>`; return; }
     body.innerHTML = `<div class="adm-note">最近 7 天，依訊息分組（只收到已登入使用者的）</div>` + data.map(r => `<div class="adm-item">
       <div class="adm-top"><span class="adm-flags">${r.n} 次・${r.users} 人</span><small>最後 ${when(r.last_at)}${r.app_ver ? "・" + esc(r.app_ver) : ""}</small></div>
       <div class="adm-body adm-mono">${esc(r.message)}</div>

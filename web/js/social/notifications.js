@@ -44,6 +44,7 @@ const Notifs = (() => {
     if (n.type === "gift") return name + " 送了果實給你的夥伴";
     if (n.type === "mention") return name + " 在貼文中提到你";
     // 留守人（phase31）
+    if (n.type === "admin") return T("管理提醒：過去 24 小時有新的檢舉或錯誤，點這裡處理");   // schema-phase36，只有管理員會收到
     if (n.type === "guard") return T("%s 出發了，請你當留守人").replace("%s", name);
     if (n.type === "guard_ext") return T("%s 延後了預計下山時間").replace("%s", name);
     if (n.type === "overdue") return T("%s 超過預計下山時間 30 分鐘還沒回報").replace("%s", name);
@@ -51,7 +52,7 @@ const Notifs = (() => {
     return name;
   }
   const GUARD = new Set(["guard", "guard_ext", "overdue", "safe"]);
-  function icon(t) { if (GUARD.has(t)) return ic(t === "safe" ? "check" : t === "overdue" ? "alert" : "shield"); return (t === "follow" || t === "follow_req" || t === "follow_ok") ? ic("plus") : t === "like" ? ic("heart") : t === "team" ? ic("users") : t === "gift" ? (typeof BERRY_SVG !== "undefined" ? BERRY_SVG : "🍓") : t === "mention" ? ic("megaphone") : ic("chat"); }
+  function icon(t) { if (t === "admin") return ic("sliders"); if (GUARD.has(t)) return ic(t === "safe" ? "check" : t === "overdue" ? "alert" : "shield"); return (t === "follow" || t === "follow_req" || t === "follow_ok") ? ic("plus") : t === "like" ? ic("heart") : t === "team" ? ic("users") : t === "gift" ? (typeof BERRY_SVG !== "undefined" ? BERRY_SVG : "🍓") : t === "mention" ? ic("megaphone") : ic("chat"); }
 
   // 我收到、還沒處理的追蹤請求（phase18；未升級回空集合）
   async function pendingRequestIds() {
@@ -171,6 +172,7 @@ const Notifs = (() => {
       }));
       document.querySelectorAll(".notif").forEach(el => el.addEventListener("click", () => {
         if (el.dataset.type === "follow" || el.dataset.type === "follow_req" || el.dataset.type === "follow_ok") { if (typeof Discover !== "undefined" && el.dataset.uid) Discover.openProfile(el.dataset.uid); }
+        else if (el.dataset.type === "admin") { if (typeof ensureScript === "function") ensureScript("js/admin.js").then(() => Admin.open("queue")); }
         else if (el.dataset.type === "team") { if (typeof Team !== "undefined") Team.openSheet(); }
         else if (GUARD.has(el.dataset.type)) { if (typeof Guardian !== "undefined" && el.dataset.plan) Guardian.openPlan(el.dataset.plan); }
         else if (el.dataset.type === "gift") { const b = document.querySelector('.tab[data-view="pet"]'); if (b) b.click(); }

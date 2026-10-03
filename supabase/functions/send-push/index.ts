@@ -124,6 +124,9 @@ Deno.serve(async (req) => {
       }
     }
 
+    // 管理提醒（schema-phase36）：沒有觸發者，固定文字，點了開 App
+    if (type === "admin") { pushTitle = "管理提醒"; bodyText = "過去 24 小時有新的檢舉或錯誤，24 小時內要處理"; url = origin; }
+
     // Web Push（網頁裝置）
     const { data: subs } = await admin.from("push_subscriptions").select("*").eq("user_id", user_id);
     if (subs && subs.length) {

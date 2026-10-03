@@ -1,0 +1,43 @@
+name: Database backup
+# 每週日備份一次 Supabase 資料庫（public＋auth 兩個 schema：步道紀錄雲端備份、貼文、山社、帳號…）。
+# 這個 repo 是公開的，所以備份檔一定先用密碼加密（AES256），才存成 Actions 附件（保留 35 天）。
+# 要先在 GitHub → Settings → Secrets and variables → Actions 設兩個 secret（步驟見 docs/backup.md）：
+#   SUPABASE_DB_URL       Supabase → Connect → Session pooler 的連線字串（含資料庫密碼）
+#   BACKUP_PASSPHRASE     你自己想一組長密碼，還原時要用，請另外記好
+# 沒設 secret 時這個流程會跳過、不算失敗。
+on:
+  schedule:
+    - cron: "0 19 * * 6"   # 台灣週日 03:00
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check secrets
+        id: chk
+        env:
+          DB: ${{ secrets.SUPABASE_DB_URL }}
+          PW: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$DB" ] || [ -z "$PW" ]; then echo "::notice::還沒設 SUPABASE_DB_URL / BACKUP_PASSPHRASE，跳過備份（見 docs/backup.md）"; echo "ok=0" >> $GITHUB_OUTPUT; else echo "ok=1" >> $GITHUB_OUTPUT; fi
+      - name: Dump + encrypt
+        if: steps.chk.outputs.ok == '1'
+        env:
+          DB: ${{ secrets.SUPABASE_DB_URL }}
+          PW: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -o pipefail
+          F="trail-tracker-db-$(date -u +%Y%m%d).sql.gz.gpg"
+          docker run --rm -e DB="$DB" postgres:17-alpine sh -c 'pg_dump "$DB" --no-owner --no-privileges -n public -n auth' \
+            | gzip -9 | gpg --batch --yes --pinentry-mode loopback --passphrase "$PW" --symmetric --cipher-algo AES256 -o "$F"
+          SIZE=$(stat -c %s "$F"); echo "備份大小：$SIZE bytes"
+          if [ "$SIZE" -lt 2000 ]; then echo "::error::備份檔太小，可能沒有抓到資料"; exit 1; fi
+          echo "FILE=$F" >> $GITHUB_ENV
+      - uses: actions/upload-artifact@v4
+        if: steps.chk.outputs.ok == '1'
+        with:
+          name: db-backup
+          path: ${{ env.FILE }}
+          retention-days: 35

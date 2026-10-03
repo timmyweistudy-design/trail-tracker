@@ -1,0 +1,37 @@
+name: Trail data check
+# 每月 1 號比對林業署官方步道資料跟 App 內建的 web/js/trails-data.js（scripts/forestry-diff.js）。
+# 有差異（新增／下架／改名／難度／長度）就開一張 issue（已開著就更新內容），GitHub 會寄信通知。
+# 林業署 API 暫時抓不到就讓流程失敗（也會寄信）。
+on:
+  schedule:
+    - cron: "0 1 1 * *"   # 台灣每月 1 號 09:00
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  diff:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare with Forestry Agency
+        id: d
+        run: |
+          set +e
+          node scripts/forestry-diff.js > diff.md; code=$?
+          cat diff.md
+          echo "code=$code" >> $GITHUB_OUTPUT
+          if [ $code = 1 ]; then exit 1; fi
+          exit 0
+      - name: Open or update issue
+        if: steps.d.outputs.code == '2'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          T="步道資料有更新（林業署）"
+          N=$(gh issue list --state open --search "$T in:title" --json number -q '.[0].number')
+          if [ -n "$N" ]; then gh issue edit "$N" --body-file diff.md; echo "更新 issue #$N"
+          else gh issue create --title "$T" --body-file diff.md; fi
