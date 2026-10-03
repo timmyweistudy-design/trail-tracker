@@ -3,7 +3,7 @@
 // 其他時候（測試面板英文預覽、工具腳本）I18n 已經在了 → 直接 registerLang。
 // 這是所有語言的「主表」：其他語言的 key 要跟這裡一致（check.js 會驗）。
 window.__ttEn = function (tx) {
-  return { D: {
+  return { D: {"抱抱！":"Hug!","抱抱！今天的親密增加了":"Hug! Today's bond went up",
     "附近步道 ›": "Nearby trails ›",
     "附近步道": "Nearby trails",
     "離你 2 公里內有經過的步道。點一條就改成照它走，已經記下的軌跡不會變。": "Trails that pass within 2 km of you. Tap one to follow it instead — what you've already recorded stays the same.",

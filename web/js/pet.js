@@ -92,11 +92,16 @@ function feedPet() {
   const gain = heartsBefore >= 5 ? 0.5 : 0.3;                  // 親密度滿時照顧獎勵更多
   localStorage.setItem("tt_pet_feedkm", String(+(feedBonusKm() + gain).toFixed(2)));
   ttBuzz([20, 30, 20]);
-  toast(`${ttT("牠吃得好開心")}・${ttT("成長")} +${gain} km`);
-  checkPetEvolve();
-  renderPet();
-  const em = $("#petEmoji"); if (em) { void em.offsetWidth; em.classList.add("tap"); }   // 開心扭動
-  petBurst("❤️", 1);   // 跳一個紅色愛心
+  const done = () => {
+    toast(`${ttT("牠吃得好開心")}・${ttT("成長")} +${gain} km`);
+    checkPetEvolve();
+    renderPet();
+    petBurst("❤️", 1);   // 跳一個紅色愛心
+  };
+  // 果實從天上掉下來、牠走過去吃（pet-stage.js）；舞台不在畫面上或減少動態效果時直接結算
+  const fb = $("#petFeed"); if (fb) fb.disabled = true;
+  if (typeof PetStage !== "undefined") PetStage.feed(BERRY_SVG).then(done, done);
+  else done();
 }
 // 帽子要用果實解鎖（果實除了餵食之外多一個用途）；解過的永久擁有
 const HAT_COST = 10;
@@ -336,18 +341,36 @@ function renderPet() {
     </div>
   </div>`;
   if (typeof PetStage !== "undefined") {
-    PetStage.bind(box.querySelector(".ps-box"));
+    PetStage.bind(box.querySelector(".ps-box"), mood.k);
     const had = PetStage.cachedWx();
     PetStage.weather().then(w => { if (w !== had && document.body.dataset.view === "pet" && box.isConnected) renderPet(); });   // 天氣回來了才補畫（之後走快取，不會一直重畫）
   }
   const em = $("#petEmoji");
-  const poke = () => {
-    em.classList.remove("tap"); void em.offsetWidth; em.classList.add("tap");
+  // 點頭＝摸摸頭（瞇眼）、點身體＝搔癢（扭一扭）、長按＝抱抱（壓扁回彈＋三顆心，每天第一次抱親密 +2）
+  const S = typeof PetStage !== "undefined";
+  const poke = (zone) => {
+    if (S) PetStage.react(zone); else { em.classList.remove("tap"); void em.offsetWidth; em.classList.add("tap"); }
     ttBuzz(20);
     petBurst("❤️", 1);
     toast(petTapLine(mood.k));
   };
-  if (em) { em.addEventListener("click", poke); em.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); poke(); } }); }
+  const hug = () => {
+    if (S) PetStage.react("hug");
+    ttBuzz([20, 40, 20]);
+    petBurst("❤️", 3);
+    if (localStorage.getItem("tt_pet_hug_day") !== todayStr()) {
+      localStorage.setItem("tt_pet_hug_day", todayStr()); bumpAffinity(2);
+      toast(ttT("抱抱！今天的親密增加了"));
+    } else toast(ttT("抱抱！"));
+  };
+  if (em) {
+    let pressT = 0, hugged = false;
+    em.addEventListener("pointerdown", () => { hugged = false; clearTimeout(pressT); pressT = setTimeout(() => { hugged = true; hug(); }, 550); });
+    ["pointerup", "pointerleave", "pointercancel"].forEach(t => em.addEventListener(t, () => clearTimeout(pressT)));
+    em.addEventListener("contextmenu", e => e.preventDefault());   // 長按不要跳出系統選單
+    em.addEventListener("click", e => { if (hugged) { hugged = false; return; } poke(S ? PetStage.zoneOf(e.clientY) : "pat"); });
+    em.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); poke("pat"); } });
+  }
   $("#petDex").addEventListener("click", openPetDex);
   $("#petRec").addEventListener("click", petRecommend);
   $("#petFeed").addEventListener("click", feedPet);
@@ -454,8 +477,11 @@ function celebrateEvolve(st, lv) {
     : `<div class="evolve-emoji">${st.e}</div>`;
   ov.style.setProperty("--habitat", PET_BG[newIdx] || PET_BG[0]);
   ov.classList.add("evolve-lv" + lv);
-  ov.innerHTML = `<div class="evolve-bg">${(A && PET_ART.habitat) ? PET_ART.habitat(newIdx) : ""}</div><div class="evolve-card">
-    <div class="evolve-spark"></div>
+  // 背景＝新階段的 2.5D 場景（跟主卡同一套，時段跟真實世界）；中間旋轉光芒＋光點往外爆
+  const bg = typeof PetStage !== "undefined" ? PetStage.html(newIdx, "", { bg: true }) : ((A && PET_ART.habitat) ? PET_ART.habitat(newIdx) : "");
+  const burst = Array.from({ length: 16 }, (_, k) => `<i style="--a:${k * 22.5}deg;--dl:${(1.05 + (k % 4) * .05).toFixed(2)}s"></i>`).join("");
+  ov.innerHTML = `<div class="evolve-bg">${bg}</div><div class="evolve-rays" aria-hidden="true"></div><div class="evolve-card">
+    <div class="evolve-spark"></div><div class="evolve-burst" aria-hidden="true">${burst}</div>
     ${stageHtml}
     <div class="evolve-h">${ttT("進化了！")}</div>
     <div class="evolve-n">${escHtml(petName() || ttT(st.n))} <span class="lv-chip lvt-${Math.min(lv, 7)}">Lv.${lv}</span></div>

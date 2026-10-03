@@ -113,7 +113,7 @@ window.PetStage = (function () {
     o = Object.assign({}, o, window.__ps || {});   // window.__ps＝測試／除錯面板強制指定時段、季節、天氣
     const i = clamp(stage), t = o.tod || tod(), se = o.season || season(), wx = o.wx || "";
     const sc = SCENES[i];
-    return `<div class="ps-box" data-stage="${i}" data-tod="${t}" data-season="${se}"${wx ? ` data-wx="${wx}"` : ""}>
+    return `<div class="ps-box${o.bg ? " ps-bg" : ""}" data-stage="${i}" data-tod="${t}" data-season="${se}"${wx ? ` data-wx="${wx}"` : ""} style="--wx:${o.bg ? 0 : pos.x};--face:${o.bg ? 1 : pos.face}">
       <div class="ps-l ps-sky" style="--d:.1">${sky(t)}${wx === "cloud" || wx === "rain" ? `<svg class="ps-svg ps-drift" ${VB}>${cloud(90, 70, 1.1, "ps-skycloud")}${cloud(300, 50, 1.4, "ps-skycloud")}</svg>` : ""}</div>
       <div class="ps-l ps-far" style="--d:.28"><svg class="ps-svg" ${VB}>${sc.far}</svg></div>
       <div class="ps-l ps-mid" style="--d:.55"><svg class="ps-svg" ${VB}>${sc.mid}</svg></div>
@@ -122,6 +122,9 @@ window.PetStage = (function () {
       <div class="ps-l ps-front" style="--d:1.35"><svg class="ps-svg" ${VB}>${sc.front}</svg></div>
     </div>`;
   }
+
+  // 角色在舞台上的位置（px，相對中心）與面向（1 右、-1 左）：重繪卡片時保留，不會「閃回中間」
+  const pos = { x: 0, face: 1 };
 
   // ── 視差：手指拖（任何裝置）＋陀螺儀（已有權限時，例如開過指北針；不在這裡主動跳權限框） ──
   let cur = { x: 0, y: 0 }, tgt = { x: 0, y: 0 }, raf = 0, box = null, base = null, io = null, visible = false;
@@ -139,15 +142,26 @@ window.PetStage = (function () {
     if (!box) return;
     const r = box.getBoundingClientRect();
     aim(((e.clientX - r.left) / r.width - .5) * 2, ((e.clientY - r.top) / r.height - .5) * 2);
+    look(e.clientX, e.clientY);
   }
-  const onLeave = () => aim(0, 0);
+  // 眼睛看向手指（以角色中心為準，-1～1）
+  function look(cx, cy) {
+    const c = box && box.querySelector("#petEmoji .pet-critter"); if (!c) return;
+    const r = c.getBoundingClientRect();
+    const ex = Math.max(-1, Math.min(1, (cx - (r.left + r.width / 2)) / (r.width * .8)));
+    const ey = Math.max(-1, Math.min(1, (cy - (r.top + r.height * .45)) / (r.height * .8)));
+    box.style.setProperty("--ex", ex.toFixed(2)); box.style.setProperty("--ey", ey.toFixed(2));
+  }
+  const onLeave = () => { aim(0, 0); if (box) { box.style.setProperty("--ex", "0"); box.style.setProperty("--ey", "0"); } };
   function onOrient(e) {
     if (!visible || e.gamma == null || e.beta == null) return;
     if (!base) base = { g: e.gamma, b: e.beta };
     aim((e.gamma - base.g) / 18, (e.beta - base.b) / 24);
   }
-  function bind(el) {
+  let mood = "content";
+  function bind(el, m) {
     unbind();
+    mood = m || "content";
     if (!el || reduce()) return;
     box = el; base = null; cur = { x: 0, y: 0 }; tgt = { x: 0, y: 0 };
     el.addEventListener("pointermove", onMove);
@@ -156,13 +170,102 @@ window.PetStage = (function () {
     window.addEventListener("deviceorientation", onOrient);
     if ("IntersectionObserver" in window) { io = new IntersectionObserver(es => { visible = es.some(x => x.isIntersecting); if (!visible) base = null; }); io.observe(el); }
     else visible = true;
+    schedule(mood);
   }
   function unbind() {
     if (box) { box.removeEventListener("pointermove", onMove); box.removeEventListener("pointerleave", onLeave); box.removeEventListener("pointerup", onLeave); }
     window.removeEventListener("deviceorientation", onOrient);
     if (io) { io.disconnect(); io = null; }
     if (raf) cancelAnimationFrame(raf);
+    clearTimeout(beat); beat = 0; busy = false;
     raf = 0; box = null; visible = false;
+  }
+
+  // ── 行為狀態機：待機 → 隨機挑一個動作 → 回待機。心情決定機率（睏的多半不動、開心的會跳會走、想念的東張西望）──
+  const WEIGHTS = {
+    sleepy: { idle: 6, stretch: 2, look: 1 },
+    happy: { hop: 3, walk: 3, look: 2, idle: 1 },
+    content: { walk: 3, look: 3, stretch: 1, idle: 2 },
+    longing: { look: 4, walk: 1, idle: 2 },
+  };
+  let beat = 0, busy = false;
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  function pick(w) {
+    let r = Math.random() * Object.values(w).reduce((a, b) => a + b, 0);
+    for (const k in w) if ((r -= w[k]) < 0) return k;
+    return "idle";
+  }
+  function emEl() { return box && box.querySelector("#petEmoji"); }
+  function flash(cls, ms) {   // 加一個動作 class，播完拿掉
+    const em = emEl(); if (!em) return sleep(0);
+    em.classList.remove(cls); void em.offsetWidth; em.classList.add(cls);
+    return sleep(ms).then(() => em.classList.remove(cls));
+  }
+  // 走到 x（px，相對舞台中心）；回傳走完的 promise
+  function walkTo(x) {
+    if (!box) return sleep(0);
+    const lim = Math.max(30, box.clientWidth * .27);
+    x = Math.round(Math.max(-lim, Math.min(lim, x)));
+    const dist = Math.abs(x - pos.x); if (dist < 4) return sleep(0);
+    pos.face = x > pos.x ? 1 : -1; pos.x = x;
+    const ms = Math.round(900 + dist * 9);
+    box.style.setProperty("--face", pos.face); box.style.setProperty("--wt", ms + "ms"); box.style.setProperty("--wx", x);
+    const em = emEl(); if (em) em.classList.add("pb-walk");
+    return sleep(ms).then(() => { const e = emEl(); if (e) e.classList.remove("pb-walk"); });
+  }
+  async function act(kind) {
+    if (!box) return;
+    busy = true;
+    try {
+      if (kind === "walk") {
+        const lim = box.clientWidth * .27;
+        let x = (Math.random() * 2 - 1) * lim; if (Math.abs(x - pos.x) < 50) x = pos.x > 0 ? -lim * .6 : lim * .6;
+        await walkTo(x);
+      } else if (kind === "look") {
+        for (const d of [-1, 1, 0]) { if (!box) break; box.style.setProperty("--ex", d); await sleep(d ? 900 : 200); }
+      } else if (kind === "hop") await flash("pb-hop", 1100);
+      else if (kind === "stretch") await flash("pb-stretch", 1400);
+      else await sleep(400);
+    } finally { busy = false; }
+  }
+  function schedule(m) {
+    clearTimeout(beat);
+    if (reduce() || window.__psNoIdle) return;   // __psNoIdle：測試要穩定時關掉隨機動作
+    beat = setTimeout(async () => {
+      if (box && box.isConnected && visible && !document.hidden && !busy) await act(pick(WEIGHTS[m] || WEIGHTS.content));
+      if (box && box.isConnected) schedule(m);
+    }, 3500 + Math.random() * 4500);
+  }
+
+  // ── 互動：點頭＝摸摸頭、點身體＝搔癢、長按＝抱抱（pet.js 決定給什麼回饋，這裡只播動作） ──
+  function zoneOf(clientY) {
+    const c = box && box.querySelector("#petEmoji .pet-critter"); if (!c) return "pat";
+    const r = c.getBoundingClientRect();
+    return clientY < r.top + r.height * .5 ? "pat" : "tickle";
+  }
+  function react(kind) {
+    if (reduce()) return sleep(0);
+    return flash(kind === "hug" ? "pb-hug" : kind === "tickle" ? "pb-tickle" : "pb-pat", kind === "hug" ? 1000 : 800);
+  }
+
+  // ── 餵食：果實從天上掉在角色旁邊 → 角色走過去 → 吃三口 → 回到原位附近。回傳播完的 promise ──
+  async function feed(berrySvg) {
+    if (!box || reduce() || !visible) return;
+    clearTimeout(beat); busy = true;
+    try {
+      const lim = box.clientWidth * .27;
+      const side = pos.x > 0 ? -1 : 1, bx = Math.round(Math.max(-lim, Math.min(lim, pos.x + side * 70)));
+      const b = document.createElement("span");
+      b.className = "ps-berry"; b.innerHTML = berrySvg || ""; b.style.setProperty("--bx", bx);
+      box.querySelector(".ps-actor").appendChild(b);
+      await sleep(650);
+      await walkTo(bx - side * 34);
+      pos.face = side; box.style.setProperty("--face", side);
+      b.classList.add("eaten");
+      await flash("pb-eat", 1000);
+      b.remove();
+      await flash("pb-hop", 1100);
+    } finally { busy = false; if (box) schedule(mood); }
   }
 
   // ── 天氣：用使用者所在位置（探索頁拿過的）或最後一趟走的步道；拿不到就不畫天氣，絕不在這裡要定位 ──
@@ -190,5 +293,5 @@ window.PetStage = (function () {
   }
   const cachedWx = () => (wxMemo ? wxMemo.wx : "");
 
-  return { html, bind, unbind, tod, season, wxOf, weather, cachedWx, count: SCENES.length };
+  return { html, bind, unbind, tod, season, wxOf, weather, cachedWx, count: SCENES.length, zoneOf, react, feed, walkTo, act, pos };
 })();

@@ -63,4 +63,58 @@ const KM=[0,5,20,40,90,150,260];
  ok(await p.evaluate(()=>(getComputedStyle(document.querySelector(".ps-box")).getPropertyValue("--px").trim()||"0")==="0"),"reduced motion: no parallax");
  await p.close();}
 
+// ── 第 2 階段：行為、互動分區、抱抱、眼睛、餵食動作、進化儀式 ──
+{const p=await mk({km:40,records:[{id:"r1",date:new Date().toISOString(),trailName:"x",distanceKm:3}]});
+ await p.evaluate(()=>document.querySelector(".ps-box").scrollIntoView({block:"center"}));
+ const seen=new Set();for(let k=0;k<26;k++){await p.waitForTimeout(500);const c=await p.evaluate(()=>[...document.querySelector("#petEmoji").classList].filter(x=>x.startsWith("pb-")).join(",")+"|"+document.querySelector(".ps-box").style.getPropertyValue("--wx")+"|"+document.querySelector(".ps-box").style.getPropertyValue("--ex"));seen.add(c);}
+ ok(seen.size>1,"idle behaviour runs on its own within 13s: "+[...seen].join(" / "));
+ await p.close();}
+{const p=await mk({km:40,berries:20});
+ await p.evaluate(()=>{window.__psNoIdle=true;renderPet();document.querySelector(".ps-box").scrollIntoView({block:"center"})});await p.waitForTimeout(400);
+ // 走動：位置、面向、走路 class；重繪後位置保留
+ const w=await p.evaluate(async()=>{const pr=PetStage.walkTo(60);await new Promise(r=>setTimeout(r,200));const mid=document.querySelector("#petEmoji").classList.contains("pb-walk");await pr;
+  const b=document.querySelector(".ps-box");return {mid,end:document.querySelector("#petEmoji").classList.contains("pb-walk"),wx:b.style.getPropertyValue("--wx"),face:b.style.getPropertyValue("--face")}});
+ ok(w.mid&&!w.end&&+w.wx===60&&+w.face===1,"walk: moves, faces right, step class only while walking "+JSON.stringify(w));
+ const wl=await p.evaluate(async()=>{await PetStage.walkTo(-40);return document.querySelector(".ps-box").style.getPropertyValue("--face")});ok(+wl===-1,"walk left faces left");
+ ok(await p.evaluate(()=>{renderPet();const b=document.querySelector(".ps-box");return +b.style.getPropertyValue("--wx")===-40&&+b.style.getPropertyValue("--face")===-1}),"position & facing survive re-render");
+ const ex=await p.evaluate(()=>{const r=document.querySelector("#petEmoji .pet-critter").getBoundingClientRect();return r.left+r.width*1.4});
+ const ey=await p.evaluate(()=>{const r=document.querySelector("#petEmoji .pet-critter").getBoundingClientRect();return r.top+r.height*.4});
+ await p.mouse.move(ex,ey);await p.waitForTimeout(300);
+ ok(await p.evaluate(()=>+document.querySelector(".ps-box").style.getPropertyValue("--ex")>0.5),"eyes follow the finger");
+ ok(await p.evaluate(async()=>{const pr=PetStage.act("hop");await new Promise(r=>setTimeout(r,100));const on=document.querySelector("#petEmoji").classList.contains("pb-hop");await pr;return on&&!document.querySelector("#petEmoji").classList.contains("pb-hop")}),"hop plays and clears");
+ // 分區：點頭＝摸頭、點身體＝搔癢
+ const head=await p.evaluate(()=>{const r=document.querySelector("#petEmoji .pet-critter").getBoundingClientRect();return {x:r.left+r.width/2,top:r.top+r.height*.25,low:r.top+r.height*.8}});
+ await p.mouse.click(head.x,head.top);await p.waitForTimeout(120);
+ ok(await p.evaluate(()=>document.querySelector("#petEmoji").classList.contains("pb-pat")),"tap head → pat");
+ await p.waitForTimeout(900);await p.mouse.click(head.x,head.low);await p.waitForTimeout(120);
+ ok(await p.evaluate(()=>document.querySelector("#petEmoji").classList.contains("pb-tickle")),"tap body → tickle");
+ // 長按＝抱抱：每天第一次 +2 親密
+ await p.waitForTimeout(900);const a0=await p.evaluate(()=>{localStorage.removeItem("tt_pet_hug_day");return +(localStorage.getItem("tt_pet_aff")||0)});
+ await p.mouse.move(head.x,head.top);await p.mouse.down();await p.waitForTimeout(750);await p.mouse.up();await p.waitForTimeout(150);
+ const h1=await p.evaluate(()=>({hug:document.querySelector("#petEmoji").classList.contains("pb-hug"),aff:+(localStorage.getItem("tt_pet_aff")||0),day:localStorage.getItem("tt_pet_hug_day")===todayStr(),t:document.getElementById("toast").textContent,pat:document.querySelector("#petEmoji").classList.contains("pb-pat")}));
+ ok(h1.hug&&!h1.pat&&h1.day&&h1.aff===a0+2&&/親密/.test(h1.t),"long press → hug, +2 bond once, no pat "+JSON.stringify(h1));
+ await p.waitForTimeout(1100);await p.mouse.down();await p.waitForTimeout(750);await p.mouse.up();await p.waitForTimeout(150);
+ ok(await p.evaluate(a=>+(localStorage.getItem("tt_pet_aff")||0)===a,h1.aff)&&/^抱抱！$/.test(await p.evaluate(()=>document.getElementById("toast").textContent.trim())),"second hug same day: no extra bond");
+ // 餵食：果實掉下來 → 走過去吃 → 結算
+ await p.evaluate(()=>localStorage.removeItem("tt_pet_fed_t"));await p.evaluate(()=>renderPet());await p.waitForTimeout(300);
+ const bal0=await p.evaluate(()=>berriesBalance());const x0=await p.evaluate(()=>PetStage.pos.x);
+ await p.click("#petFeed");await p.waitForTimeout(350);
+ const f1=await p.evaluate(()=>({berry:!!document.querySelector(".ps-box .ps-berry"),dis:document.getElementById("petFeed").disabled}));ok(f1.berry&&f1.dis,"feed: berry drops, button locked "+JSON.stringify(f1));
+ await p.screenshot({path:O+"p2-feed-drop.png"});
+ await p.waitForTimeout(1500);await p.screenshot({path:O+"p2-feed-eat.png"});
+ ok(await p.evaluate(x=>PetStage.pos.x!==x,x0),"feed: critter walks to the berry");
+ await p.waitForTimeout(2600);
+ const f2=await p.evaluate(()=>({berry:!!document.querySelector(".ps-berry"),bal:berriesBalance(),t:document.getElementById("toast").textContent}));
+ ok(!f2.berry&&f2.bal===bal0-3&&/吃得好開心/.test(f2.t),"feed: berry eaten, settled "+JSON.stringify(f2));
+ // 進化儀式
+ await p.evaluate(()=>celebrateEvolve(PET_STAGES[4],5));await p.waitForTimeout(1700);
+ ok(await p.evaluate(()=>!!document.querySelector(".evolve-bg .ps-box.ps-bg[data-stage='4']")&&document.querySelectorAll(".evolve-burst i").length===16&&!!document.querySelector(".evolve-rays")),"evolve: new stage scene + rays + burst");
+ await p.screenshot({path:O+"p2-evolve.png"});await p.click("#evolveOk");
+ await p.close();}
+{const p=await mk({km:40,berries:20,reduce:true});
+ const bal0=await p.evaluate(()=>{localStorage.removeItem("tt_pet_fed_t");renderPet();return berriesBalance()});
+ await p.click("#petFeed");await p.waitForTimeout(300);
+ ok(await p.evaluate(b=>!document.querySelector(".ps-berry")&&berriesBalance()===b-3,bal0),"reduced motion: feed settles instantly, no berry animation");
+ await p.close();}
+
 console.log("ERRS",JSON.stringify(errs));console.log("FAILS",fails);await b.close();srv.kill();})();
