@@ -167,4 +167,38 @@ const KM=[0,5,20,40,90,150,260];
  ok(/Buddy's Travels/.test(t[0])&&/Postcards/.test(t[1])&&!/[\u4e00-\u9fff]/.test(t[1]),"English journey section translated: "+t[1].replace(/\s+/g," ").slice(0,80));
  await p.close();}
 
+// ── 第 3 階段：3D 展示（按了才下載 Three.js） ──
+{const p=await mk({km:40});
+ const res=()=>p.evaluate(()=>performance.getEntriesByType("resource").some(e=>/three\.module/.test(e.name)));
+ ok(!(await res()),"three.js is NOT downloaded on the pet page");
+ await p.click("#petDex");await p.waitForTimeout(500);
+ ok(await p.evaluate(()=>document.querySelectorAll(".dex-3d").length===4),"3D button only on unlocked stages (4)");
+ await p.click('.dex-3d[data-i="3"]');
+ await p.waitForFunction(()=>!!document.querySelector(".pet3d-canvas"),null,{timeout:20000});await p.waitForTimeout(900);
+ ok(await res(),"three.js downloaded after tapping 3D");
+ const ink=await p.evaluate(()=>Pet3D.inkRatio());ok(ink>0.05&&ink<0.9,"3D fox actually drawn (ink "+ink.toFixed(3)+")");
+ await p.screenshot({path:O+"p3-fox.png"});
+ const a1=await p.evaluate(()=>document.querySelector(".pet3d-canvas").toDataURL().length);
+ const box=await p.evaluate(()=>{const r=document.querySelector(".pet3d-canvas").getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}});
+ await p.mouse.move(box.x,box.y);await p.mouse.down();await p.mouse.move(box.x+140,box.y,{steps:8});await p.mouse.up();await p.waitForTimeout(300);
+ const a2=await p.evaluate(()=>document.querySelector(".pet3d-canvas").toDataURL().length);ok(a1!==a2,"drag rotates the model");
+ await p.screenshot({path:O+"p3-fox-turned.png"});
+ await p.click("#p3Close");await p.waitForTimeout(300);
+ ok(await p.evaluate(()=>!document.querySelector(".pet3d-canvas")&&!document.querySelector('[data-ov="pet3d"]')),"close removes viewer");
+ // 7 階都畫得出來
+ const inks=[];for(let i=0;i<7;i++){await p.evaluate(i=>Pet3D.open(i,"t"+i),i);await p.waitForFunction(()=>!!document.querySelector(".pet3d-canvas"),null,{timeout:15000});await p.waitForTimeout(700);
+  inks.push(+(await p.evaluate(()=>Pet3D.inkRatio())).toFixed(3));await p.screenshot({path:O+`p3-s${i}.png`});await p.click("#p3Close");await p.waitForTimeout(200);}
+ ok(inks.every(x=>x>0.04),"all 7 stages render in 3D "+inks);
+ await p.evaluate(()=>document.getElementById("petDexClose")?.click());
+ // 進化儀式的 3D 鈕
+ await p.evaluate(()=>celebrateEvolve(PET_STAGES[6],7));await p.waitForTimeout(400);await p.click("#evolve3d");
+ await p.waitForFunction(()=>!!document.querySelector(".pet3d-canvas"),null,{timeout:15000});
+ ok(await p.evaluate(()=>{const ov=[...document.querySelectorAll('[data-ov]')].map(e=>e.dataset.ov);return ov.indexOf("pet3d")>ov.indexOf("evolve")}),"evolve → 3D viewer opens on top");
+ await p.close();}
+{const p=await mk({km:40});
+ await p.evaluate(()=>{const g=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(t,...a){return /webgl/.test(t)?null:g.call(this,t,...a)};});
+ await p.evaluate(()=>pet3d(3));await p.waitForTimeout(1200);
+ ok(await p.evaluate(()=>!!document.querySelector(".pet3d-ov.no3d .pet3d-load .pet-critter")&&!document.querySelector(".pet3d-canvas")),"no WebGL → flat SVG fallback with a note");
+ await p.close();}
+
 console.log("ERRS",JSON.stringify(errs));console.log("FAILS",fails);await b.close();srv.kill();})();

@@ -1961,3 +1961,18 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .pj-chip { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 999px; padding: 4px 10px; font-size: calc(12px * var(--fs, 1)); color: var(--ink); }
 .pj-none { color: var(--ink-faint); }
 @media (max-width: 360px) { .pj-regs-grid { grid-template-columns: repeat(3, 1fr); } }
+/* 夥伴 3D 展示（pet-3d.js） */
+.dex-3d { margin-left: auto; border: 1px solid var(--brand); background: var(--surface); color: var(--brand-deep); font: 700 calc(11px * var(--fs, 1)) / 1 var(--num, inherit); border-radius: 999px; padding: 7px 11px; min-height: 32px; cursor: pointer; letter-spacing: .5px; }
+.dex-3d:active { transform: scale(.95); }
+.pet3d-ov { z-index: 96; }
+.pet3d-card { padding-bottom: 14px; }
+.pet3d-card h2 { min-height: 1em; }
+.pet3d-stage { position: relative; width: 100%; aspect-ratio: 1 / 1; max-height: 62dvh; margin: 4px auto 0; border-radius: var(--r-lg, 18px); overflow: hidden;
+  background: radial-gradient(120% 90% at 50% 20%, #e9f3e6, #b9d6bf 60%, #8ab397); }
+.pet3d-canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+.pet3d-canvas:active { cursor: grabbing; }
+.pet3d-load { position: absolute; inset: 0; display: grid; place-items: center; }
+.pet3d-load .pet-critter { width: 60%; height: 60%; filter: drop-shadow(0 8px 10px rgba(0,0,0,.25)); }
+.pet3d-hint { text-align: center; margin: 10px 0 0; }
+.evolve-card .btn.evolve-3d { margin-top: 10px; color: #f3f1e6; border-color: rgba(255,255,255,.35); background: rgba(255,255,255,.08); }
+[data-theme="dark"] .pet3d-stage { background: radial-gradient(120% 90% at 50% 20%, #34503d, #22392a 60%, #172a1e); }
