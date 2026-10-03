@@ -54,6 +54,7 @@
 ---
 
 ## ⬜ 送審（使用者操作，步驟見 `docs/app-store-submit.md`）
+- [ ] **撤銷 Supabase 個人 token**（2026-10-02 在對話中給 Claude、存在 WSL `~/.supabase/access-token`，自用期間刻意保留方便部署）：supabase.com/dashboard/account/tokens → Revoke，再刪掉本機那份
 - [ ] **Esri 金鑰設限**：location.arcgis.com → API key → 權限只留 Basemaps、Referrer 只准 `https://trail-tracker-0ma5.onrender.com` 和 `capacitor://localhost`（金鑰公開在 GitHub；有綁卡的話被盜用會收費）
 - [ ] **解除自用模式**：`web/js/config.js` 的 `PERSONAL_MODE` 改 `false`；刪掉 `web/robots.txt`，並拿掉 `index.html`／`privacy.html`／`terms.html`／`support.html` 的 `<meta name="robots" content="noindex, nofollow">`；Supabase 重新打開「Allow new users to sign up」
 - [ ] App Store Connect 填：副標/描述/關鍵字/What's New
