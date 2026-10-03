@@ -503,7 +503,8 @@ Recorder.onUpdate(s => {
   // 天黑倒數＋原路返回（outdoor.js）：日落用目前位置離線算，依走來的時間推「最晚幾點往回走」
   // （以前只在選了步道、又有網路查到天氣時，離日落 90 分鐘提醒一次）
   if (typeof Outdoor !== "undefined") { try { Outdoor.onUpdate(s); } catch (e) { /* 安全提示失敗不影響記錄 */ } }
-  if (typeof NativeLive !== "undefined") NativeLive.tick();   // 鎖定畫面／動態島：背景時計時器會被系統放慢，跟著定位更新一起送（內部有節流）
+  if (typeof NativeLive !== "undefined") NativeLive.tick();
+  checkBattery();   // 鎖定畫面／動態島：背景時計時器會被系統放慢，跟著定位更新一起送（內部有節流）
   // 休息很久：提醒一次
   if (s.state === "running" && s.resting && s.restMs > 15 * 60000 && !_restWarned) { _restWarned = true; toast(ttT("休息 15 分鐘了，要繼續走嗎？")); }
   if (s.state === "running" && !s.resting) _restWarned = false;
@@ -574,6 +575,68 @@ function tickPaused() {
 }
 // 自動存檔存不下（手機空間滿）→ 提醒一次，免得閃退時才發現救不回來
 Recorder.onPersistFail(() => toast(ttT("手機空間快滿了，這趟的自動備份存不下，記得早點按結束存檔")));
+
+// 低電量提醒：記錄中每 5 分鐘看一次電量；≤30%、沒在充電、還沒開省電 → 每趟只問一次要不要開省電。
+// 量得到耗電速度（兩次相隔 ≥15 分鐘）就順便說「照這個速度大約還能撐多久」。
+let _batt = { last: 0, asked: false, samples: [] };
+async function checkBattery() {
+  if (Date.now() - _batt.last < 5 * 60000 || Recorder.getState() !== "recording" || typeof NativeLive === "undefined") return;
+  _batt.last = Date.now();
+  const b = await NativeLive.battery(); if (!b) return;
+  _batt.samples.push({ t: Date.now(), l: b.level }); if (_batt.samples.length > 12) _batt.samples.shift();
+  if (_batt.asked || b.charging || b.level > 0.3 || $("#lowPowerToggle").checked) return;
+  _batt.asked = true;
+  const a = _batt.samples[0], dt = (Date.now() - a.t) / 3.6e6, rate = dt >= 0.25 ? (a.l - b.level) / dt : 0;
+  const left = rate > 0.01 ? b.level / rate : 0;
+  const msg = ttT("電量剩 %d%，要開省電模式嗎？定位會省電一點，軌跡會粗一點。").replace("%d", Math.round(b.level * 100))
+    + (left ? `\n${ttT("照現在的耗電速度，大約還能撐 %s。").replace("%s", fmtDur(Math.round(left * 4) / 4 * 3.6e6))}` : "");
+  if (await ttConfirm(msg, ttT("開省電模式"), ttT("先不用"))) { const tg = $("#lowPowerToggle"); tg.checked = true; tg.dispatchEvent(new Event("change")); }
+}
+
+// 走到一半看附近步道：用「離路線多近」而不是「離步道中心多遠」——中心點可能在好幾公里外，路線卻就在腳下。
+// 先用中心點篩 15 km 內的候選、載入它們的路線，再量你到每條路線最近一點的距離，2 km 內的列出來；點了就改成照那條走
+// （偏離提醒、剩餘里程、路線圖都跟著換；已經記下的軌跡不動）。
+async function nearRouteTrails(pos) {
+  const cand = TRAILS.filter(t => t.lat && t.lon && !(t.length_km != null && t.length_km < 0.5) && !_vagueName.test(t.name || "")
+    && haversine(pos, { lat: t.lat, lon: t.lon }) < 15000);
+  await Promise.all([...new Set(cand.map(t => t.region).filter(Boolean))].map(r => ensureGeo(r).catch(() => { })));
+  const out = [];
+  for (const t of cand) {
+    let best = Infinity;
+    for (const seg of geoOf(t) || []) for (let i = 0; i < seg.length; i += 2) { const d = haversine(pos, { lat: seg[i][0], lon: seg[i][1] }); if (d < best) best = d; }
+    if (best <= 2000) out.push({ t, d: best });
+  }
+  return out.sort((a, b) => a.d - b.d).slice(0, 8);
+}
+async function openNearRoutes() {
+  if (document.querySelector('[data-ov="nearroute"]')) return;
+  const last = recSnap && recSnap.track && recSnap.track.length ? recSnap.track[recSnap.track.length - 1] : null;
+  const pos = last || (typeof myLoc !== "undefined" && myLoc);
+  if (!pos) { toast(ttT("還沒定位到你的位置")); return; }
+  const ov = document.createElement("div"); ov.className = "pet-modal"; ov.dataset.ov = "nearroute";
+  ov.innerHTML = `<div class="pet-modal-card nr-card"><button class="sheet-close" id="nrX" aria-label="${ttT("關閉")}">${ic("x")}</button>
+    <h2>${ic("compass")} ${ttT("附近步道")}</h2><p class="dex-intro">${ttT("離你 2 公里內有經過的步道。點一條就改成照它走，已經記下的軌跡不會變。")}</p>
+    <div class="nr-list" id="nrList"><div class="feed-loading"><span class="spin"></span></div></div></div>`;
+  document.body.appendChild(ov);
+  let _a11y = null;
+  const close = () => { if (_a11y) _a11y(); ov.remove(); };
+  if (typeof ttModalA11y === "function") _a11y = ttModalA11y(ov, close, { focus: "#nrX" });
+  ov.querySelector("#nrX").onclick = close;
+  ov.addEventListener("click", e => { if (e.target === ov) close(); });
+  const list = await nearRouteTrails(pos);
+  const box = ov.querySelector("#nrList"); if (!box) return;
+  if (!list.length) { box.innerHTML = `<div class="ana-empty-note">${ttT("附近 2 公里內沒有收錄的步道")}</div>`; return; }
+  box.innerHTML = list.map(({ t, d }) => `<button class="nr-item${String(t.id) === String(selectedTrailId) ? " on" : ""}" data-id="${escHtml(String(t.id))}">
+      <span class="nb-bar d${t.difficulty || 0}"></span>
+      <span class="nr-main"><b translate="no">${escHtml(ttT(t.name))}</b><small>${diffEst(t) ? "≈" : ""}${t.difficulty === 6 ? ttT("雪季限定") : ttT(diffLabel(t))}${t.length_km != null ? ` · ${fmtKm(t.length_km)} km` : ""}</small></span>
+      <span class="nr-d">${d < 50 ? ttT("你在路上") : `${d < 1000 ? Math.round(d / 10) * 10 + " m" : (d / 1000).toFixed(1) + " km"}`}</span></button>`).join("");
+  box.querySelectorAll(".nr-item").forEach(b => b.onclick = () => {
+    const t = TRAILS.find(x => String(x.id) === b.dataset.id); if (!t) return;
+    selectTrailForRecord(t, { quiet: true }); close();
+    toast(ttT("改成照「%s」走").replace("%s", ttT(t.name)));
+  });
+}
+{ const nb = $("#recNear"); if (nb) nb.addEventListener("click", openNearRoutes); }
 
 // 省電模式 + 分享即時位置 + 公里里程碑
 let lastKmMilestone = 0, _berryLastKm = null;
@@ -751,6 +814,7 @@ function renderRecHead(state) {
   if (sig === _recHeadSig) return;
   _recHeadSig = sig;
   tEl.textContent = title; eEl.innerHTML = eyebrow;
+  { const nb = _r("recNear"); if (nb) nb.hidden = state === "idle"; }   // 記錄中才有：走到一半想換條路／發現自己其實在某條步道上
   if (pEl) { pEl.hidden = !pill; pEl.innerHTML = pill; pEl.classList.toggle("dark", !!dark); }
 }
 function syncRecButtons(state) {
@@ -805,7 +869,7 @@ function startRecordingUI() {
   }
   try {
     if (Recorder.getState() === "paused") Recorder.resume(sim());
-    else { hikePhotos = []; $("#snapCount").textContent = ""; snapStoreClear(); Recorder.start(sim()); if (!sim() && typeof Guardian !== "undefined") Guardian.onStart(); }   // 新的一趟：清空隨手拍；設好的留守開始生效（模擬不算）
+    else { hikePhotos = []; $("#snapCount").textContent = ""; snapStoreClear(); _batt = { last: 0, asked: false, samples: [] }; Recorder.start(sim()); if (!sim() && typeof Guardian !== "undefined") Guardian.onStart(); }   // 新的一趟：清空隨手拍；設好的留守開始生效（模擬不算）
   } catch (e) {
     if (typeof toast === "function") toast(ttT("記錄沒有開始，再按一次試試"));
     setNavUp(false);

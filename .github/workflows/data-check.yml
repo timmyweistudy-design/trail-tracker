@@ -35,3 +35,11 @@ jobs:
           N=$(gh issue list --state open --search "$T in:title" --json number -q '.[0].number')
           if [ -n "$N" ]; then gh issue edit "$N" --body-file diff.md; echo "更新 issue #$N"
           else gh issue create --title "$T" --body-file diff.md; fi
+      - name: Close issue when data matches again
+        if: steps.d.outputs.code == '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          T="步道資料有更新（林業署）"
+          N=$(gh issue list --state open --search "$T in:title" --json number -q '.[0].number')
+          if [ -n "$N" ]; then gh issue close "$N" --comment "最新比對已經一致，自動關閉。"; echo "關閉 issue #$N"; fi

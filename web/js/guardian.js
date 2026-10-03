@@ -226,6 +226,7 @@ const Guardian = (() => {
       <div class="gd-share">
         <button class="btn ghost" id="gdSms">${ic("chat")} ${T("傳行程給家人")}</button>
         <button class="btn ghost" id="gdLoc">${ic("pin")} ${T("分享我現在的位置")}</button>
+        <button class="btn ghost" id="gdDoc">${ic("book")} ${T("登山計畫書")}</button>
       </div></div>`;
     document.body.appendChild(ov);
     let _a11y = null;
@@ -273,6 +274,7 @@ const Guardian = (() => {
     }
     $o("#gdSms").onclick = () => shareOut(shareText(at, (t && t.name) || (cur && cur.trail)));
     $o("#gdLoc").onclick = shareLoc;
+    $o("#gdDoc").onclick = () => planDoc(t);
     const cb = $o("#gdCancel"); if (cb) cb.onclick = async () => { close(); await cancel(); };
     $o("#gdGo").onclick = async () => {
       const go = $o("#gdGo"), msg = $o("#gdMsg");
@@ -356,6 +358,52 @@ const Guardian = (() => {
     setTimeout(tick, 1500);
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
-  return { openSheet, onStart, onFinish, extend, cancel, openPlan, bannerHtml, wireBanner, paintHud, tick, state: st, _whenText: whenText };
+  // ───────── 登山計畫書：把行程整理成一張，傳給家人／留守人（消防署建議出發前留給留守人）─────────
+  // 自動帶入步道、時間、路線數字、登山口座標、留守人；同行者、車號這種 App 不知道的留空，對方一看就知道要問
+  function planDoc(trail) {
+    if (document.querySelector('[data-ov="plandoc"]')) return;
+    const t = trail || curTrail(), cur = st();
+    const at = (cur && cur.at) || suggest();
+    const s = recording() && typeof Recorder !== "undefined" ? Recorder.snapshot() : null;
+    const start = s && s.elapsedMs ? Date.now() - s.elapsedMs : null;
+    const asc = t && typeof trailAscent === "function" ? trailAscent(t) : null;
+    const h = t && ((typeof myHoursFor === "function" && myHoursFor(t)) || (typeof estHours === "function" && estHours(t)));
+    const top = t ? Math.max(t.alt_high || 0, (typeof demTrusted === "function" && demTrusted(t)) ? (t.dem_hi || 0) : 0) : 0;
+    const ent = t && (t.entrances || []).find(e => e.lat && !/步道範圍中心/.test(e.memo || "")) || (t && t.lat ? { lat: t.lat, lon: t.lon } : null);
+    const rows = [
+      ["步道", t ? T(t.name) : T("自由路線")],
+      ["日期", new Date().toLocaleDateString(ttLocale(), { year: "numeric", month: "long", day: "numeric", weekday: "short" })],
+      ["出發", start ? new Date(start).toLocaleTimeString(ttLocale(), { hour: "2-digit", minute: "2-digit", hour12: false }) : "＿＿＿＿"],
+      ["預計下山", at ? whenText(at) : "＿＿＿＿"],
+      t && t.length_km ? ["路線", `${(+t.length_km).toFixed(1)} km${asc ? `・↑${Math.round(asc.v).toLocaleString()} m` : ""}${h ? `・${T("約")} ${fmtDur(Math.round(h * 4) / 4 * 3.6e6)}` : ""}${top ? `・${T("最高")} ${Math.round(top).toLocaleString()} m` : ""}`] : null,
+      ent ? ["登山口", `${(+ent.lat).toFixed(5)}, ${(+ent.lon).toFixed(5)}`] : null,
+      ["留守人", cur && cur.gs && cur.gs.length ? cur.gs.map(g => g.name).join("、") : "＿＿＿＿"],
+      ["同行者", "＿＿＿＿"], ["交通／車號", "＿＿＿＿"],
+    ].filter(Boolean);
+    const gear = ["頭燈", "雨具", "保暖衣物", "足夠的水和食物", "行動電源", "急救包", "哨子", "離線地圖"].concat(top >= 2000 ? ["入山／入園證", "衛星通訊器"] : []);
+    const mapUrl = ent ? `https://www.google.com/maps?q=${(+ent.lat).toFixed(5)},${(+ent.lon).toFixed(5)}` : "";
+    const text = [`【${T("登山計畫書")}】`, ...rows.map(([k, v]) => `${T(k)}${ttColon()}${v}`), mapUrl ? `${T("登山口位置")}${ttColon()}${mapUrl}` : "",
+      `${T("裝備")}${ttColon()}${gear.map(T).join("、")}`,
+      T("超過預計下山時間 1 小時還聯絡不上：先打給同行者，再撥 112 或 119，說出步道名稱和登山口位置。")].filter(Boolean).join("\n");
+    const ov = document.createElement("div"); ov.className = "pet-modal gd-modal"; ov.dataset.ov = "plandoc";
+    ov.innerHTML = `<div class="pet-modal-card gd-card plan-doc"><button class="sheet-close" id="pdX" aria-label="${T("關閉")}">${ic("x")}</button>
+      <h2>${ic("book")} ${T("登山計畫書")}</h2>
+      <p class="gd-intro">${T("出發前傳給家人或留守人。空白的地方傳之前自己補上。")}</p>
+      <dl class="pd-rows">${rows.map(([k, v]) => `<dt>${T(k)}</dt><dd${k === "步道" ? ' translate="no"' : ""}>${escHtml(String(v))}</dd>`).join("")}</dl>
+      <div class="gd-h">${T("裝備")}</div>
+      <div class="pd-gear">${gear.map(g => `<span>${ic("check")}${T(g)}</span>`).join("")}</div>
+      <p class="pd-sos">${T("超過預計下山時間 1 小時還聯絡不上：先打給同行者，再撥 112 或 119，說出步道名稱和登山口位置。")}</p>
+      ${top >= 2000 ? `<p class="dv-links pd-links"><a href="https://hike.taiwan.gov.tw/" target="_blank" rel="noopener">${T("台灣登山申請整合網")} ›</a></p>` : ""}
+      <button class="btn primary" id="pdShare">${ic("share")} ${T("傳給家人")}</button></div>`;
+    document.body.appendChild(ov);
+    let _a11y = null;
+    const close = () => { if (_a11y) _a11y(); ov.remove(); };
+    if (typeof ttModalA11y === "function") _a11y = ttModalA11y(ov, close, { focus: "#pdX" });
+    ov.querySelector("#pdX").onclick = close;
+    ov.addEventListener("click", e => { if (e.target === ov) close(); });
+    ov.querySelector("#pdShare").onclick = () => ttShareText(text, T("登山計畫書"));
+  }
+
+  return { openSheet, planDoc, onStart, onFinish, extend, cancel, openPlan, bannerHtml, wireBanner, paintHud, tick, state: st, _whenText: whenText };
 })();
 if (typeof window !== "undefined") window.Guardian = Guardian;

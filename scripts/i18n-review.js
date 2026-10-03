@@ -11,7 +11,7 @@ eval(fs.readFileSync(path.join(WEB, "js/i18n.js"), "utf8").replace(/I18n\.start\
 global.window.I18n = global.__I18n;
 for (const lf of fs.readdirSync(path.join(WEB, "js/i18n"))) eval(fs.readFileSync(path.join(WEB, "js/i18n", lf), "utf8"));
 const tables = global.__I18n.tables ? global.__I18n.tables() : {};
-const EN = (() => { const m = fs.readFileSync(path.join(WEB, "js/i18n.js"), "utf8").match(/const DICT = (\{[^]*?\n  \});/); try { return Function("return " + m[1])(); } catch (e) { return {}; } })();
+const EN = (() => { const m = fs.readFileSync(path.join(WEB, "js/i18n/en.js"), "utf8").match(/return \{ D: (\{[^]*?\n  \}), P:/); try { return Function("return " + m[1])(); } catch (e) { return {}; } })();
 // 來源檔：所有介面 JS＋index.html（資料檔不算）
 const SKIP = /i18n|trails-|geo|peaks-data|ecology-data|debug|admin/;
 const srcFiles = [path.join(WEB, "index.html"), ...fs.readdirSync(path.join(WEB, "js")).filter(f => f.endsWith(".js") && !SKIP.test(f)).map(f => path.join(WEB, "js", f)),

@@ -17,6 +17,13 @@ const NativeLive = (() => {
     try { avail = await p.available(); } catch (e) { avail = { live: false, widget: false }; }   // 原生沒有這個外掛 → 不支援
     return avail;
   }
+  // 電量：iOS 走原生外掛（舊版 App 沒這個方法就回 null）；其他瀏覽器有 Battery API 就用（Android Chrome、桌機）；都沒有回 null
+  async function battery() {
+    const p = plugin();
+    if (p && p.battery) { try { const r = await p.battery(); if (r && r.level >= 0) return { level: +r.level, charging: !!r.charging }; } catch (e) { /* 舊版原生沒有 */ } }
+    if (navigator.getBattery) { try { const b = await navigator.getBattery(); return { level: b.level, charging: b.charging }; } catch (e) { /* */ } }
+    return null;
+  }
   function liveState(s) {
     const alt = s.altSeries && s.altSeries.length ? s.altSeries[s.altSeries.length - 1].e : 0;
     return {
@@ -104,6 +111,6 @@ const NativeLive = (() => {
     document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") pushWidget(false); });   // 回主畫面時小工具剛好是最新的
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
-  return { tick, pushWidget, check, _liveState: liveState, _reset: () => { P = null; avail = null; active = false; lastSig = ""; lastWidgetSig = ""; lastPetSig = ""; } };
+  return { tick, pushWidget, check, battery, _liveState: liveState, _reset: () => { P = null; avail = null; active = false; lastSig = ""; lastWidgetSig = ""; lastPetSig = ""; } };
 })();
 if (typeof window !== "undefined") window.NativeLive = NativeLive;

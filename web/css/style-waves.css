@@ -774,3 +774,33 @@ html[data-theme="dark"] .trk-weight .link-btn, html[data-theme="dark"] .trk-link
 [data-fs-big] .hat-cost.hat-quest span { display: none; }
 [data-fs-big] .hat-cost.hat-quest { padding: 3px 5px; }
 [data-fs-big] .hat-grid .hat-lbl { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.15; font-size: calc(12px * min(var(--fs, 1), 1.3)); overflow-wrap: anywhere; }
+
+/* 語言選單：說明 AI 翻譯 */
+.lang-ai-note { font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-faint); line-height: 1.5; margin-top: 8px; text-align: center; }
+
+/* 登山計畫書 */
+.plan-doc .pd-rows { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 10px 0 4px; font-size: calc(14px * var(--fs, 1)); }
+.plan-doc .pd-rows dt { color: var(--ink-faint); font-weight: 600; white-space: nowrap; }
+.plan-doc .pd-rows dd { margin: 0; color: var(--ink); font-weight: 600; overflow-wrap: anywhere; }
+.plan-doc .pd-gear { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px; }
+.plan-doc .pd-gear span { display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 999px; background: var(--surface-2); font-size: calc(12.5px * var(--fs, 1)); color: var(--ink-soft); }
+.plan-doc .pd-gear .ic { width: 13px; height: 13px; margin: 0; color: var(--brand); }
+.plan-doc .pd-sos { font-size: calc(13px * var(--fs, 1)); line-height: 1.6; color: var(--ink-soft); background: var(--surface-2); border-radius: var(--r-sm); padding: 9px 11px; margin: 0 0 10px; }
+.plan-doc .pd-links { margin: 0 0 10px; }
+[data-fs-big] .plan-doc .pd-rows { grid-template-columns: 1fr; gap: 2px; }
+[data-fs-big] .plan-doc .pd-rows dd { margin-bottom: 6px; }
+.gd-share #gdDoc { grid-column: 1 / -1; }
+
+/* 記錄中：附近步道 */
+.rec-head .rh-near { display: inline-block; margin-top: 2px; padding: 2px 0; border: none; background: none; box-shadow: none; min-height: 0; font-size: calc(13px * var(--fs, 1)); font-weight: 700; color: var(--brand); }
+.rec-head .rh-near[hidden] { display: none; }
+.nr-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.nr-item { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; border: 1px solid var(--line-soft); background: var(--surface); border-radius: var(--r-sm); padding: 10px 12px; color: var(--ink); cursor: pointer; }
+.nr-item.on { border-color: var(--brand); box-shadow: inset 0 0 0 1px var(--brand); }
+.nr-item .nb-bar { width: 4px; align-self: stretch; border-radius: 2px; flex: none; }
+.nr-item .nr-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.nr-item .nr-main b { font-size: calc(14.5px * var(--fs, 1)); overflow-wrap: break-word; }
+[data-fs-big] .nr-item { flex-wrap: wrap; }
+[data-fs-big] .nr-item .nr-d { flex-basis: 100%; padding-left: 14px; }
+.nr-item .nr-main small { color: var(--ink-faint); font-size: calc(12px * var(--fs, 1)); }
+.nr-item .nr-d { flex: none; font-size: calc(12.5px * var(--fs, 1)); font-weight: 700; color: var(--accent); white-space: nowrap; }

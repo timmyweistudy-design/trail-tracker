@@ -245,6 +245,7 @@ const ICON = {
   cloud: '<path d="M7 18a4 4 0 0 1-.4-8 5.5 5.5 0 0 1 10.6 1.3A3.5 3.5 0 0 1 17 18H7Z"/>',
   rain: '<path d="M7 14a4 4 0 0 1-.4-8 5.5 5.5 0 0 1 10.6 1.3A3.5 3.5 0 0 1 17 14H7Z"/><path d="m9 17-1 3m5-3-1 3m5-3-1 3"/>',
   info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8h.01"/>',
+  signal: '<path d="M4 20v-3M9 20v-7M14 20v-11M19 20V5"/><path d="M3 4l18 17"/>',   // 沒訊號：訊號格＋斜線
   drop: '<path d="M12 3.5c-4 5.6-5.5 8.6-5.5 11a5.5 5.5 0 0 0 11 0c0-2.4-1.5-5.4-5.5-11Z"/>',
   wave: '<path d="M2 9c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M2 15c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/>',
   tree: '<path d="M12 3 6 11h3l-4 6h14l-4-6h3L12 3Z"/><path d="M12 17v4"/>',
@@ -387,7 +388,8 @@ function fmtDur(ms) {
   const m = Math.round(s / 60);
   if (m < 60) return `${m} ${ttT("分鐘")}`;
   const h = Math.floor(m / 60), mm = m % 60;
-  return mm ? `${h} ${ttT("小時")} ${mm} ${ttT("分")}` : `${h} ${ttT("小時")}`;
+  const hs = typeof ttCount === "function" ? ttCount(h, "hour") : `${h} ${ttT("小時")}`;   // 英文等要分單複數（1 hour／2 hours）
+  return mm ? `${hs} ${mm} ${ttT("分")}` : hs;
 }
 function toast(msg, opts) {
   const t = $("#toast"); t.textContent = msg; t.classList.toggle("top", !!(opts && opts.top)); t.classList.add("show");   // top：底部會蓋住內容時改從上方出現

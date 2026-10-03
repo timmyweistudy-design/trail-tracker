@@ -77,6 +77,7 @@ ok("還原較舊備份，終身統計不倒退", Store.life().km >= before);
 }
 // 6) i18n 翻譯層：字典與規則式
 eval(fs.readFileSync(web("i18n.js"), "utf8").replace(/I18n\.start\(\);[^]*$/, "") + "\n;globalThis.I18n = I18n;");
+global.window = global.window || {}; global.window.I18n = I18n; eval(fs.readFileSync(web("i18n/en.js"), "utf8"));   // 英文字典另檔
 // 按需語言檔：載入全部（測試會切到各語言驗 tx）
 global.window = global.window || {}; global.window.I18n = I18n;
 { const d = web("i18n"); if (fs.existsSync(d)) for (const lf of fs.readdirSync(d).filter(x => x.endsWith(".js"))) eval(fs.readFileSync(path.join(d, lf), "utf8")); }

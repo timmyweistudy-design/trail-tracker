@@ -3,6 +3,7 @@
 //  - 主畫面小工具：把連續天數、本週里程、夥伴資料寫進 App Group，請 WidgetKit 重畫
 // 小工具擴充是在 Codemagic 建置時才加進專案（scripts/ios-add-widgets.mjs，ENABLE_WIDGETS=1 才會做）。
 import Foundation
+import UIKit
 import Capacitor
 #if canImport(ActivityKit)
 import ActivityKit
@@ -21,6 +22,7 @@ public class TrailLivePlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "update", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "end", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setWidget", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "battery", returnType: CAPPluginReturnPromise),
     ]
 
     static let appGroup = "group.com.timmyweistudy.trailtracker"
@@ -106,6 +108,16 @@ public class TrailLivePlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     /// data：小工具要顯示的 JSON（字串）；pet：夥伴圖 PNG（base64，可省略＝沿用上次的）
+    // 電量（記錄中低電量時建議開省電模式）：level 0–1，拿不到是 -1；charging＝充電中或已充飽
+    @objc func battery(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            UIDevice.current.isBatteryMonitoringEnabled = true
+            let lvl = UIDevice.current.batteryLevel
+            let st = UIDevice.current.batteryState
+            call.resolve(["level": lvl < 0 ? -1 : Double(lvl), "charging": st == .charging || st == .full])
+        }
+    }
+
     @objc func setWidget(_ call: CAPPluginCall) {
         guard let dir = groupURL() else { call.resolve(["ok": false, "reason": "no-app-group"]); return }
         if let json = call.getString("data") {

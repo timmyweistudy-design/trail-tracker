@@ -136,6 +136,8 @@ function detailPrepHtml(t) {
     ${top >= 2000 ? `<div class="dv-card dv-permit">${ic("shield")}<div><b>${ttT("高山步道多半要申請")}</b>
       <p>${ttT("海拔 2,000 公尺以上常會進到山地管制區或國家公園，可能要入山證、入園證，山屋也要先抽籤。出發前到官方網站確認。")}</p>
       <p class="dv-links"><a href="https://hike.taiwan.gov.tw/" target="_blank" rel="noopener">${ttT("台灣登山申請整合網")} ›</a><a href="https://nv2.npa.gov.tw/" target="_blank" rel="noopener">${ttT("警政署入山申請")} ›</a></p></div></div>` : ""}
+    ${top >= 2000 ? `<div class="dv-card dv-permit">${ic("signal")}<div><b>${ttT("高山常常沒有訊號")}</b>
+      <p>${ttT("台灣高山很多地方沒有手機訊號，iPhone 的衛星緊急求救目前在台灣也還不能用。高山或過夜行程，建議帶或租衛星通訊器（例如 Garmin inReach、ZOLEO），出發前先預載離線地圖、把計畫書傳給家人。")}</p></div></div>` : ""}
     ${bugHtml(t)}
     <div id="amenBox" class="amen-box"></div>
     <div class="section-title">${ic("backpack")}<span>${ttT("出發前準備")}</span></div>
@@ -143,6 +145,7 @@ function detailPrepHtml(t) {
       <button class="btn ghost" id="btnOffline">${done ? `${ic("check")} ${ttT("已預載離線地圖")}<small>・${ttT("再按一次會補齊")}</small>` : `${ic("download")} ${ttT("預載此步道離線地圖")}`}</button>
       <div id="offlineBox" class="offline-box" hidden></div>
       <button class="btn ghost" id="btnGuardSet">${ic("shield")} ${ttT("設定留守人")}<small>・${ttT("超時沒回報會通知家人")}</small></button>
+      <button class="btn ghost" id="btnPlanDoc">${ic("book")} ${ttT("登山計畫書")}<small>・${ttT("出發前傳給家人")}</small></button>
     </div>`;
 }
 // 日照：今天日出日落＋「最晚幾點出發才能天黑前走完」（預估時間＋半小時餘裕）
@@ -342,6 +345,7 @@ function bindDetail(t) {
     _dvHeadObs = new IntersectionObserver(es => es.forEach(en => nav.classList.toggle("mini", !en.isIntersecting)), { root: $("#detailSheet"), threshold: 0 });
     _dvHeadObs.observe(head);
   }
+  { const pd = $("#btnPlanDoc"); if (pd) pd.addEventListener("click", () => { if (typeof Guardian !== "undefined") Guardian.planDoc(t); }); }
   // 設定留守人：先把這條設成記錄的步道，再開留守人設定
   const gs = $("#btnGuardSet");
   if (gs) gs.addEventListener("click", () => {

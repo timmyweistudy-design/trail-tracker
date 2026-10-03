@@ -276,6 +276,17 @@ async function toggleDebugPanel() {
       ["🔎一句話搜尋", closeAnd(() => { const tab = document.querySelector('.tab[data-view="explore"]'); if (tab) tab.click(); setTimeout(() => { const i = document.getElementById("searchInput"); if (!i) return; i.value = "台北 3 小時內 有瀑布 不要太陡"; i.dispatchEvent(new Event("input", { bubbles: true })); }, 300); })],
       ["🐾拜訪夥伴範例", closeAnd(async () => { if (window.loadSocial) await window.loadSocial(); Pets.visit({ id: "demo", handle: "mei_trail", pet_name: "毛毛", pet_level: 5, total_km: 420 }, false, null); })],
       ["🏔山社", closeAnd(async () => { if (window.loadSocial) await window.loadSocial(); Clubs.open(); })],
+      ["📄登山計畫書", closeAnd(() => Guardian.planDoc(TRAILS.find(x => (x.alt_high || 0) > 2500) || TRAILS[0]))],
+      ["🧭附近步道（記錄中）", closeAnd(async () => {   // 假裝站在金瓜寮步道中段、記錄中，開「附近步道」
+        const t = TRAILS.find(x => x.id === "forestry-004"); await ensureGeo(t.region); const s = geoOf(t)[0], q = s[Math.floor(s.length / 2)];
+        document.querySelector('.tab[data-view="record"]').click(); recSnap = { track: [{ lat: q[0], lon: q[1] }] }; openNearRoutes();
+      })],
+      ["🔋低電量提醒", closeAnd(async () => {   // 模擬電量 25%、一小時掉 20%
+        const real = NativeLive.battery; NativeLive.battery = async () => ({ level: 0.25, charging: false });
+        const gs = Recorder.getState; Recorder.getState = () => "recording";
+        _batt = { last: 0, asked: false, samples: [{ t: Date.now() - 3600e3, l: 0.45 }] };
+        try { await checkBattery(); } finally { NativeLive.battery = real; Recorder.getState = gs; }
+      })],
       ["📅揪團（免責提醒）", closeAnd(async () => { if (window.loadSocial) await window.loadSocial(); Events.open(); })],
       ["📊進階分析", closeAnd(() => ensureScript("js/analytics.js").then(() => openAnalytics()))], ["🗓年度回顧", closeAnd(() => ensureScript("js/analytics.js").then(() => openYearReview()))],   // analytics.js 延遲載入
       ["🧾結算頁範例", closeAnd(async () => {   // 一趟真的（非模擬）的金瓜寮：看收穫、移動時間、跟預估比、這趟的海拔

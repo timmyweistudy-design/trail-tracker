@@ -100,6 +100,7 @@ function langGate(force) {
     <input type="search" class="lang-search" id="lgSearch" placeholder="Search · 搜尋" autocomplete="off">
     <div class="lang-list" id="lgList">${TT_LANGS.map(([c, f, n, sub]) =>
       `<button class="lang-item" data-lg="${c}" data-search="${(n + " " + sub + " " + c).toLowerCase()}"><span class="flag">${f}</span><span class="names"><span class="native">${n}</span>${n === sub ? "" : ` <span class="sub">${sub}</span>`}</span></button>`).join("")}</div>
+    <div class="lang-ai-note">除了中文，其他語言是 AI 翻譯，可能有不自然的地方 · Languages other than Chinese are AI-translated and may read a little unnaturally</div>
   </div>`;
   // 字體大小：第一眼就能調，選了立刻套用（langGate 的字也跟著放大，年長者馬上有回饋）
   const curFs = (() => { try { return localStorage.getItem("tt_fontscale") || "1.2"; } catch (e) { return "1.2"; } })();
@@ -149,6 +150,10 @@ function onboarding(force, opts) {
 
   // 翻譯：預設 ttT（中文回原文、其他語言翻）；DEBUG 中/英預覽用 previewLang 直接查該語言字典（不必切語言重載）
   const previewLang = opts.previewLang;
+  // 預覽的語言字典還沒載（英文也是按需載入了）→ 先載再重開，否則預覽會整段是中文
+  if (previewLang && previewLang !== "zh" && typeof I18n !== "undefined" && I18n.tables && !I18n.tables()[previewLang] && I18n.ensure && !opts._loaded) {
+    I18n.ensure(previewLang, () => onboarding(force, Object.assign({}, opts, { _loaded: true }))); return;
+  }
   let T;
   if (previewLang === "zh") T = s => s;
   else if (previewLang && typeof I18n !== "undefined" && I18n.tables) { const D = (I18n.tables()[previewLang] || {}).D || {}; T = s => D[s] || s; }

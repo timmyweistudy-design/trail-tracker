@@ -267,7 +267,8 @@ function initTheme() {
       lb.addEventListener("click", () => { row.hidden = !row.hidden; lb.setAttribute("aria-expanded", row.hidden ? "false" : "true"); if (!row.hidden) { const sr = document.getElementById("langSearch"); if (sr) sr.focus({ preventScroll: true }); } });
     }
     row.innerHTML = `<input type="search" class="lang-search" id="langSearch" placeholder="${ttT("搜尋語言")}" autocomplete="off">
-      <div class="lang-scroll" id="langScroll">${TT_LANGS.map(itemHtml).join("")}</div>`;
+      <div class="lang-scroll" id="langScroll">${TT_LANGS.map(itemHtml).join("")}</div>
+      <div class="lang-ai-note">${ttT("除了中文，其他語言是 AI 翻譯，可能有不自然的地方。看到奇怪的翻譯歡迎告訴我們。")}</div>`;
     const bind = b => b.addEventListener("click", () => {
       if (b.dataset.langOpt !== curLang && typeof I18n !== "undefined") I18n.set(b.dataset.langOpt);
     });
