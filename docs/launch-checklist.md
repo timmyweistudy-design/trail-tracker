@@ -1,9 +1,10 @@
 # 循徑拾光 上架前最終確認清單
 
-**目前狀態（2026-09-30）**：**改為自用，暫不公開上架；網頁版不使用。**
+**目前狀態（2026-10-03）**：**自用中，暫不公開上架；網頁版不使用（新帳號註冊關閉）。**
+完整進度與待辦總覽見 [roadmap.md](roadmap.md)。
 下面的「送審」與「上線後」清單先凍結，日後決定公開時再照做（填表步驟見 `docs/app-store-submit.md`）。
-自己裝的方式：沿用 TestFlight（內部測試，不需送審）。注意 build 25 之後又改了很多（生態資訊、沿線地標、
-訂閱解鎖修正…），要重跑 Codemagic 出新 build 才裝得到。TestFlight 每個 build 90 天到期，到期前要再出一版。
+自己裝的方式：沿用 TestFlight（內部測試，不需送審）。注意 build 25 之後又改了很多（10/01–10/03 步道／記錄／夥伴／我的／社群改版、
+登山計畫書、低電量提醒（需要新的原生方法）…），要重跑 Codemagic 出新 build 才裝得到。TestFlight 每個 build 90 天到期，到期前要再出一版。
 
 > 歷史：2026-07-18 build 1.0 (25) 上 TestFlight 外部公測。
 
@@ -22,6 +23,8 @@
 - [x] **原生推播 APNs**：客戶端＋後端＋entitlements，**實機驗證收得到**
 - [x] 外部連結（導航/景點/美食）原生改走 Capacitor Browser
 - [x] 離線地圖原生**實機飛航驗證正常**
+- [x] 2026-10-01～03：五大頁改版＋資料可靠性、不當字詞過濾全面版（App＋資料庫 phase37 已套用）、CSP、登山計畫書、高山沒訊號提醒、低電量提醒、記錄中附近步道、揪團免責條款（細節 roadmap.md）
+- [x] Apple 登入（2026-10-03 設定完成；secret **2027-04-01 到期**要重產）
 
 ### 訂閱 / 金流
 - [x] 訂閱價：月 NT$100 / 年 NT$1000（App Store Connect 已改）
@@ -49,7 +52,8 @@
 ---
 
 ## 🔄 進行中
-- [ ] **TestFlight 公測**：發連結給山友、收 2–3 天 feedback（build 25）
+- [ ] **重新出 iOS build**：低電量提醒要新原生方法 `TrailLive.battery`，並帶入 10/01 後所有改版（build 25 太舊）
+- [ ] **TestFlight 公測**：發連結給山友、收 2–3 天 feedback
 
 ---
 
@@ -57,12 +61,15 @@
 - [ ] **撤銷 Supabase 個人 token**（2026-10-02 在對話中給 Claude、存在 WSL `~/.supabase/access-token`，自用期間刻意保留方便部署）：supabase.com/dashboard/account/tokens → Revoke，再刪掉本機那份
 - [ ] **Esri 金鑰設限**：location.arcgis.com → API key → 權限只留 Basemaps、Referrer 只准 `https://trail-tracker-0ma5.onrender.com` 和 `capacitor://localhost`（金鑰公開在 GitHub；有綁卡的話被盜用會收費）
 - [ ] **解除自用模式**：`web/js/config.js` 的 `PERSONAL_MODE` 改 `false`；刪掉 `web/robots.txt`，並拿掉 `index.html`／`privacy.html`／`terms.html`／`support.html` 的 `<meta name="robots" content="noindex, nofollow">`；Supabase 重新打開「Allow new users to sign up」
+- [ ] **Open-Meteo 商用金鑰**：公開上架＝商業使用，免費端點不可商用；申請後改 `config.js` 走 customer-api
+- [ ] **GitHub secrets**：`SUPABASE_DB_URL`、`BACKUP_PASSPHRASE`（每週備份，`docs/backup.md`）
+- [ ] **律師看條款**：使用條款（含揪團責任條款）、隱私權政策（含步道人氣資料說明）
 - [ ] App Store Connect 填：副標/描述/關鍵字/What's New
 - [ ] 上傳截圖（6.9" 那格）
 - [ ] App Privacy 問卷（**別漏 Diagnostics ▸ Other Diagnostic Data**）
 - [ ] **兩個訂閱一起加入本次版本送審**（IAP 每個中英中繼資料齊、審核截圖=升級面板）
 - [ ] Age Rating 問卷（含 UGC=Yes → 約 4+）
-- [ ] 選 build **1.0 (25)**
+- [ ] 選**最新 build**（不是 25）
 - [ ] App Review Information 填測試帳號 + 背景定位/登入/IAP 說明
 - [ ] 送出審核（首版建議手動發佈）
 
@@ -73,13 +80,13 @@
 - [ ] 小隊加入碼：用非隊長帳號實測一次
 - [ ] 刪測試用 RevenueCat customer `diag-key-check-20260716`
 - [ ] ~~網頁 Stripe 價格改月 100/年 1000~~（2026-09-30：網頁版不使用，擱置。原註：Stripe 建新 Price + 更新 Supabase secret `STRIPE_PRICE_ID`/`_YEAR`；現況顯示 100 實收 60）
-- [ ] Android 上架（RevenueCat Android 金鑰 + Play Console 訂閱產品 + Service Account）
+- [ ] Android 上架：**先升 Capacitor 8＋target API 36**（Google Play 2026-08-31 起強制，可申請延到 11-01；iOS 最低版本會從 13 變 15），再設 RevenueCat Android 金鑰 + Play Console 訂閱產品 + Service Account
 - [ ] 原生推播 APNs：設定清單 `docs/push-setup.md`（已完成）
 
 ---
 
 ## 收尾流程（公測 → 上架）
 1. 公測收 feedback；有 bug 就修、必要時重 build 換上群組（同版本小 build 多半免重審）。
-2. App Store Connect 照 `docs/app-store-submit.md` 填完、選 build 25、兩訂閱一起送、送出。
+2. App Store Connect 照 `docs/app-store-submit.md` 填完、選最新 build、兩訂閱一起送、送出。
 3. 審核 1–3 天 → 過了手動發佈上架。
 4. 上線後：停掉/讓 beta 自然到期（90 天）、處理上面「上線後」清單。

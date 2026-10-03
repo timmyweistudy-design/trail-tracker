@@ -1,8 +1,9 @@
-# 步道誌 Trail Tracker
+# 循徑拾光 Gather the Trail
 
 一款搜尋登山步道與親子步道的**跨平台手機 App**（手機瀏覽器 / PWA，iOS / Android 皆可使用），提供步道分級，並記錄使用者的步行路徑、計算里程、步數與消耗卡路里。步道資料以**政府開放資料**為主要來源。
 
-> ✅ **MVP 已可執行**（手機優先 PWA 網頁版）。本文件含大綱與執行方式。
+> **目前進度與待辦**：[`docs/roadmap.md`](docs/roadmap.md)；上架清單：[`docs/launch-checklist.md`](docs/launch-checklist.md)。
+> 現況（2026-10-03）：iOS App（Capacitor）自用中、TestFlight 安裝；網頁版不公開。本文件下方的大綱是早期規劃，部分內容已過時。
 
 ## 🚀 快速開始
 
