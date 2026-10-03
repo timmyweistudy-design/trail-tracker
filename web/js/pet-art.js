@@ -9,7 +9,7 @@ window.PET_ART = (function () {
       <circle cx="78" cy="150" r="4" fill="#d8c393"/><circle cx="121" cy="158" r="5" fill="#d8c393"/><circle cx="112" cy="96" r="3.5" fill="#d8c393"/><circle cx="90" cy="176" r="3" fill="#d8c393"/>
       <path d="M74 108 l12 8 l-9 9 l14 8" fill="none" stroke="#b89f68" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
       <ellipse cx="80" cy="88" rx="12" ry="20" fill="#ffffff" opacity=".5"/>
-    </g>
+    <!--H--></g>
     <g class="pc-tw"><path d="M150 60 l3 9 l9 3 l-9 3 l-3 9 l-3-9 l-9-3 l9-3Z" fill="#ffe6a0"/></g>
     <g class="pc-tw" style="animation-delay:1.1s"><path d="M44 92 l2 6 l6 2 l-6 2 l-2 6 l-2-6 l-6-2 l6-2Z" fill="#ffe6a0"/></g>
     <defs><radialGradient id="pa-egg" cx="38%" cy="30%" r="72%"><stop offset="0" stop-color="#fbf3dc"/><stop offset="1" stop-color="#e2cfa0"/></radialGradient></defs>`;
@@ -142,6 +142,7 @@ window.PET_ART = (function () {
     </g>`;
 
   const A = [EGG, LARVA, BUTTERFLY, FOX, TIGER, HATCHDRAGON, DRAGON];
+  for (let k = 1; k < A.length; k++) A[k] = A[k].replace(/<\/g>\s*$/, "<!--H--></g>");
 
   // 棲息地剪影（各階段專屬場景，鋪在角色後方；深色低調、卡片漸層透出來）。viewBox 0 0 400 150，貼底。
   const GROUND = `<path d="M0 150 L0 122 Q200 100 400 120 L400 150Z" fill="#193a24"/>`;
@@ -189,17 +190,24 @@ window.PET_ART = (function () {
   }
   const EMOJI = ["🥚", "🐛", "🦋", "🦊", "🐅", "🐲", "🐉"];   // 對映 PET_STAGES 的 e，供把同步來的 emoji 反查成階段
   const clamp = i => Math.max(0, Math.min(A.length - 1, (i | 0)));
-  function svg(i, cls) {
-    return `<svg class="pet-critter ${cls || ""}" viewBox="0 0 200 200" role="img" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${A[clamp(i)]}</svg>`;
+  // 帽子畫進「頭所在的那一組」（<!--H--> 位置），跟著角色同一個動畫一起動。
+  // 以前帽子是另一張疊上去的 SVG、用自己的起伏動畫：彩蝶／神龍的漂浮週期（3.8s、10px）跟帽子（3.4s、6px）
+  // 對不上，幾秒後帽子就滑到臉上。
+  function hatG(id, i) {
+    if (!HATS[id]) return "";
+    const a = HAT_ANCHOR[clamp(i)] || [100, 46, 1];
+    return `<g class="pc-hat" transform="translate(${a[0]} ${a[1]}) scale(${a[2]}) translate(-100 -45)">${HATS[id]}</g>`;
+  }
+  function body(i, hatId) { return A[clamp(i)].replace("<!--H-->", hatG(hatId, i)); }
+  function svg(i, cls, hatId) {
+    return `<svg class="pet-critter ${cls || ""}" viewBox="0 0 200 200" role="img" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${body(i, hatId)}</svg>`;
   }
   function byEmoji(e) { return EMOJI.indexOf(e); }   // 找不到回 -1
   // 給 canvas 用：帶 width/height 的獨立 SVG data URI（靜態一幀，供 new Image().src 光柵化畫進分享圖卡）
   // hatId 有給就把配件一起畫進去（合照用）
   function dataUri(i, size, hatId) {
     const s = size || 120;
-    let h = "";
-    if (hatId && HATS[hatId]) { const a = HAT_ANCHOR[clamp(i)] || [100, 46, 1]; h = `<g transform="translate(${a[0]} ${a[1]}) scale(${a[2]}) translate(-100 -45)">${HATS[hatId]}</g>`; }
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 200 200">${A[clamp(i)]}${h}</svg>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 200 200">${body(i, hatId)}</svg>`;
     return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
   }
   function habitatUri(i, w, h) {

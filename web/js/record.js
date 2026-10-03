@@ -533,7 +533,7 @@ Recorder.onUpdate(s => {
     if (!_petSigCache || Date.now() - _petSigCache.at > 10000) _petSigCache = { at: Date.now(), stage: petStageIndex(totalKm()), mood: (typeof petMood === "function" ? petMood().k : "content"), hat: (typeof petHat === "function" ? petHat() : "none") };
     const _pStage = _petSigCache.stage, _pMood = _petSigCache.mood, _pHat = _petSigCache.hat;
     const _pSig = _pStage + "|" + _pMood + "|" + _pHat;
-    const _petFace = () => `<span class="pm-face pet-m-${_pMood}">${typeof PET_ART !== "undefined" ? PET_ART.svg(_pStage) : petEmojiNow()}${(typeof PET_ART !== "undefined" && PET_ART.hat) ? PET_ART.hat(_pHat, _pStage) : ""}</span>`;
+    const _petFace = () => `<span class="pm-face pet-m-${_pMood}">${typeof PET_ART !== "undefined" ? PET_ART.svg(_pStage, "", _pHat) : petEmojiNow()}</span>`;
     if (meAv) {
       if (!recMarker || !recMarker._av || recMarker._sig !== _pSig) {
         if (recMarker) recMap.removeLayer(recMarker);

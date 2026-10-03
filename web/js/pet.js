@@ -104,7 +104,6 @@ function hatsOwned() { try { return new Set(JSON.parse(localStorage.getItem("tt_
 function petStageIndex(km) { let i = 0; for (let k = 0; k < PET_STAGES.length; k++) if (km >= PET_STAGES[k].km) i = k; return i; }
 function petName() { return localStorage.getItem("tt_pet_name") || ""; }
 function petHat() { return localStorage.getItem("tt_pet_hat") || "none"; }   // A5 配件（Premium 裝扮）
-function petHatSvg(i) { return (typeof PET_ART !== "undefined" && PET_ART.hat) ? PET_ART.hat(petHat(), i) : ""; }
 // 裝扮選擇器：戴帽子在夥伴頭上。
 // 免費版也能打開：自己掙來的（每月挑戰的登山頭巾）和以前換過的照樣能戴；用果實換新配件是 PRO 福利。
 const FREE_HATS = new Set(["none", "bandana"]);
@@ -292,7 +291,7 @@ function renderPet() {
   const km = totalKm(), i = petStageIndex(km), st = PET_STAGES[i], next = PET_STAGES[i + 1];
   const nm = petName(), mood = petMood(), days = petDaysTogether(), streak = weeksStreak(), en = energy();
   const berries = berriesBalance(), h = petHearts(), canFeed = canFeedNow(), cd = feedCooldownMs();
-  const art = (typeof PET_ART !== "undefined") ? PET_ART.svg(i) : `<span style="font-size:70px">${st.e}</span>`;
+  const art = (typeof PET_ART !== "undefined") ? PET_ART.svg(i, "", petHat()) : `<span style="font-size:70px">${st.e}</span>`;   // 帽子畫在角色裡面，跟著同一個動畫動
   let evoTop, prog = "";
   if (next) {
     const pct = Math.max(2, Math.min(100, Math.round((km - st.km) / (next.km - st.km) * 100)));
@@ -309,7 +308,7 @@ function renderPet() {
     <div class="pet-habitat">${(typeof PET_ART !== "undefined" && PET_ART.habitat) ? PET_ART.habitat(i) : ""}<span class="pet-ff" style="left:16%;top:24%"></span><span class="pet-ff" style="left:78%;top:18%;animation-delay:2.1s;animation-duration:7.5s"></span><span class="pet-ff" style="left:60%;top:40%;animation-delay:3.4s;animation-duration:5.5s"></span></div>
     <div class="pet-stage">
       <div class="pet-bubble">${ttT(mood.t)}</div>
-      <div id="petEmoji" class="pet-m-${mood.k || "content"}" role="button" tabindex="0" aria-label="${ttT("摸摸")} ${escHtml(nm || ttT(st.n))}">${art}${petHatSvg(i)}${petMoodFx(mood.k)}</div>
+      <div id="petEmoji" class="pet-m-${mood.k || "content"}" role="button" tabindex="0" aria-label="${ttT("摸摸")} ${escHtml(nm || ttT(st.n))}">${art}${petMoodFx(mood.k)}</div>
       <div class="pet-shadow"></div>
       <div class="pet-idline"><span class="pet-name">${escHtml(nm || ttT(st.n))}</span><span class="lv-chip lvt-${Math.min(i + 1, 7)} pet-lv-chip">Lv.${i + 1}</span></div>
       <div class="pet-tools"><button class="pet-tool" id="petDress">${ic("sparkle")}${ttT("裝扮")}</button>${(typeof Premium !== "undefined" && Premium.isOn()) ? `<button class="pet-tool" id="petRename">${ic("pencil")}${ttT("改名")}</button>` : ""}</div>

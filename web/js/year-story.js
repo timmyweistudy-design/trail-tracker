@@ -94,7 +94,7 @@ const YearStory = (() => {
     return `<div class="ys-months">${d.mk.map((v, i) => `<div class="ys-mo${i + 1 === hi ? " hi" : ""}"><i style="height:${Math.round(v / mx * 100)}%;animation-delay:${(i * 0.05).toFixed(2)}s"></i><span>${i + 1}</span></div>`).join("")}</div>`;
   }
   function artHtml(p, d) {
-    if (p.art === "pet" && typeof PET_ART !== "undefined") return `<div class="ys-pet">${PET_ART.svg(petStageIndex(totalKm()))}${typeof petHatSvg === "function" ? petHatSvg(petStageIndex(totalKm())) : ""}</div>`;
+    if (p.art === "pet" && typeof PET_ART !== "undefined") return `<div class="ys-pet">${PET_ART.svg(petStageIndex(totalKm()), "", typeof petHat === "function" ? petHat() : "")}</div>`;
     if (p.art === "months") return monthsSvg(d, d.busiest);
     if (p.art === "route" && typeof routeMini === "function") return `<div class="ys-route">${routeMini(d.longest.track, "ys-route-svg", true)}</div>`;
     if (p.art === "stamps") return `<div class="ys-stamps">${d.stamps.slice(0, 6).map(s => `<span class="ys-stamp ${s.list}">${ic("mountain")}<b>${escHtml(T(s.name))}</b><small>${fmt(s.ele)} m</small></span>`).join("")}</div>`;
