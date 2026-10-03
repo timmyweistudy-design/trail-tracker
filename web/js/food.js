@@ -1,5 +1,5 @@
 // 步道周邊美食：Google Places API (New) 查附近餐飲，含 Google 星級與評論數。
-// 結果以 localStorage 快取（7 天），可按「距離 / 星級」排序。
+// 結果只在記憶體快取 30 分鐘（Google 條款不允許長期儲存），可按「距離 / 星級」排序。
 //
 // 金鑰由 js/config.js 注入（window.PLACES_KEY）——該檔不進公開 repo，
 // 由 Render 建置時依環境變數 GOOGLE_PLACES_KEY 產生（見 render.yaml）。
@@ -10,17 +10,16 @@
 const Food = (() => {
   const KEY = (typeof window !== "undefined" && window.PLACES_KEY) || "";
   const ENDPOINT = "https://places.googleapis.com/v1/places:searchNearby";
-  const TTL = 7 * 864e5;
+  const TTL = 30 * 60e3;   // Google Places 條款不允許長期存店名／評分：只在記憶體裡放 30 分鐘，關掉 App 就沒了
   const RADIUS = 8000;             // 8 公里
   const CKEY = "foodg_";           // Google 版快取（與舊 OSM 版區隔）
 
+  const PLACES_MEM = window.__ttPlacesMem || (window.__ttPlacesMem = new Map());   // 三個 Google Places 模組共用
   function cacheGet(id) {
-    try { const c = JSON.parse(localStorage.getItem(CKEY + id)); if (c && Date.now() - c.ts < TTL) return c.items; } catch { /* */ }
+    const c = PLACES_MEM.get(CKEY + id); if (c && Date.now() - c.ts < TTL) return c.items;
     return null;
   }
-  function cacheSet(id, items) {
-    try { localStorage.setItem(CKEY + id, JSON.stringify({ ts: Date.now(), items })); } catch { /* quota */ }
-  }
+  function cacheSet(id, items) { PLACES_MEM.set(CKEY + id, { ts: Date.now(), items }); }
 
   async function query(lat, lon) {
     if (typeof ttPlacesAllow === "function" && !ttPlacesAllow()) return [];   // 每日用量守門：超限改用快取
@@ -76,3 +75,6 @@ const Food = (() => {
 
   return { nearby, sortItems };
 })();
+
+// 以前版本把 Google Places 結果存在 localStorage 7 天（違反 Places 條款）→ 清掉留在手機上的舊快取
+try { for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k && /^(foodg?_|attrg2?_|amen_)/.test(k)) localStorage.removeItem(k); } } catch (e) { /* */ }

@@ -72,12 +72,15 @@ const Ecology = (() => {
   }
 
   // 附近的真實目擊（iNaturalist，連網；失敗/離線回 null → 呼叫端隱藏此區）
+  // 照片授權：App 有收費＝商用，只用 CC0／CC BY／CC BY-SA 的照片（不可商用 NC、保留所有權利的一律不顯示照片），
+  // 每張都標拍攝者＋授權（CC BY 要求署名）。沒有可用照片的物種照樣列名字。
+  const OK_LIC = { "cc0": "CC0", "cc-by": "CC BY", "cc-by-sa": "CC BY-SA" };
   async function nearbyObservations(lat, lon) {
     if (lat == null || lon == null || typeof fetch !== "function") return null;
     try {
       const u = `https://api.inaturalist.org/v1/observations?lat=${lat}&lng=${lon}&radius=5`
         + `&locale=zh-TW&order_by=observed_on&per_page=24&photos=true&quality_grade=research`
-        + `&iconic_taxa=Aves,Mammalia,Insecta,Amphibia,Reptilia&introduced=false`;
+        + `&iconic_taxa=Aves,Mammalia,Insecta,Amphibia,Reptilia&introduced=false&photo_license=cc0,cc-by,cc-by-sa`;
       const r = await fetch(u); if (!r.ok) return null;
       const j = await r.json();
       const seen = new Set(), out = [];
@@ -85,8 +88,10 @@ const Ecology = (() => {
         const t = o.taxon; if (!t) continue;
         const nm = t.preferred_common_name || t.name; if (!nm || seen.has(nm)) continue;
         seen.add(nm);
-        const p = o.photos && o.photos[0] && o.photos[0].url;
-        out.push({ name: nm, sci: t.name, thumb: p ? p.replace("square", "small") : null, on: o.observed_on || "" });
+        const ph = (o.photos || []).find(x => x && x.url && OK_LIC[x.license_code]);
+        const who = (o.user && (o.user.name || o.user.login)) || "";
+        out.push({ name: nm, sci: t.name, thumb: ph ? ph.url.replace("square", "small") : null, on: o.observed_on || "",
+          credit: ph ? `© ${who} · ${OK_LIC[ph.license_code]}` : "", link: o.uri || (o.id ? `https://www.inaturalist.org/observations/${o.id}` : "") });
         if (out.length >= 12) break;
       }
       return out.length ? out : null;

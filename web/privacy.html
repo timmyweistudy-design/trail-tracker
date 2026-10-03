@@ -24,8 +24,8 @@
 <body>
 <main>
   <h1>隱私權政策</h1>
-  <p class="updated">循徑拾光 Gather the Trail　·　最後更新：2026-07-07</p>
-  <p class="lang"><a href="#en">English version below ↓</a></p>
+  <p class="updated">循徑拾光 Gather the Trail　·　最後更新：2026-10-03</p>
+  <p class="lang"><a href="#en">English version below ↓</a>　·　<a href="terms.html">使用條款 Terms</a></p>
 
   <p>本政策說明「循徑拾光」App（下稱本 App）如何蒐集、使用與保護你的資料。我們的原則很簡單：<strong>只蒐集讓 App 正常運作所需的資料，不販售你的個人資料。</strong></p>
 
@@ -42,6 +42,15 @@
   <h3>你建立的內容</h3>
   <ul>
     <li>社群貼文、相片、留言、夥伴（寵物）、小隊等，是你主動建立並選擇分享的內容。</li>
+  </ul>
+  <h3>安全與社群功能（你使用時才會有）</h3>
+  <ul>
+    <li><strong>留守人</strong>：你設定的預計下山時間、步道、留守人名單，以及記錄中定時回報的最後位置。只有你選的留守人看得到；超時時會通知他們並附上最後位置。行程結束後就不再更新。</li>
+    <li><strong>山友路況回報與檢舉</strong>：你送出的路況類型、文字、照片與步道；檢舉時的理由。</li>
+    <li><strong>步道人氣</strong>：登入後走完一條步道，App 會送一筆「哪條步道、幾點出發、走多久」，<strong>不含軌跡與位置</strong>。對外只顯示匿名的統計數字（少於 3 人不顯示），可在設定關閉。</li>
+    <li><strong>山社、小隊</strong>：你加入的山社與小隊、成員身分；小隊同行時你的即時位置只給同隊的人看，不會存檔。</li>
+    <li><strong>錯誤紀錄</strong>：登入後若 App 發生程式錯誤，會自動送出錯誤訊息、App 版本與瀏覽器／裝置型號，用來修 bug，保存 30 天。</li>
+    <li><strong>推播</strong>：你開啟通知時，會儲存這台裝置的推播識別碼，用來送通知。</li>
   </ul>
   <h3>裝置本機資料</h3>
   <ul>
@@ -60,14 +69,16 @@
     <li><strong>Supabase</strong>：帳號驗證、資料庫、雲端備份與相片儲存。</li>
     <li><strong>Google</strong>：僅在你選擇用 Google 登入時，用於身分驗證。</li>
     <li><strong>地圖與地形服務</strong>（如 Esri、AWS 地形圖磚）：載入地圖圖磚，過程中會傳送地圖檢視區域的請求。</li>
-    <li><strong>翻譯與周邊地點服務</strong>：當你使用翻譯或查看步道周邊設施時，會向對應服務發出請求。</li>
+    <li><strong>翻譯與周邊地點服務</strong>：當你使用翻譯或查看步道周邊設施時，會向對應服務發出請求（MyMemory 翻譯、Google Places）。</li>
+    <li><strong>天氣與生態</strong>：Open-Meteo（天氣）、iNaturalist（附近物種目擊）只會收到步道的座標，不會收到你的身分。</li>
+    <li><strong>付款</strong>：訂閱由 Apple App Store（經 RevenueCat）或網頁版的 Stripe 處理，我們拿不到你的信用卡資料。</li>
   </ul>
   <p>我們<strong>不會販售</strong>你的個人資料，也不會用於與 App 功能無關的廣告追蹤。</p>
 
   <h2>四、你的權利</h2>
   <ul>
     <li><strong>匯出</strong>：可在「我的 ▸ 資料備份」匯出你的行程備份檔。</li>
-    <li><strong>刪除</strong>：可清除本機資料；如需刪除雲端帳號與資料，請來信告知。</li>
+    <li><strong>刪除</strong>：可清除本機資料；在「社群 ▸ 我的 ▸ 設定 ▸ 刪除帳號」可自行永久刪除雲端帳號與所有資料，也可以來信請我們處理。</li>
     <li><strong>權限</strong>：位置權限可隨時在系統設定關閉；關閉後將無法記錄路徑。</li>
   </ul>
 
@@ -80,7 +91,7 @@
   <hr>
 
   <h1 id="en">Privacy Policy</h1>
-  <p class="updated">Gather the Trail (循徑拾光)　·　Last updated: 2026-07-07</p>
+  <p class="updated">Gather the Trail (循徑拾光)　·　Last updated: 2026-10-03</p>
   <p>This policy explains how the Gather the Trail app (“the App”) collects, uses and protects your data. Our principle is simple: <strong>we only collect what the App needs to work, and we do not sell your personal data.</strong></p>
 
   <h2>1. Data we collect</h2>
@@ -93,6 +104,15 @@
   <ul><li>When you sign in with Email or Google, we store your email, display name, handle and avatar via Supabase.</li></ul>
   <h3>Content you create</h3>
   <ul><li>Community posts, photos, comments, buddy (pet) and team data that you choose to create and share.</li></ul>
+  <h3>Safety & community features (only when you use them)</h3>
+  <ul>
+    <li><strong>Check-in contact</strong> — your expected return time, trail, chosen contacts and, while recording, your periodically reported last position. Only your chosen contacts can see it; if you are overdue they are notified with your last position. Updates stop when the trip ends.</li>
+    <li><strong>Trail reports & flags</strong> — the report type, text, photo and trail you submit, and the reason when you flag something.</li>
+    <li><strong>Trail crowd levels</strong> — when signed in and you finish a trail, the App sends “which trail, start time, duration”, <strong>without your track or location</strong>. Only anonymous totals are shown (hidden under 3 people). You can turn this off in settings.</li>
+    <li><strong>Clubs & teams</strong> — clubs and teams you join and your role; during team live-tracking your live position is shared only with your team and is not stored.</li>
+    <li><strong>Error logs</strong> — when signed in, App errors are sent automatically with the app version and browser/device model to help fix bugs; kept for 30 days.</li>
+    <li><strong>Push</strong> — if you enable notifications, we store this device’s push token to deliver them.</li>
+  </ul>
   <h3>On-device data</h3>
   <ul><li>Trip history, favorites, settings and offline map tiles are stored on your device so the App works offline.</li></ul>
 
@@ -108,14 +128,16 @@
     <li><strong>Supabase</strong> — authentication, database, cloud backup and photo storage.</li>
     <li><strong>Google</strong> — used for sign-in only, if you choose Google login.</li>
     <li><strong>Map & terrain services</strong> (e.g. Esri, AWS terrain tiles) — to load map tiles for the area you view.</li>
-    <li><strong>Translation & nearby-place services</strong> — requests are sent when you use translation or view amenities near a trail.</li>
+    <li><strong>Translation & nearby-place services</strong> — requests are sent when you use translation or view amenities near a trail (MyMemory, Google Places).</li>
+    <li><strong>Weather & wildlife</strong> — Open-Meteo (weather) and iNaturalist (nearby sightings) receive only the trail’s coordinates, not your identity.</li>
+    <li><strong>Payments</strong> — subscriptions are processed by the Apple App Store (via RevenueCat) or Stripe on the web; we never see your card details.</li>
   </ul>
   <p>We <strong>do not sell</strong> your personal data and do not use it for ad tracking unrelated to the App.</p>
 
   <h2>4. Your rights</h2>
   <ul>
     <li><strong>Export</strong> — export a backup of your trips in “Me ▸ Data backup”.</li>
-    <li><strong>Delete</strong> — clear on-device data anytime; to delete your cloud account and data, email us.</li>
+    <li><strong>Delete</strong> — clear on-device data anytime; delete your cloud account and all its data yourself in “Social ▸ Me ▸ Settings ▸ Delete account”, or email us.</li>
     <li><strong>Permissions</strong> — you can turn off location permission in system settings at any time; recording will then be unavailable.</li>
   </ul>
 

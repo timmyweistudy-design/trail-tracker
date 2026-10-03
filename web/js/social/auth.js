@@ -44,18 +44,20 @@ const Auth = (() => {
     return data ? data.session : null;
   }
 
-  async function signInGoogle() {
+  // provider：google／apple（Apple 登入要先在 Supabase 開 Apple provider，再把 config.js 的 SOCIAL_APPLE 設 true）
+  async function signInGoogle(provider) {
+    provider = provider === "apple" ? "apple" : "google";
     const c = Supa.client(); if (!c) return;
     if (NATIVE) {
       // 原生：Google 擋 WebView 內登入，改用系統瀏覽器(Chrome Custom Tab)開，登完 deep link 回來
-      const { data, error } = await c.auth.signInWithOAuth({ provider: "google", options: { redirectTo: REDIRECT, skipBrowserRedirect: true } });
-      if (error || !data || !data.url) { if (typeof toast === "function") toast(T("Google 登入開不起來，等一下再試")); return; }
+      const { data, error } = await c.auth.signInWithOAuth({ provider, options: { redirectTo: REDIRECT, skipBrowserRedirect: true } });
+      if (error || !data || !data.url) { if (typeof toast === "function") toast(provider === "apple" ? T("Apple 登入開不起來，等一下再試") : T("Google 登入開不起來，等一下再試")); return; }
       const Browser = _cap("Browser");
       if (Browser) await Browser.open({ url: data.url, presentationStyle: "popover" });
       else window.open(data.url, "_system");
       return;
     }
-    await c.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + location.pathname } });
+    await c.auth.signInWithOAuth({ provider, options: { redirectTo: location.origin + location.pathname } });
   }
 
   // 寄送 Email 驗證碼（OTP）。全程留在 App，避免魔法連結在別的瀏覽器開、裝在主畫面的 App 登不進去。
@@ -90,19 +92,24 @@ const Auth = (() => {
   const onEnter = (el, fn) => el && el.addEventListener("keydown", e => { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); fn(); } });
 
   function renderLogin(render) {
-    const google = window.SOCIAL_GOOGLE
-      ? `<button class="btn primary" id="authGoogle">${T("使用 Google 繼續")}</button><div class="auth-or">${T("或")}</div>` : "";
+    // App Store 4.8：有 Google 登入就要提供「用 Apple 登入」，而且要放在一樣顯眼的位置（放第一個）
+    const apple = window.SOCIAL_APPLE
+      ? `<button class="btn auth-apple" id="authApple"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M16.4 12.6c0-2.4 2-3.6 2.1-3.7-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9-.8 0-1.9-.9-3.2-.8-1.6 0-3.1 1-4 2.4-1.7 3-.4 7.4 1.2 9.8.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.2-.8s1.9.8 3.2.8c1.3 0 2.2-1.2 3-2.4.9-1.4 1.3-2.7 1.3-2.8 0 0-2.6-1-2.6-3.9ZM14 5.4c.7-.8 1.1-1.9 1-3-1 0-2.1.7-2.8 1.5-.6.7-1.2 1.8-1 2.9 1 .1 2.1-.6 2.8-1.4Z"/></svg>${T("使用 Apple 繼續")}</button>` : "";
+    const google = (window.SOCIAL_GOOGLE
+      ? `<button class="btn primary" id="authGoogle">${T("使用 Google 繼續")}</button>` : "");
+    const oauth = apple || google ? `${apple}${google}<div class="auth-or">${T("或")}</div>` : "";
     render(`
       <div class="social-auth">
         <div class="auth-logo"><img src="icons/icon-192.png" alt="" width="64" height="64"></div>
         <h3>${T("加入山友社群")}</h3>
         <p class="auth-sub">${T("分享你的步道旅行，看看好友走過哪裡。")}</p>
-        ${google}
+        ${oauth}
         <input type="email" id="authEmail" class="auth-input" placeholder="${T("輸入 Email")}" inputmode="email" autocapitalize="off" autocomplete="email" enterkeyhint="send">
         <button class="btn ghost" id="authEmailBtn">${T("寄驗證碼給我")}</button>
         <div class="auth-msg" id="authMsg" role="alert"></div>
       </div>`);
-    if (window.SOCIAL_GOOGLE) document.getElementById("authGoogle").addEventListener("click", signInGoogle);
+    if (window.SOCIAL_GOOGLE) document.getElementById("authGoogle").addEventListener("click", () => signInGoogle("google"));
+    if (window.SOCIAL_APPLE) document.getElementById("authApple").addEventListener("click", () => signInGoogle("apple"));
     const btn = document.getElementById("authEmailBtn");
     const go = async () => {
       if (btn.disabled) return;
@@ -229,6 +236,8 @@ const Auth = (() => {
       const msg = document.getElementById("obMsg");
       if (!v.ok) { msg.textContent = T(v.msg); return; }
       if (!lastOk) { msg.textContent = T("帳號名稱還沒確認可以用"); return; }
+      if (ttBadWord(v.handle, document.getElementById("obName").value, document.getElementById("obBio").value)) { msg.textContent = T("內容有不適當的字詞，改一下再送出"); return; }
+      if (!(await ttRulesGate())) return;   // 建帳號前先同意社群規範與使用條款
       const sb = document.getElementById("obSave"); if (sb.disabled) return; sb.disabled = true;
       msg.textContent = T("建立中…");
       const r = await createProfile({

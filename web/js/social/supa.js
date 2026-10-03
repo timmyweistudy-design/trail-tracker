@@ -46,6 +46,7 @@ const Supa = (() => {
   // Supabase 回來的英文錯誤 → 人話
   function errText(msg) {
     const m = String(msg || "");
+    if (/objectionable/i.test(m)) return "內容有不適當的字詞，改一下再送出";   // schema-phase35 的資料庫過濾
     if (/rate limit|too many|429/i.test(m)) return "太頻繁了，等一分鐘再試";
     if (/expired|invalid.*(otp|token)|otp.*invalid|token.*(expired|invalid)/i.test(m)) return "驗證碼不對或已過期，再寄一次";
     if (/failed to fetch|network|timeout|逾時/i.test(m)) return "連不上網路，檢查一下再試";

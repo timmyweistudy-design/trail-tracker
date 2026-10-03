@@ -1,8 +1,7 @@
-// 步道照片：用 Wikimedia Commons 以「步道名稱」搜尋檔案，並要求照片標題確實含該步道名（核心地名），
+// 步道照片（每張都帶作者＋授權 credit，CC 合規）：用 Wikimedia Commons 以「步道名稱」搜尋檔案，並要求照片標題確實含該步道名（核心地名），
 // 才採用 → 避免抓到旁邊的草/蝴蝶等不相關照片。寧可不顯示也不放錯的。CC 授權、免金鑰。
 const Photos = (() => {
   const TTL = 30 * 864e5;
-  const CKEY = "photon4_";   // 換鍵：舊快取可能存著公告照
   // 公告/告示牌/施工說明也排除：草嶺古道曾經抓到一張「大里段施工公告」當封面，整頁像佈告欄
   const BAD = /\.(svg|djvu|pdf|tif|tiff|gif)$|map|diagram|地圖|路線圖|示意圖|logo|icon|公告|告示|施工|封閉|管制|禁止|注意事項|說明牌|看板|指示牌|標示牌|sign\b|notice|signboard|poster/i;
   // 去掉步道常見後綴，取核心地名（如「象山步道」→「象山」）
@@ -12,10 +11,6 @@ const Photos = (() => {
 
   // 照片說明也要看：草嶺古道那張檔名是「草嶺古道入口 不准你走！」，只有說明寫著「施工公告」
   const descOf = ii => String((ii && ii.extmetadata && ii.extmetadata.ImageDescription && ii.extmetadata.ImageDescription.value) || "").replace(/<[^>]+>/g, "");
-  function cacheGet(id) {
-    try { const c = JSON.parse(localStorage.getItem(CKEY + id)); if (c && Date.now() - c.ts < TTL) return c.url; } catch { /* */ }
-    return undefined;
-  }
   // 容量管理：寫入失敗(配額滿)時，淘汰最舊的 1/3 照片快取再重試
   function evictPhotos() {
     const ks = [];
@@ -32,33 +27,6 @@ const Photos = (() => {
   function safeSet(key, val) {
     try { localStorage.setItem(key, val); }
     catch { try { evictPhotos(); localStorage.setItem(key, val); } catch { /* 仍滿就放棄 */ } }
-  }
-  function cacheSet(id, url) { safeSet(CKEY + id, JSON.stringify({ ts: Date.now(), url })); }
-
-  async function forTrail(trail) {
-    if (!trail.name) return null;
-    const cached = cacheGet(trail.id);
-    if (cached !== undefined) return cached;
-    let url = null;
-    const key = core(trail.name);
-    try {
-      const api = "https://commons.wikimedia.org/w/api.php?action=query&generator=search" +
-        `&gsrsearch=${encodeURIComponent(trail.name)}&gsrnamespace=6&gsrlimit=10` +
-        "&prop=imageinfo&iiprop=url%7Cmime%7Cextmetadata&iiextmetadatafilter=ImageDescription&iiurlwidth=900&format=json&origin=*";
-      const res = await fetch(api);
-      if (res.ok) {
-        const pages = ((await res.json()).query || {}).pages || {};
-        const hit = Object.values(pages).find(p => {
-          const title = (p.title || "").replace(/^File:/, "");
-          const ii = p.imageinfo && p.imageinfo[0];
-          return ii && ii.mime && ii.mime.startsWith("image/") && !BAD.test(title) && !BAD.test(descOf(ii))
-            && (title.includes(trail.name) || (key.length >= 2 && title.includes(key)));
-        });
-        if (hit) url = hit.imageinfo[0].thumburl || hit.imageinfo[0].url;
-      }
-    } catch { /* 無照片 */ }
-    cacheSet(trail.id, url);
-    return url;
   }
 
   // Wikimedia CC 授權要求標「作者＋授權條款」（不能只寫來源）。從 extmetadata 取作者/授權組 credit。
@@ -100,5 +68,5 @@ const Photos = (() => {
     return items;
   }
 
-  return { forTrail, forTrailMulti };
+  return { forTrailMulti };
 })();

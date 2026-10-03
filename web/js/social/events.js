@@ -123,6 +123,8 @@ const Events = (() => {
       if (!whenV) { fieldErr("evWhen", T("選一下出發時間")); return; }
       if (new Date(whenV).getTime() < Date.now() - 60000) { fieldErr("evWhen", T("這個時間已經過了")); return; }
       fieldErr(null);
+      if (body.querySelector("#evSave").disabled) return;
+      if (!(await ttRulesGate()) || !ttCleanOk(title, (body.querySelector("#evNote") || {}).value, body.querySelector("#evTrail").value)) return;
       const sv = body.querySelector("#evSave"); if (sv.disabled) return; sv.disabled = true;
       const c = Supa.client(); const myId = await me();
       msg.textContent = T("建立中…");

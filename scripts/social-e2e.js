@@ -5,7 +5,7 @@ const MOCK=fs.readFileSync(__dirname+"/fake-supabase.js","utf8");const errs=[];c
 (async()=>{const srv=spawn("python3",["-m","http.server","8885"],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));
 const b=await chromium.launch();
 const mk=async(lang)=>{const p=await (await b.newContext({viewport:{width:390,height:844}})).newPage();p.on("pageerror",e=>errs.push(e.message));
-await p.addInitScript(l=>{localStorage.setItem("tt_lang",l);["tt_onboarded_v2","tt_locperm_prompted","tt_coach_soc_friends","tt_coach_soc_explore","tt_coach_soc_search","tt_coach_soc_notif","tt_coach_soc_me"].forEach(k=>localStorage.setItem(k,"1"))},lang);await p.addInitScript(MOCK);
+await p.addInitScript(l=>{localStorage.setItem("tt_lang",l);["tt_rules_ok","tt_onboarded_v2","tt_locperm_prompted","tt_coach_soc_friends","tt_coach_soc_explore","tt_coach_soc_search","tt_coach_soc_notif","tt_coach_soc_me"].forEach(k=>localStorage.setItem(k,"1"))},lang);await p.addInitScript(MOCK);
 await p.goto("http://localhost:8885/");await p.waitForTimeout(2200);await p.evaluate(()=>window.__installFakeSupa({}));
 await p.click('.tab[data-view="social"]');await p.waitForTimeout(1500);return p;};
 const p=await mk("zh");

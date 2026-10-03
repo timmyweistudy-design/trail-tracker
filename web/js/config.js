@@ -5,6 +5,12 @@ window.PLACES_KEY = "AIzaSyBmv_wzflejv2ViaLe0_IXt90McrXCMKik";
 // Esri ArcGIS 底圖 API 金鑰（商用授權）。空＝暫用免費公開端點（開始收費前務必填，見 docs/map-licensing.md）。
 // 到 developer.arcgis.com 建 ArcGIS Location Platform 帳號→API key→填這裡。建議設用量上限/警示。
 window.ARCGIS_API_KEY = "AAPTat2Gy5a6wqwshZiTUQqCPdw..t0iiT56FvKPd9vXumnZ62wlkCVtyCMz6wKXlvlwH68tcdEWsEJ2WfQForauD6ntzvm_DxEIb7KOqcMXta8fXpz2RFnjbuLA8aXmfdo0IfZitwmQxe1jb1e01Ei1zQ8oetYlQWB7fEYwsmcIGNHiCM5DW933lhgbV2Jr6Cqm9fMWGeda05oC6WNW98Qn0bbvXjBilG6mEVn5b9Iyy9uIl-REE6_p45fCnxWFqk7cuUwP3FbVQCWAnDptRUxcGAT1_bV7dFnVI";
+// Open-Meteo 天氣／海拔：免費版只限非商用。App 收訂閱＝商用 → 開始收費前要買 Open-Meteo 方案（open-meteo.com/en/pricing），
+// 把拿到的 API key 填這裡，就會自動改走商用端點 customer-api.open-meteo.com。空＝免費端點（自用／開發）。
+window.OPEN_METEO_KEY = "";
+window.ttOpenMeteo = (path, query) => window.OPEN_METEO_KEY
+  ? `https://customer-api.open-meteo.com/v1/${path}?${query}&apikey=${encodeURIComponent(window.OPEN_METEO_KEY)}`
+  : `https://api.open-meteo.com/v1/${path}?${query}`;
 // 即時路況代理（Cloudflare Worker）網址；空＝用烘焙路況。
 window.CONDITIONS_PROXY = "https://trail-tracker.timmyweistudy.workers.dev";
 // Supabase（社群功能）。anon key 放前端是安全的：資料由 RLS 在資料庫層把關。
@@ -14,6 +20,9 @@ window.SUPABASE_URL = "https://bkbkamvbczqdejrlpiqo.supabase.co";
 window.SUPABASE_ANON_KEY = "sb_publishable_3VM6B_9iEw1vt3BTZpTo3w_-r3wkimi";
 // 設 true 才顯示「使用 Google 繼續」（需先在 Supabase 設定 Google provider）。目前用 Email 驗證碼登入。
 window.SOCIAL_GOOGLE = true;
+// 「使用 Apple 繼續」（App Store 4.8：有 Google 登入的 App 要提供 Apple 登入）。
+// 先照 docs/apple-sign-in.md 在 Apple Developer＋Supabase 設好 Apple provider，再改成 true。
+window.SOCIAL_APPLE = false;
 // Web Push 推播：填入你的 VAPID 公鑰（base64url）。空＝不顯示「開啟推播」。
 // 產生金鑰：npx web-push generate-vapid-keys（公鑰放這、私鑰放 Edge Function 環境變數 VAPID_PRIVATE_KEY）。
 window.VAPID_PUBLIC_KEY = "BMYHczEtR9vWkz2gBUuJEpRpJ2APVHRPwNKQL_SZmPJYiu9rQYxSRCHLYR5Y1rhcjG8pi_y0w5qWYGOx2w-5FdA";

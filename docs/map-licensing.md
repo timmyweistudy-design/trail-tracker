@@ -29,12 +29,12 @@ App 收訂閱費＝商用，底圖圖磚要用「可商用授權」的來源。�
 | 林業署 | 步道資料/分級 | 政府開放資料，已標註 |
 | OpenStreetMap | 步道幾何 | ODbL，商用可、需標註（已標「© OpenStreetMap」）|
 | AWS/Mapzen terrarium | 高程/3D 地形 | 開放資料，已標「Terrain: AWS/Mapzen」|
-| Google Places | 景點/美食 | ⚠️ 確認 Google Cloud 有開帳單、金鑰設限、遵守 Places 條款 |
-| Wikimedia Commons | 步道照片 | CC 授權，⚠️ 建議每張補顯示作者＋授權（目前只顯示圖）|
-| iNaturalist | 生態目擊 | API 使用條款＋照片 CC，需標註來源（已標 iNaturalist）|
-| Open-Meteo | 天氣 | 免費、商用需依其條款（CC-BY），已標「Open-Meteo」|
+| Google Places | 景點/美食/停車廁所 | 已標「Google 地圖」；結果只在記憶體放 30 分鐘（條款不准長期存，2026-10-03 改）。⚠️ 確認 Google Cloud 有開帳單、金鑰設限 |
+| Wikimedia Commons | 步道照片 | CC 授權，每張已顯示作者＋授權 |
+| iNaturalist | 生態目擊 | 只抓 CC0／CC BY／CC BY-SA 的照片（不可商用 NC、保留所有權利的不顯示），每張標拍攝者＋授權（2026-10-03 改）|
+| Open-Meteo | 天氣、海拔 | ⚠️ **免費版只限非商用**。收訂閱前要買方案（US$29/月起），金鑰填 `config.js` 的 `OPEN_METEO_KEY` 就會改走商用端點。已標「Open-Meteo」|
 
 ## 非底圖的下一步（可上線後再處理）
 - Google Places：確認帳單與金鑰限制。
-- Wikimedia 照片：補作者＋授權標示。
+- Open-Meteo：開始收費前買方案、填 `OPEN_METEO_KEY`。
 - 商標：到智慧財產局註冊「循徑拾光 / Gather the Trail」名稱＋Logo。

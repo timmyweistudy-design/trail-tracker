@@ -138,6 +138,7 @@ const TrailReports = (() => {
     else if (navigator.geolocation) navigator.geolocation.getCurrentPosition(p => { pos = { lat: p.coords.latitude, lon: p.coords.longitude }; }, () => { }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 120000 });
     send.addEventListener("click", async () => {
       if (!kind || send.disabled) return;
+      if (!(await ttRulesGate()) || !ttCleanOk(ov.querySelector("#trpNote").value)) return;   // 社群規範＋不當字詞
       send.disabled = true; msg.className = "auth-msg"; msg.textContent = T("送出中…");
       try {
         let photo_url = null;

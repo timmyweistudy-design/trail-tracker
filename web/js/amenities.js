@@ -1,9 +1,9 @@
 // 行前資訊：用 Google Places 查登山口附近的停車場、廁所、超商。
-// 結果 localStorage 快取 7 天。
+// 結果只在記憶體快取 30 分鐘（Google 條款不允許長期儲存）。
 const Amenities = (() => {
   const KEY = (typeof window !== "undefined" && window.PLACES_KEY) || "";
   const ENDPOINT = "https://places.googleapis.com/v1/places:searchNearby";
-  const TTL = 7 * 864e5;
+  const TTL = 30 * 60e3;   // Google Places 條款不允許長期存店名／評分：只在記憶體裡放 30 分鐘，關掉 App 就沒了
   const CKEY = "amen_";
   const ORDER = ["停車", "廁所", "超商"];   // 圖示交給畫面用 SVG（以前 emoji 在部分裝置是方框）
   // Google 回的 primaryType 是子類型（parking_lot 等），用模糊對應分類
@@ -15,11 +15,12 @@ const Amenities = (() => {
     return null;
   }
 
+  const PLACES_MEM = window.__ttPlacesMem || (window.__ttPlacesMem = new Map());   // 三個 Google Places 模組共用
   function cacheGet(id) {
-    try { const c = JSON.parse(localStorage.getItem(CKEY + id)); if (c && Date.now() - c.ts < TTL) return c.items; } catch { /* */ }
+    const c = PLACES_MEM.get(CKEY + id); if (c && Date.now() - c.ts < TTL) return c.items;
     return null;
   }
-  function cacheSet(id, items) { try { localStorage.setItem(CKEY + id, JSON.stringify({ ts: Date.now(), items })); } catch { /* */ } }
+  function cacheSet(id, items) { PLACES_MEM.set(CKEY + id, { ts: Date.now(), items }); }
 
   async function nearby(trail) {
     if (!KEY || !trail.lat) return null;

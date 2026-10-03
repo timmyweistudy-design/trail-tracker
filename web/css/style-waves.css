@@ -557,3 +557,22 @@ html[data-theme="dark"] .cg-c.l4 { background: #7fcf98; border-color: #8edaa6; }
 .club-sheet .pv-body > label.ob-l { display: block; margin-top: 12px; margin-bottom: 4px; }
 .club-sheet .pv-body > .ob-l { margin-bottom: 6px; }
 .club-sheet .sim-toggle { margin-top: 12px; }
+
+/* 照片署名（iNaturalist／Wikimedia：CC BY 要求標拍攝者＋授權） */
+a.eco-ob { text-decoration: none; }
+.eco-cr { display: block; font-size: calc(9.5px * var(--fs, 1)); line-height: 1.25; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.amen-src { align-self: center; margin-left: auto; font-size: calc(10px * var(--fs, 1)); color: var(--muted); white-space: nowrap; }
+
+/* 使用 Apple 繼續（Apple 規範：黑底白字＋Apple 標誌） */
+.btn.auth-apple { background: #000; color: #fff; border-color: #000; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.btn.auth-apple svg { width: 18px; height: 18px; margin-top: -2px; }
+html[data-theme="dark"] .btn.auth-apple { background: #fff; color: #000; border-color: #fff; }
+.social-auth #authApple + #authGoogle { margin-top: 8px; }
+
+/* 社群規範同意框（js/moderation.js） */
+.ttdlg-msg .rules { white-space: normal; text-align: left; }
+.rules b { display: block; font-size: calc(16px * var(--fs, 1)); margin-bottom: 8px; }
+.rules-list { margin: 0 0 10px; padding-left: 1.2em; }
+.rules-list li { margin: 4px 0; }
+.rules-note { margin: 0 0 10px; color: var(--muted); font-size: calc(13px * var(--fs, 1)); }
+.rules-link { color: var(--accent); font-weight: 600; font-size: calc(13.5px * var(--fs, 1)); }

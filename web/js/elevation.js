@@ -5,7 +5,6 @@
 // 為什麼換：拿 2183 條步道的官方爬升當基準實測，中位絕對誤差 11.1% → 7.5%，
 // 且修掉了 90 m DEM 的爆表案例（知本越嶺古道官方 250 m，Open-Meteo 算出 549 m，terrarium 295 m）。
 const Elevation = (() => {
-  const API = "https://api.open-meteo.com/v1/elevation";
   // URL 形式必須與 app.js 的 _TERR_URL 一致，否則快取鍵不同 → 吃不到記錄時預載的那批圖磚（會重抓）
   const TILE = "https://elevation-tiles-prod.s3.amazonaws.com/terrarium";
   const Z = 14;   // 落在預載的 z12–15 範圍內
@@ -22,7 +21,7 @@ const Elevation = (() => {
   async function lookupChunk(pts) {
     const lat = pts.map(p => p.lat.toFixed(5)).join(",");
     const lon = pts.map(p => p.lon.toFixed(5)).join(",");
-    const r = await fetch(`${API}?latitude=${lat}&longitude=${lon}`);
+    const r = await fetch(ttOpenMeteo("elevation", `latitude=${lat}&longitude=${lon}`));
     if (!r.ok) throw new Error("elev " + r.status);
     const j = await r.json();
     return j.elevation || [];

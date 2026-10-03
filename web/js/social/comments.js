@@ -100,6 +100,8 @@ const PostComments = (() => {
   async function send(wrap, postId) {
     const input = wrap.querySelector("#pvInput"), btn = wrap.querySelector("#pvSend"); const body = input.value.trim();
     if (!body || _sending) return;   // 送出中再按不會送兩次（鎖要在第一個 await 之前上）
+    if (!ttRulesAgreed() && !(await ttRulesGate())) return;   // 第一次留言先同意社群規範
+    if (_sending || !ttCleanOk(body)) return;
     _sending = true; input.disabled = true; btn.disabled = true;
     const uid = await Supa.uid(); if (!uid) { _sending = false; input.disabled = false; btn.disabled = false; say("先登入才能留言"); return; }
     const parent = wrap.dataset.reply || null;

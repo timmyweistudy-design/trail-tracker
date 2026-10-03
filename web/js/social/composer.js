@@ -90,6 +90,8 @@ const Composer = (() => {
     const msg = wrap.querySelector("#compMsg");
     const caption = wrap.querySelector("#compCaption").value.trim();
     const visibility = wrap.querySelector('input[name="compVis"]:checked').value;
+    if (wrap.querySelector("#compPost").disabled) return;
+    if (!(await ttRulesGate()) || !ttCleanOk(caption)) return;   // 社群規範＋不當字詞（moderation.js）
     wrap.querySelector("#compPost").disabled = true;
     const T = typeof ttT === "function" ? ttT : x => x;
     msg.textContent = T(files.length || video ? "發布中…照片上傳要一點時間" : "發布中…");

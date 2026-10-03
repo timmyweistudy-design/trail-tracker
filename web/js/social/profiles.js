@@ -131,6 +131,8 @@ const Profiles = (() => {
       <div class="set-group"><div class="set-label">${T("帳號")}</div>
         <button class="set-row set-btn" id="stShare"><span>${ic("share")} ${T("分享我的帳號")}</span></button>
         <button class="set-row set-btn" id="stSignout"><span>${ic("logout")} ${T("登出")}</span></button>
+        <button class="set-row set-btn" id="stTerms"><span>${ic("book")} ${T("使用條款與社群規範")}</span></button>
+        <button class="set-row set-btn" id="stPrivacy"><span>${ic("shield")} ${T("隱私權政策")}</span></button>
       </div>
       <div class="set-group st-danger-zone">
         <button class="btn ghost st-danger" id="stDelete">${T("刪除帳號")}</button>
@@ -139,6 +141,9 @@ const Profiles = (() => {
       </div>`);
     document.getElementById("stShare").addEventListener("click", () => shareHandle(prof));
     document.getElementById("stCrowd").addEventListener("change", e => { try { if (e.target.checked) localStorage.removeItem("tt_crowd_off"); else localStorage.setItem("tt_crowd_off", "1"); } catch (er) { /* */ } say(e.target.checked ? "會匿名分享出發時間" : "不再分享出發時間"); });
+    const site = window.TT_SITE || "https://trail-tracker-0ma5.onrender.com";
+    document.getElementById("stTerms").addEventListener("click", () => ttOpenUrl(site + "/terms.html"));
+    document.getElementById("stPrivacy").addEventListener("click", () => ttOpenUrl(site + "/privacy.html"));
     document.getElementById("stSignout").addEventListener("click", async () => {
       if (!(await ttConfirm(T("要登出嗎？這台手機上的行程不會刪掉。"), T("登出"), T("取消")))) return;   // 登出可以再登入，不算破壞性
       const btn = document.getElementById("stSignout"); if (btn) btn.disabled = true;
@@ -286,6 +291,7 @@ const Profiles = (() => {
       const display_name = (document.getElementById("edName").value || "").trim();
       const bio = (document.getElementById("edBio").value || "").trim();
       if (bio.length > 300) { msg.textContent = T("簡介最多 300 字"); return; }
+      if (ttBadWord(display_name, bio, hEl.value)) { msg.textContent = T("內容有不適當的字詞，改一下再送出"); return; }
       const hv = Handle.validate(hEl.value);
       if (!hv.ok) { msg.textContent = T("帳號名稱") + "：" + T(hv.msg); return; }
       const handleChanged = hv.handle !== prof.handle;

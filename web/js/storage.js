@@ -189,6 +189,7 @@ const Store = (() => {
   // 完整鍵清單：寵物、果實、成就、每日任務、外觀主題、篩選預設全都備份（新增鍵記得加進來）
   const BACKUP_KEYS = [
     "tt_crowd_off",   // 步道人氣：不分享出發時間（隱私偏好，換手機要跟著走）
+    "tt_rules_ok",    // 已同意社群規範（換手機不用再問一次）
     "tt_pet_name", "tt_pet_hat", "tt_pet_hatch", "tt_pet_stage", "tt_pet_base",
     "tt_pet_berry_spent", "tt_pet_berry_bonus", "tt_pet_berry_picked", "tt_pet_aff", "tt_pet_aff_t",
     "tt_pet_fed_t", "tt_pet_feedkm", "tt_pet_hats_owned", "tt_ach_island_scan",

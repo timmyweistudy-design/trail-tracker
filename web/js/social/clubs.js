@@ -124,6 +124,7 @@ const Clubs = (() => {
     el.querySelector("#clCreate").addEventListener("click", async () => {
       const name = el.querySelector("#clName").value.trim(), msg = el.querySelector("#clMsg"), b = el.querySelector("#clCreate");
       if (!name) { msg.textContent = T("取個名字吧"); el.querySelector("#clName").focus(); return; }
+      if (!(await ttRulesGate()) || !ttCleanOk(name, el.querySelector("#clAbout").value)) return;
       b.disabled = true;
       const { data, error } = await rpc("create_club", { p_name: name, p_about: el.querySelector("#clAbout").value.trim() || null, p_region: el.querySelector("#clRegion").value || null, p_public: el.querySelector("#clPublic").checked, p_code: genCode() });
       b.disabled = false;

@@ -5,7 +5,7 @@
 const Attractions = (() => {
   const KEY = (typeof window !== "undefined" && window.PLACES_KEY) || "";
   const ENDPOINT = "https://places.googleapis.com/v1/places:searchNearby";
-  const TTL = 7 * 864e5;
+  const TTL = 30 * 60e3;   // Google Places 條款不允許長期存店名／評分：只在記憶體裡放 30 分鐘，關掉 App 就沒了
   const RADIUS = 12000;            // 12 公里，方便走完步道再繞繞
   const CKEY = "attrg2_";   // 換鍵：新增 primaryType 欄位
   const FIELDS = "places.displayName,places.rating,places.userRatingCount,places.location,places.primaryTypeDisplayName,places.googleMapsUri,places.editorialSummary,places.primaryType";
@@ -18,13 +18,12 @@ const Attractions = (() => {
   const DENY_TYPE = /club|rental|store|shop|agency|lodging|hotel|restaurant|cafe|parking|gym|hiking_area|campground|spa|police|government|city_hall|courthouse|school|university|hospital|doctor|bank|atm|post_office|insurance|real_estate|car_|gas_station|farm|corporate|service/;
   const DENY_KIND = /俱樂部|出租|租借|商店|旅行社|民宿|飯店|旅館|停車|健行區|露營|用品|警察|派出所|分局|公所|政府|學校|國小|國中|醫院|診所|銀行|郵局|農場|公司|服務業|加油|汽車/;
   const isCultural = (x, trail) => !DENY_TYPE.test(x.type || "") && !DENY_KIND.test(x.kind || "") && !/警察|派出所|分駐所|消防/.test(x.name || "") && x.name !== trail.name;   // 有的派出所分類是「觀光景點」，連名字一起擋
+  const PLACES_MEM = window.__ttPlacesMem || (window.__ttPlacesMem = new Map());   // 三個 Google Places 模組共用
   function cacheGet(id) {
-    try { const c = JSON.parse(localStorage.getItem(CKEY + id)); if (c && Date.now() - c.ts < TTL) return c.items; } catch { /* */ }
+    const c = PLACES_MEM.get(CKEY + id); if (c && Date.now() - c.ts < TTL) return c.items;
     return null;
   }
-  function cacheSet(id, items) {
-    try { localStorage.setItem(CKEY + id, JSON.stringify({ ts: Date.now(), items })); } catch { /* quota */ }
-  }
+  function cacheSet(id, items) { PLACES_MEM.set(CKEY + id, { ts: Date.now(), items }); }
 
   async function call(lat, lon, types) {
     if (typeof ttPlacesAllow === "function" && !ttPlacesAllow()) return [];   // 每日用量守門：超限改用快取

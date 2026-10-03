@@ -4,6 +4,19 @@
 // 步道名稱/介紹等資料內容維持中文。要補翻譯：加 DICT 詞條或 PATTERNS 規則即可。
 const I18n = (() => {
   const DICT = {
+    "內容有不適當的字詞，改一下再送出": "This contains inappropriate words. Please edit it and try again",
+    "加入前，先看一下社群規範": "Before you join, a quick look at the community rules",
+    "不騷擾、不歧視、不發色情或暴力內容": "No harassment, discrimination, sexual or violent content",
+    "不發廣告、詐騙、賭博": "No ads, scams or gambling",
+    "路況照實回報，不亂報": "Report trail conditions honestly",
+    "不貼別人的個資，也不貼不是你拍的照片": "Don't post other people's personal info or photos you didn't take",
+    "違規內容被檢舉後會先藏起來，我們會在 24 小時內處理，嚴重的會停用帳號。看到不舒服的內容可以檢舉，也可以封鎖對方。": "Reported content is hidden first and reviewed within 24 hours; serious violations lead to account suspension. If something bothers you, report it or block the person.",
+    "完整使用條款": "Full terms of use",
+    "先不要": "Not now",
+    "我同意": "I agree",
+    "使用條款與社群規範": "Terms of use & community rules",
+    "使用 Apple 繼續": "Continue with Apple",
+    "Apple 登入開不起來，等一下再試": "Couldn't open Apple sign-in. Try again shortly",
     "資料庫還沒開山社功能（要先跑 schema-phase34-clubs.sql）": "Clubs aren't enabled in the database yet (run schema-phase34-clubs.sql)",
     "每人最多建立 3 個山社": "You can create up to 3 clubs",
     "最多加入 20 個山社": "You can join up to 20 clubs",

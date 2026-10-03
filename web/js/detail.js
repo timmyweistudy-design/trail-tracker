@@ -48,7 +48,7 @@ function bindEcology(t) {
     if (!obs) { box.innerHTML = `<div class="eco-src">${ttT("這附近暫時沒有可顯示的目擊記錄")}</div>`; return; }
     enb.dataset.done = "1";
     box.innerHTML = `<div class="eco-src">${ttT("iNaturalist 附近 5 公里的真實觀察")}</div><div class="eco-obs">`
-      + obs.map(o => `<div class="eco-ob">${o.thumb ? `<img src="${escHtml(o.thumb)}" loading="lazy" alt="">` : `<span class="eco-ob-noimg">${ic("search")}</span>`}<span>${escHtml(o.name)}</span></div>`).join("")
+      + obs.map(o => `<a class="eco-ob" href="${escHtml(o.link || "#")}" target="_blank" rel="noopener">${o.thumb ? `<img src="${escHtml(o.thumb)}" loading="lazy" alt="">` : `<span class="eco-ob-noimg">${ic("search")}</span>`}<span>${escHtml(o.name)}</span>${o.credit ? `<small class="eco-cr" translate="no">${escHtml(o.credit)}</small>` : ""}</a>`).join("")
       + `</div>`;
   });
 }
@@ -357,7 +357,7 @@ async function loadAmenities(t) {
     box.innerHTML = `<div class="amen-row">` + items.map(a => {
       const lb = String(a.label || "").replace(/^\S+\s+/, "");
       return `<span class="amen">${ic(AIC[lb] || "pin")}<b>${ttT(lb)}</b> ${(a.dist / 1000).toFixed(1)} km</span>`;
-    }).join("") + `</div>`;
+    }).join("") + `<span class="amen-src" translate="no">Google Maps</span></div>`;   // Places 條款：顯示 Google 資料要標來源
   } catch { box.hidden = true; }
 }
 

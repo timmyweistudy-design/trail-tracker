@@ -45,7 +45,7 @@ const Profile = (() => {
     const lon = points.map(p => p[1].toFixed(5)).join(",");
     // 主來源 Open-Meteo；失敗(限流/錯誤)改用 OpenTopoData SRTM 備援
     try {
-      const res = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`);
+      const res = await fetch(ttOpenMeteo("elevation", `latitude=${lat}&longitude=${lon}`));
       if (res.ok) { const e = (await res.json()).elevation; if (e && e.length) return e; }
     } catch { /* 換備援 */ }
     const locs = points.map(p => `${p[0].toFixed(5)},${p[1].toFixed(5)}`).join("|");

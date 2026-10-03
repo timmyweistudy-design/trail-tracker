@@ -12,7 +12,9 @@
     ov.className = "ttdlg-ov";
     ov.innerHTML = `<div class="ttdlg" role="dialog" aria-modal="true">
       <div class="ttdlg-msg"></div>${inner}</div>`;
-    ov.querySelector(".ttdlg-msg").textContent = msg;   // textContent：訊息可含使用者內容，避免 XSS
+    const m = ov.querySelector(".ttdlg-msg");
+    if (msg && typeof msg === "object" && msg.html) m.innerHTML = msg.html;   // 只給程式自己寫的固定內容用（社群規範）
+    else m.textContent = msg;   // textContent：訊息可含使用者內容，避免 XSS
     document.body.appendChild(ov);
     return ov;
   }
