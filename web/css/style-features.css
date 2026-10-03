@@ -1919,9 +1919,10 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .ps-box { --sea: #6fb5d8; --water: #e9f6fb; }
 .ps-box[data-tod="dusk"] { --sea: #b07a8e; --water: #f6dcd0; } .ps-box[data-tod="night"] { --sea: #23405e; --water: #8fa9c6; }
 .ps-sea, .ps-lake { fill: var(--sea); } .ps-glint { stroke: var(--water); opacity: .8; } .ps-cliff { fill: var(--rock2); }
-.ps-fallw { stroke: var(--water); stroke-dasharray: 10 8; animation: psFallW 1s linear infinite; } .ps-splash { fill: var(--water); opacity: .7; }
+.ps-water { fill: var(--water); opacity: .85; } .ps-fallw { stroke: #fff; opacity: .7; stroke-dasharray: 14 10; animation: psFallW 1s linear infinite; }
+.ps-box[data-tod="night"] .ps-water { opacity: .45; } .ps-box[data-tod="night"] .ps-fallw { opacity: .35; } .ps-splash { fill: var(--water); opacity: .7; }
 .ps-steps path { fill: #b9a684; } .ps-box[data-tod="night"] .ps-steps path { fill: #5b5648; }
-@keyframes psFallW { to { stroke-dashoffset: -18; } }
+@keyframes psFallW { to { stroke-dashoffset: -24; } }
 @media (prefers-reduced-motion: reduce) { .ps-fallw { animation: none; } }
 /* 夥伴的旅行（pet-journey.js） */
 .pj-title { display: flex; align-items: center; gap: 6px; }

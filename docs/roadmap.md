@@ -1,6 +1,6 @@
 # 循徑拾光：目前進度與待辦
 
-最後更新：2026-10-03（文件整理後；SW `trail-tracker-v558`；`test:all` 33/33 實跑通過）
+最後更新：2026-10-04（夥伴美化四階段完成；SW `trail-tracker-v566`；`test:all` 34 組：33 組一次過，`audit-center` 的步道詳情「周邊」分頁偶發 1 次溢出（吃外部即時周邊資料，這輪沒動詳情頁），單獨重跑 3 次都過）
 上架細節清單見 [launch-checklist.md](launch-checklist.md)。
 
 ## 現況
@@ -8,8 +8,18 @@
 - **定位**：自用（`PERSONAL_MODE=true`，PRO 全開），暫不公開上架；新帳號註冊在 Supabase 關閉中。
 - **平台**：iOS 用 Capacitor 6 + Codemagic（Xcode latest）出 TestFlight；網頁版在 Render（自動部署 main）；Android 未上架。
 - **資料**：步道 2,939 條（林業署 118、OSM 關係 827、OSM 路徑 1,994）。林業署每月自動比對，OSM 每季自動比對，有差異會開 GitHub issue，比對一致時自動關閉。
-- **品質**：`npm run check`（語法、i18n 覆蓋、單元測試、SW 版本、不當字詞清單同步）＋ `npm run test:all` 33 組全過；CI 每天跑。
+- **品質**：`npm run check`（語法、i18n 覆蓋、單元測試、SW 版本、不當字詞清單同步）＋ `npm run test:all` 34 組全過；CI 每天跑。
 - **健康度**（10/03 實測）：一般手機 0.55 秒出現步道清單，CPU 降速 4 倍 0.9 秒；近 30 天使用者端錯誤 9 筆，已修 8 筆（剩 1 筆是舊版 debug）；資料庫 15 MB。
+
+## 2026-10-04 完成：山林夥伴美化（四階段，各自驗證後 push）
+
+- **第 0 階段**（`481e7e6`）：帽子畫進角色「頭部那一組」，跟著同一個動畫動（以前是另一張 SVG 用自己的起伏，彩蝶／神龍的帽子幾秒後就滑到臉上）；主角 130→約 170px、下一階剪影 26→40px。
+- **第 1 階段**（`7cd0ddd`）：2.5D 分層舞台（`web/js/pet-stage.js`）。天空→遠山→中景→粒子→角色→前景六層；手指拖或陀螺儀做視差、角色微轉身。時段（晨/午/昏/夜）、季節（花瓣/螢火蟲/落葉/高山雪）、天氣（雨/雲）跟真實世界同步。7 階各有棲地。
+- **第 2 階段**（`eda259d`）：會自己動。行為狀態機（東張西望、走動、跳、伸懶腰，心情決定機率）；點頭摸頭、點身體搔癢、長按抱抱（每天第一次親密 +2）；眼睛跟著手指；餵食變成「果實掉下來→走過去吃」；進化儀式換成新階段場景＋光芒。
+- **第 4 階段**（`f46c0ed`）：夥伴跟走過的步道綁在一起（`web/js/pet-journey.js`）。明信片、發現的生物、地區配件（芒草穗/楓葉/鳳梨帽/浪花頭巾/貝殼髮夾）、舞台上的主題裝飾、記錄中夥伴快走小跑／休息坐下。
+- **第 3 階段**（`fba8382`）：3D 展示（`web/js/pet-3d.js`＋Three.js r170，gzip 167 KB，按了才下載）。7 階都用基本幾何體拼成卡通 3D，手冊「3D」鈕與進化儀式「轉一圈看看」可以拖曳旋轉。
+- **收尾**：瀑布裝飾重畫（夜晚原本像亮燈的大樓）。極端版面（320/360 寬＋特大字、深色）、24 語漏翻、效能（300 條步道 600 筆紀錄時重畫 4.5 ms）、分享圖卡帶帽子、行為狀態機長跑 40 秒，全部掃過無誤。
+- **沒做的**：年度回顧封面的 3D（故事是點一下翻頁，3D 拖曳會跟翻頁手勢打架）；好友拜訪頁仍是舊的平面棲地。
 
 ## 2026-10-01～10-03 完成
 
@@ -42,7 +52,7 @@
 
 ### 有期限
 - [ ] **Android：升 Capacitor 8＋target API 36**。Google Play 2026-08-31 起強制，可申請延到 **11-01**（只有要上架 Android 才需要）。iOS 最低版本會跟著從 13 調到 15，要實機測。
-- [ ] **重新出 iOS build（Codemagic）**：低電量提醒要新的原生方法（`TrailLive.battery`）；也包含 10/01 之後所有改版。TestFlight 每個 build 90 天到期。
+- [ ] **重新出 iOS build（Codemagic）**：低電量提醒要新的原生方法（`TrailLive.battery`）；也包含 10/01 之後所有改版（含 10/04 夥伴美化：App 內的網頁是打包進去的，不重 build 就看不到）。TestFlight 每個 build 90 天到期。
 - [ ] **Apple 登入 secret 2027-04-01 到期**：用 .p8 重產（步驟 `docs/apple-sign-in.md`）。
 
 ### 要你操作的
@@ -76,3 +86,9 @@
 - **改不當字詞清單**：只改 `web/js/moderation.js` 的 `TT_BAD` → `node scripts/gen-badwords-sql.mjs` 重產 phase37 → 到 Supabase 執行 → 測試詞在 `scripts/tests/badwords-cases.json`。`npm run check` 會擋兩邊不同步。
 - **翻譯**：英文在 `web/js/i18n/en.js`（不是 i18n.js 了）；24 語一起補，用 `python3 scripts/apply-translations.py rows.txt`（每列 25 欄，格式寫在檔頭）。
 - **每次改 web/**：bump `web/sw.js` 的 CACHE 版本（check 會擋）。
+- **山林夥伴**（四支檔各管一件事）：
+  - `pet-art.js`：角色與帽子的 SVG。**12 個地方**直接讀它（地圖標記、分享圖卡、動態島、好友…），介面 `svg(i, cls, hatId)`／`dataUri(i, size, hatId)` 不能改。帽子要畫在 `<!--H-->` 標記的位置（頭部那一組）；新帽子加進 `HATS`／`HAT_LABEL`／`HAT_IDS`，`pet-stage.test.js` 會自動檢查 7 階都不遮眼。
+  - `pet-stage.js`：2.5D 舞台＋行為狀態機＋餵食動畫。只用在夥伴卡和進化儀式背景。測試用 `window.__ps={tod,season,wx}` 強制時段／季節／天氣、`window.__psNoIdle=true` 關掉隨機動作。
+  - `pet-journey.js`：明信片／生物／地區配件／裝飾，**全部從紀錄推**，不要另外存狀態；推出來的地區配件不能寫進 `tt_pet_hats_owned`。
+  - `pet-3d.js`：3D 展示，只能用 `ensureScript` 按需載入（測試會擋「夥伴頁就下載 Three.js」）。
+  - 改了夥伴的中文文案：補 24 語＋重跑 `python3 scripts/build-font-subset.py`。

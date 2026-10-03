@@ -83,7 +83,8 @@ window.PetStage = (function () {
   // 棲地裝飾（pet-journey.js 依走過的步道主題決定）：放進遠景或中景，不擋角色（角色在正中間）
   const DECOR = {
     sea: { far: `<rect class="ps-sea" x="-10" y="226" width="420" height="34"/><path class="ps-glint" d="M40 236 h26 M120 244 h18 M250 238 h30 M330 246 h20" stroke-width="2" stroke-linecap="round"/>` },
-    fall: { far: `<path class="ps-cliff" d="M286 260 L292 150 Q318 132 344 150 L350 260Z"/><path class="ps-fallw" d="M306 152 v104 M316 150 v108 M326 152 v104" stroke-width="5" stroke-linecap="round"/><ellipse class="ps-splash" cx="316" cy="258" rx="26" ry="6"/>` },
+    // 瀑布：不規則岩壁＋一整條水（以前三條直線配方正岩壁，晚上看起來像亮燈的大樓）
+    fall: { far: `<path class="ps-cliff" d="M270 262 Q268 214 280 186 Q286 160 300 150 Q312 138 326 146 Q338 140 348 156 Q360 178 358 210 Q362 240 366 262Z"/><path class="ps-water" d="M308 150 Q306 200 302 258 L328 258 Q324 200 322 148Z"/><path class="ps-fallw" d="M311 158 Q309 200 307 252 M318 156 Q317 200 316 252" stroke-width="2" stroke-linecap="round" fill="none"/><ellipse class="ps-splash" cx="315" cy="258" rx="24" ry="5.5"/>` },
     old: { mid: `<g class="ps-steps"><path d="M132 262 h30 l-3 -6 h-24Z"/><path d="M140 252 h24 l-3 -5 h-18Z"/><path d="M148 244 h18 l-2 -4 h-14Z"/></g>` },
     forest: { far: pine(170, 226, .6, "ps-f2") + pine(206, 222, .75, "ps-f2") + pine(240, 228, .55, "ps-f2") },
     lake: { mid: `<ellipse class="ps-lake" cx="300" cy="268" rx="44" ry="9"/><path class="ps-glint" d="M282 266 h16 M306 270 h12" stroke-width="2" stroke-linecap="round"/>` },
