@@ -299,6 +299,16 @@ eval(fs.readFileSync(web("ecology.js"), "utf8") + "\n;globalThis.Ecology = Ecolo
   }
 }
 
+// 不當字詞過濾：繞法（空白、符號、全形、數字代字、拉長字母、零寬字元）都擋；正常字（樹幹、三小時、台北七星山、shiitake）不誤擋
+{
+  global.window = global.window || {}; global.document = global.document || { addEventListener() { } };
+  eval(fs.readFileSync(web("moderation.js"), "utf8").replace(/^const /gm, "var ") + "\n;globalThis.ttBadWord = ttBadWord;");
+  const C = JSON.parse(fs.readFileSync(path.join(__dirname, "badwords-cases.json"), "utf8"));
+  const miss = C.bad.filter(t => !ttBadWord(t)), wrong = C.ok.filter(t => ttBadWord(t)).map(t => `${t}→${ttBadWord(t)}`);
+  ok(`髒話全擋（${C.bad.length} 例）${miss.length ? "：漏 " + miss.join("、") : ""}`, !miss.length);
+  ok(`正常字不誤擋（${C.ok.length} 例）${wrong.length ? "：誤擋 " + wrong.join("、") : ""}`, !wrong.length);
+}
+
 Promise.all(pending).then(() => {                 // 等非同步斷言跑完再結算，否則它們等於沒執行
   console.log(fails ? `✗ ${fails} 個測試失敗` : "✓ 單元測試全部通過");
   process.exit(fails ? 1 : 0);

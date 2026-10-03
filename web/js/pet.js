@@ -343,7 +343,9 @@ function renderPet() {
   const ren = $("#petRename");   // Premium：為夥伴命名
   if (ren) ren.addEventListener("click", () => {
     askInput({ title: ttT("幫你的山林夥伴取個名字"), value: petName() || ttT(st.n), max: 12 }).then(v => {
-      if (v != null) { localStorage.setItem("tt_pet_name", v.trim().slice(0, 12)); renderPet(); }
+      if (v == null) return;
+      if (!ttCleanOk(v)) return;   // 夥伴名字會出現在個人檔案、拜訪卡、分享圖：一樣擋不當字詞
+      localStorage.setItem("tt_pet_name", v.trim().slice(0, 12)); renderPet();
     });
   });
 }

@@ -80,6 +80,7 @@ const PostView = (() => {
   }
   async function repost(post, close) {
     const quote = await ttPrompt(T("轉發這篇（想說點什麼也可以，選填）"), ""); if (quote === null) return;
+    if (!ttCleanOk(quote)) return;
     const r = await Posts.createRepost(post, quote.trim());
     if (r.error) { say(Supa.errText(r.error)); return; }
     say("轉發到你的動態了");
@@ -94,6 +95,7 @@ const PostView = (() => {
   }
   async function edit(post, wrap) {
     const v = await ttPrompt(T("編輯內文"), post.caption || ""); if (v === null) return;
+    if (!ttCleanOk(v)) return;
     const { error } = await Supa.client().from("posts").update({ caption: v.trim() || null }).eq("id", post.id);
     if (error) { say(Supa.errText(error.message)); return; }
     post.caption = v.trim();

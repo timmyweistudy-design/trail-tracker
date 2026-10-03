@@ -390,6 +390,7 @@ function openTrackReview(rec, isNew) {
   { const rn = $("#trackRename"); if (rn) rn.addEventListener("click", async () => {
       const v = await askInput({ title: ttT("這一趟叫什麼？"), value: rec.trailName || "", max: 40 });
       if (v == null || !v.trim()) return;
+      if (!ttCleanOk(v)) return;   // 行程名稱會帶進分享圖和貼文
       const name = v.trim(), t = TRAILS.find(x => x.name === name);
       Store.updateRecord(rec.id, { trailName: name, trailId: t ? t.id : rec.trailId });
       rec.trailName = name; if (t) rec.trailId = t.id;

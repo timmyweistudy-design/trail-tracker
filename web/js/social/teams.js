@@ -206,6 +206,7 @@ const Team = (() => {
     body.querySelector("#tmCreate").addEventListener("click", async () => {
       const name = (body.querySelector("#tmName").value || "").trim(); const msg = body.querySelector("#tmMsg");
       if (name.length < 1) { msg.textContent = ttT("取個小隊名稱"); return; }
+      if (ttBadWord(name)) { msg.textContent = ttT("內容有不適當的字詞，改一下再送出"); return; }
       msg.textContent = ttT("建立中…");
       const r = await create(name);
       if (r.error) { msg.textContent = ttT(Supa.errText(r.error)); return; }

@@ -1,12 +1,56 @@
 // 社群內容把關（App Store 1.2：有使用者內容的 App 要有「同意社群規範」＋「過濾不當內容」＋檢舉＋封鎖）。
 // 1. ttRulesGate()：第一次發文／留言／回報路況／建山社／揪團前，先同意社群規範（只問一次，存 tt_rules_ok）。
-// 2. ttBadWord(text)：擋明顯的髒話、色情、賭博廣告。資料庫端 schema-phase35-moderation.sql 有同一份清單當最後防線。
-//    清單刻意保守：寧可漏掉一些，也不要把「樹幹」「幹線」這種正常字擋掉。改清單時兩邊一起改。
-const TT_BAD_ZH = ["幹你娘", "幹您娘", "幹林娘", "操你媽", "操你妈", "肏", "屌你", "雞掰", "機掰", "鸡掰", "雞巴", "鸡巴", "婊子", "賤人", "贱人", "王八蛋", "去死吧", "約砲", "约炮", "援交", "娛樂城", "娱乐城", "博弈網", "百家樂", "百家乐", "代儲"];
-const TT_BAD_EN = ["fuck", "fucking", "motherfucker", "shit", "bitch", "cunt", "nigger", "nigga", "faggot", "asshole", "porn", "xxx"];
-const _TT_BAD_RE = new RegExp(`(${TT_BAD_ZH.join("|")})|\\b(${TT_BAD_EN.join("|")})\\b`, "i");
+// 2. ttBadWord(text)：擋髒話、歧視字眼、色情、賭博毒品廣告。資料庫端 schema-phase37-badwords.sql 用同一份「強」清單當最後防線
+//    （由 scripts/gen-badwords-sql.mjs 從這裡產生，check.js 會驗兩邊一致）。
+//    先正規化再比對，擋得住常見的繞法：全形／大小寫、中間塞空白或符號（幹 你 娘、f.u.c.k）、數字符號代字母（sh!t、@ss）、
+//    拉長字母（fuuuck）、零寬字元。也保留例外，避免誤擋「樹幹」「靠北側」「三小時」「媽媽的」「shiitake（香菇）」這種正常字。
+// TT_BAD.sub：在「只留字母」的壓縮字串裡找（中日韓、其他文字，以及英文裡不會出現在正常單字中的字根，字母可以重複）
+// TT_BAD.word：英文等拉丁字母語言，要是獨立單字才算（避免 grape、Scunthorpe 這類誤擋）
+const TT_BAD = {
+  sub: [
+    // 中文：幹／操＋你＋娘 這一族（繁簡、台語諧音、網路代字）
+    "[幹干乾淦赣][你妳恁拎林您伱尼泥][娘媽妈老母老師老师祖宗全家]", "[操肏草艹靠][你妳恁拎林您伱尼泥][娘媽妈老母老師老师祖宗全家]",
+    "草泥[馬马]", "肏", "[屌]你", "[屌]妳", "[雞鸡機机]掰", "[雞鸡]歪", "[雞鸡機机]巴", "懶[叫趴]", "[懒][叫趴]", "羼", "洨", "屄",
+    "婊", "[賤贱](人|貨|货|女人|狗|種|种)", "妓女", "王八[蛋羔]", "去死(?![亡角])", "死全家", "[你妳][媽妈]死了", "[他她你妳][媽妈]的",
+    "(衝|做|是|講|讲|幹|干|在|看|說|说|吵|共)三小", "三小(啦|喔|啊|阿|咧|拉|啦)", "^三小$", "靠北(?![側侧邊边方端面部])", "靠杯", "靠夭", "哭夭", "白[癡痴]", "智障", "[腦脑][殘残]", "弱智", "低能(兒|儿|仔)", "[你妳]低能",
+    "[傻煞][逼屄比筆笔]", "(?<![台臺])北七(?!星)", "娘[炮砲]", "支那(?!雅)", "黑鬼",
+    // 色情
+    "[約约][砲炮]", "打[砲炮]", "做[愛爱]", "性交", "口交", "肛交", "自慰", "打手槍", "[陰阴][莖茎道]", "[陽阳]具", "裸照", "裸聊",
+    "a片", "色情", "援交", "一夜情", "包[養养]",
+    // 賭博、毒品廣告
+    "[娛娱][樂乐]城", "博弈", "博彩", "百家[樂乐]", "代[儲储]", "[線线]上[賭赌]", "六合彩", "安非他命", "搖頭丸", "摇头丸", "k他命", "海洛因", "冰毒",
+    // 注音、拼音
+    "ㄍㄢ", "ㄐㄅ", "ㄍㄋㄋ", "ganniniang", "ganlinniang", "ganninia", "kaobei", "cnm(?![a-z])", "nmsl", "jibai",
+    // 日、韓
+    "死ね", "くそ", "クソ", "ちんこ", "ちんぽ", "まんこ", "セックス", "キチガイ", "きちがい",
+    "씨발", "시발", "ㅅㅂ", "병신", "ㅂㅅ", "개새끼", "좆", "존나", "니애미",
+    // 俄、烏、泰、越、印地、尼泊爾（非拉丁字母，壓縮後直接找）
+    "бля", "сука", "хуй", "хуё", "пизд", "ебат", "ёбан", "мудак", "курва",
+    "ควย", "เหี้ย", "เย็ด", "มึง", "địt", "đụ", "lồn", "cặc", "मादरचोद", "बहनचोद", "चूतिया",
+  ],
+  // 英文等：在壓縮字串裡找也不會誤擋的字根（每個字母可重複：fuuuck）
+  root: ["fuck", "fuk", "fvck", "phuck", "fck", "motherfucker", "nigger", "nigga", "faggot", "bitch", "asshole", "whore", "slut", "porn",
+    "wanker", "dildo", "blowjob", "handjob", "cumshot", "jizz", "bastard", "killyourself", "putangina", "tangina",
+    "madarchod", "behenchod", "bhenchod", "chutiya", "vaffanculo", "hurensohn", "scheisse", "scheiße", "klootzak", "ngentot", "kontol", "memek", "siktir", "orospu", "kurwa"],
+  // 要是獨立單字才算的（壓縮後可能是正常字的一部分：shiitake、grape、computadora）
+  word: ["shit", "shitty", "cunt", "pussy", "rape", "raped", "retard", "retarded", "nazi", "twat", "xxx", "wtf", "stfu", "kys", "tmd", "dumbass", "jackass",
+    "puta", "puto", "mierda", "pendejo", "putain", "merde", "salope", "connard", "fotze", "cazzo", "stronzo", "caralho", "porra", "chuj", "kut",
+    "amk", "gago", "bangsat", "anjing"],
+};
+const _ttLeet = s => s.replace(/[013457@$!|]/g, c => ({ 0: "o", 1: "i", 3: "e", 4: "a", 5: "s", 7: "t", "@": "a", "$": "s", "!": "i", "|": "i" })[c]);
+const _ttNorm = s => String(s || "").normalize("NFKC").toLowerCase().replace(/[\u200b-\u200f\u2060\ufeff\u00ad]/g, "");
+const _ttRep = w => w.split("").map(c => c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "+").join("");   // fuck → f+u+c+k+
+const _TT_RE_SUB = new RegExp(TT_BAD.sub.join("|"), "u");
+const _TT_RE_ROOT = new RegExp(TT_BAD.root.map(_ttRep).join("|"), "u");
+const _TT_RE_WORD = new RegExp(`(?<!\\p{L})(${TT_BAD.word.map(_ttRep).join("|")})(?!\\p{L})`, "u");
 function ttBadWord(...texts) {
-  for (const t of texts) { const m = String(t || "").match(_TT_BAD_RE); if (m) return m[0]; }
+  for (const t of texts) {
+    const n = _ttNorm(t); if (!n) continue;
+    const cjk = n.replace(/[^\p{L}]/gu, "");                 // 只留字母（中日韓、注音、各國文字都算字母）：去掉空白、符號、數字、表情
+    const lat = _ttLeet(n).replace(/[^\p{L}]/gu, "");        // 同上，但先把 0/1/3/@/$/! 當字母
+    const m = cjk.match(_TT_RE_SUB) || lat.match(_TT_RE_ROOT) || _ttLeet(n).match(_TT_RE_WORD);
+    if (m) return m[0];
+  }
   return null;
 }
 // 送出前檢查；有問題就提示並回 false
@@ -64,4 +108,4 @@ document.addEventListener("click", e => {
   const a = e.target.closest && e.target.closest("a.rules-link");
   if (a) { e.preventDefault(); ttOpenDoc("terms"); }
 });
-if (typeof window !== "undefined") Object.assign(window, { ttBadWord, ttCleanOk, ttRulesGate, ttRulesAgreed, ttOpenUrl, ttOpenDoc });
+if (typeof window !== "undefined") Object.assign(window, { TT_BAD, ttBadWord, ttCleanOk, ttRulesGate, ttRulesAgreed, ttOpenUrl, ttOpenDoc });

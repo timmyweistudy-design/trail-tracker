@@ -233,7 +233,7 @@ $("#fsSavePreset").addEventListener("click", () => {
     return;
   }
   askInput({ title: "為這組篩選命名", value: "常用篩選", max: 10 }).then(name => {
-    if (name == null) return;
+    if (name == null || !ttCleanOk(name)) return;
     const a = getPresets(); a.push({ name: name.trim().slice(0, 10) || "常用", ...currentFilterState() }); savePresets(a);
     buildPresets(); toast("已存成口袋路線");
   });

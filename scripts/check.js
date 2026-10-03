@@ -201,7 +201,7 @@ try {
   const half = new Set();   // 半翻：tx 有回傳但英文結果仍殘留中文（如「、」切段只命中一部分）——付費牆踩過
   for (const f of files) {
     if (f.endsWith("i18n.js") || f.endsWith("i18n-names.js") || /[\\/]i18n[\\/]/.test(f) || /geo-manifest\.js$|[\\/]geo[\\/]/.test(f) || /trails-(data|detail|geo)\.js$|peaks-data\.js$|debug\.js$|admin\.js$/.test(f) || f.endsWith("ecology-data.js")) continue;
-    const src2 = read(f);
+    const src2 = read(f).replace(/const TT_BAD = \{[\s\S]*?\n\};/, "");   // 不當字詞清單是比對用的，不是介面文字
     for (const m of src2.matchAll(/[>"`]([^<>`"$\\{}]*[\u4e00-\u9fff][^<>`"$\\{}]*)[<"`$]/g)) {
       const t = m[1].trim();
       if (!t || t.length < 2 || t.length > 200) continue;   // 以前上限 40：付費牆一段 50 字的說明改版後漏翻也沒抓到
@@ -251,6 +251,10 @@ try {
 // G. 跑核心邏輯單元測試
 try { execFileSync(process.execPath, [path.join(__dirname, "tests", "test-fixes.js")], { stdio: "pipe" }); }
 catch (e) { err(`[測試] 單元測試失敗：\n${String(e.stdout || e.message).trim().split("\n").filter(l => l.startsWith("✗")).join("\n")}`); }
+
+// G1b. 資料庫端的不當字詞清單要跟 moderation.js 同步（schema-phase37 由 gen-badwords-sql.mjs 產生）
+try { execFileSync(process.execPath, [path.join(__dirname, "gen-badwords-sql.mjs"), "--check"], { stdio: "pipe" }); }
+catch (e) { err(`[不當字詞] ${String(e.stderr || e.message).trim()}`); }
 
 // G2. 步道爬蟲過濾規則回歸測試（誤殺真步道／放過非步道都要在這裡擋下）
 try {
