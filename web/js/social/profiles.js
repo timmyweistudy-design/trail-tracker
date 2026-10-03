@@ -120,7 +120,7 @@ const Profiles = (() => {
         <label class="set-row"><span>${T("有人按讚、留言、追蹤時推播通知我")}</span><input type="checkbox" class="tt-switch" id="stPush"></label>
       </div>
       <div class="set-group"><div class="set-label">${T("步道人氣")}</div>
-        <label class="set-row"><span>${T("走完匿名分享出發時間")}<small>${T("讓大家知道哪個時段人多。只送步道和出發時間，不送軌跡、位置和名字")}</small></span><input type="checkbox" class="tt-switch" id="stCrowd" ${localStorage.getItem("tt_crowd_off") === "1" ? "" : "checked"}></label>
+        <label class="set-row"><span>${T("走完匿名分享出發時間")}<small>${T("讓大家知道哪個時段人多。只送步道、出發時間和走多久，不送軌跡和位置；別人只看得到 3 人以上的統計，看不到是誰")}</small></span><input type="checkbox" class="tt-switch" id="stCrowd" ${localStorage.getItem("tt_crowd_off") === "1" ? "" : "checked"}></label>
       </div>
       <div class="set-group"><div class="set-label">${T("預設發文可見度")}</div>
         <label class="set-row"><span>${T("只給好友")}</span><input type="radio" name="dvis" value="friends" ${defVis === "friends" ? "checked" : ""}></label>

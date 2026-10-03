@@ -4,6 +4,13 @@
 // 步道名稱/介紹等資料內容維持中文。要補翻譯：加 DICT 詞條或 PATTERNS 規則即可。
 const I18n = (() => {
   const DICT = {
+    "讓大家知道哪個時段人多。只送步道、出發時間和走多久，不送軌跡和位置；別人只看得到 3 人以上的統計，看不到是誰": "Shows when trails get busy. Sends only the trail, start time and duration — no track or location. Others see totals only (3+ people), never who.",
+    "揪團由山友自行發起，不是本 App 舉辦的活動。出發前請自己確認路況、天氣、入山／入園申請和保險，並把行程留給家人。": "Group hikes are set up by hikers themselves, not organised by this app. Before you go, check trail conditions, weather, mountain/park permits and insurance, and leave your plan with family.",
+    "最快平均時速": "Fastest avg speed",
+    "整體平均時速": "Overall avg speed",
+    "時速用移動時間算，休息不算在內": "Speeds use moving time — breaks aren't counted",
+    "每根是一趟的移動時速，最右邊是最近一趟": "Each bar is one hike's moving speed; rightmost is the latest",
+    "估算值，依體重、距離和爬升": "Estimates, based on weight, distance and ascent",
     "全馬腳力": "Marathon Legs",
     "單次步行 ≥ 42.195 km（一場全馬的距離）": "One hike ≥ 42.195 km (a full marathon)",
     "總爬升 8849 m（一座聖母峰）": "Total climb 8,849 m (one Everest)",

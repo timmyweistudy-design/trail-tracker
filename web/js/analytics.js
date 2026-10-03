@@ -17,10 +17,11 @@ function sparkLine(vals) {
 // 速度趨勢：有數字標示的長條圖（比裸折線好懂）——每根一趟平均速度，越高越快，最快標綠、最近一趟框起來
 function paceBars(vals) {
   if (!vals || vals.length < 2) return "";
-  const mn = Math.min(...vals), mx = Math.max(...vals), sp = (mx - mn) || 1;
+  // 刻度至少 1 km/h：以前用「最慢～最快」撐滿，差 0.05 km/h 也畫成一高一矮，像差很多
+  const mx = Math.max(...vals), sp = Math.max(1, mx - Math.min(...vals)), lo = mx - sp, top = mx.toFixed(1);
   const cols = vals.map((v, i) => {
-    const h = 26 + 74 * ((v - mn) / sp);   // 最矮也保留 26% 高度，看得到
-    const cls = (v === mx ? " fast" : "") + (i === vals.length - 1 ? " last" : "");
+    const h = 26 + 74 * ((v - lo) / sp);   // 最矮也保留 26% 高度，看得到
+    const cls = (v.toFixed(1) === top ? " fast" : "") + (i === vals.length - 1 ? " last" : "");
     return `<div class="pace-col${cls}"><span class="pace-v">${v.toFixed(1)}</span><div class="pace-track"><i style="height:${h.toFixed(0)}%"></i></div></div>`;
   }).join("");
   return `<div class="pace-bars">${cols}</div>`;
@@ -71,8 +72,8 @@ function openYearReview(year) {
   const mk = Array(12).fill(0); recs.forEach(r => { const m = +localYM(r.date).slice(5, 7); if (m) mk[m - 1] += r.distanceKm || 0; });
   const moName = m => new Date(2023, m - 1, 1).toLocaleDateString(ttLocale(), { month: "short" });
   const busiest = Object.keys(mo).sort((a, b) => mo[b] - mo[a] || mk[b - 1] - mk[a - 1])[0];   // 次數一樣就看哪個月走得遠
-  const tc = {}; recs.forEach(r => { const nm = r.trailName || "自由路線"; tc[nm] = (tc[nm] || 0) + 1; });
-  const top = Object.keys(tc).sort((a, b) => tc[b] - tc[a])[0];
+  const tc = {}; recs.forEach(r => { if (r.trailName && r.trailName !== "自由路線") tc[r.trailName] = (tc[r.trailName] || 0) + 1; });
+  const top = Object.keys(tc).filter(k => tc[k] >= 2).sort((a, b) => tc[b] - tc[a])[0];   // 只走過一次的不算「最愛」
   const lastRecs = all.filter(r => +localYear(r.date) === year - 1), lastKm = sum(lastRecs, r => r.distanceKm);   // 去年沒紀錄就不比
   const delta = km - lastKm;
   const mkMax = Math.max(1, ...mk);
@@ -83,7 +84,7 @@ function openYearReview(year) {
     ${recs.length ? `
     <div class="yr-grid">
       <div class="yr-stat"><b>${cuSpan(recs.length, "", 0)}</b><span>趟旅程</span></div>
-      <div class="yr-stat"><b>${cuSpan(km, "", 0)}</b><span>公里</span></div>
+      <div class="yr-stat"><b>${cuSpan(km, "", km < 100 ? 1 : 0)}</b><span>公里</span></div>
       <div class="yr-stat"><b>${cuSpan(asc, "↑", 0)}</b><span>公尺爬升</span></div>
       <div class="yr-stat"><b>${cuSpan(hrs, "", 0)}</b><span>小時</span></div>
     </div>
@@ -99,7 +100,7 @@ function openYearReview(year) {
       ${longest ? `<div>單次最長 <b>${longest.toFixed(1)} km</b></div>` : ""}
       ${maxAlt ? `<div>最高造訪海拔 <b>${Math.round(maxAlt).toLocaleString()} m</b></div>` : ""}
       ${busiest ? `<div><span>${ttT("最常出門")}</span> <b>${moName(+busiest)}</b></div>` : ""}
-      ${top ? `<div><span>${ttT("最愛步道")}</span> <b>${escHtml(ttT(top))}</b></div>` : ""}
+      ${top ? `<div><span>${ttT("最愛步道")}</span> <b translate="no">${escHtml(ttT(top))}</b>${ttParen(`${tc[top]} ${ttT("次")}`)}</div>` : ""}
       ${lastRecs.length ? `<div><span>${ttT("較去年里程")}</span> <b>${delta >= 0 ? "+" : "−"}${Math.abs(delta).toFixed(0)} km</b></div>` : ""}
       ${asc >= 100 ? `<div class="yr-foot">↑ 累積爬升約 ${(asc / 3952).toFixed(1)} 座玉山</div>` : ""}
     </div>
@@ -174,7 +175,7 @@ function drawYearImage(d) {
   }
   x.fillStyle = "#e0b15a"; x.font = "700 76px 'TaipeiSans', sans-serif"; x.fillText(String(d.year), W / 2, 200);
   x.fillStyle = "#f3efe4"; x.font = "600 21px 'TaipeiSans', sans-serif"; x.fillText(ttT("我的山行回顧"), W / 2, 234);
-  const stats = [[d.n, ttT("趟旅程")], [Math.round(d.km), ttT("公里")], ["↑" + Math.round(d.asc), ttT("公尺爬升")], [Math.round(d.hrs), ttT("小時")]];
+  const stats = [[d.n, ttT("趟旅程")], [d.km < 100 ? d.km.toFixed(1) : Math.round(d.km), ttT("公里")], ["↑" + Math.round(d.asc), ttT("公尺爬升")], [Math.round(d.hrs), ttT("小時")]];
   stats.forEach((s, i) => {
     const cx = W / 2 + (i % 2 ? 120 : -120), cy = 310 + Math.floor(i / 2) * 124;
     x.fillStyle = "rgba(255,255,255,.07)"; roundRect(x, cx - 110, cy - 46, 220, 104, 14); x.fill();
@@ -225,11 +226,16 @@ function openAnalytics() {
   for (const r of recs) {
     if (!longest || (r.distanceKm || 0) > (longest.distanceKm || 0)) longest = r;
     if (!steepest || (r.ascent || 0) > (steepest.ascent || 0)) steepest = r;
-    const hrs = (r.elapsedMs || 0) / 3.6e6; if (hrs > 0.05) fastest = Math.max(fastest, (r.distanceKm || 0) / hrs);
   }
-  const tc = {}; recs.forEach(r => { const nm = r.trailName || "自由路線"; tc[nm] = (tc[nm] || 0) + 1; });
-  const favTrail = Object.keys(tc).sort((a, b) => tc[b] - tc[a])[0];
-  const avgPace = totHrs > 0 ? totKm / totHrs : 0;
+  // 時速一律用「移動時間」：休息、午餐不該算成走得慢（跟結算頁同一個 movingOf）；最快只看 ≥1 km 的趟，短程幾百公尺的雜訊不算
+  const mvOf = r => (typeof movingOf === "function" && movingOf(r)) || r.elapsedMs || 0;
+  const spd = recs.filter(r => (r.distanceKm || 0) > 0 && mvOf(r) > 6e4).map(r => ({ r, v: r.distanceKm / (mvOf(r) / 3.6e6) })).filter(x => x.v < 8);
+  spd.forEach(x => { if (x.r.distanceKm >= 1) fastest = Math.max(fastest, x.v); });
+  const mvKm = spd.reduce((s, x) => s + x.r.distanceKm, 0), mvHrs = spd.reduce((s, x) => s + mvOf(x.r), 0) / 3.6e6;
+  // 最常走：自由路線不算，而且至少走過 2 次才叫「最常」（以前每條都 1 次也硬挑一條）
+  const tc = {}; recs.forEach(r => { if (r.trailName && r.trailName !== "自由路線") tc[r.trailName] = (tc[r.trailName] || 0) + 1; });
+  const favTrail = Object.keys(tc).filter(k => tc[k] >= 2).sort((a, b) => tc[b] - tc[a])[0];
+  const avgPace = mvHrs > 0 ? mvKm / mvHrs : 0;
   // 難度分布（用 TRAILS 對照 trailId）
   const tmap = new Map(); if (typeof TRAILS !== "undefined") TRAILS.forEach(t => tmap.set(String(t.id), t.difficulty || 0));
   const diffN = [0, 0, 0, 0, 0, 0, 0];
@@ -245,8 +251,7 @@ function openAnalytics() {
   const wd = [0, 0, 0, 0, 0, 0, 0]; recs.forEach(r => { const d = new Date(r.date); if (!isNaN(d)) wd[d.getDay()]++; });
   const WLBL = ["日", "一", "二", "三", "四", "五", "六"]; const maxW = Math.max(1, ...wd);
   // 速度趨勢（近 10 趟，由舊到新）
-  const paced = recs.filter(r => (r.elapsedMs || 0) > 6e4 && (r.distanceKm || 0) > 0)
-    .slice(0, 10).reverse().map(r => r.distanceKm / (r.elapsedMs / 3.6e6));
+  const paced = spd.slice(0, 10).reverse().map(x => x.v);
   // 各縣市踏遍：完成判定已改為「真實走過＋沒偏離步道 1km」自動標記（見 maybeMarkTrailDone），這裡直接用 done
   const doneSet = new Set();
   if (typeof TRAILS !== "undefined") TRAILS.forEach(t => { if (Store.trailLog(t.id).done) doneSet.add(String(t.id)); });
@@ -264,11 +269,12 @@ function openAnalytics() {
     <div class="ana-pbs">
       ${pb("單次最長", (longest ? longest.distanceKm || 0 : 0).toFixed(2) + " km")}
       ${pb("單次最大爬升", "↑" + Math.round(steepest ? steepest.ascent || 0 : 0) + " m")}
-      ${pb("最快平均配速", fastest.toFixed(1) + " km/h")}
-      ${pb("整體平均配速", avgPace.toFixed(1) + " km/h")}
-      ${pb("最常走", favTrail ? `<span>${escHtml(ttT(favTrail))}</span>${ttParen(`${tc[favTrail]} ${ttT("次")}`)}` : "—")}
+      ${fastest ? pb("最快平均時速", fastest.toFixed(1) + " km/h") : ""}
+      ${avgPace ? pb("整體平均時速", avgPace.toFixed(1) + " km/h") : ""}
+      ${favTrail ? pb("最常走", `<span translate="no">${escHtml(ttT(favTrail))}</span>${ttParen(`${tc[favTrail]} ${ttT("次")}`)}`) : ""}
     </div>
-    ${paced.length >= 2 ? `<div class="ana-sec">速度趨勢</div>${paceBars(paced)}<div class="ana-spark-cap">${ttT("每根是一趟的平均時速，最右邊是最近一趟")}</div>` : ""}
+    <div class="ana-spark-cap">${ttT("時速用移動時間算，休息不算在內")}</div>
+    ${paced.length >= 2 ? `<div class="ana-sec">速度趨勢</div>${paceBars(paced)}<div class="ana-spark-cap">${ttT("每根是一趟的移動時速，最右邊是最近一趟")}</div>` : ""}
     <div class="ana-sec">難度分布</div>
     ${diffN.slice(1, 6).some(c => c > 0) ? diffRadar(diffN.slice(1, 6), DLBL.slice(1)) : `<div class="ana-empty-note">還沒走過有分級的步道</div>`}
     ${diffN[6] ? `<div class="ana-spark-cap">${ic("snow")} <span>${ttT("雪季限定")}</span> <b>${diffN[6]}</b></div>` : ""}
@@ -279,6 +285,7 @@ function openAnalytics() {
       <div class="ana-row"><div class="ana-m">${mLabel(m)}</div>
         <div class="ana-bar kcal"><i style="width:${Math.round(by[m].kcal / maxKcal * 100)}%"></i></div>
         <div class="ana-v"><b>${Math.round(by[m].kcal).toLocaleString()}</b> kcal</div></div>`).join("")}</div>
+    <div class="ana-spark-cap">${ttT("估算值，依體重、距離和爬升")}</div>
     <div class="ana-sec">一週節律</div>
     <div class="ana-week">${wd.map((c, i) => `<div class="aw"><div class="aw-v">${c}</div><div class="aw-bar" style="height:${Math.round(c / maxW * 46) + 4}px"></div><div class="aw-l">${WLBL[i]}</div></div>`).join("")}</div>
     <div class="ana-spark-cap">星期幾最常出門</div>
@@ -317,7 +324,7 @@ function openAnalytics() {
     <div class="ana-list">${months.map(m => `
       <div class="ana-row"><div class="ana-m">${mLabel(m)}</div>
         <div class="ana-bar"><i style="width:${Math.round(by[m].km / maxKm * 100)}%"></i></div>
-        <div class="ana-v"><b>${by[m].km.toFixed(1)}</b> km・↑${Math.round(by[m].asc)} m・${by[m].n} ${ttT("次")}</div></div>`).join("")}</div>
+        <div class="ana-v"><b>${by[m].km.toFixed(1)}</b> km・↑${Math.round(by[m].asc)} m・${ttCount(by[m].n, "trip")}</div></div>`).join("")}</div>
     ${pro ? proInner : proLocked}`
     : `<div class="social-empty"><span class="ee">${ic("target")}</span>還沒有行程。走完第一趟，這裡就熱鬧了。</div>`}
   </div>`;

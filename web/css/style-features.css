@@ -767,6 +767,8 @@ html[data-theme="dark"] .disc-sec, html[data-theme="dark"] .feed-trending-h { co
 .comp-thumb { flex: 0 0 auto; }
 
 /* 揪團活動卡 */
+.ev-disc { display: flex; gap: 8px; align-items: flex-start; font-size: calc(12.5px * var(--fs, 1)); line-height: 1.55; color: var(--ink-soft); background: var(--surface-2); border: 1px dashed var(--line); border-radius: var(--r-sm); padding: 9px 11px; margin: 0 0 10px; }
+.ev-disc .ic { width: 15px; height: 15px; flex: none; margin-top: 2px; color: var(--brand-deep); }
 .ev-card { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 13px 14px; margin-bottom: 10px; }
 .ev-when { font-family: var(--num); font-size: calc(13px * var(--fs, 1)); font-weight: 700; color: var(--accent); }
 .ev-title { font-family: var(--serif); font-size: calc(16px * var(--fs, 1)); font-weight: 700; margin: 4px 0; }
@@ -1402,8 +1404,8 @@ html[data-theme="dark"] .rh-num { color: #d7ecd9; }
   font-size: calc(12.5px * var(--fs, 1)); padding: 8px 4px 0; cursor: pointer; }
 .me-login .ic { width: 15px; height: 15px; }
 /* 頁內跳轉 */
-.me-jump { display: flex; gap: 8px; margin: 12px 0 4px; }
-.me-jump-b { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px; border: 1px solid var(--line); background: var(--surface);
+.me-jump { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 4px; }
+.me-jump-b { flex: 1 1 auto; display: inline-flex; align-items: center; justify-content: center; gap: 5px; border: 1px solid var(--line); background: var(--surface);
   border-radius: 999px; padding: 8px 6px; font-size: calc(12.5px * var(--fs, 1)); font-weight: 700; color: var(--brand-deep); cursor: pointer; white-space: nowrap; }
 .me-jump-b .ic { width: 14px; height: 14px; margin: 0; }
 #histHead, #setZone, #meMonth { scroll-margin-top: calc(var(--hdr-h, 60px) + 10px); }

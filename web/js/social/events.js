@@ -3,9 +3,11 @@ const Events = (() => {
   const esc = s => Supa.esc(s);
   function fmt(iso) {
     const d = new Date(iso);
-    return d.toLocaleString(ttLocale(), { month: "numeric", day: "numeric", weekday: "short", hour: "2-digit", minute: "2-digit" });
+    return d.toLocaleString(ttLocale(), { month: "numeric", day: "numeric", weekday: "short", hour: "numeric", minute: "2-digit" });
   }
   const T = s => (typeof ttT === "function" ? ttT(s) : s);
+  // 揪團是山友自己約的，不是 App 辦的活動：講清楚責任歸屬，也提醒出發前該確認的事（入山／入園申請、保險、留行程給家人）
+  const disc = () => `<div class="ev-disc">${ic("info")}<span>${T("揪團由山友自行發起，不是本 App 舉辦的活動。出發前請自己確認路況、天氣、入山／入園申請和保險，並把行程留給家人。")}</span></div>`;
   async function me() { const c = Supa.client(); if (!c) return null; const { data } = await Supa.meUser(); return data && data.user ? data.user.id : null; }
 
   async function open(presetTrail) {
@@ -48,7 +50,7 @@ const Events = (() => {
       for (const r of (my || [])) mine.add(r.event_id);
     }
     body.className = "pv-body";
-    body.innerHTML = data.map(e => {
+    body.innerHTML = disc() + data.map(e => {
       const going = mine.has(e.id), n = counts[e.id] || 0, isMine = e.creator_id === myId;
       const cname = (e.creator && (e.creator.display_name || e.creator.handle)) || T("山友");
       return `<div class="ev-card" data-id="${e.id}">
@@ -101,6 +103,7 @@ const Events = (() => {
       <div class="ev-err" data-for="evWhen" hidden></div>
       <label class="ob-l" for="evNote">${T("說明（集合地點、裝備、注意事項…）")}</label>
       <textarea id="evNote" class="comp-cap" maxlength="1000" placeholder="${T("選填")}"></textarea>
+      ${disc()}
       <div class="auth-msg" id="evMsg"></div>
       <button class="btn primary" id="evSave">${T("發起揪團")}</button>
       <button class="btn ghost" id="evBack">${T("取消")}</button></div>`;

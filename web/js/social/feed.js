@@ -13,7 +13,7 @@ const Feed = (() => {
   function statsHtml(p) {
     const parts = [];
     if (p.distance_km != null) parts.push(`${(+p.distance_km).toFixed(1)} km`);   // 一位小數，跟 App 其他地方一致
-    if (p.ascent != null) parts.push(`↑${Math.round(p.ascent)} m`);
+    if (p.ascent != null) parts.push(`↑${Math.round(p.ascent).toLocaleString()} m`);
     const stars = p.rating ? `<span class="fc-rate" aria-label="${p.rating}/5">${"★".repeat(p.rating)}<i>${"★".repeat(5 - p.rating)}</i></span>` : "";
     return (parts.length ? `<span class="fc-stats">${parts.join(" · ")}</span>` : "") + stars;
   }

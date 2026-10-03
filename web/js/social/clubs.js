@@ -186,7 +186,7 @@ const Clubs = (() => {
       const rows = data || [], any = rows.some(r => +r.km > 0);
       box.innerHTML = `<div class="club-note">${T("最近 7 天，成員發到社群的行程加總")}</div>` + rows.map((r, i) => {
         const rank = +r.km > 0 ? i + 1 : null;
-        return `<div class="club-rank${rank && rank <= 3 ? " top" + rank : ""}" data-uid="${esc(r.user_id)}"><span class="club-no">${rank || "–"}</span>${avatar(r)}<span class="club-rank-n">${esc(r.display_name || r.handle || T("山友"))}</span><span class="club-rank-v"><b>${Math.round(+r.km * 10) / 10}</b> km<small>${T("%d 趟").replace("%d", r.hikes)}${r.ascent ? ` · ↑${r.ascent} m` : ""}</small></span></div>`;
+        return `<div class="club-rank${rank && rank <= 3 ? " top" + rank : ""}" data-uid="${esc(r.user_id)}"><span class="club-no">${rank || "–"}</span>${avatar(r)}<span class="club-rank-n">${esc(r.display_name || r.handle || T("山友"))}</span><span class="club-rank-v"><span class="club-rank-km"><b>${Math.round(+r.km * 10) / 10}</b> km</span><small>${T("%d 趟").replace("%d", r.hikes)}${r.ascent ? ` · ↑${Math.round(+r.ascent).toLocaleString()} m` : ""}</small></span></div>`;
       }).join("") + (any ? "" : `<div class="club-none">${T("這週還沒有人發行程。走完記得發到社群，就會算進來。")}</div>`);
       box.querySelectorAll(".club-rank").forEach(r => r.addEventListener("click", () => { if (typeof Discover !== "undefined") Discover.openProfile(r.dataset.uid); }));
     } else if (_view.tab === "members") {

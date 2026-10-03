@@ -129,6 +129,8 @@ function renderOfflineSets() {
     refreshOfflineStatus(); toast(ttT("刪掉了"));
   }));
 }
+// 診斷／回報問題只給網頁版：App（iOS 原生殼）整段藏起來
+{ const C = window.Capacitor, w = $("#diagWrap"); if (w && C && C.isNativePlatform && C.isNativePlatform()) w.hidden = true; }
 $("#btnDiag").addEventListener("click", async () => {
   const errs = (window.ttErrors ? window.ttErrors() : []);
   const g = fn => { try { const v = fn(); return (v == null ? "?" : v); } catch (e) { return "?"; } };
