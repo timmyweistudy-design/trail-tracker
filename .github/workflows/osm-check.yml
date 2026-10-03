@@ -1,0 +1,36 @@
+name: OSM trail check
+# 每季（1、4、7、10 月 1 號）比對 OpenStreetMap 健行路線跟 App 內建的 osm-<關係 id>（scripts/osm-diff.js）：
+# 下架、改名、上次抓取後的新路線。有差異就開／更新一張 issue。Overpass 連不上就讓流程失敗（會寄信）。
+on:
+  schedule:
+    - cron: "0 2 1 1,4,7,10 *"   # 台灣 10:00
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  diff:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare with OpenStreetMap
+        id: d
+        run: |
+          set +e
+          node scripts/osm-diff.js > diff.md; code=$?
+          cat diff.md
+          echo "code=$code" >> $GITHUB_OUTPUT
+          if [ $code = 1 ]; then exit 1; fi
+          exit 0
+      - name: Open or update issue
+        if: steps.d.outputs.code == '2'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          T="步道資料有更新（OpenStreetMap）"
+          N=$(gh issue list --state open --search "$T in:title" --json number -q '.[0].number')
+          if [ -n "$N" ]; then gh issue edit "$N" --body-file diff.md; echo "更新 issue #$N"
+          else gh issue create --title "$T" --body-file diff.md; fi
