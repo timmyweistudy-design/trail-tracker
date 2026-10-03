@@ -4,6 +4,12 @@
 // 步道名稱/介紹等資料內容維持中文。要補翻譯：加 DICT 詞條或 PATTERNS 規則即可。
 const I18n = (() => {
   const DICT = {
+    "結算頁比較這次和平常的移動速度、時速趨勢": "Hike summary compares this hike's moving speed with your usual; speed trend",
+    "這次 vs 平常速度": "This hike vs usual speed",
+    "隊長按「開始」，全隊一起記錄；隊員先在記錄頁按「準備」。隊長沒訊號時，隊員也能自己按「結束」。": "The leader taps \"Start\" and the whole team records together; members tap \"Ready\" on the Record page first. If the leader has no signal, members can tap \"Finish\" themselves.",
+    "難度前面有「≈」的是 OpenStreetMap 社群步道，等級是照長度和爬升推估的，參考就好；林業署的步道才是官方分級。出門前記得再看一下路況和天氣。": "A \"≈\" before the difficulty marks an OpenStreetMap community trail — its grade is estimated from length and ascent, so treat it as a guide. Forestry Agency trails carry the official grade. Check conditions and weather before you go.",
+    "個人紀錄、時速趨勢、難度雷達、每月卡路里、年度回顧與山行故事（每頁存成限動圖）、匯出 GPX/CSV/KML": "Personal records, speed trend, difficulty radar, monthly calories, Year in Review and story (each page saves as a Story image), GPX/CSV/KML export",
+    "個人紀錄・時速趨勢・難度分布・年度比較・一週節律・匯出 CSV/GPX/KML": "Records · Speed trend · Difficulty · Yearly compare · Weekly rhythm · CSV/GPX/KML export",
     "讓大家知道哪個時段人多。只送步道、出發時間和走多久，不送軌跡和位置；別人只看得到 3 人以上的統計，看不到是誰": "Shows when trails get busy. Sends only the trail, start time and duration — no track or location. Others see totals only (3+ people), never who.",
     "揪團由山友自行發起，不是本 App 舉辦的活動。出發前請自己確認路況、天氣、入山／入園申請和保險，並把行程留給家人。": "Group hikes are set up by hikers themselves, not organised by this app. Before you go, check trail conditions, weather, mountain/park permits and insurance, and leave your plan with family.",
     "最快平均時速": "Fastest avg speed",

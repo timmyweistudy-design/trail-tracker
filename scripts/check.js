@@ -204,7 +204,7 @@ try {
     const src2 = read(f);
     for (const m of src2.matchAll(/[>"`]([^<>`"$\\{}]*[\u4e00-\u9fff][^<>`"$\\{}]*)[<"`$]/g)) {
       const t = m[1].trim();
-      if (!t || t.length < 2 || t.length > 40) continue;
+      if (!t || t.length < 2 || t.length > 200) continue;   // 以前上限 40：付費牆一段 50 字的說明改版後漏翻也沒抓到
       if (ignore.has(t)) continue;
       const r = tx(t);
       // 半翻先判：tx 翻得出來但結果仍有中文 = 真半翻，幾乎不可能是程式碼片段，

@@ -276,6 +276,8 @@ async function toggleDebugPanel() {
       ["🔎一句話搜尋", closeAnd(() => { const tab = document.querySelector('.tab[data-view="explore"]'); if (tab) tab.click(); setTimeout(() => { const i = document.getElementById("searchInput"); if (!i) return; i.value = "台北 3 小時內 有瀑布 不要太陡"; i.dispatchEvent(new Event("input", { bubbles: true })); }, 300); })],
       ["🐾拜訪夥伴範例", closeAnd(async () => { if (window.loadSocial) await window.loadSocial(); Pets.visit({ id: "demo", handle: "mei_trail", pet_name: "毛毛", pet_level: 5, total_km: 420 }, false, null); })],
       ["🏔山社", closeAnd(async () => { if (window.loadSocial) await window.loadSocial(); Clubs.open(); })],
+      ["📅揪團（免責提醒）", closeAnd(async () => { if (window.loadSocial) await window.loadSocial(); Events.open(); })],
+      ["📊進階分析", closeAnd(() => openAnalytics())], ["🗓年度回顧", closeAnd(() => openYearReview())],
       ["🧾結算頁範例", closeAnd(async () => {   // 一趟真的（非模擬）的金瓜寮：看收穫、移動時間、跟預估比、這趟的海拔
         const t = TRAILS.find(x => x.id === "forestry-004"); await ensureGeo(t.region);
         const pts = [].concat(...geoOf(t)); let tt = Date.now() - 3 * 3.6e6; const t0 = tt;

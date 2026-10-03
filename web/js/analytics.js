@@ -301,7 +301,7 @@ function openAnalytics() {
     <div class="ana-lock">
       <div class="ana-lock-ic">${ic("sparkle")}</div>
       <b>進階分析（PRO）</b>
-      <div class="ana-lock-d">個人紀錄・配速・難度分布・年度比較・一週節律・匯出 CSV/GPX</div>
+      <div class="ana-lock-d">個人紀錄・時速趨勢・難度分布・年度比較・一週節律・匯出 CSV/GPX/KML</div>
       <button class="btn primary" id="anaUp" style="max-width:220px;margin:12px auto 0">升級 Premium 解鎖</button>
     </div>`;
 

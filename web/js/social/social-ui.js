@@ -46,6 +46,7 @@ const SocialUI = (() => {
       </div>
       <div id="subBody"></div>`);
     document.querySelectorAll(".sub-tab").forEach(b => b.addEventListener("click", () => { if (b.dataset.sub === sub) return; sub = b.dataset.sub; shell(); }));
+    { const on = document.querySelector(".social-subnav .sub-tab.on"), nav = on && on.parentElement; if (nav) requestAnimationFrame(() => { if (nav.scrollWidth > nav.clientWidth) nav.scrollLeft = Math.min(nav.scrollWidth, on.offsetLeft + on.offsetWidth - nav.clientWidth + 12); }); }   // 大字時分頁列可橫滑：把目前這頁捲到看得到
     const myGen = ++_renderGen;   // 這次 shell 的世代；晚回來的舊渲染(myGen 過期)一律不寫入
     const into = html => { if (myGen !== _renderGen) return; const e = document.getElementById("subBody"); if (e) e.innerHTML = html; };
     // 本機隱藏清單以資料庫的檢舉紀錄為準（跨裝置撤回也會生效）。動態牆要等同步完再抓，
