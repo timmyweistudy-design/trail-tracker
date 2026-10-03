@@ -64,8 +64,9 @@ async function capture(b, lang) {
   await p.evaluate(() => openDetail("forestry-027")); await p.waitForTimeout(800);
   await p.evaluate(() => { const b = document.querySelector('#detailNav [data-tab="pre"]'); if (b) b.click(); });   // 2026-10 改版：天氣在「出發前」
   await p.waitForFunction(() => document.querySelector("#summitWx .smt"), null, { timeout: 20000 }).catch(() => {});
-  await p.evaluate(() => { const s = document.getElementById("summitWx"); if (s) s.scrollIntoView({ block: "start" }); });
-  await p.evaluate(() => { const sc = document.querySelector(".sheet-body, .detail-body, #detailSheet .sheet-scroll"); if (sc) sc.scrollTop -= 90; else window.scrollBy(0, -90); });
+  // 山頂天氣標題對齊在黏頂頁籤列下方
+  await p.evaluate(() => { const sh = document.getElementById("detailSheet"), s = document.querySelector("#summitWx .smt"), nav = document.getElementById("detailNav");
+    if (sh && s) sh.scrollTop += s.getBoundingClientRect().top - sh.getBoundingClientRect().top - (nav ? nav.offsetHeight : 0) - 10; });
   await p.waitForTimeout(600); await shot("02-summit");
   await p.keyboard.press("Escape"); await p.waitForTimeout(600);
 

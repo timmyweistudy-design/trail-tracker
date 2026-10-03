@@ -703,3 +703,4 @@ html[data-theme="dark"] .btn.auth-apple { background: #fff; color: #000; border-
 .dv-wx-row .link-btn { background: transparent; color: var(--brand); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 3px 10px; }
 html[data-theme="dark"] .dv-wx-row .link-btn { color: var(--ok-ic); }
 .dv-terr { font-size: .9em; opacity: .8; }
+.dv-sun-plan > span { flex: 1 1 0; min-width: 0; }
