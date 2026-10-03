@@ -576,3 +576,11 @@ html[data-theme="dark"] .btn.auth-apple { background: #fff; color: #000; border-
 .rules-list li { margin: 4px 0; }
 .rules-note { margin: 0 0 10px; color: var(--muted); font-size: calc(13px * var(--fs, 1)); }
 .rules-link { color: var(--accent); font-weight: 600; font-size: calc(13.5px * var(--fs, 1)); }
+
+/* App 內看使用條款／隱私權政策（js/moderation.js ttOpenDoc）：要疊在確認框上面 */
+.doc-ov { position: fixed; inset: 0; z-index: 9600; background: rgba(22,30,20,.55); display: flex; align-items: flex-end; justify-content: center; padding-top: calc(var(--safe-t) + 12px); }
+.doc-card { background: var(--bg); width: 100%; max-width: 640px; height: 100%; border-radius: 22px 22px 0 0; display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--sh-lg); }
+.doc-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px 10px 18px; border-bottom: 1px solid var(--line-soft); }
+.doc-head b { font-size: calc(16px * var(--fs, 1)); }
+.doc-head .sheet-close { position: static; flex: 0 0 auto; }
+.doc-frame { flex: 1 1 auto; width: 100%; border: 0; background: #f4f1e8; padding-bottom: var(--safe-b); }

@@ -144,6 +144,7 @@ const Premium = (() => {
   const SITE = "https://trail-tracker-0ma5.onrender.com";
   const EULA = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
   function openLegal(which) {
+    if (which !== "terms" && typeof ttOpenDoc === "function") { ttOpenDoc("privacy"); return; }   // 自己的隱私權政策：App 內有關閉鍵的面板
     const url = which === "terms" ? EULA : SITE + "/privacy.html";
     const B = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser;
     if (B) { B.open({ url }).catch(() => window.open(url, "_blank")); return; }   // 原生：開系統瀏覽器，不要在 App 內導航離開

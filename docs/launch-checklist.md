@@ -54,6 +54,7 @@
 ---
 
 ## ⬜ 送審（使用者操作，步驟見 `docs/app-store-submit.md`）
+- [ ] **解除自用模式**：`web/js/config.js` 的 `PERSONAL_MODE` 改 `false`；刪掉 `web/robots.txt`，並拿掉 `index.html`／`privacy.html`／`terms.html`／`support.html` 的 `<meta name="robots" content="noindex, nofollow">`；Supabase 重新打開「Allow new users to sign up」
 - [ ] App Store Connect 填：副標/描述/關鍵字/What's New
 - [ ] 上傳截圖（6.9" 那格）
 - [ ] App Privacy 問卷（**別漏 Diagnostics ▸ Other Diagnostic Data**）

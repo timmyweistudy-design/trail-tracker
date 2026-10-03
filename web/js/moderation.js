@@ -45,8 +45,23 @@ function ttOpenUrl(url) {
   window.open(url, "_blank", "noopener");
 }
 const TT_SITE_URL = () => window.TT_SITE || "https://trail-tracker-0ma5.onrender.com";
+// 自己的說明頁（使用條款、隱私權政策）：在 App 裡開一層有「✕」的面板，載入 App 內附的那份（離線也看得到）。
+// 以前用新分頁開：加到主畫面的網頁版會直接在原畫面跳過去，沒有返回／關閉鍵，只能整個關掉重開。
+function ttOpenDoc(page) {
+  if (document.querySelector('[data-ov="doc"]')) return;
+  const ov = document.createElement("div"); ov.className = "doc-ov"; ov.dataset.ov = "doc";
+  ov.innerHTML = `<div class="doc-card" role="dialog" aria-modal="true"><div class="doc-head"><b>${page === "terms" ? ttT("使用條款與社群規範") : ttT("隱私權政策")}</b><button class="sheet-close" id="docX" aria-label="${ttT("關閉")}">${typeof ic === "function" ? ic("x") : "✕"}</button></div><iframe class="doc-frame" src="${page}.html" title="${page}"></iframe></div>`;
+  document.body.appendChild(ov);
+  let _a11y = null;
+  const close = () => { document.removeEventListener("keydown", onKey, true); if (_a11y) _a11y(); ov.remove(); };
+  const onKey = e => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); } };   // 開在確認框上面時，Esc 只關這層
+  document.addEventListener("keydown", onKey, true);
+  if (typeof ttModalA11y === "function") _a11y = ttModalA11y(ov, close, { focus: "#docX" });
+  ov.querySelector("#docX").addEventListener("click", close);
+  ov.addEventListener("click", e => { if (e.target === ov) close(); });
+}
 document.addEventListener("click", e => {
   const a = e.target.closest && e.target.closest("a.rules-link");
-  if (a) { e.preventDefault(); ttOpenUrl(a.href); }
+  if (a) { e.preventDefault(); ttOpenDoc("terms"); }
 });
-if (typeof window !== "undefined") Object.assign(window, { ttBadWord, ttCleanOk, ttRulesGate, ttRulesAgreed, ttOpenUrl });
+if (typeof window !== "undefined") Object.assign(window, { ttBadWord, ttCleanOk, ttRulesGate, ttRulesAgreed, ttOpenUrl, ttOpenDoc });

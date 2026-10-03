@@ -141,9 +141,8 @@ const Profiles = (() => {
       </div>`);
     document.getElementById("stShare").addEventListener("click", () => shareHandle(prof));
     document.getElementById("stCrowd").addEventListener("change", e => { try { if (e.target.checked) localStorage.removeItem("tt_crowd_off"); else localStorage.setItem("tt_crowd_off", "1"); } catch (er) { /* */ } say(e.target.checked ? "會匿名分享出發時間" : "不再分享出發時間"); });
-    const site = window.TT_SITE || "https://trail-tracker-0ma5.onrender.com";
-    document.getElementById("stTerms").addEventListener("click", () => ttOpenUrl(site + "/terms.html"));
-    document.getElementById("stPrivacy").addEventListener("click", () => ttOpenUrl(site + "/privacy.html"));
+    document.getElementById("stTerms").addEventListener("click", () => ttOpenDoc("terms"));
+    document.getElementById("stPrivacy").addEventListener("click", () => ttOpenDoc("privacy"));
     document.getElementById("stSignout").addEventListener("click", async () => {
       if (!(await ttConfirm(T("要登出嗎？這台手機上的行程不會刪掉。"), T("登出"), T("取消")))) return;   // 登出可以再登入，不算破壞性
       const btn = document.getElementById("stSignout"); if (btn) btn.disabled = true;

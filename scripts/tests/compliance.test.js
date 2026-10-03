@@ -49,8 +49,19 @@ const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:390,height:
  await p.evaluate(()=>{window.__opened=[];window.open=u=>{window.__opened.push(u);};});
  await p.click('.tab[data-view="social"]');await p.waitForTimeout(1500);await p.evaluate(()=>SocialUI.go("me"));await p.waitForTimeout(900);
  await p.click("#pfSettings");await p.waitForTimeout(900);
- await p.click("#stTerms");await p.click("#stPrivacy");
- ok(await p.evaluate(()=>window.__opened.some(u=>/terms\.html$/.test(u))&&window.__opened.some(u=>/privacy\.html$/.test(u))),"settings links to terms + privacy");
+ await p.click("#stTerms");await p.waitForTimeout(900);
+ ok(await p.evaluate(()=>{const f=document.querySelector('[data-ov="doc"] iframe');return f&&/terms\.html$/.test(f.getAttribute("src"))&&!window.__opened.length&&/零容忍/.test(f.contentDocument.body.innerText)}),"settings → terms in in-app panel (not a new page)");
+ await p.screenshot({path:O+"doc.png"});
+ await p.click("#docX");await p.waitForTimeout(300);ok(await p.evaluate(()=>!document.querySelector('[data-ov="doc"]')&&!!document.getElementById("stPrivacy")),"✕ closes panel, back on settings");
+ await p.click("#stPrivacy");await p.waitForTimeout(500);ok(await p.evaluate(()=>/privacy\.html$/.test(document.querySelector('[data-ov="doc"] iframe').getAttribute("src"))),"privacy opens in panel");
+ await p.keyboard.press("Escape");await p.waitForTimeout(300);ok(await p.evaluate(()=>!document.querySelector('[data-ov="doc"]')&&!!document.getElementById("stPrivacy")),"Esc closes only the panel");
+ // 從社群規範對話框裡點「完整使用條款」：疊在上面，關掉後對話框還在
+ await p.evaluate(()=>{localStorage.removeItem("tt_rules_ok");window.__gate=ttRulesGate();});await p.waitForTimeout(400);
+ await p.click(".rules-link");await p.waitForTimeout(500);
+ ok(await p.evaluate(()=>{const d=document.querySelector('[data-ov="doc"]'),g=document.querySelector(".ttdlg-ov");return d&&g&&+getComputedStyle(d).zIndex>+getComputedStyle(g).zIndex}),"terms panel opens above rules dialog");
+ await p.keyboard.press("Escape");await p.waitForTimeout(300);
+ ok(await p.evaluate(()=>!document.querySelector('[data-ov="doc"]')&&!!document.querySelector(".ttdlg-ov")),"Esc closes panel, rules dialog stays");
+ await p.click(".ttdlg .btn.primary");await p.waitForTimeout(300);
  await p.close();}
 // 商用金鑰 → customer-api
 {const p=await mk({key:"TESTKEY"});await p.evaluate(()=>Weather.get(24.1,121.1));await p.waitForTimeout(300);
@@ -66,6 +77,7 @@ const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:390,height:
  ok(await p.evaluate(()=>window.__oauth&&window.__oauth.provider==="apple"),"Apple button calls OAuth with provider apple");await p.close();}
 // 使用條款頁
 {const ctx=await b.newContext({viewport:{width:390,height:844}});const p=await ctx.newPage();await p.goto("http://localhost:8897/terms.html");
- const t=await p.evaluate(()=>document.body.innerText);ok(/112/.test(t)&&/零容忍/.test(t)&&/24 小時/.test(t)&&/zero tolerance/.test(t)&&/Apple Standard EULA/.test(t),"terms page has safety disclaimer, zero tolerance, EN version");
+ const t=await p.evaluate(()=>document.body.innerText);ok(await p.evaluate(()=>/noindex/.test((document.querySelector('meta[name="robots"]')||{}).content||"")),"terms page noindex");
+ ok(/112/.test(t)&&/零容忍/.test(t)&&/24 小時/.test(t)&&/zero tolerance/.test(t)&&/Apple Standard EULA/.test(t),"terms page has safety disclaimer, zero tolerance, EN version");
  ok(await p.evaluate(()=>document.documentElement.scrollWidth<=391),"terms page fits 390");await p.screenshot({path:O+"terms.png"});await ctx.close();}
 console.log("ERRS",JSON.stringify(errs));console.log("FAILS",fails);await b.close();srv.kill();})();

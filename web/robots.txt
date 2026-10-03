@@ -1,0 +1,3 @@
+# 自用模式：不讓搜尋引擎收錄（正式上架前刪掉這個檔，見 docs/launch-checklist.md）
+User-agent: *
+Disallow: /
