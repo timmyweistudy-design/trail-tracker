@@ -501,6 +501,7 @@ async function loadPhoto(t) {
     if (items.length > 1) {
       const dots = car.querySelector(".hero-dots");
       car.addEventListener("scroll", () => {
+        if (!car.clientWidth) return;   // 切到地圖時輪播被藏起來、寬度 0 → 0 除會變 NaN，items[NaN].credit 就噴錯（client_errors 實際記到）
         const i = Math.max(0, Math.min(items.length - 1, Math.round(car.scrollLeft / car.clientWidth)));
         dots.querySelectorAll("span").forEach((s, k) => s.classList.toggle("on", k === i));
         setCredit(i);
