@@ -35,6 +35,12 @@ const PET_BG = [
 // 排除模擬；過快(交通工具)的移動段在記錄端就已不計入里程
 const isFootRec = r => !r.sim && !r.vehicle;   // 模擬、車速自動斷掉的整趟都不計里程
 function realRecords() { return Store.getRecords().filter(isFootRec); }
+// 總數（我的、進階分析共用同一套）：逐欄取「終身統計」與「現存紀錄合計」較大者——舊紀錄被容量保護砍掉也不縮水，兩頁數字也一致
+function ttTotals() {
+  const recs = realRecords(), lf = (Store.life && Store.life()) || {}, sum = f => recs.reduce((s, r) => s + (f(r) || 0), 0);
+  return { trips: Math.max(recs.length, lf.trips || 0), km: Math.max(sum(r => r.distanceKm), lf.km || 0), asc: Math.max(sum(r => r.ascent), lf.asc || 0),
+    kcal: Math.max(sum(r => r.kcal), lf.kcal || 0), steps: Math.max(sum(r => r.steps), lf.steps || 0), ms: Math.max(sum(r => r.elapsedMs), lf.ms || 0) };
+}
 function debugKm() { return +(localStorage.getItem("tt_debug_km") || 0); }   // 測試用里程偏移
 // 總里程取「終身統計」與「現存紀錄合計」較大者：舊紀錄被容量保護砍掉，寵物/果實也不倒退
 function realTotalKm() { return Math.max(realRecords().reduce((s, r) => s + (r.distanceKm || 0), 0), (Store.life && Store.life().km) || 0) + debugKm(); }

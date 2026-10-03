@@ -4,6 +4,7 @@
 // 步道名稱/介紹等資料內容維持中文。要補翻譯：加 DICT 詞條或 PATTERNS 規則即可。
 const I18n = (() => {
   const DICT = {
+    "小時（含休息）": "Hours (incl. breaks)",
     "進階分析、年度回顧、足跡地圖和登頂收集冊都在這一排。": "Analytics, Year in Review, Footprint map and Summit log are all in this row.",
     "分析與回顧": "Analytics & review",
     "這一排是進階分析、年度回顧、足跡地圖和登頂收集冊；走到百岳、小百岳山頂附近會自動蓋章。": "This row has Advanced Analytics, Year in Review, Footprint map and the Summit log — reach near a Baiyue or Xiao Baiyue summit and it stamps automatically.",

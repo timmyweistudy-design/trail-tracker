@@ -56,7 +56,7 @@ const YearStory = (() => {
     const mara = d.km / 42.195, tw = d.km / 394;
     out.push({ key: "dist", theme: "dusk", kicker: T("這一年你走了"), big: fmt(d.km, d.km < 10 ? 1 : 0), unit: T("公里"), lines: [
       tw >= 1 ? T("差不多是台灣頭走到台灣尾 %s 趟").replace("%s", fmt(tw, 1)) : mara >= 1 ? T("≈ %s 場全程馬拉松").replace("%s", fmt(mara, 1)) : T("每一步都算數"),
-      d.steps ? T("一共 %s 步").replace("%s", fmt(d.steps)) : T("花了 %s 小時在山裡").replace("%s", fmt(d.hrs, 0)),
+      d.steps ? T("一共 %s 步").replace("%s", "≈" + fmt(d.steps)) : T("花了 %s 小時在山裡").replace("%s", fmt(d.hrs, 0)),
     ] });
     if (d.asc >= 50) out.push({ key: "climb", theme: "sky", kicker: T("往上爬了"), big: fmt(d.asc), unit: T("公尺"), lines: [
       d.asc >= 3952 * 0.5 ? T("≈ %s 座玉山疊起來").replace("%s", fmt(d.asc / 3952, 1)) : T("≈ %s 座台北 101").replace("%s", fmt(d.asc / 508, 1)),

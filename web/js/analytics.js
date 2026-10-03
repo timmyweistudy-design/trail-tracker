@@ -86,11 +86,11 @@ function openYearReview(year) {
       <div class="yr-stat"><b>${cuSpan(recs.length, "", 0)}</b><span>趟旅程</span></div>
       <div class="yr-stat"><b>${cuSpan(km, "", km < 100 ? 1 : 0)}</b><span>公里</span></div>
       <div class="yr-stat"><b>${cuSpan(asc, "↑", 0)}</b><span>公尺爬升</span></div>
-      <div class="yr-stat"><b>${cuSpan(hrs, "", 0)}</b><span>小時</span></div>
+      <div class="yr-stat"><b>${cuSpan(hrs, "", 0)}</b><span>小時（含休息）</span></div>
     </div>
     <div class="yr-sub">
-      <div><b>${cuSpan(steps, "", 0)}</b><span>步</span></div>
-      ${kcal > 0 ? `<div><b>${cuSpan(kcal, "", 0)}</b><span>大卡</span></div>` : ""}
+      <div><b>${cuSpan(steps, "≈", 0)}</b><span>步</span></div>
+      ${kcal > 0 ? `<div><b>${cuSpan(kcal, "≈", 0)}</b><span>大卡</span></div>` : ""}
       <div><b>${cuSpan(distinct, "", 0)}</b><span>條步道</span></div>
     </div>
     <div class="yr-months">${mk.map((v, i) => `<div class="yr-mo"><div class="yr-mo-v">${v > 0 ? (v >= 10 ? Math.round(v) : v.toFixed(1)) : ""}</div><div class="yr-mo-bar" style="height:${Math.round(v / mkMax * 46) + 3}px;animation-delay:${(i * 0.04).toFixed(2)}s"></div><span>${i + 1}</span></div>`).join("")}</div>
@@ -175,7 +175,7 @@ function drawYearImage(d) {
   }
   x.fillStyle = "#e0b15a"; x.font = "700 76px 'TaipeiSans', sans-serif"; x.fillText(String(d.year), W / 2, 200);
   x.fillStyle = "#f3efe4"; x.font = "600 21px 'TaipeiSans', sans-serif"; x.fillText(ttT("我的山行回顧"), W / 2, 234);
-  const stats = [[d.n, ttT("趟旅程")], [d.km < 100 ? d.km.toFixed(1) : Math.round(d.km), ttT("公里")], ["↑" + Math.round(d.asc), ttT("公尺爬升")], [Math.round(d.hrs), ttT("小時")]];
+  const stats = [[d.n, ttT("趟旅程")], [d.km < 100 ? d.km.toFixed(1) : Math.round(d.km), ttT("公里")], ["↑" + Math.round(d.asc), ttT("公尺爬升")], [Math.round(d.hrs), ttT("小時（含休息）")]];
   stats.forEach((s, i) => {
     const cx = W / 2 + (i % 2 ? 120 : -120), cy = 310 + Math.floor(i / 2) * 124;
     x.fillStyle = "rgba(255,255,255,.07)"; roundRect(x, cx - 110, cy - 46, 220, 104, 14); x.fill();
@@ -205,9 +205,8 @@ function openAnalytics() {
   const recs = realRecords();
   const pro = (typeof Premium !== "undefined") && Premium.isOn();
   const n = recs.length;
-  const totKm = recs.reduce((s, r) => s + (r.distanceKm || 0), 0);
-  const totAsc = recs.reduce((s, r) => s + (r.ascent || 0), 0);
-  const totHrs = recs.reduce((s, r) => s + (r.elapsedMs || 0), 0) / 3.6e6;
+  const T0 = ttTotals();   // 上面的總數跟「我的」同一套（含終身統計）；下面的圖表只能用現存紀錄
+  const totKm = T0.km, totAsc = T0.asc, totHrs = T0.ms / 3.6e6;
   // 每月里程
   const by = {};
   for (const r of recs) { const m = localYM(r.date); if (!m) continue; (by[m] = by[m] || { km: 0, asc: 0, n: 0, kcal: 0 }); by[m].km += r.distanceKm || 0; by[m].asc += r.ascent || 0; by[m].kcal += r.kcal || 0; by[m].n++; }
@@ -305,7 +304,7 @@ function openAnalytics() {
       <button class="btn primary" id="anaUp" style="max-width:220px;margin:12px auto 0">升級 Premium 解鎖</button>
     </div>`;
 
-  const totSteps = recs.reduce((s, r) => s + (r.steps || 0), 0);
+  const totSteps = T0.steps;
   const distinct = new Set(recs.filter(r => r.trailId || (r.trailName && r.trailName !== "自由路線")).map(r => r.trailId || r.trailName)).size;
   const ov = document.createElement("div"); ov.className = "pet-modal"; ov.dataset.ov = "analytics";
   ov.innerHTML = `<div class="pet-modal-card anim-seq">
@@ -313,18 +312,18 @@ function openAnalytics() {
     <h2>${ic("target")} 進階分析</h2>
     ${n ? `
     <div class="ana-cards">
-      ${card(n, "", 0, "總出行")}
+      ${card(T0.trips, "", 0, "總出行")}
       ${card(totKm, "", 1, "總里程 km")}
       ${card(totAsc, "↑", 0, "總爬升 m")}
-      ${card(totHrs, "", 1, "總時數 小時")}
-      ${card(totSteps, "", 0, "總步數")}
+      ${card(totHrs, "", 1, "小時（含休息）")}
+      ${card(totSteps, "≈", 0, "總步數")}
       ${card(distinct, "", 0, "走過的步道")}
     </div>
     <div class="ana-sec">每月里程</div>
     <div class="ana-list">${months.map(m => `
       <div class="ana-row"><div class="ana-m">${mLabel(m)}</div>
         <div class="ana-bar"><i style="width:${Math.round(by[m].km / maxKm * 100)}%"></i></div>
-        <div class="ana-v"><b>${by[m].km.toFixed(1)}</b> km・↑${Math.round(by[m].asc)} m・${ttCount(by[m].n, "trip")}</div></div>`).join("")}</div>
+        <div class="ana-v"><b>${by[m].km.toFixed(1)}</b> km・↑${Math.round(by[m].asc).toLocaleString()} m・${ttCount(by[m].n, "trip")}</div></div>`).join("")}</div>
     ${pro ? proInner : proLocked}`
     : `<div class="social-empty"><span class="ee">${ic("target")}</span>還沒有行程。走完第一趟，這裡就熱鬧了。</div>`}
   </div>`;

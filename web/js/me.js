@@ -522,19 +522,14 @@ function renderStats() {
   // 「走過的步道」＝真實紀錄裡出現過幾條不同步道（和進階分析同一個定義；自由路線不算）
   const walked = new Set(recs.filter(r => r.trailId || (r.trailName && r.trailName !== "自由路線")).map(r => r.trailId || r.trailName)).size;
   // 各欄取「終身統計」與「現存紀錄合計」較大者（舊紀錄被容量保護砍掉也不縮水）
-  const lf = (Store.life && Store.life()) || {};
-  const km = Math.max(recs.reduce((s, r) => s + (r.distanceKm || 0), 0), lf.km || 0);
-  const asc = Math.max(recs.reduce((s, r) => s + (r.ascent || 0), 0), lf.asc || 0);
-  const kcal = Math.max(recs.reduce((s, r) => s + (r.kcal || 0), 0), lf.kcal || 0);
-  const ms = Math.max(recs.reduce((s, r) => s + (r.elapsedMs || 0), 0), lf.ms || 0);
-  const hrs = ms / 3.6e6;
+  const T0 = ttTotals(), km = T0.km, asc = T0.asc, kcal = T0.kcal, hrs = T0.ms / 3.6e6;
   const cell = (to, pre, dec, l) => `<div class="mstat"><div class="mv" data-to="${to}" data-pre="${pre}" data-dec="${dec}">${pre}0</div><div class="ml">${l}</div></div>`;
   const html = `<div class="mstat-grid">
-    ${cell(Math.max(recs.length, lf.trips || 0), "", 0, "出行次數")}
+    ${cell(T0.trips, "", 0, "出行次數")}
     ${cell(km, "", 1, "總里程 km")}
     ${cell(asc, "↑", 0, "總爬升 m")}
-    ${cell(hrs, "", 1, "總時數 小時")}
-    ${cell(kcal, "", 0, "總卡路里")}
+    ${cell(hrs, "", 1, "小時（含休息）")}
+    ${cell(kcal, "≈", 0, "總卡路里")}
     ${cell(walked, "", 0, "走過的步道")}
   </div>`;
   if (box._last === html) return;   // 數字沒變：不重畫、不重播跳動動畫（以前每次切到「我的」都重跑一次）
