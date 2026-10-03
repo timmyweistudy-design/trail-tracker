@@ -277,7 +277,7 @@ async function toggleDebugPanel() {
       ["🐾拜訪夥伴範例", closeAnd(async () => { if (window.loadSocial) await window.loadSocial(); Pets.visit({ id: "demo", handle: "mei_trail", pet_name: "毛毛", pet_level: 5, total_km: 420 }, false, null); })],
       ["🏔山社", closeAnd(async () => { if (window.loadSocial) await window.loadSocial(); Clubs.open(); })],
       ["📅揪團（免責提醒）", closeAnd(async () => { if (window.loadSocial) await window.loadSocial(); Events.open(); })],
-      ["📊進階分析", closeAnd(() => openAnalytics())], ["🗓年度回顧", closeAnd(() => openYearReview())],
+      ["📊進階分析", closeAnd(() => ensureScript("js/analytics.js").then(() => openAnalytics()))], ["🗓年度回顧", closeAnd(() => ensureScript("js/analytics.js").then(() => openYearReview()))],   // analytics.js 延遲載入
       ["🧾結算頁範例", closeAnd(async () => {   // 一趟真的（非模擬）的金瓜寮：看收穫、移動時間、跟預估比、這趟的海拔
         const t = TRAILS.find(x => x.id === "forestry-004"); await ensureGeo(t.region);
         const pts = [].concat(...geoOf(t)); let tt = Date.now() - 3 * 3.6e6; const t0 = tt;

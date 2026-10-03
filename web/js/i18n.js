@@ -4,6 +4,10 @@
 // 步道名稱/介紹等資料內容維持中文。要補翻譯：加 DICT 詞條或 PATTERNS 規則即可。
 const I18n = (() => {
   const DICT = {
+    "進階分析、年度回顧、足跡地圖和登頂收集冊都在這一排。": "Analytics, Year in Review, Footprint map and Summit log are all in this row.",
+    "分析與回顧": "Analytics & review",
+    "這一排是進階分析、年度回顧、足跡地圖和登頂收集冊；走到百岳、小百岳山頂附近會自動蓋章。": "This row has Advanced Analytics, Year in Review, Footprint map and the Summit log — reach near a Baiyue or Xiao Baiyue summit and it stamps automatically.",
+    "你的個人檔案和發過的貼文。上面四顆鈕：編輯資料、看收藏、揪團、隱私與通知設定。": "Your profile and posts. The four buttons up top: edit profile, saved, group hikes, and privacy & notification settings.",
     "結算頁比較這次和平常的移動速度、時速趨勢": "Hike summary compares this hike's moving speed with your usual; speed trend",
     "這次 vs 平常速度": "This hike vs usual speed",
     "隊長按「開始」，全隊一起記錄；隊員先在記錄頁按「準備」。隊長沒訊號時，隊員也能自己按「結束」。": "The leader taps \"Start\" and the whole team records together; members tap \"Ready\" on the Record page first. If the leader has no signal, members can tap \"Finish\" themselves.",

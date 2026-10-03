@@ -173,8 +173,8 @@ function onboarding(force, opts) {
       p: "里程、爬升、連續天數達標就解鎖勳章。拿到就是你的，不會不見。" },
     { view: "me", sel: "#meMonth", e: ic("calendar"), h: "我的足跡",
       p: "這個月走了幾天、幾公里，一眼看完；往下是全部走過的路。" },
-    { view: "me", sel: "#btnPeaks", e: ic("mountain"), h: "登頂收集冊",
-      p: "走到百岳、小百岳山頂附近，就會自動蓋章。" },
+    { view: "me", sel: "#meLinks", e: ic("target"), h: "分析與回顧",
+      p: "進階分析、年度回顧、足跡地圖和登頂收集冊都在這一排。" },
     { view: "me", sel: ".set-zone-title", e: ic("sliders"), h: "設定",
       p: "字太小、想換深色、要備份資料，往下找這裡。" },
     { center: true, e: ic("sparkle"), h: "逛完了", p: "挑一條步道，出門走走吧。", last: true },
@@ -255,6 +255,7 @@ function onboarding(force, opts) {
       if (!huge && rr.width > 4 && rr.height > 4) r = rr;
     }
     place(r);
+    if (r && target) [350, 900].forEach(ms => setTimeout(() => { if (steps[i] !== st || !target.isConnected) return; const q = target.getBoundingClientRect(); if (Math.abs(q.top - r.top) > 2 || Math.abs(q.left - r.left) > 2 || Math.abs(q.height - r.height) > 2) { r = q; place(q); } }, ms));   // 目標畫面可能還在跑進場動畫／內容剛長出來 → 第一次量會偏，稍後再量兩次對準
   }
   show();
 }
@@ -320,6 +321,7 @@ window.ttCoach = function (flag, rawSteps, opts) {
       if (!huge && rr.width > 4 && rr.height > 4) r = rr;
     }
     place(r);
+    if (r && target) [350, 900].forEach(ms => setTimeout(() => { if (steps[i] !== st || !target.isConnected) return; const q = target.getBoundingClientRect(); if (Math.abs(q.top - r.top) > 2 || Math.abs(q.left - r.left) > 2 || Math.abs(q.height - r.height) > 2) { r = q; place(q); } }, ms));
   }
   show();
 };
@@ -359,7 +361,7 @@ window.ttCoachSocial = function (sub) {
     explore: { flag: "tt_coach_soc_explore", e: ic("compass"), h: "探索", p: "探索其他山友公開的健行足跡與旅程，替下次出遊找靈感。" },
     search: { flag: "tt_coach_soc_search", e: ic("search"), h: "搜尋山友", p: "用名稱或 @帳號找到山友，追蹤他們就能在動態看到更新。" },
     notif: { flag: "tt_coach_soc_notif", e: ic("bell"), h: "通知", p: "有人按讚、留言、追蹤你，或小隊邀請，都會出現在這裡。" },
-    me: { flag: "tt_coach_soc_me", e: ic("users"), h: "我的檔案", p: "你的個人檔案、發過的貼文和追蹤名單，也能在這裡編輯資料。" },
+    me: { flag: "tt_coach_soc_me", e: ic("users"), h: "我的檔案", p: "你的個人檔案和發過的貼文。上面四顆鈕：編輯資料、看收藏、揪團、隱私與通知設定。" },
   };
   const c = M[sub]; if (!c) return;
   window.ttCoach(c.flag, [{ center: true, e: c.e, h: c.h, p: c.p }], {});
