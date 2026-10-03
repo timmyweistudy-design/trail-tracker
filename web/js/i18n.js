@@ -4,6 +4,9 @@
 // 步道名稱/介紹等資料內容維持中文。要補翻譯：加 DICT 詞條或 PATTERNS 規則即可。
 const I18n = (() => {
   const DICT = {
+    "全馬腳力": "Marathon Legs",
+    "單次步行 ≥ 42.195 km（一場全馬的距離）": "One hike ≥ 42.195 km (a full marathon)",
+    "總爬升 8849 m（一座聖母峰）": "Total climb 8,849 m (one Everest)",
     "第一次走這條": "First time on this trail",
     "到過 %d 座山頂": "Reached %d summit(s)",
     "夥伴再 %s km 就進化": "Your buddy evolves in %s km",

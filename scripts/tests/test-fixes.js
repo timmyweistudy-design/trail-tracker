@@ -292,7 +292,10 @@ eval(fs.readFileSync(web("ecology.js"), "utf8") + "\n;globalThis.Ecology = Ecolo
   if (idm) {
     const map = JSON.parse(idm[1]), names = [...achSrc.matchAll(/\{ e: "[^"]*", n: "([^"]+)"/g)].map(m => m[1]);
     ok("每個成就都有 id（" + names.length + " 個）", names.length >= 40 && names.every(n => map[n]));
-    ok("成就 id 不重複", new Set(Object.values(map)).size === Object.values(map).length);
+    // 只看「現在清單上的成就」不能撞 id；改名時舊名字留在對照表指向同一個 id 是刻意的（已解鎖的才不會掉）
+    const cur = names.map(n => map[n]);
+    ok("成就 id 不重複", new Set(cur).size === cur.length);
+    ok("改名留下的舊名字都指向現有成就", Object.entries(map).filter(([n]) => !names.includes(n)).every(([, id]) => cur.includes(id)));
   }
 }
 

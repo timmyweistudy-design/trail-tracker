@@ -18,7 +18,7 @@ const ACH_CAT_OF = {
   "老山友": "trips", "百K俱樂部": "dist", "爬升大師": "climb", "連續一週": "streak", "健行馬拉松": "challenge", "走遍三縣": "explore",
   "山痴": "trips", "300K": "dist", "玉山高度": "climb", "半馬腳力": "challenge", "挑戰征服": "challenge", "四週堅持": "streak",
   "縱橫五百": "dist", "聖母峰高度": "climb", "走遍十縣": "explore", "步道收藏家": "explore", "月月不休": "streak",
-  "千里健行": "dist", "萬米爬升": "climb", "環島達人": "explore", "超馬腳力": "challenge", "兩百次山旅": "trips",
+  "千里健行": "dist", "萬米爬升": "climb", "環島達人": "explore", "超馬腳力": "challenge", "全馬腳力": "challenge", "兩百次山旅": "trips",
   // B 批新增
   "破曉行者": "time", "十萬步": "trips", "假日山友": "time", "兩百K": "dist",
   "走遍五縣": "explore", "拔升五百": "climb", "四季行者": "time",
@@ -26,7 +26,7 @@ const ACH_CAT_OF = {
 };
 // 成就固定 ID：以前解鎖清單、解鎖日期、分類都用「中文名稱」當 key，只要改一個成就的名字，
 // 已解鎖的就會變回沒解鎖。現在一律存 id；舊資料（含舊備份還原）在讀取時把名稱換成 id。
-const ACH_ID = {"初心者": "first", "週末山友": "trips3", "早起鳥": "early7", "夜行者": "night", "破曉行者": "dawn", "常客": "trips10", "50K": "km50", "爬升新手": "asc1000", "週週不斷": "weeks2", "十萬步": "steps100k", "假日山友": "weekend5", "老山友": "trips30", "百K俱樂部": "km100", "爬升大師": "asc3000", "連續一週": "days7", "健行馬拉松": "single10", "走遍三縣": "county3", "兩百K": "km200", "走遍五縣": "county5", "山痴": "trips100", "300K": "km300", "玉山高度": "asc3952", "半馬腳力": "single21", "挑戰征服": "hard5", "四週堅持": "weeks4", "拔升五百": "climb500", "四季行者": "seasons4", "凌晨出擊": "night3", "離島山旅": "island", "縱橫五百": "km500", "聖母峰高度": "asc8848", "走遍十縣": "county10", "步道收藏家": "done20", "月月不休": "days30", "千里健行": "km1000", "萬米爬升": "asc10000", "環島達人": "county20", "超馬腳力": "single42", "兩百次山旅": "trips200", "四年一會": "leap"};
+const ACH_ID = {"初心者": "first", "週末山友": "trips3", "早起鳥": "early7", "夜行者": "night", "破曉行者": "dawn", "常客": "trips10", "50K": "km50", "爬升新手": "asc1000", "週週不斷": "weeks2", "十萬步": "steps100k", "假日山友": "weekend5", "老山友": "trips30", "百K俱樂部": "km100", "爬升大師": "asc3000", "連續一週": "days7", "健行馬拉松": "single10", "走遍三縣": "county3", "兩百K": "km200", "走遍五縣": "county5", "山痴": "trips100", "300K": "km300", "玉山高度": "asc3952", "半馬腳力": "single21", "挑戰征服": "hard5", "四週堅持": "weeks4", "拔升五百": "climb500", "四季行者": "seasons4", "凌晨出擊": "night3", "離島山旅": "island", "縱橫五百": "km500", "聖母峰高度": "asc8848", "走遍十縣": "county10", "步道收藏家": "done20", "月月不休": "days30", "千里健行": "km1000", "萬米爬升": "asc10000", "環島達人": "county20", "超馬腳力": "single42", "全馬腳力": "single42", "兩百次山旅": "trips200", "四年一會": "leap"};
 function achIdOf(x) { return ACH_ID[x] || x; }
 function _achReadSet(key) { try { return new Set((JSON.parse(localStorage.getItem(key)) || []).map(achIdOf)); } catch { return new Set(); } }
 function _achReadDates() { let d = {}; try { d = JSON.parse(localStorage.getItem("tt_badges_date")) || {}; } catch { /* */ } const o = {}; for (const k in d) o[achIdOf(k)] = d[k]; return o; }
@@ -126,7 +126,8 @@ function petBadges() {
     { e: "🏝️", n: "離島山旅", got: island, d: "在離島記錄一次健行", t: 4, hidden: true },
     // 攻頂
     { e: "🏆", n: "縱橫五百", got: km >= 500, d: "總里程 500 km", p: [km, 500, "km"], t: 5 },
-    { e: "🏔️", n: "聖母峰高度", got: asc >= 8848, d: "總爬升 8848 m（一座聖母峰）", p: [asc, 8848, "m"], t: 5 },
+    // 聖母峰 2020 年中尼聯合測量 8,848.86 m → 8,849
+    { e: "🏔️", n: "聖母峰高度", got: asc >= 8849, d: "總爬升 8849 m（一座聖母峰）", p: [asc, 8849, "m"], t: 5 },
     { e: "🌏", n: "走遍十縣", got: counties >= 10, d: "完成 10 個縣市", p: [counties, 10, "縣"], t: 5 },
     { e: "🎯", n: "步道收藏家", got: done >= 20, d: "完成 20 條步道", p: [done, 20, "條"], t: 5 },
     { e: "❄️", n: "月月不休", got: dstreak >= 30, d: "連續 30 天健行", p: [dstreak, 30, "天"], t: 5 },
@@ -134,7 +135,8 @@ function petBadges() {
     { e: "👑", n: "千里健行", got: km >= 1000, d: "總里程 1000 km", p: [km, 1000, "km"], t: 6 },
     { e: "🌋", n: "萬米爬升", got: asc >= 10000, d: "總爬升 10000 m", p: [asc, 10000, "m"], t: 6 },
     { e: "🗺️", n: "環島達人", got: counties >= 20, d: "完成 20 個縣市", p: [counties, 20, "縣"], t: 6 },
-    { e: "🦿", n: "超馬腳力", got: maxOne >= 42, d: "單次步行 ≥ 42 km", p: [maxOne, 42, "km"], t: 6 },
+    // 42.195 km 是一場全程馬拉松；「超馬」是超過全馬的距離（以前叫「超馬腳力」是錯的，id 不變、已解鎖的不受影響）
+    { e: "🦿", n: "全馬腳力", got: maxOne >= 42.195, d: "單次步行 ≥ 42.195 km（一場全馬的距離）", p: [maxOne, 42.195, "km"], t: 6 },
     { e: "⭐", n: "兩百次山旅", got: n >= 200, d: "累積 200 次出行", p: [n, 200, "次"], t: 6 },
     { e: "🍀", n: "四年一會", got: leap, d: "在閏日 2/29 記錄一次", t: 6, hidden: true },
   ];
@@ -185,9 +187,9 @@ function achCheckUnlocks() {
 const ACH_EST = {
   "初心者": ["n", 1], "週末山友": ["n", 3], "常客": ["n", 10], "老山友": ["n", 30], "山痴": ["n", 100], "兩百次山旅": ["n", 200],
   "50K": ["km", 50], "百K俱樂部": ["km", 100], "兩百K": ["km", 200], "300K": ["km", 300], "縱橫五百": ["km", 500], "千里健行": ["km", 1000],
-  "爬升新手": ["asc", 1000], "爬升大師": ["asc", 3000], "玉山高度": ["asc", 3952], "聖母峰高度": ["asc", 8848], "萬米爬升": ["asc", 10000],
+  "爬升新手": ["asc", 1000], "爬升大師": ["asc", 3000], "玉山高度": ["asc", 3952], "聖母峰高度": ["asc", 8849], "萬米爬升": ["asc", 10000],
   "十萬步": ["steps", 100000], "假日山友": ["wk", 5], "四季行者": ["seasons", 4],
-  "健行馬拉松": ["one", 10], "半馬腳力": ["one", 21], "超馬腳力": ["one", 42], "拔升五百": ["oneAsc", 500],
+  "健行馬拉松": ["one", 10], "半馬腳力": ["one", 21], "全馬腳力": ["one", 42.195], "拔升五百": ["oneAsc", 500],
   "早起鳥": ["early", 1], "夜行者": ["night", 1], "破曉行者": ["dawn", 1], "凌晨出擊": ["dark3", 1], "四年一會": ["leap", 1],
 };
 function _achEstDates(list) {

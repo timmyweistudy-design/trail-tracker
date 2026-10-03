@@ -752,3 +752,10 @@ html[data-theme="dark"] .trk-weight .link-btn, html[data-theme="dark"] .trk-link
 [data-fs-big] .rec-controls .btn.lock-btn .lock-label { display: none; }   /* 大字：鎖定只留圖示（aria-label 還在） */
 .rec-controls .btn.lock-btn { min-width: 0; padding-inline: 8px; }
 .rec-controls .btn.lock-btn .lock-label { font-size: calc(10.5px * min(var(--fs, 1), 1.25)); }
+
+/* ───── 夥伴頁（2026-10）───── */
+/* 裝扮：統一三欄格線，每格一樣大（以前置中 flex＋沒有間距 → 3＋2＋1 東倒西歪，登山頭巾還被擠成直排） */
+.hat-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; justify-content: stretch; }
+.hat-grid .hat-opt { flex: none; width: auto; min-width: 0; display: flex; flex-direction: column; align-items: center; }
+.hat-grid .hat-lbl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.hat-opt.quest { background: var(--surface-2); border-style: dashed; }
