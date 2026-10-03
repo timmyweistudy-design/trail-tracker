@@ -104,14 +104,16 @@ const Recorder = (() => {
   }
 
   // 卡路里 = 平路移動(依時間) + 上坡爬升 + 下坡下降，三者相加；靜止時不增加
-  function calories() {
-    const hrs = movingMs / 3600000;
+  function calories() { return kcalFor(distance / 1000, movingMs, ascent, descent); }
+  // 同一套公式給結算用：海拔用地形校正後，爬升／下降變了要重算（以前卡路里停在校正前的數字）
+  function kcalFor(km, moveMs, asc, desc) {
+    const hrs = (moveMs || 0) / 3600000;
     if (hrs <= 0) return 0;
-    const kmh = (distance / 1000) / hrs;
+    const kmh = km / hrs;
     const w = Store.weight() + (Store.packWeight ? Store.packWeight() : 0);   // 體重 + 背包負重
     const flat = metForSpeed(kmh) * w * hrs;
-    const climb = ascent * w * KCAL_PER_KG_ASCENT;
-    const down = descent * w * KCAL_PER_KG_DESCENT;
+    const climb = (asc || 0) * w * KCAL_PER_KG_ASCENT;
+    const down = (desc || 0) * w * KCAL_PER_KG_DESCENT;
     return Math.round(flat + climb + down);
   }
 
@@ -407,7 +409,7 @@ const Recorder = (() => {
       id: "r" + Date.now(),
       date: new Date().toISOString(),
       distanceKm: snap.distanceKm, distance3DKm: snap.distance3DKm, steps: snap.steps, kcal: snap.kcal,
-      elapsedMs: snap.elapsedMs, ascent: Math.round(ascent), descent: Math.round(descent), track: track.slice(),
+      elapsedMs: snap.elapsedMs, movingMs: Math.round(movingMs), ascent: Math.round(ascent), descent: Math.round(descent), track: track.slice(),   // movingMs：以前沒存，結算只看得到含休息的總時間
       sim: simMode || undefined,
       vehicle: autoStopping || undefined,   // 因車速(>20km/h)自動斷掉→整趟不計里程
     } : null;
@@ -474,6 +476,6 @@ const Recorder = (() => {
     return snapshot();
   }
 
-  return { start, pause, resume, stop, snapshot, onUpdate, onAutoStop, onPersistFail, getState: () => state, hasActive, restore, setLowPower, setWake, setSimRoute,
+  return { start, pause, resume, stop, snapshot, kcalFor, onUpdate, onAutoStop, onPersistFail, getState: () => state, hasActive, restore, setLowPower, setWake, setSimRoute,
     _enc: encTrack, _dec: decTrack };
 })();

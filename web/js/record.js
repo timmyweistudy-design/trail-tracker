@@ -71,6 +71,30 @@ function updateWpHud(lat, lon) {
     + `<span class="h-txt">${ttT("下一個")}：<b>${(ahead.name || "").replace(/[<>&]/g, "")}</b></span>`
     + `<span class="h-rem">${rem < 0.08 ? ttT("即將抵達") : ttT("剩") + " " + rem.toFixed(1) + " km"}</span>`;
 }
+// 跟著步道走時：還剩多遠、照目前速度幾點走完、會不會天黑（離開路線 80 m 以上就不猜）
+let _progStartAlong = null;
+function updateProgress(s, last) {
+  const box = _r("recProg"); if (!box) return;
+  if (s.state === "idle") { box.hidden = true; _progStartAlong = null; return; }
+  const line = _wpRefLine || ((selectedTrailGeo && selectedTrailGeo.length) ? selectedTrailGeo.reduce((a, b) => (b.length > a.length ? b : a), selectedTrailGeo[0]) : null);
+  if (!line || line.length < 2 || !last || s.state !== "running") return;
+  if (routeSegs() && distToRoute(last.lat, last.lon) > 80) { box.hidden = true; return; }
+  let total = 0; for (let i = 1; i < line.length; i++) total += haversine({ lat: line[i - 1][0], lon: line[i - 1][1] }, { lat: line[i][0], lon: line[i][1] });
+  const along = _distAlong([last.lat, last.lon], line);
+  if (_progStartAlong == null) _progStartAlong = along;
+  const dir = along >= _progStartAlong ? 1 : -1;   // 從哪一頭走都對：往里程大的走＝正向
+  const remKm = Math.max(0, (dir > 0 ? total - along : along) / 1000);
+  if (remKm < 0.05) { box.hidden = false; box.className = "rec-prog"; box.innerHTML = `${ic("flag")}<span>${ttT("快到終點了")}</span>`; return; }
+  // 速度：走超過 0.3 km 用這趟的移動平均；不然先用步道估算的速度
+  const kmh = (s.distanceKm > 0.3 && s.movingMs > 6e5) ? s.distanceKm / (s.movingMs / 3.6e6) : 3;
+  const etaMs = Date.now() + remKm / Math.max(kmh, 1) * 3.6e6;
+  const ss = typeof sunsetAt === "function" ? sunsetAt(last.lat, last.lon) : null;
+  const hm = d => d.toLocaleTimeString(ttLocale(), { hour: "2-digit", minute: "2-digit", hour12: false });
+  const late = ss && etaMs > ss.getTime() - 30 * 60000;
+  box.hidden = false; box.className = "rec-prog" + (late ? " warn" : "");
+  box.innerHTML = `${ic(late ? "alert" : "route")}<span>${ttT("剩 %1 km・預計 %2 走完").replace("%1", remKm.toFixed(1)).replace("%2", `<b>${hm(new Date(etaMs))}</b>`)}</span>`
+    + (late ? `<small>${ttT("照這個速度天黑前走不完，考慮往回走或加快")}</small>` : "");
+}
 // #3 行前小卡：選好步道、開始前顯示今日天氣＋日落時間（避免摸黑）＋該難度建議裝備
 function clearPreHike() { const el = $("#preHike"); if (el) { el.hidden = true; el.innerHTML = ""; } }
 function sunsetWarn(hm) {
@@ -431,6 +455,7 @@ Recorder.onUpdate(s => {
   setText(_r("stKcal"), String(s.kcal));
   setText(_r("stTime"), fmtTime(s.elapsedMs));
   setText(_r("stPace"), (s.state === "running" && s.instKmh != null && !s.waiting) ? s.instKmh.toFixed(1) : "--");
+  updateProgress(s, last);
   const offD = (s.state === "running" && last && routeSegs()) ? distToRoute(last.lat, last.lon) : null;
   checkOffRoute(s, offD);
   if (s.state === "idle") { _liveElev = null; _liveElevAt = 0; _liveElevLen = 0; _liveElevBusy = false; _recSeq++; _drawnN = 0; _kmStartT = 0; _restWarned = false; }
@@ -944,7 +969,10 @@ async function finishRecording(autoVehicle) {
         setRecStatus(ttT("正在整理這趟的海拔數字…"));
         const sb = $("#btnStart"); if (sb) sb.disabled = true;   // 上一趟還沒存好，先別讓人開新的一趟
         const corr = await Promise.race([Elevation.correct(rec.track), new Promise(r => setTimeout(() => r(null), 8000))]);   // 原 15 秒太久
-        if (corr) { rec.ascent = corr.ascent; rec.descent = corr.descent; rec.altHigh = corr.altHigh; rec.altLow = corr.altLow; rec.altCorrected = true; }
+        if (corr) {
+          rec.ascent = corr.ascent; rec.descent = corr.descent; rec.altHigh = corr.altHigh; rec.altLow = corr.altLow; rec.altCorrected = true;
+          if (rec.movingMs && Recorder.kcalFor) rec.kcal = Recorder.kcalFor(rec.distanceKm || 0, rec.movingMs, rec.ascent, rec.descent);   // 爬升變了 → 卡路里跟著重算
+        }
       }
     });
     // #11 軌跡簡化：海拔校正後、存檔前用 Douglas-Peucker 抽掉冗餘點（4m 內），省儲存又保形狀

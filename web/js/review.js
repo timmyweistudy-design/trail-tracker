@@ -187,9 +187,9 @@ function personalBestBreaks(rec) {
   if (km > maxKm) out.push({ e: "📏", label: "最長距離" });
   if ((rec.ascent || 0) > maxAsc && (rec.ascent || 0) > 0) out.push({ e: "⛰️", label: "最多爬升" });
   if ((rec.elapsedMs || 0) > maxMs) out.push({ e: "⏱️", label: "最久時間" });
-  if (km >= 1 && rec.elapsedMs > 0) {               // 配速越小越快，需 ≥1km 才有意義
-    const pace = (rec.elapsedMs / 1000) / km;
-    const op = others.filter(r => (r.distanceKm || 0) >= 1 && r.elapsedMs > 0).map(r => (r.elapsedMs / 1000) / r.distanceKm);
+  if (km >= 1 && movingOf(rec) > 0) {               // 配速越小越快，需 ≥1km 才有意義；用移動時間（休息久不該害你「變慢」）
+    const pace = (movingOf(rec) / 1000) / km;
+    const op = others.filter(r => (r.distanceKm || 0) >= 1 && movingOf(r) > 0).map(r => (movingOf(r) / 1000) / r.distanceKm);
     if (op.length && pace < Math.min(...op)) out.push({ e: "⚡", label: "最快配速" });
   }
   return out;
@@ -206,11 +206,12 @@ function _proGate() {
 function speedHtml(rec) {
   if (rec.sim) return "";   // 模擬時間是壓縮的，速度無意義 → 不顯示
   if (!_pro()) return "";   // 分段速度／速度趨勢：PRO
-  const km = rec.distanceKm || 0;
-  if (!(rec.elapsedMs > 0) || km < 0.1) return "";
-  const cur = km / (rec.elapsedMs / 3.6e6);
-  const past = Store.getRecords().filter(r => isFootRec(r) && r.id !== rec.id && r.elapsedMs > 0 && (r.distanceKm || 0) > 0);
-  const usual = past.length ? past.reduce((s, r) => s + r.distanceKm, 0) / (past.reduce((s, r) => s + r.elapsedMs, 0) / 3.6e6) : 0;
+  const km = rec.distanceKm || 0, mv = movingOf(rec);
+  if (!(mv > 0) || km < 0.1) return "";
+  const cur = km / (mv / 3.6e6);   // 移動速度（不含休息），跟記錄中顯示的一致
+  const past = Store.getRecords().filter(r => isFootRec(r) && r.id !== rec.id && movingOf(r) > 0 && (r.distanceKm || 0) > 0);
+  const usual = past.length ? past.reduce((s, r) => s + r.distanceKm, 0) / (past.reduce((s, r) => s + movingOf(r), 0) / 3.6e6) : 0;
+  if (!(usual > 0)) return "";   // 沒有平常可比：只有一條「這次」看起來像壞掉，乾脆不顯示
   const max = Math.max(cur, usual, 0.1);
   const bar = (v, cls) => `<div class="spd-row ${cls}"><span class="spd-lbl">${cls === "cur" ? ttT("這次") : ttT("平常")}</span><div class="spd-bar"><i style="width:${Math.round(v / max * 100)}%"></i></div><b>${v.toFixed(1)}</b></div>`;
   let line = "";
@@ -238,43 +239,153 @@ function _maybePremiumUpsell(bk) {
     </div>`;
   } catch (e) { return ""; }
 }
+// 移動時間：新紀錄有存；舊紀錄（2026-10 以前沒存）從軌跡時間戳反推——兩點間時速 0.5–20 km、間隔不到 5 分鐘才算在走
+function movingOf(rec) {
+  if (!rec) return null;
+  if (rec.movingMs > 0) return rec.movingMs;
+  const tr = rec.track || []; let ms = 0;
+  for (let i = 1; i < tr.length; i++) {
+    const a = tr[i - 1], b = tr[i]; if (!a.t || !b.t) continue;
+    const dt = b.t - a.t; if (dt <= 0 || dt > 3e5) continue;
+    const v = haversine(a, b) / (dt / 1000) * 3.6;
+    if (v >= 0.5 && v <= 20) ms += dt;
+  }
+  if (!(ms > 6e4)) return null;
+  ms = Math.min(ms, rec.elapsedMs || ms);
+  // 軌跡存檔時抽過點，間隔太大就反推不準：推出來比快走（7 km/h）還快的不採用，退回總時間
+  if ((rec.distanceKm || 0) / (ms / 3.6e6) > 7) return null;
+  return ms;
+}
+// 結算頁數字旁的小標籤：這個數字怎麼來的
+const REC_SRC = {
+  gps: "手機 GPS 記錄的水平距離，已過濾原地抖動和定位跳點。樹林、山谷裡訊號差時誤差會變大。",
+  moving: "只算真的在走的時間：兩次定位之間有移動才算，停下來休息、拍照不算。",
+  dem: "用地形圖（AWS Terrain Tiles）沿著你的軌跡重算，比手機 GPS 的高度準很多。",
+  gpsalt: "手機 GPS 的高度，誤差比較大。有網路或地圖快取時，結束後會自動改用地形圖校正。",
+  steps: "依你設定的身高推算步幅換算的，上坡步伐變小時會算少，參考就好。",
+  kcal: "依體重、背包重、速度和爬升估算（平路用運動強度 MET，爬升用做功換算），誤差大約兩到三成，下坡最不準。",
+};
+// 這趟的海拔剖面：沿軌跡查地形圖（跟累積爬升同一套資料），拿不到才用 GPS 高度
+async function drawTrackProfile(rec, box) {
+  try {
+    const tr = (rec.track || []).filter(p => p && p.lat != null);
+    if (tr.length < 3) { box.previousElementSibling.hidden = true; box.hidden = true; return; }
+    const step = Math.max(1, Math.ceil(tr.length / 160)), pts = tr.filter((_, i) => i % step === 0 || i === tr.length - 1);
+    let el = (typeof Elevation !== "undefined" && Elevation.profile) ? await Elevation.profile(pts) : null;
+    const fromDem = !!el;   // 用了地形圖就要標來源（USGS 規定）
+    if (!el) el = pts.map(p => (p.alt != null ? p.alt : null));
+    const ok = pts.map((p, i) => [p, el[i]]).filter(([, e]) => e != null && isFinite(e));
+    if (ok.length < 3) { box.previousElementSibling.hidden = true; box.hidden = true; return; }
+    const d = [0]; for (let i = 1; i < ok.length; i++) d.push(d[i - 1] + haversine(ok[i - 1][0], ok[i][0]));
+    const es = ok.map(([, e]) => e), mn = Math.min(...es), mx = Math.max(...es), span = (mx - mn) || 1, W = 300, H = 80, tot = d[d.length - 1] || 1;
+    const xy = es.map((e, i) => [(W * d[i] / tot).toFixed(1), (4 + (H - 8) * (1 - (e - mn) / span)).toFixed(1)]);
+    const line = xy.map((p, i) => `${i ? "L" : "M"}${p[0]},${p[1]}`).join(" ");
+    box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" class="trk-prof-svg"><path d="${line} L${W},${H} L0,${H} Z" fill="var(--ok-bg)"/><path d="${line}" fill="none" stroke="var(--brand)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>
+      <div class="trk-prof-ax"><span>${Math.round(mn).toLocaleString()} m</span><span>${(tot / 1000).toFixed(1)} km</span><span>${Math.round(mx).toLocaleString()} m</span></div>
+      ${fromDem ? `<div class="trk-prof-src" translate="no">Terrain: AWS Terrain Tiles (Mapzen) · SRTM &amp; GMTED2010 courtesy of the U.S. Geological Survey</div>` : ""}`;
+  } catch (e) { box.hidden = true; if (box.previousElementSibling) box.previousElementSibling.hidden = true; }
+}
 function openTrackReview(rec, isNew) {
   if (!rec) return;
   _shotUrls.forEach(u => URL.revokeObjectURL(u)); _shotUrls = [];   // 回收上一份結算的照片 URL
   const km = rec.distanceKm || 0, t3 = rec.distance3DKm;
   const bk = (isNew && isFootRec(rec)) ? personalBestBreaks(rec) : [];   // 破紀錄清單（慶祝＋#18 升級卡共用）
+  const trail = rec.trailId != null ? TRAILS.find(x => String(x.id) === String(rec.trailId)) : null;
+  const mv = movingOf(rec), real = !rec.sim && !rec.vehicle;
+  const end = new Date(rec.date), start = rec.elapsedMs ? new Date(end.getTime() - rec.elapsedMs) : null;
+  const hm = d => d.toLocaleTimeString(ttLocale(), { hour: "2-digit", minute: "2-digit", hour12: false });
+  const dayTxt = end.toLocaleDateString(ttLocale(), { month: "numeric", day: "numeric", weekday: "short" });
+  // 這趟的收穫（剛走完才有）／這是第幾次走（舊紀錄）
+  const gains = [];
+  if (isNew && real) {
+    const PB_IC = { "🌱": "sprout", "📏": "ruler", "⛰️": "mountain", "⏱️": "clock", "⚡": "flame" };   // 結算頁用圖示，不用 emoji（部分裝置是方框）
+    bk.forEach(b => gains.push(`${ic(PB_IC[b.e] || "star")} <b>${b.label === "首次健行紀錄！" ? ttT(b.label) : `${ttT("破紀錄")}·${ttT(b.label)}`}</b>`));
+    const same = trail ? Store.getRecords().filter(r => r.id !== rec.id && String(r.trailId) === String(rec.trailId) && isFootRec(r)) : [];
+    if (trail && !same.length) gains.push(`${ic("flag")} ${ttT("第一次走這條")}`);
+    const pk = typeof Peaks !== "undefined" ? Peaks.hitsOf(rec) : [];
+    if (pk.length) gains.push(`${ic("mountain")} ${ttT("到過 %d 座山頂").replace("%d", pk.length)}`);
+    if (typeof PET_STAGES !== "undefined" && typeof totalKm === "function") {
+      const nx = PET_STAGES.find(s => s.km > totalKm());
+      if (nx) gains.push(`${ic("paw")} ${ttT("夥伴再 %s km 就進化").replace("%s", (nx.km - totalKm()).toFixed(1))}`);
+    }
+  }
+  let history = "";
+  if (!isNew && trail && real) {
+    const same = Store.getRecords().filter(r => isFootRec(r) && String(r.trailId) === String(rec.trailId)).sort((a, b) => new Date(a.date) - new Date(b.date));
+    const idx = same.findIndex(r => r.id === rec.id);
+    if (same.length > 1 && idx >= 0) {
+      const prev = same[idx - 1];
+      history = `${ttT("第 %d 次走這條").replace("%d", idx + 1)}${prev && movingOf(prev) ? `${ttCJK() ? "，" : ", "}${ttT("上次移動了")} ${fmtDur(movingOf(prev))}` : ""}`;
+    }
+  }
+  // 跟預估比、跟官方長度比（走的長度跟步道差不多時才比時間）
+  const notes = [];
+  if (trail && real && km > 0.2) {
+    const L = trail.length_km, ratio = L ? km / L : 1;
+    if (L && (ratio < 0.75 || ratio > 1.3)) notes.push(ratio < 0.75 ? ttT("官方長度 %1 km，你走了 %2 km：可能只走了一段").replace("%1", fmtKm(L)).replace("%2", km.toFixed(2)) : ttT("官方長度 %1 km，你記錄 %2 km：可能多走了支線或來回").replace("%1", fmtKm(L)).replace("%2", km.toFixed(2)));
+    else if (mv && typeof estHours === "function" && estHours(trail)) {
+      const est = estHours(trail), mh = mv / 3.6e6, d = Math.round((mh - est) / est * 100);
+      notes.push(`${ttT("預估 %1，你移動了 %2").replace("%1", fmtHours(est)).replace("%2", fmtDur(mv))}${ttCJK() ? "，" : ", "}${Math.abs(d) < 10 ? ttT("跟預估差不多") : d < 0 ? ttT("比預估快 %d%").replace("%d", -d) : ttT("比預估慢 %d%，多休息也沒關係").replace("%d", d)}`);
+    }
+  }
+  const prof = (typeof Store.getProfile === "function" && Store.getProfile()) || {};
+  const noWeight = !(Number(prof.weight) > 0);
+  const cell = (ico, label, val, src, sub) => `<div class="dv-stat"><div class="dv-stat-h">${ic(ico)}<span>${ttT(label)}</span></div><div class="dv-stat-v">${val}</div><div class="dv-stat-f">${src}${sub ? `<span class="dv-stat-sub">${sub}</span>` : ""}</div></div>`;
+  const chip = (k, t) => `<button class="dv-src" type="button" data-rsrc="${k}">${ttT(t)}</button>`;
+  const rest = mv && rec.elapsedMs > mv + 6e4 ? rec.elapsedMs - mv : 0;
   $("#trackBody").innerHTML = `
     <h2>${escHtml(rec.trailName || "自由路線")}</h2>
-    <div class="track-date">${new Date(rec.date).toLocaleString(ttLocale(), { month: "numeric", day: "numeric", weekday: "short", hour: "numeric", minute: "2-digit" })}</div>
-    ${bk.length ? `<div class="pb-burst">${bk.map(b => `<span class="pb-badge">${b.e} <b>${b.label === "首次健行紀錄！" ? ttT(b.label) : `${ttT("破紀錄")}·${ttT(b.label)}`}</b></span>`).join("")}</div>` : ""}
+    <div class="track-date">${dayTxt}${start ? ` ${hm(start)}–${hm(end)}` : ""}${rec.sim ? ` <span class="sim-tag">${ttT("模擬")}</span>` : ""}</div>
+    ${gains.length ? `<div class="trk-gains">${isNew ? `<div class="trk-gains-h">${ttT("這趟的收穫")}</div>` : ""}${gains.map(g => `<span class="trk-gain">${g}</span>`).join("")}</div>` : ""}
+    ${history ? `<div class="trk-hist">${ic("repeat")}<span>${history}</span></div>` : ""}
     ${_maybePremiumUpsell(bk)}
-    <div class="kv">
-      <div class="item"><div class="l">${ttT("距離")}</div><div class="v">${km.toFixed(2)} km</div></div>
-      <div class="item"><div class="l">${ttT("時間")}</div><div class="v">${fmtDur(rec.elapsedMs)}</div></div>
-      <div class="item"><div class="l">${ttT("總爬升")}${rec.altCorrected ? ` <span class="ok-mark" title="${ttT("已用地形資料校正")}">${ic("check")}</span>` : ""}</div><div class="v">↑${rec.ascent || 0} m</div></div>
-      <div class="item"><div class="l">${ttT("總下降")}</div><div class="v">↓${rec.descent || 0} m</div></div>
-      ${rec.kcal ? `<div class="item"><div class="l">${ttT("消耗")}</div><div class="v">${Math.round(rec.kcal)} ${ttT("大卡")}</div></div>` : ""}
-      ${rec.steps ? `<div class="item"><div class="l">${ttT("步數")}</div><div class="v">${rec.steps.toLocaleString()}</div></div>` : ""}
-      ${!rec.sim && rec.elapsedMs > 0 && km > 0.05 ? `<div class="item"><div class="l">${ttT("平均速度")}</div><div class="v">${(km / (rec.elapsedMs / 3.6e6)).toFixed(1)} km/h</div></div>` : ""}
-      ${!rec.sim && rec.elapsedMs > 6e5 && (rec.ascent || 0) >= 100 && _pro() ? `<div class="item"><div class="l">${ttT("爬升速率")}</div><div class="v">${Math.round(rec.ascent / (rec.elapsedMs / 3.6e6))} m/hr</div></div>` : ""}
-      ${t3 && t3 > km + 0.05 ? `<div class="item"><div class="l">${ttT("含坡度距離")}</div><div class="v">${t3.toFixed(2)} km</div></div>` : ""}
+    <div class="dv-stats trk-stats">
+      ${cell("ruler", "距離", `${km.toFixed(2)}<small>km</small>`, chip("gps", "GPS"), t3 && t3 > km + 0.05 ? `${ttT("含坡度")} ${t3.toFixed(2)} km` : "")}
+      ${cell("clock", mv ? "移動時間" : "時間", fmtDur(mv || rec.elapsedMs), mv ? chip("moving", "實際在走") : "", mv && rest ? ttT("總時間 %1，休息 %2").replace("%1", fmtDur(rec.elapsedMs)).replace("%2", fmtDur(rest)) : "")}
+      ${cell("up", "累積爬升", `${(rec.ascent || 0).toLocaleString()}<small>m</small>`, rec.altCorrected ? chip("dem", "地形校正") : chip("gpsalt", "GPS"), `${ttT("下降")} ${(rec.descent || 0).toLocaleString()} m`)}
+      ${rec.altHigh != null ? cell("mountain", "最高海拔", `${rec.altHigh.toLocaleString()}<small>m</small>`, chip("dem", "地形校正"), rec.altLow != null ? `${ttT("最低")} ${rec.altLow.toLocaleString()} m` : "") : ""}
     </div>
+    ${notes.length ? `<div class="trk-notes">${notes.map(n => `<div>${ic("info")}<span>${n}</span></div>`).join("")}</div>` : ""}
+    <div class="section-title trk-prof-h">${ic("mountain")}<span>${ttT("這趟的海拔")}</span></div>
+    <div id="trkProfile" class="trk-profile"><div class="food-loading"><span class="spin"></span></div></div>
+    <div class="trk-more-stats">
+      ${real && mv && km > 0.05 ? `<span>${ttT("移動平均")} <b>${(km / (mv / 3.6e6)).toFixed(1)} km/h</b></span>` : ""}
+      ${real && mv > 6e5 && (rec.ascent || 0) >= 100 && _pro() ? `<span>${ttT("爬升速率")} <b>${Math.round(rec.ascent / (mv / 3.6e6))} m/h</b></span>` : ""}
+      ${rec.steps ? `<button class="trk-est" type="button" data-rsrc="steps">≈ <b>${rec.steps.toLocaleString()}</b> ${ttT("步")}</button>` : ""}
+      ${rec.kcal ? `<button class="trk-est" type="button" data-rsrc="kcal">≈ <b>${Math.round(rec.kcal).toLocaleString()}</b> ${ttT("大卡")}</button>` : ""}
+    </div>
+    ${rec.kcal && noWeight ? `<div class="trk-weight">${ttT("還沒設定體重，卡路里先用 60 公斤算。")} <button class="link-btn" id="trkSetWeight">${ttT("去設定")} ›</button></div>` : ""}
     ${speedHtml(rec)}
     ${(rec.id === hikePhotosRecId && hikePhotos.length) ? `<div class="section-title">${ic("camera")}${ttT("隨手拍")}（${hikePhotos.length}）<span class="shot-hint">${ttT("點照片存到相簿")}</span></div>
       <div class="hike-shots">${hikePhotos.map((p, i) => `<figure class="shot" data-i="${i}"><img loading="lazy" decoding="async" src="${(u => { _shotUrls.push(u); return u; })(URL.createObjectURL(p.file))}" alt=""><figcaption>${new Date(p.t).toLocaleTimeString(ttLocale(), { hour: "2-digit", minute: "2-digit" })}${p.km != null ? ` · ${(+p.km).toFixed(2)} km` : ""}</figcaption></figure>`).join("")}</div>` : ""}
-    <div class="link-row flow">
+    <div class="trk-acts">
+      <button class="btn primary" id="trackCard">${ic("camera")} ${ttT("分享圖卡")}</button>
+      ${rec.sim || socialHidden() ? `<button class="btn ghost" id="trackShare">${ic("share")} ${ttT("分享行程")}</button>` : `<button class="btn ghost social-only" id="trackSocial">${ic("megaphone")} ${ttT("分享到社群")}</button>`}
+    </div>
+    <div class="trk-links">
+      ${!rec.sim && rec.trailId && typeof TrailReports !== "undefined" ? `<button class="link-btn" id="trackReport">${ic("alert")} ${ttT("回報路況")}</button>` : ""}
       <button class="link-btn" id="trackReplay">${ic("play")} ${ttT("重播路徑")}</button>
       <button class="link-btn" id="track3d">${ic("mountain")} ${ttT("3D 回放")}${_pro() ? "" : `<span class="pro-tag">PRO</span>`}</button>
-      <button class="link-btn" id="trackCard">${ic("camera")} ${ttT("分享圖卡")}</button>
       <button class="link-btn" id="trackGpx">${ic("download")} ${ttT("路線檔")}${_pro() ? "" : `<span class="pro-tag">PRO</span>`}</button>
-      <button class="link-btn" id="trackShare">${ic("share")} ${ttT("分享行程")}</button>
-      ${rec.sim || socialHidden() ? "" : `<button class="link-btn social-only" id="trackSocial">${ic("megaphone")} ${ttT("分享到社群")}</button>`}
-      ${!rec.sim && rec.trailId && typeof TrailReports !== "undefined" ? `<button class="link-btn" id="trackReport">${ic("alert")} ${ttT("回報路況")}</button>` : ""}
+      ${rec.sim || socialHidden() ? "" : `<button class="link-btn" id="trackShare">${ic("share")} ${ttT("分享行程")}</button>`}
     </div>
     ${isNew ? "" : `<div class="track-manage"><button class="tm-btn" id="trackRename">${ic("pencil")} ${ttT("改名稱")}</button><button class="tm-btn danger" id="trackDelete">${ic("trash")} ${ttT("刪除這一趟")}</button></div>`}`;
   $("#trackMask").classList.add("show");
   $("#trackSheet").classList.add("show");
   $("#trackSheet").scrollTop = 0;
+  { const pb = $("#trkProfile"); if (pb) drawTrackProfile(rec, pb); }
+  $("#trackBody").onclick = e => {   // 用 onclick 不用 addEventListener：同一個面板每次開都會重畫，才不會疊一堆監聽
+    const c = e.target.closest("[data-rsrc]"); if (c && REC_SRC[c.dataset.rsrc] && typeof ttAlertBox === "function") ttAlertBox(ttT(REC_SRC[c.dataset.rsrc]));
+  };
+  { const sw = $("#trkSetWeight"); if (sw) sw.addEventListener("click", () => {
+      closeTrackReview();
+      const tab = document.querySelector('.tab[data-view="me"]'); if (tab) tab.click();
+      setTimeout(() => {
+        const w = document.getElementById("pfWeight"), g = w && w.closest(".set-group");
+        if (g && !g.classList.contains("open")) g.querySelector(".set-head").click();
+        if (w) { w.scrollIntoView({ block: "center", behavior: "smooth" }); setTimeout(() => w.focus(), 400); }
+      }, 350);
+    }); }
   // 改名：打的名字剛好是某條步道 → 順便連回那條步道（完成判定、步道頁的「走過」才對得上）
   { const rn = $("#trackRename"); if (rn) rn.addEventListener("click", async () => {
       const v = await askInput({ title: ttT("這一趟叫什麼？"), value: rec.trailName || "", max: 40 });

@@ -276,6 +276,12 @@ async function toggleDebugPanel() {
       ["🔎一句話搜尋", closeAnd(() => { const tab = document.querySelector('.tab[data-view="explore"]'); if (tab) tab.click(); setTimeout(() => { const i = document.getElementById("searchInput"); if (!i) return; i.value = "台北 3 小時內 有瀑布 不要太陡"; i.dispatchEvent(new Event("input", { bubbles: true })); }, 300); })],
       ["🐾拜訪夥伴範例", closeAnd(async () => { if (window.loadSocial) await window.loadSocial(); Pets.visit({ id: "demo", handle: "mei_trail", pet_name: "毛毛", pet_level: 5, total_km: 420 }, false, null); })],
       ["🏔山社", closeAnd(async () => { if (window.loadSocial) await window.loadSocial(); Clubs.open(); })],
+      ["🧾結算頁範例", closeAnd(async () => {   // 一趟真的（非模擬）的金瓜寮：看收穫、移動時間、跟預估比、這趟的海拔
+        const t = TRAILS.find(x => x.id === "forestry-004"); await ensureGeo(t.region);
+        const pts = [].concat(...geoOf(t)); let tt = Date.now() - 3 * 3.6e6; const t0 = tt;
+        const track = pts.map((q, i) => { tt += (i === Math.floor(pts.length / 2) ? 15 * 60000 : 150000); return { lat: q[0], lon: q[1], alt: 300, t: tt, acc: 6 }; });
+        openTrackReview({ id: "dbg-sum", date: new Date(tt).toISOString(), trailName: t.name, trailId: t.id, distanceKm: 1.38, elapsedMs: tt - t0, ascent: 84, descent: 86, altHigh: 344, altLow: 284, altCorrected: true, kcal: 300, steps: 1950, track }, true);
+      })],
     ]],
     ["裝置與外觀", [
       ["📱模擬動態島", () => ttDebug.notch()], ["🎨切外觀", () => ttDebug.theme()],

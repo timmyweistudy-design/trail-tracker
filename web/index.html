@@ -153,14 +153,12 @@
         <div class="rh-time"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><b id="stTime">00:00</b></div>
       </div>
       <div class="rec-row">
-        <div class="rc"><div class="rc-v" id="stSteps">0</div><div class="rc-l">步數</div></div>
-        <div class="rc"><div class="rc-v" id="stKcal">0</div><div class="rc-l">大卡</div></div>
-        <div class="rc"><div class="rc-v" id="stPace">--</div><div class="rc-l">公里/小時</div></div>
-      </div>
-      <div class="rec-row">
         <div class="rc"><div class="rc-v" id="stAscent">↑0</div><div class="rc-l">累積爬升 m</div></div>
         <div class="rc"><div class="rc-v" id="stDescent">↓0</div><div class="rc-l">下降 m</div></div>
+        <div class="rc"><div class="rc-v" id="stPace">--</div><div class="rc-l">公里/小時</div></div>
       </div>
+      <div class="rec-prog" id="recProg" hidden></div>
+      <div class="rec-mini"><span>≈ <b id="stSteps">0</b> 步</span><span>≈ <b id="stKcal">0</b> 大卡</span></div>
     </div>
     <!-- 版面順序（使用者指定）：小隊(#teamReadyBar 由 teamlive 插在此前) → 已選古道 → 天氣卡 → 上次紀錄 → GPS → 地圖 → 開始鈕 → 開始文字 -->
     <div class="sel-trail" id="selTrail" hidden></div>

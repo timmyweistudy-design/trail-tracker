@@ -612,7 +612,7 @@ function renderHistory(keepShown) {
       </div>
       <div class="row">
         <span>${ic("ruler")}<b${noKm ? ' class="strike"' : ""}>${r.distanceKm.toFixed(1)}</b> km</span>
-        <span>${ic("clock")}<b>${fmtDurShort(r.elapsedMs)}</b></span>
+        <span>${ic("clock")}<b>${fmtDurShort((typeof movingOf === "function" && movingOf(r)) || r.elapsedMs)}</b></span>
         ${r.ascent ? `<span>${ic("mountain")}<b>↑${r.ascent}</b> m</span>` : ""}
         ${r.kcal ? `<span>${ic("fire")}<b>${Math.round(r.kcal)}</b> ${ttT("大卡")}</span>` : ""}
       </div>
