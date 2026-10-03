@@ -766,3 +766,11 @@ html[data-theme="dark"] .trk-weight .link-btn, html[data-theme="dark"] .trk-link
 [data-fs-big] .notif-tabs { flex-wrap: wrap; }
 [data-fs-big] .notif-tab { flex: 1 1 auto; padding: 7px 12px; }
 [data-fs-big] .pf-act { font-size: calc(12px * min(var(--fs, 1), 1.2)); min-width: 0; white-space: nowrap; }
+
+/* 夥伴大字：成就步道標題讓開右上角兩顆鈕（以前英文標題壓到清單鈕和關閉鈕）；裝扮選單「每月挑戰」只留旗子圖示（點了會跳說明） */
+.ach-modal-h { padding-right: 96px; min-width: 0; }
+.ach-modal-h > span, .ach-modal-h { overflow-wrap: anywhere; }
+[data-fs-big] .ach-modal-h { font-size: calc(19px * min(var(--fs, 1), 1.25)); line-height: 1.2; }
+[data-fs-big] .hat-cost.hat-quest span { display: none; }
+[data-fs-big] .hat-cost.hat-quest { padding: 3px 5px; }
+[data-fs-big] .hat-grid .hat-lbl { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.15; font-size: calc(12px * min(var(--fs, 1), 1.3)); overflow-wrap: anywhere; }
