@@ -2193,3 +2193,18 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 @media (prefers-reduced-motion: reduce) {
   .ps-box .pr-head, .ps-box .pc-ear, .ps-box .pr-ant, .ps-box .pr-glow, .ps-box .pr-nose, .ps-box #petEmoji.pet-m-sleepy .pr-head { animation: none !important; transition: none !important; }
 }
+/* 跟隨動作：跳／撲／升起時，耳朵和尾巴晚一點才跟上、落地後再晃一下 */
+.ps-box .pb-hop .pc-ear.l { animation: pbFlopL 1.1s ease-out; } .ps-box .pb-hop .pc-ear.r { animation: pbFlopR 1.1s ease-out; }
+.ps-box .pb-hop .pc-tail { animation: pbTailFollow 1.1s ease-out; }
+.ps-box .pb-hop .pr-head { animation: pbHopHead 1.1s ease-out; }
+.ps-box .pb-hop .m-o { animation: pbLaugh 1.1s ease-in-out; } .ps-box .pb-hop .m-c { animation: pbChewC 1.1s ease-in-out; }   /* 開心張嘴笑 */
+@keyframes pbFlopL { 0%, 100% { transform: none; } 30% { transform: rotate(-14deg); } 55% { transform: rotate(10deg); } 75% { transform: rotate(-4deg); } }
+@keyframes pbFlopR { 0%, 100% { transform: none; } 30% { transform: rotate(14deg); } 55% { transform: rotate(-10deg); } 75% { transform: rotate(4deg); } }
+@keyframes pbTailFollow { 0%, 100% { transform: none; } 30% { transform: rotate(-12deg); } 55% { transform: rotate(14deg); } 78% { transform: rotate(-5deg); } }
+@keyframes pbHopHead { 0%, 100% { transform: none; } 30% { transform: translateY(2px); } 50% { transform: translateY(-3px) rotate(-2deg); } 70% { transform: translateY(1px) rotate(1deg); } }
+/* 神龍：吃東西時龍珠亮起來、龍鬚擺得快一點 */
+.ps-box[data-stage="6"] .st-lean .pc-tw { animation-duration: .7s; }
+.ps-box[data-stage="6"] .st-lean .pc-sway, .ps-box[data-stage="6"] .pb-chew .pc-sway { animation-duration: 1.2s; }
+/* 幼龍：嚼的時候尾巴輕輕捲 */
+.ps-box[data-stage="5"] .pb-chew .pc-tail { animation: pbCurl .9s ease-in-out; }
+@media (prefers-reduced-motion: reduce) { .ps-box .pb-hop .pc-ear, .ps-box .pb-hop .pc-tail { animation: none !important; } }

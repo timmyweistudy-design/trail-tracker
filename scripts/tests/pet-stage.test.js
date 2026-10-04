@@ -313,4 +313,24 @@ for(const [km,st] of [[5,1],[150,5],[260,6]]){const p=await mk({km});
  ok(r2.s===r2.cur&&r2.h==="straw","a new postcard stamps the pet as it is now, hat included "+JSON.stringify(r2));
  await p.close();}
 
+// ── 2026-10-04 動作優化：骨架、嘴、帽子跟著頭、小圖與分享圖卡不受影響 ──
+{const p=await mk({km:40,hat:"straw"});
+ const r=await p.evaluate(()=>{const out={};const d=document.createElement("div");document.body.appendChild(d);
+  for(let i=1;i<7;i++){d.innerHTML=PET_ART.svg(i,"","straw");const q=k=>d.querySelector(k);out[i]={head:!!q(".pr-head"),mouth:i===0||!!q(".pr-mouth .m-c")&&!!q(".pr-mouth .m-o"),hatInHead:!!q(".pr-head .pc-hat"),eyesInHead:d.querySelectorAll(".pr-head .pc-eye").length===2};}
+  d.remove();return out;});
+ ok(Object.values(r).every(o=>o.head&&o.mouth&&o.hatInHead&&o.eyesInHead),"rig: 6 stages have a head (eyes + hat inside) and a mouth with closed/open states "+JSON.stringify(r));
+ const m=await p.evaluate(()=>{const o=document.querySelector("#petEmoji .m-o"),c=document.querySelector("#petEmoji .m-c");return {o:getComputedStyle(o).opacity,c:getComputedStyle(c).opacity};});
+ ok(m.o==="0"&&m.c==="1","at rest only the closed mouth shows "+JSON.stringify(m));
+ const lean=await p.evaluate(async()=>{const em=document.querySelector("#petEmoji"),h=em.querySelector(".pc-hat").getBoundingClientRect(),f=em.querySelector(".pc-bob").getBoundingClientRect();
+  em.classList.add("st-lean","st-open");await new Promise(r=>setTimeout(r,600));const h2=em.querySelector(".pc-hat").getBoundingClientRect(),f2=em.querySelector(".pc-bob").getBoundingClientRect(),o=getComputedStyle(em.querySelector(".m-o")).opacity;
+  em.classList.remove("st-lean","st-open");return {hatDown:+(h2.top-h.top).toFixed(1),feet:+Math.abs(f2.bottom-f.bottom).toFixed(1),open:o};});
+ ok(lean.hatDown>5&&lean.feet<1&&lean.open==="1","leaning: the hat goes down with the head, feet stay, mouth opens "+JSON.stringify(lean));
+ const share=await p.evaluate(()=>/\.m-o,\.m-t,\.m-p,\.pr-ext\{display:none\}/.test(decodeURIComponent(PET_ART.dataUri(3,120))));
+ ok(share,"share cards (no stylesheet) always draw the closed mouth");
+ await p.close();}
+{const p=await mk({km:40,reduce:true});
+ const r=await p.evaluate(async()=>{const em=document.querySelector("#petEmoji");em.classList.add("pb-pat");await new Promise(r=>setTimeout(r,250));const t=getComputedStyle(em.querySelector(".pr-head")).animationName;em.classList.remove("pb-pat");return t;});
+ ok(r==="none","reduced motion: no part animation ("+r+")");
+ await p.close();}
+
 console.log("ERRS",JSON.stringify(errs));console.log("FAILS",fails);await b.close();srv.kill();})();
