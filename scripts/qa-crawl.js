@@ -5,7 +5,7 @@ const path = require("path"), { spawn } = require("child_process");
 const ROOT = path.join(__dirname, "..");
 const localLibs = path.join(process.env.HOME, "pw-libs/root/usr/lib/x86_64-linux-gnu");
 if (require("fs").existsSync(localLibs)) process.env.LD_LIBRARY_PATH = localLibs + ":" + (process.env.LD_LIBRARY_PATH || "");
-const PORT = 8896;
+const PORT = +process.env.TT_PORT || 8896;   // run-all 並行時會分配不重複的 port
 const EXT = /net::|favicon|404 \(|Failed to load resource|CORS|opentopodata|translate\.googleapis|mymemory|supabase|overpass|tile\.|Access to fetch|gstatic|googleapis/i;
 
 (async () => {

@@ -10,7 +10,7 @@ const path = require("path"), fs = require("fs"), { spawn } = require("child_pro
 const ROOT = path.join(__dirname, "..");
 const localLibs = path.join(process.env.HOME, "pw-libs/root/usr/lib/x86_64-linux-gnu");
 if (fs.existsSync(localLibs)) process.env.LD_LIBRARY_PATH = localLibs + ":" + (process.env.LD_LIBRARY_PATH || "");
-const PORT = 8901;
+const PORT = +process.env.TT_PORT || 8901;   // run-all 並行時會分配不重複的 port
 const SHOT = process.argv.includes("--shot");
 const SHOTDIR = path.join(ROOT, "scratchpad", "center-shots");
 

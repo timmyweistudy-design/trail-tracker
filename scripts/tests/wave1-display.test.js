@@ -1,12 +1,13 @@
 // 自動化測試（瀏覽器）：npm run test:all 會依序跑；截圖輸出到 scripts/tests/out/（不進版控）
+const __TTP = +process.env.TT_PORT || 8876;   // run-all 並行時會分配不重複的 port
 const __path=require("path"),__fs=require("fs");
 const __out=p=>{const full=__path.join(__dirname,"out",p);__fs.mkdirSync(p.endsWith("/")?full:__path.dirname(full),{recursive:true});return p.endsWith("/")?full+"/":full;};
 const ROOT=__path.resolve(__dirname,"../..");const {chromium}=require(ROOT+"/node_modules/playwright");const {spawn}=require("child_process");
 const errs=[];let fails=0;const ok=(c,m)=>{console.log((c?"PASS ":"FAIL ")+m);if(!c)fails++;};
-(async()=>{const srv=spawn("python3",["-m","http.server","8876"],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
+(async()=>{const srv=spawn("python3",["-m","http.server",String(__TTP)],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
 const mk=async(seed,o={})=>{const p=await (await b.newContext({viewport:{width:390,height:844},colorScheme:o.scheme||"light",geolocation:{latitude:24.45,longitude:121.75},permissions:["geolocation"]})).newPage();await require(__dirname+"/fake-weather")(p);p.on("pageerror",e=>errs.push(e.message));
  await p.addInitScript(s=>{if(sessionStorage.getItem("x"))return;sessionStorage.setItem("x","1");localStorage.setItem("tt_lang","zh");["tt_onboarded_v2","tt_coach_trail","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_locperm_prompted"].forEach(k=>localStorage.setItem(k,"1"));for(const k in s)localStorage.setItem(k,s[k]);},seed);
- await p.goto("http://localhost:8876/");await p.waitForTimeout(2200);await p.evaluate(()=>document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove()));return p;};
+ await p.goto("http://localhost:"+__TTP+"/");await p.waitForTimeout(2200);await p.evaluate(()=>document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove()));return p;};
 const st=p=>p.evaluate(()=>[document.documentElement.getAttribute("data-theme"),document.documentElement.getAttribute("data-vis")||"",localStorage.getItem("tt_theme"),localStorage.getItem("tt_vis")]);
 // 舊設定遷移
 for(const [seed,exp,scheme] of [[{tt_vis:"red"},"dark,,dark,"],[{tt_vis:"sun",tt_theme:"dark"},"light,sun,sun,"],[{tt_theme:"auto"},"dark,,dark,","dark"],[{tt_theme:"auto"},"light,,light,","light"],[{},"light,,,"],[{tt_theme:"dark"},"dark,,dark,"]]){

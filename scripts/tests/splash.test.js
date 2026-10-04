@@ -4,7 +4,7 @@ const __path=require("path"),__fs=require("fs");
 const ROOT=__path.resolve(__dirname,"../..");const {chromium}=require(ROOT+"/node_modules/playwright");const {spawn}=require("child_process");
 const O=__path.join(__dirname,"out","splash")+"/";__fs.mkdirSync(O,{recursive:true});
 const errs=[];let fails=0;const ok=(c,m)=>{console.log((c?"PASS ":"FAIL ")+m);if(!c)fails++;};
-const PORT=8934;
+const PORT = +process.env.TT_PORT || 8934;   // run-all 並行時會分配不重複的 port
 (async()=>{const srv=spawn("python3",["-m","http.server",String(PORT)],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
 // o.native：模擬 App 裡的原生啟動畫面外掛；o.ls：預先寫進 localStorage 的東西
 const open=async(o={})=>{const ctx=await b.newContext({viewport:{width:390,height:844},reducedMotion:o.reduce?"reduce":"no-preference"});const p=await ctx.newPage();p.on("pageerror",e=>errs.push(e.message));

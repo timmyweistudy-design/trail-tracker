@@ -1,4 +1,5 @@
 // 一句話搜尋（js/nl-search.js＋explore.js）：拆條件、篩結果、「看懂了」條、空白時的示範句、多語言
+const __TTP = +process.env.TT_PORT || 8883;   // run-all 並行時會分配不重複的 port
 const __path=require("path"),__fs=require("fs");
 const __out=p=>{const full=__path.join(__dirname,"out",p);__fs.mkdirSync(p.endsWith("/")?full:__path.dirname(full),{recursive:true});return p.endsWith("/")?full+"/":full;};
 const ROOT=__path.resolve(__dirname,"../..");const {chromium}=require(ROOT+"/node_modules/playwright");const {spawn}=require("child_process");const O=__out("nl/");
@@ -15,10 +16,10 @@ ok(N.parse("合歡")===null,"two-char name stays keyword search");
 {const c=N.parse("台北 瀑布"),est=()=>2,sl=()=>null;
  ok(N.match({name:"OO瀑布步道",region:"臺北市",difficulty:2},c,est,sl)&&!N.match({name:"OO山步道",region:"臺北市",difficulty:2},c,est,sl)&&!N.match({name:"OO瀑布",region:"新北市",difficulty:2},c,est,sl),"match: region + sight");}
 {const c=N.parse("3 小時內 親子");ok(!N.match({name:"x",region:"a",difficulty:1},c,()=>5,()=>null)&&N.match({name:"x",region:"a",difficulty:1},c,()=>3.2,()=>null)&&!N.match({name:"x",region:"a",difficulty:3},c,()=>2,()=>null),"match: hours (15% slack) + family");}
-(async()=>{const srv=spawn("python3",["-m","http.server","8883"],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
+(async()=>{const srv=spawn("python3",["-m","http.server",String(__TTP)],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
 const mk=async(lang)=>{const ctx=await b.newContext({viewport:{width:390,height:844},timezoneId:"Asia/Taipei"});const p=await ctx.newPage();await require(__dirname+"/fake-weather")(p);p.on("pageerror",e=>errs.push(e.message));
  await p.addInitScript(l=>{if(sessionStorage.getItem("seed"))return;sessionStorage.setItem("seed","1");localStorage.setItem("tt_lang",l);["tt_onboarded_v2","tt_coach_trail","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_locperm_prompted","tt_coach_team"].forEach(k=>localStorage.setItem(k,"1"));},lang);
- await p.goto("http://localhost:8883/");await p.waitForTimeout(2300);await p.evaluate(()=>document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove()));return p;};
+ await p.goto("http://localhost:"+__TTP+"/");await p.waitForTimeout(2300);await p.evaluate(()=>document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove()));return p;};
 const search=async(p,q)=>{await p.fill("#searchInput",q);await p.waitForTimeout(700);await p.keyboard.press("Enter");await p.waitForTimeout(700);};
 const cards=p=>p.evaluate(()=>[...document.querySelectorAll("#trailList .card[data-id]")].map(c=>{const t=TRAILS.find(x=>x.id===c.dataset.id);return t&&{n:t.name,r:t.region,pos:String(t.position||"")}}).filter(Boolean));
 {const p=await mk("zh");

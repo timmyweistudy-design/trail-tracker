@@ -1,12 +1,13 @@
 // 社群頁功能測試（假後端）：留言刪除確認、送出防連點、⋯選單、#標籤按讚與 Esc、搜尋不含自己、英文介面揪團狀態。
 // 用法：node scripts/social-e2e.js
+const __TTP = +process.env.TT_PORT || 8885;   // run-all 並行時會分配不重複的 port
 const ROOT=require("path").join(__dirname,"..");const {chromium}=require(ROOT+"/node_modules/playwright");const {spawn}=require("child_process");const fs=require("fs");
 const MOCK=fs.readFileSync(__dirname+"/fake-supabase.js","utf8");const errs=[];const R=[];const ok=(n,v)=>{R.push((v?"✓ ":"✗ ")+n)};
-(async()=>{const srv=spawn("python3",["-m","http.server","8885"],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));
+(async()=>{const srv=spawn("python3",["-m","http.server",String(__TTP)],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));
 const b=await chromium.launch();
 const mk=async(lang)=>{const p=await (await b.newContext({viewport:{width:390,height:844}})).newPage();p.on("pageerror",e=>errs.push(e.message));
 await p.addInitScript(l=>{localStorage.setItem("tt_lang",l);["tt_rules_ok","tt_onboarded_v2","tt_locperm_prompted","tt_coach_soc_friends","tt_coach_soc_explore","tt_coach_soc_search","tt_coach_soc_notif","tt_coach_soc_me"].forEach(k=>localStorage.setItem(k,"1"))},lang);await p.addInitScript(MOCK);
-await p.goto("http://localhost:8885/");await p.waitForTimeout(2200);await p.evaluate(()=>window.__installFakeSupa({}));
+await p.goto("http://localhost:"+__TTP+"/");await p.waitForTimeout(2200);await p.evaluate(()=>window.__installFakeSupa({}));
 await p.click('.tab[data-view="social"]');await p.waitForTimeout(1500);return p;};
 const p=await mk("zh");
 // 貼文詳情：留言刪除要確認

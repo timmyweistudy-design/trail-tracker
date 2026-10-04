@@ -1,14 +1,15 @@
 // 自動化測試（瀏覽器）：npm run test:all 會依序跑；截圖輸出到 scripts/tests/out/（不進版控）
+const __TTP = +process.env.TT_PORT || 8880;   // run-all 並行時會分配不重複的 port
 const __path=require("path"),__fs=require("fs");
 const __out=p=>{const full=__path.join(__dirname,"out",p);__fs.mkdirSync(p.endsWith("/")?full:__path.dirname(full),{recursive:true});return p.endsWith("/")?full+"/":full;};
 const ROOT=__path.resolve(__dirname,"../..");const {chromium}=require(ROOT+"/node_modules/playwright");const {spawn}=require("child_process");const fs=require("fs");const MOCK=fs.readFileSync(__dirname+"/soc-mock.js","utf8");const O=__out("w1/");
 const errs=[];let fails=0;const ok=(c,m)=>{console.log((c?"PASS ":"FAIL ")+m);if(!c)fails++;};
 // 慢腳程紀錄：比公式慢 1.6 倍
 const R=[1,2,3,4].map(i=>({id:"s"+i,date:new Date(Date.now()-i*3*864e5).toISOString(),trailName:"x",distanceKm:5,ascent:250,elapsedMs:(5/3.5+250/500)*1.6*3.6e6,track:[]}));
-(async()=>{const srv=spawn("python3",["-m","http.server","8880"],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
+(async()=>{const srv=spawn("python3",["-m","http.server",String(__TTP)],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
 const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:o.w||390,height:844},geolocation:{latitude:24.4526,longitude:121.7517,accuracy:8},permissions:["geolocation"],timezoneId:"Asia/Taipei"});const p=await ctx.newPage();await require(__dirname+"/fake-weather")(p);p.on("pageerror",e=>errs.push(e.message));
  await p.addInitScript(o=>{if(sessionStorage.getItem("seed"))return;sessionStorage.setItem("seed","1");localStorage.setItem("tt_lang",o.lang||"zh");if(o.fs)localStorage.setItem("tt_fontscale",o.fs);["tt_onboarded_v2","tt_coach_trail","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_locperm_prompted","tt_coach_team"].forEach(k=>localStorage.setItem(k,"1"));if(o.recs)localStorage.setItem("tt_records",o.recs);},Object.assign({},o));
- await p.addInitScript(MOCK);await p.goto("http://localhost:8880/");await p.waitForTimeout(2300);
+ await p.addInitScript(MOCK);await p.goto("http://localhost:"+__TTP+"/");await p.waitForTimeout(2300);
  if(o.login)await p.evaluate(()=>window.__installFakeSupa({}));
  await p.evaluate(()=>document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove()));return p;};
 const overlap=(p)=>p.evaluate(()=>{const z=document.querySelector(".map-fs .leaflet-control-zoom"),bar=document.getElementById("teamReadyBar");if(!z||!bar)return {err:"missing",z:!!z,bar:!!bar};const a=z.getBoundingClientRect(),c=bar.getBoundingClientRect();const ctl=[...document.querySelectorAll(".map-fs .leaflet-control, .map-fs .map-fs-btn, .map-fs .fs-hud")].filter(e=>e.getClientRects().length&&getComputedStyle(e).display!=="none").map(e=>e.getBoundingClientRect()).filter(r=>r.width);const hit=ctl.filter(r=>!(r.right<=c.left||r.left>=c.right||r.bottom<=c.top||r.top>=c.bottom));return {bar:[c.left,c.top,c.right,c.bottom].map(Math.round),hits:hit.length}});

@@ -1,9 +1,10 @@
 // 授權與上架合規：不當字詞、社群規範同意、iNaturalist 照片授權＋署名、Open-Meteo 商用金鑰、Google Places 不長期存、Apple 登入、使用條款頁
+const __TTP = +process.env.TT_PORT || 8897;   // run-all 並行時會分配不重複的 port
 const __path=require("path"),__fs=require("fs");
 const __out=p=>{const full=__path.join(__dirname,"out",p);__fs.mkdirSync(p.endsWith("/")?full:__path.dirname(full),{recursive:true});return p.endsWith("/")?full+"/":full;};
 const ROOT=__path.resolve(__dirname,"../..");const {chromium}=require(ROOT+"/node_modules/playwright");const {spawn}=require("child_process");
 const O=__out("comp/");const MOCK=__fs.readFileSync(__dirname+"/soc-mock.js","utf8");const errs=[];let fails=0;const ok=(c,m)=>{console.log((c?"PASS ":"FAIL ")+m);if(!c)fails++;};
-(async()=>{const srv=spawn("python3",["-m","http.server","8897"],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
+(async()=>{const srv=spawn("python3",["-m","http.server",String(__TTP)],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
 const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:390,height:844}});const p=await ctx.newPage();await require(__dirname+"/fake-weather")(p);p.on("pageerror",e=>errs.push(e.message));
  const seen=p.__seen=[];p.on("request",r=>seen.push(r.url()));
  await p.route(/api\.inaturalist\.org/,r=>r.fulfill({status:200,contentType:"application/json",body:JSON.stringify({results:[
@@ -12,7 +13,7 @@ const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:390,height:
  await p.route(/places\.googleapis\.com/,r=>r.fulfill({status:200,contentType:"application/json",body:JSON.stringify({places:[{displayName:{text:"山腳小吃"},location:{latitude:24.45,longitude:121.75},rating:4.5,userRatingCount:120,primaryType:"restaurant",primaryTypeDisplayName:{text:"餐廳"},googleMapsUri:"https://maps.google.com/?cid=1"}]})}));
  await p.addInitScript(o=>{if(o.key)window.OPEN_METEO_KEY_TEST=o.key;if(o.apple)window.__apple=1;if(sessionStorage.getItem("seed"))return;sessionStorage.setItem("seed","1");localStorage.setItem("tt_lang",o.lang||"zh");["tt_onboarded_v2","tt_coach_trail","tt_locperm_prompted","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_coach_team","tt_coach_soc_friends","tt_coach_soc_explore","tt_coach_soc_search","tt_coach_soc_notif","tt_coach_soc_me"].forEach(k=>localStorage.setItem(k,"1"));localStorage.setItem("foodg_old","{\"ts\":1,\"items\":[]}");localStorage.setItem("amen_old","x");localStorage.setItem("tt_social","1");},o);
  await p.addInitScript(()=>{const iv=setInterval(()=>{if(window.OPEN_METEO_KEY!==undefined&&window.OPEN_METEO_KEY_TEST){window.OPEN_METEO_KEY=window.OPEN_METEO_KEY_TEST;clearInterval(iv);}if(window.SOCIAL_APPLE!==undefined&&window.__apple){window.SOCIAL_APPLE=true;}},1);setTimeout(()=>clearInterval(iv),8000);});
- await p.addInitScript(MOCK);await p.goto("http://localhost:8897/");await p.waitForTimeout(2300);
+ await p.addInitScript(MOCK);await p.goto("http://localhost:"+__TTP+"/");await p.waitForTimeout(2300);
  await p.evaluate(()=>document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove()));return p;};
 {const p=await mk();
  // 字詞
@@ -75,7 +76,7 @@ const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:390,height:
 {const ctx=await b.newContext({viewport:{width:390,height:844}});const p=await ctx.newPage();await require(__dirname+"/fake-weather")(p);p.on("pageerror",e=>errs.push(e.message));
  await p.addInitScript(()=>{["tt_onboarded_v2","tt_coach_trail","tt_locperm_prompted","tt_coach_soc_friends"].forEach(k=>localStorage.setItem(k,"1"));localStorage.setItem("tt_social","1");});
  await p.addInitScript(MOCK);
- await p.goto("http://localhost:8897/?error=access_denied&error_code=signup_disabled&error_description=Signups+not+allowed+for+this+instance");await p.waitForTimeout(2300);
+ await p.goto("http://localhost:"+__TTP+"/?error=access_denied&error_code=signup_disabled&error_description=Signups+not+allowed+for+this+instance");await p.waitForTimeout(2300);
  await p.evaluate(()=>{document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove());window.__installFakeSupa({loggedOut:true});});
  await p.click('.tab[data-view="social"]');await p.waitForTimeout(2000);
  const tt=await p.evaluate(()=>[document.getElementById("toast").textContent,location.search]);
@@ -94,7 +95,7 @@ const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:390,height:
  await p.click("#authApple");await p.waitForTimeout(400);
  ok(await p.evaluate(()=>window.__oauth&&window.__oauth.provider==="apple"),"Apple button calls OAuth with provider apple");await p.close();}
 // 使用條款頁
-{const ctx=await b.newContext({viewport:{width:390,height:844}});const p=await ctx.newPage();await p.goto("http://localhost:8897/terms.html");
+{const ctx=await b.newContext({viewport:{width:390,height:844}});const p=await ctx.newPage();await p.goto("http://localhost:"+__TTP+"/terms.html");
  const t=await p.evaluate(()=>document.body.innerText);ok(await p.evaluate(()=>/noindex/.test((document.querySelector('meta[name="robots"]')||{}).content||"")),"terms page noindex");
  ok(/112/.test(t)&&/零容忍/.test(t)&&/24 小時/.test(t)&&/zero tolerance/.test(t)&&/Apple Standard EULA/.test(t),"terms page has safety disclaimer, zero tolerance, EN version");
  ok(await p.evaluate(()=>document.documentElement.scrollWidth<=391),"terms page fits 390");await p.screenshot({path:O+"terms.png"});await ctx.close();}

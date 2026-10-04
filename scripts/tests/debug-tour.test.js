@@ -1,4 +1,5 @@
 // 自動化測試（瀏覽器）：npm run test:all 會依序跑；截圖輸出到 scripts/tests/out/（不進版控）
+const __TTP = +process.env.TT_PORT || 8887;   // run-all 並行時會分配不重複的 port
 const __path=require("path"),__fs=require("fs");
 const __out=p=>{const full=__path.join(__dirname,"out",p);__fs.mkdirSync(p.endsWith("/")?full:__path.dirname(full),{recursive:true});return p.endsWith("/")?full+"/":full;};
 const ROOT=__path.resolve(__dirname,"../..");const {chromium}=require(ROOT+"/node_modules/playwright");const {spawn}=require("child_process");const fs=require("fs");
@@ -6,12 +7,12 @@ const MOCK=fs.readFileSync(__dirname+"/soc-mock.js","utf8");const O=__out("dbgp/
 const errs=[];let fails=0;const ok=(c,m)=>{console.log((c?"PASS ":"FAIL ")+m);if(!c)fails++;};
 const Y=new Date().getFullYear();
 const recs=[1,3,5,7].map(m=>({id:"r"+m,date:new Date(Y,m-1,9,7).toISOString(),trailName:"金瓜寮魚蕨步道",trailId:"forestry-004",distanceKm:6+m,elapsedMs:9e6,ascent:300,steps:9000,track:[]}));
-(async()=>{const srv=spawn("python3",["-m","http.server","8887"],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
+(async()=>{const srv=spawn("python3",["-m","http.server",String(__TTP)],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
  const ctx=await b.newContext({viewport:{width:390,height:844},geolocation:{latitude:24.93,longitude:121.69},permissions:["geolocation"]});
  const p=await ctx.newPage();await require(__dirname+"/fake-weather")(p);p.on("pageerror",e=>errs.push(e.message));
  await p.addInitScript(r=>{if(sessionStorage.getItem("x"))return;sessionStorage.setItem("x","1");localStorage.setItem("tt_lang","zh");["tt_onboarded_v2","tt_coach_trail","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_locperm_prompted","tt_coach_team","tt_coach_soc_friends","tt_coach_soc_explore","tt_coach_soc_search","tt_coach_soc_notif","tt_coach_soc_me"].forEach(k=>localStorage.setItem(k,"1"));localStorage.setItem("tt_records",r);},JSON.stringify(recs));
  await p.addInitScript(MOCK);
- await p.goto("http://localhost:8887/");await p.waitForTimeout(2800);
+ await p.goto("http://localhost:"+__TTP+"/");await p.waitForTimeout(2800);
  await p.evaluate(()=>ensureScript("js/debug.js"));
  await p.evaluate(()=>{window.__installFakeSupa({});window.ttIsOwner=async()=>true;window.ttConfirm=async()=>true;});
  // 面板

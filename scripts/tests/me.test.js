@@ -1,4 +1,5 @@
 // 自動化測試（瀏覽器）：npm run test:all 會依序跑；截圖輸出到 scripts/tests/out/（不進版控）
+const __TTP = +process.env.TT_PORT || 8890;   // run-all 並行時會分配不重複的 port
 const __path=require("path"),__fs=require("fs");
 const __out=p=>{const full=__path.join(__dirname,"out",p);__fs.mkdirSync(p.endsWith("/")?full:__path.dirname(full),{recursive:true});return p.endsWith("/")?full+"/":full;};
 const ROOT=__path.resolve(__dirname,"../..");const {chromium}=require(ROOT+"/node_modules/playwright");const {spawn}=require("child_process");const fs=require("fs");
@@ -7,10 +8,10 @@ const O=__out("me3/");const MOCK=fs.readFileSync(__dirname+"/soc-mock.js","utf8"
 const R=[{id:"a1",date:"2026-09-30T22:10:00.000Z",trailName:"南澳古道",trailId:"forestry-002",distanceKm:4,elapsedMs:7800e3,ascent:220,kcal:400,steps:5000,track:[{lat:24.45,lon:121.75,t:1},{lat:24.451,lon:121.752,t:2},{lat:24.455,lon:121.758,t:3}]},
  {id:"a2",date:"2026-09-20T01:00:00.000Z",trailName:"南澳古道",trailId:"forestry-002",distanceKm:6,elapsedMs:9000e3,ascent:300,kcal:500,steps:7000,sim:true,track:[{lat:24.45,lon:121.75,t:1},{lat:24.46,lon:121.76,t:2}]},
  {id:"a3",date:"2026-09-10T01:00:00.000Z",trailName:"自由路線",distanceKm:5,elapsedMs:3600e3,ascent:100,kcal:300,steps:6000,track:[{lat:24.4,lon:121.7,t:1},{lat:24.41,lon:121.71,t:2}]}];
-(async()=>{const srv=spawn("python3",["-m","http.server","8890"],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
+(async()=>{const srv=spawn("python3",["-m","http.server",String(__TTP)],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
 const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:o.w||390,height:844},timezoneId:"Asia/Taipei",colorScheme:o.scheme||"light"});const p=await ctx.newPage();await require(__dirname+"/fake-weather")(p);p.on("pageerror",e=>errs.push(e.message));
  await p.addInitScript(o=>{if(sessionStorage.getItem("seeded"))return;sessionStorage.setItem("seeded","1");localStorage.setItem("tt_lang",o.lang||"zh");["tt_onboarded_v2","tt_coach_trail","tt_locperm_prompted","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_coach_team"].forEach(k=>localStorage.setItem(k,"1"));localStorage.setItem("tt_set_open","[0,1,2,3,4,5]");localStorage.setItem("tt_records",JSON.stringify(o.recs));if(o.hidesim)localStorage.setItem("tt_hist_hidesim","1");},Object.assign({recs:o.recs||R},o));
- await p.addInitScript(MOCK);await p.goto("http://localhost:8890/");await p.waitForTimeout(2500);
+ await p.addInitScript(MOCK);await p.goto("http://localhost:"+__TTP+"/");await p.waitForTimeout(2500);
  if(o.login)await p.evaluate(()=>window.__installFakeSupa({}));
  await p.evaluate(()=>document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove()));await p.click('.tab[data-view="me"]');await p.waitForTimeout(1300);return p;};
 const dlgTxt=p=>p.evaluate(()=>{const d=document.querySelector(".ttdlg");return d?d.innerText:null});

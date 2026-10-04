@@ -5,7 +5,7 @@
 const { execSync, spawn } = require("child_process");
 const path = require("path");
 const ROOT = path.join(__dirname, "..");
-const PORT = 8899;
+const PORT = +process.env.TT_PORT || 8899;   // run-all 並行時會分配不重複的 port
 
 (async () => {
   // WSL 無 sudo 安裝的系統函式庫：用使用者目錄的本地副本（~/pw-libs，apt-get download + dpkg -x）

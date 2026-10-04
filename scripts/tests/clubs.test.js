@@ -1,4 +1,5 @@
 // 山社（js/social/clubs.js）：搜尋頁入口、列表、建立（PRO）、加入碼、山社頁三格、退出、資料庫沒跑時的提示
+const __TTP = +process.env.TT_PORT || 8896;   // run-all 並行時會分配不重複的 port
 const __path=require("path"),__fs=require("fs");
 const __out=p=>{const full=__path.join(__dirname,"out",p);__fs.mkdirSync(p.endsWith("/")?full:__path.dirname(full),{recursive:true});return p.endsWith("/")?full+"/":full;};
 const ROOT=__path.resolve(__dirname,"../..");const {chromium}=require(ROOT+"/node_modules/playwright");const {spawn}=require("child_process");
@@ -24,10 +25,10 @@ const CLUBDB=o=>{const C=window.__clubs={list:[
   if(n==="kick_club_member"){roster[a.p_club]=roster[a.p_club].filter(([u])=>u!==a.p_user);return {data:true,error:null};}
   if(n==="delete_club"){C.list=C.list.filter(x=>x.id!==a.p_club);return {data:true,error:null};}
   return orig(n,a);};};
-(async()=>{const srv=spawn("python3",["-m","http.server","8896"],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
+(async()=>{const srv=spawn("python3",["-m","http.server",String(__TTP)],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
 const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:o.w||390,height:844}});const p=await ctx.newPage();await require(__dirname+"/fake-weather")(p);p.on("pageerror",e=>errs.push(e.message));
  await p.addInitScript(o=>{if(o.free)window.PERSONAL_MODE=false;if(sessionStorage.getItem("seed"))return;sessionStorage.setItem("seed","1");localStorage.setItem("tt_lang",o.lang||"zh");if(o.fs)localStorage.setItem("tt_fontscale",o.fs);["tt_rules_ok","tt_onboarded_v2","tt_coach_trail","tt_locperm_prompted","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_coach_team","tt_coach_social_search","tt_coach_social_friends"].forEach(k=>localStorage.setItem(k,"1"));localStorage.setItem("tt_social","1");},o);
- await p.addInitScript(MOCK);await p.goto("http://localhost:8896/");await p.waitForTimeout(2300);
+ await p.addInitScript(MOCK);await p.goto("http://localhost:"+__TTP+"/");await p.waitForTimeout(2300);
  await p.evaluate(()=>window.__installFakeSupa({}));await p.evaluate(CLUBDB,o);
  await p.evaluate(()=>document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove()));
  await p.click('.tab[data-view="social"]');await p.waitForTimeout(1500);await p.evaluate(()=>SocialUI.go("search"));await p.waitForTimeout(900);

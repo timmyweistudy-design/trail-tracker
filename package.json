@@ -18,7 +18,8 @@
     "test:all": "node scripts/tests/run-all.js",
     "test:quick": "node scripts/tests/run-all.js --quick",
     "test:sql": "node scripts/tests/run-all.js --sql",
-    "store:shots": "node scripts/store-shots.js"
+    "store:shots": "node scripts/store-shots.js",
+    "test:changed": "node scripts/tests/run-all.js --changed"
   },
   "dependencies": {
     "@capacitor-community/background-geolocation": "^1.2.26",

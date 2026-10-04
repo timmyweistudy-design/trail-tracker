@@ -145,6 +145,8 @@
 
 ## 維護備忘
 
+- **測試指令**（2026-10-04 並行化）：`npm run test:all` 36 組並行約 **4 分鐘**（以前排隊跑 27 分）；`npm run test:changed` 只跑跟還沒推上去的改動有關的（對照表在 `scripts/tests/run-all.js` 的 `MAP`）；`--only=名稱`、`--jobs=N`、`--serial`、`--no-retry`。失敗的那組會在大家跑完後**單獨重跑一次**：過了列為「不穩定」（不擋、但會印出第一次失敗的項目），兩次都失敗才算沒過。**新測試要讀 `process.env.TT_PORT`**（並行時分配不重複的 port；單獨跑時用自己的預設 port）。
+
 - **新增外部網域**（API、圖磚）：要加進 `web/index.html` 的 CSP `connect-src`，不然會被擋；被擋的會出現在錯誤紀錄（`CSP connect-src ...`）。
 - **改不當字詞清單**：只改 `web/js/moderation.js` 的 `TT_BAD` → `node scripts/gen-badwords-sql.mjs` 重產 phase37 → 到 Supabase 執行 → 測試詞在 `scripts/tests/badwords-cases.json`。`npm run check` 會擋兩邊不同步。
 - **翻譯**：英文在 `web/js/i18n/en.js`（不是 i18n.js 了）；24 語一起補，用 `python3 scripts/apply-translations.py rows.txt`（每列 25 欄，格式寫在檔頭）。

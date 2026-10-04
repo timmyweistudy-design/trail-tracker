@@ -1,13 +1,14 @@
 // 步道頁改版（2026-10）：數字來源與可信度、預估時間一致、開放日已過、高山申請提醒、多天行程、照片／地圖切換、黏頂標題、各種寬度不爆版
+const __TTP = +process.env.TT_PORT || 8899;   // run-all 並行時會分配不重複的 port
 const __path=require("path"),__fs=require("fs");
 const __out=p=>{const full=__path.join(__dirname,"out",p);__fs.mkdirSync(p.endsWith("/")?full:__path.dirname(full),{recursive:true});return p.endsWith("/")?full+"/":full;};
 const ROOT=__path.resolve(__dirname,"../..");const {chromium}=require(ROOT+"/node_modules/playwright");const {spawn}=require("child_process");
 const O=__out("dv/");const errs=[];let fails=0;const ok=(c,m)=>{console.log((c?"PASS ":"FAIL ")+m);if(!c)fails++;};
-(async()=>{const srv=spawn("python3",["-m","http.server","8899"],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
+(async()=>{const srv=spawn("python3",["-m","http.server",String(__TTP)],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
 const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:o.w||390,height:844}});const p=await ctx.newPage();await require(__dirname+"/fake-weather")(p);p.on("pageerror",e=>errs.push(e.message));
  await p.route(/places\.googleapis\.com|api\.inaturalist\.org|commons\.wikimedia\.org/,r=>r.fulfill({status:200,contentType:"application/json",body:/inaturalist/.test(r.request().url())?'{"results":[]}':/wikimedia/.test(r.request().url())?'{"query":{"pages":{}}}':'{"places":[]}'}));
  await p.addInitScript(o=>{if(sessionStorage.getItem("seed"))return;sessionStorage.setItem("seed","1");localStorage.setItem("tt_lang",o.lang||"zh");if(o.fs)localStorage.setItem("tt_fontscale",o.fs);["tt_onboarded_v2","tt_coach_trail","tt_locperm_prompted"].forEach(k=>localStorage.setItem(k,"1"));},o);
- await p.goto("http://localhost:8899/");await p.waitForTimeout(2300);await p.evaluate(()=>document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove()));return p;};
+ await p.goto("http://localhost:"+__TTP+"/");await p.waitForTimeout(2300);await p.evaluate(()=>document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove()));return p;};
 const open=async(p,id)=>{await p.evaluate(id=>openDetail(id),id);await p.waitForTimeout(1500);};
 const statTxt=p=>p.evaluate(()=>[...document.querySelectorAll(".dv-stat")].map(e=>e.innerText.replace(/\s+/g," ")));
 {const p=await mk();

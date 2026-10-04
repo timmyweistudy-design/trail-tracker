@@ -1,13 +1,14 @@
 // 拜訪好友的夥伴（js/social/petsocial.js）：開拜訪卡、摸摸頭（每天每位 +2 親密度一次）、送果實、合照（PRO）
+const __TTP = +process.env.TT_PORT || 8895;   // run-all 並行時會分配不重複的 port
 const __path=require("path"),__fs=require("fs");
 const __out=p=>{const full=__path.join(__dirname,"out",p);__fs.mkdirSync(p.endsWith("/")?full:__path.dirname(full),{recursive:true});return p.endsWith("/")?full+"/":full;};
 const ROOT=__path.resolve(__dirname,"../..");const {chromium}=require(ROOT+"/node_modules/playwright");const {spawn}=require("child_process");
 const O=__out("pv/");const MOCK=__fs.readFileSync(__dirname+"/soc-mock.js","utf8");const errs=[];let fails=0;const ok=(c,m)=>{console.log((c?"PASS ":"FAIL ")+m);if(!c)fails++;};
 const R=[0,1,2].map(i=>({id:"r"+i,date:new Date(Date.now()-(i+1)*864e5).toISOString(),trailName:"x",distanceKm:30,elapsedMs:7200e3,ascent:500,track:[]}));
-(async()=>{const srv=spawn("python3",["-m","http.server","8895"],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
+(async()=>{const srv=spawn("python3",["-m","http.server",String(__TTP)],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
 const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:o.w||390,height:844},acceptDownloads:true});const p=await ctx.newPage();await require(__dirname+"/fake-weather")(p);p.on("pageerror",e=>errs.push(e.message));
  await p.addInitScript(o=>{if(o.free)window.PERSONAL_MODE=false;if(sessionStorage.getItem("seed"))return;sessionStorage.setItem("seed","1");localStorage.setItem("tt_lang",o.lang||"zh");["tt_onboarded_v2","tt_coach_trail","tt_locperm_prompted","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_coach_team"].forEach(k=>localStorage.setItem(k,"1"));if(o.fs)localStorage.setItem("tt_fontscale",o.fs);localStorage.setItem("tt_records",o.recs);localStorage.setItem("tt_pet_berry_bonus","20");localStorage.setItem("tt_pet_aff","40");localStorage.setItem("tt_pet_aff_t",new Date().toISOString());localStorage.setItem("tt_pet_hat","bandana");},Object.assign({recs:JSON.stringify(R)},o));
- await p.addInitScript(MOCK);await p.goto("http://localhost:8895/");await p.waitForTimeout(2500);
+ await p.addInitScript(MOCK);await p.goto("http://localhost:"+__TTP+"/");await p.waitForTimeout(2500);
  await p.evaluate(()=>window.__installFakeSupa({}));
  await p.evaluate(()=>document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove()));await p.click('.tab[data-view="pet"]');await p.waitForTimeout(1200);
  await p.evaluate(()=>Pets.renderFriends());await p.waitForTimeout(1500);return p;};

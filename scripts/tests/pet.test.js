@@ -1,13 +1,14 @@
 // 自動化測試（瀏覽器）：npm run test:all 會依序跑；截圖輸出到 scripts/tests/out/（不進版控）
+const __TTP = +process.env.TT_PORT || 8894;   // run-all 並行時會分配不重複的 port
 const __path=require("path"),__fs=require("fs");
 const __out=p=>{const full=__path.join(__dirname,"out",p);__fs.mkdirSync(p.endsWith("/")?full:__path.dirname(full),{recursive:true});return p.endsWith("/")?full+"/":full;};
 const ROOT=__path.resolve(__dirname,"../..");const {chromium}=require(ROOT+"/node_modules/playwright");const {spawn}=require("child_process");const fs=require("fs");
 const O=__out("pt3/");fs.mkdirSync(O,{recursive:true});const MOCK=fs.readFileSync(__dirname+"/soc-mock.js","utf8");const errs=[];let fails=0;const ok=(c,m)=>{console.log((c?"PASS ":"FAIL ")+m);if(!c)fails++;};
 const R=[];for(let i=0;i<9;i++){const d=new Date(Date.now()-(i*2+1)*864e5);d.setHours(i%3?9:6,10);R.push({id:"r"+i,date:d.toISOString(),trailName:"x",trailId:["forestry-002","forestry-004","forestry-008"][i%3],distanceKm:4+i*1.3,elapsedMs:7200e3,ascent:220+i*40,descent:200,steps:6000+i*500,track:[{lat:24.45,lon:121.75,t:1},{lat:24.451,lon:121.752,t:2}]});}
-(async()=>{const srv=spawn("python3",["-m","http.server","8894"],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
+(async()=>{const srv=spawn("python3",["-m","http.server",String(__TTP)],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
 const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:o.w||390,height:844}});const p=await ctx.newPage();await require(__dirname+"/fake-weather")(p);p.on("pageerror",e=>errs.push(e.message));
  await p.addInitScript(o=>{localStorage.setItem("tt_lang",o.lang||"zh");["tt_onboarded_v2","tt_coach_trail","tt_locperm_prompted","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_coach_team"].forEach(k=>localStorage.setItem(k,"1"));if(o.fs)localStorage.setItem("tt_fontscale",o.fs);localStorage.setItem("tt_records",o.recs);localStorage.setItem("tt_pet_berry_bonus","95");localStorage.setItem("tt_pet_aff","60");},Object.assign({recs:JSON.stringify(R)},o));
- await p.addInitScript(MOCK);await p.goto("http://localhost:8894/");await p.waitForTimeout(2500);
+ await p.addInitScript(MOCK);await p.goto("http://localhost:"+__TTP+"/");await p.waitForTimeout(2500);
  if(o.login) await p.evaluate(()=>window.__installFakeSupa({}));
  await p.evaluate(()=>document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove()));await p.click('.tab[data-view="pet"]');await p.waitForTimeout(1500);return p;};
 {const p=await mk();
