@@ -233,6 +233,44 @@ function achUnlockDate(name) {
 function _achHidden(b) { return !!b.hidden && !b.got; }
 function _achName(b) { return _achHidden(b) ? "？？？" : ttT(b.n); }
 function _achEmo(b) { return _achHidden(b) ? "❓" : b.e; }
+// ── 徽章本體（2026-10-04）：以前用 emoji，很多裝置（還有截圖用的瀏覽器）會變成空框 ──
+// 外框金屬依階層（啟程銅 → 入山紅銅 → 登高銀 → 縱走金 → 攻頂白金 → 傳說玉），外形也越高階越華麗
+// （圓 → 齒輪邊 → 放射星）；中間是分類色的圓盤＋該徽章自己的線條圖示；達成多兩條緞帶，沒達成是灰的＋進度圈＋鎖。
+// 純 SVG、自帶顏色（不靠 CSS），分享圖卡的 canvas 也能直接畫。
+const ACH_ICON = { "初心者": "footprints", "週末山友": "backpack", "早起鳥": "sun", "夜行者": "moon", "破曉行者": "sunset", "常客": "repeat", "50K": "ruler",
+  "爬升新手": "mountain", "週週不斷": "flame", "十萬步": "steps", "假日山友": "calendar", "老山友": "tree", "百K俱樂部": "route", "爬升大師": "bird",
+  "連續一週": "fire", "健行馬拉松": "flag", "走遍三縣": "compass", "兩百K": "map", "走遍五縣": "globe", "山痴": "heart", "300K": "star",
+  "玉山高度": "mountain", "半馬腳力": "medal", "挑戰征服": "target", "四週堅持": "shield", "拔升五百": "up", "四季行者": "leaf", "凌晨出擊": "sparkle",
+  "離島山旅": "wave", "縱橫五百": "trophy", "聖母峰高度": "snow", "走遍十縣": "pin", "步道收藏家": "bookmark", "月月不休": "clock",
+  "千里健行": "wind", "萬米爬升": "cloud", "環島達人": "lake", "超馬腳力": "flag", "全馬腳力": "medal", "兩百次山旅": "crown", "四年一會": "sprout" };
+const ACH_METAL = [["#e8b07c", "#95602f"], ["#f0a47a", "#9c5233"], ["#eef2f5", "#7e8b98"], ["#f7d877", "#a57a1e"], ["#f3f6fb", "#6f83aa"], ["#a8ecd2", "#24806a"]];
+let _achMU = 0;
+function _achRim(t) {   // 外形：1–2 圓、3–4 齒輪邊、5 放射星、6 八角星＋圓
+  const poly = (n, r0, r1, rot) => "M" + Array.from({ length: n * 2 }, (_, k) => { const r = k % 2 ? r1 : r0, a = (k / (n * 2)) * Math.PI * 2 + (rot || 0); return (24 + Math.cos(a) * r).toFixed(1) + " " + (24 + Math.sin(a) * r).toFixed(1); }).join(" L") + "Z";
+  if (t <= 2) return `M4 24a20 20 0 1 0 40 0a20 20 0 1 0 -40 0Z`;
+  if (t <= 4) return poly(14, 21.5, 19.2, 0);
+  if (t === 5) return poly(16, 22.5, 18, -Math.PI / 2);
+  return poly(8, 23, 17.5, -Math.PI / 2);
+}
+function achMedal(b, o) {
+  o = o || {};
+  const t = Math.max(1, Math.min(6, b.t || 1)), got = !!b.got, hid = _achHidden(b), cat = _achCat(b), id = "am" + (++_achMU);
+  const [hi, lo] = got ? ACH_METAL[t - 1] : ["#e4e2dc", "#9a978f"];
+  const disk = got ? cat.col : "#b9b6ae", pct = _achPct(b);
+  const icon = hid ? `<text x="24" y="29.5" text-anchor="middle" font-size="15" font-weight="800" fill="#fff" font-family="sans-serif">?</text>`
+    : `<g transform="translate(14 14) scale(.8333)" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">${(typeof ICON !== "undefined" && ICON[ACH_ICON[b.n] || cat.i]) || ""}</g>`;
+  const ribbon = got ? `<path d="M15 34 L10 46 L15.5 43.5 L18 47 L22 36Z" fill="${cat.col}"/><path d="M33 34 L38 46 L32.5 43.5 L30 47 L26 36Z" fill="${cat.col}"/><path d="M15 34 L10 46 L15.5 43.5Z M33 34 L38 46 L32.5 43.5Z" fill="#000" opacity=".18"/>` : "";
+  const r = 22.6, C = 2 * Math.PI * r;
+  const ring = !got && !hid && pct > 0 ? `<circle cx="24" cy="24" r="${r}" fill="none" stroke="#fff" stroke-width="3" opacity=".75"/><circle cx="24" cy="24" r="${r}" fill="none" stroke="${cat.col}" stroke-width="3" stroke-linecap="round" stroke-dasharray="${(C * pct / 100).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 24 24)"/>` : "";
+  const lock = !got && !o.noLock ? `<g transform="translate(33 33)"><circle r="7" fill="#fffdf6" stroke="#9a978f" stroke-width="1.2"/><rect x="-3.2" y="-1" width="6.4" height="5" rx="1" fill="#8a877f"/><path d="M-1.9 -1v-1.6a1.9 1.9 0 0 1 3.8 0V-1" fill="none" stroke="#8a877f" stroke-width="1.3"/></g>` : "";
+  return `<svg class="ach-medal${got ? " got" : " locked"}" viewBox="0 0 48 48" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${hi}"/><stop offset=".55" stop-color="${got ? lo : "#c4c1b9"}"/><stop offset="1" stop-color="${hi}"/></linearGradient>
+    <radialGradient id="${id}d" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="${got ? "#fff" : "#e8e6e0"}" stop-opacity=".35"/><stop offset="1" stop-color="#000" stop-opacity=".12"/></radialGradient></defs>
+    ${ribbon}${ring}<path d="${_achRim(t)}" fill="url(#${id})" stroke="${lo}" stroke-width="1.2" stroke-linejoin="round"/>
+    <circle cx="24" cy="24" r="14.2" fill="${disk}" stroke="${lo}" stroke-width="1"/><circle cx="24" cy="24" r="14.2" fill="url(#${id}d)"/>
+    ${t === 6 && got ? `<circle cx="24" cy="24" r="15.6" fill="none" stroke="#f7d877" stroke-width="1.1"/>` : ""}
+    ${icon}${got ? `<path d="M15 17 a11 11 0 0 1 12 -6" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round" opacity=".55"/>` : ""}${lock}</svg>`;
+}
 function _achDesc(b) { return _achHidden(b) ? ttT("神秘成就，達成後揭曉") : ttT(b.d); }
 // 還沒完成過步道的縣市裡，挑一條林業署的輕鬆步道（給「走遍 N 縣」一個具體下一步）
 function achCountySuggest() {
@@ -255,7 +293,7 @@ function buildAchTree() {
   const nextHtml = nextUp.length ? `<div class="ach-next-h">${ttT("即將解鎖")}</div><div class="ach-next">${nextUp.map(({ b, ratio }) => {
     const [cur, goal, unit] = b.p, cat = _achCat(b);
     const sug = unit === "縣" ? achCountySuggest() : null;
-    return `<div class="anx" style="--c:${cat.col}"><span class="anx-e ach-emo">${b.e}</span><div class="anx-body"><div class="anx-top"><b>${ttT(b.n)}</b><span class="anx-remain">${_achFmt(cur, unit)} / ${goal} ${ttT(unit)}</span></div><div class="anx-bar"><i style="width:${(ratio * 100).toFixed(0)}%"></i></div>${sug ? `<button class="anx-sug" data-anx-trail="${sug.id}">${ic("compass")} ${ttT("試試")} ${escHtml(sug.name)}<span>${escHtml(sug.region)}</span></button>` : ""}</div></div>`;
+    return `<div class="anx" style="--c:${cat.col}"><span class="anx-e ach-mdl">${achMedal(b, { noLock: true })}</span><div class="anx-body"><div class="anx-top"><b>${ttT(b.n)}</b><span class="anx-remain">${_achFmt(cur, unit)} / ${goal} ${ttT(unit)}</span></div><div class="anx-bar"><i style="width:${(ratio * 100).toFixed(0)}%"></i></div>${sug ? `<button class="anx-sug" data-anx-trail="${sug.id}">${ic("compass")} ${ttT("試試")} ${escHtml(sug.name)}<span>${escHtml(sug.region)}</span></button>` : ""}</div></div>`;
   }).join("")}</div>` : "";
   return { got, total: list.length, nextHtml };
 }
@@ -519,7 +557,7 @@ function renderAchList(ov) {
     const cat = _achCat(b), pct = _achPct(b), date = b.got ? achUnlockDate(b.n) : "", hid = _achHidden(b);
     const right = b.got ? (date || ttT("已達成")) : (hid ? "？" : (b.p ? `${_achFmt(Math.min(b.p[0], b.p[1]), b.p[2])}/${b.p[1]}` : ttT("尚未達成")));
     return `<button class="ach-lrow ${b.got ? "got" : "locked"}" data-i="${i}" style="--c:${cat.col}">
-      <span class="ach-lemo ach-emo">${_achEmo(b)}</span>
+      <span class="ach-lemo ach-mdl">${achMedal(b)}</span>
       <span class="ach-lbody"><span class="ach-lname">${_achName(b)}${b.got ? ` <span class="ach-lchk">${_ACH_CHK}</span>` : ""}</span><span class="ach-ldesc">${_achDesc(b)}</span>${b.p && !hid && !b.got ? `<span class="ach-lbar"><i style="width:${pct}%"></i></span>` : ""}</span>
       <span class="ach-lright">${right}</span></button>`;
   }).join("");
@@ -548,7 +586,7 @@ function _wrapText(x, text, cx, y, maxW, lineH, maxLines) {
   return out.length;
 }
 // #3 單一成就分享圖卡（canvas，不需外部套件）
-function shareAchievement(b) {
+async function shareAchievement(b) {
   try {
     const W = 540, H = 680, c = document.createElement("canvas"); c.width = W; c.height = H;
     const x = c.getContext("2d"), cat = _achCat(b);
@@ -557,11 +595,10 @@ function shareAchievement(b) {
     x.strokeStyle = "rgba(224,177,90,.10)"; x.lineWidth = 1.5;
     for (let yy = 90; yy < H; yy += 48) { x.beginPath(); for (let xx = 0; xx <= W; xx += 12) x.lineTo(xx, yy + Math.sin((xx / W) * 6.28) * 10); x.stroke(); }
     x.textAlign = "center";
-    const ccx = W / 2, ccy = 208, r = 96;
-    x.beginPath(); x.arc(ccx, ccy, r, 0, 7); x.fillStyle = "#f6f1e4"; x.fill();
-    x.lineWidth = 9; x.strokeStyle = cat.col; x.stroke();
-    x.font = "90px sans-serif"; x.fillStyle = "#333"; x.fillText(b.e, ccx, ccy + 32);
-    if (b.got) { x.beginPath(); x.arc(ccx + 66, ccy + 62, 22, 0, 7); x.fillStyle = "#e0b15a"; x.fill(); x.strokeStyle = "#fff"; x.lineWidth = 4; x.beginPath(); x.moveTo(ccx + 56, ccy + 62); x.lineTo(ccx + 63, ccy + 70); x.lineTo(ccx + 77, ccy + 54); x.stroke(); }
+    const ccx = W / 2, ccy = 208;
+    // 徽章本體（SVG）畫成圖：以前畫 emoji，部分裝置是空框
+    const md = await new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(achMedal(b, { noLock: true }).replace("<svg ", '<svg width="240" height="240" ')); });
+    if (md) x.drawImage(md, ccx - 120, ccy - 120, 240, 240);
     x.fillStyle = "#f3efe4"; x.font = "700 42px 'TaipeiSans', sans-serif"; _wrapText(x, ttT(b.n), W / 2, 358, W - 60, 46, 1);
     x.fillStyle = cat.col; x.font = "700 21px 'TaipeiSans', sans-serif"; x.fillText(ttT(ACH_CATNAME[b.c] || ""), W / 2, 392);
     x.fillStyle = "rgba(243,239,228,.85)"; x.font = "400 19px sans-serif"; _wrapText(x, ttT(b.d), W / 2, 430, W - 70, 24, 2);
@@ -587,7 +624,7 @@ function showAchDetail(b) {
   const catName = hid ? "神秘" : (ACH_CATNAME[b.c] || "");
   const date = b.got ? achUnlockDate(b.n) : "";
   box.innerHTML = `<button class="ach3d-dx" aria-label="${ttT("關閉")}">✕</button>
-    <div class="ach3d-d-top"><div class="ach3d-d-dot" style="--c:${hid ? "var(--ink-faint)" : cat.col};--pct:${hid ? 0 : pct}"><div class="ach-dot-in ach-emo">${_achEmo(b)}</div></div>
+    <div class="ach3d-d-top"><div class="ach3d-d-dot" style="--c:${hid ? "var(--ink-faint)" : cat.col};--pct:${hid ? 0 : pct}"><div class="ach-dot-in ach-mdl">${achMedal(b)}</div></div>
       <div><div class="ach3d-d-name">${_achName(b)}${b.got ? ` <span class="ach3d-d-badge">${_ACH_CHK}</span>` : ""}</div><div class="ach3d-d-cat" style="color:${hid ? "var(--ink-faint)" : cat.col}">${hid ? "" : ic(cat.i) + " "}${ttT(catName)}${date ? ` · ${ttT("解鎖於")} ${date}` : ""}</div></div></div>
     <div class="ach3d-d-desc">${_achDesc(b)}</div>
     ${b.p && !hid && !b.got ? `<div class="ach3d-d-prog"><div class="ach3d-d-bar" style="--c:${cat.col}"><i style="width:${pct}%"></i></div><span>${_achFmt(Math.min(b.p[0], b.p[1]), b.p[2])} / ${b.p[1]} ${ttT(b.p[2])}</span></div>` : `<div class="ach3d-d-prog"><span>${b.got ? ttT("已達成") : ttT("尚未達成")}</span></div>`}
@@ -716,7 +753,7 @@ function _achInitClimb(ov) {
       b.style.setProperty("--i", i);   // 由下(0)往上依序浮現
       b.style.setProperty("--c", cat.col); b.style.setProperty("--pct", _achPct(n.b));
       b.setAttribute("aria-label", `${_achName(n.b)} · ${n.b.got ? ttT("已達成") : ttT("尚未達成")}`);   // 無障礙
-      b.innerHTML = `<span class="ach-dot"><span class="ach-dot-in ach-emo">${_achEmo(n.b)}</span>${n.b.got ? `<span class="ach-check">${_ACH_CHK}</span>` : `<span class="ach-lock">${_ACH_LOCK}</span>`}</span>`;   // 各徽章專屬 emoji＋鎖頭暗示
+      b.innerHTML = `<span class="ach-dot ach-mdl">${achMedal(n.b)}</span>`;   // 徽章本體自帶緞帶（達成）／鎖＋進度圈（未達成）ji＋鎖頭暗示
       b.addEventListener("click", e => { e.stopPropagation(); showAchDetail(n.b); });
       mc.appendChild(b);
     });

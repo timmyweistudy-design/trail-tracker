@@ -2030,3 +2030,17 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .pc-d2 { display: none; }   /* 質感細節（鱗、毛流、翅脈）：只在夥伴舞台、進化儀式的大圖顯示 */
 .ps-box .pc-d2, .evolve-stage .pc-d2 { display: inline; }
 .pet-marker .pc-d, .tm-pet .pc-d, .pf-pet .pc-d, .prof-pet .pc-d, .cmp-pet .pc-d, .fp-pet .pc-d, .pet-evo-next .pc-d, .pj-stamp .pc-d, .dex-row .dex-e .pc-d, .pm-face .pc-d, .mch-hat .pc-d { display: none; }
+/* 2026-10-04 成就徽章本體（achMedal）：取代 emoji（部分裝置是空框）；外框金屬＋形狀依階層，進度圈與鎖畫在徽章裡 */
+.ach-mdl { background: none !important; border-radius: 0 !important; box-shadow: none !important; display: block; }
+.ach-mdl > .ach-medal { width: 100%; height: 100%; display: block; overflow: visible; filter: drop-shadow(0 2px 3px rgba(0,0,0,.25)); }
+.ach-dot.ach-mdl { width: 50px; height: 54px; }
+.ach3d-mk .ach-dot.ach-mdl { width: 50px; height: 54px; }
+.ach3d-mk.locked .ach-dot.ach-mdl { opacity: 1; }
+.ach3d-mk.here .ach-dot.ach-mdl { animation: achMedalHere 1.9s ease-in-out infinite; }
+@keyframes achMedalHere { 0%, 100% { filter: drop-shadow(0 0 0 transparent); } 50% { filter: drop-shadow(0 0 9px var(--c)) drop-shadow(0 0 3px #fff); } }
+.ach-lemo.ach-mdl { width: 42px; height: 46px; }
+.ach-dot-in.ach-mdl { width: 56px; height: 60px; }
+.ach3d-d-dot:has(.ach-mdl) { background: none; width: 58px; height: 62px; }
+.anx-e.ach-mdl { width: calc(26px * var(--fs, 1)); height: calc(28px * var(--fs, 1)); }
+.ach-medal.locked { filter: drop-shadow(0 1px 2px rgba(0,0,0,.18)); }
+@media (prefers-reduced-motion: reduce) { .ach3d-mk.here .ach-dot.ach-mdl { animation: none; } }
