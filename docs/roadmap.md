@@ -1,6 +1,6 @@
 # 循徑拾光：目前進度與待辦
 
-最後更新：2026-10-04（夥伴美工輪：明信片／背景／角色重畫；SW `trail-tracker-v574`；`test:all` 34/34 一次全過）
+最後更新：2026-10-04（夥伴美工輪：明信片／背景／角色重畫；SW `trail-tracker-v575`；`test:all` 34/34 一次全過）
 上架細節清單見 [launch-checklist.md](launch-checklist.md)。
 
 ## 現況
