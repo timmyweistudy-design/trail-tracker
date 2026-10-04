@@ -514,7 +514,8 @@ html[data-theme="dark"] .cg-c.l4 { background: #7fcf98; border-color: #8edaa6; }
 .fv-critter .pet-prop { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
 .fv-stage .pet-shadow { width: 92px; margin: -7px 0 6px; }
 .fv-stage .fv-heart { z-index: 4; }
-@keyframes fv-bounce { 0%, 100% { transform: translateX(-50%) scale(1); } 35% { transform: translateX(-50%) scale(1.12, .88); } 65% { transform: translateX(-50%) translateY(-10px) scale(.95, 1.06); } }
+@keyframes fv-bounce { 0%, 100% { transform: scale(1); } 35% { transform: scale(1.12, .88); } 65% { transform: translateY(-10px) scale(.95, 1.06); } }   /* 舊排版才需要 translateX(-50%)，留著會讓角色往左滑 */
+.fv-heart svg { width: 22px; height: 22px; display: block; }
 .fv-heart { position: absolute; bottom: 90px; font-size: 22px; pointer-events: none; animation: fv-heart 1.4s var(--ease-out) forwards; opacity: 0; }
 @keyframes fv-heart { 0% { opacity: 0; transform: translateY(0) scale(.6); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-90px) scale(1.15); } }
 .fv-name { margin: 2px 0 2px; }

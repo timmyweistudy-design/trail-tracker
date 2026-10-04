@@ -108,7 +108,8 @@ const Pets = (() => {
   function friendName(p) { return p.pet_name ? T(p.pet_name) : (p.display_name || p.handle || T("山友")); }
   function hearts(stage) {
     for (let i = 0; i < 5; i++) {
-      const h = document.createElement("span"); h.className = "fv-heart"; h.textContent = "💗";
+      const h = document.createElement("span"); h.className = "fv-heart";
+      if (typeof PET_HEART_SVG !== "undefined") h.innerHTML = PET_HEART_SVG; else h.textContent = "♥";   // emoji 愛心在部分裝置是空框
       h.style.left = (30 + Math.random() * 40) + "%"; h.style.animationDelay = (i * 90) + "ms";
       stage.appendChild(h); setTimeout(() => h.remove(), 1600);
     }
@@ -145,9 +146,12 @@ const Pets = (() => {
     if (typeof ttModalA11y === "function") _a11y = ttModalA11y(ov, close, { focus: "#pvPat" });
     ov.querySelector("#pvX").onclick = close;
     ov.addEventListener("click", e => { if (e.target === ov) close(); });
-    const stage = ov.querySelector(".fv-stage"), critter = ov.querySelector(".fv-critter .pet-critter");   // 只彈角色，腳下的葉子／雲不動
+    const stage = ov.querySelector(".fv-stage"), actor = ov.querySelector(".fv-critter");
     ov.querySelector("#pvPat").onclick = () => {
-      critter.classList.remove("fv-bounce"); void critter.offsetWidth; critter.classList.add("fv-bounce");
+      // 跟摸自己的夥伴同一個反應（pb-pat：以腳底為原點壓扁再彈回＋開心瞇眼）；只動角色，腳下的葉子／雲不動。
+      // 以前用 fv-bounce，關鍵影格裡還留著舊排版的 translateX(-50%)，角色會先往左滑半個身體再回來
+      clearTimeout(actor._t); actor.classList.remove("pb-pat"); void actor.offsetWidth; actor.classList.add("pb-pat");
+      actor._t = setTimeout(() => actor.classList.remove("pb-pat"), 850);
       hearts(stage); if (typeof ttBuzz === "function") ttBuzz(20);
       if (patsToday().has(p.id)) { say(T("%s 蹭了蹭你的手").replace("%s", friendName(p))); return; }
       markPat(p.id);

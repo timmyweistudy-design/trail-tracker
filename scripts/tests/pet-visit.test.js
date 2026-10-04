@@ -20,7 +20,7 @@ const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:o.w||390,he
  await p.screenshot({path:O+"visit.png"});
  const a0=await p.evaluate(()=>affinity());
  await p.click("#pvPat");await p.waitForTimeout(300);
- ok(await p.evaluate(()=>document.querySelectorAll(".fv-heart").length===5&&document.querySelector(".fv-critter .pet-critter").classList.contains("fv-bounce")),"pat: hearts + bounce");
+ ok(await p.evaluate(()=>document.querySelectorAll(".fv-heart svg").length===5&&document.querySelector(".fv-critter").classList.contains("pb-pat")),"pat: 5 SVG hearts + the same squish as my own pet");
  await p.screenshot({path:O+"pat.png"});
  const a1=await p.evaluate(()=>affinity());ok(a1===a0+2,`first pat today +2 affinity (${a0}→${a1})`);
  ok(/毛毛 很開心/.test(await p.evaluate(()=>document.getElementById("toast").textContent)),"pat toast");
@@ -62,13 +62,25 @@ const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:o.w||390,he
   Pets.visit({id:"x1",handle:"a",pet_name:"小龍",pet_level:6,total_km:200,pet_hat:"maple",pet_decor:"fall,old,<script>"},false,null);await new Promise(r=>setTimeout(r,300));
   const box=document.querySelector(".fv-stage .ps-box"),pr=document.querySelector(".fv-critter .pet-prop"),b0=pr.getBoundingClientRect();
   document.querySelector("#pvPat").click();await new Promise(r=>setTimeout(r,180));const b1=pr.getBoundingClientRect();
-  const out={stage:box.dataset.stage,decor:box.dataset.decor,hat:!!document.querySelector(".fv-critter .pc-hat"),propMoved:Math.abs(b1.top-b0.top),bounce:document.querySelector(".fv-critter .pet-critter").classList.contains("fv-bounce")};
+  const out={stage:box.dataset.stage,decor:box.dataset.decor,hat:!!document.querySelector(".fv-critter .pc-hat"),propMoved:Math.abs(b1.top-b0.top),bounce:document.querySelector(".fv-critter").classList.contains("pb-pat")};
   document.querySelectorAll('[data-ov="petvisit"]').forEach(e=>e.remove());
   Pets.visit({id:"x2",handle:"b",pet_level:3,pet_hat:"evil-hat"},false,null);await new Promise(r=>setTimeout(r,300));
   out.old={stage:document.querySelector(".fv-stage .ps-box").dataset.stage,decor:document.querySelector(".fv-stage .ps-box").dataset.decor||"",hat:!!document.querySelector(".fv-critter .pc-hat")};return out;});
  ok(r.stage==="5"&&r.decor==="fall old"&&r.hat,"friend's hat and walked scenery carried over (unknown decor dropped) "+JSON.stringify(r));
  ok(r.propMoved<.5&&r.bounce,"pat bounces only the pet; the cloud under it stays "+JSON.stringify(r));
  ok(r.old.stage==="2"&&!r.old.decor&&!r.old.hat,"unknown hat / no decor falls back to the plain stage "+JSON.stringify(r.old));
+ await p.close();}
+
+// 使用者回報：摸頭時好友的夥伴會往左滑再回原位 → 整段動畫逐格量，左右位移不能超過 2px；開心瞇眼要出現
+{const p=await mk();
+ const r=await p.evaluate(async()=>{document.querySelectorAll('[data-ov="petvisit"]').forEach(e=>e.remove());
+  Pets.visit({id:"x3",handle:"c",pet_name:"阿狐",pet_level:4,total_km:50},false,null);await new Promise(r=>setTimeout(r,400));
+  const c=document.querySelector(".fv-critter .pet-critter"),cx=()=>{const q=c.getBoundingClientRect();return q.left+q.width/2;},x0=cx();
+  document.querySelector("#pvPat").click();let dx=0,eh=false;
+  for(let k=0;k<20;k++){await new Promise(r=>setTimeout(r,40));dx=Math.max(dx,Math.abs(cx()-x0));const e=document.querySelector(".fv-critter .pc-eh");if(e&&getComputedStyle(e).display!=="none")eh=true;}
+  return {dx:+dx.toFixed(2),eh};});
+ ok(r.dx<2,"pat: the friend's pet does not slide sideways (max dx "+r.dx+"px)");
+ ok(r.eh,"pat: the friend's pet shows happy ^^ eyes");
  await p.close();}
 
 console.log("ERRS",JSON.stringify(errs));console.log("FAILS",fails);await b.close();srv.kill();})();
