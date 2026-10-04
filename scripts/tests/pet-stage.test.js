@@ -104,21 +104,27 @@ const KM=[0,5,20,40,90,150,260];
  const f1=await p.evaluate(()=>{const bs=[...document.querySelectorAll(".ps-box .ps-berry")].map(b=>+b.style.getPropertyValue("--bx"));return {n:bs.length,xs:bs,minGap:Math.min(...bs.flatMap((a,i)=>bs.slice(i+1).map(b=>Math.abs(a-b)))),dis:document.getElementById("petFeed").disabled};});
  ok(f1.n===3&&f1.minGap>=34&&f1.dis,"feed: three berries drop at separate random spots, button locked "+JSON.stringify(f1));
  await p.screenshot({path:O+"p2-feed-drop.png"});
- const seq=await p.evaluate(async()=>{const vals=[],steps=[],c0=document.querySelector("#petEmoji .pet-critter"),b=document.querySelector(".ps-box").getBoundingClientRect();let bite=false,off=0,feet=null,feetMove=0;
+ const seq=await p.evaluate(async()=>{const vals=[],steps=[],c0=document.querySelector("#petEmoji .pet-critter"),b=document.querySelector(".ps-box").getBoundingClientRect();let bite=false,off=0,feet=null,feetMove=0,wasOpen=false;const aims=[];
   for(let k=0;k<220;k++){const e=document.querySelector("#petFeed .feed-bal");if(e){const v=+e.textContent;if(vals[vals.length-1]!==v)vals.push(v);}
    const em=document.querySelector("#petEmoji");if(em){const top=["pb-lick","pb-gulp","pb-chew","pb-snap","st-open","st-lean"].find(k=>em.classList.contains(k));if(top&&steps[steps.length-1]!==top)steps.push(top);
-    if(em.classList.contains("st-lean")){bite=true;const c=em.querySelector(".pet-critter").getBoundingClientRect(),f=em.querySelector(".pc-bob").getBoundingClientRect();off=Math.max(off,Math.abs((c.left+c.width/2)-(b.left+b.width/2)));feet=feet==null?f.bottom:feet;feetMove=Math.max(feetMove,Math.abs(f.bottom-feet));}}
+    if(em.classList.contains("st-lean")){bite=true;const f=em.querySelector(".pc-bob").getBoundingClientRect();feet=feet==null?f.bottom:feet;feetMove=Math.max(feetMove,Math.abs(f.bottom-feet));}
+    if(em.classList.contains("st-open")&&!wasOpen){const m=em.querySelector(".pr-mouth").getBoundingClientRect(),mc=[m.left+m.width/2,m.top+m.height/2];
+     const bs=[...document.querySelectorAll(".ps-berry:not(.eaten)")].map(x=>{const q=x.getBoundingClientRect();return [q.left+q.width/2-mc[0],q.top+q.height/2-mc[1]]}).sort((u,v)=>Math.hypot(...u)-Math.hypot(...v));if(bs[0])aims.push(bs[0].map(Math.round));}
+    wasOpen=em.classList.contains("st-open");if(!em.classList.contains("st-lean"))feet=null;}
    if(!document.querySelector(".ps-berry"))break;await new Promise(r=>setTimeout(r,70));}
-  return {vals,bite,off:+off.toFixed(1),steps:steps.join(">"),feetMove:+feetMove.toFixed(1)};});
+  return {vals,bite,steps:steps.join(">"),feetMove:+feetMove.toFixed(1),aims};});
  await p.screenshot({path:O+"p2-feed-eat.png"});
  ok(seq.vals.join()===[shown0,shown0-1,shown0-2,shown0-3].join(),"feed: the berry count on the button ticks down one per bite "+JSON.stringify(seq));
- ok(seq.bite&&seq.off<4&&seq.feetMove<1.5,"feed: leans down to eat in place, feet stay planted "+JSON.stringify(seq));
+ ok(seq.bite&&seq.feetMove<1.5,"feed: leans down to eat, feet stay planted while eating "+JSON.stringify({feetMove:seq.feetMove}));
+ ok(seq.aims.length===3&&seq.aims.every(([dx,dy])=>Math.abs(dx)<=14&&Math.abs(dy)<=24),"feed: walks over so the mouth is right above each berry when it opens (dx,dy px) "+JSON.stringify(seq.aims));
  ok(/st-lean>st-open>pb-snap>pb-chew>pb-gulp/.test(seq.steps),"feed: each berry = lean > open mouth > snap > chew > gulp "+seq.steps);
  const lick=await p.evaluate(async()=>{for(let k=0;k<30;k++){if(document.querySelector("#petEmoji.pb-lick"))return true;await new Promise(r=>setTimeout(r,50));}return false;});
  ok(lick,"feed: licks its lips after the last berry");
- await p.waitForTimeout(3000);   // 愛心先冒、0.45 秒後才跳提示
+ await p.waitForFunction(()=>/吃得好開心/.test(document.getElementById("toast").textContent),null,{timeout:12000}).catch(()=>{});   // 走回中間、慶祝、愛心先冒、0.45 秒後才跳提示
  const f2=await p.evaluate(()=>({berry:!!document.querySelector(".ps-berry"),bal:berriesBalance(),t:document.getElementById("toast").textContent}));
  ok(!f2.berry&&f2.bal===bal0-3&&/吃得好開心/.test(f2.t),"feed: all three eaten, settled (−3) "+JSON.stringify(f2));
+
+ ok(await p.evaluate(()=>Math.abs(parseFloat(document.querySelector(".ps-box").style.getPropertyValue("--wx"))||0)<1),"feed: walks back to the middle afterwards");
  const keep=await p.evaluate(()=>({same:document.querySelector(".ps-box")===window.__psBefore,parts:[...document.querySelectorAll(".ps-p")].map(e=>e.style.left).join()===window.__psParts,
   km:document.querySelector(".pet-chip .cv").textContent,feedDis:document.getElementById("petFeed").disabled,lbl:document.querySelector("#petFeed span").textContent}));
  ok(keep.same&&keep.parts&&keep.feedDis&&/小時後可餵/.test(keep.lbl),"after eating the card is updated in place: same stage element, particles untouched, button shows the cooldown "+JSON.stringify(keep));

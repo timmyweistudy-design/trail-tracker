@@ -1847,7 +1847,7 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 @keyframes psDrift { from { transform: translateX(-18px); } to { transform: translateX(18px); } }
 /* 角色：跟著視差微微轉身；時段打不同方向的輪廓光 */
 .ps-box #petEmoji { perspective: 700px; }
-.ps-box #petEmoji .pet-critter { rotate: y calc(var(--px) * 10deg); }
+.ps-box #petEmoji .pet-critter { rotate: y calc(var(--px) * 10deg + var(--face, 0deg)); translate: var(--wx, 0px) var(--wy, 0px); }   /* --face／--wx：走過去吃（pet-walk.js） */
 .ps-box[data-tod="dawn"]  #petEmoji .pet-critter { filter: drop-shadow(-4px -2px 6px rgba(255,190,150,.5)) drop-shadow(0 10px 12px rgba(0,0,0,.28)); }
 .ps-box[data-tod="dusk"]  #petEmoji .pet-critter { filter: drop-shadow(4px -2px 7px rgba(255,150,80,.5)) drop-shadow(0 10px 12px rgba(0,0,0,.3)); }
 .ps-box[data-tod="night"] #petEmoji .pet-critter { filter: brightness(.92) drop-shadow(-3px -3px 7px rgba(160,190,255,.45)) drop-shadow(0 10px 12px rgba(0,0,0,.35)); }
@@ -2214,3 +2214,32 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .pet-chip.bump .cv, .pet-meter.bump b { animation: petBump .6s var(--ease-out, ease-out); display: inline-block; }
 @keyframes petBump { 0% { transform: scale(1); } 30% { transform: scale(1.18); color: #f2cf6a; } 100% { transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .pet-chip.bump .cv, .pet-meter.bump b { animation: none; } }
+
+/* ════ 走過去吃（pet-walk.js 每一格寫變數，這裡套到骨架上）════ */
+.ps-box .pet-shadow { translate: var(--wx, 0px) 0; }
+.ps-box[data-stage="5"] #petEmoji .pet-prop { translate: calc(-50% + var(--wx, 0px)) 0; }   /* 幼龍的雲跟著飄 */
+.ps-box.walking .pc-bob, .ps-box.walking .pc-hover { animation: none; transform: translate(var(--gsx, 0px), var(--gby, 0px)) rotate(var(--gbr, 0deg)); scale: calc(1 + var(--gpre, 0) * .03) calc(1 - var(--gpre, 0) * .07); transition: scale .15s ease-out; }
+.ps-box.walking .pc-bob.pc-egg { transform-origin: 50% 96%; }
+.ps-box.walking .pr-head { transform: translateY(var(--ghy, 0px)) rotate(var(--ghr, 0deg)); }
+.ps-box.walking .pr-paw.l { transform: translate(var(--pLx, 0px), var(--pLy, 0px)) rotate(var(--pLr, 0deg)); }
+.ps-box.walking .pr-paw.r { transform: translate(var(--pRx, 0px), var(--pRy, 0px)) rotate(var(--pRr, 0deg)); }
+.ps-box.walking .pr-foot.l { transform: translate(var(--hLx, 0px), var(--hLy, 0px)); }
+.ps-box.walking .pr-foot.r { transform: translate(var(--hRx, 0px), var(--hRy, 0px)); }
+.ps-box.walking .pc-tail { animation: none; transform: rotate(var(--gtr, 0deg)); }
+.ps-box.walking .pc-ear.l { animation: none; transform: rotate(var(--gear, 0deg)); }
+.ps-box.walking .pc-ear.r { animation: none; transform: rotate(calc(var(--gear, 0deg) * -1)); }
+.ps-box.walking[data-walk="fly"] .pc-wing { animation-duration: .42s; }
+.ps-box.walking[data-walk="swim"] .pc-sway { animation-duration: 1s; }
+.ps-box .pr-foot { transform-box: view-box; transform-origin: var(--ox, 100px) var(--oy, 100px); }
+.ps-box.no-tr *, .ps-box.no-tr { transition: none !important; }   /* 量姿勢用的那一格不要有過渡 */
+/* 幼龍撿果實：蹲下、爪子伸下去、抓住、舉到嘴邊（pet-stage.js 依果實在哪一側選左右爪） */
+.ps-box .pr-paw { transition: transform .34s cubic-bezier(.3,.7,.4,1); }
+.ps-box .st-crouch .pc-bob { animation: none; transform: scale(1.04, .93); transition: transform .3s ease-out; }
+.ps-box .st-crouch .pr-head { transform: translateY(4px) rotate(calc(var(--ex, 0) * 5deg)); }
+.ps-box .st-reach-l .pr-paw.l { transform: translate(-4px, 14px) rotate(28deg); }
+.ps-box .st-reach-r .pr-paw.r { transform: translate(4px, 14px) rotate(-28deg); }
+.ps-box .st-lift-l .pr-paw.l { transform: translate(2px, -22px) rotate(-60deg); }
+.ps-box .st-lift-r .pr-paw.r { transform: translate(-2px, -22px) rotate(60deg); }
+/* 被抓著的果實：跟著爪子平滑移動（--tx／--ty 由 pet-stage.js 量） */
+.ps-berry.held { animation: none; transform: translate(var(--tx, 0px), var(--ty, 0px)); transition: transform .3s cubic-bezier(.3,.7,.4,1); }
+.ps-berry.held.eaten { transform: translate(var(--tx, 0px), var(--ty, 0px)) scale(.12); opacity: 0; transition: transform .3s ease-in, opacity .2s ease-in .12s; }

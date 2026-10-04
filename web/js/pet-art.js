@@ -195,7 +195,7 @@ window.PET_ART = (function () {
       <g class="pc-tail">${P(Pa("M126 177 C158 183 182 165 184 135 C186 111 172 93 154 91 C168 109 166 133 152 151 C142 161 132 165 122 165Z"), FX, { hl: [172, 123, 4, 12] })}
         ${P(Pa("M154 91 C170 91 186 107 184 129 C178 117 168 111 160 111 C163 104 161 97 154 91Z"), FXC, { sw: 2.4, dx: 2, dy: 2 })}
         <path class="pc-d2" d="M174 137 q-6 10 -14 14 M168 127 q-4 8 -12 12 M178 151 q-8 10 -20 14" stroke="${sh(FX, .3)}" stroke-width="1.6" fill="none" stroke-linecap="round"/></g>
-      ${P(E(132, 193, 11, 4.6), FXK, { sw: 2, dx: 2, dy: 2 })}
+      ${rig("pr-foot r", 132, 190, P(E(132, 193, 11, 4.6), FXK, { sw: 2, dx: 2, dy: 2 }))}
       ${P(Pa("M72 193 C64 165 74 135 100 129 C126 125 140 147 140 169 C140 185 134 193 122 195Z"), FX, { hl: [82, 145, 6, 12] })}
       <path class="pc-d" d="M124 157 Q138 165 134 187" stroke="${sh(FX, .3)}" stroke-width="2" fill="none" stroke-linecap="round"/>
       ${rig("pr-paw l", 90, 157, P(Pa("M84 157 L83 191 Q90 196 97 191 L97 157Z"), FX, { dx: 2, dy: 2 }) + P(Pa("M83 175 L83 191 Q90 196 97 191 L97 175Q90 172 83 175Z"), FXK, { sw: 2, dx: 2, dy: 2 }))}
@@ -277,10 +277,7 @@ window.PET_ART = (function () {
       ${P(Pa("M100 126 Q118 128 120 150 Q116 170 100 174 Q84 170 80 150 Q82 128 100 126Z"), BELLY, { sw: 2.2, dx: 3, dy: 3, sk: .14 })}
       <path d="M85 140 Q100 145 115 140 M83 151 Q100 156 117 151 M86 162 Q100 167 114 162" stroke="${sh(BELLY, .3)}" stroke-width="1.8" fill="none" stroke-linecap="round"/>
       <g class="pc-d2">${[[74, 142], [72, 154], [126, 142], [128, 154], [78, 130], [122, 130]].map(([x, y]) => `<path d="M${x - 3} ${y} q3 3.4 6 0" stroke="${JD}" stroke-width="1.3" fill="none" opacity=".55"/>`).join("")}</g>
-      ${P(E(82, 176, 11, 7), JADE, { sw: 2.4, dx: 2, dy: 2 })}${P(E(118, 176, 11, 7), JADE, { sw: 2.4, dx: 2, dy: 2 })}
-      ${[[76, 181], [82, 182], [88, 181], [112, 181], [118, 182], [124, 181]].map(([x, y]) => `<path d="M${x - 2} ${y - 2} q2 5 4 0Z" fill="#f4ecd2" stroke="#9c8a5a" stroke-width="1.2" stroke-linejoin="round"/>`).join("")}
-      ${rig("pr-paw l", 76, 132, P(Pa(tube([[[76, 132], [72, 140], [72, 148], [76, 154]]], [[0, 11], [1, 9]])), JADE, { dx: 2, dy: 2 }) + claw(78, 156, 80, 3, JADE))}
-      ${rig("pr-paw r", 124, 132, P(Pa(tube([[[124, 132], [128, 140], [128, 148], [124, 154]]], [[0, 11], [1, 9]])), JADE, { dx: 2, dy: 2 }) + claw(122, 156, 100, 3, JADE))}
+      ${[[82, -1], [118, 1]].map(([fx, k]) => rig(`pr-foot ${k < 0 ? "l" : "r"}`, fx, 172, P(E(fx, 176, 11, 7), JADE, { sw: 2.4, dx: 2, dy: 2 }) + [-6, 0, 6].map(d => `<path d="M${fx + d - 2} ${(d ? 181 : 182) - 2} q2 5 4 0Z" fill="#f4ecd2" stroke="#9c8a5a" stroke-width="1.2" stroke-linejoin="round"/>`).join(""))).join("")}
       <g class="pc-tw">${P(Pa("M38 152 Q36 142 42 136 Q42 142 46 142 Q46 136 50 132 Q54 142 50 152Z"), "#ffa94a", { sw: 1.6, dx: 1, dy: 1 })}${P(C(44, 154, 8), "#ffdf86", { hl: [41, 151, 3, 2], dx: 2, dy: 2 })}</g>
       <g class="pr-head" style="--ox:100px;--oy:124px">
       ${[[-170, 16, 9, -4], [-150, 18, 10, -3], [-30, 18, 10, 3], [-10, 16, 9, 4], [160, 12, 8, 3], [20, 12, 8, -3]].map(([a, L, w, b]) => { const r = a * Math.PI / 180, x0 = 100 + Math.cos(r) * 30, y0 = 80 + Math.sin(r) * 24; return tpo(rd(x0), rd(y0), rd(x0 + Math.cos(r) * L), rd(y0 + Math.sin(r) * L), w, MANE, b); }).join("")}
@@ -301,6 +298,9 @@ window.PET_ART = (function () {
       ${brow(78, 72, 94, 73, JD)}${brow(122, 72, 106, 73, JD)}
       ${eyeOf("round", 87, 86, 8, 9.4, -1, "#c99a2a", { pupil: "slit", pw: .5 })}${eyeOf("round", 113, 86, 8, 9.4, 1, "#c99a2a", { pupil: "slit", pw: .5 })}
       <!--H--></g>
+      <!-- 前爪畫在頭之後：撿果實舉到嘴邊時爪子要在下巴前面（平常不會跟頭重疊，看起來一樣）-->
+      ${rig("pr-paw l", 76, 132, P(Pa(tube([[[76, 132], [72, 140], [72, 148], [76, 154]]], [[0, 11], [1, 9]])), JADE, { dx: 2, dy: 2 }) + claw(78, 156, 80, 3, JADE))}
+      ${rig("pr-paw r", 124, 132, P(Pa(tube([[[124, 132], [128, 140], [128, 148], [124, 154]]], [[0, 11], [1, 9]])), JADE, { dx: 2, dy: 2 }) + claw(122, 156, 100, 3, JADE))}
     </g>`;
 
   // 6 騰雲神龍（2026-10-04 重畫）：東方龍「九似」——駝頭長吻、鹿角、牛耳、蛇身、蜃腹（節狀腹甲）、鯉鱗、鷹爪、龍鬚、
