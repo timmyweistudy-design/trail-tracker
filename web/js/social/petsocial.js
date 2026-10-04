@@ -70,7 +70,7 @@ const Pets = (() => {
     const giftLbl = `${T("送出")} 3 ${berry}`;
     box.innerHTML = `${H}<div class="friend-pets">${list.map(p => {
       const lvl = p.pet_level || 1, emoji = (typeof PET_STAGES !== "undefined" && PET_STAGES[lvl - 1]) ? PET_STAGES[lvl - 1].e : "🥚";
-      const art = (typeof PET_ART !== "undefined") ? PET_ART.svg(lvl - 1) : emoji;   // 好友夥伴也用 SVG 角色
+      const art = (typeof PET_ART !== "undefined") ? PET_ART.svg(lvl - 1, "", HAT_OK(p.pet_hat) ? p.pet_hat : undefined) : emoji;   // 好友夥伴也用 SVG 角色，戴著對方的配件
       const sent = sentToday.has(p.id);
       return `<div class="fp"><button class="fp-visit" data-id="${p.id}" aria-label="${esc(T("去拜訪"))}"><span class="fp-pet">${art}</span><span class="fp-info"><b>${esc(p.pet_name ? T(p.pet_name) : (p.display_name || p.handle))}</b> <span class="lv-chip lvt-${Math.min(lvl, 7)}">Lv.${lvl}</span><span class="fp-by">@${esc(p.handle)}</span></span></button><button class="btn ghost fp-gift" data-id="${p.id}" data-name="${esc(p.display_name || p.handle)}"${sent ? " disabled" : ""}>${sent ? T("今天已送") : giftLbl}</button></div>`;
     }).join("")}</div>`;
