@@ -12,7 +12,7 @@ window.PetWalk = (function () {
   // 各階的走法：D＝走一個完整步伐週期前進幾 px；v＝速度 px/s；duty＝支撐期比例；bob／roll／lift 單位是 SVG（viewBox 200）
   const GAIT = {
     0: { mode: "rock", v: 86, D: 30, bob: 3, roll: 15 },                                      // 蛋：左右搖著滾過去
-    1: { mode: "crawl", v: 60, D: 24, bob: 1.5, roll: 0, wave: 7 },                          // 幼蟲：蠕動（收縮波從尾巴往頭傳）
+    1: { mode: "crawl", v: 60, D: 30, bob: 0, roll: 0, head: 0 },                          // 幼蟲：蠕動（收縮波從尾巴往頭傳）
     2: { mode: "fly", v: 140, D: 38, bob: 9, roll: 0, bank: 9 },                               // 蝶：一拍一升的小弧線、轉彎時內傾
     3: { mode: "stand", v: 135, swing: 24, knee: 34, duty: .62, bob: 3, tail: 10, ear: 6, neck: 3.5, legL: 54 },   // 狐：站起來輕快地走（側身四條腿）
     4: { mode: "stand", v: 104, swing: 21, knee: 40, duty: .66, bob: 4.5, tail: 8, ear: 3, neck: -1.2, legL: 52 }, // 虎：慢、沉、腳抬高、頭穩（貓科頭幾乎不動）
@@ -20,6 +20,49 @@ window.PetWalk = (function () {
     6: { mode: "swim", v: 125, D: 70, bob: 3, roll: 1.5, tail: 8, head: 1.5 },                 // 神龍：在雲上游
   };
   let raf = 0;
+  // ── 身體變形（幼蟲蠕動、神龍游）：.pr-deform 裡的路徑座標每一格依「變形場」移動，走完還原 ──
+  // 幼蟲：一個隆起從尾巴往頭跑（收縮波，腹足跟著被抬起來）；神龍：沿身體往尾巴傳的正弦波，越往尾巴越大
+  const ORIG = new WeakMap();
+  const TOK = /([MLHVCSQTAZmlhvcsqtaz])|(-?\d*\.?\d+(?:e[-+]?\d+)?)/g;
+  function snapshot(box) {
+    const g = box.querySelector("#petEmoji .pr-deform"); if (!g) return null;
+    if (ORIG.has(g)) return ORIG.get(g);
+    const items = [];
+    g.querySelectorAll("path,ellipse,circle,g[transform]").forEach(el => {
+      if (el.tagName === "path") { const d = el.getAttribute("d"); if (d) items.push({ el, d, toks: d.match(TOK) }); }
+      else if (el.tagName === "g") { const m = /^translate\(([-\d.]+)[ ,]+([-\d.]+)\)(.*)$/.exec(el.getAttribute("transform")); if (m) items.push({ el, gx: +m[1], gy: +m[2], rest: m[3] }); }
+      else if (!el.closest("g[transform]") || el.closest("g[transform]") === g) items.push({ el, cx: +el.getAttribute("cx"), cy: +el.getAttribute("cy") });
+    });
+    ORIG.set(g, items); return items;
+  }
+  function applyField(box, F) {
+    const items = snapshot(box); if (!items) return;
+    const r = v => Math.round(v * 10) / 10;
+    for (const it of items) {
+      if (it.toks) {
+        if (it.el.closest("g[transform]") && it.el.closest("g[transform]") !== box.querySelector("#petEmoji .pr-deform")) continue;   // 在平移群組裡的（爪子）跟著群組走
+        let out = "", cmd = "", buf = [];
+        const flush = () => { if (!buf.length) return; if ("MLTQSC".includes(cmd)) for (let i = 0; i + 1 < buf.length; i += 2) { const [x, y] = F(buf[i], buf[i + 1]); out += r(x) + " " + r(y) + " "; } else out += buf.join(" ") + " "; buf = []; };
+        for (const t of it.toks) { if (/[A-Za-z]/.test(t)) { flush(); cmd = t; out += t; } else buf.push(+t); }
+        flush(); it.el.setAttribute("d", out.trim());
+      } else if (it.gx != null) { const [x, y] = F(it.gx, it.gy); it.el.setAttribute("transform", `translate(${r(x)} ${r(y)})${it.rest}`); }
+      else { const [x, y] = F(it.cx, it.cy); it.el.setAttribute("cx", r(x)); it.el.setAttribute("cy", r(y)); }
+    }
+  }
+  function resetField(box) {
+    const g = box.querySelector("#petEmoji .pr-deform"); const items = g && ORIG.get(g); if (!items) return;
+    for (const it of items) { if (it.toks) it.el.setAttribute("d", it.d); else if (it.gx != null) it.el.setAttribute("transform", `translate(${it.gx} ${it.gy})${it.rest}`); else { it.el.setAttribute("cx", it.cx); it.el.setAttribute("cy", it.cy); } }
+  }
+  const hump = (x, c, w) => Math.exp(-Math.pow((x - c) / w, 2));
+  function field(box, mode, ph, s) {
+    if (mode === "crawl") {   // 隆起從尾巴（x≈34）跑到頭（x≈150），高 8、寬 16；被抬起來的那一段往前縮一點
+      const c = 30 + 128 * ph;
+      applyField(box, (x, y) => { const h = hump(x, c, 16) * s; return [x - 2.5 * h, y - 8 * h]; });
+      set(box, "--ghy", (-8 * hump(142, c, 18) * s).toFixed(2) + "px");   // 隆起傳到頭時頭跟著抬一下
+    } else if (mode === "swim") {   // 往尾巴傳的波：靠頭那端幾乎不動、尾巴擺最大
+      applyField(box, (x, y) => { const a = (1.2 + 6 * Math.max(0, Math.min(1, (x - 84) / 110))) * s; return [x, y + a * Math.sin(Math.PI * 2 * (x / 70 - ph))]; });
+    }
+  }
   const set = (box, k, v) => box.style.setProperty(k, v);
   const critterPx = box => { const c = box.querySelector("#petEmoji .pet-critter"); return c ? c.getBoundingClientRect().width || 168 : 168; };
   // 站姿走路的步伐長度：腳在支撐期掃過的距離＝2·腿長·sin(擺角)，換成 px（u＝SVG 單位／px）
@@ -105,10 +148,12 @@ window.PetWalk = (function () {
         done += ds; p += ds / g.D;
         set(box, "--wx", (x0 + dir * done).toFixed(2) + "px");
         pose(box, g, p, Math.max(.15, ease), dir);
+        if (g.mode === "crawl" || g.mode === "swim") field(box, g.mode, ((p % 1) + 1) % 1, Math.max(.15, ease));
         if (left - ds > .2) raf = requestAnimationFrame(step); else res();
       };
       raf = requestAnimationFrame(step);
     });
+    set(box, "--wx", x + "px");   // 停在剛好的位置（迴圈在差 0.2px 內就停）
     // 收步：身體往前多衝一點再回來（彈簧），腳收回、尾巴再擺一下
     const p1 = p, t1 = performance.now();
     await new Promise(res => {
@@ -122,6 +167,7 @@ window.PetWalk = (function () {
       raf = requestAnimationFrame(step);
     });
     set(box, "--gsx", "0px");
+    if (g.mode === "crawl" || g.mode === "swim") resetField(box);
     box.classList.remove("walking"); delete box.dataset.walk;
   }
   // 讓「嘴」對準果實：量嘴相對角色中心的位置（已經轉向那一側），走到嘴在果實正上方

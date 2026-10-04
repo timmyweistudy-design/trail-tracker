@@ -345,4 +345,17 @@ for(const [km,st] of [[5,1],[150,5],[260,6]]){const p=await mk({km});
  ok(r==="none","reduced motion: no part animation ("+r+")");
  await p.close();}
 
+// ── 2026-10-04 走過去吃：蠕動／游動的身體變形走完要還原；站姿走路要坐回去 ──
+for(const [km,st] of [[5,1],[260,6]]){const p=await mk({km});
+ const r=await p.evaluate(async()=>{const box=document.querySelector(".ps-box"),sig=()=>[...box.querySelectorAll("#petEmoji .pr-deform path")].map(e=>e.getAttribute("d")).join("|");
+  const before=sig();let mid="";const t=setTimeout(()=>{mid=sig()},500);await PetWalk.goTo(box,60);clearTimeout(t);const after=sig();await PetWalk.home(box);
+  return {changedMid:mid!==""&&mid!==before,restored:after===before&&sig()===before,wx:box.style.getPropertyValue("--wx")};});
+ ok(r.changedMid&&r.restored,"stage "+st+": body bends while moving and is restored exactly afterwards "+JSON.stringify(r));
+ await p.close();}
+{const p=await mk({km:90});
+ const r=await p.evaluate(async()=>{const box=document.querySelector(".ps-box");const p1=PetWalk.goTo(box,-50);await new Promise(r=>setTimeout(r,450));const standing=box.classList.contains("standing"),vis=getComputedStyle(box.querySelector(".pr-stand")).display;
+  await p1;await PetWalk.home(box);return {standing,vis,after:box.classList.contains("standing"),sitVis:getComputedStyle(box.querySelector("#petEmoji .pc-bob")).display};});
+ ok(r.standing&&r.vis!=="none"&&!r.after&&r.sitVis!=="none","tiger stands up to walk (side body shown) and sits back down at home "+JSON.stringify(r));
+ await p.close();}
+
 console.log("ERRS",JSON.stringify(errs));console.log("FAILS",fails);await b.close();srv.kill();})();

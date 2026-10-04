@@ -135,6 +135,7 @@ window.PET_ART = (function () {
   const lvFolds = spine(LVS, 10).filter((q, k) => k > 0 && k < 10 && k % 2 === 0).map(q => { const w = wAt(LVW, q.f) / 2; return `M${rd(q.x + q.nx * w * .95)} ${rd(q.y + q.ny * w * .95)}Q${rd(q.x + q.nx * w * .1 + Math.cos(q.a * Math.PI / 180) * 3)} ${rd(q.y + q.ny * w * .1 + Math.sin(q.a * Math.PI / 180) * 3)} ${rd(q.x - q.nx * w * .95)} ${rd(q.y - q.ny * w * .95)}`; }).join("");
   const LARVA = `
     <g class="pc-bob pc-larva">
+      <g class="pr-deform">
       ${[[62, 186], [82, 189], [102, 187]].map(([x, y]) => P(E(x, y, 6, 5), "#6faa48", { sw: 2, dx: 1, dy: 1 })).join("")}
       ${P(C(44, 166, 12), LV, { dx: 3, dy: 3 })}
       ${P(Pa(tube(LVS, LVW, 0, 10)), LV, { hl: [84, 160, 14, 4] })}
@@ -142,6 +143,7 @@ window.PET_ART = (function () {
       <path class="pc-d" d="M50 176 Q80 190 118 180" stroke="${tn(LV, .45)}" stroke-width="3" fill="none" stroke-linecap="round" opacity=".7"/>
       <g class="pc-d2" opacity=".85"><ellipse cx="112" cy="156" rx="5.4" ry="4.2" fill="#b89a5a"/><ellipse cx="112.6" cy="156.4" rx="3" ry="2.4" fill="#3a2c1c"/></g>
       ${[[134, 172], [142, 168], [150, 162]].map(([x, y]) => `<path d="M${x} ${y} l2 5" stroke="#3a4a20" stroke-width="3" stroke-linecap="round"/>`).join("")}
+      </g>
       <g class="pr-head" style="--ox:132px;--oy:152px">
       <!--O--><g class="pc-tail">${tp(132, 128, 120, 116, 3.6, "#f29a3a", -2)}${tp(132, 128, 126, 112, 3.6, "#f29a3a", 2)}</g><!--/O-->
       ${P(C(148, 136, 23), "#a6d978", { hl: [138, 123, 8, 5], dx: 4, dy: 4 })}
@@ -339,10 +341,10 @@ ${tigerHead()}
     cloud([[150, 176, 14], [170, 170, 16], [188, 178, 11], [130, 184, 9]], [[162, 178, 5, 1]]);
   const DRAGON = `
     <g class="pc-hover pc-soar">
-      <g class="pc-tail">${P(Pa("M172 160 C180 168 184 180 176 192 C172 184 166 182 160 184 C166 178 164 170 166 164Z"), MANE, { dx: 2, dy: 2 })}
+      <g class="pr-deform"><g class="pc-tail">${P(Pa("M172 160 C180 168 184 180 176 192 C172 184 166 182 160 184 C166 178 164 170 166 164Z"), MANE, { dx: 2, dy: 2 })}
         <path class="pc-d" d="M172 168 q4 8 2 16 M167 172 q0 6 -3 9" stroke="${tn(MANE, .5)}" stroke-width="1.6" fill="none" stroke-linecap="round"/></g>
             ${dragonBody}
-      ${P(Pa(tube([[[150, 146], [154, 152], [156, 158], [158, 164]]], [[0, 12], [1, 9]])), JADE, { dx: 2, dy: 2 })}${claw(159, 166, 70, 3, JADE)}
+      ${P(Pa(tube([[[150, 146], [154, 152], [156, 158], [158, 164]]], [[0, 12], [1, 9]])), JADE, { dx: 2, dy: 2 })}${claw(159, 166, 70, 3, JADE)}</g>
       ${P(Pa(tube([[[104, 134], [96, 146], [88, 152], [78, 156]]], [[0, 13], [1, 9]])), JADE, { dx: 2, dy: 2 })}
       <g class="pc-tw"><circle cx="62" cy="160" r="19" fill="#ffd36a" opacity=".28"/></g>
       ${P(Pa("M46 160 Q42 142 52 134 Q53 144 58 145 Q56 130 66 122 Q67 136 73 140 Q77 134 80 128 Q86 144 78 160Z"), "#ffa94a", { sw: 2, dx: 2, dy: 2, sk: .15 })}
