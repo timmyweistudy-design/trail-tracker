@@ -2000,4 +2000,6 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 
 /* 夥伴角色（pet-art.js 美工輪）：開心瞇眼平常藏著；小尺寸（≤44px：地圖、頭像、清單、剪影、郵票）藏細節，只留輪廓＋眼睛＋一塊陰影 */
 .pc-eh { display: none; }
+.pc-d2 { display: none; }   /* 質感細節（鱗、毛流、翅脈）：只在夥伴舞台、進化儀式的大圖顯示 */
+.ps-box .pc-d2, .evolve-stage .pc-d2 { display: inline; }
 .pet-marker .pc-d, .tm-pet .pc-d, .pf-pet .pc-d, .prof-pet .pc-d, .cmp-pet .pc-d, .fp-pet .pc-d, .pet-evo-next .pc-d, .pj-stamp .pc-d, .dex-row .dex-e .pc-d, .pm-face .pc-d, .mch-hat .pc-d { display: none; }

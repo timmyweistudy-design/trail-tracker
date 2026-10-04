@@ -215,9 +215,11 @@ const KM=[0,5,20,40,90,150,260];
  const r=await p.evaluate(async()=>{const a=PET_ART.svg(3),b=PET_ART.svg(3);const ida=(a.match(/id="([^"]+)"/)||[])[1],idb=(b.match(/id="([^"]+)"/)||[])[1];
   const sizes=[0,1,2,3,4,5,6].map(i=>PET_ART.svg(i,"","straw").length);
   const imgs=await Promise.all([0,1,2,3,4,5,6].map(i=>new Promise(res=>{const im=new Image();im.onload=()=>res(im.width===120);im.onerror=()=>res(false);im.src=PET_ART.dataUri(i,120,"maple")})));
-  return {uniq:ida&&idb&&ida!==idb,leftover:/§/.test(a+b),max:Math.max(...sizes),imgs};});
+  const host=document.createElement("div");document.body.appendChild(host);const t0=performance.now();host.innerHTML=Array.from({length:40},()=>PET_ART.svg(6,"","straw")).join("");host.getBoundingClientRect();const ms=(performance.now()-t0)/40;host.remove();
+  return {uniq:ida&&idb&&ida!==idb,leftover:/§/.test(a+b),max:Math.max(...sizes),imgs,ms:+ms.toFixed(2)};});
  ok(r.uniq&&!r.leftover,"each SVG copy gets its own ids, no § left");
- ok(r.max<12000,"character SVG size budget (max "+r.max+" chars)");
+ // 2026-10-04 龍重畫：東方龍要有鬃、鬚、鹿角、背鰭、鱗才像龍，預算 12K→24K；另外量實際插進頁面的時間（列表一次畫很多隻）
+ ok(r.max<24000&&r.ms<10,"character SVG size & speed budget (max "+r.max+" chars, "+r.ms+" ms per dragon)");
  ok(r.imgs.every(Boolean),"dataUri (share cards / widgets) loads for 7 stages with hat");
  await p.evaluate(()=>{window.__psNoIdle=true;renderPet();document.querySelector(".ps-box").scrollIntoView({block:"center"})});
  const hb=await p.evaluate(()=>{const c=document.querySelector("#petEmoji .pet-critter").getBoundingClientRect();return {x:c.left+c.width/2,y:c.top+c.height*.25}});
