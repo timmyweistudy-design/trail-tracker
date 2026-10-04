@@ -14,8 +14,8 @@ const open=async(o={})=>{const ctx=await b.newContext({viewport:{width:390,heigh
  const t0=Date.now();await p.goto(`http://localhost:${PORT}/`,{waitUntil:"commit"});p._t0=t0;return p;};
 
 // ── 第 1 階段：版面、品牌字、原生交接 ──
-{const p=await open({native:true});
- await p.waitForSelector("#splash .sp-name");await p.waitForTimeout(250);
+{const p=await open({native:true,ls:{tt_splash_test:"1",tt_splash_mode:"compact"}});
+ await p.waitForSelector("#splash .sp-name");await p.waitForTimeout(950);   // 精簡版：動畫播完（約 0.9 秒）、還沒收場（1.2 秒）時量版面
  const L=await p.evaluate(()=>{const r=s=>document.querySelector(s).getBoundingClientRect();const m=r("#splash .sp-mark"),n=r("#splash .sp-name"),s=r("#splash .sp-sub");
   const groupMid=(m.top+s.bottom)/2;return {gap1:Math.round(n.top-m.bottom),gap2:Math.round(s.top-n.bottom),groupMid:Math.round(groupMid),vh:innerHeight,nameCx:Math.round(n.left+n.width/2-parseFloat(getComputedStyle(document.querySelector("#splash .sp-name")).letterSpacing)/2),markCx:Math.round(m.left+m.width/2),vw:innerWidth};});
  ok(L.gap1>=0&&L.gap1<60&&L.gap2>=0&&L.gap2<40,"logo / name / subtitle stay together as one group "+JSON.stringify(L));
@@ -52,7 +52,10 @@ const ended=async p=>{await p.waitForFunction(()=>!document.getElementById("spla
 {const p=await open({reduce:true,ls:{tt_splash_test:"1"}});await p.waitForSelector("#splash");
  const e=await ended(p);ok(e&&e.mode==="static"&&!e.anim&&e.at>=550&&e.at<1500,"reduced motion → static ≈0.6s ("+JSON.stringify(e)+")");
  ok(await p.evaluate(()=>getComputedStyle(document.querySelector(".sp-dot")).opacity==="0"&&getComputedStyle(document.querySelector(".sp-glow")).opacity==="0"),"static: no stray dot / glow ring");await p.close();}
-{const p=await open({ls:{tt_splash_test:"1"}});await p.evaluate(()=>{window.ttSplashReady=false;});await p.waitForSelector("#splash");
+{const ctx=await b.newContext({viewport:{width:390,height:844}});const p=await ctx.newPage();
+ await p.route("**/js/warmup.js",r=>r.fulfill({status:200,contentType:"text/javascript",body:"window.ttSplashReady=false;"}));   // 預載永遠沒做完
+ await p.addInitScript(()=>{localStorage.setItem("tt_lang","zh");localStorage.setItem("tt_onboarded_v2","1");localStorage.setItem("tt_splash_test","1");});
+ await p.goto(`http://localhost:${PORT}/`,{waitUntil:"commit"});await p.waitForSelector("#splash");
  const e=await ended(p);ok(e&&e.at>=3400&&e.at<3900,"never-ready app still ends at the 3.5s cap ("+JSON.stringify(e)+")");await p.close();}
 {const p=await open({});await p.waitForSelector("#splash");const e=await ended(p);
  ok(e&&e.mode==="compact"&&e.at<900,"automation browser: quick by default so other tests aren't slowed ("+JSON.stringify(e)+")");await p.close();}
@@ -61,5 +64,24 @@ const ended=async p=>{await p.waitForFunction(()=>!document.getElementById("spla
 {const p=await open({});await p.waitForLoadState("load");await p.evaluate(()=>{window.__keep=1;});
  await p.waitForFunction(()=>navigator.serviceWorker&&navigator.serviceWorker.controller,null,{timeout:15000}).catch(()=>{});await p.waitForTimeout(2500);
  ok(await p.evaluate(()=>window.__keep===1&&!!navigator.serviceWorker.controller),"first visit: SW takes control without reloading the page");await p.close();}
+
+// ── 第 3 階段：動畫期間的預載 ──
+{const p=await open({ls:{tt_splash_test:"1",tt_records:JSON.stringify([{id:"a",date:new Date().toISOString(),trailName:"x",trailId:"forestry-004",distanceKm:2}])}});
+ await p.waitForSelector("#splash");const e=await ended(p);
+ const W=await p.evaluate(()=>window.ttWarmup);
+ console.log("warmup:",JSON.stringify(W));
+ ok(W&&W.readyAt&&W.readyAt<e.at+(await p.evaluate(()=>window.ttWarmup.started)),"critical warm-up (fonts, first list) done before the splash ends");
+ await p.waitForFunction(()=>window.ttWarmup&&window.ttWarmup.doneAt,null,{timeout:8000});
+ const s2=await p.evaluate(()=>({steps:window.ttWarmup.steps.map(x=>x.name),errs:window.ttWarmup.steps.filter(x=>x.err).map(x=>x.name+":"+x.err),detail:!!window.TRAILS_DETAIL,region:window.ttWarmup.region}));
+ ok(["fonts","first-list","detail-data","pet-weather","decode-photos"].every(n=>s2.steps.includes(n))&&s2.steps.some(n=>n.startsWith("geo-")),"all warm-up steps ran "+s2.steps.join(","));
+ ok(s2.detail&&s2.region==="新北市","trail details + the likely county's routes are loaded before any tap ("+s2.region+")");
+ ok(s2.errs.length===0,"no warm-up step failed "+JSON.stringify(s2.errs));
+ await p.close();}
+// 預載某一項壞掉也不能擋開機
+{const ctx=await b.newContext({viewport:{width:390,height:844}});const p=await ctx.newPage();p.on("pageerror",e=>errs.push(e.message));
+ await p.route("**/js/trails-detail.js",r=>r.abort());
+ await p.addInitScript(()=>{localStorage.setItem("tt_lang","zh");localStorage.setItem("tt_onboarded_v2","1");localStorage.setItem("tt_locperm_prompted","1");localStorage.setItem("tt_splash_test","1");});
+ await p.goto(`http://localhost:${PORT}/`);await p.waitForFunction(()=>!document.getElementById("splash"),null,{timeout:6000});
+ ok(await p.evaluate(()=>document.querySelectorAll(".card, .jcard").length>0),"a failing warm-up step doesn't block start-up");await ctx.close();}
 
 console.log("ERRS",JSON.stringify(errs));console.log("FAILS",fails);await b.close();srv.kill();})();
