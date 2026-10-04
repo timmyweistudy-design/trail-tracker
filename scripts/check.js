@@ -69,6 +69,7 @@ for (const f of files) {
 const BACKUP_EXEMPT = new Set([
   "tt_pet_pats",   // 今天摸過哪些好友的夥伴：隔天就沒用
   "tt_pet_hug_day",   // 今天抱過自己的夥伴了沒（每天第一次抱才加親密）：隔天就沒用
+  "tt_splash_day",   // 今天看過完整進場動畫了沒（同一天再開播精簡版）：裝置性、隔天就沒用
   "tt_records", "tt_profile", "tt_favs", "tt_log",        // exportAll 另外處理
   "tt_offline_mb", "tt_offline_free",                     // 離線額度：綁裝置，不跨機還原
   "tt_native_push",                                       // 原生推播開關：綁這台裝置的 APNs token，不跨機還原

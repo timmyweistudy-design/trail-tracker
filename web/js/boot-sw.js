@@ -2,6 +2,9 @@
 // Service Worker：偵測新版本 → 顯示更新橫幅；點擊後讓新版接手並重載
 if ("serviceWorker" in navigator) {
   let _swReg = null, _refreshing = false;
+  // 第一次安裝時 SW 會接手頁面（controllerchange）——那不是「換新版」，不該重載。
+  // 以前不分青紅皂白都重載：每個第一次來的人頁面會在 1～2 秒後自己重新整理一次（點到一半的東西不見、進場動畫播兩次）。
+  const _hadController = !!navigator.serviceWorker.controller;
   window.addEventListener("load", async () => {
     try {
       _swReg = await navigator.serviceWorker.register("sw.js");
@@ -22,7 +25,7 @@ if ("serviceWorker" in navigator) {
     } catch (e) { /* */ }
   });
   navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (_refreshing) return; _refreshing = true; location.reload();
+    if (_refreshing || !_hadController) return; _refreshing = true; location.reload();
   });
   document.getElementById("updateBanner").addEventListener("click", () => {
     const b = document.getElementById("updateBanner"); b.style.display = "none";
