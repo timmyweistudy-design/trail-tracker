@@ -1,5 +1,6 @@
 // 夥伴的旅行（PRO）：讓夥伴跟「真的走過的步道」綁在一起。全部從紀錄推出來——不另外存狀態，
-// 換手機還原紀錄後自動回來，刪掉紀錄也跟著消失，不會有對不起來的數字。唯一存的是「哪幾張看過了」（新卡片的小標）。
+// 換手機還原紀錄後自動回來，刪掉紀錄也跟著消失，不會有對不起來的數字。存的只有「哪幾張看過了」（新卡片的小標）
+// 和「那時候的夥伴」（tt_pj_snap：第一次去的時候夥伴是哪一階、戴什麼、叫什麼——郵票定格在那一刻，之後進化也不會變）。
 //  - 明信片：每走過一條步道，夥伴帶回一張。插畫依步道主題、天色依第一次走的時段；點開翻面看夥伴寫的話、郵戳、走了幾次
 //  - 走過的地區：22 縣市方格地圖＋五個地區的進度；走過那個地區就解鎖當地配件
 //  - 舞台裝飾：走最多的兩個主題出現在夥伴舞台上
@@ -56,13 +57,37 @@ window.PetJourney = (function () {
     for (const r of recs()) {
       if (!r.trailId) continue;
       const t = trail(r.trailId); if (!t) continue;
-      const e = m.get(t.id) || { t, first: r.date, last: r.date, n: 0, km: 0 };
-      e.n++; e.km += r.distanceKm || 0;
+      const e = m.get(t.id) || { t, first: r.date, last: r.date, n: 0, km: 0, dates: [], km1: 0 };
+      e.n++; e.km += r.distanceKm || 0; e.dates.push(r.date);
+      if (r.date <= e.first) e.km1 = r.distanceKm || 0;
       if (r.date < e.first) e.first = r.date;
       if (r.date > e.last) e.last = r.date;
       m.set(t.id, e);
     }
+    for (const e of m.values()) e.dates.sort();
     return [...m.values()].sort((a, b) => (a.first < b.first ? 1 : -1));
+  }
+
+  // ── 那時候的夥伴（郵票定格）──
+  // 第一次去的那天夥伴是哪一階：兩天內的新卡片＝現在的樣子（含帽子、名字，最準）；
+  // 以前走的（功能上線前就有的紀錄）用「到那天為止累積的里程」推回去（帽子不知道就不戴）。存起來之後就不再變。
+  function snaps() { try { const o = JSON.parse(localStorage.getItem("tt_pj_snap")); return o && typeof o === "object" ? o : {}; } catch (e) { return {}; } }
+  function snapOf(e) {
+    const all = snaps(), id = String(e.t.id), old = all[id];
+    if (old && old.d === e.first) return old;   // 有更早的紀錄補進來（例如同步）才重算
+    const cur = stageI();
+    let st = cur, hat = "none", nm = typeof petName === "function" ? petName() : "";
+    if (Date.now() - new Date(e.first).getTime() < 2 * 864e5) { if (typeof petHat === "function") hat = petHat(); }
+    else {
+      const R = recs(), sum = R.reduce((a, r) => a + (r.distanceKm || 0), 0), life = (typeof Store !== "undefined" && Store.life && Store.life().km) || 0;
+      const lost = Math.max(0, life - sum);   // 被容量保護砍掉的舊紀錄：一定比現存的都早
+      const km = R.filter(r => r.date <= e.first).reduce((a, r) => a + (r.distanceKm || 0), 0) + lost + (typeof debugKm === "function" ? debugKm() : 0);
+      st = Math.min(cur, typeof petStageIndex === "function" ? petStageIndex(Math.max(0, km - (typeof petBase === "function" ? petBase() : 0))) : cur);
+    }
+    const s = { d: e.first, s: st, h: hat, n: nm };
+    all[id] = s;
+    try { localStorage.setItem("tt_pj_snap", JSON.stringify(all)); } catch (err) { /* 滿了就只是不定格 */ }
+    return s;
   }
   function themeOf(t) {
     const tags = typeof tagsOf === "function" ? tagsOf(t) : [];
@@ -97,10 +122,51 @@ window.PetJourney = (function () {
     return `<svg class="pj-art" viewBox="0 0 160 100" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><rect width="160" height="100" fill="#cfe6d2"/></svg>`;
   }
   const stageI = () => (typeof petStageIndex === "function" ? petStageIndex(totalKm()) : 0);
+
+  // ── 郵票與郵戳（2026-10-04：定格，不跟著現在的夥伴變）──
+  // 郵票：齒孔邊、主題色框、那時候的夥伴（不動）、面額＝那天走的公里數、縣市代碼。
+  // 郵戳：雙圈，上緣縣市、中間日期、下緣時段（日／晨昏／月）；角度、位置、墨色都由步道 id 決定（每次畫都一樣）。
+  const INK = { fall: "#2f5f8a", sea: "#24648f", old: "#8a3b2e", forest: "#2f6a42", lake: "#3d5f8f", peak: "#5a4a8a", hill: "#7a4a2a" };
+  const FRAME = { fall: "#7fb6d9", sea: "#6fb0d6", old: "#d6a46a", forest: "#8cc08a", lake: "#8fb4dc", peak: "#b4a6dc", hill: "#d9b77a" };
+  let SU = 0;
+  const hsh = v => (typeof ArtKit !== "undefined" ? ArtKit.hash(v) : 7);
+  const ymd = iso => { const d = new Date(iso); return isNaN(d) ? "" : `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`; };
+  function stamp(e, big) {
+    const sn = snapOf(e), th = themeOf(e.t), id = "pjs" + (++SU), code = (TILE[e.t.region] || [])[2] || "TW";
+    let holes = ""; for (let k = 0; k <= 8; k++) { const x = 3 + k * 6.75; holes += `<circle cx="${x}" cy="0" r="2.1"/><circle cx="${x}" cy="72" r="2.1"/>`; }
+    for (let k = 1; k < 10; k++) { const y = k * 7.2; holes += `<circle cx="0" cy="${y}" r="2.1"/><circle cx="60" cy="${y}" r="2.1"/>`; }
+    const pet = typeof PET_ART !== "undefined" ? PET_ART.svg(sn.s, "", sn.h).replace(/^<svg class="pet-critter[^"]*"/, '<svg x="9" y="11" width="42" height="42"') : "";
+    const rot = (hsh(e.t.id) % 9) - 4;
+    return `<span class="pj-stamp${big ? " big" : ""}" style="--r:${rot}deg"><svg viewBox="0 0 60 72" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+      <mask id="${id}"><rect width="60" height="72" fill="#fff"/><g fill="#000">${holes}</g></mask>
+      <g mask="url(#${id})"><rect width="60" height="72" fill="#fffdf6"/><rect x="5" y="5" width="50" height="62" rx="1.5" fill="${FRAME[th] || FRAME.hill}" opacity=".35"/>
+      <rect x="5" y="5" width="50" height="62" rx="1.5" fill="none" stroke="${INK[th] || INK.hill}" stroke-width="1.2" opacity=".7"/></g>
+      ${pet}<text x="8" y="63" font-size="7.5" font-weight="800" fill="${INK[th] || INK.hill}">${(e.km1 || 0).toFixed(1)}<tspan font-size="5.5"> km</tspan></text>
+      <text x="52" y="63" font-size="6" font-weight="700" text-anchor="end" fill="${INK[th] || INK.hill}" opacity=".8">${code}</text></svg></span>`;
+  }
+  function todGlyph(t, col) {
+    if (t === "night") return `<path d="M3 -3.5 a4 4 0 1 0 0 7 a3.1 3.1 0 1 1 0 -7Z" fill="${col}"/>`;
+    if (t === "dawn" || t === "dusk") return `<path d="M-5 1.5 h10 M-3.5 1.5 a3.5 3.5 0 0 1 7 0" stroke="${col}" stroke-width="1.3" fill="none"/>`;
+    return `<circle r="2.6" fill="${col}"/><path d="M0 -5 v1.3 M0 5 v-1.3 M-5 0 h1.3 M5 0 h-1.3 M-3.5 -3.5 l.9 .9 M3.5 3.5 l-.9 -.9 M-3.5 3.5 l.9 -.9 M3.5 -3.5 l-.9 .9" stroke="${col}" stroke-width="1"/>`;
+  }
+  function postmark(e, iso, k) {
+    const th = themeOf(e.t), col = INK[th] || INK.hill, h = hsh(String(e.t.id) + "|" + k), id = "pjm" + (++SU);
+    const place = cjk() ? (e.t.region || "").replace(/[市縣]$/, "") : ((TILE[e.t.region] || [])[2] || "");
+    const rot = (h % 36) - 18, tod = todOf(iso);
+    return `<span class="pj-mark" style="--r:${rot}deg;--k:${k}"><svg viewBox="0 0 96 60" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><g fill="none" stroke="${col}" opacity=".78">
+      <circle cx="30" cy="30" r="25" stroke-width="2.2"/><circle cx="30" cy="30" r="17.5" stroke-width="1.1"/>
+      <path d="M58 20 q6 -4 12 0 t12 0 t12 0 M58 30 q6 -4 12 0 t12 0 t12 0 M58 40 q6 -4 12 0 t12 0 t12 0" stroke-width="2"/></g>
+      <path id="${id}" d="M9 30 a21 21 0 0 1 42 0" fill="none"/>
+      <text font-size="8" font-weight="800" fill="${col}" opacity=".85" letter-spacing="1"><textPath href="#${id}" startOffset="50%" text-anchor="middle">${esc(place)}</textPath></text>
+      <text x="30" y="33" font-size="7.2" font-weight="800" text-anchor="middle" fill="${col}" opacity=".85">${ymd(iso)}</text>
+      <g transform="translate(30 44)" opacity=".85">${todGlyph(tod, col)}</g></svg></span>`;
+  }
+  // 每一趟一個郵戳（最多 3 個，第一趟在最上面）
+  const marks = (e, n) => e.dates.slice(0, n).map((d, k) => postmark(e, d, k)).join("");
   function card(e, isNew) {
     const th = themeOf(e.t);
     return `<button class="pj-card" data-theme="${th}" data-id="${esc(e.t.id)}" aria-label="${esc(e.t.name)}">${cardArt(th, e.first, e.t.id)}
-      <span class="pj-stamp">${typeof PET_ART !== "undefined" ? PET_ART.svg(stageI()) : ""}</span>${isNew ? `<span class="pj-new">${T("新")}</span>` : ""}
+      ${stamp(e)}${isNew ? `<span class="pj-new">${T("新")}</span>` : ""}
       <span class="pj-cap"><b class="pj-name">${esc(e.t.name)}</b><span class="pj-meta">${esc(e.t.region || "")}・${fmt(e.first)}${e.n > 1 ? `・×${e.n}` : ""}</span></span></button>`;
   }
 
@@ -191,14 +257,14 @@ window.PetJourney = (function () {
     const e = walked().find(x => String(x.t.id) === String(id)); if (!e) return;
     if (document.querySelector('[data-ov="pjcard"]')) return;
     markSeen([e.t.id]);
-    const th = themeOf(e.t), nm = typeof petName === "function" && petName() ? petName() : T(PET_STAGES[stageI()].n);
+    const th = themeOf(e.t), sn = snapOf(e), stN = T(PET_STAGES[sn.s].n), nm = sn.n || stN;
     const ov = document.createElement("div"); ov.className = "pet-modal pj-card-ov"; ov.dataset.ov = "pjcard";
     ov.innerHTML = `<div class="pj-flip" role="button" tabindex="0" aria-label="${esc(e.t.name)}">
-      <div class="pj-face pj-front">${cardArt(th, e.first, e.t.id)}<span class="pj-stamp big">${typeof PET_ART !== "undefined" ? PET_ART.svg(stageI()) : ""}</span><span class="pj-front-n">${esc(e.t.name)}</span></div>
+      <div class="pj-face pj-front">${cardArt(th, e.first, e.t.id)}${stamp(e, true)}<span class="pj-marks front">${marks(e, 1)}</span><span class="pj-front-n">${esc(e.t.name)}</span></div>
       <div class="pj-face pj-back">
-        <div class="pj-post"><span class="pj-pm">${esc((e.t.region || "").replace(/[市縣]$/, ""))}<br><small>${fmt(e.first)}</small></span><span class="pj-stamp">${typeof PET_ART !== "undefined" ? PET_ART.svg(stageI()) : ""}</span></div>
+        <div class="pj-post"><span class="pj-marks">${marks(e, 3)}</span>${stamp(e)}</div>
         <p class="pj-note">${T(NOTE[th] || NOTE.hill)}</p>
-        <p class="pj-sign">— ${esc(nm)}</p>
+        <p class="pj-sign">— ${esc(nm)}<small>${sn.n ? `${esc(stN)} ` : ""}Lv.${sn.s + 1}</small></p>
         <div class="pj-facts"><span>${icon("footprints")} ${e.n} ${T("次")}</span><span>${icon("route")} ${e.km.toFixed(1)} km</span>${e.n > 1 ? `<span>${icon("calendar")} ${fmt(e.last)}</span>` : ""}</div>
         <button class="btn primary pj-go" id="pjGo">${T("看這條步道")}</button>
       </div></div>
@@ -220,5 +286,5 @@ window.PetJourney = (function () {
     setTimeout(() => flip.classList.add("turned"), 650);   // 先看正面一眼，再自動翻到背面
   }
 
-  return { walked, themeOf, regionOf, regions, counties, regionHats, hatRegion, decor, render, openAlbum, openCard, cardArt, seen, markSeen, REGION_HAT, TILE };
+  return { snapOf, walked, themeOf, regionOf, regions, counties, regionHats, hatRegion, decor, render, openAlbum, openCard, cardArt, seen, markSeen, REGION_HAT, TILE };
 })();

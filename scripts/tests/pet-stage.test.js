@@ -152,8 +152,8 @@ const KM=[0,5,20,40,90,150,260];
  // 單張明信片：翻面、夥伴寫的話、看這條步道
  await p.evaluate(()=>document.querySelector(".pj-strip .pj-card").click());await p.waitForTimeout(400);
  await p.screenshot({path:O+"p4-card-front.png"});await p.waitForTimeout(1200);
- const cd=await p.evaluate(()=>({turned:document.querySelector(".pj-flip").classList.contains("turned"),note:document.querySelector(".pj-note").textContent,facts:document.querySelector(".pj-facts").textContent,pm:document.querySelector(".pj-pm").textContent}));
- ok(cd.turned&&cd.note.length>8&&/次/.test(cd.facts)&&/km/.test(cd.facts)&&cd.pm.length>1,"postcard flips to the back: note, postmark, times, km "+JSON.stringify(cd));
+ const cd=await p.evaluate(()=>({turned:document.querySelector(".pj-flip").classList.contains("turned"),note:document.querySelector(".pj-note").textContent,facts:document.querySelector(".pj-facts").textContent,pm:document.querySelector(".pj-back .pj-mark").textContent,stamp:!!document.querySelector(".pj-back .pj-stamp .pc-bob,.pj-back .pj-stamp .pc-hover")}));
+ ok(cd.turned&&cd.note.length>8&&/次/.test(cd.facts)&&/km/.test(cd.facts)&&/\d{4}\.\d{2}\.\d{2}/.test(cd.pm)&&cd.stamp,"postcard flips to the back: note, postmark (date), stamp with the pet, times, km "+JSON.stringify(cd));
  await p.screenshot({path:O+"p4-card-back.png"});
  await p.click("#pjGo");await p.waitForTimeout(1200);
  ok(await p.evaluate(()=>!document.querySelector('[data-ov="pjcard"]')&&!!document.querySelector("#detailSheet.show, .sheet.show")),"「看這條步道」opens the trail detail");
@@ -283,6 +283,22 @@ for(const [km,st] of [[5,1],[150,5],[260,6]]){const p=await mk({km});
  await p.close();}
 {const p=await mk({km:5,hat:"straw"});
  ok(await p.evaluate(()=>{const s=PET_ART.svg(1,"","straw"),n=PET_ART.svg(1);return !/f29a3a/.test(s)&&/f29a3a/.test(n)}),"larva: the osmeterium is removed when wearing a hat (hat sits on the head)");
+ await p.close();}
+
+// ── 2026-10-04 明信片定格：郵票是「第一次去的時候」的夥伴，之後進化也不變；郵戳每趟一個、角度固定 ──
+{const p=await mk({km:0,hat:"straw"});
+ const r=await p.evaluate(()=>{const t=TRAILS.find(x=>x.region&&tagsOf(x)[0]);const add=(days,km)=>{const d=new Date();d.setDate(d.getDate()-days);Store.addRecord({id:"dbg"+Math.random(),date:d.toISOString(),dbg:true,trailId:t.id,trailName:t.name,distanceKm:km,elapsedMs:3600e3,ascent:50,descent:50,steps:100,kcal:10,track:[]})};
+  const u=TRAILS.find(x=>x.region&&x.id!==t.id);const addU=(days,km)=>{const d=new Date();d.setDate(d.getDate()-days);Store.addRecord({id:"dbg"+Math.random(),date:d.toISOString(),dbg:true,trailId:u.id,trailName:u.name,distanceKm:km,elapsedMs:3600e3,ascent:50,descent:50,steps:100,kcal:10,track:[]})};
+  addU(90,4);add(60,20);add(20,2);   // 90 天前累積 4 km＝幼蟲；60 天前累積 24 km＝彩蝶
+  const e=()=>PetJourney.walked().find(x=>x.t.id===t.id),eu=()=>PetJourney.walked().find(x=>x.t.id===u.id);
+  const a1=PetJourney.snapOf(e()),b1=PetJourney.snapOf(eu());localStorage.setItem("tt_debug_km","300");   // 進化到最終型態
+  const a2=PetJourney.snapOf(e());const html1=document.createElement("div");
+  return {a1:[a1.s,a1.h],b1:[b1.s,b1.h],a2:[a2.s],marks:e().dates.length,same:PetJourney.snapOf(e()).s===a1.s};});
+ ok(r.b1[0]===1&&r.a1[0]===2&&r.a1[1]==="none","old trips are back-dated by the km walked up to that day (larva 90 days ago, butterfly 60 days ago) "+JSON.stringify(r));
+ ok(r.a2[0]===2&&r.same,"after the pet evolves, old postcards keep the pet as it was "+JSON.stringify(r));
+ const r2=await p.evaluate(async()=>{const w=new Set(PetJourney.walked().map(e=>e.t.id));const t=TRAILS.find(x=>x.region&&!w.has(x.id));const d=new Date();Store.addRecord({id:"dbg"+Math.random(),date:d.toISOString(),dbg:true,trailId:t.id,trailName:t.name,distanceKm:3,elapsedMs:3600e3,ascent:50,descent:50,steps:100,kcal:10,track:[]});
+  const e=PetJourney.walked().find(x=>x.t.id===t.id);const s=PetJourney.snapOf(e);return {s:s.s,h:s.h,cur:petStageIndex(totalKm())};});
+ ok(r2.s===r2.cur&&r2.h==="straw","a new postcard stamps the pet as it is now, hat included "+JSON.stringify(r2));
  await p.close();}
 
 console.log("ERRS",JSON.stringify(errs));console.log("FAILS",fails);await b.close();srv.kill();})();

@@ -1950,8 +1950,16 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .pj-card { position: relative; display: block; width: 100%; padding: 0; text-align: left; font: inherit; border-radius: 12px; overflow: hidden; background: #fffdf6; box-shadow: 0 3px 10px -4px rgba(30,40,30,.35); border: 4px solid #fffdf6; cursor: pointer; }
 .pj-card:active { transform: scale(.98); }
 .pj-art { display: block; width: 100%; aspect-ratio: 16 / 10; border-radius: 7px; }
-.pj-stamp { position: absolute; top: 6px; right: 6px; width: 34px; height: 34px; border-radius: 7px; background: #fffdf6; border: 2px dashed #d9c9a8; display: grid; place-items: center; transform: rotate(6deg); }
-.pj-stamp .pet-critter { width: 28px; height: 28px; filter: none; }
+/* 郵票（2026-10-04 定格）：齒孔邊＋那時候的夥伴；印出來的東西不會動 */
+.pj-stamp { position: absolute; top: 6px; right: 6px; width: 30px; height: 36px; transform: rotate(var(--r, 3deg)); filter: drop-shadow(0 1px 1.5px rgba(0,0,0,.28)); }
+.pj-stamp svg { width: 100%; height: 100%; display: block; overflow: visible; font-family: var(--sans, system-ui), sans-serif; }
+.pj-stamp *, .pj-mark * { animation: none !important; }
+/* 郵戳：雙圈＋波浪線，蓋在郵票左下角（壓到一點郵票才像真的蓋過） */
+.pj-mark { display: block; width: 64px; height: 40px; transform: rotate(var(--r, -8deg)); pointer-events: none; mix-blend-mode: multiply; }
+.pj-mark svg { width: 100%; height: 100%; display: block; overflow: visible; font-family: var(--sans, system-ui), sans-serif; }
+.pj-marks.front { position: absolute; top: 52px; right: 34px; }
+.pj-marks.front .pj-mark { mix-blend-mode: normal; filter: drop-shadow(0 0 1.5px rgba(255,253,246,.9)); }   /* 插畫底色深，multiply 會看不見 */
+.pj-marks.front .pj-mark { width: 84px; height: 52px; }
 .pj-new { position: absolute; top: 6px; left: 6px; background: #d9534f; color: #fff; font-size: calc(10.5px * var(--fs, 1)); font-weight: 800; padding: 2px 7px; border-radius: 999px; box-shadow: 0 2px 6px rgba(0,0,0,.25); }
 .pj-cap { display: block; padding: 6px 3px 2px; color: #2b2f26; }
 .pj-name { display: block; font-size: calc(12.5px * var(--fs, 1)); font-weight: 700; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1997,16 +2005,17 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .pj-flip.turned { transform: rotateY(180deg); }
 .pj-face { position: absolute; inset: 0; border-radius: 16px; background: #fffdf6; border: 7px solid #fffdf6; box-shadow: 0 18px 40px -14px rgba(0,0,0,.55); backface-visibility: hidden; -webkit-backface-visibility: hidden; overflow: hidden; }
 .pj-front .pj-art { width: 100%; height: 100%; aspect-ratio: auto; }
-.pj-front .pj-stamp.big { width: 54px; height: 54px; top: 10px; right: 10px; }
-.pj-front .pj-stamp.big .pet-critter { width: 44px; height: 44px; }
+.pj-front .pj-stamp.big { width: 54px; height: 65px; top: 10px; right: 10px; }
 .pj-front-n { position: absolute; left: 12px; bottom: 10px; color: #fff; font-family: var(--serif); font-weight: 700; font-size: calc(17px * var(--fs, 1)); text-shadow: 0 2px 8px rgba(0,0,0,.55); }
 .pj-back { transform: rotateY(180deg); padding: 14px 16px; display: flex; flex-direction: column; color: #2b2f26;
   background: repeating-linear-gradient(transparent 0 25px, rgba(120,140,170,.18) 25px 26px), #fffdf6; }
 .pj-post { display: flex; justify-content: space-between; align-items: flex-start; }
-.pj-pm { width: 64px; height: 64px; border: 2px solid rgba(160,60,50,.55); border-radius: 50%; display: grid; place-items: center; text-align: center; color: rgba(160,60,50,.85); font-weight: 800; font-size: calc(12px * var(--fs, 1)); line-height: 1.2; transform: rotate(-12deg); }
-.pj-pm small { font-weight: 600; font-size: .78em; }
-.pj-back .pj-stamp { position: static; width: 46px; height: 46px; }
-.pj-back .pj-stamp .pet-critter { width: 38px; height: 38px; }
+.pj-back .pj-post { position: relative; min-height: 64px; }
+.pj-back .pj-stamp { position: relative; top: 0; right: 0; width: 46px; height: 55px; flex: none; }
+.pj-back .pj-marks { display: flex; align-items: flex-start; }
+.pj-back .pj-marks .pj-mark { width: 74px; height: 46px; flex: none; }
+.pj-back .pj-marks .pj-mark + .pj-mark { margin-left: -34px; margin-top: calc(var(--k) * 7px); }   /* 每多走一趟就多蓋一個，往右錯開、壓在前一個上 */
+.pj-sign small { display: block; font-size: .72em; opacity: .65; font-weight: 600; margin-top: 1px; }
 .pj-note { font-family: var(--serif); font-size: calc(15px * var(--fs, 1)); line-height: 1.75; margin: 6px 0 0; flex: 1; }
 .pj-sign { text-align: right; margin: 0 0 6px; font-weight: 700; color: #6a6f62; }
 .pj-facts { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: calc(12px * var(--fs, 1)); color: #4b5045; font-variant-numeric: tabular-nums; }
