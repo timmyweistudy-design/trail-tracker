@@ -290,7 +290,8 @@ for(const [km,st] of [[5,1],[150,5],[260,6]]){const p=await mk({km});
  ok(!r.none&&r.prop<.5&&r.anim,"stage "+st+": the leaf/cloud under the pet stays put while the pet moves "+JSON.stringify(r));
  await p.close();}
 {const p=await mk({km:40});
- const r=await p.evaluate(async()=>{const g=document.querySelector("#petEmoji .pc-bob");let lo=1e9,hi=-1e9;for(let k=0;k<12;k++){const b=g.getBoundingClientRect();lo=Math.min(lo,b.bottom);hi=Math.max(hi,b.bottom);await new Promise(r=>setTimeout(r,300));}return hi-lo;});
+ const r=await p.evaluate(async()=>{window.__psNoIdle=true;const em0=document.querySelector("#petEmoji");em0.className=em0.className.replace(/\bpb-\S+/g,"");await new Promise(r=>setTimeout(r,1500));   // 只量呼吸：關掉隨機動作（伸懶腰會抬前腳，那是故意的）
+  const g=document.querySelector("#petEmoji .pc-bob");let lo=1e9,hi=-1e9;for(let k=0;k<12;k++){const b=g.getBoundingClientRect();lo=Math.min(lo,b.bottom);hi=Math.max(hi,b.bottom);await new Promise(r=>setTimeout(r,300));}return hi-lo;});
  ok(r<1,"fox idle: feet stay on the ground (bottom moves "+r.toFixed(2)+"px over 3.6 s)");
  await p.close();}
 {const p=await mk({km:5,hat:"straw"});
