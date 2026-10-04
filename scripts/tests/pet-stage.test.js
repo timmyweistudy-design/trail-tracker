@@ -210,6 +210,27 @@ const KM=[0,5,20,40,90,150,260];
  ok(r.max<60000&&r.ms<10,"stage scene size & speed budget (max "+r.max+" chars, "+r.ms+" ms)");
  await p.close();}
 
+// ── 美工輪 第 3 階段：角色（外框＋明暗＋眼睛＋表情＋小尺寸） ──
+{const p=await mk({km:40});
+ const r=await p.evaluate(async()=>{const a=PET_ART.svg(3),b=PET_ART.svg(3);const ida=(a.match(/id="([^"]+)"/)||[])[1],idb=(b.match(/id="([^"]+)"/)||[])[1];
+  const sizes=[0,1,2,3,4,5,6].map(i=>PET_ART.svg(i,"","straw").length);
+  const imgs=await Promise.all([0,1,2,3,4,5,6].map(i=>new Promise(res=>{const im=new Image();im.onload=()=>res(im.width===120);im.onerror=()=>res(false);im.src=PET_ART.dataUri(i,120,"maple")})));
+  return {uniq:ida&&idb&&ida!==idb,leftover:/§/.test(a+b),max:Math.max(...sizes),imgs};});
+ ok(r.uniq&&!r.leftover,"each SVG copy gets its own ids, no § left");
+ ok(r.max<12000,"character SVG size budget (max "+r.max+" chars)");
+ ok(r.imgs.every(Boolean),"dataUri (share cards / widgets) loads for 7 stages with hat");
+ await p.evaluate(()=>{window.__psNoIdle=true;renderPet();document.querySelector(".ps-box").scrollIntoView({block:"center"})});
+ const hb=await p.evaluate(()=>{const c=document.querySelector("#petEmoji .pet-critter").getBoundingClientRect();return {x:c.left+c.width/2,y:c.top+c.height*.25}});
+ await p.mouse.click(hb.x,hb.y);await p.waitForTimeout(150);
+ const ex=await p.evaluate(()=>({eh:getComputedStyle(document.querySelector("#petEmoji .pc-eh")).display,eye:getComputedStyle(document.querySelector("#petEmoji .pc-eye")).display}));
+ ok(ex.eh!=="none"&&ex.eye==="none","pat → happy ^^ eyes replace open eyes "+JSON.stringify(ex));
+ await p.waitForTimeout(900);
+ ok(await p.evaluate(()=>getComputedStyle(document.querySelector("#petEmoji .pc-eh")).display==="none"),"happy eyes go away after the reaction");
+ const lod=await p.evaluate(()=>{const big=document.querySelector("#petEmoji .pc-d"),sm=document.querySelector(".pet-evo-next .pc-d");return {big:big&&getComputedStyle(big).display,sm:sm?getComputedStyle(sm).display:"none"}});
+ ok(lod.big!=="none"&&lod.sm==="none","details shown on the big critter, hidden in the small silhouette "+JSON.stringify(lod));
+ await p.screenshot({path:O+"p3-chars-card.png"});
+ await p.close();}
+
 // ── debug 面板：夥伴舞台與旅行 ──
 {const p=await mk({km:40});
  await p.evaluate(()=>ensureScript("js/debug.js"));await p.waitForTimeout(300);

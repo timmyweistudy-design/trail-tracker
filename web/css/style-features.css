@@ -1881,7 +1881,8 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .ps-box .pb-tickle .pet-critter { animation: pbWiggle .8s ease-in-out; }
 .ps-box .pb-hug .pet-critter { animation: pbHug 1s var(--ease-out, ease-out); }
 .ps-box .pb-eat .pet-critter { animation: pbChomp 1s ease-in-out; }
-.ps-box .pb-pat .pc-eye, .ps-box .pb-hug .pc-eye, .ps-box .pb-eat .pc-eye { transform: scaleY(.25) !important; animation: none !important; }
+.ps-box .pb-pat .pc-eye, .ps-box .pb-hug .pc-eye, .ps-box .pb-eat .pc-eye { display: none; }   /* 換成開心瞇眼 ^^（.pc-eh） */
+.ps-box .pb-pat .pc-eh, .ps-box .pb-hug .pc-eh, .ps-box .pb-eat .pc-eh { display: inline; }
 @keyframes pbHop { 0%, 100% { transform: none; } 14% { transform: scale(1.06, .9); } 30% { transform: translateY(-26px) scale(.96, 1.06); } 46% { transform: scale(1.06, .92); } 62% { transform: translateY(-16px); } 78% { transform: scale(1.04, .95); } }
 @keyframes pbStretch { 0%, 100% { transform: none; } 40% { transform: scale(.93, 1.1); } 62% { transform: scale(.95, 1.08) rotate(-2deg); } }
 @keyframes pbSquish { 0%, 100% { transform: none; } 30% { transform: scale(1.06, .92); } 62% { transform: scale(.98, 1.03); } }
@@ -1996,3 +1997,7 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .pj-back .pj-go { margin-top: 10px; min-height: 40px; }
 .pj-cclose { position: absolute; top: calc(var(--safe-t, 0px) + 14px); right: 16px; }
 @media (prefers-reduced-motion: reduce) { .pj-flip { transition: none; } }
+
+/* 夥伴角色（pet-art.js 美工輪）：開心瞇眼平常藏著；小尺寸（≤44px：地圖、頭像、清單、剪影、郵票）藏細節，只留輪廓＋眼睛＋一塊陰影 */
+.pc-eh { display: none; }
+.pet-marker .pc-d, .tm-pet .pc-d, .pf-pet .pc-d, .prof-pet .pc-d, .cmp-pet .pc-d, .fp-pet .pc-d, .pet-evo-next .pc-d, .pj-stamp .pc-d, .dex-row .dex-e .pc-d, .pm-face .pc-d, .mch-hat .pc-d { display: none; }
