@@ -16,11 +16,11 @@ const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:o.w||390,he
  await p.click('#petFriends .fp-visit[data-id="u1"]');await p.waitForTimeout(700);
  const t=await p.evaluate(()=>document.querySelector('[data-ov="petvisit"]')?.innerText||"");
  ok(/毛毛/.test(t)&&/Lv\.5/.test(t)&&/@mei_trail/.test(t)&&/420 km/.test(t),"visit card shows friend pet: "+t.replace(/\n/g," | "));
- ok(await p.evaluate(()=>!!document.querySelector(".fv-stage .pet-hab")&&!!document.querySelector(".fv-critter .pet-critter")),"habitat + critter drawn");
+ ok(await p.evaluate(()=>!!document.querySelector(".fv-stage .ps-box")&&!!document.querySelector(".fv-critter .pet-critter")),"friend's pet stands in the same 2.5D stage as my own pet card");
  await p.screenshot({path:O+"visit.png"});
  const a0=await p.evaluate(()=>affinity());
  await p.click("#pvPat");await p.waitForTimeout(300);
- ok(await p.evaluate(()=>document.querySelectorAll(".fv-heart").length===5&&document.querySelector(".fv-critter").classList.contains("fv-bounce")),"pat: hearts + bounce");
+ ok(await p.evaluate(()=>document.querySelectorAll(".fv-heart").length===5&&document.querySelector(".fv-critter .pet-critter").classList.contains("fv-bounce")),"pat: hearts + bounce");
  await p.screenshot({path:O+"pat.png"});
  const a1=await p.evaluate(()=>affinity());ok(a1===a0+2,`first pat today +2 affinity (${a0}→${a1})`);
  ok(/毛毛 很開心/.test(await p.evaluate(()=>document.getElementById("toast").textContent)),"pat toast");
@@ -56,4 +56,19 @@ const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:o.w||390,he
  const t=await p.evaluate(()=>document.querySelector('[data-ov="petvisit"]').innerText);ok(!/[一-鿿]/.test(t.replace(/毛毛/g,"")),"en visit card translated: "+t.replace(/\n/g," | "));
  ok(await p.evaluate(()=>{const c=document.querySelector(".fv-card").getBoundingClientRect();return [...document.querySelectorAll(".fv-acts .btn")].every(b=>{const r=b.getBoundingClientRect();return r.left>=c.left-1&&r.right<=c.right+1})}),"buttons fit at 360/1.65");
  await p.screenshot({path:O+"en-360.png"});await p.close();}
+// 2026-10-04：照搬好友那邊的舞台（配件、走過的風景），摸頭時只有角色彈、腳下的雲不動；欄位沒有時退回只用等級
+{const p=await mk();
+ const r=await p.evaluate(async()=>{document.querySelectorAll('[data-ov="petvisit"]').forEach(e=>e.remove());
+  Pets.visit({id:"x1",handle:"a",pet_name:"小龍",pet_level:6,total_km:200,pet_hat:"maple",pet_decor:"fall,old,<script>"},false,null);await new Promise(r=>setTimeout(r,300));
+  const box=document.querySelector(".fv-stage .ps-box"),pr=document.querySelector(".fv-critter .pet-prop"),b0=pr.getBoundingClientRect();
+  document.querySelector("#pvPat").click();await new Promise(r=>setTimeout(r,180));const b1=pr.getBoundingClientRect();
+  const out={stage:box.dataset.stage,decor:box.dataset.decor,hat:!!document.querySelector(".fv-critter .pc-hat"),propMoved:Math.abs(b1.top-b0.top),bounce:document.querySelector(".fv-critter .pet-critter").classList.contains("fv-bounce")};
+  document.querySelectorAll('[data-ov="petvisit"]').forEach(e=>e.remove());
+  Pets.visit({id:"x2",handle:"b",pet_level:3,pet_hat:"evil-hat"},false,null);await new Promise(r=>setTimeout(r,300));
+  out.old={stage:document.querySelector(".fv-stage .ps-box").dataset.stage,decor:document.querySelector(".fv-stage .ps-box").dataset.decor||"",hat:!!document.querySelector(".fv-critter .pc-hat")};return out;});
+ ok(r.stage==="5"&&r.decor==="fall old"&&r.hat,"friend's hat and walked scenery carried over (unknown decor dropped) "+JSON.stringify(r));
+ ok(r.propMoved<.5&&r.bounce,"pat bounces only the pet; the cloud under it stays "+JSON.stringify(r));
+ ok(r.old.stage==="2"&&!r.old.decor&&!r.old.hat,"unknown hat / no decor falls back to the plain stage "+JSON.stringify(r.old));
+ await p.close();}
+
 console.log("ERRS",JSON.stringify(errs));console.log("FAILS",fails);await b.close();srv.kill();})();

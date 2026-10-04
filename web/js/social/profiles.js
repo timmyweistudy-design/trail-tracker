@@ -8,10 +8,18 @@ const Profiles = (() => {
   async function syncMyStats(uid) {
     if (typeof petStats !== "function") return;
     const s = petStats(); const c = Supa.client(); if (!c) return;
-    const sig = [uid, s.name, s.level, s.km].join("|");
+    // 好友拜訪頁要照搬我的夥伴舞台：配件＋舞台上走過的風景（phase38 的兩個欄位）
+    const hat = typeof petHat === "function" ? petHat() : "none";
+    const decor = typeof PetJourney !== "undefined" && typeof Premium !== "undefined" && Premium.isOn() ? PetJourney.decor().join(",") : "";
+    const sig = [uid, s.name, s.level, s.km, hat, decor].join("|");
     if (sig === _syncSig && Date.now() - _syncAt < 600000) return;
     _syncSig = sig; _syncAt = Date.now();
-    try { await c.from("profiles").update({ pet_name: s.name, pet_level: s.level, total_km: s.km }).eq("id", uid); } catch (e) { _syncSig = ""; }
+    const base = { pet_name: s.name, pet_level: s.level, total_km: s.km };
+    try {
+      const { error } = await c.from("profiles").update(Object.assign({ pet_hat: hat === "none" ? null : hat, pet_decor: decor || null }, base)).eq("id", uid);
+      // 資料庫還沒跑 phase38（沒有那兩欄）：退回只寫等級，不要讓整筆同步失敗
+      if (error) { const r = await c.from("profiles").update(base).eq("id", uid); if (r.error) _syncSig = ""; }
+    } catch (e) { _syncSig = ""; }
   }
   const T = s => (typeof ttT === "function" ? ttT(s) : s);
   const say = s => { if (typeof toast === "function") toast(T(s)); };

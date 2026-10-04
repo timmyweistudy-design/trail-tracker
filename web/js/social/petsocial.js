@@ -15,7 +15,9 @@ const Pets = (() => {
     const following = new Set((fo || []).map(r => r.following_id));
     const mutual = (fr || []).map(r => r.follower_id).filter(id => following.has(id));
     if (!mutual.length) return [];
-    const { data } = await c.from("profiles").select("id,handle,display_name,avatar_url,pet_name,pet_level,total_km").in("id", mutual).limit(100);
+    const cols = "id,handle,display_name,avatar_url,pet_name,pet_level,total_km";
+    let { data, error } = await c.from("profiles").select(cols + ",pet_hat,pet_decor").in("id", mutual).limit(100);
+    if (error) ({ data } = await c.from("profiles").select(cols).in("id", mutual).limit(100));   // 還沒跑 phase38
     return data || [];
   }
 
@@ -111,6 +113,17 @@ const Pets = (() => {
       stage.appendChild(h); setTimeout(() => h.remove(), 1600);
     }
   }
+  // 好友的夥伴舞台：跟對方自己的夥伴卡同一套（pet-stage.js 的 2.5D 場景＋腳下的葉子／雲＋影子），
+  // 配件、走過的風景照對方同步上來的（phase38）；時段、季節跟著現在（你們在同一個台灣）
+  const HAT_OK = id => typeof PET_ART !== "undefined" && PET_ART.HAT_IDS.includes(id);
+  const DECOR_OK = ["fall", "sea", "old", "forest", "lake"];
+  function scene(p, i) {
+    const hat = HAT_OK(p.pet_hat) ? p.pet_hat : "none";
+    const decor = String(p.pet_decor || "").split(",").filter(d => DECOR_OK.includes(d)).slice(0, 2);
+    const actor = `<div class="fv-critter">${PET_ART.prop ? PET_ART.prop(i) : ""}${PET_ART.svg(i, "", hat)}</div><div class="pet-shadow"></div>`;
+    if (typeof PetStage === "undefined") return `${PET_ART.habitat(i)}${actor}`;
+    return PetStage.html(i, actor, { decor });
+  }
   function visit(p, sent, onChange) {
     if (document.querySelector('[data-ov="petvisit"]')) return;
     const lvl = p.pet_level || 1, i = lvl - 1, berry = typeof BERRY_SVG !== "undefined" ? BERRY_SVG : "";
@@ -118,7 +131,7 @@ const Pets = (() => {
     const ov = document.createElement("div"); ov.className = "pet-modal"; ov.dataset.ov = "petvisit";
     ov.innerHTML = `<div class="pet-modal-card fv-card" role="dialog" aria-label="${esc(T("拜訪夥伴"))}">
       <button class="sheet-close" id="pvX" aria-label="${esc(T("關閉"))}">${ic("x")}</button>
-      <div class="fv-stage">${PET_ART.habitat(i)}<div class="fv-critter">${PET_ART.svg(i)}</div></div>
+      <div class="fv-stage">${scene(p, i)}</div>
       <h2 class="fv-name">${esc(friendName(p))} <span class="lv-chip lvt-${Math.min(lvl, 7)}">Lv.${lvl}</span></h2>
       <div class="fv-by">${esc(T("%s 的夥伴").replace("%s", "@" + (p.handle || "")))}${p.total_km != null ? ` · ${T("已走")} ${Math.round(p.total_km * 10) / 10} km` : ""}</div>
       <div class="fv-acts">
@@ -132,7 +145,7 @@ const Pets = (() => {
     if (typeof ttModalA11y === "function") _a11y = ttModalA11y(ov, close, { focus: "#pvPat" });
     ov.querySelector("#pvX").onclick = close;
     ov.addEventListener("click", e => { if (e.target === ov) close(); });
-    const stage = ov.querySelector(".fv-stage"), critter = ov.querySelector(".fv-critter");
+    const stage = ov.querySelector(".fv-stage"), critter = ov.querySelector(".fv-critter .pet-critter");   // 只彈角色，腳下的葉子／雲不動
     ov.querySelector("#pvPat").onclick = () => {
       critter.classList.remove("fv-bounce"); void critter.offsetWidth; critter.classList.add("fv-bounce");
       hearts(stage); if (typeof ttBuzz === "function") ttBuzz(20);
@@ -156,7 +169,7 @@ const Pets = (() => {
     const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#132c1d"); g.addColorStop(.7, "#22452e"); g.addColorStop(1, "#1b3620");
     x.fillStyle = g; x.fillRect(0, 0, W, H);
     try { await document.fonts.ready; } catch (e) { /* */ }
-    const [hab, a, b] = await Promise.all([img(PET_ART.habitatUri(top, 1080, 520)), img(PET_ART.dataUri(mi, 500, petHat())), img(PET_ART.dataUri(fi, 500))]);
+    const [hab, a, b] = await Promise.all([img(PET_ART.habitatUri(top, 1080, 520)), img(PET_ART.dataUri(mi, 500, petHat())), img(PET_ART.dataUri(fi, 500, HAT_OK(p.pet_hat) ? p.pet_hat : undefined))]);   // 好友的配件也一起入鏡
     x.drawImage(hab, 0, 360, 1080, 520);
     x.fillStyle = "#1b3620"; x.fillRect(0, 878, W, H - 878);
     x.drawImage(a, 50, 380, 500, 500); x.drawImage(b, 530, 380, 500, 500);
