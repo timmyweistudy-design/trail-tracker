@@ -246,4 +246,43 @@ const KM=[0,5,20,40,90,150,260];
  ok(r.after===0,"debug: clear test trails removes postcards");
  await p.close();}
 
+// ── 2026-10-04 角色重畫：結構檢查（id 引用、畫框、開心眼對位、動畫掛點）、分享圖卡不畫瞇眼、幼蟲的頭在下半部 ──
+{const p=await mk({km:5});
+ const r=await p.evaluate(async()=>{const out=[],h=document.createElement("div");document.body.appendChild(h);
+  for(let i=0;i<7;i++)for(const hat of PET_ART.HAT_IDS){const s=PET_ART.svg(i,"",hat);if(/NaN|undefined|Infinity/.test(s))out.push([i,hat,"NaN"]);
+   h.innerHTML=s;const sv=h.firstChild;sv.style.cssText="width:200px;height:200px;animation:none";sv.querySelectorAll("*").forEach(e=>e.style.animation="none");
+   const ids=new Set([...sv.querySelectorAll("[id]")].map(e=>e.id));for(const m of s.matchAll(/(?:url\(#|href="#)([^)"]+)/g))if(!ids.has(m[1]))out.push([i,hat,"dangling "+m[1]]);
+   if(hat==="none"){const bb=[...sv.children].reduce((a,c)=>{if(!c.getBBox)return a;const x=c.getBBox();return [Math.min(a[0],x.x),Math.min(a[1],x.y),Math.max(a[2],x.x+x.width),Math.max(a[3],x.y+x.height)]},[999,999,-999,-999]);
+    if(bb[0]<-2||bb[1]<-2||bb[2]>202||bb[3]>202)out.push([i,"out of frame",bb.map(Math.round)]);
+    const eyes=[...sv.querySelectorAll(".pc-eye")],ehs=[...sv.querySelectorAll(".pc-eh")];if(eyes.length!==ehs.length||(i>0&&eyes.length!==2))out.push([i,"eye count"]);
+    ehs.forEach(e=>e.style.display="inline");eyes.forEach((e,k)=>{const a=e.getBBox(),c=ehs[k].getBBox();if(Math.abs(a.x+a.width/2-c.x-c.width/2)>2)out.push([i,"happy eye misaligned"])});
+    for(const c of ["pc-bob","pc-hover","pc-tail","pc-wing","pc-sway","pc-tw"])sv.querySelectorAll("."+c).forEach(e=>{if(!e.getBBox().width)out.push([i,"empty "+c])});}}
+  h.remove();
+  const load=src=>new Promise(r=>{const im=new Image();im.onload=()=>r(im);im.src=src});const cv=document.createElement("canvas");cv.width=cv.height=200;const g=cv.getContext("2d");
+  const px=async src=>{g.clearRect(0,0,200,200);g.drawImage(await load(src),0,0);return g.getImageData(0,0,200,200).data};
+  const shown=[];for(let i=1;i<7;i++){const a=await px(PET_ART.dataUri(i,200)),hid=PET_ART.dataUri(i,200);const b2=await px("data:image/svg+xml;charset=utf-8,"+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><style>.pc-eh,.pc-eye{}.pc-eh{display:none!important}</style>`+decodeURIComponent(hid.split(",")[1]).replace(/^<svg[^>]*>/,"")));
+   let d=0;for(let k=0;k<a.length;k+=4)if(Math.abs(a[k]-b2[k])>40)d++;shown.push(d)}
+  const c=document.querySelector("#petEmoji .pet-critter").getBoundingClientRect();
+  return {out,shown,zone:[PetStage.zoneOf(c.top+c.height*.6),PetStage.zoneOf(c.top+c.height*.8)]};});
+ ok(r.out.length===0,"7 stages × 11 hats: no dangling ids, in frame, happy eyes aligned, animation hooks not empty "+JSON.stringify(r.out.slice(0,5)));
+ ok(r.shown.every(n=>n<5),"share card (dataUri) does not draw the happy ^^ eyes over the open eyes "+r.shown);
+ ok(r.zone[0]==="pat"&&r.zone[1]==="tickle","larva: tapping its head (lower half of the picture) pats, tapping its body tickles "+r.zone);
+ await p.close();}
+
+// ── 2026-10-04 第二輪（使用者：不能飄、腳下的葉子／雲不能跟著跳、帽子戴在頭上）──
+for(const [km,st] of [[5,1],[150,5],[260,6]]){const p=await mk({km});
+ const r=await p.evaluate(async()=>{const pr=document.querySelector("#petEmoji .pet-prop"),c=document.querySelector("#petEmoji .pet-critter");if(!pr)return {none:true};
+  const b0=pr.getBoundingClientRect(),c0=c.getBoundingClientRect();document.querySelector("#petEmoji").classList.add("pb-hop");await new Promise(r=>setTimeout(r,380));
+  const b1=pr.getBoundingClientRect(),c1=c.getBoundingClientRect();const moved=Math.abs(c1.top-c0.top)+Math.abs(c1.left-c0.left)+Math.abs(c1.height-c0.height)+Math.abs(Math.atan2(0,1));
+  const style=getComputedStyle(c).transform;return {prop:Math.abs(b1.top-b0.top)+Math.abs(b1.left-b0.left),anim:style!=="none"}});
+ ok(!r.none&&r.prop<.5&&r.anim,"stage "+st+": the leaf/cloud under the pet stays put while the pet moves "+JSON.stringify(r));
+ await p.close();}
+{const p=await mk({km:40});
+ const r=await p.evaluate(async()=>{const g=document.querySelector("#petEmoji .pc-bob");let lo=1e9,hi=-1e9;for(let k=0;k<12;k++){const b=g.getBoundingClientRect();lo=Math.min(lo,b.bottom);hi=Math.max(hi,b.bottom);await new Promise(r=>setTimeout(r,300));}return hi-lo;});
+ ok(r<1,"fox idle: feet stay on the ground (bottom moves "+r.toFixed(2)+"px over 3.6 s)");
+ await p.close();}
+{const p=await mk({km:5,hat:"straw"});
+ ok(await p.evaluate(()=>{const s=PET_ART.svg(1,"","straw"),n=PET_ART.svg(1);return !/f29a3a/.test(s)&&/f29a3a/.test(n)}),"larva: the osmeterium is removed when wearing a hat (hat sits on the head)");
+ await p.close();}
+
 console.log("ERRS",JSON.stringify(errs));console.log("FAILS",fails);await b.close();srv.kill();})();

@@ -325,7 +325,7 @@ function renderPet() {
   // 2.5D 舞台（pet-stage.js）：角色那一層包在分層場景裡；沒載到就退回舊的平面棲地
   const actorHtml = `
       <div class="pet-bubble">${ttT(mood.t)}</div>
-      <div id="petEmoji" class="pet-m-${mood.k || "content"}" role="button" tabindex="0" aria-label="${ttT("摸摸")} ${escHtml(nm || ttT(st.n))}">${art}${petMoodFx(mood.k)}</div>
+      <div id="petEmoji" class="pet-m-${mood.k || "content"}" role="button" tabindex="0" aria-label="${ttT("摸摸")} ${escHtml(nm || ttT(st.n))}">${typeof PET_ART !== "undefined" && PET_ART.prop ? PET_ART.prop(i) : ""}${art}${petMoodFx(mood.k)}</div>
       <div class="pet-shadow"></div>`;
   const stageHtml = (typeof PetStage !== "undefined")
     ? PetStage.html(i, actorHtml, { wx: PetStage.cachedWx(), decor: typeof PetJourney !== "undefined" ? PetJourney.decor() : [] })

@@ -171,7 +171,8 @@ window.PetStage = (function () {
   function zoneOf(clientY) {
     const c = box && box.querySelector("#petEmoji .pet-critter"); if (!c) return "pat";
     const r = c.getBoundingClientRect();
-    return clientY < r.top + r.height * .5 ? "pat" : "tickle";
+    const line = typeof PET_ART !== "undefined" && PET_ART.headLine ? PET_ART.headLine(+box.dataset.stage || 0) : .5;   // 每階段的頭高度不同（幼蟲的頭在下半部）
+    return clientY < r.top + r.height * line ? "pat" : "tickle";
   }
   function react(kind) {
     if (reduce()) return sleep(0);

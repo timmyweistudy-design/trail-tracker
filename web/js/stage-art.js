@@ -96,12 +96,11 @@ window.StageArt = (function () {
     const farExtra = (has("forest") ? decoForest(c) : "") + (has("fall") ? decoFall(c) : "");
     const midExtra = (has("old") ? decoOld(c) : "") + (has("lake") ? decoLake(c) : "");
     let o = {};
-    if (stage === 0) {   // 神秘之卵：兩棵大樹框住的林間空地、灑落的光斑、編織的巢
+    if (stage === 0) {   // 神秘之卵：兩棵大樹框住的林間空地、灑落的光斑
       o.far = far(c, { between }) + farExtra;
-      let nest = "";
-      for (let k = 0; k < 14; k++) { const a = k / 14 * Math.PI, rx = 62, y0 = 264; nest += `<path d="M${f(200 - rx * Math.cos(a))} ${f(y0 + 6 * Math.sin(a))} Q200 ${f(y0 + A.R(r, 6, 16))} ${f(200 + rx * Math.cos(a + .6))} ${f(y0 + 4 * Math.sin(a + .6))}" stroke="${A.mix("#8a6236", k % 2 ? "#5e4026" : "#b08a5a", .4)}" stroke-width="${A.R(r, 2.4, 4).toFixed(1)}" fill="none" stroke-linecap="round"/>`; }
       o.mid = ground(c, 252) + `<g opacity="${c.tod === "night" ? .12 : .28}">${[[120, 258, 26], [260, 262, 30], [200, 276, 20]].map(([x, y, rr]) => `<ellipse cx="${x}" cy="${y}" rx="${rr}" ry="${rr * .25}" fill="${c.P.sun}"/>`).join("")}</g>` +
-        `<ellipse cx="200" cy="266" rx="68" ry="13" fill="${A.shade("#6b4a2a", .2)}"/>` + nest + midExtra +
+        midExtra +   // 2026-10-04 拿掉地上的深色巢：跟蛋疊在一起像個坑洞（使用者回饋）；蛋直接坐在草地上、影子在夥伴卡那層
+
         trunk(c, 30, 30, -10) + trunk(c, 372, 36, -10, true) + canopy(c, 20, -40, 2.4, 0) + canopy(c, 390, -50, 2.6, 2);
       o.front = grassRow(c, [12, 44, 360, 392], 304, 1.6) + [[70, 296], [330, 300]].map(([x, y], k) => A.taper(x, y, x + 22, y - 8, 9, leaf(c, k + 1))).join("");
     } else if (stage === 1) {   // 草叢幼蟲：草地、有明暗的香菇、幸運草、遠處小樹
