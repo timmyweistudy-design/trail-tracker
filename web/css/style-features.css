@@ -2118,7 +2118,7 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 @keyframes pbChewH { 0%, 100% { transform: none; } 45% { transform: translateY(1.6px) scale(1.01, .99); } }
 @keyframes pbChewJ { 0%, 100% { transform: none; } 45% { transform: translateY(4px); } }
 .ps-box[data-stage="1"] .pb-chew .m-o, .ps-box[data-stage="1"] .pb-chew .m-c, .ps-box[data-stage="1"] .pb-chew .m-p, .ps-box[data-stage="1"] .pb-chew .pr-head { animation-duration: .18s; animation-iteration-count: 5; }   /* 幼蟲：小口快快啃 */
-.ps-box[data-stage="4"] .pb-chew .m-o, .ps-box[data-stage="4"] .pb-chew .m-c, .ps-box[data-stage="4"] .pb-chew .m-p, .ps-box[data-stage="4"] .pb-chew .pr-head { animation-duration: .4s; }   /* 虎：嚼得慢、有力 */
+.ps-box[data-stage="4"] .pb-chew .m-o, .ps-box[data-stage="4"] .pb-chew .m-c, .ps-box[data-stage="4"] .pb-chew .m-p, .ps-box[data-stage="4"] .pb-chew .pr-head { animation-duration: .35s; }   /* 虎：嚼得慢、有力 */
 /* 蝶：吸（口器一伸一縮、翅膀慢拍） */
 .ps-box .pb-sip .pr-ext { opacity: 1; animation: pbSip .3s ease-in-out 3; }
 .ps-box .pb-sip .pr-curl { opacity: 0; }
@@ -2243,3 +2243,32 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 /* 被抓著的果實：跟著爪子平滑移動（--tx／--ty 由 pet-stage.js 量） */
 .ps-berry.held { animation: none; transform: translate(var(--tx, 0px), var(--ty, 0px)); transition: transform .3s cubic-bezier(.3,.7,.4,1); }
 .ps-berry.held.eaten { transform: translate(var(--tx, 0px), var(--ty, 0px)) scale(.12); opacity: 0; transition: transform .3s ease-in, opacity .2s ease-in .12s; }
+/* 狐、虎走路時換成側身站姿（pet-art.js 的 .pr-stand）：面朝左，往右走時鏡像；每個關節的角度由 pet-walk.js 給 */
+.ps-box.standing #petEmoji .pc-bob { display: none; }
+.ps-box.standing #petEmoji .pr-stand { display: inline; animation: prRise .28s cubic-bezier(.3,.7,.4,1); }
+@keyframes prRise { 0% { transform: var(--flip, translate(0, 0)) scale(1, .82); opacity: .4; } 100% { transform: var(--flip, translate(0, 0)); opacity: 1; } }
+/* 支點放在後腳掌（低頭時整個身體以後腳為支點往前趴）；往右走的鏡像要繞 x=100，所以先平移 −96 再翻 */
+.ps-box.standing .pr-stand { transform-box: view-box; transform-origin: 148px 196px; transform: var(--flip, translate(0, 0)) rotate(var(--pitch, 0deg)); transition: transform .38s cubic-bezier(.3,.7,.4,1); }
+.ps-box.standing.face-r { --flip: translateX(-96px) scale(-1, 1); }
+.ps-box.standing .st-lean .pr-stand { --pitch: -15deg; }   /* 趴下去吃（像狗、狐狸低頭吃東西：胸口往下、手肘彎） */
+.ps-box.standing .st-lean .pr-leg.fl { transform: rotate(14deg); } .ps-box.standing .st-lean .pr-leg.fl .pr-shin { transform: rotate(-34deg); }
+.ps-box.standing .st-lean .pr-leg.fr { transform: rotate(10deg); } .ps-box.standing .st-lean .pr-leg.fr .pr-shin { transform: rotate(-30deg); }
+.ps-box.standing .st-lean .pr-leg.hl, .ps-box.standing .st-lean .pr-leg.hr { transform: rotate(-6deg); }
+.ps-box .pr-leg.fl { transform: rotate(var(--aFL, 0deg)); } .ps-box .pr-leg.fl .pr-shin { transform: rotate(var(--bFL, 0deg)); }
+.ps-box .pr-leg.fr { transform: rotate(var(--aFR, 0deg)); } .ps-box .pr-leg.fr .pr-shin { transform: rotate(var(--bFR, 0deg)); }
+.ps-box .pr-leg.hl { transform: rotate(var(--aHL, 0deg)); } .ps-box .pr-leg.hl .pr-shin { transform: rotate(var(--bHL, 0deg)); }
+.ps-box .pr-leg.hr { transform: rotate(var(--aHR, 0deg)); } .ps-box .pr-leg.hr .pr-shin { transform: rotate(var(--bHR, 0deg)); }
+.ps-box .pr-stand .pr-torso, .ps-box .pr-stand > .pc-tail { translate: 0 var(--gby, 0px); }
+.ps-box .pr-stand .pr-neck { translate: 0 var(--gby, 0px); transform: rotate(var(--nk, 0deg)); transition: transform .38s cubic-bezier(.3,.7,.4,1); }
+.ps-box .pr-stand > .pc-tail { animation: none; transform: rotate(var(--gtr, 0deg)); }
+.ps-box .pr-stand .pr-head2 .pr-head { transition: none; }
+/* 站著低頭吃：脖子往下轉、頭反過來轉回去（臉朝著食物，不會整顆頭歪掉） */
+.ps-box.standing .st-lean .pr-stand .pr-neck { transform: rotate(var(--nk, -62deg)); }
+.ps-box.standing .pr-stand .pr-head2 .pr-head { transform: rotate(calc(var(--nk, 0deg) * -.55)); transition: transform .38s cubic-bezier(.3,.7,.4,1); }
+.ps-box.standing .st-lean .pr-stand .pr-head2 .pr-head { transform: rotate(calc(var(--nk, -62deg) * -.55)); }
+/* 坐下（從站姿換回坐姿）：壓一下再彈回 */
+.ps-box .pb-sit .pc-bob { animation: pbSitDown .42s cubic-bezier(.3,.7,.4,1); }
+@keyframes pbSitDown { 0% { transform: scale(1.06, .82); } 60% { transform: scale(.98, 1.04); } 100% { transform: none; } }
+.ps-box #petEmoji .pet-critter { overflow: visible; }   /* 趴下吃、走到邊邊時頭會超出 200×200 的畫框，不要切掉 */
+/* 後兩顆只嚼兩下 */
+.ps-box .chew2.pb-chew .m-o, .ps-box .chew2.pb-chew .m-c, .ps-box .chew2.pb-chew .m-p, .ps-box .chew2.pb-chew .pr-head, .ps-box .chew2.pb-chew .pr-jaw { animation-iteration-count: 2; }

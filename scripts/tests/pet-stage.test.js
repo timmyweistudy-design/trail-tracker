@@ -105,10 +105,10 @@ const KM=[0,5,20,40,90,150,260];
  ok(f1.n===3&&f1.minGap>=34&&f1.dis,"feed: three berries drop at separate random spots, button locked "+JSON.stringify(f1));
  await p.screenshot({path:O+"p2-feed-drop.png"});
  const seq=await p.evaluate(async()=>{const vals=[],steps=[],c0=document.querySelector("#petEmoji .pet-critter"),b=document.querySelector(".ps-box").getBoundingClientRect();let bite=false,off=0,feet=null,feetMove=0,wasOpen=false;const aims=[];
-  for(let k=0;k<220;k++){const e=document.querySelector("#petFeed .feed-bal");if(e){const v=+e.textContent;if(vals[vals.length-1]!==v)vals.push(v);}
+  for(let k=0;k<420;k++){const e=document.querySelector("#petFeed .feed-bal");if(e){const v=+e.textContent;if(vals[vals.length-1]!==v)vals.push(v);}
    const em=document.querySelector("#petEmoji");if(em){const top=["pb-lick","pb-gulp","pb-chew","pb-snap","st-open","st-lean"].find(k=>em.classList.contains(k));if(top&&steps[steps.length-1]!==top)steps.push(top);
     if(em.classList.contains("st-lean")){bite=true;const f=em.querySelector(".pc-bob").getBoundingClientRect();feet=feet==null?f.bottom:feet;feetMove=Math.max(feetMove,Math.abs(f.bottom-feet));}
-    if(em.classList.contains("st-open")&&!wasOpen){const m=em.querySelector(".pr-mouth").getBoundingClientRect(),mc=[m.left+m.width/2,m.top+m.height/2];
+    if(em.classList.contains("st-open")&&!wasOpen){const m=PetWalk.part(document.querySelector(".ps-box"),".pr-mouth").getBoundingClientRect(),mc=[m.left+m.width/2,m.top+m.height/2];
      const bs=[...document.querySelectorAll(".ps-berry:not(.eaten)")].map(x=>{const q=x.getBoundingClientRect();return [q.left+q.width/2-mc[0],q.top+q.height/2-mc[1]]}).sort((u,v)=>Math.hypot(...u)-Math.hypot(...v));if(bs[0])aims.push(bs[0].map(Math.round));}
     wasOpen=em.classList.contains("st-open");if(!em.classList.contains("st-lean"))feet=null;}
    if(!document.querySelector(".ps-berry"))break;await new Promise(r=>setTimeout(r,70));}
@@ -118,7 +118,7 @@ const KM=[0,5,20,40,90,150,260];
  ok(seq.bite&&seq.feetMove<1.5,"feed: leans down to eat, feet stay planted while eating "+JSON.stringify({feetMove:seq.feetMove}));
  ok(seq.aims.length===3&&seq.aims.every(([dx,dy])=>Math.abs(dx)<=14&&Math.abs(dy)<=24),"feed: walks over so the mouth is right above each berry when it opens (dx,dy px) "+JSON.stringify(seq.aims));
  ok(/st-lean>st-open>pb-snap>pb-chew>pb-gulp/.test(seq.steps),"feed: each berry = lean > open mouth > snap > chew > gulp "+seq.steps);
- const lick=await p.evaluate(async()=>{for(let k=0;k<30;k++){if(document.querySelector("#petEmoji.pb-lick"))return true;await new Promise(r=>setTimeout(r,50));}return false;});
+ const lick=await p.evaluate(async()=>{for(let k=0;k<80;k++){if(document.querySelector("#petEmoji.pb-lick"))return true;await new Promise(r=>setTimeout(r,50));}return false;});
  ok(lick,"feed: licks its lips after the last berry");
  await p.waitForFunction(()=>/吃得好開心/.test(document.getElementById("toast").textContent),null,{timeout:12000}).catch(()=>{});   // 走回中間、慶祝、愛心先冒、0.45 秒後才跳提示
  const f2=await p.evaluate(()=>({berry:!!document.querySelector(".ps-berry"),bal:berriesBalance(),t:document.getElementById("toast").textContent}));
@@ -241,7 +241,8 @@ const KM=[0,5,20,40,90,150,260];
   return {uniq:ida&&idb&&ida!==idb,leftover:/§/.test(a+b),max:Math.max(...sizes),imgs,ms:+ms.toFixed(2)};});
  ok(r.uniq&&!r.leftover,"each SVG copy gets its own ids, no § left");
  // 2026-10-04 龍重畫：東方龍要有鬃、鬚、鹿角、背鰭、鱗才像龍，預算 12K→24K；另外量實際插進頁面的時間（列表一次畫很多隻）
- ok(r.max<24000&&r.ms<10,"character SVG size & speed budget (max "+r.max+" chars, "+r.ms+" ms per dragon)");
+ // 2026-10-04 走過去吃：狐、虎多了一份側身站姿（四條有關節的腿＋脖子＋同一顆頭），預算 24K→40K；插入時間照量
+ ok(r.max<40000&&r.ms<10,"character SVG size & speed budget (max "+r.max+" chars, "+r.ms+" ms per dragon)");
  ok(r.imgs.every(Boolean),"dataUri (share cards / widgets) loads for 7 stages with hat");
  await p.evaluate(()=>{window.__psNoIdle=true;renderPet();document.querySelector(".ps-box").scrollIntoView({block:"center"})});
  const hb=await p.evaluate(()=>{const c=document.querySelector("#petEmoji .pet-critter").getBoundingClientRect();return {x:c.left+c.width/2,y:c.top+c.height*.25}});
@@ -276,7 +277,7 @@ const KM=[0,5,20,40,90,150,260];
    const ids=new Set([...sv.querySelectorAll("[id]")].map(e=>e.id));for(const m of s.matchAll(/(?:url\(#|href="#)([^)"]+)/g))if(!ids.has(m[1]))out.push([i,hat,"dangling "+m[1]]);
    if(hat==="none"){const bb=[...sv.children].reduce((a,c)=>{if(!c.getBBox)return a;const x=c.getBBox();return [Math.min(a[0],x.x),Math.min(a[1],x.y),Math.max(a[2],x.x+x.width),Math.max(a[3],x.y+x.height)]},[999,999,-999,-999]);
     if(bb[0]<-2||bb[1]<-2||bb[2]>202||bb[3]>202)out.push([i,"out of frame",bb.map(Math.round)]);
-    const eyes=[...sv.querySelectorAll(".pc-eye")],ehs=[...sv.querySelectorAll(".pc-eh")];if(eyes.length!==ehs.length||(i>0&&eyes.length!==2))out.push([i,"eye count"]);
+    const vis=e=>!e.closest(".pr-stand");const eyes=[...sv.querySelectorAll(".pc-eye")].filter(vis),ehs=[...sv.querySelectorAll(".pc-eh")].filter(vis);if(eyes.length!==ehs.length||(i>0&&eyes.length!==2))out.push([i,"eye count"]);
     ehs.forEach(e=>e.style.display="inline");eyes.forEach((e,k)=>{const a=e.getBBox(),c=ehs[k].getBBox();if(Math.abs(a.x+a.width/2-c.x-c.width/2)>2)out.push([i,"happy eye misaligned"])});
     for(const c of ["pc-bob","pc-hover","pc-tail","pc-wing","pc-sway","pc-tw"])sv.querySelectorAll("."+c).forEach(e=>{if(!e.getBBox().width)out.push([i,"empty "+c])});}}
   h.remove();
@@ -327,7 +328,7 @@ for(const [km,st] of [[5,1],[150,5],[260,6]]){const p=await mk({km});
 // ── 2026-10-04 動作優化：骨架、嘴、帽子跟著頭、小圖與分享圖卡不受影響 ──
 {const p=await mk({km:40,hat:"straw"});
  const r=await p.evaluate(()=>{const out={};const d=document.createElement("div");document.body.appendChild(d);
-  for(let i=1;i<7;i++){d.innerHTML=PET_ART.svg(i,"","straw");const q=k=>d.querySelector(k);out[i]={head:!!q(".pr-head"),mouth:i===0||!!q(".pr-mouth .m-c")&&!!q(".pr-mouth .m-o"),hatInHead:!!q(".pr-head .pc-hat"),eyesInHead:d.querySelectorAll(".pr-head .pc-eye").length===2};}
+  for(let i=1;i<7;i++){d.innerHTML=PET_ART.svg(i,"","straw");const q=k=>d.querySelector(k);out[i]={head:!!q(".pr-head"),mouth:i===0||!!q(".pr-mouth .m-c")&&!!q(".pr-mouth .m-o"),hatInHead:!!q(".pr-head .pc-hat"),eyesInHead:[...d.querySelectorAll(".pr-head .pc-eye")].filter(e=>!e.closest(".pr-stand")).length===2};}
   d.remove();return out;});
  ok(Object.values(r).every(o=>o.head&&o.mouth&&o.hatInHead&&o.eyesInHead),"rig: 6 stages have a head (eyes + hat inside) and a mouth with closed/open states "+JSON.stringify(r));
  const m=await p.evaluate(()=>{const o=document.querySelector("#petEmoji .m-o"),c=document.querySelector("#petEmoji .m-c");return {o:getComputedStyle(o).opacity,c:getComputedStyle(c).opacity};});
@@ -336,7 +337,7 @@ for(const [km,st] of [[5,1],[150,5],[260,6]]){const p=await mk({km});
   em.classList.add("st-lean","st-open");await new Promise(r=>setTimeout(r,600));const h2=em.querySelector(".pc-hat").getBoundingClientRect(),f2=em.querySelector(".pc-bob").getBoundingClientRect(),o=getComputedStyle(em.querySelector(".m-o")).opacity;
   em.classList.remove("st-lean","st-open");return {hatDown:+(h2.top-h.top).toFixed(1),feet:+Math.abs(f2.bottom-f.bottom).toFixed(1),open:o};});
  ok(lean.hatDown>5&&lean.feet<1&&lean.open==="1","leaning: the hat goes down with the head, feet stay, mouth opens "+JSON.stringify(lean));
- const share=await p.evaluate(()=>/\.m-o,\.m-t,\.m-p,\.pr-ext\{display:none\}/.test(decodeURIComponent(PET_ART.dataUri(3,120))));
+ const share=await p.evaluate(()=>/\.m-o,\.m-t,\.m-p,\.pr-ext,\.pr-stand\{display:none\}/.test(decodeURIComponent(PET_ART.dataUri(3,120))));
  ok(share,"share cards (no stylesheet) always draw the closed mouth");
  await p.close();}
 {const p=await mk({km:40,reduce:true});
