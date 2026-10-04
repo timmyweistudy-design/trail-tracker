@@ -51,6 +51,11 @@ window.PostcardArt = (function () {
     if (c.season === "spring" && k % 4 === 2) col = "#f2b8c8";
     return c.tod === "night" ? A.mix(col, c.P.near, .72) : c.tod === "dusk" ? A.mix(col, c.P.mid, .45) : c.tod === "dawn" ? A.mix(col, c.P.mid, .25) : col;
   }
+  // 地面帶：從 y 開始往下鋪一條微微起伏的地（樹、石頭要站在畫出來的地面上——不能站在霧、遠山或水面上：2026-10-04 使用者看到「樹在天上」）
+  function land(c, r, y, k, amp) {
+    const A = K(), a = amp == null ? 6 : amp, col = A.mix(leaf(c, k || 0), c.P.mid, .35);
+    return A.mountain([[-10, y + a], [W * .2, y - a * .4], [W * .45, y + a * .5], [W * .7, y - a * .6], [W + 10, y + a * .3]], H, col, { fade: A.mix(col, c.P.ground, .5), lit: .15 });
+  }
   function trees(c, r, xs, y, s) { const A = K(); return xs.map((x, k) => A.broadleaf(x + A.R(r, -6, 6), y + A.R(r, -2, 2), s * A.R(r, .8, 1.15), leaf(c, k), r)).join(""); }
 
   // ── 天空：漸層＋太陽/月亮＋雲（夏天的積雲大一點）＋夜晚星星 ──
@@ -103,7 +108,7 @@ window.PostcardArt = (function () {
       Array.from({ length: 6 }, () => `<ellipse cx="${A.R(r, x0, x1).toFixed(1)}" cy="${A.R(r, top + 10, bottom).toFixed(1)}" rx="${A.R(r, 6, 14).toFixed(1)}" ry="${A.R(r, 3, 6).toFixed(1)}" fill="${leaf(c, 0)}" opacity=".55"/>`).join("") + `</g>`;
   }
   const FALL = [
-    (c, r) => farR(c, r, 92, 30) + K().mist(96, 10, c.P.mist, .5, W) + trees(c, r, [40, 70, 270, 300], 128, .9) + cliff(c, r, 96, 236, 34, 172) + trees(c, r, [118, 150, 210], 44, .55) +
+    (c, r) => farR(c, r, 92, 30) + K().mist(96, 10, c.P.mist, .5, W) + land(c, r, 122, 1, 5) + trees(c, r, [40, 70, 270, 300], 128, .9) + cliff(c, r, 96, 236, 34, 172) + trees(c, r, [118, 150, 210], 44, .55) +
       fall(c, r, 150, 186, 46, 166, 140, 196) + fern(c.tod === "night" ? 118 : 116, 120, .8, K().shade(leaf(c, 0), .1)) + fern(222, 110, .7, leaf(c, 0), true) +
       pool(c, r, 168, -10, W + 10) + rock(76, 186, 1, "#8a8476", r) + rock(252, 190, .8, "#8a8476", r),
     (c, r) => farR(c, r, 86, 26) + midR(c, r, 120, 26) + cliff(c, r, 104, 230, 26, 120) + fall(c, r, 156, 180, 34, 104, 152, 184) +
@@ -133,7 +138,7 @@ window.PostcardArt = (function () {
       steps(c, r, [[150, 202], [118, 172], [150, 146], [186, 126], [168, 108]], 34, 5, 13) + shrine(222, 148, 1.15, c.tod === "night") +
       K().silvergrass(278, 196, 1.3, r) + K().silvergrass(300, 200, 1.1, r) + fern(30, 178, 1, leaf(c, 1)) + frame(c, r, "left"),
     (c, r) => farR(c, r, 90, 20) + `<rect x="0" y="0" width="${W}" height="${H}" fill="${K().mix(c.P.mist, c.P.sky[1], .3)}" opacity=".35"/>` +
-      steps(c, r, [[160, 204], [158, 160], [162, 128], [160, 104]], 40, 6, 12) +
+      land(c, r, 140, 0, 5) + steps(c, r, [[160, 204], [158, 160], [162, 128], [160, 104]], 40, 6, 12) +
       K().cedar(56, 196, 190, leaf(c, 0)) + K().cedar(266, 198, 200, leaf(c, 3)) + K().cedar(100, 150, 96, K().mix(leaf(c, 0), c.P.far, .4)) + K().cedar(218, 150, 96, K().mix(leaf(c, 0), c.P.far, .4)) +
       shrine(206, 162, .8, c.tod === "night") + fern(110, 190, 1, leaf(c, 2)) + fern(214, 196, .9, leaf(c, 1), true),
     (c, r) => { const A = K(), wall = c.tod === "night" ? "#4f5258" : "#9a9180"; let s = farR(c, r, 78, 26) + A.mist(92, 12, c.P.mist, .6, W) +
@@ -157,11 +162,11 @@ window.PostcardArt = (function () {
   }
   function ridgeD(c, r, base, amp) { const A = K(), pts = A.ridgePts(r, -10, W + 10, base, amp, 6); return { d: A.smooth(pts) + ` L${W + 10} ${base + 4} L-10 ${base + 4}Z`, pts }; }
   const LAKE = [
-    (c, r) => { const A = K(), col = A.mix(c.P.far, c.P.sky[1], .15), R1 = ridgeD(c, r, 112, 46); return A.mountain(R1.pts, 120, col, { fade: c.P.mist }) + trees(c, r, [30, 64, 280], 118, .7) + lake(c, r, 116, R1.d, col) + rock(60, 194, .8, "#8a8476", r) + A.grass(286, 198, 1.4, leaf(c, 2), r) + frame(c, r); },
-    (c, r) => { const A = K(), col = A.mix(c.P.mid, c.P.far, .4), R1 = ridgeD(c, r, 104, 34); return A.mountain(R1.pts, 110, col, { fade: c.P.mist }) + lake(c, r, 108, R1.d, col) +
+    (c, r) => { const A = K(), col = A.mix(c.P.far, c.P.sky[1], .15), R1 = ridgeD(c, r, 112, 46); return A.mountain(R1.pts, 120, col, { fade: c.P.mist }) + land(c, r, 106, 0, 3) + trees(c, r, [30, 64, 280], 112, .7) + lake(c, r, 116, R1.d, col) + rock(60, 194, .8, "#8a8476", r) + A.grass(286, 198, 1.4, leaf(c, 2), r) + frame(c, r); },
+    (c, r) => { const A = K(), col = A.mix(c.P.mid, c.P.far, .4), R1 = ridgeD(c, r, 104, 34); return A.mountain(R1.pts, 110, col, { fade: c.P.mist }) + land(c, r, 98, 1, 3) + trees(c, r, [26, 60, 96], 104, .75) + lake(c, r, 108, R1.d, col) +
       `<path d="M190 150 H300 V156 H190Z" fill="#7a5a3a"/><path d="M200 156 V176 M232 156 V180 M264 156 V176 M292 156 V172" stroke="#5e4430" stroke-width="3"/>` +
       `<g transform="translate(270 150)"><path d="M-18 0 H18 V-4 H-18Z" fill="#8a6a46"/><path d="M-14 -4 V-22 M14 -4 V-22" stroke="#7a5a3a" stroke-width="2.4"/><path d="M-24 -20 Q0 -36 24 -20 Q16 -22 0 -30 Q-16 -22 -24 -20Z" fill="#9c4a3a"/></g>` +
-      trees(c, r, [26, 60, 96], 112, .8) + A.grass(40, 198, 1.6, leaf(c, 1), r); },
+      A.grass(40, 198, 1.6, leaf(c, 1), r); },
     (c, r) => { const A = K(), col = A.mix(c.P.far, c.P.mist, .35), R1 = ridgeD(c, r, 118, 30); return A.mountain(R1.pts, 124, col, { fade: c.P.mist }) + lake(c, r, 122, R1.d, col) + A.mist(110, 14, c.P.mist, .7, W) + A.mist(134, 8, c.P.mist, .45, W) +
       `<path d="M150 150 Q172 156 196 150 L190 156 Q172 160 156 156Z" fill="${A.shade(c.P.near, .2)}"/><path d="M172 150 V134 L184 146Z" fill="${A.mix("#f4efe2", c.P.sky[1], .3)}"/>` +
       [12, 30, 290, 306].map(x => `<path d="M${x} 200 Q${x + 2} 170 ${x - 4} 150 M${x + 6} 200 Q${x + 6} 176 ${x + 10} 158" stroke="${A.shade(c.P.near, .2)}" stroke-width="2" fill="none"/>`).join(""); },
@@ -190,15 +195,15 @@ window.PostcardArt = (function () {
 
   // ── 森林／高山／郊山 ──
   const FOREST = [
-    (c, r) => { const A = K(); let s = farR(c, r, 90, 26) + A.mist(100, 12, c.P.mist, .5, W); [30, 70, 110, 150, 190, 230, 270, 310].forEach((x, k) => { s += A.cedar(x + A.R(r, -6, 6), 168 - k % 2 * 10, A.R(r, 100, 140), A.mix(leaf(c, k), c.P.far, .3)); });
+    (c, r) => { const A = K(); let s = farR(c, r, 90, 26) + A.mist(100, 12, c.P.mist, .5, W) + land(c, r, 152, 0, 6); [30, 70, 110, 150, 190, 230, 270, 310].forEach((x, k) => { s += A.cedar(x + A.R(r, -6, 6), 168 - k % 2 * 10, A.R(r, 100, 140), A.mix(leaf(c, k), c.P.far, .3)); });
       s += `<g opacity="${c.tod === "night" ? .08 : .2}">${[0, 1, 2].map(k => `<path d="M${120 + k * 40} 0 L${150 + k * 40} 0 L${80 + k * 60} 200 L${40 + k * 60} 200Z" fill="#fff8d8"/>`).join("")}</g>`;
       [10, 300].forEach((x, k) => { s += A.cedar(x, 204, 210, leaf(c, k + 3)); }); return s + `<path d="M140 200 Q160 170 170 150" stroke="${c.tod === "night" ? "#3a3a32" : "#b8a37a"}" stroke-width="10" fill="none" stroke-linecap="round"/>` + fern(118, 192, 1, leaf(c, 1)) + fern(206, 196, .9, leaf(c, 2), true); },
-    (c, r) => { const A = K(), dirt = c.tod === "night" ? "#3a3a32" : "#c4ae84"; let s = farR(c, r, 100, 22) + trees(c, r, [30, 70, 110, 150, 190, 230, 270, 310], 142, 1) +
+    (c, r) => { const A = K(), dirt = c.tod === "night" ? "#3a3a32" : "#c4ae84"; let s = farR(c, r, 100, 22) + land(c, r, 134, 0, 4) + trees(c, r, [30, 70, 110, 150, 190, 230, 270, 310], 142, 1) +
       `<path d="M96 206 C130 176 150 160 160 142 C168 160 186 178 226 206Z" fill="${dirt}"/><path d="M160 142 C168 160 186 178 226 206 L200 206 C176 178 166 162 160 142Z" fill="${A.shade(dirt, .15)}"/>`;
       s += trees(c, r, [-10, 330], 214, 2.3);
       for (let k = 0; k < 9; k++) s += `<circle cx="${(k * 40 + A.R(r, -8, 8)).toFixed(1)}" cy="${A.R(r, -6, 8).toFixed(1)}" r="${A.R(r, 26, 38).toFixed(1)}" fill="${A.shade(leaf(c, k), .35)}"/>`;
       return s + A.grass(112, 200, 1.5, leaf(c, 3), r) + A.grass(214, 200, 1.4, leaf(c, 2), r); },
-    (c, r) => { const A = K(), bark = c.tod === "night" ? "#3a3028" : "#7a5a3e"; return farR(c, r, 88, 24) + trees(c, r, [200, 240, 280, 320], 150, .9) +
+    (c, r) => { const A = K(), bark = c.tod === "night" ? "#3a3028" : "#7a5a3e"; return farR(c, r, 88, 24) + land(c, r, 142, 1, 5) + trees(c, r, [200, 240, 280, 320], 150, .9) +
       `<path d="M8 204 C30 196 44 186 50 160 C54 120 48 80 58 30 L100 30 C110 80 104 120 108 160 C114 186 128 196 152 204Z" fill="${bark}"/><path d="M78 204 C84 170 86 120 84 30 L100 30 C110 80 104 120 108 160 C114 186 128 196 152 204Z" fill="${A.shade(bark, .3)}"/>` +
       [70, 84, 62].map((x, k) => `<path d="M${x} 196 C${x - 4} 150 ${x + 4} 100 ${x - 2} 40" stroke="${A.shade(bark, .45)}" stroke-width="${1.6 + k * .4}" fill="none" opacity=".8"/>`).join("") +
       Array.from({ length: 10 }, () => `<ellipse cx="${A.R(r, 52, 104).toFixed(1)}" cy="${A.R(r, 50, 196).toFixed(1)}" rx="${A.R(r, 4, 9).toFixed(1)}" ry="3" fill="${leaf(c, 0)}" opacity=".75"/>`).join("") +
