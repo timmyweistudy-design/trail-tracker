@@ -1827,11 +1827,11 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 /* 舞台下緣到名字留 18px：6px 時名字和裝扮/改名鈕太貼上面的畫面（使用者回饋 2026-10-04） */
 /* ── 山林夥伴 2.5D 舞台（pet-stage.js）：天空→遠山→中景→粒子→角色→前景，以 --px/--py × 各層 --d 做視差 ── */
 .ps-box { position: relative; margin: -18px -16px 18px; padding: 16px 16px 0; overflow: hidden; border-radius: 24px 24px 0 0; isolation: isolate; --px: 0; --py: 0;
-  --sky1: #8fc7e8; --sky2: #d6ecdc; --f1: #86aea6; --f2: #5f9378; --m: #3f7a52; --m2: #4d8a5e; --g: #2c5f3e; --fr: #22513a; --rock: #8a8d90; --rock2: #6d7174; --mist: rgba(240,246,244,.55); --cloud: #f3f7f6; --floor: #1f4730;
+  --sky1: #8cc4ea; --sky2: #e4f3f2; --floor: #1f4730;
   background: linear-gradient(180deg, var(--sky1), var(--sky2) 78%); touch-action: pan-y; }
-.ps-box[data-tod="dawn"]  { --sky1: #f2b99a; --sky2: #b9d3cf; --f1: #b49aa7; --f2: #86918a; --m: #4a7656; --m2: #5a8664; --g: #315a40; --fr: #27503a; --cloud: #fbe9e0; }
-.ps-box[data-tod="dusk"]  { --sky1: #6b5a8c; --sky2: #eb9a68; --f1: #8a6b86; --f2: #5e5a74; --m: #3a5a48; --m2: #46664f; --g: #2a4a38; --fr: #1e3a2c; --rock: #7a6b70; --rock2: #5d5458; --mist: rgba(250,214,190,.45); --cloud: #f6d2bf; }
-.ps-box[data-tod="night"] { --sky1: #0e1a33; --sky2: #23405a; --f1: #283d58; --f2: #1f344a; --m: #1b3a33; --m2: #21423a; --g: #16322a; --fr: #0f281f; --rock: #3e4652; --rock2: #2f3640; --mist: rgba(170,190,215,.28); --cloud: #8ea2bb; }
+.ps-box[data-tod="dawn"]  { --sky1: #f2b7a0; --sky2: #fde9d6; }
+.ps-box[data-tod="dusk"]  { --sky1: #6c5a96; --sky2: #f4a878; }
+.ps-box[data-tod="night"] { --sky1: #0f1b36; --sky2: #2b4566; }
 .ps-box[data-stage="0"] { --floor: #3d3424; } .ps-box[data-stage="1"] { --floor: #2d4828; } .ps-box[data-stage="2"] { --floor: #2f6142; } .ps-box[data-stage="3"] { --floor: #26533a; }
 .ps-box[data-stage="4"] { --floor: #4d4128; } .ps-box[data-stage="5"] { --floor: #353766; } .ps-box[data-stage="6"] { --floor: #2a5840; }
 .ps-box::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 58px; z-index: 1; pointer-events: none; background: linear-gradient(to bottom, transparent, var(--floor)); }

@@ -104,7 +104,8 @@ window.StageArt = (function () {
         trunk(c, 30, 30, -10) + trunk(c, 372, 36, -10, true) + canopy(c, 20, -40, 2.4, 0) + canopy(c, 390, -50, 2.6, 2);
       o.front = grassRow(c, [12, 44, 360, 392], 304, 1.6) + [[70, 296], [330, 300]].map(([x, y], k) => A.taper(x, y, x + 22, y - 8, 9, leaf(c, k + 1))).join("");
     } else if (stage === 1) {   // 草叢幼蟲：草地、有明暗的香菇、幸運草、遠處小樹
-      o.far = far(c, { between }) + farExtra + [60, 330].map((x, k) => A.broadleaf(x, 232, .7, A.mix(leaf(c, k), c.P.far, .35), r)).join("");
+      // 遠處小樹先畫、裝飾（瀑布岩壁）後畫：樹被岩壁擋在後面，不會浮在瀑布前（使用者回饋 2026-10-04）
+      o.far = far(c, { between }) + [60, 330].map((x, k) => A.broadleaf(x, 232, .7, A.mix(leaf(c, k), c.P.far, .35), r)).join("") + farExtra;
       o.mid = ground(c, 250) + grassRow(c, [70, 130, 280, 330], 262, 1.2) + shroom(c, 92, 270, 1.4) + shroom(c, 312, 266, 1.1) + shroom(c, 292, 272, .8) + midExtra +
         [[150, 276], [258, 278]].map(([x, y]) => [0, 120, 240].map(a => `<circle cx="${f(x + Math.cos(a * Math.PI / 180) * 4)}" cy="${f(y + Math.sin(a * Math.PI / 180) * 4)}" r="4" fill="${A.tint(leaf(c, 0), .1)}"/>`).join("")).join("");
       o.front = grassRow(c, [10, 40, 70, 330, 362, 394], 304, 1.8);
@@ -115,9 +116,9 @@ window.StageArt = (function () {
         [[70, 268, 1.1], [106, 262, .8], [300, 264, 1], [336, 270, 1.2], [132, 258, .6], [272, 256, .65]].map(([x, y, s], k) => flower(c, x, y, s, cols[k % cols.length])).join("") + midExtra;
       o.front = flower(c, 24, 306, 1.7, cols[1]) + flower(c, 378, 304, 1.6, cols[2]) + grassRow(c, [50, 352], 304, 1.4);
     } else if (stage === 3) {   // 靈巧山狐：杉木林（遠淡近濃）、光束、蕨類
-      let fr = far(c, { between }) + farExtra;
+      let fr = far(c, { between });
       [40, 90, 140, 260, 310, 360].forEach((x, k) => { fr += A.cedar(x, 232 - k % 2 * 6, 64 + k % 3 * 12, A.mix(leaf(c, k), c.P.far, .5)); });
-      o.far = fr;
+      o.far = fr + farExtra;   // 同上：裝飾畫在遠景樹之後
       o.mid = ground(c, 250) + `<g opacity="${c.tod === "night" ? .06 : .16}">${[0, 1].map(k => `<path d="M${150 + k * 70} -10 L${180 + k * 70} -10 L${120 + k * 90} 260 L${80 + k * 90} 260Z" fill="#fff8d8"/>`).join("")}</g>` +
         A.cedar(52, 262, 150, leaf(c, 0)) + A.cedar(350, 266, 170, leaf(c, 3)) + A.cedar(96, 254, 96, A.mix(leaf(c, 1), c.P.mid, .3)) + midExtra;
       o.front = fern(c, 0, 304, 1.5, false, 1) + fern(c, 400, 304, 1.5, true, 2) + grassRow(c, [80, 330], 304, 1.3);

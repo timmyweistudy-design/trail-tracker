@@ -24,14 +24,14 @@ window.PET_ART = (function () {
   const E = (cx, cy, rx, ry) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"`;
   const C = (cx, cy, r) => `<circle cx="${cx}" cy="${cy}" r="${r}"`;
   const Pa = d => `<path d="${d}"`;
-  // 眼睛：深色底＋下半虹膜＋大小兩個反光＋眼皮線（細節）；另附開心瞇眼（.pc-eh，預設藏）
+  // 眼睛：深色底＋下半低調虹膜＋一個中等反光（第二個很小很淡）；另附開心瞇眼（.pc-eh，預設藏）
+  // 2026-10-04 使用者回饋「眼睛太亮、偏女性化，要中性」：反光縮小、拿掉眼皮線（看起來像睫毛）、虹膜壓暗
   function eye(cx, cy, rx, ry, iris) {
-    return `<g class="pc-eye"><ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#24140a"/><ellipse cx="${cx}" cy="${cy + ry * .38}" rx="${rx * .72}" ry="${ry * .5}" fill="${iris}"/>` +
-      `<circle cx="${cx + rx * .32}" cy="${cy - ry * .38}" r="${rx * .38}" fill="#fff"/><circle cx="${cx - rx * .35}" cy="${cy + ry * .42}" r="${rx * .17}" fill="#fff" opacity=".85"/>` +
-      `<path class="pc-d" d="M${cx - rx * 1.05} ${cy - ry * .82} Q${cx} ${cy - ry * 1.32} ${cx + rx * 1.05} ${cy - ry * .82}" stroke="#24140a" stroke-width="1.6" fill="none" stroke-linecap="round" opacity=".6"/></g>` +
+    return `<g class="pc-eye"><ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#24140a"/><ellipse cx="${cx}" cy="${cy + ry * .4}" rx="${rx * .62}" ry="${ry * .42}" fill="${mixc(iris, "#24140a", .35)}"/>` +
+      `<circle cx="${cx + rx * .28}" cy="${cy - ry * .36}" r="${rx * .27}" fill="#fff" opacity=".92"/><circle class="pc-d" cx="${cx - rx * .3}" cy="${cy + ry * .4}" r="${rx * .1}" fill="#fff" opacity=".45"/></g>` +
       `<path class="pc-eh" d="M${cx - rx * 1.1} ${cy + ry * .15} Q${cx} ${cy - ry * .95} ${cx + rx * 1.1} ${cy + ry * .15}" stroke="#24140a" stroke-width="${Math.max(2.6, rx * .42)}" fill="none" stroke-linecap="round"/>`;
   }
-  const blush = (cx, cy, rx, ry) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#f29a9a" opacity=".55"/><ellipse class="pc-d" cx="${cx - rx * .3}" cy="${cy - ry * .2}" rx="${rx * .35}" ry="${ry * .3}" fill="#fff" opacity=".35"/>`;
+  const blush = (cx, cy, rx, ry) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#e89a8a" opacity=".38"/>`;   // 淡一點、不加亮點（中性）
   // 兩端漸細的線（條紋、毛流、鬍鬚）
   function tp(x0, y0, x1, y1, w, col, bend) {
     const mx = (x0 + x1) / 2 + (bend || 0), my = (y0 + y1) / 2, dx = y1 - y0, dy = -(x1 - x0), L = Math.hypot(dx, dy) || 1, nx = dx / L * w / 2, ny = dy / L * w / 2, r = v => Math.round(v * 10) / 10;
