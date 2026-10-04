@@ -128,11 +128,12 @@ window.PetStage = (function () {
 
   // ── 行為狀態機：待機 → 隨機挑一個動作 → 回待機。角色固定站在舞台中間（走動試過，看起來不自然，2026-10-04 拿掉）。
   // 心情決定機率：睏的多半不動、開心的會跳、想念的東張西望。
+  // 2026-10-04：多了連眨兩下、打哈欠（睏）、嘆氣（想念）；看的時候頭跟著轉（CSS 讀 --ex）
   const WEIGHTS = {
-    sleepy: { idle: 6, stretch: 2, look: 1 },
-    happy: { hop: 4, look: 2, stretch: 1, idle: 1 },
-    content: { look: 3, hop: 1, stretch: 2, idle: 2 },
-    longing: { look: 4, idle: 2 },
+    sleepy: { idle: 5, yawn: 3, stretch: 1, look: 1 },
+    happy: { hop: 4, look: 2, stretch: 1, blink2: 1, idle: 1 },
+    content: { look: 3, hop: 1, stretch: 2, blink2: 1, idle: 2 },
+    longing: { look: 3, sigh: 2, blink2: 1, idle: 2 },
   };
   let beat = 0, busy = false;
   const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -155,12 +156,16 @@ window.PetStage = (function () {
         for (const d of [-1, 1, 0]) { if (!box) break; box.style.setProperty("--ex", d); await sleep(d ? 900 : 200); }
       } else if (kind === "hop") await flash("pb-hop", 1100);
       else if (kind === "stretch") await flash("pb-stretch", 1400);
+      else if (kind === "yawn") await flash("pb-yawn", 1400);
+      else if (kind === "sigh") await flash("pb-sigh", 1600);
+      else if (kind === "blink2") await flash("pb-blink2", 500);
       else await sleep(400);
     } finally { busy = false; }
   }
   function schedule(m) {
     clearTimeout(beat);
     if (reduce() || window.__psNoIdle) return;   // __psNoIdle：測試要穩定時關掉隨機動作
+    if (box) box.style.setProperty("--bk", (3.2 + Math.random() * 3).toFixed(2) + "s");   // 眨眼間隔每輪換一次（不要像節拍器）
     beat = setTimeout(async () => {
       if (box && box.isConnected && visible && !document.hidden && !busy) await act(pick(WEIGHTS[m] || WEIGHTS.content));
       if (box && box.isConnected) schedule(m);
@@ -192,10 +197,20 @@ window.PetStage = (function () {
     while (out.length < n) out.push([-60, 58, -28][out.length]);   // 保底
     return out;
   }
+  // 一顆一顆吃：看（頭＋眼轉過去）→ 俯身 → 張嘴 → 咬（果實飛進嘴裡）→ 抬頭 → 嚼三下（臉頰鼓起）→ 吞；
+  // 三顆吃完舔舔嘴、再慶祝。蝶是飛低、口器伸直去吸；蛋是晃一下、裂縫亮起來把果實吸進去。
+  const cls = (on, ...c) => { const em = emEl(); if (em) c.forEach(k => em.classList.toggle(k, on)); };
+  function toMouth(b, egg) {   // 果實要飛去的點＝嘴（蛋就是蛋的中間）
+    const em = emEl(); if (!em) return;
+    const t = (egg ? em.querySelector(".pc-bob") : em.querySelector(".pr-mouth") || em.querySelector(".pr-head")) || em;
+    const a = t.getBoundingClientRect(), r = b.getBoundingClientRect();
+    b.style.setProperty("--tx", `${Math.round(a.left + a.width / 2 - (r.left + r.width / 2))}px`);
+    b.style.setProperty("--ty", `${Math.round(a.top + a.height / 2 - (r.top + r.height / 2))}px`);
+  }
   async function feed(berrySvg) {
     if (!box || reduce() || !visible) return;
     clearTimeout(beat); busy = true;
-    const actor = box.querySelector(".ps-actor"), egg = +box.dataset.stage === 0;
+    const actor = box.querySelector(".ps-actor"), stg = +box.dataset.stage, egg = stg === 0, fly = stg === 2;
     const bal = document.querySelector("#petFeed .feed-bal");
     let left = bal ? +bal.textContent : NaN;
     const berries = [];
@@ -210,22 +225,32 @@ window.PetStage = (function () {
       });
       box.style.setProperty("--ex", "0"); box.style.setProperty("--ey", "1");   // 低頭看掉下來的果實
       await sleep(340 + 650 + 120);
-      // 從離自己最近的開始吃
-      berries.sort((a, b) => Math.abs(a.x) - Math.abs(b.x));
+      berries.sort((a, b) => Math.abs(a.x) - Math.abs(b.x));   // 從離自己最近的開始吃
       for (const { b, x } of berries) {
         if (!box) break;
-        box.style.setProperty("--ex", String(Math.sign(x) * Math.min(1, Math.abs(x) / 60)));   // 轉頭看這一顆
-        await sleep(260);
-        b.style.setProperty("--tx", `${Math.round(-x * .8)}px`);   // 被吸到嘴邊
-        b.classList.add("eaten");
-        await flash(egg ? "pb-absorb" : "pb-bite", egg ? 560 : 520);
+        box.style.setProperty("--ex", String(Math.sign(x) * Math.min(1, Math.abs(x) / 60)));   // 頭和眼睛轉過去看這一顆
+        await sleep(240);
+        if (egg) {   // 蛋：晃一下把果實吸進去
+          toMouth(b, true); b.classList.add("eaten");
+          await flash("pb-absorb", 560);
+        } else {
+          cls(true, "st-lean"); await sleep(360);                     // 俯身（狐會先嗅兩下）
+          cls(true, fly ? "st-sip" : "st-open"); await sleep(fly ? 260 : 170);   // 張嘴（蝶：口器伸直）
+          toMouth(b, false); b.classList.add("eaten");               // 果實飛進嘴裡
+          if (fly) { await flash("pb-sip", 900); cls(false, "st-sip"); }
+          else { cls(false, "st-open"); await flash("pb-snap", 240); }   // 咬！
+          cls(false, "st-lean"); await sleep(280);                    // 抬頭
+          if (!fly) await flash("pb-chew", stg === 1 ? 900 : stg === 4 ? 1200 : 900);   // 嚼三下（幼蟲快快啃、虎慢慢嚼）
+          await flash("pb-gulp", 340);                               // 吞
+        }
         if (bal && isFinite(left)) { left = Math.max(0, left - 1); bal.textContent = left; bal.classList.remove("tick"); void bal.offsetWidth; bal.classList.add("tick"); }
         if (typeof ttBuzz === "function") ttBuzz(8);
         b.remove();
       }
       if (box) { box.style.setProperty("--ex", "0"); box.style.setProperty("--ey", "0"); }
+      if (!egg && !fly) await flash("pb-lick", 780);                  // 舔舔嘴
       await flash("pb-hop", 1300);   // 各自的慶祝（style-features.css 依階段換動作）
-    } finally { berries.forEach(o => o.b.remove()); busy = false; if (box) schedule(mood); }
+    } finally { berries.forEach(o => o.b.remove()); cls(false, "st-lean", "st-open", "st-sip"); busy = false; if (box) schedule(mood); }
   }
 
   // ── 天氣：用使用者所在位置（探索頁拿過的）或最後一趟走的步道；拿不到就不畫天氣，絕不在這裡要定位 ──

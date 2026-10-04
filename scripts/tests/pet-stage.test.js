@@ -103,14 +103,18 @@ const KM=[0,5,20,40,90,150,260];
  const f1=await p.evaluate(()=>{const bs=[...document.querySelectorAll(".ps-box .ps-berry")].map(b=>+b.style.getPropertyValue("--bx"));return {n:bs.length,xs:bs,minGap:Math.min(...bs.flatMap((a,i)=>bs.slice(i+1).map(b=>Math.abs(a-b)))),dis:document.getElementById("petFeed").disabled};});
  ok(f1.n===3&&f1.minGap>=34&&f1.dis,"feed: three berries drop at separate random spots, button locked "+JSON.stringify(f1));
  await p.screenshot({path:O+"p2-feed-drop.png"});
- const seq=await p.evaluate(async()=>{const vals=[],c0=document.querySelector("#petEmoji .pet-critter"),b=document.querySelector(".ps-box").getBoundingClientRect();let bite=false,off=0;
-  for(let k=0;k<70;k++){const e=document.querySelector("#petFeed .feed-bal");if(e){const v=+e.textContent;if(vals[vals.length-1]!==v)vals.push(v);}
-   const em=document.querySelector("#petEmoji");if(em&&em.classList.contains("pb-bite")){bite=true;const c=em.querySelector(".pet-critter").getBoundingClientRect();off=Math.max(off,Math.abs((c.left+c.width/2)-(b.left+b.width/2)));}
+ const seq=await p.evaluate(async()=>{const vals=[],steps=[],c0=document.querySelector("#petEmoji .pet-critter"),b=document.querySelector(".ps-box").getBoundingClientRect();let bite=false,off=0,feet=null,feetMove=0;
+  for(let k=0;k<220;k++){const e=document.querySelector("#petFeed .feed-bal");if(e){const v=+e.textContent;if(vals[vals.length-1]!==v)vals.push(v);}
+   const em=document.querySelector("#petEmoji");if(em){const top=["pb-lick","pb-gulp","pb-chew","pb-snap","st-open","st-lean"].find(k=>em.classList.contains(k));if(top&&steps[steps.length-1]!==top)steps.push(top);
+    if(em.classList.contains("st-lean")){bite=true;const c=em.querySelector(".pet-critter").getBoundingClientRect(),f=em.querySelector(".pc-bob").getBoundingClientRect();off=Math.max(off,Math.abs((c.left+c.width/2)-(b.left+b.width/2)));feet=feet==null?f.bottom:feet;feetMove=Math.max(feetMove,Math.abs(f.bottom-feet));}}
    if(!document.querySelector(".ps-berry"))break;await new Promise(r=>setTimeout(r,70));}
-  return {vals,bite,off:+off.toFixed(1)};});
+  return {vals,bite,off:+off.toFixed(1),steps:steps.join(">"),feetMove:+feetMove.toFixed(1)};});
  await p.screenshot({path:O+"p2-feed-eat.png"});
  ok(seq.vals.join()===[shown0,shown0-1,shown0-2,shown0-3].join(),"feed: the berry count on the button ticks down one per bite "+JSON.stringify(seq));
- ok(seq.bite&&seq.off<4,"feed: bites in place at the centre "+JSON.stringify(seq));
+ ok(seq.bite&&seq.off<4&&seq.feetMove<1.5,"feed: leans down to eat in place, feet stay planted "+JSON.stringify(seq));
+ ok(/st-lean>st-open>pb-snap>pb-chew>pb-gulp/.test(seq.steps),"feed: each berry = lean > open mouth > snap > chew > gulp "+seq.steps);
+ const lick=await p.evaluate(async()=>{for(let k=0;k<30;k++){if(document.querySelector("#petEmoji.pb-lick"))return true;await new Promise(r=>setTimeout(r,50));}return false;});
+ ok(lick,"feed: licks its lips after the last berry");
  await p.waitForTimeout(2200);
  const f2=await p.evaluate(()=>({berry:!!document.querySelector(".ps-berry"),bal:berriesBalance(),t:document.getElementById("toast").textContent}));
  ok(!f2.berry&&f2.bal===bal0-3&&/吃得好開心/.test(f2.t),"feed: all three eaten, settled (−3) "+JSON.stringify(f2));
