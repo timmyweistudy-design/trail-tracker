@@ -123,7 +123,7 @@ window.PetStage = (function () {
     o = Object.assign({}, o, window.__ps || {});   // window.__ps＝測試／除錯面板強制指定時段、季節、天氣
     const i = clamp(stage), t = o.tod || tod(), se = o.season || season(), wx = o.wx || "";
     const sc = SCENES[i];
-    return `<div class="ps-box${o.bg ? " ps-bg" : ""}" data-stage="${i}"${(o.decor || []).length ? ` data-decor="${o.decor.join(" ")}"` : ""} data-tod="${t}" data-season="${se}"${wx ? ` data-wx="${wx}"` : ""} style="--wx:${o.bg ? 0 : pos.x};--face:${o.bg ? 1 : pos.face}">
+    return `<div class="ps-box${o.bg ? " ps-bg" : ""}" data-stage="${i}"${(o.decor || []).length ? ` data-decor="${o.decor.join(" ")}"` : ""} data-tod="${t}" data-season="${se}"${wx ? ` data-wx="${wx}"` : ""}>
       <div class="ps-l ps-sky" style="--d:.1">${sky(t)}${wx === "cloud" || wx === "rain" ? `<svg class="ps-svg ps-drift" ${VB}>${cloud(90, 70, 1.1, "ps-skycloud")}${cloud(300, 50, 1.4, "ps-skycloud")}</svg>` : ""}</div>
       <div class="ps-l ps-far" style="--d:.28"><svg class="ps-svg" ${VB}>${sc.far}${decorOf(o.decor, i, "far")}</svg></div>
       <div class="ps-l ps-mid" style="--d:.55"><svg class="ps-svg" ${VB}>${sc.mid}${decorOf(o.decor, i, "mid")}</svg></div>
@@ -132,9 +132,6 @@ window.PetStage = (function () {
       <div class="ps-l ps-front" style="--d:1.35"><svg class="ps-svg" ${VB}>${sc.front}</svg></div>
     </div>`;
   }
-
-  // 角色在舞台上的位置（px，相對中心）與面向（1 右、-1 左）：重繪卡片時保留，不會「閃回中間」
-  const pos = { x: 0, face: 1 };
 
   // ── 視差：手指拖（任何裝置）＋陀螺儀（已有權限時，例如開過指北針；不在這裡主動跳權限框） ──
   let cur = { x: 0, y: 0 }, tgt = { x: 0, y: 0 }, raf = 0, box = null, base = null, io = null, visible = false;
@@ -191,12 +188,13 @@ window.PetStage = (function () {
     raf = 0; box = null; visible = false;
   }
 
-  // ── 行為狀態機：待機 → 隨機挑一個動作 → 回待機。心情決定機率（睏的多半不動、開心的會跳會走、想念的東張西望）──
+  // ── 行為狀態機：待機 → 隨機挑一個動作 → 回待機。角色固定站在舞台中間（走動試過，看起來不自然，2026-10-04 拿掉）。
+  // 心情決定機率：睏的多半不動、開心的會跳、想念的東張西望。
   const WEIGHTS = {
     sleepy: { idle: 6, stretch: 2, look: 1 },
-    happy: { hop: 3, walk: 3, look: 2, idle: 1 },
-    content: { walk: 3, look: 3, stretch: 1, idle: 2 },
-    longing: { look: 4, walk: 1, idle: 2 },
+    happy: { hop: 4, look: 2, stretch: 1, idle: 1 },
+    content: { look: 3, hop: 1, stretch: 2, idle: 2 },
+    longing: { look: 4, idle: 2 },
   };
   let beat = 0, busy = false;
   const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -211,27 +209,11 @@ window.PetStage = (function () {
     em.classList.remove(cls); void em.offsetWidth; em.classList.add(cls);
     return sleep(ms).then(() => em.classList.remove(cls));
   }
-  // 走到 x（px，相對舞台中心）；回傳走完的 promise
-  function walkTo(x) {
-    if (!box) return sleep(0);
-    const lim = Math.max(30, box.clientWidth * .27);
-    x = Math.round(Math.max(-lim, Math.min(lim, x)));
-    const dist = Math.abs(x - pos.x); if (dist < 4) return sleep(0);
-    pos.face = x > pos.x ? 1 : -1; pos.x = x;
-    const ms = Math.round(900 + dist * 9);
-    box.style.setProperty("--face", pos.face); box.style.setProperty("--wt", ms + "ms"); box.style.setProperty("--wx", x);
-    const em = emEl(); if (em) em.classList.add("pb-walk");
-    return sleep(ms).then(() => { const e = emEl(); if (e) e.classList.remove("pb-walk"); });
-  }
   async function act(kind) {
     if (!box) return;
     busy = true;
     try {
-      if (kind === "walk") {
-        const lim = box.clientWidth * .27;
-        let x = (Math.random() * 2 - 1) * lim; if (Math.abs(x - pos.x) < 50) x = pos.x > 0 ? -lim * .6 : lim * .6;
-        await walkTo(x);
-      } else if (kind === "look") {
+      if (kind === "look") {
         for (const d of [-1, 1, 0]) { if (!box) break; box.style.setProperty("--ex", d); await sleep(d ? 900 : 200); }
       } else if (kind === "hop") await flash("pb-hop", 1100);
       else if (kind === "stretch") await flash("pb-stretch", 1400);
@@ -258,22 +240,20 @@ window.PetStage = (function () {
     return flash(kind === "hug" ? "pb-hug" : kind === "tickle" ? "pb-tickle" : "pb-pat", kind === "hug" ? 1000 : 800);
   }
 
-  // ── 餵食：果實從天上掉在角色旁邊 → 角色走過去 → 吃三口 → 回到原位附近。回傳播完的 promise ──
+  // ── 餵食：果實從天上掉在角色腳前 → 低頭看 → 原地吃三口 → 跳一下。回傳播完的 promise ──
   async function feed(berrySvg) {
     if (!box || reduce() || !visible) return;
     clearTimeout(beat); busy = true;
     try {
-      const lim = box.clientWidth * .27;
-      const side = pos.x > 0 ? -1 : 1, bx = Math.round(Math.max(-lim, Math.min(lim, pos.x + side * 70)));
       const b = document.createElement("span");
-      b.className = "ps-berry"; b.innerHTML = berrySvg || ""; b.style.setProperty("--bx", bx);
+      b.className = "ps-berry"; b.innerHTML = berrySvg || ""; b.style.setProperty("--bx", 34);
       box.querySelector(".ps-actor").appendChild(b);
-      await sleep(650);
-      await walkTo(bx - side * 34);
-      pos.face = side; box.style.setProperty("--face", side);
+      box.style.setProperty("--ex", ".5"); box.style.setProperty("--ey", "1");   // 低頭看果實
+      await sleep(750);
       b.classList.add("eaten");
       await flash("pb-eat", 1000);
       b.remove();
+      if (box) { box.style.setProperty("--ex", "0"); box.style.setProperty("--ey", "0"); }
       await flash("pb-hop", 1100);
     } finally { busy = false; if (box) schedule(mood); }
   }
@@ -303,5 +283,5 @@ window.PetStage = (function () {
   }
   const cachedWx = () => (wxMemo ? wxMemo.wx : "");
 
-  return { html, bind, unbind, tod, season, wxOf, weather, cachedWx, count: SCENES.length, zoneOf, react, feed, walkTo, act, pos };
+  return { html, bind, unbind, tod, season, wxOf, weather, cachedWx, count: SCENES.length, zoneOf, react, feed, act };
 })();

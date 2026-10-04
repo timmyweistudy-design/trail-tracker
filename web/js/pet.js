@@ -447,7 +447,7 @@ function openPetDex() {
     return `<div class="dex-row${unlocked ? "" : " locked"}${isNow ? " now" : ""}">
       <div class="dex-e">${unlocked && typeof PET_ART !== "undefined" ? PET_ART.svg(i) : (unlocked ? s.e : `<svg class="ic dex-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`)}</div>
       <div class="dex-body">
-        <div class="dex-h"><b>${unlocked ? ttT(s.n) : Q}</b><span class="lv-chip lvt-${Math.min(i + 1, 7)}">Lv.${i + 1}</span>${isNow ? `<span class="dex-now">${ttT("目前")}</span>` : ""}${unlocked ? `<button class="dex-3d" data-i="${i}" aria-label="${ttT("轉一圈看看")}">3D</button>` : ""}</div>
+        <div class="dex-h"><b>${unlocked ? ttT(s.n) : Q}</b><span class="lv-chip lvt-${Math.min(i + 1, 7)}">Lv.${i + 1}</span>${isNow ? `<span class="dex-now">${ttT("目前")}</span>` : ""}</div>
         <div class="dex-k">${i === 0 ? ttT("起始型態") : ttT(`成長里程 ${s.km} km 解鎖`)}</div>
         <div class="dex-d">${unlocked ? ttT(s.d) : ttT("還沒見過牠。多走幾趟就碰得到")}</div>
       </div>
@@ -471,12 +471,6 @@ function openPetDex() {
   if (typeof ttModalA11y === "function") _a11y = ttModalA11y(ov, close, { focus: "#petDexClose" });
   ov.addEventListener("click", e => { if (e.target === ov) close(); });
   ov.querySelector("#petDexClose").addEventListener("click", close);
-  ov.querySelectorAll(".dex-3d").forEach(b => b.addEventListener("click", () => pet3d(+b.dataset.i)));
-}
-// 3D 展示（pet-3d.js＋Three.js 都是按了才下載）
-function pet3d(i) {
-  const nm = i === petStageIndex(totalKm()) && petName() ? petName() : ttT(PET_STAGES[i].n);
-  ensureScript("js/pet-3d.js").then(ok => { if (ok && typeof Pet3D !== "undefined") Pet3D.open(i, nm); else toast(ttT("3D 載入失敗，先看平面的")); });
 }
 // 全螢幕進化慶祝
 function celebrateEvolve(st, lv) {
@@ -501,13 +495,11 @@ function celebrateEvolve(st, lv) {
     <div class="evolve-n">${escHtml(petName() || ttT(st.n))} <span class="lv-chip lvt-${Math.min(lv, 7)}">Lv.${lv}</span></div>
     <div class="evolve-d">${ttT(st.d)}</div>
     <button class="btn primary" id="evolveOk">${ttT("太棒了")}</button>
-    <button class="btn ghost evolve-3d" id="evolve3d">${ttT("轉一圈看看")}</button>
   </div>`;
   document.body.appendChild(ov);
   ttBuzz([40, 60, 30, 40, 120]);
   const close = () => ov.remove();
   ov.querySelector("#evolveOk").addEventListener("click", close);
-  ov.querySelector("#evolve3d").addEventListener("click", () => pet3d(newIdx));
   ov.addEventListener("click", e => { if (e.target === ov) close(); });
 }
 // 走完後檢查是否進化（跨次也記住）

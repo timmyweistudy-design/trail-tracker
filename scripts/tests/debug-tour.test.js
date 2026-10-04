@@ -17,9 +17,9 @@ const recs=[1,3,5,7].map(m=>({id:"r"+m,date:new Date(Y,m-1,9,7).toISOString(),tr
  // 面板
  await p.evaluate(()=>toggleDebugPanel());await p.waitForTimeout(800);
  const secs=await p.evaluate(()=>[...document.querySelectorAll("#debugPanel .dbg-sec summary")].map(s=>s.textContent));
- ok(secs.length===9&&/第三波/.test(secs.join())&&/第四波/.test(secs.join()),"panel has 9 sections: "+secs.join(" / "));
+ ok(secs.length===10&&/夥伴舞台與旅行/.test(secs.join())&&/第三波/.test(secs.join())&&/第四波/.test(secs.join()),"panel has 10 sections: "+secs.join(" / "));
  await p.screenshot({path:O+"panel.png"});
- const SKIP=/拜訪夥伴範例|🏔山社|結算頁範例|檢舉處理|錯誤紀錄|清所有行程|重置🥚|重看語言|導覽\(|開成就頁|求救卡|開收集冊|山頂天氣|回報路況|留守人看到的|人氣範例|今年故事|去年故事/;
+ const SKIP=/看餵食動畫|看進化動畫|開明信片簿|開發現的生物|拜訪夥伴範例|🏔山社|結算頁範例|檢舉處理|錯誤紀錄|清所有行程|重置🥚|重看語言|導覽\(|開成就頁|求救卡|開收集冊|山頂天氣|回報路況|留守人看到的|人氣範例|今年故事|去年故事/;
  const toasts=[];await p.exposeFunction("__t",t=>toasts.push(t));await p.evaluate(()=>{const o=window.toast;window.toast=(m,...a)=>{window.__t(String(m));return o(m,...a);};});
  for(let si=0;si<secs.length;si++){
    await p.evaluate(si=>{const d=document.querySelectorAll("#debugPanel .dbg-sec")[si];if(d&&!d.open)d.querySelector("summary").click();},si);await p.waitForTimeout(250);

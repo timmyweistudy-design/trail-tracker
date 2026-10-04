@@ -72,15 +72,14 @@ const KM=[0,5,20,40,90,150,260];
 {const p=await mk({km:40,berries:20});
  await p.evaluate(()=>{window.__psNoIdle=true;renderPet();document.querySelector(".ps-box").scrollIntoView({block:"center"})});await p.waitForTimeout(400);
  // 走動：位置、面向、走路 class；重繪後位置保留
- const w=await p.evaluate(async()=>{const pr=PetStage.walkTo(60);await new Promise(r=>setTimeout(r,200));const mid=document.querySelector("#petEmoji").classList.contains("pb-walk");await pr;
-  const b=document.querySelector(".ps-box");return {mid,end:document.querySelector("#petEmoji").classList.contains("pb-walk"),wx:b.style.getPropertyValue("--wx"),face:b.style.getPropertyValue("--face")}});
- ok(w.mid&&!w.end&&+w.wx===60&&+w.face===1,"walk: moves, faces right, step class only while walking "+JSON.stringify(w));
- const wl=await p.evaluate(async()=>{await PetStage.walkTo(-40);return document.querySelector(".ps-box").style.getPropertyValue("--face")});ok(+wl===-1,"walk left faces left");
- ok(await p.evaluate(()=>{renderPet();const b=document.querySelector(".ps-box");return +b.style.getPropertyValue("--wx")===-40&&+b.style.getPropertyValue("--face")===-1}),"position & facing survive re-render");
- const ex=await p.evaluate(()=>{const r=document.querySelector("#petEmoji .pet-critter").getBoundingClientRect();return r.left+r.width*1.4});
+ // 角色固定在中間：沒有走動 class、沒有位移變數；跳和東張西望照樣會播
+ const ctr=await p.evaluate(async()=>{for(const k of ["hop","look","stretch"])await PetStage.act(k);const em=document.querySelector("#petEmoji"),bx=document.querySelector(".ps-box"),c=em.querySelector(".pet-critter").getBoundingClientRect(),b=bx.getBoundingClientRect();
+  return {walkApi:typeof PetStage.walkTo,wx:bx.style.getPropertyValue("--wx"),off:Math.abs((c.left+c.width/2)-(b.left+b.width/2))}});
+ ok(ctr.walkApi==="undefined"&&!ctr.wx&&ctr.off<3,"critter stays centered, no walking "+JSON.stringify(ctr));
+ const ex=await p.evaluate(()=>{const r=document.querySelector("#petEmoji .pet-critter").getBoundingClientRect();return r.left+r.width*1.15});   // 角色在中間：1.15 倍寬還在卡片內
  const ey=await p.evaluate(()=>{const r=document.querySelector("#petEmoji .pet-critter").getBoundingClientRect();return r.top+r.height*.4});
  await p.mouse.move(ex,ey);await p.waitForTimeout(300);
- ok(await p.evaluate(()=>+document.querySelector(".ps-box").style.getPropertyValue("--ex")>0.5),"eyes follow the finger");
+ const exv=await p.evaluate(()=>document.querySelector(".ps-box").style.getPropertyValue("--ex"));ok(+exv>0.5,"eyes follow the finger (--ex "+exv+")");
  ok(await p.evaluate(async()=>{const pr=PetStage.act("hop");await new Promise(r=>setTimeout(r,100));const on=document.querySelector("#petEmoji").classList.contains("pb-hop");await pr;return on&&!document.querySelector("#petEmoji").classList.contains("pb-hop")}),"hop plays and clears");
  // 分區：點頭＝摸頭、點身體＝搔癢
  const head=await p.evaluate(()=>{const r=document.querySelector("#petEmoji .pet-critter").getBoundingClientRect();return {x:r.left+r.width/2,top:r.top+r.height*.25,low:r.top+r.height*.8}});
@@ -97,13 +96,13 @@ const KM=[0,5,20,40,90,150,260];
  ok(await p.evaluate(a=>+(localStorage.getItem("tt_pet_aff")||0)===a,h1.aff)&&/^抱抱！$/.test(await p.evaluate(()=>document.getElementById("toast").textContent.trim())),"second hug same day: no extra bond");
  // 餵食：果實掉下來 → 走過去吃 → 結算
  await p.evaluate(()=>localStorage.removeItem("tt_pet_fed_t"));await p.evaluate(()=>renderPet());await p.waitForTimeout(300);
- const bal0=await p.evaluate(()=>berriesBalance());const x0=await p.evaluate(()=>PetStage.pos.x);
+ const bal0=await p.evaluate(()=>berriesBalance());
  await p.click("#petFeed");await p.waitForTimeout(350);
  const f1=await p.evaluate(()=>({berry:!!document.querySelector(".ps-box .ps-berry"),dis:document.getElementById("petFeed").disabled}));ok(f1.berry&&f1.dis,"feed: berry drops, button locked "+JSON.stringify(f1));
  await p.screenshot({path:O+"p2-feed-drop.png"});
- await p.waitForTimeout(1500);await p.screenshot({path:O+"p2-feed-eat.png"});
- ok(await p.evaluate(x=>PetStage.pos.x!==x,x0),"feed: critter walks to the berry");
- await p.waitForTimeout(2600);
+ await p.waitForTimeout(800);await p.screenshot({path:O+"p2-feed-eat.png"});
+ ok(await p.evaluate(()=>{const c=document.querySelector("#petEmoji .pet-critter").getBoundingClientRect(),b=document.querySelector(".ps-box").getBoundingClientRect();return Math.abs((c.left+c.width/2)-(b.left+b.width/2))<3&&document.querySelector("#petEmoji").classList.contains("pb-eat")}),"feed: eats in place at the centre");
+ await p.waitForTimeout(3300);
  const f2=await p.evaluate(()=>({berry:!!document.querySelector(".ps-berry"),bal:berriesBalance(),t:document.getElementById("toast").textContent}));
  ok(!f2.berry&&f2.bal===bal0-3&&/吃得好開心/.test(f2.t),"feed: berry eaten, settled "+JSON.stringify(f2));
  // 進化儀式
@@ -167,38 +166,17 @@ const KM=[0,5,20,40,90,150,260];
  ok(/Buddy's Travels/.test(t[0])&&/Postcards/.test(t[1])&&!/[\u4e00-\u9fff]/.test(t[1]),"English journey section translated: "+t[1].replace(/\s+/g," ").slice(0,80));
  await p.close();}
 
-// ── 第 3 階段：3D 展示（按了才下載 Three.js） ──
+// ── debug 面板：夥伴舞台與旅行 ──
 {const p=await mk({km:40});
- const res=()=>p.evaluate(()=>performance.getEntriesByType("resource").some(e=>/three\.module/.test(e.name)));
- ok(!(await res()),"three.js is NOT downloaded on the pet page");
- await p.click("#petDex");await p.waitForTimeout(500);
- ok(await p.evaluate(()=>document.querySelectorAll(".dex-3d").length===4),"3D button only on unlocked stages (4)");
- await p.click('.dex-3d[data-i="3"]');
- await p.waitForFunction(()=>!!document.querySelector(".pet3d-canvas"),null,{timeout:20000});await p.waitForTimeout(900);
- ok(await res(),"three.js downloaded after tapping 3D");
- const ink=await p.evaluate(()=>Pet3D.inkRatio());ok(ink>0.05&&ink<0.9,"3D fox actually drawn (ink "+ink.toFixed(3)+")");
- await p.screenshot({path:O+"p3-fox.png"});
- const a1=await p.evaluate(()=>document.querySelector(".pet3d-canvas").toDataURL().length);
- const box=await p.evaluate(()=>{const r=document.querySelector(".pet3d-canvas").getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}});
- await p.mouse.move(box.x,box.y);await p.mouse.down();await p.mouse.move(box.x+140,box.y,{steps:8});await p.mouse.up();await p.waitForTimeout(300);
- const a2=await p.evaluate(()=>document.querySelector(".pet3d-canvas").toDataURL().length);ok(a1!==a2,"drag rotates the model");
- await p.screenshot({path:O+"p3-fox-turned.png"});
- await p.click("#p3Close");await p.waitForTimeout(300);
- ok(await p.evaluate(()=>!document.querySelector(".pet3d-canvas")&&!document.querySelector('[data-ov="pet3d"]')),"close removes viewer");
- // 7 階都畫得出來
- const inks=[];for(let i=0;i<7;i++){await p.evaluate(i=>Pet3D.open(i,"t"+i),i);await p.waitForFunction(()=>!!document.querySelector(".pet3d-canvas"),null,{timeout:15000});await p.waitForTimeout(700);
-  inks.push(+(await p.evaluate(()=>Pet3D.inkRatio())).toFixed(3));await p.screenshot({path:O+`p3-s${i}.png`});await p.click("#p3Close");await p.waitForTimeout(200);}
- ok(inks.every(x=>x>0.04),"all 7 stages render in 3D "+inks);
- await p.evaluate(()=>document.getElementById("petDexClose")?.click());
- // 進化儀式的 3D 鈕
- await p.evaluate(()=>celebrateEvolve(PET_STAGES[6],7));await p.waitForTimeout(400);await p.click("#evolve3d");
- await p.waitForFunction(()=>!!document.querySelector(".pet3d-canvas"),null,{timeout:15000});
- ok(await p.evaluate(()=>{const ov=[...document.querySelectorAll('[data-ov]')].map(e=>e.dataset.ov);return ov.indexOf("pet3d")>ov.indexOf("evolve")}),"evolve → 3D viewer opens on top");
- await p.close();}
-{const p=await mk({km:40});
- await p.evaluate(()=>{const g=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(t,...a){return /webgl/.test(t)?null:g.call(this,t,...a)};});
- await p.evaluate(()=>pet3d(3));await p.waitForTimeout(1200);
- ok(await p.evaluate(()=>!!document.querySelector(".pet3d-ov.no3d .pet3d-load .pet-critter")&&!document.querySelector(".pet3d-canvas")),"no WebGL → flat SVG fallback with a note");
+ await p.evaluate(()=>ensureScript("js/debug.js"));await p.waitForTimeout(300);
+ const r=await p.evaluate(()=>{ttDebug.stage("tod","night");ttDebug.stage("wx","rain");const a=[document.querySelector(".ps-box").dataset.tod,document.querySelector(".ps-box").dataset.wx];
+  ttDebug.stage(null);const b=document.querySelector(".ps-box").dataset.tod===PetStage.tod()&&!document.querySelector(".ps-box").dataset.wx;
+  ttDebug.allRegions();ttDebug.addTheme("瀑布");ttDebug.addRandomTrail();
+  const j={regs:PetJourney.regions().size,decor:PetJourney.decor(),cards:PetJourney.walked().length,hug:(ttDebug.resetHug(),localStorage.getItem("tt_pet_hug_day"))};
+  ttDebug.clearHikes();return {a,b,j,after:PetJourney.walked().length};});
+ ok(r.a[0]==="night"&&r.a[1]==="rain"&&r.b,"debug: force night+rain, then back to real "+JSON.stringify(r.a));
+ ok(r.j.regs===5&&r.j.decor[0]==="fall"&&r.j.cards>=6&&r.j.hug===null,"debug: all regions, waterfall decor, postcards, hug reset "+JSON.stringify(r.j));
+ ok(r.after===0,"debug: clear test trails removes postcards");
  await p.close();}
 
 console.log("ERRS",JSON.stringify(errs));console.log("FAILS",fails);await b.close();srv.kill();})();

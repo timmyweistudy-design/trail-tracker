@@ -511,8 +511,10 @@ Recorder.onUpdate(s => {
   if (s.simDone && !_simDoneToasted) { _simDoneToasted = true; toast(ttT("模擬走完了，按「結束」看結算")); ttBuzz([60, 40, 60]); }
   if (s.state === "idle") _simDoneToasted = false;
   // 地圖上的夥伴：休息／暫停時坐下，快走（>6.5 km/h）時小跑步
-  document.body.classList.toggle("rec-resting", s.state === "paused" || (s.state === "running" && !!s.resting));
-  document.body.classList.toggle("rec-fast", s.state === "running" && !s.resting && (s.instKmh || 0) > 6.5);
+  // window.__recPet＝測試面板強制（"fast"／"rest"）：模擬記錄沒有真實速度、也不會休息，不強制就看不到
+  const _rp = window.__recPet;
+  document.body.classList.toggle("rec-resting", _rp ? _rp === "rest" : s.state === "paused" || (s.state === "running" && !!s.resting));
+  document.body.classList.toggle("rec-fast", _rp ? _rp === "fast" : s.state === "running" && !s.resting && (s.instKmh || 0) > 6.5);
   // 狀態列（有變才寫）
   if (s.error && s.errCode) setRecStatus(`<span class="rs-warn">${ic("alert")} ${escHtml(ttT(GPS_ERR[s.errCode] || GPS_ERR[2]))}</span>`, true);
   else if (s.waiting) setRecStatus(`<span class="rs-wait"><span class="spin"></span>${ttT("正在等定位，第一次可能要十幾秒…")}</span>`, true);

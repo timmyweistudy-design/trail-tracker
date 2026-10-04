@@ -39,6 +39,28 @@ window.ttDebug = (() => {
       });
       bumpAffinity(8); checkPetEvolve(); refresh(); return api.state();
     },
+    // ── 夥伴舞台與旅行（2026-10-04） ──
+    // 強制時段／季節／天氣（window.__ps，pet-stage.js 讀）；null＝回到真實
+    stage(k, v) { const cur = Object.assign({}, window.__ps || {}); if (k === null) window.__ps = null; else { cur[k] = v; window.__ps = cur; } refresh(); return window.__ps ? "舞台：" + JSON.stringify(window.__ps) : "舞台：跟真實時間／天氣"; },
+    act(kind) { if (typeof PetStage === "undefined") return "沒有舞台"; PetStage.act(kind); return ""; },
+    resetHug() { ls.removeItem("tt_pet_hug_day"); return "今天可以再抱一次（親密 +2）"; },
+    // 加「走過某條步道」的測試行程（dbg:true，清測試行程會一起清掉）→ 明信片、生物、地區配件、舞台裝飾都從這裡推
+    addTrail(t, daysAgo) {
+      if (!t) return "找不到符合的步道";
+      const d = new Date(); d.setDate(d.getDate() - (daysAgo == null ? Math.floor(Math.random() * 60) : daysAgo)); d.setHours(9, 0, 0, 0);
+      Store.addRecord({ id: "dbg" + Date.now() + Math.random().toString(36).slice(2, 6), date: d.toISOString(), dbg: true, note: "測試行程", trailId: t.id, trailName: t.name,
+        distanceKm: +(t.length_km || 3).toFixed(1), elapsedMs: 2 * 3600e3, ascent: t.ascent || 100, descent: t.ascent || 100, steps: 4000, kcal: 200, track: [] });
+      refresh(); return `＋明信片：${t.name}（${t.region || ""}）`;
+    },
+    addRandomTrail() { const pool = TRAILS.filter(t => t.region && isFinite(t.lat)); return api.addTrail(pool[Math.floor(Math.random() * pool.length)]); },
+    // 某個主題的步道走兩趟 → 舞台出現那個裝飾（瀑布／海景／古道／森林／湖泊）
+    addTheme(tag) { const pool = TRAILS.filter(t => tagsOf(t)[0] === tag && t.region); const t = pool[Math.floor(Math.random() * pool.length)]; api.addTrail(t, 1); return api.addTrail(t, 2) + "（走兩趟）"; },
+    // 五個地區各走一條 → 五個地區配件全解鎖
+    allRegions() {
+      const R = { 北部: ["臺北市", "新北市", "宜蘭縣"], 中部: ["臺中市", "南投縣"], 南部: ["高雄市", "屏東縣", "嘉義縣"], 東部: ["花蓮縣", "臺東縣"], 離島: ["澎湖縣", "金門縣", "連江縣"] };
+      const got = []; for (const [r, cs] of Object.entries(R)) { const t = TRAILS.find(x => cs.includes(x.region)); if (t) { api.addTrail(t); got.push(r); } }
+      return "已走過：" + got.join("、") + "（去裝扮看地區配件）";
+    },
     clearHikes() { const kept = Store.getRecords().filter(r => !r.dbg); Store.setRecords(kept); refresh(); return "已清除測試行程"; },
     // 一鍵解鎖全部成就：灌入足以滿足成就樹全部 30 個徽章的測試資料
     unlockAch() {
@@ -250,6 +272,20 @@ async function toggleDebugPanel() {
       ["+5km", () => ttDebug.addKm(5)], ["+20km", () => ttDebug.addKm(20)], ["進化➡", () => ttDebug.evolve()], ["神龍🐉", () => ttDebug.maxLevel()],
       ["+50🍓", () => ttDebug.addBerries(50)], ["❤️滿", () => ttDebug.setAffinity(100)], ["可再餵", () => ttDebug.resetFeed()], ["+30天", () => ttDebug.addDays(30)],
       ["重置🥚", () => ttDebug.resetPet()], ["清debug", () => ttDebug.clearDebug()],
+    ]],
+    ["夥伴舞台與旅行", [
+      ["🌅清晨", () => ttDebug.stage("tod", "dawn")], ["☀白天", () => ttDebug.stage("tod", "day")], ["🌇黃昏", () => ttDebug.stage("tod", "dusk")], ["🌙夜晚", () => ttDebug.stage("tod", "night")],
+      ["🌸春", () => ttDebug.stage("season", "spring")], ["🌿夏", () => ttDebug.stage("season", "summer")], ["🍁秋", () => ttDebug.stage("season", "autumn")], ["❄冬", () => ttDebug.stage("season", "winter")],
+      ["🌧下雨", () => ttDebug.stage("wx", "rain")], ["☁陰天", () => ttDebug.stage("wx", "cloud")], ["🌨下雪", () => ttDebug.stage("wx", "snow")], ["🌤晴", () => ttDebug.stage("wx", "")],
+      ["↺回真實時間天氣", () => ttDebug.stage(null)],
+      ["🐾跳一下", () => ttDebug.act("hop")], ["🙆伸懶腰", () => ttDebug.act("stretch")], ["👀東張西望", () => ttDebug.act("look")], ["🤗今天可再抱", () => ttDebug.resetHug()],
+      ["🍓看餵食動畫", closeAnd(() => { ttDebug.addBerries(10); ttDebug.resetFeed(); document.querySelector('.tab[data-view="pet"]').click(); setTimeout(() => { const f = document.getElementById("petFeed"); if (f) { f.scrollIntoView({ block: "center" }); setTimeout(() => f.click(), 500); } }, 600); })],
+      ["✨看進化動畫", closeAnd(() => { const i = petStageIndex(totalKm()); celebrateEvolve(PET_STAGES[i], i + 1); })],
+      ["📮＋明信片(隨機)", () => ttDebug.addRandomTrail()], ["🗾五區全走過", () => ttDebug.allRegions()],
+      ["💧＋瀑布×2", () => ttDebug.addTheme("瀑布")], ["🌊＋海景×2", () => ttDebug.addTheme("海景")], ["🪨＋古道×2", () => ttDebug.addTheme("古道")], ["🌲＋森林×2", () => ttDebug.addTheme("森林")], ["🏞＋湖泊×2", () => ttDebug.addTheme("湖泊")],
+      ["📮開明信片簿", closeAnd(() => PetJourney.openAlbum("cards"))], ["🦋開發現的生物", closeAnd(() => PetJourney.openAlbum("species"))],
+      ["🗺地圖夥伴：小跑", () => { window.__recPet = "fast"; return "記錄中地圖上的夥伴會小跑（開模擬記錄看）"; }], ["🗺地圖夥伴：坐下", () => { window.__recPet = "rest"; return "記錄中地圖上的夥伴會坐下（開模擬記錄看）"; }], ["🗺地圖夥伴：恢復", () => { window.__recPet = null; return "地圖夥伴跟真實速度／休息"; }],
+      ["🧹清測試步道", () => ttDebug.clearHikes()],
     ]],
     ["行程與成就", [
       ["＋行程3km", () => ttDebug.addHike(3)], ["＋行程10km", () => ttDebug.addHike(10)], ["清測試行程", () => ttDebug.clearHikes()],

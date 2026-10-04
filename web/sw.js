@@ -1,5 +1,5 @@
 // 離線快取：app shell + 地圖圖磚
-const CACHE = "trail-tracker-v566";
+const CACHE = "trail-tracker-v567";
 const TILE_CACHE = "tt-tiles";
 const SAVED_CACHE = "tt-tiles-saved";   // 使用者下載的離線地圖（不隨版本清除、不受上限）   // 地圖圖磚（不隨版本清除，保留離線地圖）
 const ASSETS = [
@@ -29,7 +29,6 @@ const ASSETS_LAZY = [
   // 按需載入的語言包（離線也能切語言）＋ 3D 地圖引擎（離線也能開 3D）
   ...["en", "cn", "de", "es", "fr", "hi", "id", "it", "ja", "km", "ko", "mn", "ms", "my", "ne", "nl", "pl", "pt", "ru", "th", "tl", "tr", "uk", "vi"].map(c => `./js/i18n/${c}.js`),
   "./vendor/maplibre/maplibre-gl.js", "./vendor/maplibre/maplibre-gl.css",
-  "./js/pet-3d.js", "./vendor/three/three.module.min.js",   // 夥伴 3D 展示（按了才載入；離線也能開）
 ];
 
 self.addEventListener("install", e => {
