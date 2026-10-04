@@ -90,32 +90,16 @@ window.PetJourney = (function () {
   }
   function markSeen(ids) { const s = seen(); ids.forEach(i => s.add(String(i))); localStorage.setItem("tt_pj_seen", JSON.stringify([...s])); }
 
-  // ── 明信片插畫（viewBox 160×100）：主題決定風景、第一次走的時段決定天色 ──
-  const SKY = {
-    dawn: ["#f4c3a8", "#fbe8da"], day: ["#a8d4ee", "#e9f5f6"], dusk: ["#8a6fa8", "#f2b48a"], night: ["#1c2a4a", "#3d5878"],
-  };
-  const ART = {
-    fall: `<path d="M0 100 V58 L40 36 L58 54 V100Z" fill="#5c8a6a"/><path d="M160 100 V50 L118 34 L100 52 V100Z" fill="#4f7d5e"/><path d="M64 30 Q62 60 60 88 H98 Q96 60 94 30Z" fill="#e9f6fb"/><path d="M70 34 v50 M79 32 v54 M88 34 v50" stroke="#bfe2f0" stroke-width="2.4"/><ellipse cx="79" cy="90" rx="30" ry="7" fill="#d9eef6"/><path d="M0 100 V88 Q80 80 160 88 V100Z" fill="#3f6e50"/>`,
-    sea: `<rect x="0" y="56" width="160" height="44" fill="#5aa9d6"/><path d="M0 64 q20-5 40 0 t40 0 t40 0 t40 0 M0 76 q20-5 40 0 t40 0 t40 0 t40 0" stroke="#e8f6fd" stroke-width="2" fill="none"/><path d="M104 100 V62 q8-16 24-18 q20 0 32 18 V100Z" fill="#6f8f5a"/><rect x="126" y="30" width="8" height="18" fill="#fff"/><path d="M124 30 h12 l-6 -8Z" fill="#d9534f"/>`,
-    old: `<path d="M0 100 V60 Q50 44 90 58 T160 50 V100Z" fill="#7a9a5e"/><path d="M60 100 L74 86 L70 74 L84 64 L80 54 L94 46" stroke="#c9b48a" stroke-width="9" fill="none" stroke-linejoin="round"/><path d="M62 96 h14 M68 84 h12 M74 72 h12 M80 62 h12" stroke="#a89068" stroke-width="2.4"/><circle cx="36" cy="66" r="14" fill="#4f7d4a"/><rect x="34" y="72" width="4" height="14" fill="#6b4a2a"/>`,
-    forest: `<path d="M0 100 V70 Q80 58 160 70 V100Z" fill="#4f8a5c"/><g fill="#2f6b45"><path d="M24 84 l-14 0 l14 -34 l14 34Z"/><path d="M56 80 l-12 0 l12 -40 l12 40Z"/><path d="M104 82 l-13 0 l13 -42 l13 42Z"/><path d="M138 86 l-12 0 l12 -32 l12 32Z"/></g><path d="M80 88 l-10 0 l10 -26 l10 26Z" fill="#3d7d52"/>`,
-    lake: `<path d="M0 100 V54 L36 34 L70 52 L104 30 L160 56 V100Z" fill="#7aa38a"/><ellipse cx="80" cy="80" rx="64" ry="14" fill="#7cc3dc"/><path d="M40 78 h22 M92 84 h26" stroke="#e8f7fb" stroke-width="2" stroke-linecap="round"/>`,
-    peak: `<path d="M0 100 V72 L46 26 L70 50 L98 16 L160 76 V100Z" fill="#6b8bb0"/><path d="M98 16 L86 32 L94 30 L98 36 L104 28 L110 30Z M46 26 L38 36 L46 34 L52 38Z" fill="#f4f8fc"/><path d="M0 100 V84 Q80 72 160 86 V100Z" fill="#4f7d5e"/>`,
-    hill: `<path d="M0 100 V64 Q40 40 80 58 T160 52 V100Z" fill="#7fb07c"/><path d="M0 100 V80 Q80 66 160 80 V100Z" fill="#5c9a62"/><circle cx="122" cy="62" r="10" fill="#4f8a55"/><rect x="120" y="68" width="4" height="10" fill="#6b4a2a"/>`,
-  };
-  function todOf(iso) { const h = new Date(iso).getHours(); return h >= 5 && h < 8 ? "dawn" : h >= 8 && h < 16 ? "day" : h >= 16 && h < 19 ? "dusk" : "night"; }
-  let _gid = 0;
-  function cardArt(theme, tod) {
-    const s = SKY[tod] || SKY.day, id = "pjs" + (++_gid);
-    const sun = tod === "night" ? `<circle cx="132" cy="18" r="6" fill="#f4eecf"/><circle cx="135" cy="16" r="5" fill="${s[0]}"/><circle cx="30" cy="14" r="1" fill="#fff"/><circle cx="62" cy="22" r="1" fill="#fff"/><circle cx="100" cy="10" r="1.2" fill="#fff"/>`
-      : tod === "day" ? `<circle cx="134" cy="18" r="8" fill="#fff6c8"/>` : `<circle cx="${tod === "dawn" ? 28 : 132}" cy="44" r="10" fill="#ffd08a" opacity=".9"/>`;
-    const dim = tod === "night" ? `<rect width="160" height="100" fill="#0b1630" opacity=".38"/>` : tod === "dusk" ? `<rect width="160" height="100" fill="#6a3a5a" opacity=".12"/>` : "";
-    return `<svg class="pj-art" viewBox="0 0 160 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${s[0]}"/><stop offset="1" stop-color="${s[1]}"/></linearGradient></defs><rect width="160" height="100" fill="url(#${id})"/>${sun}${ART[theme] || ART.hill}${dim}</svg>`;
+  // ── 明信片插畫：postcard-art.js（7 主題 × 3 構圖、時段色票、季節）；舊的平面版只在它沒載到時用 ──
+  function todOf(iso) { return typeof ArtKit !== "undefined" ? ArtKit.todOf(iso) : "day"; }
+  function cardArt(theme, first, id) {
+    if (typeof PostcardArt !== "undefined") return PostcardArt.draw(id || theme, theme, first);
+    return `<svg class="pj-art" viewBox="0 0 160 100" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><rect width="160" height="100" fill="#cfe6d2"/></svg>`;
   }
   const stageI = () => (typeof petStageIndex === "function" ? petStageIndex(totalKm()) : 0);
   function card(e, isNew) {
     const th = themeOf(e.t);
-    return `<button class="pj-card" data-theme="${th}" data-id="${esc(e.t.id)}" aria-label="${esc(e.t.name)}">${cardArt(th, todOf(e.first))}
+    return `<button class="pj-card" data-theme="${th}" data-id="${esc(e.t.id)}" aria-label="${esc(e.t.name)}">${cardArt(th, e.first, e.t.id)}
       <span class="pj-stamp">${typeof PET_ART !== "undefined" ? PET_ART.svg(stageI()) : ""}</span>${isNew ? `<span class="pj-new">${T("新")}</span>` : ""}
       <span class="pj-cap"><b class="pj-name">${esc(e.t.name)}</b><span class="pj-meta">${esc(e.t.region || "")}・${fmt(e.first)}${e.n > 1 ? `・×${e.n}` : ""}</span></span></button>`;
   }
@@ -146,7 +130,7 @@ window.PetJourney = (function () {
     const box = document.getElementById("petJourney"); if (!box) return;
     if (!pro()) {   // PRO 功能：免費版只放一張說明卡，點了開升級面板
       box.innerHTML = `<div class="section-title pj-title">${icon("map")} ${T("夥伴的旅行")} <span class="pro-tag">PRO</span></div>
-        <button class="pj-wrap pj-locked" id="pjPro"><span class="pj-lock-art">${cardArt("peak", "dawn")}${cardArt("sea", "day")}</span><span class="pj-lock-t">${T("走過的步道變成明信片，走遍各地區解鎖當地配件")}</span></button>`;
+        <button class="pj-wrap pj-locked" id="pjPro"><span class="pj-lock-art">${cardArt("peak", "2026-01-10T06:30:00", "demo-a")}${cardArt("sea", "2026-07-10T10:00:00", "demo-b")}</span><span class="pj-lock-t">${T("走過的步道變成明信片，走遍各地區解鎖當地配件")}</span></button>`;
       box.querySelector("#pjPro").addEventListener("click", () => { if (typeof _proGate === "function") _proGate(); });
       return;
     }
@@ -210,7 +194,7 @@ window.PetJourney = (function () {
     const th = themeOf(e.t), nm = typeof petName === "function" && petName() ? petName() : T(PET_STAGES[stageI()].n);
     const ov = document.createElement("div"); ov.className = "pet-modal pj-card-ov"; ov.dataset.ov = "pjcard";
     ov.innerHTML = `<div class="pj-flip" role="button" tabindex="0" aria-label="${esc(e.t.name)}">
-      <div class="pj-face pj-front">${cardArt(th, todOf(e.first))}<span class="pj-stamp big">${typeof PET_ART !== "undefined" ? PET_ART.svg(stageI()) : ""}</span><span class="pj-front-n">${esc(e.t.name)}</span></div>
+      <div class="pj-face pj-front">${cardArt(th, e.first, e.t.id)}<span class="pj-stamp big">${typeof PET_ART !== "undefined" ? PET_ART.svg(stageI()) : ""}</span><span class="pj-front-n">${esc(e.t.name)}</span></div>
       <div class="pj-face pj-back">
         <div class="pj-post"><span class="pj-pm">${esc((e.t.region || "").replace(/[市縣]$/, ""))}<br><small>${fmt(e.first)}</small></span><span class="pj-stamp">${typeof PET_ART !== "undefined" ? PET_ART.svg(stageI()) : ""}</span></div>
         <p class="pj-note">${T(NOTE[th] || NOTE.hill)}</p>

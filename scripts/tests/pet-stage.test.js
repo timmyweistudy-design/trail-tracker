@@ -188,6 +188,19 @@ const KM=[0,5,20,40,90,150,260];
  ok(await p.evaluate(()=>[...document.querySelectorAll(".pj-tile")].every(x=>/^[A-Z]{3}$/.test(x.textContent))),"English county map uses ISO codes");
  await p.close();}
 
+// ── 美工輪 第 1 階段：明信片插畫（7 主題 × 3 構圖、時段、季節） ──
+{const p=await mk({km:40});
+ const r=await p.evaluate(()=>{const th=Object.keys(PostcardArt.THEMES),bad=[],sizes=[];let n=0;const t0=performance.now();
+  for(const t of th)for(let v=0;v<3;v++)for(const tod of ["dawn","day","dusk","night"]){const s=PostcardArt.draw("x"+t+v,t,"2026-07-10T10:00:00",{variant:v,tod});n++;sizes.push(s.length);if(/NaN|undefined/.test(s))bad.push(t+v+tod);}
+  const ms=(performance.now()-t0)/n;
+  const norm=x=>x.replace(/id="[^"]+"|url\(#[^)]+\)/g,"");const same=norm(PostcardArt.draw("forestry-002","old","2026-03-01T06:00:00"))===norm(PostcardArt.draw("forestry-002","old","2026-03-01T06:00:00"));
+  const ids=["a1","b2","c3","d4","e5","f6"].map(i=>PostcardArt.draw(i,"fall","2026-07-10T10:00:00").replace(/id="[^"]+"|url\(#[^)]+\)/g,""));
+  return {n,bad,max:Math.max(...sizes),ms:+ms.toFixed(2),same,distinct:new Set(ids).size};});
+ ok(r.n===84&&r.bad.length===0,"84 postcard renders, no NaN/undefined "+JSON.stringify(r.bad));
+ ok(r.max<40000&&r.ms<15,"postcard size & speed budget (max "+r.max+" chars, "+r.ms+" ms each)");
+ ok(r.same&&r.distinct>=3,"same trail → same card; different trails vary ("+r.distinct+"/6 distinct)");
+ await p.close();}
+
 // ── debug 面板：夥伴舞台與旅行 ──
 {const p=await mk({km:40});
  await p.evaluate(()=>ensureScript("js/debug.js"));await p.waitForTimeout(300);
