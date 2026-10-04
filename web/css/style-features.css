@@ -2208,3 +2208,9 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 /* 幼龍：嚼的時候尾巴輕輕捲 */
 .ps-box[data-stage="5"] .pb-chew .pc-tail { animation: pbCurl .9s ease-in-out; }
 @media (prefers-reduced-motion: reduce) { .ps-box .pb-hop .pc-ear, .ps-box .pb-hop .pc-tail { animation: none !important; } }
+/* 夥伴卡只更新數字時（pet.js 的 petCardUpdate）：文字淡入淡出、數字變了跳一下（不再整張重畫） */
+.pet-bubble, .pet-evo-top, #petFeed > span { transition: opacity .17s ease, transform .17s ease; }
+.pet-bubble.swap, .pet-evo-top.swap, #petFeed > span.swap { opacity: 0; transform: translateY(3px); }
+.pet-chip.bump .cv, .pet-meter.bump b { animation: petBump .6s var(--ease-out, ease-out); display: inline-block; }
+@keyframes petBump { 0% { transform: scale(1); } 30% { transform: scale(1.18); color: #f2cf6a; } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .pet-chip.bump .cv, .pet-meter.bump b { animation: none; } }

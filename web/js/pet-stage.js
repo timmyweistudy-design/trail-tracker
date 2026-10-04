@@ -279,5 +279,7 @@ window.PetStage = (function () {
   }
   const cachedWx = () => (wxMemo ? wxMemo.wx : "");
 
-  return { html, bind, unbind, tod, season, wxOf, weather, cachedWx, count: STAGES, zoneOf, react, feed, act };
+  // 心情變了但卡片沒重畫（pet.js 的 petCardUpdate）：待機動作的機率跟著換
+  function setMood(m) { mood = m || "content"; if (box) schedule(mood); }
+  return { setMood, html, bind, unbind, tod, season, wxOf, weather, cachedWx, count: STAGES, zoneOf, react, feed, act };
 })();

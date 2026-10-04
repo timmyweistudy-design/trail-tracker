@@ -99,6 +99,7 @@ const KM=[0,5,20,40,90,150,260];
  await p.evaluate(()=>localStorage.removeItem("tt_pet_fed_t"));await p.evaluate(()=>renderPet());await p.waitForTimeout(300);
  const bal0=await p.evaluate(()=>berriesBalance());
  const shown0=await p.evaluate(()=>+(document.querySelector("#petFeed .feed-bal")||{}).textContent);
+ await p.evaluate(()=>{window.__psBefore=document.querySelector(".ps-box");window.__psParts=[...document.querySelectorAll(".ps-p")].map(e=>e.style.left).join();});
  await p.click("#petFeed");await p.waitForTimeout(350);
  const f1=await p.evaluate(()=>{const bs=[...document.querySelectorAll(".ps-box .ps-berry")].map(b=>+b.style.getPropertyValue("--bx"));return {n:bs.length,xs:bs,minGap:Math.min(...bs.flatMap((a,i)=>bs.slice(i+1).map(b=>Math.abs(a-b)))),dis:document.getElementById("petFeed").disabled};});
  ok(f1.n===3&&f1.minGap>=34&&f1.dis,"feed: three berries drop at separate random spots, button locked "+JSON.stringify(f1));
@@ -115,9 +116,12 @@ const KM=[0,5,20,40,90,150,260];
  ok(/st-lean>st-open>pb-snap>pb-chew>pb-gulp/.test(seq.steps),"feed: each berry = lean > open mouth > snap > chew > gulp "+seq.steps);
  const lick=await p.evaluate(async()=>{for(let k=0;k<30;k++){if(document.querySelector("#petEmoji.pb-lick"))return true;await new Promise(r=>setTimeout(r,50));}return false;});
  ok(lick,"feed: licks its lips after the last berry");
- await p.waitForTimeout(2200);
+ await p.waitForTimeout(3000);   // 愛心先冒、0.45 秒後才跳提示
  const f2=await p.evaluate(()=>({berry:!!document.querySelector(".ps-berry"),bal:berriesBalance(),t:document.getElementById("toast").textContent}));
  ok(!f2.berry&&f2.bal===bal0-3&&/吃得好開心/.test(f2.t),"feed: all three eaten, settled (−3) "+JSON.stringify(f2));
+ const keep=await p.evaluate(()=>({same:document.querySelector(".ps-box")===window.__psBefore,parts:[...document.querySelectorAll(".ps-p")].map(e=>e.style.left).join()===window.__psParts,
+  km:document.querySelector(".pet-chip .cv").textContent,feedDis:document.getElementById("petFeed").disabled,lbl:document.querySelector("#petFeed span").textContent}));
+ ok(keep.same&&keep.parts&&keep.feedDis&&/小時後可餵/.test(keep.lbl),"after eating the card is updated in place: same stage element, particles untouched, button shows the cooldown "+JSON.stringify(keep));
  // 進化儀式
  await p.evaluate(()=>celebrateEvolve(PET_STAGES[4],5));await p.waitForTimeout(1700);
  ok(await p.evaluate(()=>!!document.querySelector(".evolve-bg .ps-box.ps-bg[data-stage='4']")&&document.querySelectorAll(".evolve-burst i").length===16&&!!document.querySelector(".evolve-rays")),"evolve: new stage scene + rays + burst");
