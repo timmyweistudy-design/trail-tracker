@@ -13,6 +13,7 @@ window.StageArt = (function () {
     if (c.season === "spring" && k % 4 === 2) col = "#f2b8c8";
     return c.tod === "night" ? A.mix(col, c.P.near, .72) : c.tod === "dusk" ? A.mix(col, c.P.mid, .45) : c.tod === "dawn" ? A.mix(col, c.P.mid, .25) : col;
   }
+  function ever(c, k) { const A = c.A, col = ["#3f7a50", "#4f8a5a", "#5a9462"][(k || 0) % 3]; return c.tod === "night" ? A.mix(col, c.P.near, .72) : c.tod === "dusk" ? A.mix(col, c.P.mid, .45) : c.tod === "dawn" ? A.mix(col, c.P.mid, .25) : col; }   // 杉木常綠，不跟季節變色
   const groundCol = c => c.A.mix(leaf(c, 0), c.P.ground, .5);
   // 遠景：兩層山＋兩條霧；extra 插在兩層之間（例如海）
   function far(c, o) {
@@ -55,7 +56,7 @@ window.StageArt = (function () {
     return `<path d="${d}" fill="${bark}"/><path d="M${f(x + g * w * .1)} ${H} C${f(x + g * w * .15)} 200 ${f(x + g * w * .1)} 120 ${f(x + g * w * .05)} ${top} L${f(x + g * w * .45)} ${top} C${f(x + g * w * .55)} 120 ${f(x + g * w * .7)} 220 ${f(x + g * w)} ${H}Z" fill="${A.shade(bark, .35)}"/>` +
       [.2, -.15].map(k => `<path d="M${f(x + w * k)} ${H - 10} C${f(x + w * k - 3)} 200 ${f(x + w * k + 3)} 140 ${f(x + w * k)} ${top + 20}" stroke="${A.shade(bark, .5)}" stroke-width="2" fill="none" opacity=".6"/>`).join("");
   }
-  function canopy(c, x, y, s, k) { const A = c.A; return A.broadleaf(x, y + 60 * s, s, A.shade(leaf(c, k || 0), .18), c.r); }
+  function canopy(c, x, y, s, k) { const A = c.A; return A.crown(x, y + 20 * s, 70 * s, 54 * s, A.shade(leaf(c, k || 0), .18), c.r); }   // 樹冠不帶樹幹
 
   // ── 走過的風景（裝飾） ──
   function decoFall(c) {
@@ -84,7 +85,7 @@ window.StageArt = (function () {
     const night = c.tod === "night";
     return s + `</g><g transform="translate(48 252) scale(.62)"><rect x="-15" y="-6" width="30" height="6" fill="${night ? "#3f4550" : "#7f7c73"}"/><rect x="-11" y="-24" width="22" height="18" fill="${night ? "#5d6470" : "#a9a69c"}"/><path d="M-5 -6 V-15 Q0 -20 5 -15 V-6Z" fill="#2b2620"/><path d="M-17 -23 Q-10 -25 0 -31 Q10 -25 17 -23 Q19 -26 20 -28 Q12 -26 0 -35 Q-12 -26 -20 -28 Q-19 -26 -17 -23Z" fill="${night ? "#6a3a34" : "#9c4a3a"}"/>${night ? `<circle cx="0" cy="-11" r="9" fill="#ffd27a" opacity=".25"/>` : ""}</g>`;
   }
-  function decoForest(c) { const A = c.A; return [150, 186, 222, 252].map((x, k) => A.cedar(x, 228 - k % 2 * 4, 52 + k % 3 * 10, A.mix(leaf(c, k), c.P.far, .45))).join(""); }
+  function decoForest(c) { const A = c.A; return [150, 186, 222, 252].map((x, k) => A.cedar(x, 228 - k % 2 * 4, 52 + k % 3 * 10, A.mix(ever(c, k), c.P.far, .45))).join(""); }
 
   // ── 7 階的場景 ──
   function scene(stage, tod, season, decor) {
@@ -117,22 +118,22 @@ window.StageArt = (function () {
       o.front = flower(c, 24, 306, 1.7, cols[1]) + flower(c, 378, 304, 1.6, cols[2]) + grassRow(c, [50, 352], 304, 1.4);
     } else if (stage === 3) {   // 靈巧山狐：杉木林（遠淡近濃）、光束、蕨類
       let fr = far(c, { between });
-      [40, 90, 140, 260, 310, 360].forEach((x, k) => { fr += A.cedar(x, 232 - k % 2 * 6, 64 + k % 3 * 12, A.mix(leaf(c, k), c.P.far, .5)); });
+      [40, 90, 140, 260, 310, 360].forEach((x, k) => { fr += A.cedar(x, 232 - k % 2 * 6, 64 + k % 3 * 12, A.mix(ever(c, k), c.P.far, .5)); });
       o.far = fr + farExtra;   // 同上：裝飾畫在遠景樹之後
       o.mid = ground(c, 250) + `<g opacity="${c.tod === "night" ? .06 : .16}">${[0, 1].map(k => `<path d="M${150 + k * 70} -10 L${180 + k * 70} -10 L${120 + k * 90} 260 L${80 + k * 90} 260Z" fill="#fff8d8"/>`).join("")}</g>` +
-        A.cedar(52, 262, 150, leaf(c, 0)) + A.cedar(350, 266, 170, leaf(c, 3)) + A.cedar(96, 254, 96, A.mix(leaf(c, 1), c.P.mid, .3)) + midExtra;
+        A.cedar(52, 262, 150, ever(c, 0)) + A.cedar(350, 266, 170, ever(c, 3)) + A.cedar(96, 254, 96, A.mix(ever(c, 1), c.P.mid, .3)) + midExtra;
       o.front = fern(c, 0, 304, 1.5, false, 1) + fern(c, 400, 304, 1.5, true, 2) + grassRow(c, [80, 330], 304, 1.3);
     } else if (stage === 4) {   // 山林猛虎：尖峰岩稜、分面的岩塊、玉山圓柏
       o.far = A.mountain([[-10, 210], [50, 150], [110, 186], [170, 118], [230, 180], [300, 132], [360, 172], [410, 150]], H, A.mix("#7d8aa0", c.P.far, .4), { fade: c.P.mist, lit: .3 }) + between +
         A.mist(198, 12, c.P.mist, .5, W) + A.mountain(A.ridgePts(r, -10, W + 10, 228, 30, 6), H, A.mix(c.P.far, c.P.mid, .45), { fade: c.P.mist }) + farExtra;
       const juniper = c.tod === "night" ? "#2e3a34" : "#4e6b4a", tw = c.tod === "night" ? "#5a5a5a" : "#c9c1b0";
       o.mid = ground(c, 252, A.mix("#8a8476", groundCol(c), .45)) + rock(c, 80, 268, 1.8) + rock(c, 326, 266, 2.2) + rock(c, 130, 260, .9) + midExtra +
-        `<path d="M300 238 C304 222 292 214 300 200 C310 188 326 192 334 182" stroke="${tw}" stroke-width="5" fill="none" stroke-linecap="round"/>` + [[334, 180, 13], [348, 176, 9], [318, 194, 9]].map(([x, y, rr]) => `<ellipse cx="${x}" cy="${y}" rx="${rr * 1.5}" ry="${rr * .6}" fill="${juniper}"/>`).join("");
+        A.juniper(296, 244, 1.3, tw, juniper, r);
       o.front = rock(c, 22, 312, 1.4) + rock(c, 384, 314, 1.2) + grassRow(c, [60, 350], 304, 1.2);
     } else if (stage === 5) {   // 初醒幼龍：三層山夾三層霧的山谷
       o.far = A.mountain([[-10, 180], [60, 120], [120, 168], [190, 92], [250, 158], [320, 104], [410, 150]], H, A.mix(c.P.far, c.P.sky[1], .25), { fade: c.P.mist, lit: .25 }) + A.mist(170, 16, c.P.mist, .6, W) + between +
         A.mountain(A.ridgePts(r, -10, W + 10, 214, 44, 6), H, A.mix(c.P.far, c.P.mid, .4), { fade: c.P.mist }) + A.mist(210, 12, c.P.mist, .5, W) + farExtra;
-      o.mid = ground(c, 252) + A.cedar(40, 258, 110, leaf(c, 0)) + A.cedar(78, 254, 70, A.mix(leaf(c, 1), c.P.mid, .3)) + A.cedar(356, 260, 120, leaf(c, 2)) + rock(c, 300, 266, 1) + midExtra + A.mist(240, 8, c.P.mist, .3, W);
+      o.mid = ground(c, 252) + A.cedar(40, 258, 110, ever(c, 0)) + A.cedar(78, 254, 70, A.mix(ever(c, 1), c.P.mid, .3)) + A.cedar(356, 260, 120, ever(c, 2)) + rock(c, 300, 266, 1) + midExtra + A.mist(240, 8, c.P.mist, .3, W);
       o.front = A.mist(286, 10, c.P.mist, .45, W) + grassRow(c, [20, 380], 304, 1.4);
     } else {   // 騰雲神龍：站在雲海之上，遠方山尖露出
       const cc = c.tod === "night" ? "#7c8ca8" : A.mix("#ffffff", c.P.sky[1], .18);

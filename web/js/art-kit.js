@@ -92,6 +92,29 @@ window.ArtKit = (function () {
     const B = (c, dx, dy, k) => blobs.map(([a, b, rr]) => `<circle cx="${f1(x + (a + dx) * s)}" cy="${f1(y + (b + dy) * s)}" r="${f1(rr * s * (k || 1))}" fill="${c}"/>`).join("");
     return `<path d="M${f1(x - 3 * s)} ${f1(y)} L${f1(x - 2 * s)} ${f1(y - 26 * s)} L${f1(x + 2 * s)} ${f1(y - 26 * s)} L${f1(x + 3 * s)} ${f1(y)}Z" fill="#5e4430"/>` + B(dk, 3, 3) + B(color, 0, 0) + B(lit, -5, -6, .55);
   }
+  // 樹冠：只有一團葉子、不帶樹幹（大樹頂上用；用 broadleaf 的話會多一截小樹幹，看起來像樹幹頂上長了小樹——2026-10-04 使用者回報）
+  // 中心 (x,y)、寬 w、高 h；暗面在右下、亮面在左上，邊緣是不規則的一圈圓
+  function crown(x, y, w, h, color, r) {
+    r = r || Math.random;
+    const dk = shade(color, .25), lit = tint(color, .25), blobs = [];
+    const n = Math.max(7, Math.round(w / 14));
+    for (let k = 0; k < n; k++) { const a = k / n * Math.PI * 2; blobs.push([x + Math.cos(a) * w * .42 + R(r, -4, 4), y + Math.sin(a) * h * .38 + R(r, -3, 3), Math.min(w, h) * R(r, .2, .28)]); }
+    blobs.push([x, y, Math.min(w, h) * .42], [x - w * .15, y - h * .1, Math.min(w, h) * .32]);
+    const B = (c, dx, dy, k) => blobs.map(([a, b, rr]) => `<circle cx="${f1(a + dx)}" cy="${f1(b + dy)}" r="${f1(rr * (k || 1))}" fill="${c}"/>`).join("");
+    return B(dk, 4, 5) + B(color, 0, 0) + B(lit, -w * .06, -h * .08, .5);
+  }
+  // 玉山圓柏：被風吹彎、漸細的樹幹＋側枝，樹冠壓扁成一層一層（高山圓柏的樣子；以前是一根細棍子加幾片橢圓）
+  function juniper(x, y, s, trunkCol, leafCol, r) {
+    r = r || Math.random;
+    // 樹幹：粗、被風吹彎；兩根側枝
+    let o = taper(x, y + 2 * s, x + 18 * s, y - 30 * s, 11 * s, trunkCol, -7 * s) + taper(x + 16 * s, y - 26 * s, x + 44 * s, y - 44 * s, 7 * s, trunkCol, 5 * s) + taper(x + 10 * s, y - 16 * s, x - 16 * s, y - 30 * s, 6 * s, trunkCol, -4 * s);
+    // 樹冠：三層被風壓扁的墊狀葉團（每團＝暗底＋本色＋上緣亮邊）
+    const pad = (cx, cy, w, h) => { const dk = shade(leafCol, .3), lit = tint(leafCol, .22);
+      return `<ellipse cx="${f1(cx + 2 * s)}" cy="${f1(cy + 2.5 * s)}" rx="${f1(w)}" ry="${f1(h)}" fill="${dk}"/><ellipse cx="${f1(cx)}" cy="${f1(cy)}" rx="${f1(w)}" ry="${f1(h)}" fill="${leafCol}"/>` +
+        `<ellipse cx="${f1(cx - w * .25)}" cy="${f1(cy - h * .35)}" rx="${f1(w * .55)}" ry="${f1(h * .4)}" fill="${lit}"/>` +
+        `<ellipse cx="${f1(cx + w * .55)}" cy="${f1(cy + h * .1)}" rx="${f1(w * .45)}" ry="${f1(h * .8)}" fill="${leafCol}"/><ellipse cx="${f1(cx - w * .6)}" cy="${f1(cy + h * .15)}" rx="${f1(w * .4)}" ry="${f1(h * .75)}" fill="${leafCol}"/>`; };
+    return o + pad(x + 46 * s, y - 47 * s, 18 * s, 6 * s) + pad(x + 22 * s, y - 34 * s, 16 * s, 5.5 * s) + pad(x - 18 * s, y - 32 * s, 12 * s, 4.5 * s);
+  }
   // 草叢：5 種葉形隨機組合（不會一眼看出是複製的）
   function grass(x, y, s, color, r) {
     r = r || Math.random;
@@ -140,5 +163,5 @@ window.ArtKit = (function () {
   }
   const skyGrad = (id, a, b) => `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient>`;
 
-  return { mix, shade, tint, PAL, SEASON, seasonOf, todOf, hash, rng, R, f1, smooth, ridgePts, mountain, cloud, mist, cedar, broadleaf, grass, silvergrass, taper, grain, grainURI, uid, skyGrad };
+  return { mix, shade, tint, PAL, SEASON, seasonOf, todOf, hash, rng, R, f1, smooth, ridgePts, mountain, cloud, mist, cedar, broadleaf, crown, juniper, grass, silvergrass, taper, grain, grainURI, uid, skyGrad };
 })();
