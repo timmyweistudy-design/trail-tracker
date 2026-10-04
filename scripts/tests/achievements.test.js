@@ -28,6 +28,10 @@ const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:390,height:
  ok(await p.evaluate(()=>{const rows=document.querySelectorAll("#achList .ach-lemo");return rows.length>10&&[...rows].every(r=>r.querySelector(".ach-medal"));}),"list view uses medals too");
  const sec=await p.evaluate(()=>({n:document.querySelectorAll("#achList .ach-lsec").length,rows:document.querySelectorAll("#achList .ach-lrow").length,total:petBadges().length}));
  ok(sec.n===6&&sec.rows===sec.total,"list grouped into the 6 tiers, every badge listed once "+JSON.stringify(sec));
+ // 外框顏色＝稱號：段頭跟稱號膠囊同一個 class、同一個顏色
+ const col=await p.evaluate(()=>{const chip=document.createElement("span");chip.className="ach-rankchip rank-3";document.body.appendChild(chip);const c1=getComputedStyle(chip).color;chip.remove();
+  const sec=document.querySelectorAll("#achList .ach-lsec")[3];return {same:getComputedStyle(sec).color===c1,cls:[...document.querySelectorAll("#achList .ach-lsec")].map(e=>[...e.classList].find(c=>/^rank-/.test(c)))};});
+ ok(col.same&&col.cls.join()==="rank-0,rank-1,rank-2,rank-3,rank-4,rank-5","tier colours are the same design as the rank titles "+JSON.stringify(col));
  await p.evaluate(()=>document.querySelector('.ach-fchip[data-c="climb"]').click());await p.waitForTimeout(300);
  ok(await p.evaluate(()=>document.querySelectorAll("#achList .ach-lsec").length===0&&document.querySelectorAll("#achList .ach-lrow").length===petBadges().filter(b=>b.c==="climb").length),"category filter shows a flat list of that category");
  await p.screenshot({path:O+"/list.png"});

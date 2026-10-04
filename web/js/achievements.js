@@ -243,7 +243,9 @@ const ACH_ICON = { "初心者": "footprints", "週末山友": "backpack", "早�
   "玉山高度": "mountain", "半馬腳力": "medal", "挑戰征服": "target", "四週堅持": "shield", "拔升五百": "up", "四季行者": "leaf", "凌晨出擊": "sparkle",
   "離島山旅": "wave", "縱橫五百": "trophy", "聖母峰高度": "snow", "走遍十縣": "pin", "步道收藏家": "bookmark", "月月不休": "clock",
   "千里健行": "wind", "萬米爬升": "cloud", "環島達人": "lake", "超馬腳力": "flag", "全馬腳力": "medal", "兩百次山旅": "crown", "四年一會": "sprout" };
-const ACH_METAL = [["#e8b07c", "#95602f"], ["#f0a47a", "#9c5233"], ["#eef2f5", "#7e8b98"], ["#f7d877", "#a57a1e"], ["#f3f6fb", "#6f83aa"], ["#a8ecd2", "#24806a"]];
+// 外框配色＝稱號的顏色（使用者要求 2026-10-04）：山腳新手灰褐、入山山友綠、登高好手青、縱走達人紫、攻頂勇者橘、傳說山神金
+// （跟 .ach-rankchip.rank-0～5 同一組色；每階一亮一暗，畫成金屬漸層）
+const ACH_METAL = [["#bdb8aa", "#6f6a5b"], ["#86c98f", "#2f7438"], ["#78c6d1", "#236e7a"], ["#a79df0", "#4b40a8"], ["#f2b075", "#a95c1f"], ["#ffe07a", "#e0941a"]];
 let _achMU = 0;
 function _achRim(t) {   // 外形：1–2 圓、3–4 齒輪邊、5 放射星、6 八角星＋圓
   const poly = (n, r0, r1, rot) => "M" + Array.from({ length: n * 2 }, (_, k) => { const r = k % 2 ? r1 : r0, a = (k / (n * 2)) * Math.PI * 2 + (rot || 0); return (24 + Math.cos(a) * r).toFixed(1) + " " + (24 + Math.sin(a) * r).toFixed(1); }).join(" L") + "Z";
@@ -263,7 +265,7 @@ function achMedal(b, o) {
   const r = 22.6, C = 2 * Math.PI * r;
   const ring = !got && !hid && pct > 0 ? `<circle cx="24" cy="24" r="${r}" fill="none" stroke="#fff" stroke-width="3" opacity=".75"/><circle cx="24" cy="24" r="${r}" fill="none" stroke="${cat.col}" stroke-width="3" stroke-linecap="round" stroke-dasharray="${(C * pct / 100).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 24 24)"/>` : "";
   const lock = !got && !o.noLock ? `<g transform="translate(33 33)"><circle r="7" fill="#fffdf6" stroke="#9a978f" stroke-width="1.2"/><rect x="-3.2" y="-1" width="6.4" height="5" rx="1" fill="#8a877f"/><path d="M-1.9 -1v-1.6a1.9 1.9 0 0 1 3.8 0V-1" fill="none" stroke="#8a877f" stroke-width="1.3"/></g>` : "";
-  return `<svg class="ach-medal${got ? " got" : " locked"}" viewBox="0 0 48 48" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+  return `<svg class="ach-medal${got ? " got" : " locked"} tier-${t}" viewBox="0 0 48 48" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
     <defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${hi}"/><stop offset=".55" stop-color="${got ? lo : "#c4c1b9"}"/><stop offset="1" stop-color="${hi}"/></linearGradient>
     <radialGradient id="${id}d" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="${got ? "#fff" : "#e8e6e0"}" stop-opacity=".35"/><stop offset="1" stop-color="#000" stop-opacity=".12"/></radialGradient></defs>
     ${ribbon}${ring}<path d="${_achRim(t)}" fill="url(#${id})" stroke="${lo}" stroke-width="1.2" stroke-linejoin="round"/>
@@ -679,7 +681,7 @@ function renderAchList(ov) {
   if (filter === "all" && shown.length) {
     const rowOf = {}; shown.forEach(({ b }, k) => { (rowOf[b.t] = rowOf[b.t] || []).push(rowArr[k]); });
     body = Object.keys(rowOf).sort((a, b) => a - b).map(t => { const m = ACH_METAL[t - 1] || ACH_METAL[0], inT = list.filter(b => b.t === +t);
-      return `<div class="ach-lsec" style="--m1:${m[0]};--m2:${m[1]}"><span class="ach-lsec-ic">${ic(ACH_TIER_IC[t - 1])}</span><b>${ttT(ACH_TIERS[t - 1])}</b><i>${inT.filter(b => b.got).length} / ${inT.length}</i></div>${rowOf[t].join("")}`; }).join("");
+      return `<div class="ach-lsec ach-tierc rank-${t - 1}"><span class="ach-lsec-ic">${ic(ACH_TIER_IC[t - 1])}</span><b>${ttT(ACH_TIERS[t - 1])}</b><i>${inT.filter(b => b.got).length} / ${inT.length}</i></div>${rowOf[t].join("")}`; }).join("");
   }
   box.innerHTML = `<div class="ach-fchips">${chips}</div><div class="ach-lrows">${body || `<div class="ach-lempty">${ttT("這個類別還沒有成就")}</div>`}</div>`;
   // 分類列比螢幕寬：右邊還有沒露出來的就加淡出提示；選中的那顆捲進畫面
@@ -746,7 +748,7 @@ function showAchDetail(b) {
   box.innerHTML = `<button class="ach3d-dx" aria-label="${ttT("關閉")}">✕</button>
     <div class="ach3d-d-top"><div class="ach3d-d-dot" style="--c:${hid ? "var(--ink-faint)" : cat.col};--pct:${hid ? 0 : pct}"><div class="ach-dot-in ach-mdl">${achMedal(b)}</div></div>
       <div><div class="ach3d-d-name">${_achName(b)}${b.got ? ` <span class="ach3d-d-badge">${_ACH_CHK}</span>` : ""}</div><div class="ach3d-d-cat" style="color:${hid ? "var(--ink-faint)" : cat.col}">${hid ? "" : ic(cat.i) + " "}${ttT(catName)}${date ? ` · ${ttT("解鎖於")} ${date}` : ""}</div></div></div>
-    <div class="ach3d-d-chips"><span class="ach3d-d-tier" style="--m1:${(ACH_METAL[b.t - 1] || ACH_METAL[0])[0]};--m2:${(ACH_METAL[b.t - 1] || ACH_METAL[0])[1]}">${ic(ACH_TIER_IC[b.t - 1])} ${ttT(ACH_TIERS[b.t - 1])}</span>${ACH_REWARD[b.t] ? `<span class="ach3d-d-rew${b.got ? " got" : ""}">+${ACH_REWARD[b.t]} ${typeof BERRY_SVG !== "undefined" ? BERRY_SVG : ""}</span>` : ""}</div>
+    <div class="ach3d-d-chips"><span class="ach3d-d-tier ach-tierc rank-${b.t - 1}">${ic(ACH_TIER_IC[b.t - 1])} ${ttT(ACH_TIERS[b.t - 1])}</span>${ACH_REWARD[b.t] ? `<span class="ach3d-d-rew${b.got ? " got" : ""}">+${ACH_REWARD[b.t]} ${typeof BERRY_SVG !== "undefined" ? BERRY_SVG : ""}</span>` : ""}</div>
     <div class="ach3d-d-desc">${_achDesc(b)}</div>
     ${b.p && !hid && !b.got ? `<div class="ach3d-d-prog"><div class="ach3d-d-bar" style="--c:${cat.col}"><i style="width:${pct}%"></i></div><span>${_achFmt(Math.min(b.p[0], b.p[1]), b.p[2])} / ${b.p[1]} ${ttT(b.p[2])}</span></div>` : `<div class="ach3d-d-prog"><span>${b.got ? ttT("已達成") : ttT("尚未達成")}</span></div>`}
     ${hid ? "" : `<button class="ach3d-d-share" id="achShareBtn">${ic("share")} ${ttT("分享")}</button>`}`;

@@ -558,15 +558,15 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 .ach-rankchip { background: color-mix(in srgb, var(--brand) 16%, var(--surface)); color: var(--brand-deep); }
 .ach-rankchip .ic { width: 14px; height: 14px; }
 /* 稱號依階級變色（低→高：石灰→森綠→湖青→靛紫→古銅→傳說金）；顏色與 --ink 混合→深淺自動配合日夜 */
-.ach-rankchip.rank-0 { background: color-mix(in srgb, #7c7768 16%, var(--surface)); color: color-mix(in srgb, #6f6a5b 72%, var(--ink)); }
-.ach-rankchip.rank-1 { background: color-mix(in srgb, #3f8a48 16%, var(--surface)); color: color-mix(in srgb, #3f8a48 72%, var(--ink)); }
-.ach-rankchip.rank-2 { background: color-mix(in srgb, #2f8593 17%, var(--surface)); color: color-mix(in srgb, #2f8593 72%, var(--ink)); }
-.ach-rankchip.rank-3 { background: color-mix(in srgb, #6155c4 17%, var(--surface)); color: color-mix(in srgb, #6155c4 74%, var(--ink)); }
-.ach-rankchip.rank-4 { background: color-mix(in srgb, #c9752e 18%, var(--surface)); color: color-mix(in srgb, #c9752e 74%, var(--ink)); }
+.ach-rankchip.rank-0, .ach-tierc.rank-0 { background: color-mix(in srgb, #7c7768 16%, var(--surface)); color: color-mix(in srgb, #6f6a5b 72%, var(--ink)); }
+.ach-rankchip.rank-1, .ach-tierc.rank-1 { background: color-mix(in srgb, #3f8a48 16%, var(--surface)); color: color-mix(in srgb, #3f8a48 72%, var(--ink)); }
+.ach-rankchip.rank-2, .ach-tierc.rank-2 { background: color-mix(in srgb, #2f8593 17%, var(--surface)); color: color-mix(in srgb, #2f8593 72%, var(--ink)); }
+.ach-rankchip.rank-3, .ach-tierc.rank-3 { background: color-mix(in srgb, #6155c4 17%, var(--surface)); color: color-mix(in srgb, #6155c4 74%, var(--ink)); }
+.ach-rankchip.rank-4, .ach-tierc.rank-4 { background: color-mix(in srgb, #c9752e 18%, var(--surface)); color: color-mix(in srgb, #c9752e 74%, var(--ink)); }
 /* 傳說山神：金色實心＋像 PRO 標一樣掃過反光 */
-.ach-rankchip.rank-5 { position: relative; overflow: hidden; color: #5a3a00; background: linear-gradient(135deg, #ffe07a, #f0a91e); box-shadow: 0 1px 7px rgba(240,169,30,.4); }
-.ach-rankchip.rank-5 .ic { color: #5a3a00; }
-.ach-rankchip.rank-5::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.7) 50%, transparent 65%); background-size: 220% 100%; animation: lv-shine 3.4s ease-in-out infinite; }
+.ach-rankchip.rank-5, .ach-tierc.rank-5 { position: relative; overflow: hidden; color: #5a3a00; background: linear-gradient(135deg, #ffe07a, #f0a91e); box-shadow: 0 1px 7px rgba(240,169,30,.4); }
+.ach-rankchip.rank-5 .ic, .ach-tierc.rank-5 .ic { color: #5a3a00; }
+.ach-rankchip.rank-5::after, .ach-tierc.rank-5::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.7) 50%, transparent 65%); background-size: 220% 100%; animation: lv-shine 3.4s ease-in-out infinite; }
 .ach-scorechip { background: var(--surface-2); color: var(--ink-soft); }
 .ach-scorechip b { color: var(--accent); font-family: var(--num); }
 /* 檢視切換鈕（爬山 ⟷ 清單） */
@@ -2045,16 +2045,16 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .ach-medal.locked { filter: drop-shadow(0 1px 2px rgba(0,0,0,.18)); }
 @media (prefers-reduced-motion: reduce) { .ach3d-mk.here .ach-dot.ach-mdl { animation: none; } }
 /* 成就清單依階層分段、詳情卡的階層／獎勵（2026-10-04） */
-.ach-lsec { display: flex; align-items: center; gap: 7px; margin: 14px 2px 6px; padding: 6px 12px; border-radius: 999px; font-size: calc(13px * var(--fs, 1)); color: #2b2418;
-  background: linear-gradient(110deg, var(--m1), color-mix(in srgb, var(--m1) 55%, var(--m2)) 60%, var(--m1)); box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 1px 3px rgba(0,0,0,.12); }
+.ach-lsec { display: flex; align-items: center; gap: 7px; margin: 14px 2px 6px; padding: 6px 12px; border-radius: 999px; font-size: calc(13px * var(--fs, 1)); }   /* 顏色吃 .ach-tierc.rank-N（＝稱號） */
 .ach-lsec:first-child { margin-top: 4px; }
 .ach-lsec b { font-weight: 800; letter-spacing: .08em; }
 .ach-lsec i { margin-left: auto; font-style: normal; font-weight: 700; opacity: .75; font-size: .92em; }
 .ach-lsec-ic .ic { width: 15px; height: 15px; }
 .ach3d-d-chips { display: flex; gap: 6px; margin: 8px 0 2px; flex-wrap: wrap; }
-.ach3d-d-tier { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 999px; font-size: calc(12px * var(--fs, 1)); font-weight: 800; color: #2b2418;
-  background: linear-gradient(110deg, var(--m1), color-mix(in srgb, var(--m1) 55%, var(--m2)) 60%, var(--m1)); }
+.ach3d-d-tier { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 999px; font-size: calc(12px * var(--fs, 1)); font-weight: 800; }
 .ach3d-d-tier .ic { width: 13px; height: 13px; }
 .ach3d-d-rew { display: inline-flex; align-items: center; gap: 3px; padding: 3px 9px; border-radius: 999px; font-size: calc(12px * var(--fs, 1)); font-weight: 800; background: var(--surface-2, #efe9dc); color: var(--muted); }
 .ach3d-d-rew.got { background: color-mix(in srgb, #e0445c 14%, var(--surface)); color: #b8364c; }
 .ach3d-d-rew .berry { width: 14px; height: 14px; }
+/* 傳說的獎章：跟「傳說山神」稱號一樣帶金色光暈 */
+.ach-mdl > .ach-medal.got.tier-6 { filter: drop-shadow(0 0 5px rgba(240,169,30,.65)) drop-shadow(0 2px 3px rgba(0,0,0,.25)); }
