@@ -51,7 +51,8 @@ iOS 專案 `ios/` **已經建好並設定完成**（Info.plist 定位權限說�
 ---
 
 ## 已處理
-- App 圖示、啟動畫面（深綠底 #16301f）— 由 `assets/icon.png`＋`assets/splash.png` 產生，指令：`npm run assets`。
+- App 圖示、啟動畫面 — 由 `assets/icon.png`＋`assets/splash.png` 產生，指令：`npm run assets`。啟動畫面（2026-10-04 起）是**純深綠漸層、不放 logo**：logo 由網頁的進場動畫畫出來，原生畫面放 logo 的話會先出現、消失、再畫一次。iOS 已換好；Android 的還是舊圖（有 logo 方塊），做 Android 時跑一次 `npm run assets` 就同步。
+- 原生啟動畫面交接：`@capacitor/splash-screen`（`capacitor.config.json` 設自動關、最多 1.5 秒當保險），網頁 splash 畫出第一格就由 `web/js/splash.js` 主動關（fadeOut 0）；WebView 底色 `backgroundColor: #16301f`，開 App 不閃白。
 - App 名稱、appId、直向鎖定、主題色已設定。
 - 定位權限、背景定位、前景服務權限、Google 登入 deep link 都已寫進 `AndroidManifest.xml`。
 - **Google 登入（原生可用）**：偵測到在原生 App 時，改用系統瀏覽器（Chrome Custom Tab）開 Google 登入，登完用 deep link `com.timmyweistudy.trailtracker://login-callback` 帶授權碼回來、以 PKCE 換 session。網頁版行為不變。
@@ -60,7 +61,7 @@ iOS 專案 `ios/` **已經建好並設定完成**（Info.plist 定位權限說�
   - ⚠️ 首次記錄時，Android 會請求定位權限，請選「**一律允許 / Allow all the time**」背景定位才會運作。
 
 ## 用外掛（改動後要 sync）
-每次 `npm install` 或改了外掛，要 `npm run sync` 才會套進 `android/`。已裝：`@capacitor/browser`、`@capacitor/app`、`@capacitor-community/background-geolocation`。
+每次 `npm install` 或改了外掛，要 `npm run sync` 才會套進 `android/`。已裝（節錄）：`@capacitor/browser`、`@capacitor/app`、`@capacitor-community/background-geolocation`、`@capacitor/splash-screen`；完整清單看 `package.json`。iOS 由 Codemagic 自動 `npx cap sync ios`＋`pod install`，本機改外掛後也要 `npx cap sync ios` 讓 `ios/App/Podfile` 更新並提交。
 
 ## 上架前還要處理
 - 隱私權政策網址、商店文案、螢幕截圖。

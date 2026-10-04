@@ -1,10 +1,10 @@
 # 循徑拾光 上架前最終確認清單
 
-**目前狀態（2026-10-03）**：**自用中，暫不公開上架；網頁版不使用（新帳號註冊關閉）。**
+**目前狀態（2026-10-04）**：**自用中，暫不公開上架；網頁版不使用（新帳號註冊關閉）。**
 完整進度與待辦總覽見 [roadmap.md](roadmap.md)。
 下面的「送審」與「上線後」清單先凍結，日後決定公開時再照做（填表步驟見 `docs/app-store-submit.md`）。
 自己裝的方式：沿用 TestFlight（內部測試，不需送審）。注意 build 25 之後又改了很多（10/01–10/03 步道／記錄／夥伴／我的／社群改版、
-登山計畫書、低電量提醒（需要新的原生方法）…），要重跑 Codemagic 出新 build 才裝得到。TestFlight 每個 build 90 天到期，到期前要再出一版。
+登山計畫書、低電量提醒（需要新的原生方法）；10/04 夥伴美化／美工、進場動畫（品牌啟動圖、`@capacitor/splash-screen` 外掛）…），要重跑 Codemagic 出新 build 才裝得到。TestFlight 每個 build 90 天到期，到期前要再出一版。
 
 > 歷史：2026-07-18 build 1.0 (25) 上 TestFlight 外部公測。
 
@@ -44,6 +44,7 @@
 
 ### 商店素材
 - [x] iOS 截圖 7 張（1290×2796）
+- [ ] **夥伴那張截圖要重拍**：2026-10-04 夥伴外觀全面改版（角色、2.5D 舞台、明信片），`store-assets/ios-6.9/` 第 4 張是舊外觀（`npm run store:shots`）
 - [x] 商店文案中英（`docs/store-listing.md`）
 - [x] 隱私權政策頁 `/privacy.html`、支援頁 `/support.html`（線上）
 - [x] App Privacy 問卷答案（`docs/app-privacy-answers.md`）
