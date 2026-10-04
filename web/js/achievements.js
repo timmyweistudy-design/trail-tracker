@@ -372,19 +372,26 @@ function _achNearTrail(x, y, band, topY, pad) {
 }
 // 樹外層 .ach-sway 只負責微風搖擺（CSS rotate），內層才定位/縮放，避免 CSS transform 蓋掉 SVG translate
 function _swayWrap(inner, x, dur) { const dl = ((Math.round(x) * 7) % 20) / 4; return `<g class="ach-sway" style="animation-duration:${dur}s;animation-delay:-${dl}s">${inner}</g>`; }
+// 2026-10-04 美化：有 ArtKit（夥伴舞台那套美工）就畫受光的杉木／闊葉樹／樹叢／草；種子固定（同一頁每次長一樣）
+const _AK = () => typeof ArtKit !== "undefined";
+const _akR = (x, y) => _sr(Math.round(x * 31 + y * 17));
 function _pine(x, y, s, night) {
+  if (_AK()) return _swayWrap(`<g transform="translate(${x} ${y}) scale(${s})">${ArtKit.cedar(0, 1, 50, night ? "#2b4a2c" : "#3d7a40")}</g>`, x, 4.6);
   const c = night ? ["#22381f", "#2b4a2a", "#356038"] : ["#2c5a30", "#3c7338", "#4c8a46"], tk = night ? "#33281a" : "#5f452a";
   return _swayWrap(`<g transform="translate(${x} ${y}) scale(${s})"><rect x="-2" y="-13" width="4" height="14" fill="${tk}"/><path d="M0 -47 L-13 -21 L13 -21Z" fill="${c[0]}"/><path d="M0 -37 L-15 -9 L15 -9Z" fill="${c[1]}"/><path d="M0 -27 L-17 3 L17 3Z" fill="${c[2]}"/></g>`, x, 4.6);
 }
 function _leafTree(x, y, s, night) {
+  if (_AK()) return _swayWrap(`<g transform="translate(${x} ${y}) scale(${(s * .62).toFixed(3)})">${ArtKit.broadleaf(0, 0, 1, night ? "#2f5232" : "#559a4e", _akR(x, y))}</g>`, x, 5.2);
   const c = night ? ["#2a4a2c", "#325a34", "#3c6a3c"] : ["#3f7d40", "#57974f", "#6aad5c"], tk = night ? "#33281a" : "#6b4d2e";
   return _swayWrap(`<g transform="translate(${x} ${y}) scale(${s})"><rect x="-2.5" y="-17" width="5" height="18" fill="${tk}"/><circle cx="-10" cy="-25" r="11" fill="${c[0]}"/><circle cx="11" cy="-26" r="11" fill="${c[2]}"/><circle cx="0" cy="-33" r="14" fill="${c[1]}"/><circle cx="0" cy="-24" r="12" fill="${c[2]}"/></g>`, x, 5.4);
 }
 function _bush(x, y, s, night) {
+  if (_AK()) return `<g transform="translate(${x} ${y}) scale(${s})">${ArtKit.crown(0, -8, 26, 16, night ? "#2f5032" : "#4f8f48", _akR(x, y))}</g>`;
   const c = night ? ["#2c4a2e", "#345a34"] : ["#4a8546", "#5c9a52"];
   return `<g transform="translate(${x} ${y}) scale(${s})"><ellipse cx="-7" cy="-4" rx="10" ry="8" fill="${c[0]}"/><ellipse cx="7" cy="-4" rx="10" ry="8" fill="${c[1]}"/><ellipse cx="0" cy="-9" rx="11" ry="9" fill="${c[0]}"/></g>`;
 }
 function _grass(x, y, s, night) {
+  if (_AK()) return `<g transform="translate(${x} ${y}) scale(${(s * .8).toFixed(3)})">${ArtKit.grass(0, 0, 1, night ? "#3a5a38" : "#5f9e4e", _akR(x, y))}</g>`;
   const c = night ? "#3a5a38" : "#5c9a4e";
   return `<g transform="translate(${x} ${y}) scale(${s})" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round"><path d="M0 0 Q-4 -9 -7 -13"/><path d="M0 0 Q0 -11 1 -16"/><path d="M0 0 Q4 -9 7 -13"/></g>`;
 }
@@ -406,6 +413,8 @@ function _bird(x, y, s) {
   return `<path d="M${x} ${y} q4.5 -5 9 0 q4.5 -5 9 0" transform="scale(1)" fill="none" stroke="#5a6b7a" stroke-width="${1.6 * s}" stroke-linecap="round" opacity=".7"/>`;
 }
 function _range(y, amp, col, seed) {
+  // 受光稜線（平滑、左上一道亮邊、往下融進霧），以前是一段段折線
+  if (_AK()) return ArtKit.mountain(ArtKit.ridgePts(_sr(seed), -14, 374, y, amp, 4), y + 64, col, { lit: .22, fade: ArtKit.tint(col, .3) });
   const rnd = _sr(seed); let d = `M-10 ${(y + 60).toFixed(1)} L-10 ${y.toFixed(1)}`;
   for (let x = 0; x <= 360; x += 30) d += ` L${x} ${(y - rnd() * amp).toFixed(1)}`;
   return `<path d="${d} L372 ${y.toFixed(1)} L372 ${(y + 60).toFixed(1)} Z" fill="${col}"/>`;
@@ -453,7 +462,16 @@ const ACH_GRD = {
 };
 // 單頁山景：低海拔森林 → 深林 → 登高橄欖岩稜 → 攻頂雪線 → 雲上騰雲駕霧
 // alt：同一種山景的第二頁（縱走）；cloudU：雲上頁每個成就的位置（在它底下墊一朵雲）
-function _achPgSVG(p, night, alt, cloudU) {
+// 地標找空位：cands＝候選錨點 [x, y]（錨點在底部中央），box＝[左右半寬, 高]；跟任何徽章（約 28 半徑）重疊就換下一個，都不行就不畫
+function _achSpot(cands, box, occ) {
+  for (const [x, y] of cands) {
+    const L = x - box[0], R = x + box[0], T = y - box[1], B = y;
+    if (!(occ || []).some(n => n.x + 28 > L && n.x - 28 < R && n.y + 30 > T && n.y - 30 < B)) return [x, y];
+  }
+  return null;
+}
+const _lm = (name, spot, fn) => spot ? `<g class="ach-lm" data-lm="${name}">${fn(spot[0], spot[1])}</g>` : "";
+function _achPgSVG(p, night, alt, cloudU, occ) {
   const g = p < 4 ? ACH_GRD[night ? "n" : "d"][p] : ACH_GRD[night ? "n" : "d"][3];
   const snow = night ? "#c2ccd8" : "#f3f6ef", contour = p === 3 ? (night ? "#2c333d" : "#8fa0ae") : (night ? "#000" : "#3f5a34");
   const gid = `apg${p}${alt ? "b" : ""}`, k = alt ? 7 : 0;
@@ -488,8 +506,21 @@ function _achPgSVG(p, night, alt, cloudU) {
     // 山面豐富散佈
     surf = _achScatter(p, ry, night, p + (alt ? 11 : 0));
     // 每頁英雄小物
-    if (p === 0) surf = _achArch(night) + surf;               // 山腳木造登山口
-    if (p === 3) surf += _achFlagpole(90, ry + 60, night) + _achFlagpole(286, ry + 120, night);  // 攻頂旗杆
+    const occ0 = p === 0 ? (occ || []).concat([{ x: 70, y: 575 }, { x: 110, y: 575 }]) : (occ || []);   // 「登山口」字樣在拱門左邊
+    if (p === 0) { const ss = _achSpot([[306, 604], [320, 520], [40, 470]], [32, 56], occ0);
+      const occS = ss ? occ0.concat([{ x: ss[0], y: ss[1] - 30 }]) : occ0;   // 解說牌也避開指標牌
+      surf = _achDapples(night) + _achArch(night) + surf + _lm("sign", ss, (x, y) => _achSignpost(x, y, 1.1, night)) +
+      _lm("board", _achSpot([[52, 452], [310, 440], [48, 330], [312, 300]], [26, 46], occS), (x, y) => _achBoard(x, y, 1, night)); }   // 山腳木造登山口＋指標牌＋解說牌
+    if (p === 1) surf = _lm("giant", _achSpot([[296, 396], [64, 420], [300, 220], [60, 220]], [52, 160], occ), (x, y) => _achGiantTree(x, y, 1, night)) + surf +
+      _lm("bamboo", _achSpot([[34, 600], [330, 590], [30, 300]], [24, 100], occ), (x, y) => _achBamboo(x, y, .9, night)) + _achFern(330, 606, 1.3, night) + _achFern(76, 300, .9, night);   // 神木、竹叢、蕨
+    if (p === 2 && !alt) surf = _achBambooGrass(night, ry, .5, 48) + surf + _lm("trig", _achSpot([[70, 214], [300, 250], [64, 420], [310, 430]], [22, 40], occ), (x, y) => _achTrig(x, y, 1.4, night)) +
+      _lm("juniper", _achSpot([[300, 520], [40, 560], [306, 330], [44, 330]], [30, 66], occ), (x, y) => _achJuniper(x - 18, y, .9, night));   // 箭竹草原、三角點、玉山圓柏
+    if (p === 2 && alt) { const hs = _achSpot([[292, 380], [70, 380], [292, 540], [70, 540], [290, 250], [70, 250]], [48, 62], occ);
+      const occH = hs ? (occ || []).concat([-34, 0, 34].map(d => ({ x: hs[0] + d, y: hs[1] - 30 }))) : occ;   // 圓柏不要長在山屋屋頂上
+      surf = _achBambooGrass(night, ry, .5, 48) + surf + _lm("hut", hs, (x, y) => _achHut(x, y, 1, night)) +
+      _lm("juniper", _achSpot([[26, 560], [320, 600], [30, 440], [320, 300]], [30, 66], occH), (x, y) => _achJuniper(x - 18, y, .8, night)); }   // 縱走：稜線山屋
+    if (p === 3) surf += _achFlagpole(90, ry + 60, night) + _achFlagpole(286, ry + 120, night) + _lm("stele", _achSpot([[78, ry + 70], [300, ry + 50], [70, ry + 220], [300, ry + 240]], [24, 70], occ), (x, y) => _achStele(x, y, 1.2, night)) +
+      _lm("juniper", _achSpot([[300, 560], [44, 580], [310, 470]], [30, 66], occ), (x, y) => _achJuniper(x - 18, y, .85, night, true));  // 攻頂旗杆＋主峰碑＋冰雪圓柏
     // 前景框：底部草叢/岩緣/雪堆加深縱深
     fg = _achFg(p, night);
   } else {
@@ -499,6 +530,7 @@ function _achPgSVG(p, night, alt, cloudU) {
     // 高空薄雲＋飛鳥
     far2 += _cloud(70, 196, 1.2, cc[0], .66) + _cloud(300, 150, 1.0, cc[1], .6) + _cloud(184, 108, .8, cc[0], .46);
     far2 += _bird(150, 176, 1) + _bird(176, 168, .85) + _bird(120, 150, .8);
+    cloudsea += _achSunGlow(night) + _achPeakTips(night, occ);
     // 每個成就下方一朵浮雲（像踩在雲上）
     (cloudU || []).forEach(u => { cloudsea += _cloud(_achUX(u, band), _achUY(u, topY) + 16, 1.0, cc[1], .95); });
     // 由最高節點接上「傳說」的雲階（不留斷口）
@@ -515,6 +547,87 @@ function _achPgSVG(p, night, alt, cloudU) {
     mist = `<defs><linearGradient id="mist${p}${alt ? "b" : ""}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${mc}" stop-opacity="${op}"/><stop offset="1" stop-color="${mc}" stop-opacity="0"/></linearGradient></defs><rect x="-2" y="0" width="364" height="${h}" fill="url(#mist${p}${alt ? "b" : ""})"/>`;
   }
   return `<svg class="ach-page-mtn" viewBox="0 0 ${PAGE_W} ${PAGE_H}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${defs}${far2}${bg}${surf}${peak}${cloudsea}${mist}${fg}${_achPgTrail(p, night)}</svg>`;
+}
+// ── 2026-10-04 每一頁一個台灣步道的地標（擺在步道另一側，不擋徽章）──
+// 啟程＝登山口指標牌＋解說牌＋林間光斑；入山＝神木＋竹叢＋蕨；登高＝三角點（方柱、頂面十字）＋箭竹草原＋玉山圓柏；
+// 縱走＝稜線山屋（晚上窗戶亮燈）；攻頂＝主峰碑＋冰雪圓柏；傳說＝雲海上冒出的群峰＋日出的金邊
+function _achSignpost(x, y, s, night) {
+  const w = night ? "#5a4326" : "#8a6636", b = night ? "#7a5c34" : "#c9955a", t = night ? "#3a2c18" : "#5e4024";
+  return `<g transform="translate(${x} ${y}) scale(${s})"><rect x="-2.6" y="-48" width="5.2" height="48" rx="1.4" fill="${w}"/>
+    <path d="M-1 -44 h24 l6 5 l-6 5 h-24Z" fill="${b}" stroke="${t}" stroke-width="1.2"/><path d="M1 -31 h-24 l-6 5 l6 5 h24Z" fill="${b}" stroke="${t}" stroke-width="1.2"/>
+    <path d="M3 -39 h16 M-5 -26 h-16" stroke="${t}" stroke-width="1.6" stroke-linecap="round"/><ellipse cx="0" cy="0" rx="9" ry="2.6" fill="#000" opacity=".18"/></g>`;
+}
+function _achBoard(x, y, s, night) {
+  const w = night ? "#5a4326" : "#7a5a32", f = night ? "#3f5a46" : "#e9e1c8", g = night ? "#2f4a3a" : "#7fa66a";
+  return `<g transform="translate(${x} ${y}) scale(${s})"><rect x="-17" y="-20" width="3.4" height="20" fill="${w}"/><rect x="13.6" y="-20" width="3.4" height="20" fill="${w}"/>
+    <path d="M-22 -40 h44 v20 h-44Z" fill="${w}"/><rect x="-19" y="-37.5" width="38" height="15" rx="1" fill="${f}"/><path d="M-16 -26 l7 -7 l5 4 l6 -6 l7 9Z" fill="${g}"/><path d="M-24 -41 h48 l-3 -5 h-42Z" fill="${night ? "#4a3620" : "#5e4024"}"/></g>`;
+}
+function _achDapples(night) {
+  if (night) return "";
+  const r = _sr(77); let s = ""; for (let k = 0; k < 9; k++) s += `<ellipse cx="${(20 + r() * 320).toFixed(0)}" cy="${(380 + r() * 260).toFixed(0)}" rx="${(10 + r() * 16).toFixed(0)}" ry="${(3 + r() * 4).toFixed(0)}" fill="#fff6c8" opacity=".22"/>`;
+  return s;
+}
+function _achGiantTree(x, y, s, night) {
+  if (!_AK()) return "";
+  const tk = night ? "#3b2c1c" : "#6b4a2e", tl = night ? "#4a3824" : "#8a6440", lf = night ? "#284a2e" : "#3f7d44";
+  return `<g transform="translate(${x} ${y}) scale(${s})"><path d="M-14 0 Q-10 -40 -9 -86 L9 -86 Q10 -40 16 0 Q4 -6 -14 0Z" fill="${tk}"/><path d="M-9 -86 Q-8 -40 -12 0 L-6 0 Q-4 -44 -3 -86Z" fill="${tl}" opacity=".7"/>
+    <path d="M-12 -2 q-12 2 -18 6 M14 -2 q12 2 18 6" stroke="${tk}" stroke-width="5" stroke-linecap="round" fill="none"/>
+    ${ArtKit.crown(-20, -96, 56, 40, lf, _sr(5))}${ArtKit.crown(24, -104, 60, 44, lf, _sr(6))}${ArtKit.crown(0, -126, 70, 48, lf, _sr(7))}
+    <path d="M-6 -60 q4 6 0 12" stroke="#7fb06a" stroke-width="2" fill="none" opacity=".7"/></g>`;
+}
+function _achBamboo(x, y, s, night) {
+  const c = night ? ["#2f4f30", "#3c6236"] : ["#5a9a48", "#7ab85e"], r = _sr(Math.round(x));
+  let o = ""; for (let k = 0; k < 6; k++) { const bx = (k - 2.5) * 6 + r() * 3, h = 70 + r() * 30, lean = (r() - .5) * 10, col = c[k % 2];
+    o += `<path d="M${bx} 0 Q${bx + lean * .4} ${-h * .5} ${bx + lean} ${-h}" stroke="${col}" stroke-width="3.2" fill="none" stroke-linecap="round"/>`;
+    for (let j = 1; j < 4; j++) { const yy = -h * j / 4, xx = bx + lean * j / 4; o += `<path d="M${xx} ${yy} q${(k % 2 ? 1 : -1) * 9} -4 ${(k % 2 ? 1 : -1) * 15} 2 q${(k % 2 ? -1 : 1) * 7} -1 ${(k % 2 ? -1 : 1) * 15} -2Z" fill="${col}" opacity=".9"/>`; } }
+  return `<g transform="translate(${x} ${y}) scale(${s})">${o}</g>`;
+}
+function _achFern(x, y, s, night) {
+  const c = night ? "#2f5232" : "#4f9a4a"; let o = "";
+  [-40, -15, 15, 40].forEach((a, i) => { o += `<g transform="rotate(${a})"><path d="M0 0 Q2 -10 0 -20" stroke="${c}" stroke-width="1.6" fill="none"/>${[4, 8, 12, 16].map(t => `<path d="M0 ${-t} l-5 -2 M0 ${-t} l5 -2" stroke="${c}" stroke-width="1.4"/>`).join("")}</g>`; });
+  return `<g transform="translate(${x} ${y}) scale(${s})" stroke-linecap="round">${o}</g>`;
+}
+function _achTrig(x, y, s, night) {   // 三角點：方柱基石，頂面十字（台灣山頭最常見的地標）
+  const st = night ? "#8a8a90" : "#d8d4c8", sd = night ? "#6a6a70" : "#aaa496";
+  return `<g transform="translate(${x} ${y}) scale(${s})"><ellipse cx="0" cy="2" rx="22" ry="6" fill="${night ? "#3e4038" : "#8f8a6a"}" opacity=".6"/>
+    <path d="M-8 0 L-8 -22 L8 -22 L8 0Z" fill="${st}"/><path d="M8 0 L8 -22 L13 -25 L13 -3Z" fill="${sd}"/><path d="M-8 -22 L-3 -25 L13 -25 L8 -22Z" fill="${night ? "#a0a0a6" : "#ece8dc"}"/>
+    <path d="M1 -24.4 h7 M4.5 -25.6 v2.4" stroke="#7a3a2a" stroke-width="1.1"/><path d="M-5 -14 h10 M-5 -9 h7" stroke="${sd}" stroke-width="1.2"/></g>`;
+}
+function _achBambooGrass(night, ry, band, topY) {   // 箭竹草原：一片低矮的金綠草浪
+  if (!_AK()) return "";
+  const r = _sr(201); let o = ""; const col = night ? "#4a5a34" : "#a3b04e";
+  for (let k = 0; k < 40; k++) { const x = 6 + r() * 348, y = ry + 30 + r() * (PAGE_H - ry - 40); if (_achNearTrail(x, y, band, topY, 30)) continue; const sc = .5 + (y - ry) / (PAGE_H - ry) * .8; o += ArtKit.grass(x, y, sc, col, r); }
+  return o;
+}
+function _achJuniper(x, y, s, night, snow) {
+  if (!_AK()) return "";
+  return `<g transform="translate(${x} ${y}) scale(${s})">${ArtKit.juniper(0, 0, 1, night ? "#4a3a2c" : "#7a5a40", night ? "#2f4a3a" : "#4a7e5a", _sr(Math.round(x)))}${snow ? `<path d="M30 -53 q16 -6 32 0 q-16 3 -32 0Z M6 -40 q14 -5 28 0 q-14 3 -28 0Z" fill="#fbfdff" opacity=".95"/>` : ""}</g>`;
+}
+function _achHut(x, y, s, night) {   // 稜線山屋：石砌牆、紅色鐵皮屋頂、煙囪；晚上窗戶亮
+  const wall = night ? "#6a6a6e" : "#c9c2b2", wd = night ? "#55555a" : "#a59d8c", roof = night ? "#6a2e28" : "#c0503c", win = night ? "#ffd27a" : "#5f7a8c";
+  return `<g transform="translate(${x} ${y}) scale(${s})"><ellipse cx="0" cy="2" rx="46" ry="7" fill="#000" opacity=".15"/>
+    <path d="M-38 0 V-26 H38 V0Z" fill="${wall}"/><path d="M18 0 V-26 H38 V0Z" fill="${wd}"/>
+    <path d="M-38 -26 h3 M-28 -18 h8 M-12 -10 h8 M4 -20 h8 M22 -12 h8" stroke="${wd}" stroke-width="1.4"/>
+    <path d="M-44 -24 L-30 -46 H34 L46 -24Z" fill="${roof}"/><path d="M-30 -46 H34 L40 -36 H-36Z" fill="#fff" opacity=".12"/>
+    <rect x="22" y="-58" width="7" height="14" fill="${wd}"/>${night ? "" : `<path d="M25 -60 q-4 -6 1 -10 q5 -4 1 -10" stroke="#e8eef2" stroke-width="2.4" fill="none" opacity=".7" stroke-linecap="round"/>`}
+    <rect x="-28" y="-20" width="11" height="9" rx="1" fill="${win}"/><rect x="-6" y="-20" width="11" height="9" rx="1" fill="${win}"/><rect x="24" y="-17" width="9" height="17" rx="1" fill="${night ? "#3a2c1c" : "#6b4a2e"}"/>
+    ${night ? `<ellipse cx="-12" cy="-6" rx="30" ry="10" fill="#ffd27a" opacity=".12"/>` : ""}</g>`;
+}
+function _achStele(x, y, s, night) {   // 主峰碑：立起的石碑＋底座（不刻字：字會跟著語言變）
+  const st = night ? "#7c7c84" : "#cfc8b8", sd = night ? "#606068" : "#a39b88", base = night ? "#55555c" : "#9a927e";
+  return `<g transform="translate(${x} ${y}) scale(${s})"><path d="M-22 0 L-18 -8 H18 L22 0Z" fill="${base}"/>
+    <path d="M-11 -8 V-52 Q0 -60 11 -52 V-8Z" fill="${st}"/><path d="M5 -8 V-56 Q9 -55 11 -52 V-8Z" fill="${sd}"/>
+    <path d="M-5 -46 v30 M0 -48 v32" stroke="${sd}" stroke-width="1.6" stroke-linecap="round"/><path d="M-13 -52 Q0 -64 13 -52 Q0 -58 -13 -52Z" fill="#fbfdff" opacity=".9"/></g>`;
+}
+function _achPeakTips(night, occ) {   // 雲海上冒出來的山頭（左、右兩側，不擋步道）＋日出金邊
+  const c = night ? "#4a5468" : "#7d8ca6", lit = night ? "#6b7690" : "#f2c48a";
+  const peak = (x, y, w, h) => `<path d="M${x - w} ${y} L${x - w * .25} ${y - h * .8} L${x} ${y - h} L${x + w * .4} ${y - h * .7} L${x + w} ${y}Z" fill="${c}"/><path d="M${x - w * .25} ${y - h * .8} L${x} ${y - h} L${x + w * .1} ${y - h * .55} L${x - w * .4} ${y - h * .5}Z" fill="${lit}" opacity=".85"/>`;
+  // 山頭也避開徽章：每座山先找空位（找不到就不畫那一座）
+  const P = [[[56, 470], [40, 540], [70, 400]], [[312, 446], [320, 540], [300, 380]], [[250, 486], [130, 520], [230, 560]]].map((c, k) => { const w = [46, 54, 30][k], h = [64, 82, 36][k], sp = _achSpot(c, [w, h], occ); return sp ? `<g class="ach-lm" data-lm="peaks">${peak(sp[0], sp[1], w, h)}</g>` : ""; }).join("");
+  return `<g opacity=".95">${P}</g>`;
+}
+function _achSunGlow(night) {   // 日出時雲海上的一道金光
+  return (night ? "" : `<rect x="-2" y="380" width="364" height="110" fill="url(#achSunGlow)"/><defs><linearGradient id="achSunGlow" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd59a" stop-opacity="0"/><stop offset=".6" stop-color="#ffd59a" stop-opacity=".35"/><stop offset="1" stop-color="#ffd59a" stop-opacity="0"/></linearGradient></defs>`);
 }
 // 山腳登山口木拱門（框住「啟程」）
 function _achArch(night) {
@@ -739,7 +852,7 @@ function _achInitClimb(ov) {
     const headL = p === 0 && !nearStart ? `<div class="ach-head" style="left:${px(_achUX(0, band) - 84)};top:${py(_achUY(0, topY) - 44)}">${ic("footprints")}<b>${ttT("登山口")}</b></div>` : "";
     const peakL = s === 4 ? `<div class="ach-peak" style="left:50%;top:${py(150 - 66)}">${ic("crown")}</div>` : "";
     const hikerL = here ? `<div class="ach-hiker" style="left:${px(here.x)};top:${py(here.y - 40)}"><span class="ach-hiker-b">${ttT("你在這")}</span><span class="ach-hiker-pin">${ic("footprints")}</span></div>` : "";
-    el.innerHTML = `${_achPgSVG(s, sky.night, alt, s === 4 ? mainU : null)}
+    el.innerHTML = `${_achPgSVG(s, sky.night, alt, s === 4 ? mainU : null, nodes)}
         <svg class="ach-spurs" viewBox="0 0 ${PAGE_W} ${PAGE_H}" preserveAspectRatio="none" aria-hidden="true">${spurs}</svg>
         ${_achFauna(s)}
         <div class="ach-pgtag">${ic(ACH_TIER_IC[p])} ${ttT(ACH_TIERS[p])}<i>${gotN}/${pageBadges.length}</i></div>

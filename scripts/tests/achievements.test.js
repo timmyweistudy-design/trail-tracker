@@ -37,4 +37,16 @@ const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:390,height:
  ok(share.ok&&share.warm>500,"share card draws the medal "+JSON.stringify(share));
  await p.close();}
 
+// 每一頁有自己的台灣步道地標，且不擋到徽章
+{const p=await mk();await p.evaluate(()=>openAchTree());await p.waitForTimeout(1500);
+ const want=[["sign","board"],["giant","bamboo"],["trig","juniper"],["hut"],["stele"],["peaks"]];const got=[],hit=[];
+ for(let i=0;i<6;i++){await p.evaluate(i=>document.querySelector(`.ach-pgdot[data-pg="${i}"]`).click(),i);await p.waitForTimeout(900);
+  const r=await p.evaluate(i=>{const pg=document.querySelector(`.ach-page[data-p="${i}"]`);const lm=[...pg.querySelectorAll(".ach-lm")];
+   const mk=[...pg.querySelectorAll(".ach3d-mk")].map(e=>e.getBoundingClientRect());let over=0;
+   lm.forEach(l=>{const a=l.getBoundingClientRect();mk.forEach(m=>{const ox=Math.max(0,Math.min(a.right,m.right)-Math.max(a.left,m.left)),oy=Math.max(0,Math.min(a.bottom,m.bottom)-Math.max(a.top,m.top));if(ox*oy>m.width*m.height*.25)over++;});});
+   return {lm:lm.map(l=>l.dataset.lm),over};},i);got.push(r.lm);hit.push(r.over);}
+ ok(want.every((w,i)=>w.every(k=>got[i].includes(k))),"every page has its own Taiwan trail landmark "+JSON.stringify(got));
+ ok(hit.every(n=>n===0),"landmarks never cover a badge (per page) "+JSON.stringify(hit));
+ await p.close();}
+
 console.log("ERRS",JSON.stringify(errs));console.log("FAILS",fails);await b.close();srv.kill();})();
