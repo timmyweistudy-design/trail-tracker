@@ -52,6 +52,7 @@ window.ttDebug = (() => {
         distanceKm: +(t.length_km || 3).toFixed(1), elapsedMs: 2 * 3600e3, ascent: t.ascent || 100, descent: t.ascent || 100, steps: 4000, kcal: 200, track: [] });
       refresh(); return `＋明信片：${t.name}（${t.region || ""}）`;
     },
+    allNew() { ls.setItem("tt_pj_seen", "[]"); refresh(); return "明信片都會標「新」"; },   // 測「新」小標
     addRandomTrail() { const pool = TRAILS.filter(t => t.region && isFinite(t.lat)); return api.addTrail(pool[Math.floor(Math.random() * pool.length)]); },
     // 某個主題的步道走兩趟 → 舞台出現那個裝飾（瀑布／海景／古道／森林／湖泊）
     addTheme(tag) { const pool = TRAILS.filter(t => tagsOf(t)[0] === tag && t.region); const t = pool[Math.floor(Math.random() * pool.length)]; api.addTrail(t, 1); return api.addTrail(t, 2) + "（走兩趟）"; },
@@ -283,7 +284,7 @@ async function toggleDebugPanel() {
       ["✨看進化動畫", closeAnd(() => { const i = petStageIndex(totalKm()); celebrateEvolve(PET_STAGES[i], i + 1); })],
       ["📮＋明信片(隨機)", () => ttDebug.addRandomTrail()], ["🗾五區全走過", () => ttDebug.allRegions()],
       ["💧＋瀑布×2", () => ttDebug.addTheme("瀑布")], ["🌊＋海景×2", () => ttDebug.addTheme("海景")], ["🪨＋古道×2", () => ttDebug.addTheme("古道")], ["🌲＋森林×2", () => ttDebug.addTheme("森林")], ["🏞＋湖泊×2", () => ttDebug.addTheme("湖泊")],
-      ["📮開明信片簿", closeAnd(() => PetJourney.openAlbum("cards"))], ["🦋開發現的生物", closeAnd(() => PetJourney.openAlbum("species"))],
+      ["📮開明信片簿", closeAnd(() => PetJourney.openAlbum("cards"))], ["🗾開走過的縣市", closeAnd(() => PetJourney.openAlbum("regions"))], ["🖼開第一張明信片", closeAnd(() => { const w = PetJourney.walked(); if (!w.length) return "先按「＋明信片」"; PetJourney.openCard(w[0].t.id); })], ["🆕全部標成新的", () => ttDebug.allNew()],
       ["🗺地圖夥伴：小跑", () => { window.__recPet = "fast"; return "記錄中地圖上的夥伴會小跑（開模擬記錄看）"; }], ["🗺地圖夥伴：坐下", () => { window.__recPet = "rest"; return "記錄中地圖上的夥伴會坐下（開模擬記錄看）"; }], ["🗺地圖夥伴：恢復", () => { window.__recPet = null; return "地圖夥伴跟真實速度／休息"; }],
       ["🧹清測試步道", () => ttDebug.clearHikes()],
     ]],

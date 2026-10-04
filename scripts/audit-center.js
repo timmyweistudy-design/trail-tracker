@@ -68,6 +68,8 @@ const DETECT_OVERFLOW = () => {
   const skip = new Set(["HTML", "BODY", "SCRIPT", "STYLE", "BR", "HR"]);
   for (const el of document.querySelectorAll("*")) {
     if (skip.has(el.tagName)) continue;
+    // 轉圈圖示：圓形的，畫面上不會超出；但轉到斜角時外框（正方形轉 45°）會暫時變大，剛好在載入中才量到＝誤報
+    if (el.classList && el.classList.contains("spin")) continue;
     const p = el.parentElement;
     if (!p) continue;
     const cs = getComputedStyle(el), ps = getComputedStyle(p);

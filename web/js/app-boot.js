@@ -175,7 +175,7 @@ function onboarding(force, opts) {
     { view: "pet", sel: "#petCard", e: ic("paw"), h: "你的山林夥伴",
       p: "一顆蛋，靠你走路長大。果實靠走路和每日任務賺，每天餵一次，牠就有精神。" },
     { view: "pet", sel: "#petJourney", e: ic("map"), h: "夥伴的旅行",
-      p: "每走完一條步道，夥伴帶回一張明信片，也記下沿路的生物；走過新的地區還會解鎖當地配件。" },
+      p: "每走完一條步道，夥伴帶回一張明信片；走過新的地區，地圖會亮起來，還會解鎖當地配件。" },
     { view: "pet", sel: "#petBadges", e: ic("medal"), h: "成就",
       p: "里程、爬升、連續天數達標就解鎖勳章。拿到就是你的，不會不見。" },
     { view: "me", sel: "#meMonth", e: ic("calendar"), h: "我的足跡",
