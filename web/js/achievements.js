@@ -666,15 +666,22 @@ function renderAchList(ov) {
   const cats = ["all", "dist", "climb", "trips", "streak", "explore", "challenge", "time"];
   const chips = cats.map(c => `<button class="ach-fchip${c === filter ? " on" : ""}" data-c="${c}">${c === "all" ? ttT("全部") : `${ic(ACH_CAT[c].i)} ${ttT(ACH_CATNAME[c])}`}</button>`).join("");
   const shown = list.map((b, i) => ({ b, i })).filter(o => filter === "all" || o.b.c === filter);
-  const rows = shown.map(({ b, i }) => {
+  const rowArr = shown.map(({ b, i }) => {
     const cat = _achCat(b), pct = _achPct(b), date = b.got ? achUnlockDate(b.n) : "", hid = _achHidden(b);
     const right = b.got ? (date || ttT("已達成")) : (hid ? "？" : (b.p ? `${_achFmt(Math.min(b.p[0], b.p[1]), b.p[2])}/${b.p[1]}` : ttT("尚未達成")));
     return `<button class="ach-lrow ${b.got ? "got" : "locked"}" data-i="${i}" style="--c:${cat.col}">
       <span class="ach-lemo ach-mdl">${achMedal(b)}</span>
       <span class="ach-lbody"><span class="ach-lname">${_achName(b)}${b.got ? ` <span class="ach-lchk">${_ACH_CHK}</span>` : ""}</span><span class="ach-ldesc">${_achDesc(b)}</span>${b.p && !hid && !b.got ? `<span class="ach-lbar"><i style="width:${pct}%"></i></span>` : ""}</span>
       <span class="ach-lright">${right}</span></button>`;
-  }).join("");
-  box.innerHTML = `<div class="ach-fchips">${chips}</div><div class="ach-lrows">${rows || `<div class="ach-lempty">${ttT("這個類別還沒有成就")}</div>`}</div>`;
+  }), rows = rowArr.join("");
+  // 「全部」依階層分段：段頭用那一階的獎章金屬色＋紋章＋達成數（跟步道上一頁一階對得起來）
+  let body = rows;
+  if (filter === "all" && shown.length) {
+    const rowOf = {}; shown.forEach(({ b }, k) => { (rowOf[b.t] = rowOf[b.t] || []).push(rowArr[k]); });
+    body = Object.keys(rowOf).sort((a, b) => a - b).map(t => { const m = ACH_METAL[t - 1] || ACH_METAL[0], inT = list.filter(b => b.t === +t);
+      return `<div class="ach-lsec" style="--m1:${m[0]};--m2:${m[1]}"><span class="ach-lsec-ic">${ic(ACH_TIER_IC[t - 1])}</span><b>${ttT(ACH_TIERS[t - 1])}</b><i>${inT.filter(b => b.got).length} / ${inT.length}</i></div>${rowOf[t].join("")}`; }).join("");
+  }
+  box.innerHTML = `<div class="ach-fchips">${chips}</div><div class="ach-lrows">${body || `<div class="ach-lempty">${ttT("這個類別還沒有成就")}</div>`}</div>`;
   // 分類列比螢幕寬：右邊還有沒露出來的就加淡出提示；選中的那顆捲進畫面
   const fc = box.querySelector(".ach-fchips");
   const fade = () => fc.classList.toggle("more", fc.scrollLeft + fc.clientWidth < fc.scrollWidth - 4);
@@ -739,6 +746,7 @@ function showAchDetail(b) {
   box.innerHTML = `<button class="ach3d-dx" aria-label="${ttT("關閉")}">✕</button>
     <div class="ach3d-d-top"><div class="ach3d-d-dot" style="--c:${hid ? "var(--ink-faint)" : cat.col};--pct:${hid ? 0 : pct}"><div class="ach-dot-in ach-mdl">${achMedal(b)}</div></div>
       <div><div class="ach3d-d-name">${_achName(b)}${b.got ? ` <span class="ach3d-d-badge">${_ACH_CHK}</span>` : ""}</div><div class="ach3d-d-cat" style="color:${hid ? "var(--ink-faint)" : cat.col}">${hid ? "" : ic(cat.i) + " "}${ttT(catName)}${date ? ` · ${ttT("解鎖於")} ${date}` : ""}</div></div></div>
+    <div class="ach3d-d-chips"><span class="ach3d-d-tier" style="--m1:${(ACH_METAL[b.t - 1] || ACH_METAL[0])[0]};--m2:${(ACH_METAL[b.t - 1] || ACH_METAL[0])[1]}">${ic(ACH_TIER_IC[b.t - 1])} ${ttT(ACH_TIERS[b.t - 1])}</span>${ACH_REWARD[b.t] ? `<span class="ach3d-d-rew${b.got ? " got" : ""}">+${ACH_REWARD[b.t]} ${typeof BERRY_SVG !== "undefined" ? BERRY_SVG : ""}</span>` : ""}</div>
     <div class="ach3d-d-desc">${_achDesc(b)}</div>
     ${b.p && !hid && !b.got ? `<div class="ach3d-d-prog"><div class="ach3d-d-bar" style="--c:${cat.col}"><i style="width:${pct}%"></i></div><span>${_achFmt(Math.min(b.p[0], b.p[1]), b.p[2])} / ${b.p[1]} ${ttT(b.p[2])}</span></div>` : `<div class="ach3d-d-prog"><span>${b.got ? ttT("已達成") : ttT("尚未達成")}</span></div>`}
     ${hid ? "" : `<button class="ach3d-d-share" id="achShareBtn">${ic("share")} ${ttT("分享")}</button>`}`;

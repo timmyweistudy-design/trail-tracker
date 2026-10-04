@@ -26,10 +26,14 @@ const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:390,height:
  // 清單與詳情
  await p.click("#achViewTog");await p.waitForTimeout(600);
  ok(await p.evaluate(()=>{const rows=document.querySelectorAll("#achList .ach-lemo");return rows.length>10&&[...rows].every(r=>r.querySelector(".ach-medal"));}),"list view uses medals too");
+ const sec=await p.evaluate(()=>({n:document.querySelectorAll("#achList .ach-lsec").length,rows:document.querySelectorAll("#achList .ach-lrow").length,total:petBadges().length}));
+ ok(sec.n===6&&sec.rows===sec.total,"list grouped into the 6 tiers, every badge listed once "+JSON.stringify(sec));
+ await p.evaluate(()=>document.querySelector('.ach-fchip[data-c="climb"]').click());await p.waitForTimeout(300);
+ ok(await p.evaluate(()=>document.querySelectorAll("#achList .ach-lsec").length===0&&document.querySelectorAll("#achList .ach-lrow").length===petBadges().filter(b=>b.c==="climb").length),"category filter shows a flat list of that category");
  await p.screenshot({path:O+"/list.png"});
  await p.click("#achViewTog");await p.waitForTimeout(500);
  await p.evaluate(()=>document.querySelector(".ach3d-mk.got").click());await p.waitForTimeout(500);
- ok(await p.evaluate(()=>!!document.querySelector(".ach3d-detail.show .ach-medal")),"detail card shows the medal");
+ ok(await p.evaluate(()=>!!document.querySelector(".ach3d-detail.show .ach-medal")&&!!document.querySelector(".ach3d-detail.show .ach3d-d-tier")&&!!document.querySelector(".ach3d-detail.show .ach3d-d-rew .berry")),"detail card shows the medal, its tier and the berry reward");
  // 分享圖卡畫得出徽章（以前 canvas 上畫 emoji）
  const share=await p.evaluate(async()=>{let blob=null;const orig=window.saveBlob;window.saveBlob=async(bl)=>{blob=bl;return "saved"};try{await shareAchievement(petBadges().find(b=>b.got));for(let i=0;i<30&&!blob;i++)await new Promise(r=>setTimeout(r,100));}finally{window.saveBlob=orig}
   if(!blob)return {ok:false};const im=await createImageBitmap(blob);const c=document.createElement("canvas");c.width=im.width;c.height=im.height;const x=c.getContext("2d");x.drawImage(im,0,0);
