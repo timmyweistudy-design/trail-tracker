@@ -1,7 +1,7 @@
 // 開機與導覽（從 app.js 拆出，2026-10）：啟動流程、路況更新、深連結、語言選擇、主導覽、情境導覽、點擊回饋、測試面板入口。
 // 一般 script，和 app.js 共用全域；必須在 app.js / map-ui.js / detail.js / appearance.js 之後載入（這裡的程式一載入就會執行）。
 // ---------- 啟動 ----------
-setTimeout(() => { const s = document.getElementById("splash"); if (s) s.remove(); }, 1700);
+// 進場畫面由 js/splash.js 控制（時間、跳過、預載、收場）
 // 量測 header 高度供搜尋列吸頂用
 function setHeaderH() { const h = document.querySelector(".app-header"); if (h) document.documentElement.style.setProperty("--hdr-h", h.offsetHeight + "px"); }
 setHeaderH(); window.addEventListener("load", setHeaderH); window.addEventListener("resize", setHeaderH);

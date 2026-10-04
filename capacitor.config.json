@@ -4,5 +4,20 @@
   "webDir": "web",
   "android": {
     "allowMixedContent": false
+  },
+  "backgroundColor": "#16301f",
+  "ios": {
+    "backgroundColor": "#16301f"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1500,
+      "launchAutoHide": true,
+      "launchFadeOutDuration": 0,
+      "backgroundColor": "#16301f",
+      "showSpinner": false,
+      "splashFullScreen": false,
+      "splashImmersive": false
+    }
   }
 }

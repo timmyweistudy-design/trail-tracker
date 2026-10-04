@@ -22,20 +22,25 @@
   <link rel="stylesheet" href="css/style-features.css">
   <link rel="stylesheet" href="css/style-waves.css">
   <style>
-    /* 啟動畫面（內聯，立即顯示不閃白） */
-    #splash { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center;
-      background: linear-gradient(155deg, #1f4730, #16301f 60%, #112619); color: #fbf8ee;
-      animation: splashOut .55s ease 1s forwards; }
-    #splash .sp-mark { width: 84px; height: 84px; animation: spPop .7s cubic-bezier(.2,.9,.3,1.3); }
-    #splash .sp-name { font-family: "TaipeiSans", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif; font-weight: 900; font-size: 30px; letter-spacing: 6px; margin-top: 10px; }
-    #splash .sp-sub { font-size: 11px; letter-spacing: 5px; opacity: .6; margin-top: 8px; }
-    @keyframes spPop { 0% { transform: scale(.4); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-    @keyframes splashOut { to { opacity: 0; visibility: hidden; } }
-    @media (prefers-reduced-motion: reduce) { #splash { animation-delay: .3s; } #splash .sp-mark { animation: none; } }
+    /* 啟動畫面（內聯，立即顯示不閃白）。品牌字（只有「循徑拾光」4 個字、1.8 KB）直接內嵌：第一格就有字，不等下載；
+       而且是真正的 900 粗（以前用內文字型，最粗 700，900 是瀏覽器硬加粗、筆畫會糊）。
+       logo／名稱／副標包成一組放在視覺中心（以前三個直接排在全螢幕 grid 裡，被拉到上中下三個位置）。 */
+    @font-face { font-family: "BrandSplash"; font-weight: 900; font-display: swap; src: url(data:font/woff2;base64,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) format("woff2"); }
+    #splash { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(155deg, #1f4730, #16301f 60%, #112619); color: #fbf8ee; }
+    #splash .sp-group { display: flex; flex-direction: column; align-items: center; transform: translateY(-4vh); }   /* 視覺中心比幾何中心略高 */
+    #splash .sp-mark { width: 96px; height: 96px; }
+    #splash .sp-mark svg { width: 100%; height: 100%; display: block; overflow: visible; }
+    #splash .sp-name { font-family: "BrandSplash", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif; font-weight: 900; font-size: 34px; line-height: 1.2;
+      letter-spacing: .35em; margin: 18px -.35em 0 0; }   /* 負右邊距：補回最後一個字後面的字距，才會真正置中 */
+    #splash .sp-sub { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; font-weight: 600; font-size: 11px;
+      letter-spacing: .42em; margin: 10px -.42em 0 0; opacity: .65; }
+    #splash.sp-out { transition: opacity .45s ease; opacity: 0; pointer-events: none; }
   </style>
 </head>
 <body>
-<div id="splash"><div class="sp-mark"><svg class="tt-logo" viewBox="0 0 48 48" aria-hidden="true"><circle cx="35" cy="12" r="5" fill="#f3e9c6"/><path d="M3 41 17 22l14 19Z" fill="#2f6b47"/><path d="M13 41 27 15l16 26Z" fill="#43905f"/><path d="m27 15-3.6 6.7L27 20l3.7 1.8Z" fill="#f4f1e6"/><path d="m17 22-2.3 3.2 2.3-.9 2.4 1Z" fill="#f4f1e6"/><path d="M27.5 21c-4.5 5-6.5 11-4.5 20" stroke="#e2b85c" stroke-width="2.6" fill="none" stroke-linecap="round"/></svg></div><div class="sp-name">循徑拾光</div><div class="sp-sub">GATHER THE TRAIL</div></div>
+<div id="splash" aria-hidden="true"><div class="sp-group"><div class="sp-mark"><svg class="tt-logo" viewBox="0 0 48 48" aria-hidden="true"><circle cx="35" cy="12" r="5" fill="#f3e9c6"/><path d="M3 41 17 22l14 19Z" fill="#2f6b47"/><path d="M13 41 27 15l16 26Z" fill="#43905f"/><path d="m27 15-3.6 6.7L27 20l3.7 1.8Z" fill="#f4f1e6"/><path d="m17 22-2.3 3.2 2.3-.9 2.4 1Z" fill="#f4f1e6"/><path d="M27.5 21c-4.5 5-6.5 11-4.5 20" stroke="#e2b85c" stroke-width="2.6" fill="none" stroke-linecap="round"/></svg></div><div class="sp-name">循徑拾光</div><div class="sp-sub">GATHER THE TRAIL</div></div></div>
+<script src="js/splash.js"></script>
 <div id="app">
   <header class="app-header">
     <div class="app-header-inner">

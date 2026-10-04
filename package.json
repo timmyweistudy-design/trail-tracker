@@ -32,6 +32,7 @@
     "@capacitor/ios": "^6.2.1",
     "@capacitor/local-notifications": "^6.1.0",
     "@capacitor/push-notifications": "^6.0.5",
+    "@capacitor/splash-screen": "^6.0.4",
     "@revenuecat/purchases-capacitor": "^9.2.2"
   },
   "devDependencies": {
