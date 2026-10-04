@@ -2258,8 +2258,8 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .ps-box .pr-leg.fr { transform: rotate(var(--aFR, 0deg)); } .ps-box .pr-leg.fr .pr-shin { transform: rotate(var(--bFR, 0deg)); }
 .ps-box .pr-leg.hl { transform: rotate(var(--aHL, 0deg)); } .ps-box .pr-leg.hl .pr-shin { transform: rotate(var(--bHL, 0deg)); }
 .ps-box .pr-leg.hr { transform: rotate(var(--aHR, 0deg)); } .ps-box .pr-leg.hr .pr-shin { transform: rotate(var(--bHR, 0deg)); }
-.ps-box .pr-stand .pr-torso, .ps-box .pr-stand > .pc-tail { translate: 0 var(--gby, 0px); }
-.ps-box .pr-stand .pr-neck { translate: 0 var(--gby, 0px); transform: rotate(var(--nk, 0deg)); transition: transform .38s cubic-bezier(.3,.7,.4,1); }
+.ps-box.standing .pr-stand { translate: 0 var(--gby, 0px); }   /* 整個站姿身體一起下沉（腿的膝蓋由 IK 彎曲把腳留在地面） */
+.ps-box .pr-stand .pr-neck { transform: rotate(var(--nk, 0deg)); transition: transform .38s cubic-bezier(.3,.7,.4,1); }
 .ps-box .pr-stand > .pc-tail { animation: none; transform: rotate(var(--gtr, 0deg)); }
 .ps-box .pr-stand .pr-head2 .pr-head { transition: none; }
 /* 站著低頭吃：脖子往下轉、頭反過來轉回去（臉朝著食物，不會整顆頭歪掉） */

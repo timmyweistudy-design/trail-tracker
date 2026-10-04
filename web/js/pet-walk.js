@@ -14,8 +14,8 @@ window.PetWalk = (function () {
     0: { mode: "rock", v: 86, D: 30, bob: 3, roll: 15 },                                      // 蛋：左右搖著滾過去
     1: { mode: "crawl", v: 60, D: 30, bob: 0, roll: 0, head: 0 },                          // 幼蟲：蠕動（收縮波從尾巴往頭傳）
     2: { mode: "fly", v: 140, D: 38, bob: 9, roll: 0, bank: 9 },                               // 蝶：一拍一升的小弧線、轉彎時內傾
-    3: { mode: "stand", v: 135, swing: 24, knee: 34, duty: .62, bob: 3, tail: 10, ear: 6, neck: 3.5, legL: 54 },   // 狐：站起來輕快地走（側身四條腿）
-    4: { mode: "stand", v: 104, swing: 21, knee: 40, duty: .66, bob: 4.5, tail: 8, ear: 3, neck: -1.2, legL: 52 }, // 虎：慢、沉、腳抬高、頭穩（貓科頭幾乎不動）
+    3: { mode: "stand", v: 135, stride: 36, lift: 10, sink: 4, duty: .62, bob: 2, tail: 10, ear: 6, neck: 3.5, legL: 58 },   // 狐：站起來輕快地走（側身四條腿）
+    4: { mode: "stand", v: 104, stride: 32, lift: 13, sink: 4.5, duty: .66, bob: 3, tail: 8, ear: 3, neck: -1.2, legL: 56 }, // 虎：慢、沉、腳抬高、頭穩（貓科頭幾乎不動）
     5: { mode: "waddle", v: 78, D: 28, bob: 4.5, roll: 7, lift: 11, duty: .56, tail: 12, ear: 6, head: 2.4 },        // 幼龍：短腿搖搖擺擺
     6: { mode: "swim", v: 125, D: 70, bob: 3, roll: 1.5, tail: 8, head: 1.5 },                 // 神龍：在雲上游
   };
@@ -63,33 +63,119 @@ window.PetWalk = (function () {
       applyField(box, (x, y) => { const a = (1.2 + 6 * Math.max(0, Math.min(1, (x - 84) / 110))) * s; return [x, y + a * Math.sin(Math.PI * 2 * (x / 70 - ph))]; });
     }
   }
-  const set = (box, k, v) => box.style.setProperty(k, v);
-  const critterPx = box => { const c = box.querySelector("#petEmoji .pet-critter"); return c ? c.getBoundingClientRect().width || 168 : 168; };
+  // 走路的變數寫在角色自己的容器（#petEmoji）上：寫在 .ps-box 會讓整個舞台（風景、粒子）每一格都重算樣式——
+  // 實測 4 倍降速時狐狸掉到 27fps。位置（--wx）、轉身（--face）影子和道具也要用，留在 .ps-box
+  const BOXV = new Set(["--wx", "--wy", "--face"]);
+  // 效能：走路時每一格的值直接寫到「會動的那幾個元素」的 style 上（不用繼承的 CSS 變數）——
+  // 改繼承變數會讓整個角色的所有子元素都重算樣式（34 KB 的 SVG，4 倍降速時一格要 30ms 以上）。
+  // set() 先把值收進 box.__gv，pose() 結尾一次寫到元素上；位置（--wx）也直接寫到角色、影子、道具。
+  const set = (box, k, v) => { if (BOXV.has(k)) { box.style.setProperty(k, v); return; } (box.__gv || (box.__gv = {}))[k] = v; };
+  const ELS = new WeakMap();
+  function els(box) {
+    let o = ELS.get(box); const em = box.querySelector("#petEmoji");
+    if (o && o.em === em) return o;
+    const q = sel => em ? em.querySelector(sel) : null, st = q(".pr-stand");
+    o = { em, critter: q(".pet-critter"), shadow: box.querySelector(".pet-shadow"), prop: q(".pet-prop"),
+      body: q(".pc-bob") || q(".pc-hover"), head: em ? [...em.querySelectorAll(".pr-head")].find(h => !h.closest(".pr-stand")) : null, tail: em ? [...em.querySelectorAll(".pc-tail")].find(t => !t.closest(".pr-stand")) : null,
+      earL: em ? [...em.querySelectorAll(".pc-ear.l")].find(e => !e.closest(".pr-stand")) : null, earR: em ? [...em.querySelectorAll(".pc-ear.r")].find(e => !e.closest(".pr-stand")) : null,
+      pawL: q(".pr-paw.l"), pawR: q(".pr-paw.r"), footL: q(".pr-foot.l"), footR: q(".pr-foot.r"),
+      stand: st, neck: st && st.querySelector(".pr-neck"), head2: st && st.querySelector(".pr-head2 .pr-head"), stail: st && st.querySelector(":scope > .pc-tail"),
+      legs: st ? Object.fromEntries(["fl", "fr", "hl", "hr"].map(n => { const lg = st.querySelector(".pr-leg." + n); return [n, [lg, lg && lg.querySelector(".pr-shin")]]; })) : {} };
+    ELS.set(box, o); return o;
+  }
+  function flush(box) {
+    const v = box.__gv; if (!v) return; box.__gv = null;
+    const E = els(box), g = k => v[k] || "0px", d = k => v[k] || "0deg", T = (el, t) => { if (el) el.style.transform = t; };
+    if (box.classList.contains("standing") && E.stand) {
+      E.stand.style.translate = `0 ${g("--gby")}`;
+      for (const n of ["fl", "fr", "hl", "hr"]) { const [lg, sh] = E.legs[n] || []; const N = n.toUpperCase(); T(lg, `rotate(${d("--a" + N)})`); T(sh, `rotate(${d("--b" + N)})`); }
+      if (v["--nk"] != null) { T(E.neck, `rotate(${v["--nk"]})`); T(E.head2, `rotate(calc(${v["--nk"]} * -.55))`); }
+      T(E.stail, `rotate(${d("--gtr")})`);
+      return;
+    }
+    if (E.body) { E.body.style.animation = "none"; T(E.body, `translate(${g("--gsx")}, ${g("--gby")}) rotate(${d("--gbr")})`); E.body.style.scale = v["--gpre"] && v["--gpre"] !== "0" ? `1.03 .93` : ""; }
+    T(E.head, `translateY(${g("--ghy")}) rotate(${d("--ghr")})`);
+    if (E.tail) { E.tail.style.animation = "none"; T(E.tail, `rotate(${d("--gtr")})`); }
+    if (E.earL) { E.earL.style.animation = "none"; T(E.earL, `rotate(${d("--gear")})`); }
+    if (E.earR) { E.earR.style.animation = "none"; T(E.earR, `rotate(calc(${d("--gear")} * -1))`); }
+    T(E.pawL, `translate(${g("--pLx")}, ${g("--pLy")}) rotate(${d("--pLr")})`); T(E.pawR, `translate(${g("--pRx")}, ${g("--pRy")}) rotate(${d("--pRr")})`);
+    T(E.footL, `translate(${g("--hLx")}, ${g("--hLy")})`); T(E.footR, `translate(${g("--hRx")}, ${g("--hRy")})`);
+  }
+  function moveTo(box, x) {   // 位置直接寫到角色、影子、幼龍的雲（不用 .ps-box 上的變數，免得整個舞台每格重算）
+    const E = els(box), px = x.toFixed(2) + "px";
+    if (E.critter) E.critter.style.translate = `${px} var(--wy, 0px)`;
+    if (E.shadow) E.shadow.style.translate = `${px} 0`;
+    if (E.prop && +box.dataset.stage === 5) E.prop.style.translate = `calc(-50% + ${px}) 0`;
+    box.__wx = x;
+  }
+  const GAITV = ["--gby", "--gbr", "--gs", "--gsx", "--gpre", "--ghy", "--ghr", "--gtr", "--gear", "--gwave", "--pLx", "--pLy", "--pLr", "--pRx", "--pRy", "--pRr", "--hLx", "--hLy", "--hRx", "--hRy", "--aHL", "--bHL", "--aFL", "--bFL", "--aHR", "--bHR", "--aFR", "--bFR", "--nk"];
+  const clearGait = box => {
+    const em = box.querySelector("#petEmoji"); if (em) GAITV.forEach(k => em.style.removeProperty(k));
+    box.__gv = null; const E = ELS.get(box); if (!E) return;
+    [E.body, E.head, E.tail, E.earL, E.earR, E.pawL, E.pawR, E.footL, E.footR, E.neck, E.head2, E.stail, ...Object.values(E.legs || {}).flat()].forEach(el => { if (el) { el.style.transform = ""; el.style.animation = ""; el.style.scale = ""; } });
+    if (E.stand) E.stand.style.translate = "";
+  };
+  // 角色的版面寬度（px）：用 clientWidth，不能用 getBoundingClientRect——轉身（rotateY）時畫面上的寬度會變窄，步幅就會算錯
+  const critterPx = box => { const c = box.querySelector("#petEmoji .pet-critter"); return c ? (c.clientWidth || c.getBoundingClientRect().width || 168) : 168; };
+  // 每條腿的長度（髖→膝、膝→腳掌著地點），從骨架讀一次記起來
+  const GEO = new WeakMap(), PREVB = new WeakMap();
+  function legGeo(box) {
+    const st = box.querySelector("#petEmoji .pr-stand"); if (!st) return {};
+    if (GEO.has(st)) return GEO.get(st);
+    const o = {};
+    st.querySelectorAll(".pr-leg").forEach(lg => {
+      const n = ["fl", "fr", "hl", "hr"].find(k => lg.classList.contains(k)), sh = lg.querySelector(".pr-shin");
+      const hy = parseFloat(lg.style.getPropertyValue("--oy")), ky = parseFloat(sh.style.getPropertyValue("--oy"));
+      const pw = [...sh.querySelectorAll("ellipse")].find(e => !e.closest("clipPath") && !e.closest("defs"));
+      const hx = parseFloat(lg.style.getPropertyValue("--ox"));
+      if (n && pw) o[n] = [ky - hy, +pw.getAttribute("cy") + +pw.getAttribute("ry") - ky, +pw.getAttribute("cx") - hx];   // [大腿長, 小腿到著地點的垂直長, 著地點的水平偏移]
+    });
+    GEO.set(st, o); return o;
+  }
   // 站姿走路的步伐長度：腳在支撐期掃過的距離＝2·腿長·sin(擺角)，換成 px（u＝SVG 單位／px）
-  const strideD = (box, g) => (2 * g.legL * Math.sin(g.swing * Math.PI / 180) / g.duty) * critterPx(box) / 200;
+  const strideD = (box, g) => (g.stride / g.duty) * critterPx(box) / 200;   // 一個步伐週期身體走多遠（支撐期剛好走一個步幅）
   function pose(box, g, p, s, dir) {   // p＝步伐相位（可以超過 1）、s＝走路的程度 0..1（起步／停下時漸變）、dir＝±1
     const TAU = Math.PI * 2, f = x => (x % 1 + 1) % 1, u = 200 / critterPx(box);
-    if (g.mode === "stand") {   // 側身四條腿：橫向步序 左後 → 左前 → 右後 → 右前；擺動期膝蓋彎、支撐期腳在地上不動
-      const legA = (off, front) => {
-        const ph = f(p + off), duty = g.duty;
-        if (ph < duty) { const k = ph / duty; return [g.swing * (1 - 2 * k) * s, -4 * Math.sin(Math.PI * k) * s]; }   // 支撐：往前→往後（身體走過去）
-        const k = (ph - duty) / (1 - duty), e = k * k * (3 - 2 * k);
-        return [g.swing * (-1 + 2 * e) * s, -(front ? g.knee : g.knee * .8) * Math.sin(Math.PI * k) * s];   // 擺動：膝蓋往後彎、往前跨
-      };
-      const [aHL, bHL] = legA(0, false), [aFL, bFL] = legA(.25, true), [aHR, bHR] = legA(.5, false), [aFR, bFR] = legA(.75, true);
-      [["--aHL", aHL], ["--bHL", bHL], ["--aFL", aFL], ["--bFL", bFL], ["--aHR", aHR], ["--bHR", bHR], ["--aFR", aFR], ["--bFR", bFR]].forEach(([k, v]) => set(box, k, v.toFixed(1) + "deg"));
+    if (g.mode === "stand") {   // 側身四條腿：橫向步序 左後 → 左前 → 右後 → 右前
+      // 兩節腿的反向運動學（IK）：每條腿有一個「腳掌目標點」——
+      //   支撐期：目標是地上固定的一點，在身體座標裡剛好以身體前進的速度往後退（腳完全不滑）
+      //   擺動期：目標從離地點沿一條抬高的弧線跑到下一個落地點
+      // 每一格用餘弦定理解出大腿與膝蓋的角度讓腳掌剛好到目標；前腳膝蓋往前、後腳跗關節往後（像真的四足動物）
+      const R = Math.PI / 180, geo = legGeo(box), S = g.stride, duty = g.duty;
       const contact = .5 + .5 * Math.cos(TAU * 2 * p);
-      set(box, "--gby", (g.bob * contact * s).toFixed(2) + "px");
+      const sink = (g.sink + g.bob * contact) * s;   // 身體下沉：平常就微蹲（腳才搆得到步幅兩端），著地那一刻再沉一點
+      const legs = [[0, false, "hl"], [.25, true, "fl"], [.5, false, "hr"], [.75, true, "fr"]].map(([off, front, n]) => {
+        const G = geo[n] || [g.legL * .5, g.legL * .5, 0], L1 = G[0], dx = G[2], L2 = G[1], Rr = Math.hypot(dx, L2), dd = Math.atan2(-dx, L2);
+        const ph = f(p + off);
+        let u, lift = 0;   // u＝腳掌在髖關節前方多少（SVG 單位，往前為正）
+        if (ph < duty) { const k = ph / duty; u = (S / 2 - S * k) * s; }
+        else { const k = (ph - duty) / (1 - duty), e = k * k * (3 - 2 * k); u = (-S / 2 + S * e) * s; lift = (front ? g.lift : g.lift * .85) * Math.sin(Math.PI * k) * s; }
+        // 目標（相對髖關節，畫面座標：往前＝−x、往下＝+y）
+        const tx = -u, ty = L1 + L2 - sink - lift;
+        let d = Math.hypot(tx, ty); d = Math.min(d, L1 + Rr - .01);
+        const thT = Math.atan2(-tx, ty) / R;   // 目標相對「正下方」的角度（往前為正）
+        const al = Math.acos(Math.max(-1, Math.min(1, (L1 * L1 + d * d - Rr * Rr) / (2 * L1 * d)))) / R;
+        const a = front ? thT + al : thT - al;   // 前腳膝蓋往前凸、後腳往後凸
+        const kx = -L1 * Math.sin(a * R), ky = L1 * Math.cos(a * R);   // 膝蓋位置
+        const phi = (Math.atan2(-(tx - kx), ty - ky) - dd) / R;   // 小腿要轉多少，(dx, L2) 才會從膝蓋指到目標
+        return { n, a, b: phi - a };
+      });
+      const [HL, FL, HR, FR] = legs;
+      set(box, "--gby", sink.toFixed(2) + "px");
+      [["--aHL", HL.a], ["--bHL", HL.b], ["--aFL", FL.a], ["--bFL", FL.b], ["--aHR", HR.a], ["--bHR", HR.b], ["--aFR", FR.a], ["--bFR", FR.b]].forEach(([k, v]) => set(box, k, v.toFixed(2) + "deg"));
       set(box, "--nk", (g.neck * Math.cos(TAU * 2 * (p - .08)) * s).toFixed(2) + "deg");   // 頭跟著步伐點（虎是反向補償，頭幾乎不動）
       set(box, "--gtr", (g.tail * Math.sin(TAU * (p + .25)) * s).toFixed(2) + "deg");
       set(box, "--gear", (g.ear * Math.cos(TAU * 2 * (p - .12)) * s).toFixed(2) + "deg");
+      flush(box);
       return;
     }
     const contact = .5 + .5 * Math.cos(TAU * 2 * p);                      // 1＝著地下沉、0＝抬高（每週期兩次）
     let by = (g.bob || 0) * contact * s, br = (g.roll || 0) * Math.sin(TAU * p) * s;
     // 腳：兩組相差半拍（四足的前後各一組也錯開 1/4，形成背上往前傳的起伏）
     const leg = (off, lift) => {
-      const ph = f(p + off), duty = g.duty || .6, S = (g.D * duty) * u;     // 支撐期身體走 D*duty，腳要往後退一樣多
+      // 支撐期身體走 D*duty，腳要往後退一樣多（在畫面上）。腳在角色座標裡移 1 單位、畫面上實際移多少 px，
+      // 每次起步時量一次（轉身、透視、縮放都算進去了）：box.__k
+      const ph = f(p + off), duty = g.duty || .6, S = (g.D * duty) / (box.__k || 1 / u);
       if (ph < duty) { const k = ph / duty; return { x: dir * S * (.5 - k) * s, y: 0, r: -dir * 6 * (.5 - k) * s }; }
       const k = (ph - duty) / (1 - duty), e = k * k * (3 - 2 * k);
       return { x: dir * S * (-.5 + e) * s, y: -(lift || g.lift || 6) * Math.sin(Math.PI * k) * s, r: dir * 10 * Math.sin(Math.PI * k) * s };
@@ -115,11 +201,27 @@ window.PetWalk = (function () {
     if (g.mode === "fly") { by = -(g.bob) * Math.abs(Math.sin(Math.PI * 2 * p)) * s; br = dir * (g.bank) * s; }
     if (g.mode === "crawl") { set(box, "--gwave", f(p).toFixed(3)); by = 0; }
     if (g.mode === "swim") { set(box, "--gwave", f(p).toFixed(3)); br = (g.roll) * Math.sin(TAU * p) * s; by = (g.bob) * Math.sin(TAU * p) * s; }
-    if (g.mode === "waddle") br = (g.roll) * Math.sin(TAU * p) * s;
+    if (g.mode === "waddle") {
+      br = (g.roll) * Math.sin(TAU * p) * s;
+      const sr = Math.sin(br * Math.PI / 180) * 18;   // 腳離身體中心 ±18：身體繞腳底中間轉 br 度，左腳上去多少、右腳下去多少
+      set(box, "--hLy", (HL.y - by + sr).toFixed(2) + "px"); set(box, "--hRy", (HR.y - by - sr).toFixed(2) + "px");
+    }
     set(box, "--gby", by.toFixed(2) + "px"); set(box, "--gbr", br.toFixed(2) + "deg"); set(box, "--gs", s.toFixed(3));
+    flush(box);
   }
   function stage(box) { return +box.dataset.stage || 0; }
-  function curX(box) { return parseFloat(box.style.getPropertyValue("--wx")) || 0; }
+  // 量「腳在角色座標裡移 20 單位，畫面上移幾 px」（同一格量完還原，不會閃）
+  function calib(box) {
+    const el = box.querySelector("#petEmoji .pr-foot.l") || box.querySelector("#petEmoji .pr-paw.l"); if (!el) return 0;
+    const isFoot = el.classList.contains("pr-foot"), kx = isFoot ? "--hLx" : "--pLx", ky = isFoot ? "--hLy" : "--pLy";
+    const ox = box.style.getPropertyValue(kx), oy = box.style.getPropertyValue(ky);
+    box.classList.add("no-tr"); set(box, ky, "0px");
+    set(box, kx, "0px"); void el.getBoundingClientRect(); const a = el.getBoundingClientRect().left;
+    set(box, kx, "20px"); const b = el.getBoundingClientRect().left;
+    set(box, kx, ox || "0px"); set(box, ky, oy || "0px"); box.classList.remove("no-tr");
+    const k = Math.abs(b - a) / 20; return k > .2 && k < 5 ? k : 0;
+  }
+  function curX(box) { return box.classList.contains("walking") && box.__wx != null ? box.__wx : (parseFloat(box.style.getPropertyValue("--wx")) || 0); }
   // 轉身（3/4 側面）：dir＝-1 往左、1 往右、0 轉回正面
   async function face(box, dir, ms) {
     const from = parseFloat(box.style.getPropertyValue("--face")) || 0, to = dir * 24, t0 = performance.now(), D = ms || 260;
@@ -133,10 +235,12 @@ window.PetWalk = (function () {
     if (reduce()) { set(box, "--wx", x + "px"); return; }
     if (Math.abs(dist) < 3) { set(box, "--wx", x + "px"); return; }
     box.classList.add("walking"); box.dataset.walk = g.mode;
+    box.__k = 0;   // 起步後（轉完身）再量
     if (g.mode === "stand") { await standUp(box); if (!opts.keepFace) box.classList.toggle("face-r", dir > 0); g = Object.assign({}, g, { D: strideD(box, g) }); }
     else if (!opts.keepFace) await face(box, dir);
     // 預備：往下蹲、往後縮一點
     if (!opts.keepFace) { set(box, "--gpre", "1"); await sleep(150); set(box, "--gpre", "0"); }   // 小碎步不用預備
+    box.__k = g.mode === "stand" ? 0 : calib(box);   // 站姿用 IK（SVG 單位、沒有 3D 轉身），不用量
     const ramp = Math.min(Math.abs(dist) * .35, 26);   // 起步／停下的緩衝距離
     let p = 0, t = performance.now(), done = 0;
     await new Promise(res => {
@@ -146,14 +250,14 @@ window.PetWalk = (function () {
         const ease = Math.min(1, (done + 2) / ramp, (left + 2) / ramp);   // 起步加速、快到時減速
         const v = g.v * (.25 + .75 * ease), ds = Math.min(left, v * dt);
         done += ds; p += ds / g.D;
-        set(box, "--wx", (x0 + dir * done).toFixed(2) + "px");
+        moveTo(box, x0 + dir * done);
         pose(box, g, p, Math.max(.15, ease), dir);
         if (g.mode === "crawl" || g.mode === "swim") field(box, g.mode, ((p % 1) + 1) % 1, Math.max(.15, ease));
         if (left - ds > .2) raf = requestAnimationFrame(step); else res();
       };
       raf = requestAnimationFrame(step);
     });
-    set(box, "--wx", x + "px");   // 停在剛好的位置（迴圈在差 0.2px 內就停）
+    moveTo(box, x);   // 停在剛好的位置（迴圈在差 0.2px 內就停）
     // 收步：身體往前多衝一點再回來（彈簧），腳收回、尾巴再擺一下
     const p1 = p, t1 = performance.now();
     await new Promise(res => {
@@ -161,13 +265,14 @@ window.PetWalk = (function () {
         const k = Math.min(1, (now - t1) / (opts.keepFace ? 160 : 320)), s = (1 - k);
         pose(box, g, p1 + k * .25, s * .6, dir);
         set(box, "--gsx", (dir * 5 * Math.sin(k * Math.PI * 1.6) * (1 - k)).toFixed(2) + "px");   // 往前多衝一點再回來
-        set(box, "--gtr", ((g.tail || 0) * 1.2 * Math.sin(k * Math.PI * 2.4) * (1 - k)).toFixed(2) + "deg");
+        set(box, "--gtr", ((g.tail || 0) * 1.2 * Math.sin(k * Math.PI * 2.4) * (1 - k)).toFixed(2) + "deg"); flush(box);
         if (k < 1) raf = requestAnimationFrame(step); else res();
       };
       raf = requestAnimationFrame(step);
     });
-    set(box, "--gsx", "0px");
     if (g.mode === "crawl" || g.mode === "swim") resetField(box);
+    set(box, "--wx", x + "px"); { const E = els(box); [E.critter, E.shadow, E.prop].forEach(el => { if (el) el.style.translate = ""; }); }
+    clearGait(box);   // 走完就清掉（站著吃東西時脖子角度由 pet-stage.js 寫在 .ps-box，不能被這裡的舊值蓋掉）
     box.classList.remove("walking"); delete box.dataset.walk;
   }
   // 讓「嘴」對準果實：量嘴相對角色中心的位置（已經轉向那一側），走到嘴在果實正上方
@@ -179,20 +284,20 @@ window.PetWalk = (function () {
     // 嘴的位置要用「低頭吃」的姿勢量（低頭時頭會往前／往下移）：同一格套上姿勢、量完拿掉，畫面不會閃
     const hold = ["st-lean"], old = box.style.getPropertyValue("--ex");
     const nk0 = box.style.getPropertyValue("--nk");
-    box.classList.add("no-tr"); box.style.setProperty("--ex", "0"); if (g.mode === "stand") set(box, "--nk", "-70deg"); hold.forEach(k => em.classList.add(k)); void em.offsetWidth;
+    box.classList.add("no-tr"); box.style.setProperty("--ex", "0"); if (g.mode === "stand") box.style.setProperty("--nk", "-70deg"); hold.forEach(k => em.classList.add(k)); void em.offsetWidth;
     const c = em.querySelector(".pet-critter").getBoundingClientRect(), m = (part(box, ".pr-mouth") || part(box, ".pr-head") || em).getBoundingClientRect();
-    hold.forEach(k => em.classList.remove(k)); box.style.setProperty("--ex", old || "0"); if (g.mode === "stand") set(box, "--nk", nk0 || "0deg"); void em.offsetWidth; box.classList.remove("no-tr");
+    hold.forEach(k => em.classList.remove(k)); box.style.setProperty("--ex", old || "0"); if (g.mode === "stand") box.style.setProperty("--nk", nk0 || "0deg"); void em.offsetWidth; box.classList.remove("no-tr");
     let mouthDx = (m.left + m.width / 2) - (c.left + c.width / 2);   // 嘴在角色中心左右多少 px
     if (stage(box) === 0) mouthDx = dir * c.width * .34;              // 蛋：停在果實旁邊（不是壓在上面），晃一下把它吸進去
     if (stage(box) === 5) { const pw = em.querySelector(dir > 0 ? ".pr-paw.r" : ".pr-paw.l"); if (pw) { const q = pw.getBoundingClientRect(); mouthDx = (q.left + q.width / 2) - (c.left + c.width / 2) + dir * 6; } }   // 幼龍：用前爪撿起來
     await goTo(box, Math.round(berryX - mouthDx));
   }
   // 站起來／坐下（狐、虎）：換成側身站姿，坐下時換回正面坐姿、壓一下
-  async function standUp(box) { if (box.classList.contains("standing")) return; set(box, "--nk", "0deg"); box.classList.add("standing"); await sleep(300); }
-  async function sitDown(box) { if (!box.classList.contains("standing")) return; box.classList.remove("standing", "face-r"); ["--aHL", "--bHL", "--aFL", "--bFL", "--aHR", "--bHR", "--aFR", "--bFR", "--nk"].forEach(k => box.style.removeProperty(k)); const em = box.querySelector("#petEmoji"); if (em) { em.classList.add("pb-sit"); await sleep(420); em.classList.remove("pb-sit"); } }
+  async function standUp(box) { if (box.classList.contains("standing")) return; box.style.setProperty("--nk", "0deg"); box.classList.add("standing"); await sleep(300); }
+  async function sitDown(box) { if (!box.classList.contains("standing")) return; box.classList.remove("standing", "face-r"); clearGait(box); box.style.removeProperty("--nk"); const em = box.querySelector("#petEmoji"); if (em) { em.classList.add("pb-sit"); await sleep(420); em.classList.remove("pb-sit"); } }
   async function home(box) { if (!box) return; await goTo(box, 0); await sitDown(box); await face(box, 0, 300); }
-  function stop(box) { cancelAnimationFrame(raf); if (box) { box.classList.remove("walking"); ["--wx", "--face", "--gby", "--gbr"].forEach(k => box.style.removeProperty(k)); } }
+  function stop(box) { cancelAnimationFrame(raf); if (box) { box.classList.remove("walking"); ["--wx", "--face"].forEach(k => box.style.removeProperty(k)); clearGait(box); } }
   // 現在看得到的那一份身體（站著時是 .pr-stand）裡找部位
   const part = (box, sel) => { const em = box.querySelector("#petEmoji"); if (!em) return null; return (box.classList.contains("standing") && em.querySelector(".pr-stand " + sel)) || em.querySelector(sel); };
-  return { goTo, goEat, home, face, stop, standUp, sitDown, part, GAIT };
+  return { goTo, goEat, home, face, stop, standUp, sitDown, part, GAIT, _pose: pose };   // _pose：測試逐相位檢查用
 })();

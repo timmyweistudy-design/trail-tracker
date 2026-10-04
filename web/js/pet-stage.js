@@ -253,7 +253,12 @@ window.PetStage = (function () {
         if (box.classList.contains("standing")) {   // 站著（狐、虎）：試幾個脖子角度，挑嘴最接近果實高度的那個
           const em = emEl(); let best = -62, bd = 1e9;
           box.classList.add("no-tr"); em.classList.add("st-lean");
-          for (const a of [-40, -52, -64, -76, -88, -100]) { box.style.setProperty("--nk", a + "deg"); void em.offsetWidth; const m = PetWalk.part(box, ".pr-mouth").getBoundingClientRect(), br = b.getBoundingClientRect(); const d = Math.abs(br.top + br.height / 2 - (m.top + m.height / 2)); if (d < bd) { bd = d; best = a; } }
+          // 三個角度量嘴的高度、拋物線內插出最接近的角度（以前試 6 個角度＝6 次強制排版，4 倍降速時卡 150ms）
+          const dyAt = a => { box.style.setProperty("--nk", a + "deg"); void em.offsetWidth; const m = PetWalk.part(box, ".pr-mouth").getBoundingClientRect(), br = b.getBoundingClientRect(); return br.top + br.height / 2 - (m.top + m.height / 2); };
+          const A0 = -45, A1 = -72, A2 = -100, y0 = dyAt(A0), y1 = dyAt(A1), y2 = dyAt(A2);
+          const lin = (ya, yb, aa, ab) => (ya === yb ? aa : aa + (0 - ya) * (ab - aa) / (yb - ya));
+          best = y1 <= 0 ? lin(y0, y1, A0, A1) : lin(y1, y2, A1, A2);   // 嘴高度隨角度大致單調：在跨過 0 的那一段內插
+          best = Math.max(-105, Math.min(-35, Math.round(best))); bd = 0;
           // 用選好的角度再量一次嘴的左右位置：差超過 5px 就小碎步挪過去（真的動物也會這樣調整）
           box.style.setProperty("--nk", best + "deg"); void em.offsetWidth;
           const mm = PetWalk.part(box, ".pr-mouth").getBoundingClientRect(), bb = b.getBoundingClientRect(), dx = (bb.left + bb.width / 2) - (mm.left + mm.width / 2);
