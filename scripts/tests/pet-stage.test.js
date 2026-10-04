@@ -201,6 +201,15 @@ const KM=[0,5,20,40,90,150,260];
  ok(r.same&&r.distinct>=3,"same trail → same card; different trails vary ("+r.distinct+"/6 distinct)");
  await p.close();}
 
+// ── 美工輪 第 2 階段：舞台背景（StageArt） ──
+{const p=await mk({km:40});
+ const r=await p.evaluate(()=>{const bad=[];let n=0,max=0;const t0=performance.now();
+  for(let i=0;i<7;i++)for(const tod of ["dawn","day","dusk","night"])for(const d of [[],["fall","old"],["sea","lake"],["forest"]]){const o=StageArt.scene(i,tod,"autumn",d);n++;const s=o.far+o.mid+o.front;max=Math.max(max,s.length);if(/NaN|undefined/.test(s))bad.push(i+tod+d);}
+  return {n,bad,max,ms:+((performance.now()-t0)/n).toFixed(2)};});
+ ok(r.n===112&&r.bad.length===0,"112 stage scenes, no NaN/undefined "+JSON.stringify(r.bad.slice(0,3)));
+ ok(r.max<60000&&r.ms<10,"stage scene size & speed budget (max "+r.max+" chars, "+r.ms+" ms)");
+ await p.close();}
+
 // ── debug 面板：夥伴舞台與旅行 ──
 {const p=await mk({km:40});
  await p.evaluate(()=>ensureScript("js/debug.js"));await p.waitForTimeout(300);

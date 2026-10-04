@@ -1840,9 +1840,6 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .ps-fx { z-index: 1; inset: 0; overflow: hidden; translate: none; }
 .ps-actor { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; text-align: center; translate: calc(var(--px) * var(--d) * -16px) calc(var(--py) * var(--d) * -7px); }
 .ps-front { z-index: 3; }
-.ps-f1 { fill: var(--f1); } .ps-f2 { fill: var(--f2); } .ps-m { fill: var(--m); } .ps-m2 { fill: var(--m2); } .ps-g { fill: var(--g); } .ps-fr { fill: var(--fr); }
-.ps-rock { fill: var(--rock); } .ps-rock2 { fill: var(--rock2); } .ps-mist { fill: var(--mist); } .ps-cloud { fill: var(--cloud); } .ps-cloud2 { fill: var(--cloud); opacity: .7; } .ps-skycloud { fill: var(--cloud); opacity: .8; }
-.ps-fern { fill: var(--fr); } .ps-trunk { fill: var(--trunk, #5b4431); } .ps-box[data-tod="night"] { --trunk: #2b2620; } .ps-box[data-tod="dusk"] { --trunk: #4a3830; } .ps-leaf { fill: #b5742e; } .ps-nest { fill: #6b4a2a; } .ps-twig { stroke: #8a6236; } .ps-stem { stroke: var(--m); }
 .ps-moonbite { fill: var(--sky1); }
 .ps-star { fill: #f3f0d8; transform-box: fill-box; transform-origin: center; animation: psTw 3.2s ease-in-out infinite; }
 @keyframes psTw { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
@@ -1914,12 +1911,8 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 @keyframes evoBurst { 0% { opacity: 0; transform: rotate(var(--a)) translateX(0) scale(.4); } 15% { opacity: 1; } 100% { opacity: 0; transform: rotate(var(--a)) translateX(150px) scale(1); } }
 @media (prefers-reduced-motion: reduce) { .evolve-rays { animation: none; opacity: .6; } .evolve-burst { display: none; } }
 /* 棲地裝飾（走過的步道主題） */
-.ps-box { --sea: #6fb5d8; --water: #e9f6fb; }
-.ps-box[data-tod="dusk"] { --sea: #b07a8e; --water: #f6dcd0; } .ps-box[data-tod="night"] { --sea: #23405e; --water: #8fa9c6; }
-.ps-sea, .ps-lake { fill: var(--sea); } .ps-glint { stroke: var(--water); opacity: .8; } .ps-cliff { fill: var(--rock2); }
-.ps-water { fill: var(--water); opacity: .85; } .ps-fallw { stroke: #fff; opacity: .7; stroke-dasharray: 14 10; animation: psFallW 1s linear infinite; }
-.ps-box[data-tod="night"] .ps-water { opacity: .45; } .ps-box[data-tod="night"] .ps-fallw { opacity: .35; } .ps-splash { fill: var(--water); opacity: .7; }
-.ps-steps path { fill: #b9a684; } .ps-box[data-tod="night"] .ps-steps path { fill: #5b5648; }
+/* 走過的風景裝飾：顏色由 stage-art.js 依時段直接給；這裡只留瀑布亮線的流動 */
+.ps-fallw { stroke-dasharray: 14 10; animation: psFallW 1s linear infinite; }
 @keyframes psFallW { to { stroke-dashoffset: -24; } }
 @media (prefers-reduced-motion: reduce) { .ps-fallw { animation: none; } }
 /* 夥伴的旅行（pet-journey.js，PRO） */
