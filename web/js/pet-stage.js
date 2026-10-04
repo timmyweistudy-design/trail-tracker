@@ -179,22 +179,53 @@ window.PetStage = (function () {
     return flash(kind === "hug" ? "pb-hug" : kind === "tickle" ? "pb-tickle" : "pb-pat", kind === "hug" ? 1000 : 800);
   }
 
-  // ── 餵食：果實從天上掉在角色腳前 → 低頭看 → 原地吃三口 → 跳一下。回傳播完的 promise ──
+  // ── 餵食（2026-10-04 改）：一次扣三顆，就掉三顆——隨機落在腳邊（彼此分開、各自大小／角度／落下高度不同），
+  // 夥伴一顆一顆轉頭看、咬一口（果實被吸到嘴邊縮小），餵食鈕上的果實數跟著一顆一顆減；三顆吃完再用自己那一種方式慶祝（跳、撲、挺胸…）。
+  // 蛋不會吃：晃一下把果實「吸」進去。減少動態效果或舞台不在畫面上時，pet.js 直接結算。回傳播完的 promise
+  function dropSpots(n) {
+    const out = [];
+    for (let tries = 0; out.length < n && tries < 60; tries++) {
+      const x = Math.round((Math.random() * 2 - 1) * 84);
+      if (Math.abs(x) < 18 || out.some(o => Math.abs(o - x) < 34)) continue;   // 不要剛好在正中間（被身體擋住）、彼此不要疊在一起
+      out.push(x);
+    }
+    while (out.length < n) out.push([-60, 58, -28][out.length]);   // 保底
+    return out;
+  }
   async function feed(berrySvg) {
     if (!box || reduce() || !visible) return;
     clearTimeout(beat); busy = true;
+    const actor = box.querySelector(".ps-actor"), egg = +box.dataset.stage === 0;
+    const bal = document.querySelector("#petFeed .feed-bal");
+    let left = bal ? +bal.textContent : NaN;
+    const berries = [];
     try {
-      const b = document.createElement("span");
-      b.className = "ps-berry"; b.innerHTML = berrySvg || ""; b.style.setProperty("--bx", 34);
-      box.querySelector(".ps-actor").appendChild(b);
-      box.style.setProperty("--ex", ".5"); box.style.setProperty("--ey", "1");   // 低頭看果實
-      await sleep(750);
-      b.classList.add("eaten");
-      await flash("pb-eat", 1000);
-      b.remove();
+      dropSpots(3).forEach((x, k) => {
+        const b = document.createElement("span");
+        b.className = "ps-berry";
+        b.innerHTML = berrySvg || "";
+        const size = 26 + Math.round(Math.random() * 7), by = 10 + Math.round(Math.random() * 12);
+        b.style.cssText = `--bx:${x};--by:${by}px;--bs:${size}px;--br:${Math.round((Math.random() * 2 - 1) * 22)}deg;--bh:${-(200 + Math.round(Math.random() * 70))}px;animation-delay:${k * 170}ms;z-index:${by < 16 ? 4 : 3}`;
+        actor.appendChild(b); berries.push({ b, x });
+      });
+      box.style.setProperty("--ex", "0"); box.style.setProperty("--ey", "1");   // 低頭看掉下來的果實
+      await sleep(340 + 650 + 120);
+      // 從離自己最近的開始吃
+      berries.sort((a, b) => Math.abs(a.x) - Math.abs(b.x));
+      for (const { b, x } of berries) {
+        if (!box) break;
+        box.style.setProperty("--ex", String(Math.sign(x) * Math.min(1, Math.abs(x) / 60)));   // 轉頭看這一顆
+        await sleep(260);
+        b.style.setProperty("--tx", `${Math.round(-x * .8)}px`);   // 被吸到嘴邊
+        b.classList.add("eaten");
+        await flash(egg ? "pb-absorb" : "pb-bite", egg ? 560 : 520);
+        if (bal && isFinite(left)) { left = Math.max(0, left - 1); bal.textContent = left; bal.classList.remove("tick"); void bal.offsetWidth; bal.classList.add("tick"); }
+        if (typeof ttBuzz === "function") ttBuzz(8);
+        b.remove();
+      }
       if (box) { box.style.setProperty("--ex", "0"); box.style.setProperty("--ey", "0"); }
-      await flash("pb-hop", 1100);
-    } finally { busy = false; if (box) schedule(mood); }
+      await flash("pb-hop", 1300);   // 各自的慶祝（style-features.css 依階段換動作）
+    } finally { berries.forEach(o => o.b.remove()); busy = false; if (box) schedule(mood); }
   }
 
   // ── 天氣：用使用者所在位置（探索頁拿過的）或最後一趟走的步道；拿不到就不畫天氣，絕不在這裡要定位 ──

@@ -95,17 +95,25 @@ const KM=[0,5,20,40,90,150,260];
  ok(h1.hug&&!h1.pat&&h1.day&&h1.aff===a0+2&&/親密/.test(h1.t),"long press → hug, +2 bond once, no pat "+JSON.stringify(h1));
  await p.waitForTimeout(1100);await p.mouse.down();await p.waitForTimeout(750);await p.mouse.up();await p.waitForTimeout(150);
  ok(await p.evaluate(a=>+(localStorage.getItem("tt_pet_aff")||0)===a,h1.aff)&&/^抱抱！$/.test(await p.evaluate(()=>document.getElementById("toast").textContent.trim())),"second hug same day: no extra bond");
- // 餵食：果實掉下來 → 走過去吃 → 結算
+ // 餵食（2026-10-04）：一次扣三顆 → 掉三顆（隨機、彼此分開）→ 一顆一顆吃、餵食鈕上的數字一顆一顆減 → 結算
  await p.evaluate(()=>localStorage.removeItem("tt_pet_fed_t"));await p.evaluate(()=>renderPet());await p.waitForTimeout(300);
  const bal0=await p.evaluate(()=>berriesBalance());
+ const shown0=await p.evaluate(()=>+(document.querySelector("#petFeed .feed-bal")||{}).textContent);
  await p.click("#petFeed");await p.waitForTimeout(350);
- const f1=await p.evaluate(()=>({berry:!!document.querySelector(".ps-box .ps-berry"),dis:document.getElementById("petFeed").disabled}));ok(f1.berry&&f1.dis,"feed: berry drops, button locked "+JSON.stringify(f1));
+ const f1=await p.evaluate(()=>{const bs=[...document.querySelectorAll(".ps-box .ps-berry")].map(b=>+b.style.getPropertyValue("--bx"));return {n:bs.length,xs:bs,minGap:Math.min(...bs.flatMap((a,i)=>bs.slice(i+1).map(b=>Math.abs(a-b)))),dis:document.getElementById("petFeed").disabled};});
+ ok(f1.n===3&&f1.minGap>=34&&f1.dis,"feed: three berries drop at separate random spots, button locked "+JSON.stringify(f1));
  await p.screenshot({path:O+"p2-feed-drop.png"});
- await p.waitForTimeout(800);await p.screenshot({path:O+"p2-feed-eat.png"});
- ok(await p.evaluate(()=>{const c=document.querySelector("#petEmoji .pet-critter").getBoundingClientRect(),b=document.querySelector(".ps-box").getBoundingClientRect();return Math.abs((c.left+c.width/2)-(b.left+b.width/2))<3&&document.querySelector("#petEmoji").classList.contains("pb-eat")}),"feed: eats in place at the centre");
- await p.waitForTimeout(3300);
+ const seq=await p.evaluate(async()=>{const vals=[],c0=document.querySelector("#petEmoji .pet-critter"),b=document.querySelector(".ps-box").getBoundingClientRect();let bite=false,off=0;
+  for(let k=0;k<70;k++){const e=document.querySelector("#petFeed .feed-bal");if(e){const v=+e.textContent;if(vals[vals.length-1]!==v)vals.push(v);}
+   const em=document.querySelector("#petEmoji");if(em&&em.classList.contains("pb-bite")){bite=true;const c=em.querySelector(".pet-critter").getBoundingClientRect();off=Math.max(off,Math.abs((c.left+c.width/2)-(b.left+b.width/2)));}
+   if(!document.querySelector(".ps-berry"))break;await new Promise(r=>setTimeout(r,70));}
+  return {vals,bite,off:+off.toFixed(1)};});
+ await p.screenshot({path:O+"p2-feed-eat.png"});
+ ok(seq.vals.join()===[shown0,shown0-1,shown0-2,shown0-3].join(),"feed: the berry count on the button ticks down one per bite "+JSON.stringify(seq));
+ ok(seq.bite&&seq.off<4,"feed: bites in place at the centre "+JSON.stringify(seq));
+ await p.waitForTimeout(2200);
  const f2=await p.evaluate(()=>({berry:!!document.querySelector(".ps-berry"),bal:berriesBalance(),t:document.getElementById("toast").textContent}));
- ok(!f2.berry&&f2.bal===bal0-3&&/吃得好開心/.test(f2.t),"feed: berry eaten, settled "+JSON.stringify(f2));
+ ok(!f2.berry&&f2.bal===bal0-3&&/吃得好開心/.test(f2.t),"feed: all three eaten, settled (−3) "+JSON.stringify(f2));
  // 進化儀式
  await p.evaluate(()=>celebrateEvolve(PET_STAGES[4],5));await p.waitForTimeout(1700);
  ok(await p.evaluate(()=>!!document.querySelector(".evolve-bg .ps-box.ps-bg[data-stage='4']")&&document.querySelectorAll(".evolve-burst i").length===16&&!!document.querySelector(".evolve-rays")),"evolve: new stage scene + rays + burst");

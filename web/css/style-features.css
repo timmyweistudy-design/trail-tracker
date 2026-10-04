@@ -1908,12 +1908,22 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 @keyframes pbRise { 0%, 100% { transform: none; } 45% { transform: translateY(-18px) rotate(-1.5deg); } }
 @keyframes pbCoil { 0%, 100% { transform: none; } 40% { transform: scale(1.05, .95) rotate(1deg); } 70% { transform: scale(.97, 1.03); } }
 /* 餵食的果實：從舞台上方掉到角色旁邊、彈一下，被吃掉時縮小消失 */
-.ps-berry { position: absolute; left: 50%; bottom: 14px; width: 30px; height: 30px; margin-left: -15px; z-index: 3; pointer-events: none; translate: calc(var(--bx, 0) * 1px) 0; animation: psBerryDrop .65s cubic-bezier(.45, 0, .7, .2) both; }
+.ps-berry { position: absolute; left: 50%; bottom: var(--by, 14px); width: var(--bs, 30px); height: var(--bs, 30px); margin-left: calc(var(--bs, 30px) / -2); z-index: 3; pointer-events: none; translate: calc(var(--bx, 0) * 1px) 0; rotate: var(--br, 0deg); animation: psBerryDrop .65s cubic-bezier(.45, 0, .7, .2) both; }
 .ps-berry svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 3px 3px rgba(0,0,0,.3)); }
-.ps-berry.eaten { animation: psBerryEat 1s ease-in forwards; }
-@keyframes psBerryDrop { 0% { transform: translateY(-240px); opacity: 0; } 15% { opacity: 1; } 78% { transform: translateY(0) scale(1.1, .86); } 90% { transform: translateY(-8px); } 100% { transform: none; } }
-@keyframes psBerryEat { 0% { transform: none; } 30% { transform: scale(.75); } 60% { transform: scale(.45); } 100% { transform: scale(0); opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .ps-box .pc-eye { transition: none; } .ps-berry { display: none; } }
+.ps-berry.eaten { animation: psBerryEat .5s cubic-bezier(.5, 0, .9, .4) forwards; animation-delay: 0s; }
+@keyframes psBerryDrop { 0% { transform: translateY(var(--bh, -240px)); opacity: 0; } 15% { opacity: 1; } 78% { transform: translateY(0) scale(1.12, .84); } 88% { transform: translateY(-9px) scale(.96, 1.05); } 100% { transform: none; } }
+/* 被吸到嘴邊：往角色中間、往上飄、縮小 */
+@keyframes psBerryEat { 0% { transform: none; } 40% { transform: translate(calc(var(--tx, 0px) * .5), -26px) scale(.85); } 100% { transform: translate(var(--tx, 0px), -46px) scale(0); opacity: 0; } }
+/* 咬一口：短的一下（以前三顆一起吃完才咬三下） */
+.ps-box .pb-bite .pet-critter { animation: pbBite .52s ease-in-out; }
+@keyframes pbBite { 0%, 100% { transform: none; } 45% { transform: translateY(4px) scale(1.05, .9); } 70% { transform: scale(.98, 1.03); } }
+.ps-box .pb-absorb .pet-critter { animation: pbRock .56s ease-in-out; transform-origin: 50% 97%; }   /* 蛋：晃一下把果實吸進去 */
+.ps-box .pb-bite .pc-eye, .ps-box .pb-absorb .pc-eye { display: none; }
+.ps-box .pb-bite .pc-eh, .ps-box .pb-absorb .pc-eh { display: inline; }
+/* 餵食鈕上的果實數：每吃一顆跳一下 */
+.feed-bal.tick { animation: feedTick .38s var(--ease-out, ease-out); display: inline-block; }
+@keyframes feedTick { 0% { transform: scale(1); } 35% { transform: scale(1.45); color: #fff3c4; } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .ps-box .pc-eye { transition: none; } .ps-berry { display: none; } .feed-bal.tick { animation: none; } }
 /* 進化儀式：背景用新階段的 2.5D 場景（.ps-bg），壓暗讓角色跳出來；旋轉光芒＋光點在閃光那一刻往外爆 */
 .evolve-bg .ps-box.ps-bg { position: absolute; inset: 0; margin: 0; padding: 0; border-radius: 0; }
 .evolve-bg .ps-box.ps-bg .ps-l { inset: 0; }
