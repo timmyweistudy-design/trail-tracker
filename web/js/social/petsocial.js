@@ -16,7 +16,8 @@ const Pets = (() => {
     const mutual = (fr || []).map(r => r.follower_id).filter(id => following.has(id));
     if (!mutual.length) return [];
     const cols = "id,handle,display_name,avatar_url,pet_name,pet_level,total_km";
-    let { data, error } = await c.from("profiles").select(cols + ",pet_hat,pet_decor").in("id", mutual).limit(100);
+    let { data, error } = await c.from("profiles").select(cols + ",pet_hat,pet_decor,pet_state").in("id", mutual).limit(100);
+    if (error) ({ data, error } = await c.from("profiles").select(cols + ",pet_hat,pet_decor").in("id", mutual).limit(100));   // 還沒跑 phase39
     if (error) ({ data } = await c.from("profiles").select(cols).in("id", mutual).limit(100));   // 還沒跑 phase38
     return data || [];
   }
@@ -118,12 +119,28 @@ const Pets = (() => {
   // 配件、走過的風景照對方同步上來的（phase38）；時段、季節跟著現在（你們在同一個台灣）
   const HAT_OK = id => typeof PET_ART !== "undefined" && PET_ART.HAT_IDS.includes(id);
   const DECOR_OK = ["fall", "sea", "old", "forest", "lake"];
+  // 好友夥伴「當下」的心情：用對方最近一次走路的時間、跟自己夥伴卡同一套規則（pet.js 的 petMood）現在算，
+  // 不存心情本身（存了會過時）；天氣是對方那邊的，超過 3 小時就不用（避免一直顯示早上的雨）
+  const MOOD = [[1, "happy", "剛運動完，活力滿滿！"], [4, "content", "狀態不錯，隨時能出發"], [9, "longing", "有點想念山林了…"], [1e9, "sleepy", "好久沒出門，懶洋洋的"]];
+  function friendMood(st) {
+    const last = st && st.last ? new Date(st.last) : null;
+    if (!last || isNaN(last)) return null;   // 對方還沒同步過狀態（舊版 App）：不亂猜
+    const d = typeof daysSince === "function" ? daysSince(st.last) : Math.floor((Date.now() - last.getTime()) / 864e5);   // 跟對方自己的夥伴卡同一個算法
+    const m = MOOD.find(([n]) => d <= n); return { k: m[1], t: m[2] };
+  }
+  function friendWx(st) {
+    if (!st || !["rain", "snow", "cloud"].includes(st.wx) || !st.wxAt) return "";
+    const at = new Date(st.wxAt.length <= 13 ? st.wxAt + ":00:00Z" : st.wxAt);
+    return Date.now() - at.getTime() < 3 * 3600e3 ? st.wx : "";
+  }
   function scene(p, i) {
     const hat = HAT_OK(p.pet_hat) ? p.pet_hat : "none";
     const decor = String(p.pet_decor || "").split(",").filter(d => DECOR_OK.includes(d)).slice(0, 2);
-    const actor = `<div class="fv-critter">${PET_ART.prop ? PET_ART.prop(i) : ""}${PET_ART.svg(i, "", hat)}</div><div class="pet-shadow"></div>`;
+    const st = p.pet_state && typeof p.pet_state === "object" ? p.pet_state : null, mood = friendMood(st), wx = friendWx(st);
+    const fx = mood && typeof petMoodFx === "function" ? petMoodFx(mood.k) : "";
+    const actor = `${mood ? `<div class="pet-bubble">${esc(T(mood.t))}</div>` : ""}<div class="fv-critter${mood ? ` pet-m-${mood.k}` : ""}">${PET_ART.prop ? PET_ART.prop(i) : ""}${PET_ART.svg(i, "", hat)}${fx}</div><div class="pet-shadow"></div>`;
     if (typeof PetStage === "undefined") return `${PET_ART.habitat(i)}${actor}`;
-    return PetStage.html(i, actor, { decor });
+    return PetStage.html(i, actor, { decor, wx });
   }
   function visit(p, sent, onChange) {
     if (document.querySelector('[data-ov="petvisit"]')) return;

@@ -83,4 +83,20 @@ const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:o.w||390,he
  ok(r.eh,"pat: the friend's pet shows happy ^^ eyes");
  await p.close();}
 
+// 2026-10-04：好友夥伴「當下」的狀態——心情用對方最近一次走路現在算、天氣是對方那邊的（超過 3 小時不用）
+{const p=await mk();
+ const r=await p.evaluate(async()=>{const show=async st=>{document.querySelectorAll('[data-ov="petvisit"]').forEach(e=>e.remove());Pets.visit({id:"s1",handle:"s",pet_level:4,total_km:9,pet_state:st},false,null);await new Promise(r=>setTimeout(r,250));
+   const c=document.querySelector(".fv-critter"),box=document.querySelector(".fv-stage .ps-box"),bub=document.querySelector(".fv-stage .pet-bubble");
+   return {mood:[...c.classList].find(x=>/^pet-m-/.test(x))||"",bubble:bub?bub.textContent:"",wx:box.dataset.wx||"",fx:!!c.querySelector(".pet-fx")};};
+  const H=h=>new Date(Date.now()-h*3600e3).toISOString();
+  return {fresh:await show({last:H(2),wx:"rain",wxAt:H(1).slice(0,13)}),longing:await show({last:H(24*6)}),sleepy:await show({last:H(24*20)}),stale:await show({last:H(2),wx:"rain",wxAt:H(5).slice(0,13)}),none:await show(null)};});
+ ok(r.fresh.mood==="pet-m-happy"&&/活力/.test(r.fresh.bubble)&&r.fresh.wx==="rain"&&r.fresh.fx,"friend just walked + raining there: happy bubble, sparkle, rain on their stage "+JSON.stringify(r.fresh));
+ ok(r.longing.mood==="pet-m-longing"&&r.sleepy.mood==="pet-m-sleepy","mood is worked out now from their last walk (6 days longing, 20 days sleepy) "+JSON.stringify([r.longing,r.sleepy]));
+ ok(r.stale.wx==="","weather older than 3 hours is not shown "+JSON.stringify(r.stale));
+ ok(!r.none.mood&&!r.none.bubble,"friend on an old app version (no state): no guessed mood "+JSON.stringify(r.none));
+ // 我這邊同步上去的狀態
+ const u=await p.evaluate(async()=>{window.__updates=[];await Profiles.syncMyStats("me-sync-test");const x=(window.__updates||[]).find(q=>q.table==="profiles");return x?x.fields:null;});
+ ok(u&&u.pet_state&&"last" in u.pet_state&&"wx" in u.pet_state&&"pet_hat" in u&&"pet_decor" in u,"my sync sends hat, scenery and current state "+JSON.stringify(u));
+ await p.close();}
+
 console.log("ERRS",JSON.stringify(errs));console.log("FAILS",fails);await b.close();srv.kill();})();

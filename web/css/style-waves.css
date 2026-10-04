@@ -814,3 +814,6 @@ html[data-theme="dark"] .trk-weight .link-btn, html[data-theme="dark"] .trk-link
 [data-fs-big] .nr-item .nr-d { flex-basis: 100%; padding-left: 14px; }
 .nr-item .nr-main small { color: var(--ink-faint); font-size: calc(12px * var(--fs, 1)); }
 .nr-item .nr-d { flex: none; font-size: calc(12.5px * var(--fs, 1)); font-weight: 700; color: var(--accent); white-space: nowrap; }
+/* 好友夥伴當下的心情：對話泡＋角色旁的小裝飾（跟自己的夥伴卡一樣） */
+.fv-stage .pet-bubble { margin-bottom: 2px; }
+.fv-critter .pet-fx { top: 4%; right: 6%; }

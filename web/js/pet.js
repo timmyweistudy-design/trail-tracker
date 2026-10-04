@@ -356,7 +356,7 @@ function renderPet() {
   if (typeof PetStage !== "undefined") {
     PetStage.bind(box.querySelector(".ps-box"), mood.k);
     const had = PetStage.cachedWx();
-    PetStage.weather().then(w => { if (w !== had && document.body.dataset.view === "pet" && box.isConnected) renderPet(); });   // 天氣回來了才補畫（之後走快取，不會一直重畫）
+    PetStage.weather().then(w => { if (w !== had && document.body.dataset.view === "pet" && box.isConnected) renderPet(); if (typeof window.syncMyStatsToCloud === "function") window.syncMyStatsToCloud(); });   // 好友看到的天氣、配件跟著更新   // 天氣回來了才補畫（之後走快取，不會一直重畫）
   }
   if (typeof PetJourney !== "undefined") PetJourney.render();   // 夥伴的旅行（PRO：明信片／走過的縣市／地區配件）
   const em = $("#petEmoji");

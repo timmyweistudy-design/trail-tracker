@@ -11,13 +11,18 @@ const Profiles = (() => {
     // 好友拜訪頁要照搬我的夥伴舞台：配件＋舞台上走過的風景（phase38 的兩個欄位）
     const hat = typeof petHat === "function" ? petHat() : "none";
     const decor = typeof PetJourney !== "undefined" && typeof Premium !== "undefined" && Premium.isOn() ? PetJourney.decor().join(",") : "";
-    const sig = [uid, s.name, s.level, s.km, hat, decor].join("|");
+    // 當下的狀態（phase39）：最近一次走路（好友那邊用它算現在的心情）＋這邊的天氣
+    const recs = typeof realRecords === "function" ? realRecords() : [], wx = typeof PetStage !== "undefined" ? PetStage.cachedWx() || "" : "";
+    const state = { last: recs[0] ? recs[0].date : null, wx, wxAt: wx ? new Date().toISOString().slice(0, 13) : null };   // 天氣時間只到「小時」：簽名不會每分鐘都變
+    const sig = [uid, s.name, s.level, s.km, hat, decor, state.last, state.wx, state.wxAt].join("|");
     if (sig === _syncSig && Date.now() - _syncAt < 600000) return;
     _syncSig = sig; _syncAt = Date.now();
     const base = { pet_name: s.name, pet_level: s.level, total_km: s.km };
     try {
-      const { error } = await c.from("profiles").update(Object.assign({ pet_hat: hat === "none" ? null : hat, pet_decor: decor || null }, base)).eq("id", uid);
-      // 資料庫還沒跑 phase38（沒有那兩欄）：退回只寫等級，不要讓整筆同步失敗
+      const scene = { pet_hat: hat === "none" ? null : hat, pet_decor: decor || null };
+      // 資料庫還沒跑 phase39／38（少欄位）：一層層退回，不要讓整筆同步失敗
+      let { error } = await c.from("profiles").update(Object.assign({ pet_state: state }, scene, base)).eq("id", uid);
+      if (error) ({ error } = await c.from("profiles").update(Object.assign({}, scene, base)).eq("id", uid));
       if (error) { const r = await c.from("profiles").update(base).eq("id", uid); if (r.error) _syncSig = ""; }
     } catch (e) { _syncSig = ""; }
   }
