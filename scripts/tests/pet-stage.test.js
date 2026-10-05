@@ -337,7 +337,7 @@ for(const [km,st] of [[5,1],[150,5],[260,6]]){const p=await mk({km});
   em.classList.add("st-lean","st-open");await new Promise(r=>setTimeout(r,600));const h2=em.querySelector(".pc-hat").getBoundingClientRect(),f2=em.querySelector(".pc-bob").getBoundingClientRect(),o=getComputedStyle(em.querySelector(".m-o")).opacity;
   em.classList.remove("st-lean","st-open");return {hatDown:+(h2.top-h.top).toFixed(1),feet:+Math.abs(f2.bottom-f.bottom).toFixed(1),open:o};});
  ok(lean.hatDown>5&&lean.feet<1&&lean.open==="1","leaning: the hat goes down with the head, feet stay, mouth opens "+JSON.stringify(lean));
- const share=await p.evaluate(()=>/\.m-o,\.m-t,\.m-p,\.pr-ext,\.pr-stand,\.pr-front\{display:none\}/.test(decodeURIComponent(PET_ART.dataUri(3,120))));
+ const share=await p.evaluate(()=>/\.m-o,\.m-t,\.m-p,\.pr-ext,\.pr-stand,\.pr-front,\.pr-legs,\.pc-crack2,\.pc-crack3\{display:none\}/.test(decodeURIComponent(PET_ART.dataUri(3,120))));
  ok(share,"share cards (no stylesheet) always draw the closed mouth");
  await p.close();}
 {const p=await mk({km:40,reduce:true});
@@ -362,6 +362,37 @@ for(const [km,st] of [[5,1],[40,3],[90,4],[260,6]]){const p=await mk({km});
  ok(r.moved===0,"stage "+st+": berries on the ground never move while the pet walks ("+r.moved+")");
  ok(r.maxTarget===1,"stage "+st+": exactly one berry is marked as the one being eaten");
  ok(r.turns<=2,"stage "+st+": eats in one sweep, turns around at most twice ("+r.turns+")");
+ await p.close();}
+
+// ── 2026-10-05 蛋、蝶：蛋不走路、果實化成光點飛進裂縫；蝶落在果實旁、腳尖踩地、口器彎過去吸（尖端在果實上） ──
+for(const [km,st] of [[0,0],[20,2]]){const p=await mk({km,berries:20});
+ await p.evaluate(()=>{window.__psNoIdle=true;localStorage.removeItem("tt_pet_fed_t");renderPet();document.querySelector(".ps-box").scrollIntoView({block:"center"});});await p.waitForTimeout(300);await p.click("#petFeed");
+ const r=await p.evaluate(async()=>{const out={xs:[],tips:[],feet:[],sparks:[],sparkGap:[],wx:new Set(),face:0,moved:0};const seen=new Set();let prev=null;const t0=performance.now();
+  while(performance.now()-t0<30000){const box=document.querySelector(".ps-box"),em=document.querySelector("#petEmoji"),bs=[...document.querySelectorAll(".ps-berry")];
+   if(!out.xs.length&&bs.length)out.xs=bs.map(b=>+b.style.getPropertyValue("--bx"));
+   out.wx.add(parseFloat(box.style.getPropertyValue("--wx"))||0);out.face=Math.max(out.face,Math.abs(parseFloat(box.style.getPropertyValue("--face"))||0));
+   if(box.classList.contains("walking")){const pos=bs.filter(b=>!b.classList.contains("sipped")).map(b=>{const q=b.getBoundingClientRect();return Math.round(q.left)+","+Math.round(q.top)});if(prev&&prev.length===pos.length&&pos.some((x,i)=>x!==prev[i]))out.moved++;prev=pos;}else prev=null;
+   const tb=bs.find(b=>b.classList.contains("target"));
+   if(tb&&em.classList.contains("st-sip")&&!seen.has(tb)){seen.add(tb);await new Promise(r=>setTimeout(r,200));
+    const ext=em.querySelector(".pr-ext"),pt=ext.getPointAtLength(ext.getTotalLength()),sp=new DOMPoint(pt.x,pt.y).matrixTransform(ext.getScreenCTM()),q=tb.getBoundingClientRect();out.tips.push(+Math.hypot(sp.x-(q.left+q.width/2),sp.y-(q.top+q.height/2)).toFixed(1));
+    let lo=-1e9;em.querySelectorAll(".pr-legs path").forEach(l=>{const pp=l.getPointAtLength(l.getTotalLength()),s2=new DOMPoint(pp.x,pp.y).matrixTransform(l.getScreenCTM());lo=Math.max(lo,s2.y)});out.feet.push(+(lo-PetWalk.groundY(tb)).toFixed(1));}
+   const mb=bs.find(b=>b.classList.contains("melt"));
+   if(mb&&!seen.has(mb)){seen.add(mb);await new Promise(r=>setTimeout(r,20));const ss=[...document.querySelectorAll(".ps-spark")];out.sparks.push(ss.length);
+    await Promise.all(ss.flatMap(s=>s.getAnimations().map(a=>a.finished.catch(()=>{}))).concat([]));   // 最後一格：光點的位置跟它要去的裂縫
+    }
+   if(!bs.length&&seen.size)break;await new Promise(r=>requestAnimationFrame(r));}
+  out.wx=[...out.wx];return out;});
+ if(st===0){ok(r.xs.length===3&&r.xs.every(x=>Math.abs(x)<=40),"egg: berries land in front of the egg within ±40px "+JSON.stringify(r.xs));
+  ok(r.wx.every(x=>x===0),"egg: does not walk (stays at the centre) "+JSON.stringify(r.wx));
+  ok(r.sparks.length===3&&r.sparks.every(n=>n>=5&&n<=7),"egg: each berry turns into 5–7 sparks flying into the crack "+JSON.stringify(r.sparks));}
+ else{ok(r.tips.length===3&&r.tips.every(d=>d<=6),"butterfly: the proboscis tip reaches the berry (≤6px) "+JSON.stringify(r.tips));
+  ok(r.feet.length===3&&r.feet.every(d=>Math.abs(d)<=3),"butterfly: lands with its leg tips on the ground line (≤3px) "+JSON.stringify(r.feet));
+  ok(r.face<1&&r.moved===0,"butterfly: flies without the 3D turn and never pushes the berries "+JSON.stringify({face:r.face,moved:r.moved}));}
+ await p.close();}
+{const p=await mk({km:2.4});   // 蛋 0→3 km：走到 80%＝三道裂縫
+ const r=await p.evaluate(()=>{const v=c=>getComputedStyle(document.querySelector("#petEmoji "+c)).display!=="none";const a=[document.querySelector(".ps-box").dataset.evo,v(".pc-crack2"),v(".pc-crack3")];
+  localStorage.setItem("tt_debug_km","0.3");renderPet();const b=[document.querySelector(".ps-box").dataset.evo||"",v(".pc-crack2"),v(".pc-crack3")];return {a,b};});
+ ok(r.a.join()==="2,true,true"&&r.b.join()===",false,false","egg: more cracks appear as it gets closer to hatching "+JSON.stringify(r));
  await p.close();}
 
 // ── 2026-10-04 走過去吃：蠕動／游動的身體變形走完要還原；站姿走路要坐回去 ──

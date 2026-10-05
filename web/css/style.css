@@ -871,9 +871,10 @@ body.rec-running.rec-resting #recMap .pm-e .pet-critter, body.rec-running.rec-re
 @keyframes pcblink { 0%,92%,100% { transform: scaleY(1); } 96% { transform: scaleY(.1); } }
 .pc-tail { transform-box: fill-box; transform-origin: 78% 62%; animation: pcwag 2.7s ease-in-out infinite; }
 @keyframes pcwag { 0%,100% { transform: rotate(-6deg); } 50% { transform: rotate(8deg); } }
-.pc-wing { transform-box: fill-box; animation: pcflut 1.1s ease-in-out infinite; }
-.pc-wing.l { transform-origin: 100% 50%; }
-.pc-wing.r { transform-origin: 0% 50%; }
+/* 翅膀（2026-10-05）：前翅、後翅各自從胸口兩側（x=100）往內收；後翅晚 0.18 秒（前翅帶頭）。身體、頭不縮放 */
+.pc-fw, .pc-hw { transform-box: view-box; animation: pcflut 1.1s ease-in-out infinite; }
+.pc-fw { transform-origin: 100px 100px; } .pc-hw { transform-origin: 100px 116px; animation-delay: -.92s; }
+.pr-legs, .pc-crack2, .pc-crack3 { display: none; }
 @keyframes pcflut { 0%,100% { transform: scaleX(1); } 50% { transform: scaleX(.72); } }
 .pc-tw { transform-box: fill-box; transform-origin: center; animation: pctw 2.4s ease-in-out infinite; }
 @keyframes pctw { 0%,100% { opacity: .5; transform: scale(.9); } 50% { opacity: 1; transform: scale(1.12); } }
@@ -882,7 +883,7 @@ body.rec-running.rec-resting #recMap .pm-e .pet-critter, body.rec-running.rec-re
 .pc-sway.r { transform-origin: 0% 8%; }
 @keyframes pcsway { 0%,100% { transform: rotate(-4deg); } 50% { transform: rotate(5deg); } }
 @keyframes petTap { 0% { transform: scale(1); } 35% { transform: scale(1.18) rotate(-6deg); } 70% { transform: scale(.94) rotate(4deg); } 100% { transform: scale(1); } }
-@media (prefers-reduced-motion: reduce) { .pc-bob,.pc-hover,.pc-eye,.pc-tail,.pc-wing,.pc-tw,.pc-sway,.pc-ear,.pet-ff { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .pc-bob,.pc-hover,.pc-eye,.pc-tail,.pc-wing,.pc-fw,.pc-hw,.pc-tw,.pc-sway,.pc-ear,.pet-ff { animation: none !important; } }
 /* A1 表情跟心情：改角色眼睛＋角色旁小裝飾 */
 #petEmoji.pet-m-sleepy .pc-eye, .fv-critter.pet-m-sleepy .pc-eye { transform: scaleY(.28) !important; animation: none !important; }   /* 半瞇不眨＝睏 */
 #petEmoji.pet-m-sleepy .pc-bob, .fv-critter.pet-m-sleepy .pc-bob { animation-duration: 5.4s; }                                        /* 呼吸放慢 */

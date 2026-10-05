@@ -110,6 +110,8 @@ function hatsOwned() {
   if (typeof PetJourney !== "undefined" && typeof Premium !== "undefined" && Premium.isOn()) PetJourney.regionHats().forEach(h => s.add(h));   // 地區配件（PRO）：走過那個地區就有（從紀錄推，不存）
   return s;
 }
+// 蛋上的裂縫數（進化進度 1/3、2/3 各多一道；pet-art.js 的 .pc-crack2/3、CSS 讀 .ps-box[data-evo]）
+const petEvoLv = pct => (pct == null ? 0 : pct >= 67 ? 2 : pct >= 34 ? 1 : 0);
 function petStageIndex(km) { let i = 0; for (let k = 0; k < PET_STAGES.length; k++) if (km >= PET_STAGES[k].km) i = k; return i; }
 function petName() { return localStorage.getItem("tt_pet_name") || ""; }
 function petHat() {   // A5 配件（Premium 裝扮）
@@ -337,7 +339,7 @@ function renderPet() {
       <div id="petEmoji" class="pet-m-${mood.k || "content"}" role="button" tabindex="0" aria-label="${ttT("摸摸")} ${escHtml(nm || ttT(st.n))}">${typeof PET_ART !== "undefined" && PET_ART.prop ? PET_ART.prop(i) : ""}${art}${petMoodFx(mood.k)}</div>
       <div class="pet-shadow"></div>`;
   const stageHtml = (typeof PetStage !== "undefined")
-    ? PetStage.html(i, actorHtml, { wx: PetStage.cachedWx(), decor: typeof PetJourney !== "undefined" ? PetJourney.decor() : [] })
+    ? PetStage.html(i, actorHtml, { evo: next ? petEvoLv(Math.round((km - st.km) / (next.km - st.km) * 100)) : 0, wx: PetStage.cachedWx(), decor: typeof PetJourney !== "undefined" ? PetJourney.decor() : [] })
     : `<div class="pet-habitat">${(typeof PET_ART !== "undefined" && PET_ART.habitat) ? PET_ART.habitat(i) : ""}</div>${actorHtml}`;
   box.innerHTML = `<div class="pet-card${i >= 6 ? " final" : ""}" style="--habitat:${PET_BG[i]}">
     ${stageHtml}
@@ -443,6 +445,7 @@ function petCardUpdate(box, v) {
   // 進化進度
   petSwapText(box.querySelector(".pet-evo-top"), v.evoTop);
   const tr = box.querySelector(".pet-track"); if (tr && v.pct != null) { tr.querySelector("i").style.width = v.pct + "%"; tr.setAttribute("aria-valuenow", v.pct); }
+  const psb = box.querySelector(".ps-box"); if (psb) { const ev = petEvoLv(v.pct); if (ev) psb.dataset.evo = ev; else delete psb.dataset.evo; }   // 餵完長大：蛋上的裂縫當場多一道
   // 活力、親密
   const ms = box.querySelectorAll(".pet-meter");
   if (ms[0]) { ms[0].setAttribute("aria-valuenow", v.en == null ? 0 : v.en); ms[0].querySelector("b").textContent = v.en == null ? "—" : v.en; ms[0].querySelector(".m-en").style.width = (v.en == null ? 0 : v.en) + "%"; }

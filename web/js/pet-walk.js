@@ -86,6 +86,7 @@ window.PetWalk = (function () {
     o = { em, critter: q(".pet-critter"), shadow: box.querySelector(".pet-shadow"), prop: q(".pet-prop"),
       body: q(".pc-bob") || q(".pc-hover"), head: em ? [...em.querySelectorAll(".pr-head")].find(h => !h.closest(".pr-stand")) : null, tail: em ? [...em.querySelectorAll(".pc-tail")].find(t => !t.closest(".pr-stand")) : null,
       earL: em ? [...em.querySelectorAll(".pc-ear.l")].find(e => !e.closest(".pr-stand")) : null, earR: em ? [...em.querySelectorAll(".pc-ear.r")].find(e => !e.closest(".pr-stand")) : null,
+      fw: em ? [...em.querySelectorAll(".pc-fw")] : [], hw: em ? [...em.querySelectorAll(".pc-hw")] : [],
       pawL: q(".pr-paw.l"), pawR: q(".pr-paw.r"), footL: q(".pr-foot.l"), footR: q(".pr-foot.r"),
       stand: st, neck: st && st.querySelector(".pr-neck"), head2: st && st.querySelector(".pr-head2 .pr-head"), h2g: st && st.querySelector(".pr-head2"), stail: st && st.querySelector(":scope > .pc-tail"),
       legs: st ? Object.fromEntries(["fl", "fr", "hl", "hr"].map(n => { const lg = st.querySelector(".pr-leg." + n); return [n, [lg, lg && lg.querySelector(".pr-shin")]]; })) : {} };
@@ -109,21 +110,22 @@ window.PetWalk = (function () {
     if (E.earR) { E.earR.style.animation = "none"; T(E.earR, `rotate(calc(${d("--gear")} * -1))`); }
     T(E.pawL, `translate(${g("--pLx")}, ${g("--pLy")}) rotate(${d("--pLr")})`); T(E.pawR, `translate(${g("--pRx")}, ${g("--pRy")}) rotate(${d("--pRr")})`);
     T(E.footL, `translate(${g("--hLx")}, ${g("--hLy")})`); T(E.footR, `translate(${g("--hRx")}, ${g("--hRy")})`);
+    if (v["--wf"] != null) { E.fw.forEach(el => { el.style.animation = "none"; el.style.transform = `scaleX(${v["--wf"]})`; }); E.hw.forEach(el => { el.style.animation = "none"; el.style.transform = `scaleX(${v["--wh"]})`; }); }   // 蝶：拍翅跟身體起伏同一個相位
   }
   // y＝前後（深度）：果實落在比較靠鏡頭的地方（畫面上比較低）時，往前站一點點，腳底線跟果實在同一個深度
   function moveTo(box, x, y) {   // 位置直接寫到角色、影子、幼龍的雲（不用 .ps-box 上的變數，免得整個舞台每格重算）
     const E = els(box), px = x.toFixed(2) + "px", py = (y == null ? curY(box) : y).toFixed(2) + "px";
     if (E.critter) E.critter.style.translate = `${px} ${py}`;
-    if (E.shadow) E.shadow.style.translate = `${px} ${py}`;
+    if (E.shadow) E.shadow.style.translate = `${px} ${stage(box) === 2 ? "0px" : py}`;   // 蝶在飛：影子留在地上（降落時腳尖才碰到影子那條線）
     if (E.prop && +box.dataset.stage === 5) E.prop.style.translate = `calc(-50% + ${px}) ${py}`;
     box.__wx = x; if (y != null) box.__wy = y;
   }
   const curY = box => (box.__wy != null && box.classList.contains("walking") ? box.__wy : parseFloat(box.style.getPropertyValue("--wy")) || 0);
-  const GAITV = ["--ghx", "--gby", "--gbr", "--gs", "--gsx", "--gpre", "--ghy", "--ghr", "--gtr", "--gear", "--gwave", "--pLx", "--pLy", "--pLr", "--pRx", "--pRy", "--pRr", "--hLx", "--hLy", "--hRx", "--hRy", "--aHL", "--bHL", "--aFL", "--bFL", "--aHR", "--bHR", "--aFR", "--bFR", "--nk", "--gpt"];
+  const GAITV = ["--ghx", "--gby", "--gbr", "--gs", "--gsx", "--gpre", "--ghy", "--ghr", "--gtr", "--gear", "--gwave", "--pLx", "--pLy", "--pLr", "--pRx", "--pRy", "--pRr", "--hLx", "--hLy", "--hRx", "--hRy", "--aHL", "--bHL", "--aFL", "--bFL", "--aHR", "--bHR", "--aFR", "--bFR", "--nk", "--gpt", "--wf", "--wh"];
   const clearGait = box => {
     const em = box.querySelector("#petEmoji"); if (em) GAITV.forEach(k => em.style.removeProperty(k));
     box.__gv = null; const E = ELS.get(box); if (!E) return;
-    [E.body, E.head, E.tail, E.earL, E.earR, E.pawL, E.pawR, E.footL, E.footR, E.neck, E.head2, E.stail, ...Object.values(E.legs || {}).flat()].forEach(el => { if (el) { el.style.transform = ""; el.style.animation = ""; el.style.scale = ""; } });
+    [E.body, E.head, E.tail, E.earL, E.earR, E.pawL, E.pawR, E.footL, E.footR, E.neck, E.head2, E.stail, ...E.fw, ...E.hw, ...Object.values(E.legs || {}).flat()].forEach(el => { if (el) { el.style.transform = ""; el.style.animation = ""; el.style.scale = ""; } });
     if (E.stand && !box.__bow) { E.stand.style.translate = ""; E.stand.style.transform = ""; E.stand.style.transition = ""; }
   };
   // 角色的版面寬度（px）：用 clientWidth，不能用 getBoundingClientRect——轉身（rotateY）時畫面上的寬度會變窄，步幅就會算錯
@@ -212,7 +214,10 @@ window.PetWalk = (function () {
     set(box, "--gear", ((g.ear || 0) * Math.cos(TAU * 2 * (p - .12)) * s).toFixed(2) + "deg");
     // 各種走法的身體
     if (g.mode === "rock") { br = dir * 4 * s + (g.roll) * Math.sin(TAU * p) * s; by = (g.bob) * Math.abs(Math.sin(TAU * p)) * s; }
-    if (g.mode === "fly") { by = -(g.bob) * Math.abs(Math.sin(Math.PI * 2 * p)) * s; br = dir * (g.bank) * s; }
+    if (g.mode === "fly") {   // 一拍一升：翅膀往下拍（收→張）時身體上升、往上收時落下；後翅晚一點跟上
+      by = -(g.bob) * Math.abs(Math.sin(TAU * p)) * s; br = dir * (g.bank) * s;
+      set(box, "--wf", (.7 + .3 * Math.abs(Math.sin(TAU * p))).toFixed(3)); set(box, "--wh", (.7 + .3 * Math.abs(Math.sin(TAU * (p - .05)))).toFixed(3));
+    }
     if (g.mode === "crawl") { set(box, "--gwave", f(p).toFixed(3)); by = 0; }
     if (g.mode === "swim") { set(box, "--gwave", f(p).toFixed(3)); br = (g.roll) * Math.sin(TAU * p) * s; by = (g.bob) * Math.sin(TAU * p) * s; }
     if (g.mode === "waddle") {
@@ -286,11 +291,12 @@ window.PetWalk = (function () {
       const n = Math.max(1, Math.round(Math.abs(dist) / (g.Du / (200 / critterPx(box)))));   // 整數道波
       g = Object.assign({}, g, { D: Math.abs(dist) / n });
     }
-    else if (!opts.keepFace) await face(box, dir);
+    else if (!opts.keepFace && g.mode !== "fly") await face(box, dir);   // 蝶不轉身（正面對稱、靠身體內傾表示方向）：rotateY 會讓量口器位置的 getScreenCTM 不準
     // 預備：往下蹲、往後縮一點
     if (!opts.keepFace && g.mode !== "crawl") { set(box, "--gpre", "1"); await sleep(150); set(box, "--gpre", "0"); }   // 小碎步不用預備；幼蟲的預備就是第一道波
     box.__k = g.mode === "stand" || g.mode === "crawl" ? 0 : calib(box);   // 站姿用 IK（SVG 單位、沒有 3D 轉身），不用量
     const ramp = Math.min(Math.abs(dist) * .35, 26);   // 起步／停下的緩衝距離
+    const arc = g.mode === "fly" ? Math.min(28, Math.abs(dist) * .3) : 0;   // 蝶：飛一道弧線過去（不是貼著直線滑）
     let p = 0, t = performance.now(), done = 0;
     await new Promise(res => {
       const step = now => {
@@ -299,7 +305,8 @@ window.PetWalk = (function () {
         const ease = Math.min(1, (done + 2) / ramp, (left + 2) / ramp);   // 起步加速、快到時減速
         const v = g.v * (.25 + .75 * ease), ds = Math.min(left, v * dt);
         done += ds; p += ds / g.D;
-        moveTo(box, x0 + dir * done, y0 + (y1 - y0) * Math.min(1, done / Math.abs(dist)));
+        const kk = Math.min(1, done / Math.abs(dist));
+        moveTo(box, x0 + dir * done, y0 + (y1 - y0) * (g.mode === "fly" ? kk * kk * (3 - 2 * kk) : kk) - arc * Math.sin(Math.PI * kk));
         pose(box, g, p, Math.max(.15, ease), dir);
         if (g.mode === "crawl") { crawlField(box, Math.min(.99999, p - Math.floor(p)) , 1, g.D * 200 / critterPx(box), rev); flush(box); }   // 波的高度不跟著加減速縮（每一節的位移要剛好抵掉身體的移動，腳才不滑）
         else if (g.mode === "swim") field(box, g.mode, ((p % 1) + 1) % 1, Math.max(.15, ease));
@@ -354,12 +361,18 @@ window.PetWalk = (function () {
       await goTo(box, Math.round(berryX - lvFace(box) * mo), { keepFace: true });
       return;
     }
-    if (st === 0) mouthDx = side * c.width * .34;   // 蛋：停在果實旁邊（不是壓在上面）
+    if (st === 2) {   // 蝶：落在果實旁邊約 30px（口器斜斜伸過去吸），腳尖（圖上 y≈160）剛好踩在果實的那條地面線上
+      const tipY = c.top + c.height * 160 / 200;
+      await goTo(box, Math.round(berryX - side * 30), { wy: Math.round((curY(box) + groundY(berryEl) - tipY) * 10) / 10 });
+      return;
+    }
     if (st === 5) { const pw = em.querySelector(side > 0 ? ".pr-paw.r" : ".pr-paw.l"); if (pw) { const q = pw.getBoundingClientRect(); mouthDx = (q.left + q.width / 2) - (c.left + c.width / 2) + side * 6; } }   // 幼龍：用前爪撿起來
     const tx = Math.round(berryX - mouthDx);
     if (Math.abs(tx - cur) >= 3) await face(box, Math.sign(tx - cur), 200);
     await goTo(box, tx);
   }
+  // 果實那一條地面線（畫面座標）：用版面位置算，不受果實落下／旋轉的動畫影響
+  function groundY(b) { const ar = b.offsetParent.getBoundingClientRect(); return ar.top + b.offsetTop + b.offsetHeight; }
   // ── 低頭吃（狐、虎）：像狗趴下去吃東西——胸口往下（身體以後腳為支點往前傾）、前腳彎、四隻腳掌留在原地 ──
   // 以前只有脖子往下轉，地上的果實搆不到，脖子轉到 -112° 頭整個倒過來。現在：身體前傾 pitch、脖子 nk 轉自然的角度，
   // 每條腿用兩節 IK 解出「腳掌還在原本著地點」的大腿／小腿角度（跟走路同一套公式）
@@ -444,5 +457,5 @@ window.PetWalk = (function () {
   function stop(box) { cancelAnimationFrame(raf); if (box) { box.classList.remove("walking", "pf-front", "pf-x", "pf-y"); setQ(box, 0); ["--wx", "--wy", "--face"].forEach(k => box.style.removeProperty(k)); clearGait(box); } }
   // 現在看得到的那一份身體（站著時是 .pr-stand）裡找部位
   const part = (box, sel) => { const em = box.querySelector("#petEmoji"); if (!em) return null; return (box.classList.contains("standing") && em.querySelector(".pr-stand " + sel)) || em.querySelector(sel); };
-  return { goTo, goEat, home, face, stop, standUp, sitDown, turnStand, setQ, larvaTurn, bend, part, bow, bowSet, bowClear, GAIT, _pose: pose };   // _pose：測試逐相位檢查用
+  return { goTo, goEat, home, face, stop, standUp, sitDown, turnStand, setQ, larvaTurn, bend, part, bow, bowSet, bowClear, groundY, GAIT, _pose: pose };   // _pose：測試逐相位檢查用
 })();

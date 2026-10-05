@@ -126,6 +126,8 @@ window.PET_ART = (function () {
       <path class="pr-glow" d="M72 115 L84 125 L76 133 L90 141" stroke="#ffd98a" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/>
       ${tp(72, 115, 84, 125, 3.4, "#8a6a38")}${tp(84, 125, 76, 133, 3.4, "#8a6a38")}${tp(76, 133, 90, 141, 3.2, "#8a6a38")}
       <path class="pc-d" d="M84 125 l7 -3 M76 133 l-5 2" stroke="#8a6a38" stroke-width="1.6" stroke-linecap="round"/>
+      <g class="pc-crack2"><path class="pr-glow" d="M90 141 L100 136 L108 146" stroke="#ffd98a" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/>${tp(90, 141, 100, 136, 3, "#8a6a38")}${tp(100, 136, 108, 146, 2.8, "#8a6a38")}</g>
+      <g class="pc-crack3"><path class="pr-glow" d="M124 100 L132 114 L125 122 L134 132" stroke="#ffd98a" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/>${tp(124, 100, 132, 114, 3, "#8a6a38")}${tp(132, 114, 125, 122, 3, "#8a6a38")}${tp(125, 122, 134, 132, 2.6, "#8a6a38")}</g>
     </g>
     <g class="pc-tw"><path d="M150 66 l3 9 l9 3 l-9 3 l-3 9 l-3-9 l-9-3 l9-3Z" fill="#ffe6a0"/></g>
     <g class="pc-tw" style="animation-delay:1.1s"><path d="M44 96 l2 6 l6 2 l-6 2 l-2 6 l-2-6 l-6-2 l6-2Z" fill="#ffe6a0"/></g>`;
@@ -160,20 +162,25 @@ window.PET_ART = (function () {
   const BFD = "#2c2522", BFG = "#2fbfa8";
   function bfWings(m) {   // m＝1 右翅、-1 左翅（以 x=100 對稱）
     const X = x => 100 + m * (x - 100), fl = (d) => d.replace(/(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)/g, (_, x, y) => X(+x) + " " + y);
-    return P(Pa(fl("M106 94 Q132 58 170 56 Q180 68 172 84 Q150 106 108 108Z")), BFD, { hl: [X(150), 66, 12, 4], dx: m * 4, dy: 4, sk: .1 }) +
+    // 前翅、後翅分開（2026-10-05）：拍翅時前翅帶頭、後翅晚一點跟上；後翅畫在前翅後面（真的鳳蝶前翅蓋在後翅上）
+    const fore = P(Pa(fl("M106 94 Q132 58 170 56 Q180 68 172 84 Q150 106 108 108Z")), BFD, { hl: [X(150), 66, 12, 4], dx: m * 4, dy: 4, sk: .1 }) +
       `<path class="pc-d2" d="${fl("M108 98 L164 64 M108 101 L170 74 M108 104 L166 86 M108 106 L150 98")}" stroke="#5a4e48" stroke-width="1.2" opacity=".7"/>` +
       `<path d="${fl("M116 98 Q134 84 156 72")}" stroke="${BFG}" stroke-width="10" fill="none" stroke-linecap="round"/>` +
       `<path d="${fl("M118 97 Q134 85 152 75")}" stroke="#a6f0e2" stroke-width="3" fill="none" stroke-linecap="round" opacity=".8"/>` +
-      `<g class="pc-d">${[[160, 62], [168, 70], [170, 80]].map(([x, y]) => `<circle cx="${X(x)}" cy="${y}" r="1.8" fill="#cfe9df"/>`).join("")}</g>` +
-      P(Pa(fl("M108 110 Q138 108 154 124 Q158 140 142 146 L146 172 Q136 178 128 168 L124 148 Q110 140 106 118Z")), BFD, { dx: m * 3, dy: 3, sk: .1 }) +
+      `<g class="pc-d">${[[160, 62], [168, 70], [170, 80]].map(([x, y]) => `<circle cx="${X(x)}" cy="${y}" r="1.8" fill="#cfe9df"/>`).join("")}</g>`;
+    const hind = P(Pa(fl("M108 110 Q138 108 154 124 Q158 140 142 146 L146 172 Q136 178 128 168 L124 148 Q110 140 106 118Z")), BFD, { dx: m * 3, dy: 3, sk: .1 }) +
       P(Pa(fl("M112 116 Q130 112 142 122 Q138 134 124 134 Q114 130 112 116Z")), BFG, { sw: 0, dx: m * 2, dy: 2, sk: .15 }) +
       `<path d="${fl("M146 128 Q150 132 149 137 M144 140 Q146 144 143 148")}" stroke="#e0503c" stroke-width="3" fill="none" stroke-linecap="round"/>` +
       `<circle cx="${X(132)}" cy="156" r="4.4" fill="#4a7fd0"/><circle cx="${X(132)}" cy="156" r="2" fill="#1a1410"/>`;
+    return `<g class="pc-hw">${hind}</g><g class="pc-fw">${fore}</g>`;
   }
+  // 六隻腳（停下來吃的時候才伸出來）：從胸部往外、膝蓋往上彎、腳尖都落在同一條線（y≈160）
+  const BF_LEGS = `<g class="pr-legs" stroke="#2a201a" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round">${[[118, 84, 128, 79, 159], [124, 87, 136, 87, 160], [130, 91, 142, 94, 160]].map(([y0, kx, ky, fx, fy]) => `<path d="M97 ${y0} L${kx} ${ky} L${fx} ${fy}"/><path d="M103 ${y0} L${200 - kx} ${ky} L${200 - fx} ${fy}"/>`).join("")}</g>`;
   const BUTTERFLY = `
     <g class="pc-hover">
       <g class="pc-wing l">${bfWings(-1)}</g>
       <g class="pc-wing r">${bfWings(1)}</g>
+      ${BF_LEGS}
       ${P(E(100, 126, 6.6, 20), "#3a2c24", { hl: [98, 116, 1.6, 5], dx: 2, dy: 2 })}
       <path class="pc-d" d="M94.5 116 h11 M94 124 h12 M94.5 132 h11 M96 140 h8" stroke="#1e1612" stroke-width="1.4" opacity=".7"/>
       ${P(E(100, 100, 9.4, 11), "#4a3a30", { dx: 2, dy: 2 })}
@@ -183,7 +190,7 @@ window.PET_ART = (function () {
       <g class="pr-ant r" style="--ox:106px;--oy:70px">${tp(106, 70, 120, 48, 2.8, "#2a201a", 5)}${P(E(121, 46, 3.4, 5), "#2a201a", { sw: 1.6, dx: 1, dy: 1 })}</g>
       ${P(C(100, 80, 15), "#a07a5a", { hl: [93, 72, 5, 3.2], dx: 3, dy: 3 })}
       <g class="pr-prob" style="--ox:100px;--oy:95px"><path class="pr-curl" d="M100 95 q4 4 0 7 q-3 2 -3 -1" stroke="#2a201a" stroke-width="1.4" fill="none" stroke-linecap="round"/>
-        <path class="pr-ext" d="M100 95 Q101 118 100 142 q-1 4 -3 3" stroke="#2a201a" stroke-width="1.6" fill="none" stroke-linecap="round"/></g>
+        <path class="pr-ext" d="M100 95 Q101 118 100 142 q-1 4 -3 3" stroke="#c49a66" stroke-width="2" fill="none" stroke-linecap="round"/></g>
       ${eyeOf("compound", 92, 80, 5.8, 6.8, -1)}${eyeOf("compound", 108, 80, 5.8, 6.8, 1)}
       ${blush(88, 89, 3, 2)}${blush(112, 89, 3, 2)}
       ${mouth(100, 88, `<path d="M97 88 q3 3 6 0" stroke="#2a1608" stroke-width="1.8" fill="none" stroke-linecap="round"/>`, `<ellipse cx="100" cy="89.4" rx="3" ry="2.4" fill="${MOUTH_IN}"/>`)}
@@ -514,7 +521,7 @@ ${tigerHead()}
   function dataUri(i, size, hatId) {
     const s = size || 120;
     // 圖片裡吃不到 style.css：開心瞇眼要自己藏起來（以前分享圖卡會同時畫出睜眼和 ^^ 眼）；質感細節 .pc-d2 照畫（圖卡夠大）
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 200 200"><style>.pc-eh,.m-o,.m-t,.m-p,.pr-ext,.pr-stand,.pr-front{display:none}</style>${body(i, hatId)}</svg>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 200 200"><style>.pc-eh,.m-o,.m-t,.m-p,.pr-ext,.pr-stand,.pr-front,.pr-legs,.pc-crack2,.pc-crack3{display:none}</style>${body(i, hatId)}</svg>`;
     return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
   }
   function habitatUri(i, w, h) {
