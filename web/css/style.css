@@ -848,7 +848,7 @@ body.rec-running.rec-resting #recMap .pm-e .pet-critter, body.rec-running.rec-re
 /* 角色待機動畫（SVG 內以 part class 對應各部位） */
 /* 骨架（2026-10-04 動作優化）：每個部位繞自己的支點轉（--ox/--oy 是 viewBox 座標，寫在 pet-art.js 的部位上）；
    張嘴、舌頭、鼓起的臉頰、伸直的口器平常藏著，只有 .ps-box 裡的動作會叫出來 */
-.pr-head, .pr-paw, .pr-jaw, .pr-mouth, .pr-nose, .pr-ant, .pr-prob, .m-o, .m-t, .m-p { transform-box: view-box; transform-origin: var(--ox, 100px) var(--oy, 100px); }
+.pr-head, .pr-hfx, .pr-paw, .pr-jaw, .pr-mouth, .pr-nose, .pr-ant, .pr-prob, .m-o, .m-t, .m-p { transform-box: view-box; transform-origin: var(--ox, 100px) var(--oy, 100px); }
 .m-o, .m-t, .m-p, .pr-ext { opacity: 0; }
 .pr-stand, .pr-front { display: none; }   /* 站姿／正面站姿（.pr-front：坐↔走之間的橋）（狐、虎走路時）：只有夥伴卡走路時才出現 */
 .pr-leg, .pr-shin, .pr-neck, .pr-torso { transform-box: view-box; transform-origin: var(--ox, 100px) var(--oy, 100px); }

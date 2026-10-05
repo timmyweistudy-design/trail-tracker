@@ -303,7 +303,7 @@ window.PetStage = (function () {
   let feeding = false;
   async function feed(berrySvg) {
     if (!box || reduce() || !visible || feeding) return;   // 正在吃就不再開一輪（餵食鈕本來就會鎖住＋8 小時冷卻；測試面板連按才會進來）
-    clearTimeout(beat); busy = true; feeding = true;
+    clearTimeout(beat); busy = true; feeding = true; box.classList.add("feeding");
     const actor = box.querySelector(".ps-actor"), stg = +box.dataset.stage, egg = stg === 0, fly = stg === 2;
     const bal = document.querySelector("#petFeed .feed-bal");
     let left = bal ? +bal.textContent : NaN;
@@ -429,7 +429,7 @@ window.PetStage = (function () {
       if (onCloud && W && box) { box.__riders = null; await PetWalk.goTo(box, -40); }   // 神龍：吃飽在雲上游一小段（身體走頭走過的路、雲座晚一點跟上）
       if (W && box) await PetWalk.home(box);                          // 走回中間
       await flash("pb-hop", 1300);   // 各自的慶祝（style-features.css 依階段換動作）
-    } finally { berries.forEach(o => o.b.remove()); cls(false, "st-lean", "st-open", "st-sip", "st-land", "st-glow", "st-tilt-l", "st-tilt-r"); resetProboscis(); if (box) { box.__riders = null; if (box.__phi && typeof PetWalk !== "undefined") PetWalk.tailTo(box, null, 1); box.style.removeProperty("--ld"); box.style.removeProperty("--lx"); if (typeof PetWalk !== "undefined" && (reduce() || aborted)) { PetWalk.stop(box); box.classList.remove("standing", "face-r"); } } feeding = false; busy = false; if (box) schedule(mood); }
+    } finally { berries.forEach(o => o.b.remove()); cls(false, "st-lean", "st-open", "st-sip", "st-land", "st-glow", "st-tilt-l", "st-tilt-r"); resetProboscis(); if (box) { box.__riders = null; if (box.__phi && typeof PetWalk !== "undefined") PetWalk.tailTo(box, null, 1); box.style.removeProperty("--ld"); box.style.removeProperty("--lx"); if (typeof PetWalk !== "undefined" && (reduce() || aborted)) { PetWalk.stop(box); box.classList.remove("standing", "face-r"); } } feeding = false; busy = false; if (box) { box.classList.remove("feeding"); schedule(mood); } }
   }
 
   // ── 天氣：用使用者所在位置（探索頁拿過的）或最後一趟走的步道；拿不到就不畫天氣，絕不在這裡要定位 ──

@@ -354,8 +354,12 @@ window.PetWalk = (function () {
   // 幼蟲低頭吃：頭往下 ld、往前 lx（跟 CSS .st-lean 移頭的量一樣），身體前段跟著彎（x 從 78 到頭漸增），不會在中間拱出尖角
   async function bend(box, ld, lx, ms) {
     const [l0, x0] = box.__bend || [0, 0];
-    await tween(ms, e => { const L = l0 + (ld - l0) * e, X = x0 + (lx - x0) * e; applyField(box, (x, y) => { const k = sstep((x - 78) / 66); return [x + X * k, y + L * k]; }); });
-    box.__bend = ld || lx ? [ld, lx] : null; if (!box.__bend) resetField(box);
+    // 頭跟身體同一格一起寫（2026-10-05 第二輪）：頭掛在身體最前端（x≈140 那一節彎了多少，頭就移多少）——
+    // 以前頭靠 .st-lean 一下子跳到低頭位置、身體 0.3 秒才彎過去；抬頭時反過來，中間看得到頭離開身體
+    const E = els(box), kh = sstep((140 - 78) / 66);
+    await tween(ms, e => { const L = l0 + (ld - l0) * e, X = x0 + (lx - x0) * e; applyField(box, (x, y) => { const k = sstep((x - 78) / 66); return [x + X * k, y + L * k]; });
+      if (E.head) E.head.style.transform = `translate(${(X * kh).toFixed(2)}px, ${(L * kh).toFixed(2)}px)`; });
+    box.__bend = ld || lx ? [ld, lx] : null; if (!box.__bend) { resetField(box); if (E.head) E.head.style.transform = ""; }
   }
   // 走到 x（px，相對舞台中間）。回傳 promise。不支援動畫時直接瞬移。
   async function goTo(box, x, opts) {   // opts.keepFace：小碎步調整位置（往後退一點也不轉身）

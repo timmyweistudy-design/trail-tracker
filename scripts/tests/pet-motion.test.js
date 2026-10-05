@@ -16,7 +16,7 @@ const SPOTS = { 0: [[-34, 2, 34], [36, 12, -20]], 3: [[-62, 8, 66], [66, 40, 18]
 const DEF = [[-62, 8, 66], [66, 40, 18]];
 // 還沒修好的（階段名）：key＝檢查代號:階段
 const TODO = {
-  "jump:1": "P4", "jump:2": "P6", "jump:3": "P3", "jump:4": "P3", "jump:5": "P5",
+  "jump:2": "P6", "jump:3": "P3", "jump:4": "P3", "jump:5": "P5",
   "bite:5": "P5", "berry:5": "P5", "berry:6": "P5", "tail:6": "P5", "happy:5": "P5",
   "neck:1": "P4", "egg:0": "P6", "wing:2": "P6",
   "time:1": "P4", "time:3": "P3", "time:4": "P3", "time:5": "P5",
@@ -108,8 +108,10 @@ function judge(st, tag, R) {
     ok(bites.length >= 3 && bites.every(v => v <= 1), `${tag}: at every bite the mouth is on the berry (distance / berry radius ${JSON.stringify(bites)})`, todoOf("bite", st));
   }
   if (st === 2) {
-    const g = F.filter(f => f.prob && /pb-sip/.test(f.cls)).map(f => { const tb = f.berries.find(x => /target/.test(x.cls)); return tb ? D(f.prob, tb.c) : 0; });
-    ok(g.length > 10 && Math.max(...g) <= 6, `${tag}: the proboscis tip stays on the berry the whole time it sips (max ${Math.max(0, ...g).toFixed(1)}px)`);
+    const g = F.map((f, i) => [f, i]).filter(([f]) => f.prob && /pb-sip/.test(f.cls)).map(([f, i]) => { const tb = f.berries.find(x => /target/.test(x.cls)); return [tb ? D(f.prob, tb.c) : 0, i]; });
+    const gw = g.reduce((a, b) => (b[0] > a[0] ? b : a), [0, -1]);
+    if (process.env.PM_SEQ) console.log(tag, "sip", g.filter((_, k) => k % 3 === 0).map(([d, i]) => { const tb = F[i].berries.find(x => /target/.test(x.cls)); return i + ":" + d.toFixed(1) + " tip" + F[i].prob.map(v => v.toFixed(0)) + " b" + tb.c.map(v => v.toFixed(0)) + " w" + tb.w.toFixed(0); }).join("  "));
+    ok(g.length > 10 && gw[0] <= 6, `${tag}: the proboscis tip stays on the berry the whole time it sips (max ${gw[0].toFixed(1)}px @${gw[1]})`);
     const under = F.filter(f => f.hw && /st-sip/.test(f.cls)).some(f => { const tb = f.berries.find(x => /target/.test(x.cls)); return tb && tb.c[0] > f.hw[0] + 6 && tb.c[0] < f.hw[2] - 6 && tb.c[1] > f.hw[1] && tb.c[1] < f.hw[3]; });
     ok(!under, `${tag}: the berry it sips is beside the wings, not hidden under them`, todoOf("wing", st));
   }

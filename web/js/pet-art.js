@@ -440,7 +440,21 @@ ${tigerHead()}
       <g class="pr-neck" style="--ox:84px;--oy:126px">${P(Pa("M54 142 Q46 120 58 100 Q74 88 92 96 Q104 114 110 136 Q86 152 54 142Z"), TG, { dx: 2, dy: 2, sw: 0 })}${P(Pa("M56 140 Q48 122 58 106 Q64 124 74 140 Q64 144 56 140Z"), TGC, { sw: 0, dx: 1, dy: 1 })}${stripe(76, 100, 90, 106, 4, 1)}${stripe(84, 114, 98, 120, 4, 1)}${stripe(92, 126, 104, 132, 3.6, 1)}
         <g class="pr-head2" transform="translate(60 78) scale(.78) translate(-100 -100)"><g class="pr-head" style="--ox:100px;--oy:134px">${tigerHead()}<!--H2--></g></g></g>
     </g>`;
-  const A = [EGG, LARVA, BUTTERFLY, FOX + FOX_STAND, TIGER + TIGER_STAND, HATCHDRAGON, DRAGON];
+  // 頭裡面再包一層 .pr-hfx（2026-10-05 第二輪「控制權分層」）：外層 .pr-head 給姿勢（低頭、走路、看手指——JS 或狀態 class），
+  // 內層給咬、嚼、吞、摸頭這些 CSS 小動作。以前兩種都寫在同一個元素的 transform 上，誰後寫誰贏：嚼的動畫一播，低頭的位移就被蓋掉（頭彈起來離開身體）
+  function wrapHeads(src) {
+    let out = "", i = 0;
+    const open = /<g class="pr-head"[^>]*>/g; let m;
+    while ((m = open.exec(src))) {
+      let j = m.index + m[0].length, depth = 1;
+      const tag = /<g\b[^>]*?(\/?)>|<\/g>/g; tag.lastIndex = j; let t;
+      while (depth && (t = tag.exec(src))) { if (t[0] === "</g>") depth--; else if (!t[1]) depth++; }
+      const close = t.index;   // 這個頭自己的 </g>
+      out += src.slice(i, j) + '<g class="pr-hfx">' + src.slice(j, close) + "</g>"; i = close; open.lastIndex = close;
+    }
+    return out + src.slice(i);
+  }
+  const A = [EGG, LARVA, BUTTERFLY, FOX + FOX_STAND, TIGER + TIGER_STAND, HATCHDRAGON, DRAGON].map(wrapHeads);
   // 腳下的靜止道具（只在夥伴卡用，畫在角色後面的另一層）：角色跳、伸懶腰時它不動
   const LEAF = `${P(Pa("M10 192 Q56 172 116 178 Q162 182 192 196 Q140 200 80 199 Q32 198 10 192Z"), "#5f9a48", { sw: 2.4, dx: 3, dy: 3 })}<path d="M18 192 Q90 184 186 195" stroke="#4a7d38" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M56 188 l-8 7 M88 186 l-6 9 M120 188 l-4 9 M72 187 l6 -6 M104 187 l6 -6 M140 190 l6 -5" stroke="#4a7d38" stroke-width="1.6" stroke-linecap="round"/>`;
   const PROP = ["", LEAF, "", "", "", HATCH_CLOUD, DRAGON_CLOUD];

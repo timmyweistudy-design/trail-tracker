@@ -2094,6 +2094,9 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .ps-box .st-lean .pc-ear.l { animation: none; transform: rotate(8deg); }
 .ps-box .st-lean .pc-ear.r { animation: none; transform: rotate(-8deg); }
 .ps-box .st-lean .pr-paw { transform: rotate(0deg) translateY(-1px); }
+/* 餵食中（pet-stage.js 加 .feeding）：待機的上下飄小一點——接觸（嘴、口器、尾巴）才不會被飄走 */
+.ps-box.feeding .pc-hover { animation: pchoverFeed 3.8s ease-in-out infinite; }
+@keyframes pchoverFeed { 0%, 100% { transform: translateY(1px); } 50% { transform: translateY(-2px); } }
 /* 蝶落地（2026-10-05）：停住上下飄、六隻腳淡入、翅膀半收慢慢拍（落在果實旁，由 pet-walk.js 算好高度讓腳尖踩在地面線上） */
 .ps-box .st-land .pc-hover { animation: none; transform: none; }
 .ps-box .st-land .pr-legs { display: inline; animation: bfLegs .3s ease-out; }
@@ -2104,7 +2107,7 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 @keyframes bfLegs { from { opacity: 0; } to { opacity: 1; } }
 @keyframes bfRest { 0%, 100% { transform: scaleX(.6); } 50% { transform: scaleX(.74); } }
 .ps-box[data-stage="2"] .pet-shadow { translate: var(--wx, 0px) 0; }   /* 蝶飛高飛低，影子都留在地上 */
-.ps-berry.sipped { animation: psSipped 1s ease-in forwards; animation-delay: 0s; transform-origin: 50% 60%; }   /* 被吸：原地慢慢縮小、淡出（不飛走） */
+.ps-berry.sipped { animation: psSipped 1s ease-in forwards; animation-delay: 0s; transform-origin: 50% 50%; }   /* 縮向口器尖端對準的那一點（果實正中間）   /* 被吸：原地慢慢縮小、淡出（不飛走） */
 @keyframes psSipped { 0% { transform: none; } 100% { transform: scale(.3); opacity: 0; } }
 .ps-box[data-stage="6"] .st-lean .pc-hover { animation: none; transform: translateY(4px); transition: transform .4s ease-in-out; }   /* 神龍：長脖子往下探，身體只沉一點 */
 .ps-box[data-stage="3"] .st-lean .pr-nose { animation: pbSniff .32s ease-in-out 2; }   /* 狐：先嗅兩下 */
@@ -2119,14 +2122,16 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .ps-box .st-sip .pr-ext { opacity: 1; } .ps-box .st-sip .pr-curl { opacity: 0; }
 /* 咬下：嘴「啪」地合上、頭往上帶一下 */
 .ps-box .pb-snap .m-o { animation: pbSnapM .22s ease-in forwards; }
-.ps-box .pb-snap .pr-head { animation: pbSnapH .26s ease-out; }
+/* 睏：頭偶爾打瞌睡點一下——放在咬、嚼、摸頭之前、權重壓低（以前帶 #petEmoji，睏的夥伴連咀嚼動畫都被它蓋掉）；餵食時不打瞌睡 */
+.ps-box:not(.feeding) :where(#petEmoji.pet-m-sleepy) .pr-hfx { animation: pbDoze 6s ease-in-out infinite; }
+.ps-box .pb-snap .pr-hfx { animation: pbSnapH .26s ease-out; }
 @keyframes pbSnapM { 0% { opacity: 1; transform: scaleY(1.1); } 100% { opacity: 0; transform: scaleY(.4); } }
-@keyframes pbSnapH { 0%, 100% { transform: translate(var(--lx), var(--ld)); } 50% { transform: translate(var(--lx), calc(var(--ld) - 4px)) scale(1.02); } }
+@keyframes pbSnapH { 0%, 100% { transform: none; } 50% { transform: translateY(-4px) scale(1.02); } }   /* 在內層：疊在低頭的位移上（以前要自己補 --lx/--ld，補錯就跳） */
 /* 嚼三下：嘴開合、臉頰鼓起來、頭跟著點、下顎跟著動；嚼的時候閉上眼睛享受 */
 .ps-box .pb-chew .m-o { animation: pbChewM .3s ease-in-out 3; }
 .ps-box .pb-chew .m-c { animation: pbChewC .3s ease-in-out 3; }
 .ps-box .pb-chew .m-p { animation: pbChewP .3s ease-in-out 3; }
-.ps-box .pb-chew .pr-head { animation: pbChewH .3s ease-in-out 3; }
+.ps-box .pb-chew .pr-hfx { animation: pbChewH .3s ease-in-out 3; }
 .ps-box .pb-chew .pr-jaw { animation: pbChewJ .3s ease-in-out 3; }
 .ps-box .pb-chew .pc-eye { display: none; } .ps-box .pb-chew .pc-eh { display: inline; }
 @keyframes pbChewM { 0%, 100% { opacity: 0; transform: scaleY(.4); } 45% { opacity: .95; transform: scaleY(.7); } }
@@ -2134,14 +2139,14 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 @keyframes pbChewP { 0%, 100% { opacity: .85; transform: scale(1); } 45% { opacity: .95; transform: scale(1.18); } }
 @keyframes pbChewH { 0%, 100% { transform: none; } 45% { transform: translateY(1.6px) scale(1.01, .99); } }
 @keyframes pbChewJ { 0%, 100% { transform: none; } 45% { transform: translateY(4px); } }
-.ps-box[data-stage="1"] .pb-chew .m-o, .ps-box[data-stage="1"] .pb-chew .m-c, .ps-box[data-stage="1"] .pb-chew .m-p, .ps-box[data-stage="1"] .pb-chew .pr-head { animation-duration: .18s; animation-iteration-count: 5; }   /* 幼蟲：小口快快啃 */
-.ps-box[data-stage="4"] .pb-chew .m-o, .ps-box[data-stage="4"] .pb-chew .m-c, .ps-box[data-stage="4"] .pb-chew .m-p, .ps-box[data-stage="4"] .pb-chew .pr-head { animation-duration: .35s; }   /* 虎：嚼得慢、有力 */
+.ps-box[data-stage="1"] .pb-chew .m-o, .ps-box[data-stage="1"] .pb-chew .m-c, .ps-box[data-stage="1"] .pb-chew .m-p, .ps-box[data-stage="1"] .pb-chew .pr-hfx { animation-duration: .18s; animation-iteration-count: 5; }   /* 幼蟲：小口快快啃 */
+.ps-box[data-stage="4"] .pb-chew .m-o, .ps-box[data-stage="4"] .pb-chew .m-c, .ps-box[data-stage="4"] .pb-chew .m-p, .ps-box[data-stage="4"] .pb-chew .pr-hfx { animation-duration: .35s; }   /* 虎：嚼得慢、有力 */
 /* 蝶：吸（口器一伸一縮、翅膀慢拍） */
 .ps-box .pb-sip .pr-ext { opacity: 1; animation: pbSip .3s ease-in-out 3; }   /* 一吸一吸：口器變粗一點（不縮放，尖端留在果實上） */
 .ps-box .pb-sip .pr-curl { opacity: 0; }
 @keyframes pbSip { 0%, 100% { stroke-width: 2px; } 50% { stroke-width: 3px; } }
 /* 吞：頭點一下 */
-.ps-box .pb-gulp .pr-head { animation: pbGulp .34s ease-in-out; }
+.ps-box .pb-gulp .pr-hfx { animation: pbGulp .34s ease-in-out; }
 @keyframes pbGulp { 0%, 100% { transform: none; } 50% { transform: translateY(3px) scale(1.01, .98); } }
 /* 舔嘴：舌頭伸出來繞一下；開心瞇眼 */
 .ps-box .pb-lick .m-t { animation: pbLick .78s ease-in-out; }
@@ -2163,7 +2168,7 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .ps-box[data-evo="1"] .pc-crack2, .ps-box[data-evo="2"] .pc-crack2, .ps-box[data-evo="2"] .pc-crack3 { display: inline; }
 
 /* 摸頭：頭往下縮迎著手（往一側歪）、耳朵往後貼平、尾巴快搖、身體輕輕震（像呼嚕） */
-.ps-box .pb-pat .pr-head { animation: pbPatH .8s cubic-bezier(.3,.7,.4,1); }
+.ps-box .pb-pat .pr-hfx { animation: pbPatH .8s cubic-bezier(.3,.7,.4,1); }
 .ps-box .pb-pat .pc-ear.l { animation: pbEarL .8s ease-out; } .ps-box .pb-pat .pc-ear.r { animation: pbEarR .8s ease-out; }
 .ps-box .pb-pat .pc-tail { animation-duration: .42s; }
 @keyframes pbPatH { 0%, 100% { transform: none; } 30% { transform: translateY(5px) rotate(-6deg) scale(1.02, .97); } 60% { transform: translateY(3px) rotate(5deg); } 80% { transform: translateY(1px) rotate(-2deg); } }
@@ -2172,20 +2177,20 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 /* 搔癢：笑開嘴、前腳縮起來、頭左右甩 */
 .ps-box .pb-tickle .m-o { animation: pbLaugh .8s ease-in-out; } .ps-box .pb-tickle .m-c { animation: pbChewC .8s ease-in-out; }
 .ps-box .pb-tickle .pr-paw.l { animation: pbPawInL .8s ease-in-out; } .ps-box .pb-tickle .pr-paw.r { animation: pbPawInR .8s ease-in-out; }
-.ps-box .pb-tickle .pr-head { animation: pbShake .8s ease-in-out; }
+.ps-box .pb-tickle .pr-hfx { animation: pbShake .8s ease-in-out; }
 @keyframes pbLaugh { 0%, 100% { opacity: 0; } 15%, 85% { opacity: 1; transform: scaleY(.8); } 50% { opacity: 1; transform: scaleY(1); } }
 @keyframes pbPawInL { 0%, 100% { transform: none; } 30%, 70% { transform: rotate(-24deg) translateY(-3px); } }
 @keyframes pbPawInR { 0%, 100% { transform: none; } 30%, 70% { transform: rotate(24deg) translateY(-3px); } }
 @keyframes pbShake { 0%, 100% { transform: none; } 25% { transform: rotate(-7deg); } 50% { transform: rotate(6deg); } 75% { transform: rotate(-3deg); } }
 /* 抱抱：頭靠過來、前腳往內抱、尾巴捲起來 */
-.ps-box .pb-hug .pr-head { animation: pbHugH 1s ease-in-out; }
+.ps-box .pb-hug .pr-hfx { animation: pbHugH 1s ease-in-out; }
 .ps-box .pb-hug .pr-paw.l { animation: pbPawInL 1s ease-in-out; } .ps-box .pb-hug .pr-paw.r { animation: pbPawInR 1s ease-in-out; }
 .ps-box .pb-hug .pc-tail { animation: pbCurl 1s ease-in-out; }
 @keyframes pbHugH { 0%, 100% { transform: none; } 30%, 70% { transform: translateY(4px) rotate(4deg) scale(1.03); } }
 @keyframes pbCurl { 0%, 100% { transform: none; } 40%, 70% { transform: rotate(-14deg) scale(.94); } }
 /* 伸懶腰＋打哈欠：前腳往上伸、頭往後仰、嘴大張、眼睛瞇起來，最後甩甩頭 */
 .ps-box .pb-stretch .pr-paw.l { animation: pbReachL 1.4s ease-in-out; } .ps-box .pb-stretch .pr-paw.r { animation: pbReachR 1.4s ease-in-out; }
-.ps-box .pb-stretch .pr-head, .ps-box .pb-yawn .pr-head { animation: pbYawnH 1.4s ease-in-out; }
+.ps-box .pb-stretch .pr-hfx, .ps-box .pb-yawn .pr-hfx { animation: pbYawnH 1.4s ease-in-out; }
 .ps-box .pb-stretch .m-o, .ps-box .pb-yawn .m-o { animation: pbYawnM 1.4s ease-in-out; }
 .ps-box .pb-stretch .m-c, .ps-box .pb-yawn .m-c { animation: pbYawnC 1.4s ease-in-out; }
 .ps-box .pb-stretch .pc-eye, .ps-box .pb-yawn .pc-eye { animation: pbSquint 1.4s ease-in-out; }
@@ -2202,13 +2207,12 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 @keyframes pbBlink2 { 0%, 30%, 60%, 100% { transform: none; } 15%, 45% { transform: scaleY(.1); } }
 /* 嘆氣（想念）：身體沉一下、頭垂下再抬起 */
 .ps-box .pb-sigh .pc-bob { animation: pbSighB 1.6s ease-in-out; }
-.ps-box .pb-sigh .pr-head { animation: pbSighH 1.6s ease-in-out; }
+.ps-box .pb-sigh .pr-hfx { animation: pbSighH 1.6s ease-in-out; }
 @keyframes pbSighB { 0%, 100% { transform: none; } 25% { transform: scale(1.01, 1.04); } 55% { transform: scale(1.02, .95); } }
 @keyframes pbSighH { 0%, 100% { transform: none; } 55%, 70% { transform: translateY(5px) rotate(3deg); } }
 /* 心情的待機姿態：睏＝點頭打瞌睡；想念＝頭微微抬起望遠方；開心＝尾巴搖快一點 */
-.ps-box #petEmoji.pet-m-sleepy .pr-head { animation: pbDoze 6s ease-in-out infinite; }
 @keyframes pbDoze { 0%, 55%, 100% { transform: none; } 70% { transform: translateY(5px) rotate(4deg); } 76% { transform: translateY(1px) rotate(-1deg); } 84% { transform: translateY(6px) rotate(5deg); } 92% { transform: none; } }
-.ps-box #petEmoji.pet-m-longing .pr-head { transform: translateY(-1px) rotate(-3deg); }
+.ps-box:not(.feeding) :where(#petEmoji.pet-m-longing) .pr-hfx { transform: translateY(-1px) rotate(-3deg); }   /* 想念：頭微微低下歪一邊（內層；權重壓低，咬、嚼、摸頭會蓋過它） */
 .ps-box #petEmoji.pet-m-happy .pc-tail { animation-duration: 1.5s; }
 /* 小東西的待機：蝶的觸角、蛋的裂縫光、狐的鼻子偶爾動一下 */
 .ps-box .pr-ant { animation: pbAnt 3.4s ease-in-out infinite; } .ps-box .pr-ant.r { animation-delay: -.6s; }
@@ -2218,12 +2222,12 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .ps-box .pr-nose { animation: pbNoseIdle 7.5s ease-in-out infinite; }
 @keyframes pbNoseIdle { 0%, 88%, 100% { transform: none; } 91%, 97% { transform: scale(1.12, .9) translateY(-.6px); } 94% { transform: none; } }
 @media (prefers-reduced-motion: reduce) {
-  .ps-box .pr-head, .ps-box .pc-ear, .ps-box .pr-ant, .ps-box .pr-glow, .ps-box .pr-nose, .ps-box #petEmoji.pet-m-sleepy .pr-head { animation: none !important; transition: none !important; }
+  .ps-box .pr-head, .ps-box .pr-hfx, .ps-box .pc-ear, .ps-box .pr-ant, .ps-box .pr-glow, .ps-box .pr-nose, .ps-box #petEmoji.pet-m-sleepy .pr-head { animation: none !important; transition: none !important; }
 }
 /* 跟隨動作：跳／撲／升起時，耳朵和尾巴晚一點才跟上、落地後再晃一下 */
 .ps-box .pb-hop .pc-ear.l { animation: pbFlopL 1.1s ease-out; } .ps-box .pb-hop .pc-ear.r { animation: pbFlopR 1.1s ease-out; }
 .ps-box .pb-hop .pc-tail { animation: pbTailFollow 1.1s ease-out; }
-.ps-box .pb-hop .pr-head { animation: pbHopHead 1.1s ease-out; }
+.ps-box .pb-hop .pr-hfx { animation: pbHopHead 1.1s ease-out; }
 .ps-box .pb-hop .m-o { animation: pbLaugh 1.1s ease-in-out; } .ps-box .pb-hop .m-c { animation: pbChewC 1.1s ease-in-out; }   /* 開心張嘴笑 */
 @keyframes pbFlopL { 0%, 100% { transform: none; } 30% { transform: rotate(-14deg); } 55% { transform: rotate(10deg); } 75% { transform: rotate(-4deg); } }
 @keyframes pbFlopR { 0%, 100% { transform: none; } 30% { transform: rotate(14deg); } 55% { transform: rotate(-10deg); } 75% { transform: rotate(4deg); } }
@@ -2277,6 +2281,7 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .ps-box.no-tr *, .ps-box.no-tr { transition: none !important; }   /* 量姿勢用的那一格不要有過渡 */
 /* 幼龍撿果實：蹲下、爪子伸下去、抓住、舉到嘴邊（pet-stage.js 依果實在哪一側選左右爪） */
 .ps-box .pr-paw { transition: transform .34s cubic-bezier(.3,.7,.4,1); }
+.ps-box.walking .pr-paw { transition: none; }   /* 走路時爪子由 pet-walk.js 逐格寫：有 transition 會一路落後（腳滑） */
 .ps-box .st-crouch .pc-bob { animation: none; transform: scale(1.04, .93); transition: transform .3s ease-out; }
 .ps-box .st-crouch .pr-head { transform: translateY(4px) rotate(calc(var(--ex, 0) * 5deg)); }
 .ps-box .st-reach-l .pr-paw.l { transform: translate(-4px, 14px) rotate(28deg); }
@@ -2301,19 +2306,19 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .ps-box .pr-leg.hl { transform: rotate(var(--aHL, 0deg)); } .ps-box .pr-leg.hl .pr-shin { transform: rotate(var(--bHL, 0deg)); }
 .ps-box .pr-leg.hr { transform: rotate(var(--aHR, 0deg)); } .ps-box .pr-leg.hr .pr-shin { transform: rotate(var(--bHR, 0deg)); }
 .ps-box.standing .pr-stand { translate: 0 var(--gby, 0px); }   /* 整個站姿身體一起下沉（腿的膝蓋由 IK 彎曲把腳留在地面） */
-.ps-box .pr-stand .pr-neck { transform: rotate(var(--nk, 0deg)); transition: transform .38s cubic-bezier(.3,.7,.4,1); }
+.ps-box .pr-stand .pr-neck { transform: rotate(var(--nk, 0deg)); }   /* 不要 transition：脖子由 pet-walk.js 逐格寫（以前量低頭時擺上去再清掉，脖子會從量的角度彈回來） */
 .ps-box .pr-stand > .pc-tail { animation: none; transform: rotate(var(--gtr, 0deg)); }
 .ps-box .pr-stand .pr-head2 .pr-head { transition: none; }
 /* 站著低頭吃：脖子往下轉、頭反過來轉回去（臉朝著食物，不會整顆頭歪掉） */
 .ps-box.standing .st-lean .pr-stand .pr-neck { transform: rotate(var(--nk, -62deg)); }
-.ps-box.standing .pr-stand .pr-head2 .pr-head { transform: rotate(calc(var(--nk, 0deg) * -.55)); transition: transform .38s cubic-bezier(.3,.7,.4,1); }
+.ps-box.standing .pr-stand .pr-head2 .pr-head { transform: rotate(calc(var(--nk, 0deg) * -.55)); }
 .ps-box.standing .st-lean .pr-stand .pr-head2 .pr-head { transform: rotate(calc(var(--nk, -62deg) * -.55)); }
 /* 坐下（從站姿換回坐姿）：壓一下再彈回 */
 .ps-box .pb-sit .pc-bob { animation: pbSitDown .42s cubic-bezier(.3,.7,.4,1); }
 @keyframes pbSitDown { 0% { transform: scale(1.06, .82); } 60% { transform: scale(.98, 1.04); } 100% { transform: none; } }
 .ps-box #petEmoji .pet-critter { overflow: visible; }   /* 趴下吃、走到邊邊時頭會超出 200×200 的畫框，不要切掉 */
 /* 後兩顆只嚼兩下 */
-.ps-box .chew2.pb-chew .m-o, .ps-box .chew2.pb-chew .m-c, .ps-box .chew2.pb-chew .m-p, .ps-box .chew2.pb-chew .pr-head, .ps-box .chew2.pb-chew .pr-jaw { animation-iteration-count: 2; }
+.ps-box .chew2.pb-chew .m-o, .ps-box .chew2.pb-chew .m-c, .ps-box .chew2.pb-chew .m-p, .ps-box .chew2.pb-chew .pr-hfx, .ps-box .chew2.pb-chew .pr-jaw { animation-iteration-count: 2; }
 /* ── 2026-10-05 正面站姿（狐、虎）：坐著 → 站起來（正面）→ 四分之三面 → 側身；轉身也經過正面（不再壓扁成紙片）── */
 /* 坐 ↔ 正面站：坐著的臀部淡出、站著的背和後腿淡入（頭、前腿、胸前的毛不變，眼睛一直看得到同一個角色） */
 .ps-box[data-stage="3"] #petEmoji .pr-front, .ps-box[data-stage="4"] #petEmoji .pr-front { display: inline; opacity: 0; transition: opacity .22s ease-out; }
