@@ -2302,3 +2302,11 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .ps-box .pr-stand .pr-leg.hl { translate: calc(var(--q, 0) * -29.4px) 0; }
 .ps-box .pr-stand .pr-leg.hr { translate: calc(var(--q, 0) * -28px) calc(var(--q, 0) * -3px); }
 .ps-box .pr-stand > .pc-tail { translate: calc(var(--q, 0) * -36px) calc(var(--q, 0) * -4px); }
+/* 幼蟲往左爬：整隻鏡像（頭在前）；掉頭由 pet-walk.js larvaTurn() 演出 */
+.ps-box.lv-l #petEmoji .pet-critter { scale: -1 1; }
+/* 一口一個缺口（幼蟲啃三口、幼龍咬兩口）：缺口在嘴靠過來的那一側（--nx），用遮罩挖掉圓形 */
+.ps-berry.bit1 svg { -webkit-mask: radial-gradient(circle at var(--nx, 40%) 12%, transparent 0 25%, #000 26%); mask: radial-gradient(circle at var(--nx, 40%) 12%, transparent 0 25%, #000 26%); }
+.ps-berry.bit2 svg { -webkit-mask: radial-gradient(circle at var(--nx, 40%) 12%, transparent 0 25%, #000 26%), radial-gradient(circle at calc(100% - var(--nx, 40%)) 22%, transparent 0 22%, #000 23%); -webkit-mask-composite: source-in; mask: radial-gradient(circle at var(--nx, 40%) 12%, transparent 0 25%, #000 26%) intersect, radial-gradient(circle at calc(100% - var(--nx, 40%)) 22%, transparent 0 22%, #000 23%); }
+.ps-berry.bit1 { animation: psNibble .22s ease-out; } .ps-berry.bit2 { animation: psNibble2 .22s ease-out; }
+@keyframes psNibble { 40% { transform: translateX(calc((50% - var(--nx, 8%)) * .06)) scale(.94, 1.04); } }
+@keyframes psNibble2 { 40% { transform: translateX(calc((50% - var(--nx, 8%)) * .06)) scale(.94, 1.04); } }

@@ -314,6 +314,24 @@ window.PetStage = (function () {
             if (typeof ttBuzz === "function") ttBuzz(8);
             b.remove(); box.style.removeProperty("--ld"); box.style.removeProperty("--lx"); continue;
           }
+          if (stg === 1) {   // 幼蟲：一小口一小口啃——每一口果實多一個缺口（缺口在嘴靠過來的那一側），第三口整顆吞下
+            // 低頭：不是只有頭往下（那樣身體中間會拱成尖角），前面幾節一起彎下去（頭那一端彎最多、往後漸少）
+            const ld = parseFloat(box.style.getPropertyValue("--ld")) || 0, lx = parseFloat(box.style.getPropertyValue("--lx")) || 0;
+            cls(true, "st-lean"); await PetWalk.bend(box, ld, lx, 320);
+            b.style.setProperty("--nx", box.classList.contains("lv-l") ? "38%" : "62%");   // 缺口在上面、偏嘴那一側
+            for (let k = 1; k <= 2; k++) {
+              cls(true, "st-open"); await sleep(130); cls(false, "st-open");
+              b.classList.add("bit" + k); await flash("pb-snap", 220);           // 咬下去：果實多一個缺口
+              cls(true, "chew2"); await flash("pb-chew", 420); cls(false, "chew2");  // 快快啃兩下
+            }
+            cls(true, "st-open"); await sleep(130);
+            toMouth(b, false); b.classList.add("eaten"); cls(false, "st-open"); await flash("pb-snap", 220);
+            cls(false, "st-lean"); await PetWalk.bend(box, 0, 0, later ? 220 : 280);
+            cls(true, "chew2"); await flash("pb-chew", 520); cls(false, "chew2"); await flash("pb-gulp", 320);
+            if (bal && isFinite(left)) { left = Math.max(0, left - 1); bal.textContent = left; bal.classList.remove("tick"); void bal.offsetWidth; bal.classList.add("tick"); }
+            if (typeof ttBuzz === "function") ttBuzz(8);
+            b.remove(); box.style.removeProperty("--ld"); box.style.removeProperty("--lx"); continue;
+          }
           cls(true, "st-lean"); if (bowTo) await PetWalk.bow(box, bowTo[0], bowTo[1], stg === 4 ? 420 : 380); else await sleep(360);   // 俯身（狐、虎：胸口往下、前腳彎；狐會先嗅兩下）
           cls(true, fly ? "st-sip" : "st-open"); await sleep(fly ? 260 : 170);   // 張嘴（蝶：口器伸直）
           toMouth(b, false); b.classList.add("eaten");               // 果實飛進嘴裡
