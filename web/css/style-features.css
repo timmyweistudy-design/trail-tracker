@@ -2080,7 +2080,7 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
    原則：預備動作（咬前先張嘴）、跟隨（頭停了耳朵／尾巴／龍鬚晚一點才停）、緩入緩出、小幅擠壓伸展、地上的動物腳不離地。
    狀態 class（st-*）停在一個姿勢、用 transition 過去；動作 class（pb-*）是一次性的關鍵影格。都只在 .ps-box（夥伴卡／好友頁）裡生效。 */
 /* 看：頭跟著眼睛一起轉（以前只有眼珠動） */
-.ps-box .pr-head { translate: calc(var(--ex, 0) * 2.6px) calc(var(--ey, 0) * 1.8px); rotate: calc(var(--ex, 0) * 5deg); transition: translate .38s cubic-bezier(.3,.7,.4,1), rotate .38s cubic-bezier(.3,.7,.4,1), transform .34s cubic-bezier(.3,.7,.4,1); }
+.ps-box .pr-head { translate: calc(var(--ex, 0) * 2.6px) calc(var(--ey, 0) * 1.8px); rotate: calc(var(--ex, 0) * 5deg); transition: translate .38s cubic-bezier(.3,.7,.4,1), rotate .38s cubic-bezier(.3,.7,.4,1); }   /* transform 不要 transition：外層的頭由 JS 逐格寫（幼蟲低頭時頭落後身體 0.3 秒、脖子被拉開） */
 .ps-box .pc-ear { transition: transform .3s ease-out; }
 /* 俯身：身體往下蹲一點、頭往下伸向果實（往果實那一側歪）；耳朵往前豎 */
 .ps-box { --ld: 14px; --lx: 0px; }
@@ -2283,7 +2283,7 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .ps-box .pr-paw { transition: transform .34s cubic-bezier(.3,.7,.4,1); }
 .ps-box.walking .pr-paw { transition: none; }   /* 走路時爪子由 pet-walk.js 逐格寫：有 transition 會一路落後（腳滑） */
 .ps-box .st-crouch .pc-bob { animation: none; transform: scale(1.04, .93); transition: transform .3s ease-out; }
-.ps-box .st-crouch .pr-head { transform: translateY(4px) rotate(calc(var(--ex, 0) * 5deg)); }
+.ps-box .st-crouch .pr-head { transform: translateY(4px) rotate(calc(var(--ex, 0) * 5deg)); transition: transform .3s ease-out; }
 .ps-box .st-reach-l .pr-paw.l { transform: translate(-4px, 14px) rotate(28deg); }
 .ps-box .st-reach-r .pr-paw.r { transform: translate(4px, 14px) rotate(-28deg); }
 .ps-box .st-lift-l .pr-paw.l { transform: translate(2px, -22px) rotate(-60deg); }

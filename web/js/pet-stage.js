@@ -342,6 +342,8 @@ window.PetStage = (function () {
       // 吃的順序：從離現在位置比較近的那一端開始，一路掃到另一端——以前每次挑最近的會左右來回（轉身最難看，能少就少：最多轉兩次）
       const todo = berries.slice().sort((a, b) => a.x - b.x);
       if (Math.abs(todo[todo.length - 1].x - at()) < Math.abs(todo[0].x - at())) todo.reverse();
+      // 幼蟲掉頭很花時間（頭不動、身體繞過去，等於多走 80px）：從頭朝的那一端開始吃，少掉一次頭（2026-10-05 第二輪）
+      if (stg === 1 && (todo[0].x > todo[todo.length - 1].x) !== !box.classList.contains("lv-l")) todo.reverse();   // 頭朝右＝從最右邊開始
       while (todo.length) {
         if (!box || !visible || document.hidden) { aborted = true; break; }   // 滑走或切到背景：直接結算（pet.js 的 done 會更新數字），角色回到坐姿
         const { b, x } = todo.shift(), later = todo.length < 2;   // 第二、三顆：嚼兩下、停頓短一點（整段不要拖太久）
@@ -396,17 +398,18 @@ window.PetStage = (function () {
           if (stg === 1) {   // 幼蟲：一小口一小口啃——每一口果實多一個缺口（缺口在嘴靠過來的那一側），第三口整顆吞下
             // 低頭：不是只有頭往下（那樣身體中間會拱成尖角），前面幾節一起彎下去（頭那一端彎最多、往後漸少）
             const ld = parseFloat(box.style.getPropertyValue("--ld")) || 0, lx = parseFloat(box.style.getPropertyValue("--lx")) || 0;
+            { const hd = PetWalk.part(box, ".pr-head"); if (hd) hd.style.transform = "translate(0px, 0px)"; }   // 頭先由 JS 接手（不然加上 st-lean 那一格，CSS 會先把頭移到低頭的位置，身體還沒彎）
             cls(true, "st-lean"); await PetWalk.bend(box, ld, lx, 320);
             b.style.setProperty("--nx", box.classList.contains("lv-l") ? "38%" : "62%");   // 缺口在上面、偏嘴那一側
-            for (let k = 1; k <= 2; k++) {
+            for (let k = 1; k <= 1; k++) {   // 2026-10-05 第二輪：兩口（咬一口留缺口、第二口吃掉），以前三口——一次餵食 23～29 秒太長
               cls(true, "st-open"); await sleep(130); cls(false, "st-open");
               b.classList.add("bit" + k); await flash("pb-snap", 220);           // 咬下去：果實多一個缺口
-              cls(true, "chew2"); await flash("pb-chew", 420); cls(false, "chew2");  // 快快啃兩下
+              cls(true, "chew2"); await flash("pb-chew", 320); cls(false, "chew2");  // 快快啃兩下
             }
             cls(true, "st-open"); await sleep(130);
             toMouth(b, false); b.classList.add("eaten"); cls(false, "st-open"); await flash("pb-snap", 220);
             cls(false, "st-lean"); await PetWalk.bend(box, 0, 0, later ? 220 : 280);
-            cls(true, "chew2"); await flash("pb-chew", 520); cls(false, "chew2"); await flash("pb-gulp", 320);
+            cls(true, "chew2"); await flash("pb-chew", 400); cls(false, "chew2"); await flash("pb-gulp", 300);
             if (bal && isFinite(left)) { left = Math.max(0, left - 1); bal.textContent = left; bal.classList.remove("tick"); void bal.offsetWidth; bal.classList.add("tick"); }
             if (typeof ttBuzz === "function") ttBuzz(8);
             b.remove(); box.style.removeProperty("--ld"); box.style.removeProperty("--lx"); continue;

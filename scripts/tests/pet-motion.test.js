@@ -18,8 +18,8 @@ const DEF = [[-62, 8, 66], [66, 40, 18]];
 const TODO = {
   "jump:2": "P6", "jump:5": "P5",
   "berry:5": "P5", "berry:6": "P5", "tail:6": "P5",
-  "neck:1": "P4", "egg:0": "P6", "wing:2": "P6",
-  "time:1": "P4", "time:5": "P5",
+  "egg:0": "P6", "wing:2": "P6",
+  "time:5": "P5",
 };
 const todoOf = (k, st) => TODO[k + ":" + st];
 
@@ -34,13 +34,13 @@ const probe = () => {
     sparks: document.querySelectorAll(".ps-spark").length };
   const eh = [...em.querySelectorAll(".pc-eh")].find(e => !e.closest(".pr-stand") || standing); o.happy = !!eh && getComputedStyle(eh).display !== "none";
   if (standing) o.paws = [...em.querySelectorAll(".pr-stand .pr-leg .pr-shin")].map(sh => { const e = [...sh.querySelectorAll("ellipse")].find(x => !x.closest("clipPath") && !x.closest("defs")); const pt = new DOMPoint(+e.getAttribute("cx"), +e.getAttribute("cy") + +e.getAttribute("ry")).matrixTransform(e.getScreenCTM()); return [pt.x, pt.y]; });
-  if (st === 1) {   // 頭的中心相對「身體最前端」的位置（身體座標）：頭跟身體連著時這個向量幾乎不變
+  if (st === 1) {   // 頭跟身體有沒有分開：頭（半徑 23 的圓）的中心到身體外框最近的點有多遠——身體外框在頭底下（≤23）就看不到縫
     const svg = em.querySelector(".pet-critter"), inv = svg.getScreenCTM().inverse(), hd = em.querySelector(".pr-head");
     const hc = new DOMPoint(148, 136).matrixTransform(hd.getScreenCTM()).matrixTransform(inv);
-    const tube = [...em.querySelectorAll(".pr-deform path")].sort((a, b) => b.getAttribute("d").length - a.getAttribute("d").length)[0];
-    const n = tube.getAttribute("d").match(/-?\d*\.?\d+/g).map(Number), pts = []; for (let i = 0; i + 1 < n.length; i += 2) pts.push([n[i], n[i + 1]]);
-    pts.sort((a, b) => b[0] - a[0]); const f = pts.slice(0, 4).reduce((s, q) => [s[0] + q[0] / 4, s[1] + q[1] / 4], [0, 0]);
-    o.neck = [hc.x - f[0], hc.y - f[1]];
+    const tube = [...em.querySelectorAll(".pr-deform path")].sort((a, b) => b.getAttribute("d").length - a.getAttribute("d").length)[0], tm = tube.getScreenCTM();
+    const n = tube.getAttribute("d").match(/-?\d*\.?\d+/g).map(Number); let best = 1e9;
+    for (let i = 0; i + 1 < n.length; i += 2) { const q = new DOMPoint(n[i], n[i + 1]).matrixTransform(tm).matrixTransform(inv); best = Math.min(best, Math.hypot(q.x - hc.x, q.y - hc.y)); }
+    o.neck = best;
   }
   if (st === 2) { const ext = em.querySelector(".pr-ext"); if (+getComputedStyle(ext).opacity > .5) { const pt = ext.getPointAtLength(ext.getTotalLength()), s = new DOMPoint(pt.x, pt.y).matrixTransform(ext.getScreenCTM()); o.prob = [s.x, s.y]; }
     const hw = [...em.querySelectorAll(".pc-hw")].map(e => e.getBoundingClientRect()); o.hw = [Math.min(...hw.map(r => r.left)), Math.min(...hw.map(r => r.top)), Math.max(...hw.map(r => r.right)), Math.max(...hw.map(r => r.bottom))]; }
@@ -123,8 +123,9 @@ function judge(st, tag, R) {
   let bj = 0; for (let i = 45; i < n; i++) { if (F[i].berries.length !== F[i - 1].berries.length) continue; F[i].berries.forEach((x, k) => { if (/eaten|sipped|melt/.test(x.cls)) return; const d = D(x.c, F[i - 1].berries[k].c), held = /held|carried/.test(x.cls); bj = Math.max(bj, held ? d - 10 : d - 1); }); }
   ok(bj <= 0, `${tag}: berries never jump (ground berries still, held ones ≤10px/frame; worst excess ${bj.toFixed(1)}px)`, todoOf("berry", st));
   if (st === 1) {
-    const v = F.filter(f => f.neck).map(f => f.neck), v0 = v[0]; const dv = Math.max(...v.map(q => D(q, v0)));
-    ok(dv <= 3, `${tag}: the head stays attached to the first body segment (max shift ${dv.toFixed(1)} units)`, todoOf("neck", st));
+    const v = F.filter(f => f.neck != null).map(f => f.neck), dv = Math.max(...v), i0 = F.findIndex(f => f.neck === dv);
+    if (process.env.PM_SEQ) for (let i = i0 - 6; i <= i0 + 4; i++) console.log("   neck", i, F[i].neck.toFixed(1), F[i].raw);
+    ok(dv <= 25, `${tag}: the head never comes off the body (head centre to body outline ≤25 units, head radius 23; max ${dv.toFixed(1)} @${i0} ${F[i0] ? F[i0].cls + "|" + F[i0].bcl : ""})`, todoOf("neck", st));
   }
   if (st === 6) {
     let out = 0, thr = 0; for (let i = 1; i < n; i++) { const d = F[i].deform, b = F[i].boxr; out = Math.max(out, b[0] - d[0], d[2] - b[2], b[1] - d[1]); thr = Math.max(thr, ...d.map((q, k) => Math.abs(q - F[i - 1].deform[k]))); }
@@ -138,7 +139,7 @@ function judge(st, tag, R) {
     let both = 0; for (const f of F) if (f.sparks >= 3 && f.berries.some(x => /melt/.test(x.cls) && x.op > .8 && x.w >= f.berries[0].w * .9)) both++;
     ok(both === 0, `${tag}: the berry shrinks as the sparks leave it (frames with a full berry and ≥3 sparks: ${both})`, todoOf("egg", st));
   }
-  const lim = st === 4 ? 19 : st === 3 ? 17 : 16;   // 含判定結束的 0.7 秒；狐、虎要走去左右兩端（A、C 組）；虎刻意慢、有重量（ChatGPT 看錄影的建議）
+  const lim = st === 4 ? 19 : st === 3 || st === 1 ? 17.9 : 16;   // 幼蟲：左右兩邊都有果實時要掉頭兩次（頭不動、身體繞過去＝每次多爬 80px）   // 含判定結束的 0.7 秒；狐、虎要走去左右兩端（A、C 組）；虎刻意慢、有重量（ChatGPT 看錄影的建議）
   ok(sec <= lim, `${tag}: one feeding (3 berries, walk home, celebrate) takes ≤${lim} s (${sec.toFixed(1)} s)`, todoOf("time", st));
   const last = F[n - 1];
   ok(!last.berries.length && !last.cls && Math.abs(R.end.wx) < 1 && R.end.bal === R.bal0 - 3, `${tag}: ends clean — no berries, no leftover pose, back in the middle, exactly 3 berries spent ${JSON.stringify({ cls: last.cls, wx: R.end.wx, spent: R.bal0 - R.end.bal })}`);

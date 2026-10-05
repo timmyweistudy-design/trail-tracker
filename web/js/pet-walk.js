@@ -12,7 +12,7 @@ window.PetWalk = (function () {
   // 各階的走法：D＝走一個完整步伐週期前進幾 px；v＝速度 px/s；duty＝支撐期比例；bob／roll／lift 單位是 SVG（viewBox 200）
   const GAIT = {
     0: { mode: "rock", v: 86, D: 30, bob: 3, roll: 15 },                                      // 蛋：左右搖著滾過去
-    1: { mode: "crawl", v: 40, Du: 22, bob: 0, roll: 0, head: 0 },                         // 幼蟲：蠕動（收縮波從尾巴往頭傳；一道波往前 22 單位）
+    1: { mode: "crawl", v: 66, Du: 22, bob: 0, roll: 0, head: 0 },                         // 幼蟲：蠕動（收縮波從尾巴往頭傳；一道波往前 22 單位）
     2: { mode: "fly", v: 140, D: 38, bob: 9, roll: 0, bank: 9 },                               // 蝶：一拍一升的小弧線、轉彎時內傾
     3: { mode: "stand", v: 150, stride: 34, lift: 11, sink: 3.6, duty: .6, bob: 2.4, tail: 15, ear: 7, neck: 3.5, sh: .7, legL: 58 },             // 狐：小步、輕、有彈性；尾巴大幅、晚一拍
     4: { mode: "stand", v: 115, stride: 36, lift: 12, sink: 5, duty: .68, bob: 3.6, lag: .06, tail: 5, ear: 2, neck: -1.2, sh: 1.6, legL: 56 },  // 虎：慢、步幅大、肩膀隨前腳起伏、落地後才沉（重）；尾巴小幅；頭穩
@@ -59,11 +59,14 @@ window.PetWalk = (function () {
   // 身體整體（moveTo）是等速往前，所以每一節在身體座標裡：波還沒到 → 往後退（＝在地上不動）、波經過 → 往前跳 Du、波過了 → 又不動。
   // 一趟路切成整數道波，最後一道波結束時每一節剛好回到原位（身體是平的才停）。rev＝倒退（波從頭傳到尾）
   function crawlField(box, ph, s, Du, rev) {
-    const W = 15, c = rev ? 196 - 206 * ph : 4 + 206 * ph;   // 波的中心：從尾巴外（x≈4）走到頭外（x≈210）
+    const W = 24, c = rev ? 195 - 187 * ph : 8 + 187 * ph;   // 波的中心：從尾巴外（x≈8）走到頭外（x≈195）；過渡區 W 加寬到 24（2026-10-05 第二輪：以前 15，每一節的推進只有一格，頭一下子往前跳 18px）
     const S = x => sstep(((rev ? x - c : c - x) + W) / (2 * W)), sg = rev ? -1 : 1;
-    applyField(box, (x, y) => { const h = hump(x, c, 13) * s; return [x + sg * Du * (S(x) - ph), y - 10 * h]; });
-    set(box, "--ghx", (sg * Du * (S(140) - ph)).toFixed(2) + "px");
-    set(box, "--ghy", (-7 * hump(140, c, 16) * s).toFixed(2) + "px");   // 波傳到頭：頭抬起來往前探一步
+    const F = (x, y) => { const h = hump(x, c, 13) * s; return [x + sg * Du * (S(x) - ph), y - 10 * h]; };
+    applyField(box, F);
+    // 頭掛在第一節上（2026-10-05 第二輪）：頭的位移＝同一個變形場在頸部那一點（x≈146）的位移——以前用另一條公式，跟身體前端差到 11 個單位，看得到頭離開身體
+    const nk = F(146, 150);
+    set(box, "--ghx", (nk[0] - 146).toFixed(2) + "px");
+    set(box, "--ghy", (nk[1] - 150).toFixed(2) + "px");
   }
   // 神龍游（2026-10-05 改 follow-the-leader）：波固定在「世界」裡（跟著舞台位置 x，不跟著時間）——
   // 頭經過哪裡高、哪裡低，身體每一節經過同一個地方時就一樣高、一樣低，整條身體走頭走過的路（以前是原地扭的正弦波）。
@@ -174,6 +177,7 @@ window.PetWalk = (function () {
     ELS.set(box, o); return o;
   }
   function flush(box) {
+    if (box.__xtra) Object.assign(box.__gv || (box.__gv = {}), box.__xtra);   // 收步時額外疊上的值（見 goTo 的收步）
     const v = box.__gv; if (!v) return; box.__gv = null;
     const E = els(box), g = k => v[k] || "0px", d = k => v[k] || "0deg", T = (el, t) => { if (el) el.style.transform = t; };
     if (box.classList.contains("standing") && E.stand) {
@@ -338,10 +342,10 @@ window.PetWalk = (function () {
     const u = 200 / critterPx(box), x0 = curX(box);
     const tuck = (k, arch) => { applyField(box, (x, y) => { const t = Math.max(0, Math.min(1, (LV_HEAD - x) / 114)); return [LV_HEAD + (x - LV_HEAD) * k, y - arch * Math.sin(Math.PI * t) * (1 - k)]; }); };
     // 收：尾巴先收（離頭越遠收越多）、背拱起來；頭微微抬起、往前看
-    await tween(380, e => { tuck(1 - .86 * e, 10); set(box, "--ghy", (-5 * e).toFixed(2) + "px"); flush(box); });
+    await tween(300, e => { tuck(1 - .86 * e, 10); set(box, "--ghy", (-5 * e).toFixed(2) + "px"); flush(box); });
     box.classList.toggle("lv-l", dir < 0);
     moveTo(box, x0 + 2 * f * (LV_HEAD - 100) / u);   // 換邊：頭的位置不變（中心跳到頭的另一邊）
-    await tween(420, e => { tuck(.14 + .86 * e, 10); set(box, "--ghy", (-5 * (1 - e)).toFixed(2) + "px"); flush(box); });
+    await tween(340, e => { tuck(.14 + .86 * e, 10); set(box, "--ghy", (-5 * (1 - e)).toFixed(2) + "px"); flush(box); });
     resetField(box); clearGait(box);
     set(box, "--wx", (x0 + 2 * f * (LV_HEAD - 100) / u) + "px"); { const E = els(box); [E.critter, E.shadow, E.prop].forEach(el => { if (el) el.style.translate = ""; }); }
     box.classList.remove("walking"); delete box.dataset.walk;
@@ -351,8 +355,9 @@ window.PetWalk = (function () {
     const [l0, x0] = box.__bend || [0, 0];
     // 頭跟身體同一格一起寫（2026-10-05 第二輪）：頭掛在身體最前端（x≈140 那一節彎了多少，頭就移多少）——
     // 以前頭靠 .st-lean 一下子跳到低頭位置、身體 0.3 秒才彎過去；抬頭時反過來，中間看得到頭離開身體
-    const E = els(box), kh = sstep((140 - 78) / 66);
-    await tween(ms, e => { const L = l0 + (ld - l0) * e, X = x0 + (lx - x0) * e; applyField(box, (x, y) => { const k = sstep((x - 78) / 66); return [x + X * k, y + L * k]; });
+    // 彎曲集中在 x 86～132（頭底下那一段跟頭一起移；以前從 x 78 到頭慢慢加，頭正下方只彎了 67～94%，低頭時脖子被拉開）
+    const K = x => sstep((x - 86) / 46), E = els(box), kh = K(140);
+    await tween(ms, e => { const L = l0 + (ld - l0) * e, X = x0 + (lx - x0) * e; applyField(box, (x, y) => { const k = K(x); return [x + X * k, y + L * k]; });
       if (E.head) E.head.style.transform = `translate(${(X * kh).toFixed(2)}px, ${(L * kh).toFixed(2)}px)`; });
     box.__bend = ld || lx ? [ld, lx] : null; if (!box.__bend) { resetField(box); if (E.head) E.head.style.transform = ""; }
   }
@@ -407,10 +412,10 @@ window.PetWalk = (function () {
       const step = () => { const now = performance.now();
         const k = Math.min(1, (now - t1) / (opts.keepFace && g.mode !== "swim" ? 160 : 320)), s = (1 - k);   // 神龍至少 0.32 秒：雲座晚 0.25 秒才跟到
         if (g.mode === "swim") { swimField(box, Math.max(0, .9 * (1 - k)), .016); cloudTick(box, x); }   // 身體的起伏慢慢收平、雲座趕上來
+        // 往前多衝一點再回來、尾巴再擺一下：交給 pose() 一起寫（以前 pose() 寫完再 flush 一次，那一次其他值都是空的——站姿的腿和下沉、幼龍的腳都被歸零，頭也跟著跳）
+        box.__xtra = { "--gsx": (dir * 5 * Math.sin(k * Math.PI * 1.6) * (1 - k)).toFixed(2) + "px", "--gtr": ((g.tail || 0) * 1.2 * Math.sin(k * Math.PI * 2.4) * (1 - k)).toFixed(2) + "deg" };
         pose(box, g, p1 + k * .25, s * Math.min(.6, lastS), dir);   // 從走路最後的幅度接著收（以前一律從 0.6 開始，停下那一格步伐突然變大）
-        set(box, "--gsx", (dir * 5 * Math.sin(k * Math.PI * 1.6) * (1 - k)).toFixed(2) + "px");   // 往前多衝一點再回來
-        set(box, "--gtr", ((g.tail || 0) * 1.2 * Math.sin(k * Math.PI * 2.4) * (1 - k)).toFixed(2) + "deg");
-        flush(box);
+        box.__xtra = null;
         if (k < 1) raf = requestAnimationFrame(step); else res();
       };
       raf = requestAnimationFrame(step);
