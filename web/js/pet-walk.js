@@ -138,7 +138,7 @@ window.PetWalk = (function () {
   // tgt：果實元素（尾尖去托它）／"mouth"（送到下巴前的交接點）／null（尾巴放回原位）
   // 尾尖走一條弧線：去托果實時微微抬起；送到嘴前時從身體下方繞過去（不從臉、角或身體中間穿過）；收回時往下回到原位
   const mouthLocal = box => { const m = cpt(box, "mouth"); return toLocal(box, m[0] - 5, m[1] + 6); };   // 下巴前面一點點（交接點）
-  async function tailTo(box, tgt, ms) {   // 果實跟著尾尖走由 pet-stage.js 的 follow() 負責（尾尖是 .cp-tail，在變形群組裡）
+  async function tailTo(box, tgt, ms, onFrame) {   // onFrame：尾巴每寫一格就呼叫（pet-stage.js 在同一格把果實對齊尾尖）   // 果實跟著尾尖走由 pet-stage.js 的 follow() 負責（尾尖是 .cp-tail，在變形群組裡）
     if (!sp6()) return;
     let P = (box.__chain || rest()).map(q => q.slice());
     const st = P[P.length - 1].slice();
@@ -150,11 +150,11 @@ window.PetWalk = (function () {
       const u = 1 - e, T = [u * u * st[0] + 2 * u * e * c[0] + e * e * g[0], u * u * st[1] + 2 * u * e * c[1] + e * e * g[1]];
       step(T);
       if (!tgt) { const R = rest(), w = e * e; P = P.map((q, i) => [q[0] + (R[i][0] - q[0]) * w, q[1] + (R[i][1] - q[1]) * w]); }   // 收回：一路混回原本的形狀（最後一格剛好是原形，不會跳）
-      applyChain(box, P);
+      applyChain(box, P); if (onFrame) onFrame();
     });
     for (let f = 0; tgt && f < 12; f++) {   // 每格限速可能讓尾尖晚一點到：多跟幾格，真的碰到目標才結束
       const g = goal(); if (Math.hypot(P[P.length - 1][0] - g[0], P[P.length - 1][1] - g[1]) < 1) break;
-      step(g); applyChain(box, P); await new Promise(r => requestAnimationFrame(r));
+      step(g); applyChain(box, P); if (onFrame) onFrame(); await new Promise(r => requestAnimationFrame(r));
     }
     if (!tgt) { resetField(box); box.__chain = null; }
   }
@@ -591,5 +591,5 @@ window.PetWalk = (function () {
   }
   // 現在看得到的那一份身體（站著時是 .pr-stand）裡找部位
   const part = (box, sel) => { const em = box.querySelector("#petEmoji"); if (!em) return null; return (box.classList.contains("standing") && em.querySelector(".pr-stand " + sel)) || em.querySelector(sel); };
-  return { goTo, goEat, home, face, stop, standUp, sitDown, turnStand, setQ, larvaTurn, bend, part, bow, bowSet, bowClear, solveBow, groundY, cpt, tailTo, tailReach, GAIT, _pose: pose };   // _pose：測試逐相位檢查用
+  return { tween, goTo, goEat, home, face, stop, standUp, sitDown, turnStand, setQ, larvaTurn, bend, part, bow, bowSet, bowClear, solveBow, groundY, cpt, tailTo, tailReach, GAIT, _pose: pose };   // _pose：測試逐相位檢查用
 })();

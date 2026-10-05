@@ -363,7 +363,7 @@ window.PetStage = (function () {
         else if (onCloud) {   // 神龍：尾尖托住果實 → 沿身體下方送到下巴前的交接點 → 停一下、頭往前、張嘴 → 果實改歸嘴、尾巴鬆開退回 → 咬、嚼
           await PetWalk.tailTo(box, b, 650);
           b.classList.add("carried"); follow(b, "tail", { ay: .62, ms: 120 });   // 托住之後果實歸尾尖（尾巴拿著時跟尾尖）
-          await PetWalk.tailTo(box, "mouth", 820);
+          await PetWalk.tailTo(box, "mouth", 820, () => ownTick(true));   // 同一格把果實對齊尾尖（不等下一個 rAF：機器忙時會差一格、果實晃一下）
           await sleep(120);                                                     // 到了交接點停一下
           const hd = PetWalk.part(box, ".pr-head");
           const lean = hd && hd.animate([{ transform: "none" }, { transform: "translate(-3px, 3px)" }], { duration: 180, easing: "ease-out", fill: "forwards" });   // 頭略往前迎上去
@@ -387,7 +387,12 @@ window.PetStage = (function () {
             const side = x - at() >= 0 ? "r" : "l";
             cls(true, "st-crouch", "st-reach-" + side); await sleep(340);       // 蹲下、那隻爪子伸下去
             b.classList.add("held"); follow(b, "palm-" + side, { ay: .38, ms: 220 }); await sleep(220);   // 抓住：從現在起果實歸手掌（最後幾 px 慢慢收進手心）
-            cls(false, "st-reach-" + side); cls(true, "st-lift-" + side); await sleep(500);   // 舉到嘴邊（慢起慢停，果實每一格跟著手掌）
+            // 舉到嘴邊：爪子由 JS 逐格寫、同一格把果實對齊手掌（以前爪子用 CSS 過渡、果實在另一個 rAF 追，機器忙時差一格會晃）
+            const paw = emEl().querySelector(".pr-paw." + side), sg = side === "r" ? -1 : 1;
+            const P0 = [-sg * 4, 14, sg * 28], P1 = [sg * 2, -22, -sg * 60];   // [x, y, 角度]：伸下去 → 舉到嘴邊（跟 CSS 的 st-reach／st-lift 同一組數字）
+            paw.style.transition = "none"; cls(false, "st-reach-" + side);
+            await PetWalk.tween(500, e => { const v = P0.map((a, i) => a + (P1[i] - a) * e); paw.style.transform = `translate(${v[0].toFixed(2)}px, ${v[1].toFixed(2)}px) rotate(${v[2].toFixed(2)}deg)`; ownTick(true); });
+            cls(true, "st-lift-" + side); paw.style.transform = ""; paw.style.transition = "";
             // 咬兩口：第一口咬掉一角（剩 2/3）、手拿著嚼；第二口吃掉、嚼、吞——吞完手才放下、才拍肚子（2026-10-05 第二輪照 ChatGPT 看錄影的建議：以前第二口咬下去手就放下了）
             b.style.setProperty("--nx", side === "r" ? "28%" : "72%");          // 缺口在靠嘴的那一側
             cls(true, "st-open"); await sleep(120);
