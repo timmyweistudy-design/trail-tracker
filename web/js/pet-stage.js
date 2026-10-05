@@ -189,6 +189,7 @@ window.PetStage = (function () {
   // 夥伴一顆一顆轉頭看、咬一口（果實被吸到嘴邊縮小），餵食鈕上的果實數跟著一顆一顆減；三顆吃完再用自己那一種方式慶祝（跳、撲、挺胸…）。
   // 蛋不會吃也不會走：果實掉在蛋前面，化成光點飛進裂縫。減少動態效果或舞台不在畫面上時，pet.js 直接結算。回傳播完的 promise
   function dropSpots(n, egg) {   // egg：蛋不會走路，果實掉在蛋的前方 ±40 以內（在蛋前面、不會被擋住）
+    if (Array.isArray(window.__psSpots) && window.__psSpots.length >= n) return window.__psSpots.slice(0, n);   // 測試／除錯：指定落點（px，相對舞台中間）
     const out = [], R = egg ? 40 : 84, gap = egg ? 26 : 34;
     for (let tries = 0; out.length < n && tries < 80; tries++) {
       const x = Math.round((Math.random() * 2 - 1) * R);
@@ -203,10 +204,11 @@ window.PetStage = (function () {
     const pr = box.querySelector("#petEmoji .pet-prop"), actor = box.querySelector(".ps-actor");
     if (!pr || typeof PET_ART === "undefined" || !PET_ART.cloudTop6) return null;
     const q = pr.getBoundingClientRect(), a = actor.getBoundingClientRect(), k = q.width / 200, out = [];
+    const forced = Array.isArray(window.__psSpots) && window.__psSpots.length >= n ? window.__psSpots.slice(0, n) : null;   // 測試：指定雲上的落點（圖上的 x）
     for (let tries = 0; out.length < n && tries < 120; tries++) {
-      const lx = 84 + Math.random() * 112, top = PET_ART.cloudTop6(lx); if (top == null) continue;   // 尾巴那一側（頭那邊要繞過整個身體，太勉強）
+      const lx = forced ? forced[out.length] : 84 + Math.random() * 112, top = PET_ART.cloudTop6(lx); if (top == null) continue;   // 尾巴那一側（頭那邊要繞過整個身體，太勉強）
       const x = Math.round(q.left + lx * k - (a.left + a.width / 2));
-      if (out.some(o => Math.abs(o.x - x) < 26) || PetWalk.tailReach(lx, top + 3 - 15) > 3) continue;
+      if (!forced && (out.some(o => Math.abs(o.x - x) < 26) || PetWalk.tailReach(lx, top + 3 - 15) > 3)) continue;
       out.push({ x, by: Math.round(a.bottom - (q.top + (top + 3) * k)) });
     }
     return out.length === n ? out : null;
@@ -455,7 +457,31 @@ window.PetStage = (function () {
   }
   const cachedWx = () => (wxMemo ? wxMemo.wx : "");
 
+  // ── 除錯標記（測試面板「餵食除錯標記」／PetStage.debug(true)）：紅＝嘴、綠＝果實中心、藍＝腳掌著地點、黃＝接觸點（.cp-*）──
+  let dbgOn = false, dbgRaf = 0;
+  function debug(on) {
+    dbgOn = on == null ? !dbgOn : !!on; cancelAnimationFrame(dbgRaf);
+    document.querySelectorAll(".ps-dbg").forEach(e => e.remove());
+    if (!dbgOn) return false;
+    const lay = document.createElement("div"); lay.className = "ps-dbg"; lay.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:9999"; document.body.appendChild(lay);
+    const dot = (x, y, c, r) => `<i style="position:fixed;left:${x - (r || 3)}px;top:${y - (r || 3)}px;width:${2 * (r || 3)}px;height:${2 * (r || 3)}px;border-radius:50%;background:${c};box-shadow:0 0 0 1px #000"></i>`;
+    const tick = () => {
+      if (!dbgOn) return;
+      let h = "";
+      const bx = document.querySelector(".ps-box"), em = bx && bx.querySelector("#petEmoji");
+      if (em) {
+        const P = sel => (typeof PetWalk !== "undefined" ? PetWalk.part(bx, sel) : em.querySelector(sel));
+        const m = P(".pr-mouth"); if (m) { const r = m.getBoundingClientRect(); h += dot(r.left + r.width / 2, r.top + r.height / 2, "#f33", 4); }
+        em.querySelectorAll(".cp").forEach(c => { const q = c.getBoundingClientRect(); if (q.width || q.height || c.getScreenCTM) { const M = c.getScreenCTM && c.getScreenCTM(); if (M) { const pt = new DOMPoint(+c.getAttribute("cx"), +c.getAttribute("cy")).matrixTransform(M); h += dot(pt.x, pt.y, "#ff0", 3); } } });
+        if (bx.classList.contains("standing")) em.querySelectorAll(".pr-stand .pr-shin").forEach(sh => { const e = [...sh.querySelectorAll("ellipse")].find(x => !x.closest("clipPath") && !x.closest("defs")); if (!e) return; const pt = new DOMPoint(+e.getAttribute("cx"), +e.getAttribute("cy") + +e.getAttribute("ry")).matrixTransform(e.getScreenCTM()); h += dot(pt.x, pt.y, "#39f", 3); });
+      }
+      document.querySelectorAll(".ps-berry").forEach(b => { const r = b.getBoundingClientRect(); h += dot(r.left + r.width / 2, r.top + r.height / 2, "#3f6", 3); });
+      lay.innerHTML = h; dbgRaf = requestAnimationFrame(tick);
+    };
+    tick(); return true;
+  }
+
   // 心情變了但卡片沒重畫（pet.js 的 petCardUpdate）：待機動作的機率跟著換
   function setMood(m) { mood = m || "content"; if (box) schedule(mood); }
-  return { setMood, html, bind, unbind, tod, season, wxOf, weather, cachedWx, count: STAGES, zoneOf, react, feed, act };
+  return { debug, setMood, html, bind, unbind, tod, season, wxOf, weather, cachedWx, count: STAGES, zoneOf, react, feed, act };
 })();

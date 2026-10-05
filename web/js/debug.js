@@ -277,7 +277,7 @@ async function toggleDebugPanel() {
     ["夥伴舞台與旅行", [
       ["🌅清晨", () => ttDebug.stage("tod", "dawn")], ["☀白天", () => ttDebug.stage("tod", "day")], ["🌇黃昏", () => ttDebug.stage("tod", "dusk")], ["🌙夜晚", () => ttDebug.stage("tod", "night")],
       ["🌸春", () => ttDebug.stage("season", "spring")], ["🌿夏", () => ttDebug.stage("season", "summer")], ["🍁秋", () => ttDebug.stage("season", "autumn")], ["❄冬", () => ttDebug.stage("season", "winter")],
-      ["🌧下雨", () => ttDebug.stage("wx", "rain")], ["☁陰天", () => ttDebug.stage("wx", "cloud")], ["🌨下雪", () => ttDebug.stage("wx", "snow")], ["🌤晴", () => ttDebug.stage("wx", "")],
+      ["🎯餵食除錯標記", () => (typeof PetStage !== "undefined" && PetStage.debug() ? "餵食除錯標記：開（紅＝嘴、綠＝果實、藍＝腳掌、黃＝接觸點）" : "餵食除錯標記：關")], ["🌧下雨", () => ttDebug.stage("wx", "rain")], ["☁陰天", () => ttDebug.stage("wx", "cloud")], ["🌨下雪", () => ttDebug.stage("wx", "snow")], ["🌤晴", () => ttDebug.stage("wx", "")],
       ["↺回真實時間天氣", () => ttDebug.stage(null)],
       ["🐾跳一下", () => ttDebug.act("hop")], ["🙆伸懶腰", () => ttDebug.act("stretch")], ["👀東張西望", () => ttDebug.act("look")], ["🤗今天可再抱", () => ttDebug.resetHug()],
       ["🍓看餵食動畫", closeAnd(() => { ttDebug.addBerries(10); ttDebug.resetFeed(); document.querySelector('.tab[data-view="pet"]').click(); setTimeout(() => { const f = document.getElementById("petFeed"); if (f) { f.scrollIntoView({ block: "center" }); setTimeout(() => f.click(), 500); } }, 600); })],

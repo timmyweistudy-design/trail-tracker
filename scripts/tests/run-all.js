@@ -37,7 +37,8 @@ else if (sqlOnly || !quick) console.log("（略過資料庫測試：沒裝 embed
 
 // ── --changed：改了哪些檔 → 跑哪些測試（對不到的 web/ 檔案就跑主要流程；check 一律跑）──
 const MAP = [
-  [/web\/js\/(pet-art|pet-stage|stage-art|art-kit|pet)\.js$/, ["pet-stage", "pet", "pet-visit", "year-story"]],
+  [/web\/js\/(pet-art|pet-stage|stage-art|art-kit|pet)\.js$/, ["pet-stage", "pet-motion", "pet", "pet-visit", "year-story"]],
+  [/web\/js\/pet-walk\.js$/, ["pet-stage", "pet-motion"]],
   [/web\/js\/(pet-journey|postcard-art)\.js$/, ["pet-stage", "pet"]],
   [/web\/js\/achievements\.js$/, ["achievements", "pet"]],
   [/web\/js\/social\//, ["social", "social-e2e", "pet-visit", "clubs", "pro-admin"]],

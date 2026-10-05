@@ -331,7 +331,7 @@ window.PetWalk = (function () {
   // 轉身（3/4 側面）：dir＝-1 往左、1 往右、0 轉回正面
   async function face(box, dir, ms) {
     const from = parseFloat(box.style.getPropertyValue("--face")) || 0, to = dir * 24, t0 = performance.now(), D = ms || 260;
-    await new Promise(res => { const step = t => { const k = Math.min(1, (t - t0) / D), e = k * k * (3 - 2 * k); set(box, "--face", (from + (to - from) * e).toFixed(2) + "deg"); if (k < 1) raf = requestAnimationFrame(step); else res(); }; raf = requestAnimationFrame(step); });
+    await new Promise(res => { const step = () => { const t = performance.now(); const k = Math.min(1, (t - t0) / D), e = k * k * (3 - 2 * k); set(box, "--face", (from + (to - from) * e).toFixed(2) + "deg"); if (k < 1) raf = requestAnimationFrame(step); else res(); }; raf = requestAnimationFrame(step); });
   }
   // ── 幼蟲掉頭：身體一節一節往頭後面收（像轉向鏡頭：只看到頭、身體藏在後面），頭不動，換邊，再一節一節伸出去 ──
   // 畫面上：頭留在原地、身體從頭的一邊繞到另一邊（不是整條瞬間鏡像，也不會壓成紙片——最窄的時候是頭朝著你）
@@ -365,7 +365,7 @@ window.PetWalk = (function () {
     const y0 = curY(box), y1 = opts.wy == null ? y0 : opts.wy;
     if (reduce()) { set(box, "--wx", x + "px"); set(box, "--wy", y1 + "px"); return; }
     if (Math.abs(dist) < 3) {   // 左右幾乎不用動、只要往前（深度）挪：原地踏一小步過去
-      if (Math.abs(y1 - y0) >= 1.5) await new Promise(res => { const t0 = performance.now(); const step = now => { const k = Math.min(1, (now - t0) / 300), e = k * k * (3 - 2 * k); moveTo(box, x0 + (x - x0) * e, y0 + (y1 - y0) * e); if (k < 1) raf = requestAnimationFrame(step); else res(); }; raf = requestAnimationFrame(step); });
+      if (Math.abs(y1 - y0) >= 1.5) await new Promise(res => { const t0 = performance.now(); const step = () => { const now = performance.now(); const k = Math.min(1, (now - t0) / 300), e = k * k * (3 - 2 * k); moveTo(box, x0 + (x - x0) * e, y0 + (y1 - y0) * e); if (k < 1) raf = requestAnimationFrame(step); else res(); }; raf = requestAnimationFrame(step); });
       set(box, "--wx", x + "px"); set(box, "--wy", y1 + "px"); box.__wy = null; const E = els(box); [E.critter, E.shadow, E.prop].forEach(el => { if (el) el.style.translate = ""; }); return;
     }
     box.classList.add("walking"); box.dataset.walk = g.mode;
@@ -386,7 +386,7 @@ window.PetWalk = (function () {
     const arc = g.mode === "fly" ? Math.min(28, Math.abs(dist) * .3) : 0;   // 蝶：飛一道弧線過去（不是貼著直線滑）
     let p = 0, t = performance.now(), done = 0;
     await new Promise(res => {
-      const step = now => {
+      const step = () => { const now = performance.now();
         const dt = Math.min(.05, (now - t) / 1000); t = now;
         const left = Math.abs(dist) - done;
         const ease = Math.min(1, (done + 2) / ramp, (left + 2) / ramp);   // 起步加速、快到時減速
@@ -405,7 +405,7 @@ window.PetWalk = (function () {
     // 收步：身體往前多衝一點再回來（彈簧），腳收回、尾巴再擺一下（幼蟲沒有：最後一道波結束身體就是平的）
     const p1 = p, t1 = performance.now();
     if (g.mode !== "crawl") await new Promise(res => {
-      const step = now => {
+      const step = () => { const now = performance.now();
         const k = Math.min(1, (now - t1) / (opts.keepFace && g.mode !== "swim" ? 160 : 320)), s = (1 - k);   // 神龍至少 0.32 秒：雲座晚 0.25 秒才跟到
         if (g.mode === "swim") { swimField(box, Math.max(0, .9 * (1 - k)), .016); cloudTick(box, x); }   // 身體的起伏慢慢收平、雲座趕上來
         pose(box, g, p1 + k * .25, s * .6, dir);
@@ -494,14 +494,16 @@ window.PetWalk = (function () {
   }
   function bow(box, pitch, nk, ms) {   // 從現在的姿勢平滑過去（先慢後快再慢）；pitch＝nk＝0 是站直
     const [p0, n0] = box.__bow || [0, 0], t0 = performance.now(), D = ms || 360;
-    return new Promise(res => { const step = now => { const k = Math.min(1, (now - t0) / D), e = k * k * (3 - 2 * k);
+    return new Promise(res => { const step = () => { const now = performance.now(); const k = Math.min(1, (now - t0) / D), e = k * k * (3 - 2 * k);
       bowSet(box, p0 + (pitch - p0) * e, n0 + (nk - n0) * e); if (k < 1) raf = requestAnimationFrame(step); else { if (!pitch && !nk) bowClear(box); res(); } };
       raf = requestAnimationFrame(step); });
   }
   // ── 站起來／坐下／轉身（狐、虎）：坐著（正面）→ 站起來（正面）→ 四分之三面 → 側身；轉身＝側身 → 四分之三 → 正面 → 另一邊四分之三 → 側身 ──
   // 以前：坐姿直接換成側身（像換了一張圖）、轉身用 rotateY 翻面（翻到一半身體寬度是 0，像紙片）。
   // 現在每一步只差一點點：頭一直在、大小位置連續，身體由「坐著的臀部 → 正面的背 → 縮短的側身 → 完整側身」接起來
-  const tween = (ms, fn) => new Promise(res => { const t0 = performance.now(); const step = now => { const k = Math.min(1, (now - t0) / ms); fn(k * k * (3 - 2 * k), k); if (k < 1) raf = requestAnimationFrame(step); else res(); }; raf = requestAnimationFrame(step); });
+  // 所有逐格動畫都用 performance.now() 算進度，不用 requestAnimationFrame 給的時間戳記：
+  // 兩者不保證同一個時鐘（Chrome 虛擬時間差了 25 秒、補間卡在起點；WebKit 也不保證），起點又是用 performance.now() 記的
+  const tween = (ms, fn) => new Promise(res => { const t0 = performance.now(); const step = () => { const now = performance.now(); const k = Math.min(1, (now - t0) / ms); fn(k * k * (3 - 2 * k), k); if (k < 1) raf = requestAnimationFrame(step); else res(); }; raf = requestAnimationFrame(step); });
   const H2 = new WeakMap();
   function setQ(box, q) {   // q：0＝側身、1＝四分之三面（頭移到正面站姿的頭的位置、大小）
     const E = els(box); if (!E.stand || !E.h2g) return;
