@@ -116,7 +116,7 @@ const KM=[0,5,20,40,90,150,260];
  await p.screenshot({path:O+"p2-feed-eat.png"});
  ok(seq.vals.join()===[shown0,shown0-1,shown0-2,shown0-3].join(),"feed: the berry count on the button ticks down one per bite "+JSON.stringify(seq));
  ok(seq.bite&&seq.feetMove<1.5,"feed: leans down to eat, feet stay planted while eating "+JSON.stringify({feetMove:seq.feetMove}));
- ok(seq.aims.length===3&&seq.aims.every(([dx,dy])=>Math.abs(dx)<=14&&Math.abs(dy)<=24),"feed: walks over so the mouth is right above each berry when it opens (dx,dy px) "+JSON.stringify(seq.aims));
+ ok(seq.aims.length===3&&seq.aims.every(([dx,dy])=>Math.abs(dx)<=8&&Math.abs(dy)<=8),"feed: walks over so the mouth is right above each berry when it opens (dx,dy px) "+JSON.stringify(seq.aims));
  ok(/st-lean>st-open>pb-snap>pb-chew>pb-gulp/.test(seq.steps),"feed: each berry = lean > open mouth > snap > chew > gulp "+seq.steps);
  const lick=await p.evaluate(async()=>{for(let k=0;k<80;k++){if(document.querySelector("#petEmoji.pb-lick"))return true;await new Promise(r=>setTimeout(r,50));}return false;});
  ok(lick,"feed: licks its lips after the last berry");
@@ -343,6 +343,25 @@ for(const [km,st] of [[5,1],[150,5],[260,6]]){const p=await mk({km});
 {const p=await mk({km:40,reduce:true});
  const r=await p.evaluate(async()=>{const em=document.querySelector("#petEmoji");em.classList.add("pb-pat");await new Promise(r=>setTimeout(r,250));const t=getComputedStyle(em.querySelector(".pr-head")).animationName;em.classList.remove("pb-pat");return t;});
  ok(r==="none","reduced motion: no part animation ("+r+")");
+ await p.close();}
+
+// ── 2026-10-05 餵食骨架：咬下那一刻嘴真的碰到果實（果實不再自己飛過去）、走路時地上的果實不動、一次只標一顆、最多轉身兩次 ──
+for(const [km,st] of [[5,1],[40,3],[90,4],[260,6]]){const p=await mk({km});
+ await p.evaluate(()=>{localStorage.removeItem("tt_pet_fed_t");renderPet();});await p.waitForTimeout(300);
+ await p.evaluate(()=>document.querySelector(".ps-box").scrollIntoView());await p.click("#petFeed");
+ const r=await p.evaluate(async()=>{const bite=[],seen=new Set();let moved=0,prev=null,maxTarget=0,dirs=[],lastX=null;const t0=performance.now();
+  while(performance.now()-t0<30000){const box=document.querySelector(".ps-box");const bs=[...document.querySelectorAll(".ps-berry")];
+   for(const b of bs)if(b.classList.contains("eaten")&&!seen.has(b)){seen.add(b);bite.push([Math.round(parseFloat(b.style.getPropertyValue("--tx"))||0),Math.round(parseFloat(b.style.getPropertyValue("--ty"))||0)]);}
+   maxTarget=Math.max(maxTarget,bs.filter(b=>b.classList.contains("target")&&!b.classList.contains("eaten")).length);
+   if(box.classList.contains("walking")){const pos=bs.filter(b=>!b.classList.contains("eaten")&&!b.classList.contains("held")).map(b=>{const q=b.getBoundingClientRect();return Math.round(q.left)+","+Math.round(q.top)});if(prev&&prev.length===pos.length&&pos.some((x,i)=>x!==prev[i]))moved++;prev=pos;
+   }else prev=null;
+   {const fv=parseFloat(box.style.getPropertyValue("--face"))||0,d=box.classList.contains("standing")?(box.classList.contains("face-r")?1:-1):(Math.abs(fv)>8?Math.sign(fv):0);if(d&&dirs[dirs.length-1]!==d)dirs.push(d);}   // 面朝哪邊（小碎步往後退不算轉身）
+   if(!bs.length&&bite.length)break;await new Promise(r=>setTimeout(r,25));}
+  return {bite,moved,maxTarget,turns:Math.max(0,dirs.length-1)};});
+ ok(r.bite.length===3&&r.bite.every(([x,y])=>Math.hypot(x,y)<=8),"stage "+st+": the mouth touches the berry when it bites (berry moves ≤8px into the mouth) "+JSON.stringify(r.bite));
+ ok(r.moved===0,"stage "+st+": berries on the ground never move while the pet walks ("+r.moved+")");
+ ok(r.maxTarget===1,"stage "+st+": exactly one berry is marked as the one being eaten");
+ ok(r.turns<=2,"stage "+st+": eats in one sweep, turns around at most twice ("+r.turns+")");
  await p.close();}
 
 // ── 2026-10-04 走過去吃：蠕動／游動的身體變形走完要還原；站姿走路要坐回去 ──

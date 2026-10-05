@@ -1910,11 +1910,18 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 /* 餵食的果實：從舞台上方掉到角色旁邊、彈一下，被吃掉時縮小消失 */
 .ps-berry { position: absolute; left: 50%; bottom: var(--by, 14px); width: var(--bs, 30px); height: var(--bs, 30px); margin-left: calc(var(--bs, 30px) / -2); z-index: 3; pointer-events: none; translate: calc(var(--bx, 0) * 1px) 0; rotate: var(--br, 0deg); animation: psBerryDrop .65s cubic-bezier(.45, 0, .7, .2) both; }
 .ps-berry svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 3px 3px rgba(0,0,0,.3)); }
-.ps-berry.eaten { animation: psBerryEat .5s cubic-bezier(.5, 0, .9, .4) forwards; animation-delay: 0s; }
+/* 正在吃的那一顆：腳下一圈淡淡的光（亮一下再慢慢呼吸）；排隊的稍微暗一點 */
+.ps-berry::after { content: ""; position: absolute; left: 50%; bottom: -3px; width: 120%; height: 30%; translate: -50% 0; border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 236, 160, .75), rgba(255, 236, 160, 0)); opacity: 0; transition: opacity .3s; z-index: -1; }
+.ps-berry.target::after { opacity: 1; animation: psTarget 1.6s ease-in-out infinite; }
+@keyframes psTarget { 0%, 100% { scale: 1; opacity: .9; } 50% { scale: 1.18; opacity: .55; } }
+.ps-berry.wait svg { filter: drop-shadow(0 3px 3px rgba(0,0,0,.3)) saturate(.75) brightness(.9); transition: filter .3s; }
+.ps-berry.eaten::after, .ps-berry.held::after { opacity: 0; animation: none; }
+.ps-berry.eaten { animation: psBerryEat .36s cubic-bezier(.5, 0, .9, .4) forwards; animation-delay: 0s; }
 @keyframes psBerryDrop { 0% { transform: translateY(var(--bh, -240px)); opacity: 0; } 15% { opacity: 1; } 78% { transform: translateY(0) scale(1.12, .84); } 88% { transform: translateY(-9px) scale(.96, 1.05); } 100% { transform: none; } }
 /* 被吸到嘴邊：往角色中間、往上飄、縮小 */
 /* 被吸進嘴裡：飛到嘴的位置（pet-stage.js 量好 --tx/--ty）、越來越小 */
-@keyframes psBerryEat { 0% { transform: none; } 45% { transform: translate(calc(var(--tx, 0px) * .55), calc(var(--ty, -46px) * .55 - 10px)) scale(.8); } 100% { transform: translate(var(--tx, 0px), var(--ty, -46px)) scale(.12); opacity: 0; } }
+/* 2026-10-05：不再「飛」進嘴裡——嘴已經碰到果實（pet-stage.js reach()），這裡只是被咬進去：先被咬扁一點、再縮進嘴裡 */
+@keyframes psBerryEat { 0% { transform: none; } 30% { transform: translate(calc(var(--tx, 0px) * .5), calc(var(--ty, 0px) * .5)) scale(1.08, .82); } 100% { transform: translate(var(--tx, 0px), var(--ty, 0px)) scale(.15); opacity: 0; } }
 .ps-box .pc-eye { animation-duration: var(--bk, 4.4s); }
 /* 咬一口：短的一下（以前三顆一起吃完才咬三下） */
 .ps-box .pb-bite .pet-critter { animation: pbBite .52s ease-in-out; }
@@ -2216,8 +2223,8 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 @media (prefers-reduced-motion: reduce) { .pet-chip.bump .cv, .pet-meter.bump b { animation: none; } }
 
 /* ════ 走過去吃（pet-walk.js 每一格寫變數，這裡套到骨架上）════ */
-.ps-box .pet-shadow { translate: var(--wx, 0px) 0; }
-.ps-box[data-stage="5"] #petEmoji .pet-prop { translate: calc(-50% + var(--wx, 0px)) 0; }   /* 幼龍的雲跟著飄 */
+.ps-box .pet-shadow { translate: var(--wx, 0px) var(--wy, 0px); }
+.ps-box[data-stage="5"] #petEmoji .pet-prop { translate: calc(-50% + var(--wx, 0px)) var(--wy, 0px); }   /* 幼龍的雲跟著飄 */
 .ps-box.walking .pc-bob, .ps-box.walking .pc-hover { animation: none; transform: translate(var(--gsx, 0px), var(--gby, 0px)) rotate(var(--gbr, 0deg)); scale: calc(1 + var(--gpre, 0) * .03) calc(1 - var(--gpre, 0) * .07); transition: scale .15s ease-out; }
 .ps-box.walking .pc-bob.pc-egg { transform-origin: 50% 96%; }
 .ps-box.walking .pr-head { transform: translateY(var(--ghy, 0px)) rotate(var(--ghr, 0deg)); }
