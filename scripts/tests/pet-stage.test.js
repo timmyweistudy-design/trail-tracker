@@ -337,7 +337,7 @@ for(const [km,st] of [[5,1],[150,5],[260,6]]){const p=await mk({km});
   em.classList.add("st-lean","st-open");await new Promise(r=>setTimeout(r,600));const h2=em.querySelector(".pc-hat").getBoundingClientRect(),f2=em.querySelector(".pc-bob").getBoundingClientRect(),o=getComputedStyle(em.querySelector(".m-o")).opacity;
   em.classList.remove("st-lean","st-open");return {hatDown:+(h2.top-h.top).toFixed(1),feet:+Math.abs(f2.bottom-f.bottom).toFixed(1),open:o};});
  ok(lean.hatDown>5&&lean.feet<1&&lean.open==="1","leaning: the hat goes down with the head, feet stay, mouth opens "+JSON.stringify(lean));
- const share=await p.evaluate(()=>/\.m-o,\.m-t,\.m-p,\.pr-ext,\.pr-stand\{display:none\}/.test(decodeURIComponent(PET_ART.dataUri(3,120))));
+ const share=await p.evaluate(()=>/\.m-o,\.m-t,\.m-p,\.pr-ext,\.pr-stand,\.pr-front\{display:none\}/.test(decodeURIComponent(PET_ART.dataUri(3,120))));
  ok(share,"share cards (no stylesheet) always draw the closed mouth");
  await p.close();}
 {const p=await mk({km:40,reduce:true});
@@ -375,6 +375,24 @@ for(const [km,st] of [[5,1],[260,6]]){const p=await mk({km});
  const r=await p.evaluate(async()=>{const box=document.querySelector(".ps-box");const p1=PetWalk.goTo(box,-50);await new Promise(r=>setTimeout(r,450));const standing=box.classList.contains("standing"),vis=getComputedStyle(box.querySelector(".pr-stand")).display;
   await p1;await PetWalk.home(box);return {standing,vis,after:box.classList.contains("standing"),sitVis:getComputedStyle(box.querySelector("#petEmoji .pc-bob")).display};});
  ok(r.standing&&r.vis!=="none"&&!r.after&&r.sitVis!=="none","tiger stands up to walk (side body shown) and sits back down at home "+JSON.stringify(r));
+ await p.close();}
+
+// ── 2026-10-05 狐、虎：站起來／轉身／坐下都經過正面與四分之三面——身體不會被壓成紙片、腳底線不會跳 ──
+{const p=await mk({km:5});
+ const r=await p.evaluate(async()=>{const out={};
+  for(const st of [3,4]){
+   const host=document.createElement("div");host.innerHTML=`<div class="ps-box" data-stage="${st}" style="position:fixed;left:0;top:0;width:600px;height:320px;margin:0;padding:0;z-index:99"><div class="ps-actor" style="position:absolute;left:0;right:0;bottom:24px;translate:none"><div id="petEmojiT"></div></div></div>`;document.body.appendChild(host);
+   const box=host.firstChild,em=box.querySelector("#petEmojiT");em.id="petEmoji";em.innerHTML=PET_ART.svg(st);em.querySelector(".pet-critter").style.cssText="width:200px;height:200px;max-width:none;max-height:none";
+   const vis=()=>{const st_=box.classList.contains("standing");const els=[];if(st_)els.push(em.querySelector(".pr-stand"));if(!st_||box.classList.contains("pf-x")||box.classList.contains("pf-y"))els.push(em.querySelector(".pc-bob"));
+    const rs=els.map(e=>e.getBoundingClientRect()).filter(q=>q.width);return {w:Math.max(...rs.map(q=>q.width)),bottom:Math.max(...rs.map(q=>q.bottom))};};
+   const S=[];let on=true;const tick=()=>{S.push(vis());if(on)requestAnimationFrame(tick)};
+   await PetWalk.standUp(box,1);const side=vis().w;requestAnimationFrame(tick);
+   await PetWalk.turnStand(box,-1);await PetWalk.sitDown(box);await PetWalk.standUp(box,-1);on=false;
+   let jump=0;for(let i=1;i<S.length;i++)jump=Math.max(jump,Math.abs(S[i].bottom-S[i-1].bottom));
+   out[st]={minW:+(Math.min(...S.map(v=>v.w))/side).toFixed(2),jump:+jump.toFixed(1),frames:S.length};host.remove();}
+  return out;});
+ ok(r[3].minW>=.55&&r[4].minW>=.55,"fox/tiger: turning, standing up and sitting down never squash the body below 55% of its side width "+JSON.stringify(r));
+ ok(r[3].jump<=2&&r[4].jump<=2,"fox/tiger: the bottom of the body does not jump between poses (max px per frame) "+JSON.stringify(r));
  await p.close();}
 
 // ── 2026-10-04 腳要踩住：走路時支撐腳的著地點在畫面上不能滑（狐、虎用 IK：中位數 ≤1px；幼龍有 3D 轉身：≤3px）──
