@@ -258,25 +258,40 @@ window.PetStage = (function () {
   // 一顆一顆吃：看（頭＋眼轉過去）→ 俯身 → 張嘴 → 咬（果實飛進嘴裡）→ 抬頭 → 嚼三下（臉頰鼓起）→ 吞；
   // 三顆吃完舔舔嘴、再慶祝。蝶是落在果實旁、口器彎過去吸；蛋是往果實傾、裂縫亮起來把光吸進去。
   const cls = (on, ...c) => { const em = emEl(); if (em) c.forEach(k => em.classList.toggle(k, on)); };
-  // 果實跟著爪子走：量那隻爪子的末端，果實移過去（held＝用 transition 跟上，不再用飛的關鍵影格）
-  function toPaw(b, side, lifted) {
-    const em = emEl(); if (!em) return;
-    const pw = em.querySelector(".pr-paw." + side); if (!pw) return;
-    const q = pw.getBoundingClientRect(), r = b.getBoundingClientRect();
-    // 爪子末端：伸下去時在下緣；舉起來時爪子朝嘴、末端在靠嘴的那一側上緣
-    const cx = lifted ? (side === "l" ? q.right - 8 : q.left + 8) : q.left + q.width / 2, cy = lifted ? q.bottom - 10 : q.bottom - 4;   // 舉起來時手臂斜向嘴，爪尖在外框靠嘴的下角
-    const ox = parseFloat(b.style.getPropertyValue("--tx")) || 0, oy = parseFloat(b.style.getPropertyValue("--ty")) || 0;
-    b.style.setProperty("--tx", `${Math.round(ox + cx - (r.left + r.width / 2))}px`);
-    b.style.setProperty("--ty", `${Math.round(oy + cy - (r.top + r.height / 2))}px`);
+  // ── 果實歸誰（2026-10-05 第二輪）：地上（不動）／手掌／尾尖／嘴，同一時間只歸一個。歸了誰，每一格就把果實的錨點對齊到那個接觸點（PetWalk.cpt），
+  // 部位怎麼動（爪子的 CSS 過渡、尾巴的變形、龍上下飄）果實就怎麼跟——以前用「量外框估爪尖」再讓果實用自己的過渡追，會落後、會跳。
+  // 換手時從現在的位置接過來，殘差 off0 在 ms 內收到 0（接觸點本來就碰到果實了才換手，所以只差幾 px，不是果實自己飛過去）
+  const owned = new Set(); let ownRaf = 0;
+  function follow(b, name, o) {
+    o = o || {}; const pt = typeof PetWalk !== "undefined" ? PetWalk.cpt(box, name) : null; if (!pt) return;
+    const r = b.getBoundingClientRect(), ax = o.ax == null ? .5 : o.ax, ay = o.ay == null ? .5 : o.ay;
+    if (b.__tx == null) { b.__bx0 = b.__rx != null ? b.__rx : parseFloat(b.style.getPropertyValue("--bx")) || 0; b.__tx = 0; b.__ty = 0; }
+    b.__own = { name, ax, ay, off0: [r.left + r.width * ax - pt[0], r.top + r.height * ay - pt[1]], t0: performance.now(), ms: o.ms || 140 };
+    owned.add(b); ownTick(true);
   }
-  function toMouth(b, egg) {   // 果實要飛去的點＝嘴（蛋就是蛋的中間）
+  function release(b) { owned.delete(b); if (b) b.__own = null; }
+  function ownTick(once) {
+    if (!once) ownRaf = 0;
+    if (!box) { owned.clear(); return; }
+    owned.forEach(b => {
+      if (!b.isConnected || !b.__own) { owned.delete(b); return; }
+      const o = b.__own, pt = PetWalk.cpt(box, o.name); if (!pt) return;
+      const k = Math.min(1, (performance.now() - o.t0) / o.ms), e = 1 - (1 - k) * (1 - k);
+      const r = b.getBoundingClientRect();
+      b.__tx += pt[0] + o.off0[0] * (1 - e) - (r.left + r.width * o.ax); b.__ty += pt[1] + o.off0[1] * (1 - e) - (r.top + r.height * o.ay);
+      b.style.translate = `${(b.__bx0 + b.__tx).toFixed(2)}px ${b.__ty.toFixed(2)}px`;
+    });
+    if (owned.size && !ownRaf) ownRaf = requestAnimationFrame(() => ownTick());
+  }
+  function toMouth(b, egg) {   // 最後一口：果實要縮進去的點＝嘴的接觸點（蛋就是蛋的中間）
     const em = emEl(); if (!em) return;
-    const P_ = sel => (typeof PetWalk !== "undefined" && box ? PetWalk.part(box, sel) : em.querySelector(sel));
-    const t = (egg ? em.querySelector(".pc-bob") : P_(".pr-mouth") || P_(".pr-head")) || em;
-    const a = t.getBoundingClientRect(), r = b.getBoundingClientRect();
-    const ox = parseFloat(b.style.getPropertyValue("--tx")) || 0, oy = parseFloat(b.style.getPropertyValue("--ty")) || 0;   // 已經被移動過（拿在手上）就接著算
-    b.style.setProperty("--tx", `${Math.round(ox + a.left + a.width / 2 - (r.left + r.width / 2))}px`);
-    b.style.setProperty("--ty", `${Math.round(oy + a.top + a.height / 2 - (r.top + r.height / 2))}px`);
+    release(b);
+    let pt = !egg && typeof PetWalk !== "undefined" && box ? PetWalk.cpt(box, "mouth") : null;
+    if (!pt) { const t = (egg ? em.querySelector(".pc-bob") : em.querySelector(".pr-mouth") || em.querySelector(".pr-head")) || em, a = t.getBoundingClientRect(); pt = [a.left + a.width / 2, a.top + a.height / 2]; }
+    const r = b.getBoundingClientRect();
+    const ox = parseFloat(b.style.getPropertyValue("--tx")) || 0, oy = parseFloat(b.style.getPropertyValue("--ty")) || 0;   // 已經被移動過就接著算
+    b.style.setProperty("--tx", `${Math.round(ox + pt[0] - (r.left + r.width / 2))}px`);
+    b.style.setProperty("--ty", `${Math.round(oy + pt[1] - (r.top + r.height / 2))}px`);
   }
   // 低頭（.st-lean 把頭移 --lx/--ld）要移多少，嘴才會剛好碰到果實：套上姿勢量、算差、再量一次修正（同一格量完拿掉，不會閃）。
   // 差太多（頭伸不到）就先小碎步挪過去再量——**果實絕不自己飛過去**，沒碰到不准咬
@@ -284,8 +299,8 @@ window.PetStage = (function () {
     const em = emEl(); if (!em) return;
     const c = em.querySelector(".pet-critter"), u = 200 / ((c && c.clientWidth) || 168);
     const gap = (lx, ld) => { box.style.setProperty("--lx", lx + "px"); box.style.setProperty("--ld", ld + "px"); void em.offsetWidth;
-      const m = PetWalk.part(box, ".pr-mouth").getBoundingClientRect(), r = b.getBoundingClientRect();
-      return [(r.left + r.width / 2 - (m.left + m.width / 2)) * u, (r.top + r.height / 2 - (m.top + m.height / 2)) * u]; };
+      const m = PetWalk.cpt(box, "mouth"), r = b.getBoundingClientRect();
+      return [(r.left + r.width / 2 - m[0]) * u, (r.top + r.height * BITE_Y - m[1]) * u]; };   // 嘴碰果實的上半部
     const LIM = { 1: [-14, 40], 3: [-8, 40], 4: [-8, 40], 6: [-14, 64] }[stg] || [-10, 40];
     let lx = 0, ld = 0;
     box.classList.add("no-tr"); em.classList.add("st-lean");
@@ -300,6 +315,7 @@ window.PetStage = (function () {
       await PetWalk.goTo(box, (parseFloat(box.style.getPropertyValue("--wx")) || 0) + rx / u, { keepFace: true });
     }
   }
+  const BITE_Y = .32;   // 咬的位置：果實由上往下 32%（咬住上緣、一部分留在嘴外）
   let feeding = false;
   async function feed(berrySvg) {
     if (!box || reduce() || !visible || feeding) return;   // 正在吃就不再開一輪（餵食鈕本來就會鎖住＋8 小時冷卻；測試面板連按才會進來）
@@ -338,7 +354,7 @@ window.PetStage = (function () {
         let bowTo = null;
         if (box.classList.contains("standing")) {   // 站著（狐、虎）：找「身體前傾多少」嘴才碰到果實（脖子先維持自然角度，不夠才再往下）
           const em = emEl();
-          const gap = (pt, nk) => { PetWalk.bowSet(box, pt, nk); void em.offsetWidth; const m = PetWalk.part(box, ".pr-mouth").getBoundingClientRect(), br = b.getBoundingClientRect(); return [br.left + br.width / 2 - (m.left + m.width / 2), br.top + br.height / 2 - (m.top + m.height / 2)]; };
+          const gap = (pt, nk) => { PetWalk.bowSet(box, pt, nk); void em.offsetWidth; const m = PetWalk.cpt(box, "mouth"), br = b.getBoundingClientRect(); return [br.left + br.width / 2 - m[0], br.top + br.height * BITE_Y - m[1]]; };   // 嘴碰果實的上半部（咬住邊緣、一部分留在嘴外），不是正中間
           const solve = (f, lo, hi, x0, x1) => {   // 割線法：f(x)=0，x 限制在 [lo, hi]
             let y0 = f(x0), y1 = f(x1);
             for (let it = 0; it < 4 && Math.abs(y1) > 1.5 && y1 !== y0; it++) { const x2 = Math.max(lo, Math.min(hi, x1 - y1 * (x1 - x0) / (y1 - y0))); x0 = x1; y0 = y1; x1 = x2; y1 = f(x1); }
@@ -356,7 +372,7 @@ window.PetStage = (function () {
         if (egg) await absorb(b, x >= 0 ? "r" : "l");   // 蛋：不走路，原地把果實化成光吸進裂縫
         else if (onCloud) {   // 神龍：尾巴繞過去托住果實 → 送到嘴前 → 張嘴咬 → 嚼的時候尾巴放回去
           await PetWalk.tailTo(box, b, 600);
-          b.classList.add("carried"); await PetWalk.tailTo(box, "mouth", 760, b);
+          b.classList.add("carried"); follow(b, "tail", { ay: .62, ms: 120 }); await PetWalk.tailTo(box, "mouth", 760);   // 托住之後果實歸尾尖
           cls(true, "st-open"); await sleep(170);
           toMouth(b, false); b.classList.add("eaten"); cls(false, "st-open"); await flash("pb-snap", 240);
           const relax = PetWalk.tailTo(box, null, 600);
@@ -373,11 +389,8 @@ window.PetStage = (function () {
           if (stg === 5) {   // 幼龍：用前爪撿起來再送到嘴邊（短腿彎不下去，撿起來吃最自然）
             const side = x - at() >= 0 ? "r" : "l";
             cls(true, "st-crouch", "st-reach-" + side); await sleep(380);       // 蹲下、那隻爪子伸下去
-            toPaw(b, side); b.classList.add("held"); await sleep(260);           // 抓住
-            // 舉到嘴邊：先在同一格量好「舉起來之後」爪子在哪，再讓爪子和果實一起過去（一起動，果實不會落後）
-            box.classList.add("no-tr"); cls(false, "st-reach-" + side); cls(true, "st-lift-" + side); void box.offsetWidth; toPaw(b, side, true);
-            cls(false, "st-lift-" + side); cls(true, "st-reach-" + side); void box.offsetWidth; box.classList.remove("no-tr"); void box.offsetWidth;
-            cls(false, "st-reach-" + side); cls(true, "st-lift-" + side); await sleep(420);
+            b.classList.add("held"); follow(b, "palm-" + side, { ay: .38, ms: 140 }); await sleep(220);   // 抓住：從現在起果實歸手掌
+            cls(false, "st-reach-" + side); cls(true, "st-lift-" + side); await sleep(420);   // 舉到嘴邊（果實每一格跟著手掌）
             // 咬兩口（2026-10-05）：第一口咬掉一角（剩 2/3）、手拿著嚼；第二口整顆吃掉、放下手再嚼、吞，最後拍拍肚子
             b.style.setProperty("--nx", side === "r" ? "28%" : "72%");          // 缺口在靠嘴的那一側
             cls(true, "st-open"); await sleep(170);
@@ -429,7 +442,7 @@ window.PetStage = (function () {
       if (onCloud && W && box) { box.__riders = null; await PetWalk.goTo(box, -40); }   // 神龍：吃飽在雲上游一小段（身體走頭走過的路、雲座晚一點跟上）
       if (W && box) await PetWalk.home(box);                          // 走回中間
       await flash("pb-hop", 1300);   // 各自的慶祝（style-features.css 依階段換動作）
-    } finally { berries.forEach(o => o.b.remove()); cls(false, "st-lean", "st-open", "st-sip", "st-land", "st-glow", "st-tilt-l", "st-tilt-r"); resetProboscis(); if (box) { box.__riders = null; if (box.__phi && typeof PetWalk !== "undefined") PetWalk.tailTo(box, null, 1); box.style.removeProperty("--ld"); box.style.removeProperty("--lx"); if (typeof PetWalk !== "undefined" && (reduce() || aborted)) { PetWalk.stop(box); box.classList.remove("standing", "face-r"); } } feeding = false; busy = false; if (box) { box.classList.remove("feeding"); schedule(mood); } }
+    } finally { berries.forEach(o => { release(o.b); o.b.remove(); }); cls(false, "st-lean", "st-open", "st-sip", "st-land", "st-glow", "st-tilt-l", "st-tilt-r"); resetProboscis(); if (box) { box.__riders = null; if (box.__phi && typeof PetWalk !== "undefined") PetWalk.tailTo(box, null, 1); box.style.removeProperty("--ld"); box.style.removeProperty("--lx"); if (typeof PetWalk !== "undefined" && (reduce() || aborted)) { PetWalk.stop(box); box.classList.remove("standing", "face-r"); } } feeding = false; busy = false; if (box) { box.classList.remove("feeding"); schedule(mood); } }
   }
 
   // ── 天氣：用使用者所在位置（探索頁拿過的）或最後一趟走的步道；拿不到就不畫天氣，絕不在這裡要定位 ──

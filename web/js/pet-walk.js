@@ -119,10 +119,10 @@ window.PetWalk = (function () {
   function toScreen(box, x, y) { const g = box.querySelector("#petEmoji .pr-deform"), m = g.getScreenCTM(); const q = new DOMPoint(x, y).matrixTransform(m); return [q.x, q.y]; }
   // 尾尖到得了這一點嗎（身體座標）：pet-stage.js 挑果實落點用
   const tailReach = (x, y) => (sp6() ? solveTail(x, y).err : 99);
-  // tgt：果實元素（尾尖去托它）／"mouth"（送到嘴前）／null（尾巴放回原位）。carry：一路黏在尾尖上的果實
+  // tgt：果實元素（尾尖去托它）／"mouth"（送到嘴前）／null（尾巴放回原位）
   // 起彎點 i0 在第一次伸出去時挑好（托果實、送到嘴前都用同一個），之後只改曲率——以前直接內插關節角度、每格重解，中間的姿勢會整條甩出畫面
   const mouthLocal = box => { const m = part(box, ".pr-mouth").getBoundingClientRect(); return toLocal(box, m.left + m.width / 2 - 4, m.top + m.height / 2 + 5); };   // 下巴前面一點點
-  async function tailTo(box, tgt, ms, carry) {
+  async function tailTo(box, tgt, ms) {   // 果實跟著尾尖走由 pet-stage.js 的 follow() 負責（尾尖是 .cp-tail，在變形群組裡）
     if (!sp6()) return;
     const n = sp6().length;
     const goal = () => {
@@ -147,11 +147,6 @@ window.PetWalk = (function () {
       sol = { i0: sol.i0, k: s0.k + (K - s0.k) * e, q: s0.q + (Q - s0.q) * e };
       const phi = !tgt && k >= 1 ? new Array(n).fill(0) : phiOf(sol.i0, sol.k, sol.q);
       applyPhi(box, phi);
-      if (carry) {   // 果實黏在尾尖：量尾尖在畫面上的位置，果實的 translate 跟過去
-        const [lx, ly] = tipOf(phi), [sx, sy] = toScreen(box, lx, ly), r = carry.getBoundingClientRect();
-        carry.__cx = (carry.__cx || 0) + sx - (r.left + r.width / 2); carry.__cy = (carry.__cy || 0) + sy - (r.top + r.height * .62);
-        carry.style.translate = `${((carry.__rx || 0) + carry.__cx).toFixed(2)}px ${carry.__cy.toFixed(2)}px`;
-      }
     });
     box.__sol = tgt ? sol : null;
     if (!tgt) { resetField(box); box.__phi = null; }
@@ -551,7 +546,15 @@ window.PetWalk = (function () {
   }
   async function home(box) { if (!box) return; await goTo(box, 0, { wy: 0 }); await sitDown(box); await face(box, 0, 300); }
   function stop(box) { cancelAnimationFrame(raf); if (box) { box.classList.remove("walking", "pf-front", "pf-x", "pf-y"); setQ(box, 0); ["--wx", "--wy", "--face"].forEach(k => box.style.removeProperty(k)); clearGait(box); } }
+  // 接觸點的畫面座標：mouth＝嘴（.pr-mouth 的支點，跟著頭的所有變換）；其他＝pet-art.js 畫的 .cp-*（手掌、尾尖、裂紋）
+  function cpt(box, name) {
+    const em = box.querySelector("#petEmoji"); if (!em) return null;
+    let el = name === "mouth" ? part(box, ".pr-mouth") : em.querySelector(".cp-" + name); if (!el || !el.getScreenCTM) return null;
+    const M = el.getScreenCTM(); if (!M) return null;
+    const x = name === "mouth" ? parseFloat(el.style.getPropertyValue("--ox")) : +el.getAttribute("cx"), y = name === "mouth" ? parseFloat(el.style.getPropertyValue("--oy")) : +el.getAttribute("cy");
+    const q = new DOMPoint(x, y).matrixTransform(M); return [q.x, q.y];
+  }
   // 現在看得到的那一份身體（站著時是 .pr-stand）裡找部位
   const part = (box, sel) => { const em = box.querySelector("#petEmoji"); if (!em) return null; return (box.classList.contains("standing") && em.querySelector(".pr-stand " + sel)) || em.querySelector(sel); };
-  return { goTo, goEat, home, face, stop, standUp, sitDown, turnStand, setQ, larvaTurn, bend, part, bow, bowSet, bowClear, groundY, tailTo, tailReach, GAIT, _pose: pose };   // _pose：測試逐相位檢查用
+  return { goTo, goEat, home, face, stop, standUp, sitDown, turnStand, setQ, larvaTurn, bend, part, bow, bowSet, bowClear, groundY, cpt, tailTo, tailReach, GAIT, _pose: pose };   // _pose：測試逐相位檢查用
 })();

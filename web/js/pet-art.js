@@ -117,6 +117,9 @@ window.PET_ART = (function () {
   // 物理：地上的動物腳底對齊 y≈196（夥伴卡的影子在 SVG 底下），待機只「呼吸」（.pc-bob 以腳底為原點微縮放，不往上飄）；
   // 會飛的（蝶、神龍）才用 .pc-hover。腳下的葉子、雲是另外一層靜止道具（PROP，見下方），不放在角色裡，免得跳的時候一起跳。
 
+  // 接觸點（2026-10-05 第二輪）：看不見的點，跟著所在的部位一起移動／旋轉／翻面；pet-walk.js 的 cpt() 用 getScreenCTM 換成畫面座標
+  // palm-l/r＝幼龍手掌、tail＝神龍尾尖（在 .pr-deform 裡，尾巴彎它就跟著動）、crack＝蛋吸收果實的那道裂紋；嘴用 .pr-mouth 自己的支點
+  const CP = (name, x, y) => `<circle class="cp cp-${name}" cx="${x}" cy="${y}" r="0"/>`;
   // 0 神秘之卵：淡淡的鯉鱗紋（預告會變成龍）、裂縫透暖光；直接坐在地上
   const EGG = `
     <g class="pc-bob pc-egg">
@@ -125,7 +128,7 @@ window.PET_ART = (function () {
       <g class="pc-d">${[[76, 173, 4.5], [122, 179, 5], [116, 111, 3.6], [92, 186, 3.2], [132, 131, 3]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#c9ad74"/><circle cx="${x - r * .3}" cy="${y - r * .3}" r="${r * .45}" fill="#e2cc98"/>`).join("")}</g>
       <path class="pr-glow" d="M72 115 L84 125 L76 133 L90 141" stroke="#ffd98a" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/>
       ${tp(72, 115, 84, 125, 3.4, "#8a6a38")}${tp(84, 125, 76, 133, 3.4, "#8a6a38")}${tp(76, 133, 90, 141, 3.2, "#8a6a38")}
-      <path class="pc-d" d="M84 125 l7 -3 M76 133 l-5 2" stroke="#8a6a38" stroke-width="1.6" stroke-linecap="round"/>
+      <path class="pc-d" d="M84 125 l7 -3 M76 133 l-5 2" stroke="#8a6a38" stroke-width="1.6" stroke-linecap="round"/>${CP("crack", 82, 128)}
       <g class="pc-crack2"><path class="pr-glow" d="M90 141 L100 136 L108 146" stroke="#ffd98a" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/>${tp(90, 141, 100, 136, 3, "#8a6a38")}${tp(100, 136, 108, 146, 2.8, "#8a6a38")}</g>
       <g class="pc-crack3"><path class="pr-glow" d="M124 100 L132 114 L125 122 L134 132" stroke="#ffd98a" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/>${tp(124, 100, 132, 114, 3, "#8a6a38")}${tp(132, 114, 125, 122, 3, "#8a6a38")}${tp(125, 122, 134, 132, 2.6, "#8a6a38")}</g>
     </g>
@@ -330,8 +333,8 @@ ${tigerHead()}
       ${eyeOf("round", 87, 86, 8, 9.4, -1, "#c99a2a", { pupil: "slit", pw: .5 })}${eyeOf("round", 113, 86, 8, 9.4, 1, "#c99a2a", { pupil: "slit", pw: .5 })}
       <!--H--></g>
       <!-- 前爪畫在頭之後：撿果實舉到嘴邊時爪子要在下巴前面（平常不會跟頭重疊，看起來一樣）-->
-      ${rig("pr-paw l", 76, 132, P(Pa(tube([[[76, 132], [72, 140], [72, 148], [76, 154]]], [[0, 11], [1, 9]])), JADE, { dx: 2, dy: 2 }) + claw(78, 156, 80, 3, JADE))}
-      ${rig("pr-paw r", 124, 132, P(Pa(tube([[[124, 132], [128, 140], [128, 148], [124, 154]]], [[0, 11], [1, 9]])), JADE, { dx: 2, dy: 2 }) + claw(122, 156, 100, 3, JADE))}
+      ${rig("pr-paw l", 76, 132, P(Pa(tube([[[76, 132], [72, 140], [72, 148], [76, 154]]], [[0, 11], [1, 9]])), JADE, { dx: 2, dy: 2 }) + claw(78, 156, 80, 3, JADE) + CP("palm-l", 79, 160))}
+      ${rig("pr-paw r", 124, 132, P(Pa(tube([[[124, 132], [128, 140], [128, 148], [124, 154]]], [[0, 11], [1, 9]])), JADE, { dx: 2, dy: 2 }) + claw(122, 156, 100, 3, JADE) + CP("palm-r", 121, 160))}
     </g>`;
 
   // 6 騰雲神龍（2026-10-04 重畫）：東方龍「九似」——駝頭長吻、鹿角、牛耳、蛇身、蜃腹（節狀腹甲）、鯉鱗、鷹爪、龍鬚、
@@ -368,7 +371,7 @@ ${tigerHead()}
     <g class="pc-hover pc-soar">
       <g class="pr-deform"><g class="pc-tail">${P(Pa("M172 160 C180 168 184 180 176 192 C172 184 166 182 160 184 C166 178 164 170 166 164Z"), MANE, { dx: 2, dy: 2 })}
         <path class="pc-d" d="M172 168 q4 8 2 16 M167 172 q0 6 -3 9" stroke="${tn(MANE, .5)}" stroke-width="1.6" fill="none" stroke-linecap="round"/></g>
-            ${dragonBody}
+            ${dragonBody}${CP("tail", 172, 182)}
       ${P(Pa(tube([[[150, 146], [154, 152], [156, 158], [158, 164]]], [[0, 12], [1, 9]])), JADE, { dx: 2, dy: 2 })}${claw(159, 166, 70, 3, JADE)}</g>
       <g class="pr-pearl">${P(Pa(tube([[[104, 134], [96, 146], [88, 152], [78, 156]]], [[0, 13], [1, 9]])), JADE, { dx: 2, dy: 2 })}
       <g class="pc-tw"><circle cx="62" cy="160" r="19" fill="#ffd36a" opacity=".28"/></g>

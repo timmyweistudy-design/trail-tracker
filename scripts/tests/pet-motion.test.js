@@ -17,7 +17,7 @@ const DEF = [[-62, 8, 66], [66, 40, 18]];
 // 還沒修好的（階段名）：key＝檢查代號:階段
 const TODO = {
   "jump:2": "P6", "jump:3": "P3", "jump:4": "P3", "jump:5": "P5",
-  "bite:5": "P5", "berry:5": "P5", "berry:6": "P5", "tail:6": "P5", "happy:5": "P5",
+  "berry:5": "P5", "berry:6": "P5", "tail:6": "P5",
   "neck:1": "P4", "egg:0": "P6", "wing:2": "P6",
   "time:1": "P4", "time:3": "P3", "time:4": "P3", "time:5": "P5",
 };
