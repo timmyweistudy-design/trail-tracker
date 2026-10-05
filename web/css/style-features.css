@@ -2283,11 +2283,14 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .ps-box .pr-paw { transition: transform .34s cubic-bezier(.3,.7,.4,1); }
 .ps-box.walking .pr-paw { transition: none; }   /* 走路時爪子由 pet-walk.js 逐格寫：有 transition 會一路落後（腳滑） */
 .ps-box .st-crouch .pc-bob { animation: none; transform: scale(1.04, .93); transition: transform .3s ease-out; }
-.ps-box .st-crouch .pr-head { transform: translateY(4px) rotate(calc(var(--ex, 0) * 5deg)); transition: transform .3s ease-out; }
+.ps-box .st-crouch .pr-head { transform: translateY(4px) rotate(calc(var(--ex, 0) * 5deg)); }
+.ps-box[data-stage="5"]:not(.walking) .pr-head { transition: translate .38s cubic-bezier(.3,.7,.4,1), rotate .38s cubic-bezier(.3,.7,.4,1), transform .3s ease-out; }   /* 幼龍蹲下／站起來時頭跟著慢慢過去（幼龍的頭只有走路時才由 JS 逐格寫） */
 .ps-box .st-reach-l .pr-paw.l { transform: translate(-4px, 14px) rotate(28deg); }
 .ps-box .st-reach-r .pr-paw.r { transform: translate(4px, 14px) rotate(-28deg); }
-.ps-box .st-lift-l .pr-paw.l { transform: translate(2px, -22px) rotate(-60deg); }
-.ps-box .st-lift-r .pr-paw.r { transform: translate(-2px, -22px) rotate(60deg); }
+.ps-box .st-lift-l .pr-paw.l { transform: translate(2px, -22px) rotate(-60deg); transition: transform .5s ease-in-out; }
+.ps-box .st-lift-r .pr-paw.r { transform: translate(-2px, -22px) rotate(60deg); transition: transform .5s ease-in-out; }   /* 舉到嘴邊：慢起慢停（果實跟著手掌，太快會一格甩 15px） */
+.ps-box[data-stage="5"] .pc-tw { transition: translate .4s ease-in-out, opacity .4s; }
+.ps-box.feeding[data-stage="5"] .pc-tw { translate: -16px 4px; opacity: .45; }   /* 餵食時旁邊的光珠讓開、淡一點（不要被當成第二顆果實） */
 /* 被抓著的果實：跟著爪子平滑移動（--tx／--ty 由 pet-stage.js 量） */
 .ps-berry.held { animation: none; transform: translate(var(--tx, 0px), var(--ty, 0px)); transition: transform .3s cubic-bezier(.3,.7,.4,1); }
 .ps-berry.held.eaten { transform: translate(var(--tx, 0px), var(--ty, 0px)) scale(.12); opacity: 0; transition: transform .3s ease-in, opacity .2s ease-in .12s; }

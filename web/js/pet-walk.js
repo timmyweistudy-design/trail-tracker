@@ -16,7 +16,7 @@ window.PetWalk = (function () {
     2: { mode: "fly", v: 140, D: 38, bob: 9, roll: 0, bank: 9 },                               // 蝶：一拍一升的小弧線、轉彎時內傾
     3: { mode: "stand", v: 150, stride: 34, lift: 11, sink: 3.6, duty: .6, bob: 2.4, tail: 15, ear: 7, neck: 3.5, sh: .7, legL: 58 },             // 狐：小步、輕、有彈性；尾巴大幅、晚一拍
     4: { mode: "stand", v: 115, stride: 36, lift: 12, sink: 5, duty: .68, bob: 3.6, lag: .06, tail: 5, ear: 2, neck: -1.2, sh: 1.6, legL: 56 },  // 虎：慢、步幅大、肩膀隨前腳起伏、落地後才沉（重）；尾巴小幅；頭穩
-    5: { mode: "waddle", v: 78, D: 28, bob: 4.5, roll: 7, lift: 11, duty: .56, tail: 12, ear: 6, head: 2.4 },        // 幼龍：短腿搖搖擺擺
+    5: { mode: "waddle", v: 100, D: 28, bob: 4.5, roll: 7, lift: 11, duty: .56, tail: 12, ear: 6, head: 2.4 },        // 幼龍：短腿搖搖擺擺
     6: { mode: "swim", v: 125, D: 70, bob: 3, roll: 1.5, tail: 8, head: 1.5 },                 // 神龍：在雲上游
   };
   let raf = 0;
@@ -92,67 +92,71 @@ window.PetWalk = (function () {
     box.__cloud = cx; ride(box);
   }
   function ride(box) { (box.__riders || []).forEach(r => { r.el.__rx = r.bx + (box.__cloud != null ? box.__cloud : r.c0) - r.c0; r.el.style.translate = `${(r.el.__rx + (r.el.__cx || 0)).toFixed(2)}px ${(r.el.__cy || 0).toFixed(2)}px`; }); }
-  // ── 神龍用尾巴托果實：身體中心線（PET_ART.dragonSpine）當成一串關節，從第 i0 節開始每節多彎 k（等曲率）——
-  // 每個路徑點跟著離它最近的那一節一起平移、旋轉，所以整條尾巴（含尾鰭、後爪）是彎過去的，不是被拉長。
-  // 解「i0、k 是多少，尾尖才會到目標點」：粗掃再細掃（每格重解，龍上下飄的時候尾尖也黏著果實）
-  let SP6 = null; const NEAR = new Map(), TIP6 = [172, 182];
+  // ── 神龍用尾巴托果實（2026-10-05 第二輪改 FABRIK）：身體中心線（PET_ART.dragonSpine）＋尾尖當成一串固定長度的關節，
+  // 從第 I0 節以後可以動。每一格從「上一格的姿勢」出發往目標逼近（FABRIK：從尾尖拉到目標、再從根部拉回來），所以前後兩格一定連續；
+  // 每個關節相對原本的彎度最多多彎 14°——不會打結、不會折出尖角。以前用「等曲率＋二次」的公式整條重解，解出來可能繞好幾圈，內插時尾巴整條在甩。
+  // 每個路徑點跟著離它最近的那一節一起平移、旋轉，所以尾鰭、後爪也跟著彎過去（不是被拉長）
+  let SP6 = null, REST = null; const NEAR = new Map(), TIP6 = [172, 182], I0 = 20, BEND = 14 * Math.PI / 180;
   const sp6 = () => SP6 || (SP6 = typeof PET_ART !== "undefined" && PET_ART.dragonSpine ? PET_ART.dragonSpine(16) : null);
-  function chainPts(phi) { const S = sp6(), P = [[S[0].x, S[0].y]]; for (let i = 0; i < S.length - 1; i++) { const c = Math.cos(phi[i]), sn = Math.sin(phi[i]), dx = S[i + 1].x - S[i].x, dy = S[i + 1].y - S[i].y; P.push([P[i][0] + c * dx - sn * dy, P[i][1] + sn * dx + c * dy]); } return P; }
-  // 曲率沿尾巴線性變化：每節的累積轉角 = k·d + q·d²（d＝離 i0 幾節）——尾巴可以先往一邊彎、尾端再勾回來
-  const phiOf = (i0, k, q) => sp6().map((_, i) => { const d = Math.max(0, i - i0); return k * d + (q || 0) * d * d; });
+  const rest = () => REST || (REST = sp6().map(q => [q.x, q.y]).concat([TIP6.slice()]));   // 最後一節＝尾尖（.cp-tail）
+  const ang = (a, b) => Math.atan2(b[1] - a[1], b[0] - a[0]), wrap = a => Math.atan2(Math.sin(a), Math.cos(a));
+  // CCD（循環座標下降）：從尾端的關節一路往根部，每個關節轉向目標，再把這個關節的彎度夾在「原本的彎度 ±14°」之內。
+  // 跟限制配合得好（FABRIK 加限制會卡住，連尾尖正上方 20 單位都到不了）；自然會從尾尖先捲（尾尖繞過去托果實）
+  function fabrik(P, T, iters) {
+    const R = rest(), n = P.length, L = [], a = [], a0 = ang(R[I0 - 1], R[I0]);
+    for (let i = I0; i < n - 1; i++) { L[i] = Math.hypot(R[i + 1][0] - R[i][0], R[i + 1][1] - R[i][1]); a[i] = ang(P[i], P[i + 1]); }
+    const rel = i => wrap(a[i] - (i === I0 ? a0 : a[i - 1])), rrel = i => wrap(ang(R[i], R[i + 1]) - ang(R[i - 1], R[i]));
+    const fk = () => { let x = R[I0][0], y = R[I0][1]; P[I0] = [x, y]; for (let i = I0; i < n - 1; i++) { x += Math.cos(a[i]) * L[i]; y += Math.sin(a[i]) * L[i]; P[i + 1] = [x, y]; } };
+    fk();
+    for (let it = 0; it < iters; it++) {
+      for (let j = n - 2; j >= I0; j--) {
+        const tip = P[n - 1], pj = P[j];
+        let d = wrap(Math.atan2(T[1] - pj[1], T[0] - pj[0]) - Math.atan2(tip[1] - pj[1], tip[0] - pj[0]));
+        const r0 = rel(j), c = Math.max(rrel(j) - BEND, Math.min(rrel(j) + BEND, r0 + d)); d = c - r0;
+        if (!d) continue;
+        for (let i = j; i < n - 1; i++) a[i] += d;
+        fk();
+      }
+    }
+    return Math.hypot(P[n - 1][0] - T[0], P[n - 1][1] - T[1]);
+  }
   function mapPt(P, phi, x, y) {
     const S = sp6(), key = x + "," + y; let j = NEAR.get(key);
     if (j == null) { let best = 1e9; S.forEach((q, i) => { const d = (q.x - x) ** 2 + (q.y - y) ** 2; if (d < best) { best = d; j = i; } }); NEAR.set(key, j); }
     const a = phi[j], c = Math.cos(a), sn = Math.sin(a), dx = x - S[j].x, dy = y - S[j].y;
     return [P[j][0] + c * dx - sn * dy, P[j][1] + sn * dx + c * dy];
   }
-  const tipOf = phi => mapPt(chainPts(phi), phi, TIP6[0], TIP6[1]);
-  function solveTail(tx, ty, prev, i0Fix) {   // prev：上一格的解（只在附近細修，不會突然換一種彎法）；i0Fix：只試這個起彎點
-    const err = (i0, k, q) => { const [x, y] = tipOf(phiOf(i0, k, q)); return Math.hypot(x - tx, y - ty) + Math.abs(k) * 2 + Math.abs(q) * 40; };   // 一樣到得了，挑彎得少的
-    let b = prev ? [err(prev.i0, prev.k, prev.q), prev.i0, prev.k, prev.q] : [1e9, 0, 0, 0];
-    if (!prev) { const n = sp6().length; for (let i0 = i0Fix != null ? i0Fix : 10; i0 <= (i0Fix != null ? i0Fix : n - 10); i0 += 4) for (let k = -.3; k <= .3; k += .03) for (let q = -.012; q <= .012; q += .0015) { const e = err(i0, k, q); if (e < b[0]) b = [e, i0, k, q]; } }
-    for (let dk = prev ? .006 : .015, dq = prev ? .0003 : .00075; dk > .0002; dk /= 2, dq /= 2)
-      for (let it = 0; it < 2; it++) for (const [k, q] of [[b[2] - dk, b[3]], [b[2] + dk, b[3]], [b[2], b[3] - dq], [b[2], b[3] + dq]]) { const e = err(b[1], k, q); if (e < b[0]) b = [e, b[1], k, q]; }
-    const [x, y] = tipOf(phiOf(b[1], b[2], b[3]));
-    return { err: Math.hypot(x - tx, y - ty), i0: b[1], k: b[2], q: b[3] };
+  function applyChain(box, P) {   // 每一節轉了多少＝新的這一節方向－原本的方向
+    const R = rest(), phi = sp6().map((_, j) => wrap(ang(P[j], P[j + 1]) - ang(R[j], R[j + 1])));
+    applyField(box, (x, y) => mapPt(P, phi, x, y)); box.__chain = P;
   }
-  function applyPhi(box, phi) { const P = chainPts(phi); applyField(box, (x, y) => mapPt(P, phi, x, y)); box.__phi = phi; }
   // 目標（畫面座標）→ 身體座標
   function toLocal(box, X, Y) { const g = box.querySelector("#petEmoji .pr-deform"), m = g && g.getScreenCTM(); if (!m) return [X, Y]; const q = new DOMPoint(X, Y).matrixTransform(m.inverse()); return [q.x, q.y]; }
-  function toScreen(box, x, y) { const g = box.querySelector("#petEmoji .pr-deform"), m = g.getScreenCTM(); const q = new DOMPoint(x, y).matrixTransform(m); return [q.x, q.y]; }
   // 尾尖到得了這一點嗎（身體座標）：pet-stage.js 挑果實落點用
-  const tailReach = (x, y) => (sp6() ? solveTail(x, y).err : 99);
-  // tgt：果實元素（尾尖去托它）／"mouth"（送到嘴前）／null（尾巴放回原位）
-  // 起彎點 i0 在第一次伸出去時挑好（托果實、送到嘴前都用同一個），之後只改曲率——以前直接內插關節角度、每格重解，中間的姿勢會整條甩出畫面
-  const mouthLocal = box => { const m = part(box, ".pr-mouth").getBoundingClientRect(); return toLocal(box, m.left + m.width / 2 - 4, m.top + m.height / 2 + 5); };   // 下巴前面一點點
+  // 跟動畫一樣讓目標一步一步移過去（從原位直接解 FABRIK 會卡住、誤判成搆不到——以前雲上的落點因此全被否決，神龍退回「果實掉在地上」）
+  const tailReach = (x, y) => { if (!sp6()) return 99; const P = rest().map(q => q.slice()), s0 = P[P.length - 1].slice(); let e = 99; for (let f = 1; f <= 30; f++) { const k = f / 30; e = fabrik(P, [s0[0] + (x - s0[0]) * k, s0[1] + (y - s0[1]) * k], f < 30 ? 4 : 12); } return e; };
+  // tgt：果實元素（尾尖去托它）／"mouth"（送到下巴前的交接點）／null（尾巴放回原位）
+  // 尾尖走一條弧線：去托果實時微微抬起；送到嘴前時從身體下方繞過去（不從臉、角或身體中間穿過）；收回時往下回到原位
+  const mouthLocal = box => { const m = cpt(box, "mouth"); return toLocal(box, m[0] - 5, m[1] + 6); };   // 下巴前面一點點（交接點）
   async function tailTo(box, tgt, ms) {   // 果實跟著尾尖走由 pet-stage.js 的 follow() 負責（尾尖是 .cp-tail，在變形群組裡）
     if (!sp6()) return;
-    const n = sp6().length;
-    const goal = () => {
-      if (!tgt) return TIP6;
-      if (tgt === "mouth") return mouthLocal(box);
-      const r = tgt.getBoundingClientRect(); return toLocal(box, r.left + r.width / 2, r.top + r.height * .62);   // 托在果實下半部
-    };
-    let sol = box.__sol;
-    if (!sol && tgt) {   // 挑起彎點：同時搆得到這顆果實和嘴、而且彎得少
-      const g = goal(), m = mouthLocal(box); let best = null;
-      for (let i0 = 10; i0 <= n - 10; i0 += 4) { const a = solveTail(g[0], g[1], null, i0), b = solveTail(m[0], m[1], null, i0), e = a.err + b.err + (Math.abs(a.k) + Math.abs(b.k)) * 4; if (!best || e < best.e) best = { e, i0 }; }
-      sol = { i0: best.i0, k: 0, q: 0 };
-    }
-    if (!sol) { if (!tgt && box.__phi) { resetField(box); box.__phi = null; } return; }
-    // 終點姿勢：在固定起彎點上整個搜一次，之後每格只在附近追（龍上下飄，果實在身體座標裡會跟著動）；
-    // 中間的姿勢＝起點和終點的曲率參數內插——同一種彎法慢慢加深，不會甩出去，最後一格剛好到
-    const s0 = { k: sol.k, q: sol.q }; let fin = null;
-    if (tgt) { const g = goal(); fin = solveTail(g[0], g[1], null, sol.i0); }
+    let P = (box.__chain || rest()).map(q => q.slice());
+    const st = P[P.length - 1].slice();
+    // 每一格：從上一格的姿勢做 FABRIK，再限制每個關節點這一格最多移 7 個單位（FABRIK 偶爾會換一種彎法，限速讓它換得過去、不會一格跳到底）
+    const step = T => { const prev = P.map(q => q.slice()); fabrik(P, T, 8); P = P.map((q, i) => { const dx = q[0] - prev[i][0], dy = q[1] - prev[i][1], d = Math.hypot(dx, dy), m = 7; return d > m ? [prev[i][0] + dx / d * m, prev[i][1] + dy / d * m] : q; }); };
+    const goal = () => { if (!tgt) return TIP6; if (tgt === "mouth") return mouthLocal(box); const r = tgt.getBoundingClientRect(); return toLocal(box, r.left + r.width / 2, r.top + r.height * .62); };
     await tween(ms, (e, k) => {
-      if (fin) { const g = goal(); fin = solveTail(g[0], g[1], fin); }
-      const K = fin ? fin.k : 0, Q = fin ? fin.q : 0;
-      sol = { i0: sol.i0, k: s0.k + (K - s0.k) * e, q: s0.q + (Q - s0.q) * e };
-      const phi = !tgt && k >= 1 ? new Array(n).fill(0) : phiOf(sol.i0, sol.k, sol.q);
-      applyPhi(box, phi);
+      const g = goal(), c = tgt === "mouth" ? [(st[0] + g[0]) / 2, Math.max(st[1], g[1]) + 26] : tgt ? [(st[0] + g[0]) / 2, Math.min(st[1], g[1]) - 16] : [(st[0] + g[0]) / 2, Math.max(st[1], g[1]) + 10];
+      const u = 1 - e, T = [u * u * st[0] + 2 * u * e * c[0] + e * e * g[0], u * u * st[1] + 2 * u * e * c[1] + e * e * g[1]];
+      step(T);
+      if (!tgt) { const R = rest(), w = e * e; P = P.map((q, i) => [q[0] + (R[i][0] - q[0]) * w, q[1] + (R[i][1] - q[1]) * w]); }   // 收回：一路混回原本的形狀（最後一格剛好是原形，不會跳）
+      applyChain(box, P);
     });
-    box.__sol = tgt ? sol : null;
-    if (!tgt) { resetField(box); box.__phi = null; }
+    for (let f = 0; tgt && f < 12; f++) {   // 每格限速可能讓尾尖晚一點到：多跟幾格，真的碰到目標才結束
+      const g = goal(); if (Math.hypot(P[P.length - 1][0] - g[0], P[P.length - 1][1] - g[1]) < 1) break;
+      step(g); applyChain(box, P); await new Promise(r => requestAnimationFrame(r));
+    }
+    if (!tgt) { resetField(box); box.__chain = null; }
   }
   // 走路的變數寫在角色自己的容器（#petEmoji）上：寫在 .ps-box 會讓整個舞台（風景、粒子）每一格都重算樣式——
   // 實測 4 倍降速時狐狸掉到 27fps。位置（--wx）、轉身（--face）影子和道具也要用，留在 .ps-box

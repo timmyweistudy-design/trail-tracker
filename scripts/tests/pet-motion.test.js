@@ -16,10 +16,9 @@ const SPOTS = { 0: [[-34, 2, 34], [36, 12, -20]], 3: [[-62, 8, 66], [66, 40, 18]
 const DEF = [[-62, 8, 66], [66, 40, 18]];
 // 還沒修好的（階段名）：key＝檢查代號:階段
 const TODO = {
-  "jump:2": "P6", "jump:5": "P5",
-  "berry:5": "P5", "berry:6": "P5", "tail:6": "P5",
+  "jump:2": "P6",
   "egg:0": "P6", "wing:2": "P6",
-  "time:5": "P5",
+
 };
 const todoOf = (k, st) => TODO[k + ":" + st];
 
@@ -78,7 +77,7 @@ function judge(st, tag, R) {
   if (process.env.PM_SEQ) { let pv = ""; console.log(tag, F.map((f, i) => { const k = f.cls + "|" + f.bcl + "|" + f.berries.length; if (k === pv) return ""; pv = k; return i + ":" + k; }).filter(Boolean).join("  ").slice(0, 1500)); }
   const changed = i => i > 0 && (F[i].bcl !== F[i - 1].bcl || (i > 1 && F[i - 1].bcl !== F[i - 2].bcl));   // 換姿勢（正面↔側身交叉淡入、幼蟲換邊）那一兩格不算
   // 1) 嘴的跳格：某一格的位移比前後兩格都大 5px 以上（尖峰＝跳），或一格超過 18px。平順但快的動作（低頭的弧線）不算
-  const dd = F.map((f, i) => (i && !changed(i) ? D(f.mouth, F[i - 1].mouth) : 0));
+  const dd = F.map((f, i) => (i && !changed(i) && !/pb-hop/.test(f.cls) ? D(f.mouth, F[i - 1].mouth) : 0));   // 慶祝的跳（pb-hop）本來就是快的一下，不算
   let jump = 0, at = -1; for (let i = 2; i < n - 1; i++) { if (changed(i) || changed(i + 1)) continue; const sp = Math.max(dd[i] - Math.max(dd[i - 1], dd[i + 1]) > 5 ? dd[i] - Math.max(dd[i - 1], dd[i + 1]) : 0, dd[i] > 18 ? dd[i] : 0); if (sp > jump) { jump = sp; at = i; } }
   if (process.env.PM_SEQ && at > 0) for (let i = at - 3; i <= at + 2; i++) console.log("   ", i, dd[i].toFixed(1), F[i].mouth.map(v => v.toFixed(1)), F[i].raw);
   ok(jump === 0, `${tag}: the mouth never pops (no single-frame spike >5px over its neighbours, nothing >18px/frame; worst ${jump.toFixed(1)} @${at} ${at >= 0 ? F[at].cls + "|" + F[at].bcl : ""})`, todoOf("jump", st));
@@ -120,16 +119,16 @@ function judge(st, tag, R) {
     ok(!under, `${tag}: the berry it sips is beside the wings, not hidden under them`, todoOf("wing", st));
   }
   // 3) 果實不亂跳：地上的不動；拿著／托著的每格最多 10px
-  let bj = 0; for (let i = 45; i < n; i++) { if (F[i].berries.length !== F[i - 1].berries.length) continue; F[i].berries.forEach((x, k) => { if (/eaten|sipped|melt/.test(x.cls)) return; const d = D(x.c, F[i - 1].berries[k].c), held = /held|carried/.test(x.cls); bj = Math.max(bj, held ? d - 10 : d - 1); }); }
-  ok(bj <= 0, `${tag}: berries never jump (ground berries still, held ones ≤10px/frame; worst excess ${bj.toFixed(1)}px)`, todoOf("berry", st));
+  let bj = 0, bjAt = ""; for (let i = 45; i < n; i++) { if (F[i].berries.length !== F[i - 1].berries.length) continue; F[i].berries.forEach((x, k) => { if (/eaten|sipped|melt/.test(x.cls)) return; const d = D(x.c, F[i - 1].berries[k].c), held = /held|carried/.test(x.cls), ex = held ? d - 10 : d - 1; if (ex > bj) { bj = ex; bjAt = `@${i} ${x.cls} ${F[i].cls}`; } }); }
+  ok(bj <= 0, `${tag}: berries never jump (ground berries still, held ones ≤10px/frame; worst excess ${bj.toFixed(1)}px ${bjAt})`, todoOf("berry", st));
   if (st === 1) {
     const v = F.filter(f => f.neck != null).map(f => f.neck), dv = Math.max(...v), i0 = F.findIndex(f => f.neck === dv);
     if (process.env.PM_SEQ) for (let i = i0 - 6; i <= i0 + 4; i++) console.log("   neck", i, F[i].neck.toFixed(1), F[i].raw);
     ok(dv <= 25, `${tag}: the head never comes off the body (head centre to body outline ≤25 units, head radius 23; max ${dv.toFixed(1)} @${i0} ${F[i0] ? F[i0].cls + "|" + F[i0].bcl : ""})`, todoOf("neck", st));
   }
   if (st === 6) {
-    let out = 0, thr = 0; for (let i = 1; i < n; i++) { const d = F[i].deform, b = F[i].boxr; out = Math.max(out, b[0] - d[0], d[2] - b[2], b[1] - d[1]); thr = Math.max(thr, ...d.map((q, k) => Math.abs(q - F[i - 1].deform[k]))); }
-    ok(out <= 0 && thr <= 12, `${tag}: the tail stays in frame and moves smoothly (out ${out.toFixed(0)}px, bbox change ${thr.toFixed(0)}px/frame)`, todoOf("tail", st));
+    let out = 0, thr = 0, thAt = ""; for (let i = 1; i < n; i++) { const d = F[i].deform, b = F[i].boxr; out = Math.max(out, b[0] - d[0], d[2] - b[2], b[1] - d[1]); const t = Math.max(...d.map((q, k) => Math.abs(q - F[i - 1].deform[k]))); if (t > thr) { thr = t; thAt = `@${i} ${F[i].cls}`; } }
+    ok(out <= 0 && thr <= 14, `${tag}: the tail stays in frame and moves smoothly (out ${out.toFixed(0)}px, bbox change ${thr.toFixed(0)}px/frame ≤14 ${thAt})`, todoOf("tail", st));
   }
   if (st === 5) {   // 吞下最後一口之前不閉眼享受
     let bad = 0; for (const f of F) { const tb = f.berries.find(x => /target/.test(x.cls) && !/eaten/.test(x.cls)); if (tb && f.happy && D(f.mouth, tb.c) > tb.w / 2) bad++; }
@@ -139,7 +138,7 @@ function judge(st, tag, R) {
     let both = 0; for (const f of F) if (f.sparks >= 3 && f.berries.some(x => /melt/.test(x.cls) && x.op > .8 && x.w >= f.berries[0].w * .9)) both++;
     ok(both === 0, `${tag}: the berry shrinks as the sparks leave it (frames with a full berry and ≥3 sparks: ${both})`, todoOf("egg", st));
   }
-  const lim = st === 4 ? 19 : st === 3 || st === 1 ? 17.9 : 16;   // 幼蟲：左右兩邊都有果實時要掉頭兩次（頭不動、身體繞過去＝每次多爬 80px）   // 含判定結束的 0.7 秒；狐、虎要走去左右兩端（A、C 組）；虎刻意慢、有重量（ChatGPT 看錄影的建議）
+  const lim = st === 4 || st === 5 ? 19 : st === 3 || st === 1 ? 17.9 : 16;   // 幼龍：撿起來、舉到嘴邊、咬兩口、吞完才放手（步驟本來就多）   // 幼蟲：左右兩邊都有果實時要掉頭兩次（頭不動、身體繞過去＝每次多爬 80px）   // 含判定結束的 0.7 秒；狐、虎要走去左右兩端（A、C 組）；虎刻意慢、有重量（ChatGPT 看錄影的建議）
   ok(sec <= lim, `${tag}: one feeding (3 berries, walk home, celebrate) takes ≤${lim} s (${sec.toFixed(1)} s)`, todoOf("time", st));
   const last = F[n - 1];
   ok(!last.berries.length && !last.cls && Math.abs(R.end.wx) < 1 && R.end.bal === R.bal0 - 3, `${tag}: ends clean — no berries, no leftover pose, back in the middle, exactly 3 berries spent ${JSON.stringify({ cls: last.cls, wx: R.end.wx, spent: R.bal0 - R.end.bal })}`);

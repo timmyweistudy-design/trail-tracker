@@ -360,13 +360,20 @@ window.PetStage = (function () {
           bowTo = [pt, nk];
         } else if (!egg && !fly && stg !== 5 && !onCloud) await reach(b, stg);
         if (egg) await absorb(b, x >= 0 ? "r" : "l");   // 蛋：不走路，原地把果實化成光吸進裂縫
-        else if (onCloud) {   // 神龍：尾巴繞過去托住果實 → 送到嘴前 → 張嘴咬 → 嚼的時候尾巴放回去
-          await PetWalk.tailTo(box, b, 600);
-          b.classList.add("carried"); follow(b, "tail", { ay: .62, ms: 120 }); await PetWalk.tailTo(box, "mouth", 760);   // 托住之後果實歸尾尖
-          cls(true, "st-open"); await sleep(170);
+        else if (onCloud) {   // 神龍：尾尖托住果實 → 沿身體下方送到下巴前的交接點 → 停一下、頭往前、張嘴 → 果實改歸嘴、尾巴鬆開退回 → 咬、嚼
+          await PetWalk.tailTo(box, b, 650);
+          b.classList.add("carried"); follow(b, "tail", { ay: .62, ms: 120 });   // 托住之後果實歸尾尖（尾巴拿著時跟尾尖）
+          await PetWalk.tailTo(box, "mouth", 820);
+          await sleep(120);                                                     // 到了交接點停一下
+          const hd = PetWalk.part(box, ".pr-head");
+          const lean = hd && hd.animate([{ transform: "none" }, { transform: "translate(-3px, 3px)" }], { duration: 180, easing: "ease-out", fill: "forwards" });   // 頭略往前迎上去
+          cls(true, "st-open"); await sleep(150);
+          follow(b, "mouth", { ay: .38, ms: 140 });                             // 嘴碰到了：果實改歸嘴（交接只發生一次，從現在的位置接過來）
+          const relax = PetWalk.tailTo(box, null, 620);                         // 尾尖鬆開、退回
+          await sleep(110);
           toMouth(b, false); b.classList.add("eaten"); cls(false, "st-open"); await flash("pb-snap", 240);
-          const relax = PetWalk.tailTo(box, null, 600);
-          cls(later, "chew2"); await flash("pb-chew", later ? 600 : 900); cls(false, "chew2"); await relax;
+          if (lean) { const back = hd.animate([{ transform: "translate(-3px, 3px)" }, { transform: "none" }], { duration: 220, easing: "ease-in-out" }); lean.cancel(); await back.finished.catch(() => {}); }
+          cls(true, "chew2"); await flash("pb-chew", 520); cls(false, "chew2"); await relax;   // 嚼兩下
           await flash("pb-gulp", 340);
         }
         else if (fly) {   // 蝶：落在果實旁（腳伸出來、翅膀半收慢拍）→ 口器彎過去吸 → 果實原地縮小淡出 → 收口器、起飛
@@ -378,19 +385,20 @@ window.PetStage = (function () {
         } else {
           if (stg === 5) {   // 幼龍：用前爪撿起來再送到嘴邊（短腿彎不下去，撿起來吃最自然）
             const side = x - at() >= 0 ? "r" : "l";
-            cls(true, "st-crouch", "st-reach-" + side); await sleep(380);       // 蹲下、那隻爪子伸下去
-            b.classList.add("held"); follow(b, "palm-" + side, { ay: .38, ms: 140 }); await sleep(220);   // 抓住：從現在起果實歸手掌
-            cls(false, "st-reach-" + side); cls(true, "st-lift-" + side); await sleep(420);   // 舉到嘴邊（果實每一格跟著手掌）
-            // 咬兩口（2026-10-05）：第一口咬掉一角（剩 2/3）、手拿著嚼；第二口整顆吃掉、放下手再嚼、吞，最後拍拍肚子
+            cls(true, "st-crouch", "st-reach-" + side); await sleep(340);       // 蹲下、那隻爪子伸下去
+            b.classList.add("held"); follow(b, "palm-" + side, { ay: .38, ms: 140 }); await sleep(160);   // 抓住：從現在起果實歸手掌
+            cls(false, "st-reach-" + side); cls(true, "st-lift-" + side); await sleep(500);   // 舉到嘴邊（慢起慢停，果實每一格跟著手掌）
+            // 咬兩口：第一口咬掉一角（剩 2/3）、手拿著嚼；第二口吃掉、嚼、吞——吞完手才放下、才拍肚子（2026-10-05 第二輪照 ChatGPT 看錄影的建議：以前第二口咬下去手就放下了）
             b.style.setProperty("--nx", side === "r" ? "28%" : "72%");          // 缺口在靠嘴的那一側
-            cls(true, "st-open"); await sleep(170);
-            cls(false, "st-open"); b.classList.add("bit1"); await flash("pb-snap", 240);
-            cls(true, "chew2"); await flash("pb-chew", later ? 480 : 600); cls(false, "chew2");   // 手拿著果實嚼
-            cls(true, "st-open"); await sleep(150);
+            cls(true, "st-open"); await sleep(120);
+            cls(false, "st-open"); b.classList.add("bit1"); await flash("pb-snap", 220);
+            cls(true, "chew2"); await flash("pb-chew", 420); cls(false, "chew2");   // 手拿著果實嚼
+            cls(true, "st-open"); await sleep(110);
             toMouth(b, false); b.classList.add("eaten");
-            cls(false, "st-open", "st-lift-" + side, "st-crouch"); await flash("pb-snap", 240);
-            cls(true, "chew2"); await flash("pb-chew", later ? 480 : 600); cls(false, "chew2"); await flash("pb-gulp", 340);
-            await flash("pb-belly", 640);                                        // 拍拍肚子
+            cls(false, "st-open"); await flash("pb-snap", 220);
+            cls(true, "chew2"); await flash("pb-chew", 420); cls(false, "chew2"); await flash("pb-gulp", 300);
+            cls(false, "st-lift-" + side, "st-crouch");                          // 吞完才放下手、站起來
+            if (!todo.length) await flash("pb-belly", 640);                      // 最後一顆吞下去才拍拍肚子
             if (bal && isFinite(left)) { left = Math.max(0, left - 1); bal.textContent = left; bal.classList.remove("tick"); void bal.offsetWidth; bal.classList.add("tick"); }
             if (typeof ttBuzz === "function") ttBuzz(8);
             b.remove(); box.style.removeProperty("--ld"); box.style.removeProperty("--lx"); continue;
@@ -430,10 +438,10 @@ window.PetStage = (function () {
       if (box) { box.style.setProperty("--ex", "0"); box.style.setProperty("--ey", "0"); }
       if (aborted || !box) return;
       if (!egg && !fly) await flash("pb-lick", 640);                  // 舔舔嘴
-      if (onCloud && W && box) { box.__riders = null; await PetWalk.goTo(box, -40); }   // 神龍：吃飽在雲上游一小段（身體走頭走過的路、雲座晚一點跟上）
+      if (onCloud && W && box) { box.__riders = null; await PetWalk.goTo(box, -28); }   // 神龍：吃飽在雲上游一小段（身體走頭走過的路、雲座晚一點跟上）
       if (W && box) await PetWalk.home(box);                          // 走回中間
       await flash("pb-hop", 1300);   // 各自的慶祝（style-features.css 依階段換動作）
-    } finally { berries.forEach(o => { release(o.b); o.b.remove(); }); cls(false, "st-lean", "st-open", "st-sip", "st-land", "st-glow", "st-tilt-l", "st-tilt-r"); resetProboscis(); if (box) { box.__riders = null; if (box.__phi && typeof PetWalk !== "undefined") PetWalk.tailTo(box, null, 1); box.style.removeProperty("--ld"); box.style.removeProperty("--lx"); if (typeof PetWalk !== "undefined" && (reduce() || aborted)) { PetWalk.stop(box); box.classList.remove("standing", "face-r"); } } feeding = false; busy = false; if (box) { box.classList.remove("feeding"); schedule(mood); } }
+    } finally { berries.forEach(o => { release(o.b); o.b.remove(); }); cls(false, "st-lean", "st-open", "st-sip", "st-land", "st-glow", "st-tilt-l", "st-tilt-r"); resetProboscis(); if (box) { box.__riders = null; if (box.__chain && typeof PetWalk !== "undefined") PetWalk.tailTo(box, null, 1); box.style.removeProperty("--ld"); box.style.removeProperty("--lx"); if (typeof PetWalk !== "undefined" && (reduce() || aborted)) { PetWalk.stop(box); box.classList.remove("standing", "face-r"); } } feeding = false; busy = false; if (box) { box.classList.remove("feeding"); schedule(mood); } }
   }
 
   // ── 天氣：用使用者所在位置（探索頁拿過的）或最後一趟走的步道；拿不到就不畫天氣，絕不在這裡要定位 ──

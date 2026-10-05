@@ -409,7 +409,7 @@ for(const [km,st] of [[0,0],[20,2]]){const p=await mk({km,berries:20});
    for(const b of bs){const k=(b.classList.contains("bit1")?"b":"")+(b.classList.contains("eaten")?"e":"")+(b.classList.contains("held")?"h":"");const key=b.style.cssText.slice(0,12)+k;if(k&&!seen.has(key)){seen.add(key);seq.push(k);}}
    if(em.classList.contains("pb-belly")&&seq[seq.length-1]!=="belly")seq.push("belly");
    if(!bs.length&&seq.length)break;await new Promise(r=>setTimeout(r,20));}return seq.join(">");});
- ok((s2.match(/h>bh>beh>belly/g)||[]).length===3,"baby dragon: picks up each berry, bites a chunk, holds the rest while chewing, eats it, pats its belly "+s2);
+ ok(s2==="h>bh>beh>h>bh>beh>h>bh>beh>belly","baby dragon: picks up each berry, bites a chunk, holds the rest while chewing, eats it; pats its belly after the last one "+s2);
  await p.close();}
 // ── 2026-10-05 神龍：果實落在雲上、尾巴托到嘴前；游的時候身體走頭走過的路、雲座晚一點跟上 ──
 {const p=await mk({km:260,berries:20});
