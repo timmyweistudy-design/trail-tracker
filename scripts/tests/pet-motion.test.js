@@ -15,11 +15,7 @@ const KM = [0, 5, 20, 40, 90, 150, 260];
 const SPOTS = { 0: [[-34, 2, 34], [36, 12, -20]], 3: [[-62, 8, 66], [66, 40, 18], [-30, 27, -64]], 4: [[-62, 8, 66], [66, 40, 18], [23, -62, 79]], 6: [[96, 140, 186], [104, 150, 176]] };   // 狐、虎的 C＝第一次錄影時的落點（會出現量完補小碎步）
 const DEF = [[-62, 8, 66], [66, 40, 18]];
 // 還沒修好的（階段名）：key＝檢查代號:階段
-const TODO = {
-  "jump:2": "P6",
-  "egg:0": "P6", "wing:2": "P6",
-
-};
+const TODO = {};   // 2026-10-06 第二輪 P0～P6 全部修好；之後新加的檢查還沒修好時放這裡（"檢查代號:階段": "Pn"）
 const todoOf = (k, st) => TODO[k + ":" + st];
 
 const probe = () => {
@@ -30,7 +26,7 @@ const probe = () => {
   const o = { raw: em.className + " || " + box.className, cls: [...em.classList].filter(c => /^(pb-|st-|chew)/.test(c)).join(" "), bcl: [...box.classList].filter(c => /standing|walking|face-r|pf-|lv-l/.test(c)).join(" "),
     mouth: m ? C(m.getBoundingClientRect()) : null, crit: [crit.left, crit.top, crit.width, crit.height], wx: box.__wx,
     berries: [...document.querySelectorAll(".ps-berry")].map(b => { const r = b.getBoundingClientRect(); return { c: C(r), w: r.width, op: +getComputedStyle(b).opacity, cls: b.className.replace("ps-berry", "").trim() }; }),
-    sparks: document.querySelectorAll(".ps-spark").length };
+    sparks: [...document.querySelectorAll(".ps-spark")].filter(e => +getComputedStyle(e).opacity > .3).length };   // 只算看得到的（還沒輪到的光點是透明的）
   const eh = [...em.querySelectorAll(".pc-eh")].find(e => !e.closest(".pr-stand") || standing); o.happy = !!eh && getComputedStyle(eh).display !== "none";
   if (standing) o.paws = [...em.querySelectorAll(".pr-stand .pr-leg .pr-shin")].map(sh => { const e = [...sh.querySelectorAll("ellipse")].find(x => !x.closest("clipPath") && !x.closest("defs")); const pt = new DOMPoint(+e.getAttribute("cx"), +e.getAttribute("cy") + +e.getAttribute("ry")).matrixTransform(e.getScreenCTM()); return [pt.x, pt.y]; });
   if (st === 1) {   // 頭跟身體有沒有分開：頭（半徑 23 的圓）的中心到身體外框最近的點有多遠——身體外框在頭底下（≤23）就看不到縫
@@ -135,7 +131,8 @@ function judge(st, tag, R) {
     ok(bad === 0, `${tag}: no happy closed eyes while the berry is still away from the mouth (${bad} frames)`, todoOf("happy", st));
   }
   if (st === 0) {   // 果實跟光點不能同時「完整」存在
-    let both = 0; for (const f of F) if (f.sparks >= 3 && f.berries.some(x => /melt/.test(x.cls) && x.op > .8 && x.w >= f.berries[0].w * .9)) both++;
+    // 每顆跟「它自己開始融化那一格」的大小比（以前拿這一格的第一顆比，融化的剛好是第一顆時＝自己跟自己比）
+    let both = 0; const w0 = {}; for (const f of F) for (const x of f.berries) if (/melt/.test(x.cls)) { const key = Math.round(x.c[0] / 4); if (w0[key] == null) w0[key] = x.w; if (f.sparks >= 3 && x.op > .8 && x.w >= w0[key] * .9) both++; }
     ok(both === 0, `${tag}: the berry shrinks as the sparks leave it (frames with a full berry and ≥3 sparks: ${both})`, todoOf("egg", st));
   }
   const lim = st === 4 || st === 5 ? 19 : st === 3 || st === 1 ? 17.9 : 16;   // 幼龍：撿起來、舉到嘴邊、咬兩口、吞完才放手（步驟本來就多）   // 幼蟲：左右兩邊都有果實時要掉頭兩次（頭不動、身體繞過去＝每次多爬 80px）   // 含判定結束的 0.7 秒；狐、虎要走去左右兩端（A、C 組）；虎刻意慢、有重量（ChatGPT 看錄影的建議）

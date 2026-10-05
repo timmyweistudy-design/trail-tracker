@@ -2107,7 +2107,7 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 @keyframes bfRest { 0%, 100% { transform: scaleX(.6); } 50% { transform: scaleX(.74); } }
 .ps-box[data-stage="2"] .pet-shadow { translate: var(--wx, 0px) 0; }   /* 蝶飛高飛低，影子都留在地上 */
 .ps-berry.sipped { animation: psSipped 1s ease-in forwards; animation-delay: 0s; transform-origin: 50% 50%; }   /* 縮向口器尖端對準的那一點（果實正中間）   /* 被吸：原地慢慢縮小、淡出（不飛走） */
-@keyframes psSipped { 0% { transform: none; } 100% { transform: scale(.3); opacity: 0; } }
+@keyframes psSipped { 0% { transform: none; } 18% { transform: scale(1.03, .9); } 30% { transform: scale(.98, .94); } 100% { transform: scale(.3); opacity: 0; } }   /* 先被吸得凹一下，再慢慢變小 */
 .ps-box[data-stage="6"] .st-lean .pc-hover { animation: none; transform: translateY(4px); transition: transform .4s ease-in-out; }   /* 神龍：長脖子往下探，身體只沉一點 */
 .ps-box[data-stage="3"] .st-lean .pr-nose { animation: pbSniff .32s ease-in-out 2; }   /* 狐：先嗅兩下 */
 @keyframes pbSniff { 0%, 100% { transform: none; } 50% { transform: scale(1.12, .9) translateY(-.6px); } }
@@ -2119,6 +2119,7 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 /* 蝶：口器伸直去吸 */
 .ps-box .pr-ext, .ps-box .pr-curl { transition: opacity .18s ease-out; }
 .ps-box .st-sip .pr-ext { opacity: 1; } .ps-box .st-sip .pr-curl { opacity: 0; }
+.ps-box .pr-ext { stroke-width: 2.6px; filter: drop-shadow(0 0 .7px #2a201a) drop-shadow(0 0 .5px #2a201a); }   /* 口器加粗、加一圈深色描邊（跟角色的線條一致，不像另外畫上去的細線） */
 /* 咬下：嘴「啪」地合上、頭往上帶一下 */
 .ps-box .pb-snap .m-o { animation: pbSnapM .22s ease-in forwards; }
 .ps-box .pr-hfx { transition: transform .4s ease-in-out; }   /* 靜態的頭部姿勢（想念時歪頭）換上／拿掉時慢慢過去；咬、嚼的動畫照樣蓋過它 */
@@ -2144,7 +2145,7 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 /* 蝶：吸（口器一伸一縮、翅膀慢拍） */
 .ps-box .pb-sip .pr-ext { opacity: 1; animation: pbSip .3s ease-in-out 3; }   /* 一吸一吸：口器變粗一點（不縮放，尖端留在果實上） */
 .ps-box .pb-sip .pr-curl { opacity: 0; }
-@keyframes pbSip { 0%, 100% { stroke-width: 2px; } 50% { stroke-width: 3px; } }
+@keyframes pbSip { 0%, 100% { stroke-width: 2.6px; } 50% { stroke-width: 3.4px; } }
 /* 吞：頭點一下 */
 .ps-box .pb-gulp .pr-hfx { animation: pbGulp .34s ease-in-out; }
 @keyframes pbGulp { 0%, 100% { transform: none; } 50% { transform: translateY(3px) scale(1.01, .98); } }
@@ -2159,11 +2160,12 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .ps-box .pc-egg .pr-glow { transition: opacity .25s ease-out, stroke-width .25s ease-out, stroke .25s; }
 .ps-box .st-glow .pc-egg .pr-glow { opacity: 1; stroke: #fff1c4; stroke-width: 9px; filter: drop-shadow(0 0 4px #ffe08a); }
 .ps-box .pb-swell .pc-egg { animation: pbSwell .72s ease-in-out; transform-origin: 50% 96%; }
-@keyframes pbSwell { 0%, 100% { transform: none; } 28% { transform: scale(1.07, 1.05); } 50% { transform: scale(1.03) rotate(-3.5deg); } 72% { transform: scale(1.01) rotate(3deg); } 88% { transform: rotate(-1deg); } }
-.ps-berry.melt { animation: psMelt .62s ease-in forwards; animation-delay: 0s; transform-origin: 50% 85%; }
+@keyframes pbSwell { 0%, 100% { transform: none; } 30% { transform: scale(1.04, 1.03); } 55% { transform: scale(1.015) rotate(-2.5deg); } 78% { transform: rotate(2deg); } 90% { transform: rotate(-.8deg); } }   /* 吃飽微微鼓起、晃兩下（只一次，不反覆縮放） */
+.ps-berry.melt { animation: none; transform-origin: 50% 60%; }   /* 縮小由 pet-stage.js 依光點一顆一顆飛走來推（光點＋剩下的果實＝原本那一份） */
 .ps-berry.melt::after, .ps-berry.sipped::after { opacity: 0; animation: none; }
 @keyframes psMelt { 0% { transform: none; filter: none; } 35% { transform: scale(1.06, .9); filter: brightness(1.5); } 100% { transform: scale(.25, .15); filter: brightness(2.2); opacity: 0; } }
-.ps-spark { position: absolute; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: #fff3c0; box-shadow: 0 0 6px 2px #ffd873; pointer-events: none; z-index: 5; }
+.ps-spark { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: radial-gradient(circle, #fffbe6 0 30%, #ffb03a 60%, #ff8a1e 100%); box-shadow: 0 0 6px 2px rgba(255, 140, 30, .85), 0 0 14px 4px rgba(255, 190, 80, .45); pointer-events: none; z-index: 5; }   /* 橘金色：在米白的蛋殼上看得到（以前淡黃色飛在蛋上幾乎看不見） */
+.ps-spark::after { content: ""; position: absolute; left: 50%; top: 50%; width: 3px; height: 10px; margin: -1px 0 0 -1.5px; border-radius: 2px; background: linear-gradient(rgba(255, 170, 60, .7), rgba(255, 170, 60, 0)); }   /* 一點拖尾 */
 /* 蛋上的裂縫跟著進化進度變多（pet.js 依進度在 .ps-box 設 data-evo：1＝第二道、2＝第三道） */
 .ps-box[data-evo="1"] .pc-crack2, .ps-box[data-evo="2"] .pc-crack2, .ps-box[data-evo="2"] .pc-crack3 { display: inline; }
 

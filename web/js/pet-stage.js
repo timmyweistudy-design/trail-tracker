@@ -223,39 +223,39 @@ window.PetStage = (function () {
     ext.setAttribute("d", `M100 95 Q${(100 + (tx - 100) * .12).toFixed(1)} ${(95 + (ty - 95) * .9).toFixed(1)} ${tx.toFixed(1)} ${ty.toFixed(1)}`);
   }
   function resetProboscis() { const em = emEl(), ext = em && em.querySelector(".pr-ext"); if (ext) ext.setAttribute("d", PROB0); }
-  // ── 蛋：往果實那邊傾、裂縫亮起來、果實化成 5～7 顆光點沿弧線飛進最近的那道裂縫、鼓起來晃兩下 ──
+  // ── 蛋：往果實那邊傾、正面那道裂縫亮起來、果實化成 5～7 顆光點沿弧線飛進裂縫（每飛出一顆果實就縮一級）、鼓起來晃兩下 ──
   async function absorb(b, side) {
     const em = emEl(); if (!em) return;
     cls(true, "st-tilt-" + side); await sleep(380);
     cls(true, "st-glow"); await sleep(200);
-    const glows = [...em.querySelectorAll(".pr-glow")].map(g => g.getBoundingClientRect()).filter(q => q.width > 0);
-    const br = b.getBoundingClientRect(), bx = br.left + br.width / 2, by = br.top + br.height / 2;
-    const tg = glows.sort((p, q) => Math.abs(p.left + p.width / 2 - bx) - Math.abs(q.left + q.width / 2 - bx))[0];
+    // 2026-10-05 第二輪：固定從正面那道裂紋（.cp-crack）吸進去；光點＋剩下的果實＝原本那一份（以前果實自己淡出、光點另外飛，像憑空複製）
+    const tg = PetWalk.cpt(box, "crack"), br = b.getBoundingClientRect(), bx = br.left + br.width / 2, by = br.top + br.height / 2;
     const actor = box.querySelector(".ps-actor"), ar = actor.getBoundingClientRect();
     b.classList.add("melt");
-    const n = 5 + Math.floor(Math.random() * 3), sparks = [];
+    const n = 5 + Math.floor(Math.random() * 3), sparks = [], gap = 70;
+    b.animate([{ transform: "none", filter: "brightness(1)" }, { transform: "scale(1.05, .92)", filter: "brightness(1.4)", offset: .12 }].concat(Array.from({ length: n }, (_, k) => ({ transform: `scale(${(1 - (k + 1) / n).toFixed(3)})`, filter: "brightness(1.6)", offset: Math.min(1, .12 + .88 * (k + 1) / n) }))), { duration: gap * n + 120, easing: "linear", fill: "forwards" });
     for (let k = 0; k < n; k++) {
       const s = document.createElement("i"); s.className = "ps-spark";
-      const sx = bx + (Math.random() - .5) * br.width * .6, sy = by + (Math.random() - .5) * br.height * .5;
-      const ex = tg ? tg.left + tg.width * (.3 + .4 * Math.random()) : bx, ey = tg ? tg.top + tg.height * (.3 + .4 * Math.random()) : by - 40;
-      const dx = ex - sx, dy = ey - sy, lift = 18 + Math.random() * 16;
+      const sx = bx + (Math.random() - .5) * br.width * .4, sy = by + (Math.random() - .5) * br.height * .3;
+      const ex = tg ? tg[0] + (Math.random() - .5) * 6 : bx, ey = tg ? tg[1] + (Math.random() - .5) * 6 : by - 40;
+      const dx = ex - sx, dy = ey - sy, lift = 16 + Math.random() * 12;
       s.style.left = (sx - ar.left) + "px"; s.style.top = (sy - ar.top) + "px";
       actor.appendChild(s);
       const a = s.animate([
-        { transform: "translate(0, 0) scale(.6)", opacity: 0 },
-        { transform: `translate(${(dx * .2).toFixed(1)}px, ${(dy * .2 - lift * .6).toFixed(1)}px) scale(1.1)`, opacity: 1, offset: .25 },
-        { transform: `translate(${(dx * .6).toFixed(1)}px, ${(dy * .6 - lift).toFixed(1)}px) scale(.9)`, opacity: 1, offset: .65 },
-        { transform: `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px) scale(.35)`, opacity: .2 },
-      ], { duration: 560 + k * 30, delay: k * 55, easing: "ease-in", fill: "both" });
-      s.__end = [ex, ey]; sparks.push([s, a]);
+        { transform: "translate(0, 0) scale(.5)", opacity: 0 },
+        { transform: `translate(${(dx * .25).toFixed(1)}px, ${(dy * .25 - lift * .7).toFixed(1)}px) scale(1.15)`, opacity: 1, offset: .3 },
+        { transform: `translate(${(dx * .7).toFixed(1)}px, ${(dy * .7 - lift).toFixed(1)}px) scale(.95)`, opacity: 1, offset: .7 },
+        { transform: `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px) scale(.3)`, opacity: .15 },
+      ], { duration: 560, delay: 120 + k * gap, easing: "ease-in", fill: "both" });
+      sparks.push([s, a]);
     }
     await Promise.all(sparks.map(([, a]) => a.finished.catch(() => {})));
     sparks.forEach(([s]) => s.remove());
     cls(false, "st-tilt-" + side);
-    await flash("pb-swell", 720);
-    cls(false, "st-glow"); await sleep(160);
+    await flash("pb-swell", 640);
+    cls(false, "st-glow"); await sleep(260);   // 光退了、停一下，下一顆才開始
   }
-  // 一顆一顆吃：看（頭＋眼轉過去）→ 俯身 → 張嘴 → 咬（果實飛進嘴裡）→ 抬頭 → 嚼三下（臉頰鼓起）→ 吞；
+  // 一顆一顆吃：看（頭＋眼轉過去）→ 俯身 → 張嘴 → 咬（嘴碰到果實上緣）→ 抬頭 → 嚼（臉頰鼓起）→ 吞；
   // 三顆吃完舔舔嘴、再慶祝。蝶是落在果實旁、口器彎過去吸；蛋是往果實傾、裂縫亮起來把光吸進去。
   const cls = (on, ...c) => { const em = emEl(); if (em) c.forEach(k => em.classList.toggle(k, on)); };
   // ── 果實歸誰（2026-10-05 第二輪）：地上（不動）／手掌／尾尖／嘴，同一時間只歸一個。歸了誰，每一格就把果實的錨點對齊到那個接觸點（PetWalk.cpt），
@@ -386,17 +386,17 @@ window.PetStage = (function () {
           if (stg === 5) {   // 幼龍：用前爪撿起來再送到嘴邊（短腿彎不下去，撿起來吃最自然）
             const side = x - at() >= 0 ? "r" : "l";
             cls(true, "st-crouch", "st-reach-" + side); await sleep(340);       // 蹲下、那隻爪子伸下去
-            b.classList.add("held"); follow(b, "palm-" + side, { ay: .38, ms: 140 }); await sleep(160);   // 抓住：從現在起果實歸手掌
+            b.classList.add("held"); follow(b, "palm-" + side, { ay: .38, ms: 220 }); await sleep(220);   // 抓住：從現在起果實歸手掌（最後幾 px 慢慢收進手心）
             cls(false, "st-reach-" + side); cls(true, "st-lift-" + side); await sleep(500);   // 舉到嘴邊（慢起慢停，果實每一格跟著手掌）
             // 咬兩口：第一口咬掉一角（剩 2/3）、手拿著嚼；第二口吃掉、嚼、吞——吞完手才放下、才拍肚子（2026-10-05 第二輪照 ChatGPT 看錄影的建議：以前第二口咬下去手就放下了）
             b.style.setProperty("--nx", side === "r" ? "28%" : "72%");          // 缺口在靠嘴的那一側
             cls(true, "st-open"); await sleep(120);
             cls(false, "st-open"); b.classList.add("bit1"); await flash("pb-snap", 220);
-            cls(true, "chew2"); await flash("pb-chew", 420); cls(false, "chew2");   // 手拿著果實嚼
+            cls(true, "chew2"); await flash("pb-chew", 380); cls(false, "chew2");   // 手拿著果實嚼
             cls(true, "st-open"); await sleep(110);
             toMouth(b, false); b.classList.add("eaten");
             cls(false, "st-open"); await flash("pb-snap", 220);
-            cls(true, "chew2"); await flash("pb-chew", 420); cls(false, "chew2"); await flash("pb-gulp", 300);
+            cls(true, "chew2"); await flash("pb-chew", 380); cls(false, "chew2"); await flash("pb-gulp", 300);
             cls(false, "st-lift-" + side, "st-crouch");                          // 吞完才放下手、站起來
             if (!todo.length) await flash("pb-belly", 640);                      // 最後一顆吞下去才拍拍肚子
             if (bal && isFinite(left)) { left = Math.max(0, left - 1); bal.textContent = left; bal.classList.remove("tick"); void bal.offsetWidth; bal.classList.add("tick"); }
@@ -438,7 +438,7 @@ window.PetStage = (function () {
       if (box) { box.style.setProperty("--ex", "0"); box.style.setProperty("--ey", "0"); }
       if (aborted || !box) return;
       if (!egg && !fly) await flash("pb-lick", 640);                  // 舔舔嘴
-      if (onCloud && W && box) { box.__riders = null; await PetWalk.goTo(box, -28); }   // 神龍：吃飽在雲上游一小段（身體走頭走過的路、雲座晚一點跟上）
+      if (onCloud && W && box) { box.__riders = null; await PetWalk.goTo(box, -22); }   // 神龍：吃飽在雲上游一小段（身體走頭走過的路、雲座晚一點跟上）
       if (W && box) await PetWalk.home(box);                          // 走回中間
       await flash("pb-hop", 1300);   // 各自的慶祝（style-features.css 依階段換動作）
     } finally { berries.forEach(o => { release(o.b); o.b.remove(); }); cls(false, "st-lean", "st-open", "st-sip", "st-land", "st-glow", "st-tilt-l", "st-tilt-r"); resetProboscis(); if (box) { box.__riders = null; if (box.__chain && typeof PetWalk !== "undefined") PetWalk.tailTo(box, null, 1); box.style.removeProperty("--ld"); box.style.removeProperty("--lx"); if (typeof PetWalk !== "undefined" && (reduce() || aborted)) { PetWalk.stop(box); box.classList.remove("standing", "face-r"); } } feeding = false; busy = false; if (box) { box.classList.remove("feeding"); schedule(mood); } }

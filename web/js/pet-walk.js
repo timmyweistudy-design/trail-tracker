@@ -142,8 +142,8 @@ window.PetWalk = (function () {
     if (!sp6()) return;
     let P = (box.__chain || rest()).map(q => q.slice());
     const st = P[P.length - 1].slice();
-    // 每一格：從上一格的姿勢做 FABRIK，再限制每個關節點這一格最多移 7 個單位（FABRIK 偶爾會換一種彎法，限速讓它換得過去、不會一格跳到底）
-    const step = T => { const prev = P.map(q => q.slice()); fabrik(P, T, 8); P = P.map((q, i) => { const dx = q[0] - prev[i][0], dy = q[1] - prev[i][1], d = Math.hypot(dx, dy), m = 7; return d > m ? [prev[i][0] + dx / d * m, prev[i][1] + dy / d * m] : q; }); };
+    // 每一格：從上一格的姿勢做 FABRIK，再限制每個關節點這一格最多移 6 個單位（FABRIK 偶爾會換一種彎法，限速讓它換得過去、不會一格跳到底）
+    const step = T => { const prev = P.map(q => q.slice()); fabrik(P, T, 8); P = P.map((q, i) => { const dx = q[0] - prev[i][0], dy = q[1] - prev[i][1], d = Math.hypot(dx, dy), m = 6; return d > m ? [prev[i][0] + dx / d * m, prev[i][1] + dy / d * m] : q; }); };
     const goal = () => { if (!tgt) return TIP6; if (tgt === "mouth") return mouthLocal(box); const r = tgt.getBoundingClientRect(); return toLocal(box, r.left + r.width / 2, r.top + r.height * .62); };
     await tween(ms, (e, k) => {
       const g = goal(), c = tgt === "mouth" ? [(st[0] + g[0]) / 2, Math.max(st[1], g[1]) + 26] : tgt ? [(st[0] + g[0]) / 2, Math.min(st[1], g[1]) - 16] : [(st[0] + g[0]) / 2, Math.max(st[1], g[1]) + 10];
@@ -373,7 +373,8 @@ window.PetWalk = (function () {
     const y0 = curY(box), y1 = opts.wy == null ? y0 : opts.wy;
     if (reduce()) { set(box, "--wx", x + "px"); set(box, "--wy", y1 + "px"); return; }
     if (Math.abs(dist) < 3) {   // 左右幾乎不用動、只要往前（深度）挪：原地踏一小步過去
-      if (Math.abs(y1 - y0) >= 1.5) await new Promise(res => { const t0 = performance.now(); const step = () => { const now = performance.now(); const k = Math.min(1, (now - t0) / 300), e = k * k * (3 - 2 * k); moveTo(box, x0 + (x - x0) * e, y0 + (y1 - y0) * e); if (k < 1) raf = requestAnimationFrame(step); else res(); }; raf = requestAnimationFrame(step); });
+      const vd = g.mode === "fly" ? Math.max(300, Math.abs(y1 - y0) / g.v * 1000 * 1.6) : 300;   // 蝶原地降落／起飛：依高度給時間（以前一律 0.3 秒，降 38px 擠在兩格）
+      if (Math.abs(y1 - y0) >= 1.5) await new Promise(res => { const t0 = performance.now(); const step = () => { const now = performance.now(); const k = Math.min(1, (now - t0) / vd), e = k * k * (3 - 2 * k); moveTo(box, x0 + (x - x0) * e, y0 + (y1 - y0) * e); if (k < 1) raf = requestAnimationFrame(step); else res(); }; raf = requestAnimationFrame(step); });
       set(box, "--wx", x + "px"); set(box, "--wy", y1 + "px"); box.__wy = null; const E = els(box); [E.critter, E.shadow, E.prop].forEach(el => { if (el) el.style.translate = ""; }); return;
     }
     box.classList.add("walking"); box.dataset.walk = g.mode;
@@ -390,19 +391,20 @@ window.PetWalk = (function () {
     // 預備：往下蹲、往後縮一點
     if (!opts.keepFace && g.mode !== "crawl") { set(box, "--gpre", "1"); await sleep(150); set(box, "--gpre", "0"); }   // 小碎步不用預備；幼蟲的預備就是第一道波
     box.__k = g.mode === "stand" || g.mode === "crawl" ? 0 : calib(box);   // 站姿用 IK（SVG 單位、沒有 3D 轉身），不用量
-    const ramp = Math.min(Math.abs(dist) * .35, 26);   // 起步／停下的緩衝距離
+    const Lp = g.mode === "fly" ? Math.hypot(Math.abs(dist), Math.abs(y1 - y0)) : Math.abs(dist);   // 蝶按「真的飛過的路」推進（水平近、垂直遠時以前會兩格就掉到底）
+    const ramp = Math.min(Lp * .35, 26);   // 起步／停下的緩衝距離
     const arc = g.mode === "fly" ? Math.min(28, Math.abs(dist) * .3) : 0;   // 蝶：飛一道弧線過去（不是貼著直線滑）
     let p = 0, t = performance.now(), done = 0, lastS = .15;
     await new Promise(res => {
       const step = () => { const now = performance.now();
         const dt = Math.min(.05, (now - t) / 1000); t = now;
-        const left = Math.abs(dist) - done;
+        const left = Lp - done;
         const ease = Math.min(1, (done + 2) / ramp, (left + 2) / ramp);   // 起步加速、快到時減速
         const v = g.v * (.25 + .75 * ease), ds = Math.min(left, v * dt);
-        done += ds; p += ds / g.D;
-        const kk = Math.min(1, done / Math.abs(dist));
+        done += ds; p += ds / g.D * (Math.abs(dist) / Lp);
+        const kk = Math.min(1, done / Lp);
         if (g.mode === "swim") swimField(box, Math.max(.15, ease), dt);   // 先算（寫 --ghy），pose() 結尾一起寫到元素
-        moveTo(box, x0 + dir * done, y0 + (y1 - y0) * (g.mode === "fly" ? kk * kk * (3 - 2 * kk) : kk) - arc * Math.sin(Math.PI * kk));
+        moveTo(box, x0 + dir * Math.abs(dist) * kk, y0 + (y1 - y0) * (g.mode === "fly" ? kk * kk * (3 - 2 * kk) : kk) - arc * Math.sin(Math.PI * kk));
         lastS = Math.max(.15, ease); pose(box, g, p, lastS, dir);
         if (g.mode === "crawl") { crawlField(box, Math.min(.99999, p - Math.floor(p)) , 1, g.D * 200 / critterPx(box), rev); flush(box); }   // 波的高度不跟著加減速縮（每一節的位移要剛好抵掉身體的移動，腳才不滑）
         if (left - ds > .2) raf = requestAnimationFrame(step); else res();
@@ -461,9 +463,9 @@ window.PetWalk = (function () {
       await goTo(box, Math.round(berryX - lvFace(box) * mo), { keepFace: true });
       return;
     }
-    if (st === 2) {   // 蝶：落在果實旁邊約 30px（口器斜斜伸過去吸），腳尖（圖上 y≈160）剛好踩在果實的那條地面線上
+    if (st === 2) {   // 蝶：落在果實旁邊約 50px（2026-10-05 第二輪從 30 拉開：果實常被後翅蓋住，看不出在吸哪一顆）（口器斜斜伸過去吸），腳尖（圖上 y≈160）剛好踩在果實的那條地面線上
       const tipY = c.top + c.height * 160 / 200;
-      await goTo(box, Math.round(berryX - side * 30), { wy: Math.round((curY(box) + groundY(berryEl) - tipY) * 10) / 10 });
+      await goTo(box, Math.round(berryX - side * 50), { wy: Math.round((curY(box) + groundY(berryEl) - tipY) * 10) / 10 });
       return;
     }
     if (st === 5) { const pw = em.querySelector(side > 0 ? ".pr-paw.r" : ".pr-paw.l"); if (pw) { const q = pw.getBoundingClientRect(); mouthDx = (q.left + q.width / 2) - (c.left + c.width / 2) + side * 6; } }   // 幼龍：用前爪撿起來
