@@ -358,7 +358,7 @@ for(const [km,st] of [[5,1],[40,3],[90,4],[260,6]]){const p=await mk({km});
    {const fv=parseFloat(box.style.getPropertyValue("--face"))||0,d=box.classList.contains("standing")?(box.classList.contains("face-r")?1:-1):(Math.abs(fv)>8?Math.sign(fv):0);if(d&&dirs[dirs.length-1]!==d)dirs.push(d);}   // 面朝哪邊（小碎步往後退不算轉身）
    if(!bs.length&&bite.length)break;await new Promise(r=>setTimeout(r,25));}
   return {bite,moved,maxTarget,turns:Math.max(0,dirs.length-1)};});
- ok(r.bite.length===3&&r.bite.every(([x,y])=>Math.hypot(x,y)<=8),"stage "+st+": the mouth touches the berry when it bites (berry moves ≤8px into the mouth) "+JSON.stringify(r.bite));
+ ok(r.bite.length===3&&r.bite.every(([x,y])=>Math.hypot(x,y)<=10),"stage "+st+": the mouth touches the berry when it bites (berry moves ≤10px into the mouth; 2026-10-05 咬的是果實上緣，最後一口果實中心要再往上移約 18% 才進嘴) "+JSON.stringify(r.bite));
  ok(r.moved===0,"stage "+st+": berries on the ground never move while the pet walks ("+r.moved+")");
  ok(r.maxTarget===1,"stage "+st+": exactly one berry is marked as the one being eaten");
  ok(r.turns<=2,"stage "+st+": eats in one sweep, turns around at most twice ("+r.turns+")");
