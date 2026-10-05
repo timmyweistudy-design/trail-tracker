@@ -14,8 +14,8 @@ window.PetWalk = (function () {
     0: { mode: "rock", v: 86, D: 30, bob: 3, roll: 15 },                                      // 蛋：左右搖著滾過去
     1: { mode: "crawl", v: 40, Du: 22, bob: 0, roll: 0, head: 0 },                         // 幼蟲：蠕動（收縮波從尾巴往頭傳；一道波往前 22 單位）
     2: { mode: "fly", v: 140, D: 38, bob: 9, roll: 0, bank: 9 },                               // 蝶：一拍一升的小弧線、轉彎時內傾
-    3: { mode: "stand", v: 135, stride: 34, lift: 11, sink: 3.6, duty: .6, bob: 2.4, tail: 15, ear: 7, neck: 3.5, sh: .7, legL: 58 },             // 狐：小步、輕、有彈性；尾巴大幅、晚一拍
-    4: { mode: "stand", v: 92, stride: 36, lift: 12, sink: 5, duty: .68, bob: 3.6, lag: .06, tail: 5, ear: 2, neck: -1.2, sh: 1.6, legL: 56 },  // 虎：慢、步幅大、肩膀隨前腳起伏、落地後才沉（重）；尾巴小幅；頭穩
+    3: { mode: "stand", v: 150, stride: 34, lift: 11, sink: 3.6, duty: .6, bob: 2.4, tail: 15, ear: 7, neck: 3.5, sh: .7, legL: 58 },             // 狐：小步、輕、有彈性；尾巴大幅、晚一拍
+    4: { mode: "stand", v: 115, stride: 36, lift: 12, sink: 5, duty: .68, bob: 3.6, lag: .06, tail: 5, ear: 2, neck: -1.2, sh: 1.6, legL: 56 },  // 虎：慢、步幅大、肩膀隨前腳起伏、落地後才沉（重）；尾巴小幅；頭穩
     5: { mode: "waddle", v: 78, D: 28, bob: 4.5, roll: 7, lift: 11, duty: .56, tail: 12, ear: 6, head: 2.4 },        // 幼龍：短腿搖搖擺擺
     6: { mode: "swim", v: 125, D: 70, bob: 3, roll: 1.5, tail: 8, head: 1.5 },                 // 神龍：在雲上游
   };
@@ -491,10 +491,14 @@ window.PetWalk = (function () {
     const E = els(box); box.__bow = null;
     [E.stand, E.neck, E.head2, ...Object.values(E.legs || {}).flat()].forEach(el => { if (el) { el.style.transform = ""; el.style.transition = ""; } });
   }
-  function bow(box, pitch, nk, ms) {   // 從現在的姿勢平滑過去（先慢後快再慢）；pitch＝nk＝0 是站直
-    const [p0, n0] = box.__bow || [0, 0], t0 = performance.now(), D = ms || 360;
-    return new Promise(res => { const step = () => { const now = performance.now(); const k = Math.min(1, (now - t0) / D), e = k * k * (3 - 2 * k);
-      bowSet(box, p0 + (pitch - p0) * e, n0 + (nk - n0) * e); if (k < 1) raf = requestAnimationFrame(step); else { if (!pitch && !nk) bowClear(box); res(); } };
+  // 從現在的姿勢平滑過去；pitch＝nk＝0 是站直。2026-10-05 第二輪：身體和脖子錯開——
+  // 往下：肩膀先沉（前傾），脖子晚 30% 才往前下方伸；往上：脖子先抬，肩膀晚一點才回正（ChatGPT 看錄影的建議；以前兩個同時動，抬頭像整隻彈回去）
+  function bow(box, pitch, nk, ms) {
+    const [p0, n0] = box.__bow || [0, 0], t0 = performance.now(), D = ms || 360, up = Math.abs(pitch) + Math.abs(nk) < Math.abs(p0) + Math.abs(n0);
+    const ss = v => { v = Math.max(0, Math.min(1, v)); return v * v * (3 - 2 * v); };
+    return new Promise(res => { const step = () => { const k = Math.min(1, (performance.now() - t0) / D);
+      const a = ss(k / .7), b = ss((k - .3) / .7), ep = up ? b : a, en = up ? a : b;   // ep＝身體、en＝脖子
+      bowSet(box, p0 + (pitch - p0) * ep, n0 + (nk - n0) * en); if (k < 1) raf = requestAnimationFrame(step); else { if (!pitch && !nk) bowClear(box); res(); } };
       raf = requestAnimationFrame(step); });
   }
   // ── 站起來／坐下／轉身（狐、虎）：坐著（正面）→ 站起來（正面）→ 四分之三面 → 側身；轉身＝側身 → 四分之三 → 正面 → 另一邊四分之三 → 側身 ──

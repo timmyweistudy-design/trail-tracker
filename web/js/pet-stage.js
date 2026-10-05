@@ -336,7 +336,7 @@ window.PetStage = (function () {
       });
       if (onCloud) { const c0 = parseFloat(box.style.getPropertyValue("--wx")) || 0; box.__cloud = c0; box.__riders = berries.map(o => ({ el: o.b, bx: o.x, c0 })); berries.forEach(o => { o.b.__rx = o.x; }); }
       box.style.setProperty("--ex", "0"); box.style.setProperty("--ey", "1");   // 低頭看掉下來的果實
-      await sleep(340 + 650 + 120);
+      await sleep(340 + 650);   // 等最後一顆落地（以前多等 0.12 秒；再早出發，第三顆還在彈就開始走）
       const W = typeof PetWalk !== "undefined";
       const at = () => parseFloat(box.style.getPropertyValue("--wx")) || 0;
       // 吃的順序：從離現在位置比較近的那一端開始，一路掃到另一端——以前每次挑最近的會左右來回（轉身最難看，能少就少：最多轉兩次）
@@ -423,13 +423,13 @@ window.PetStage = (function () {
             if (typeof ttBuzz === "function") ttBuzz(8);
             b.remove(); box.style.removeProperty("--ld"); box.style.removeProperty("--lx"); continue;
           }
-          cls(true, "st-lean"); if (bowTo) await PetWalk.bow(box, bowTo[0], bowTo[1], stg === 4 ? 420 : 380); else await sleep(360);   // 俯身（狐、虎：胸口往下、前腳彎；狐會先嗅兩下）
+          cls(true, "st-lean"); if (bowTo) { await PetWalk.bow(box, bowTo[0], bowTo[1], stg === 4 ? 540 : 440); await sleep(90); } else await sleep(360);   // 俯身（肩膀先沉、脖子再伸；虎慢、先沉重心），碰到後停一下
           cls(true, "st-open"); await sleep(170);   // 張嘴
           toMouth(b, false); b.classList.add("eaten");               // 果實被咬進嘴裡
-          cls(false, "st-open"); await flash("pb-snap", 240);        // 咬！
-          cls(false, "st-lean"); if (bowTo) await PetWalk.bow(box, 0, 0, later ? 240 : 320); else await sleep(later ? 200 : 280);   // 抬頭（站著的：身體回正、脖子抬回來）
-          { cls(later, "chew2"); await flash("pb-chew", (stg === 1 ? 900 : stg === 4 ? 1050 : 900) * (later ? .67 : 1)); cls(false, "chew2"); }   // 嚼三下（後兩顆兩下；幼蟲快快啃、虎慢慢嚼）
-          await flash("pb-gulp", 340);                               // 吞
+          cls(false, "st-open"); await flash("pb-snap", bowTo ? 200 : 240);   // 咬！
+          cls(false, "st-lean"); if (bowTo) await PetWalk.bow(box, 0, 0, stg === 4 ? 580 : 480); else await sleep(later ? 200 : 280);   // 抬頭（脖子先帶起來、肩膀再回正）
+          { const two = later || !!bowTo; cls(two, "chew2"); await flash("pb-chew", (stg === 1 ? 900 : stg === 4 ? 1050 : 900) * (two ? .67 : 1)); cls(false, "chew2"); }   // 嚼三下（後兩顆、以及狐虎每一顆都兩下：整段控制在 16 秒內）   // 嚼三下（後兩顆兩下；幼蟲快快啃、虎慢慢嚼）
+          await flash("pb-gulp", bowTo ? 280 : 340);                 // 吞
         }
         if (bal && isFinite(left)) { left = Math.max(0, left - 1); bal.textContent = left; bal.classList.remove("tick"); void bal.offsetWidth; bal.classList.add("tick"); }
         if (typeof ttBuzz === "function") ttBuzz(8);
@@ -438,7 +438,7 @@ window.PetStage = (function () {
       }
       if (box) { box.style.setProperty("--ex", "0"); box.style.setProperty("--ey", "0"); }
       if (aborted || !box) return;
-      if (!egg && !fly) await flash("pb-lick", 780);                  // 舔舔嘴
+      if (!egg && !fly) await flash("pb-lick", 640);                  // 舔舔嘴
       if (onCloud && W && box) { box.__riders = null; await PetWalk.goTo(box, -40); }   // 神龍：吃飽在雲上游一小段（身體走頭走過的路、雲座晚一點跟上）
       if (W && box) await PetWalk.home(box);                          // 走回中間
       await flash("pb-hop", 1300);   // 各自的慶祝（style-features.css 依階段換動作）

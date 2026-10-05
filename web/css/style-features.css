@@ -2095,8 +2095,7 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .ps-box .st-lean .pc-ear.r { animation: none; transform: rotate(-8deg); }
 .ps-box .st-lean .pr-paw { transform: rotate(0deg) translateY(-1px); }
 /* 餵食中（pet-stage.js 加 .feeding）：待機的上下飄小一點——接觸（嘴、口器、尾巴）才不會被飄走 */
-.ps-box.feeding .pc-hover { animation: pchoverFeed 3.8s ease-in-out infinite; }
-@keyframes pchoverFeed { 0%, 100% { transform: translateY(1px); } 50% { transform: translateY(-2px); } }
+.ps-box.feeding .pc-hover { --hv: .3; }
 /* 蝶落地（2026-10-05）：停住上下飄、六隻腳淡入、翅膀半收慢慢拍（落在果實旁，由 pet-walk.js 算好高度讓腳尖踩在地面線上） */
 .ps-box .st-land .pc-hover { animation: none; transform: none; }
 .ps-box .st-land .pr-legs { display: inline; animation: bfLegs .3s ease-out; }
@@ -2122,6 +2121,7 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .ps-box .st-sip .pr-ext { opacity: 1; } .ps-box .st-sip .pr-curl { opacity: 0; }
 /* 咬下：嘴「啪」地合上、頭往上帶一下 */
 .ps-box .pb-snap .m-o { animation: pbSnapM .22s ease-in forwards; }
+.ps-box .pr-hfx { transition: transform .4s ease-in-out; }   /* 靜態的頭部姿勢（想念時歪頭）換上／拿掉時慢慢過去；咬、嚼的動畫照樣蓋過它 */
 /* 睏：頭偶爾打瞌睡點一下——放在咬、嚼、摸頭之前、權重壓低（以前帶 #petEmoji，睏的夥伴連咀嚼動畫都被它蓋掉）；餵食時不打瞌睡 */
 .ps-box:not(.feeding) :where(#petEmoji.pet-m-sleepy) .pr-hfx { animation: pbDoze 6s ease-in-out infinite; }
 .ps-box .pb-snap .pr-hfx { animation: pbSnapH .26s ease-out; }
@@ -2149,7 +2149,7 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .ps-box .pb-gulp .pr-hfx { animation: pbGulp .34s ease-in-out; }
 @keyframes pbGulp { 0%, 100% { transform: none; } 50% { transform: translateY(3px) scale(1.01, .98); } }
 /* 舔嘴：舌頭伸出來繞一下；開心瞇眼 */
-.ps-box .pb-lick .m-t { animation: pbLick .78s ease-in-out; }
+.ps-box .pb-lick .m-t { animation: pbLick .64s ease-in-out; }
 .ps-box .pb-lick .pc-eye { display: none; } .ps-box .pb-lick .pc-eh { display: inline; }
 @keyframes pbLick { 0% { opacity: 0; transform: scale(.4) rotate(-10deg); } 20% { opacity: 1; transform: scale(1) rotate(-6deg); } 55% { opacity: 1; transform: scale(1.05) rotate(10deg); } 85% { opacity: 1; transform: scale(.8) rotate(0); } 100% { opacity: 0; transform: scale(.3); } }
 /* 蛋：吸收果實時裂縫亮起來 */
@@ -2213,7 +2213,7 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 /* 心情的待機姿態：睏＝點頭打瞌睡；想念＝頭微微抬起望遠方；開心＝尾巴搖快一點 */
 @keyframes pbDoze { 0%, 55%, 100% { transform: none; } 70% { transform: translateY(5px) rotate(4deg); } 76% { transform: translateY(1px) rotate(-1deg); } 84% { transform: translateY(6px) rotate(5deg); } 92% { transform: none; } }
 .ps-box:not(.feeding) :where(#petEmoji.pet-m-longing) .pr-hfx { transform: translateY(-1px) rotate(-3deg); }   /* 想念：頭微微低下歪一邊（內層；權重壓低，咬、嚼、摸頭會蓋過它） */
-.ps-box #petEmoji.pet-m-happy .pc-tail { animation-duration: 1.5s; }
+.ps-box :where(#petEmoji.pet-m-happy) .pc-tail { animation-duration: 1.5s; }   /* 權重壓低：摸頭時尾巴快搖（.42s）才蓋得過 */
 /* 小東西的待機：蝶的觸角、蛋的裂縫光、狐的鼻子偶爾動一下 */
 .ps-box .pr-ant { animation: pbAnt 3.4s ease-in-out infinite; } .ps-box .pr-ant.r { animation-delay: -.6s; }
 @keyframes pbAnt { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(6deg); } }

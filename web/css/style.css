@@ -866,7 +866,10 @@ body.rec-running.rec-resting #recMap .pm-e .pet-critter, body.rec-running.rec-re
 .pc-hover { transform-box: fill-box; transform-origin: 50% 50%; animation: pchover 3.8s ease-in-out infinite; }
 .pc-hover.pc-soar { animation: pcsoar 5s ease-in-out infinite; }   /* 神龍：在雲上緩緩起伏（雲是另一層、不動） */
 @keyframes pcsoar { 0%,100% { transform: translateY(1px) rotate(0); } 50% { transform: translateY(-4px) rotate(-.6deg); } }
-@keyframes pchover { 0%,100% { transform: translateY(2px); } 50% { transform: translateY(-8px); } }
+/* 懸浮幅度用變數（--hv）：餵食時調小、吃完慢慢放大回來（@property 讓它能漸變；以前換一支動畫，換的那一格會跳） */
+@property --hv { syntax: "<number>"; inherits: true; initial-value: 1; }
+.pc-hover { transition: --hv .6s ease-in-out; }
+@keyframes pchover { 0%,100% { transform: translateY(calc(2px * var(--hv, 1))); } 50% { transform: translateY(calc(-8px * var(--hv, 1))); } }
 .pc-eye { transform-box: fill-box; transform-origin: center; animation: pcblink 4.4s infinite; }
 @keyframes pcblink { 0%,92%,100% { transform: scaleY(1); } 96% { transform: scaleY(.1); } }
 .pc-tail { transform-box: fill-box; transform-origin: 78% 62%; animation: pcwag 2.7s ease-in-out infinite; }
@@ -886,9 +889,9 @@ body.rec-running.rec-resting #recMap .pm-e .pet-critter, body.rec-running.rec-re
 @media (prefers-reduced-motion: reduce) { .pc-bob,.pc-hover,.pc-eye,.pc-tail,.pc-wing,.pc-fw,.pc-hw,.pc-tw,.pc-sway,.pc-ear,.pet-ff { animation: none !important; } }
 /* A1 表情跟心情：改角色眼睛＋角色旁小裝飾 */
 #petEmoji.pet-m-sleepy .pc-eye, .fv-critter.pet-m-sleepy .pc-eye { transform: scaleY(.28) !important; animation: none !important; }   /* 半瞇不眨＝睏 */
-#petEmoji.pet-m-sleepy .pc-bob, .fv-critter.pet-m-sleepy .pc-bob { animation-duration: 5.4s; }                                        /* 呼吸放慢 */
+:where(#petEmoji.pet-m-sleepy, .fv-critter.pet-m-sleepy) .pc-bob { animation-duration: 5.4s; }   /* 呼吸放慢——只改待機呼吸：權重壓低（以前帶 id，連坐下、拍肚子這些動作都被拉成 5.4 秒，播到一半拿掉就跳） */
 #petEmoji.pet-m-longing .pc-eye, .fv-critter.pet-m-longing .pc-eye { transform: scaleY(1.14) !important; animation: none !important; } /* 水汪汪大眼＝想念 */
-#petEmoji.pet-m-happy .pc-bob, .fv-critter.pet-m-happy .pc-bob { animation-duration: 2.3s; }                                         /* 開心跳快一點 */
+:where(#petEmoji.pet-m-happy, .fv-critter.pet-m-happy) .pc-bob { animation-duration: 2.3s; }   /* 開心跳快一點（同上，只改待機呼吸） */
 .pet-fx { position: absolute; top: 8%; right: 15%; width: calc(22px * var(--fs, 1)); pointer-events: none; z-index: 3; animation: petFxFloat 2.6s ease-in-out infinite; }
 .pet-fx svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 1px 2px rgba(0,0,0,.3)); }
 .pet-fx-sleepy { top: 4%; right: 18%; }
