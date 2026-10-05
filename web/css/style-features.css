@@ -2297,10 +2297,7 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 /* 支點放在後腳掌（低頭時整個身體以後腳為支點往前趴）；往右走的鏡像要繞 x=100，所以先平移 −96 再翻 */
 .ps-box.standing .pr-stand { transform-box: view-box; transform-origin: 148px 196px; transform: var(--flip, translate(0, 0)) rotate(var(--pitch, 0deg)); }   /* 不要 transition：鏡像翻面會被內插成「寬度 0 的紙片」（傾斜、低頭都由 pet-walk.js 每格寫） */
 .ps-box.standing.face-r { --flip: translateX(-96px) scale(-1, 1); }
-.ps-box.standing .st-lean .pr-stand { --pitch: -15deg; }   /* 趴下去吃（像狗、狐狸低頭吃東西：胸口往下、手肘彎） */
-.ps-box.standing .st-lean .pr-leg.fl { transform: rotate(14deg); } .ps-box.standing .st-lean .pr-leg.fl .pr-shin { transform: rotate(-34deg); }
-.ps-box.standing .st-lean .pr-leg.fr { transform: rotate(10deg); } .ps-box.standing .st-lean .pr-leg.fr .pr-shin { transform: rotate(-30deg); }
-.ps-box.standing .st-lean .pr-leg.hl, .ps-box.standing .st-lean .pr-leg.hr { transform: rotate(-6deg); }
+/* 站姿低頭：全部由 pet-walk.js 的 bow() 逐格寫（2026-10-05 第二輪拿掉 CSS 的 .st-lean 備用姿勢——加上 st-lean 那一格、JS 還沒寫之前會先閃一下 -15° 的姿勢） */
 .ps-box .pr-leg.fl { transform: rotate(var(--aFL, 0deg)); } .ps-box .pr-leg.fl .pr-shin { transform: rotate(var(--bFL, 0deg)); }
 .ps-box .pr-leg.fr { transform: rotate(var(--aFR, 0deg)); } .ps-box .pr-leg.fr .pr-shin { transform: rotate(var(--bFR, 0deg)); }
 .ps-box .pr-leg.hl { transform: rotate(var(--aHL, 0deg)); } .ps-box .pr-leg.hl .pr-shin { transform: rotate(var(--bHL, 0deg)); }
@@ -2310,9 +2307,7 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .ps-box .pr-stand > .pc-tail { animation: none; transform: rotate(var(--gtr, 0deg)); }
 .ps-box .pr-stand .pr-head2 .pr-head { transition: none; }
 /* 站著低頭吃：脖子往下轉、頭反過來轉回去（臉朝著食物，不會整顆頭歪掉） */
-.ps-box.standing .st-lean .pr-stand .pr-neck { transform: rotate(var(--nk, -62deg)); }
-.ps-box.standing .pr-stand .pr-head2 .pr-head { transform: rotate(calc(var(--nk, 0deg) * -.55)); }
-.ps-box.standing .st-lean .pr-stand .pr-head2 .pr-head { transform: rotate(calc(var(--nk, -62deg) * -.55)); }
+.ps-box.standing .pr-stand .pr-head2 .pr-head { transform: rotate(calc(var(--nk, 0deg) * -.8)); }
 /* 坐下（從站姿換回坐姿）：壓一下再彈回 */
 .ps-box .pb-sit .pc-bob { animation: pbSitDown .42s cubic-bezier(.3,.7,.4,1); }
 @keyframes pbSitDown { 0% { transform: scale(1.06, .82); } 60% { transform: scale(.98, 1.04); } 100% { transform: none; } }

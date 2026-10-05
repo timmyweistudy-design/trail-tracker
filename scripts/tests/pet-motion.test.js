@@ -97,11 +97,13 @@ function judge(st, tag, R) {
       // 「走到定點」＝這次低頭之前最後一段長的走路（≥6 格）結束那一格；從那裡到咬下：不能再踏步、嘴只能往下（不能先抬回去）
       let e = a - 1; while (e > 0 && !(walk(e) && walk(e - 1) && walk(e - 2) && walk(e - 3) && walk(e - 4) && walk(e - 5))) e--;
       if (e <= 0) e = a; else while (e < a && walk(e)) e++;   // 前面沒有長的走路（果實就在旁邊）：從 st-lean 開始算
+      // 從上一顆吞完（或餵食開始）到這一顆咬下：走路只能有一段（不准到了再補一小步）
+      let gp = a; while (gp > 0 && !/pb-gulp/.test(F[gp].cls)) gp--; let runs = 0; for (let i = gp + 1; i < sn; i++) if (walk(i) && !walk(i - 1)) runs++; steps += Math.max(0, runs - 1);
       let lo = -1e9;
-      for (let i = e; i < sn; i++) { if (walk(i)) steps++; if (F[i].mouth) { if (F[i].mouth[1] < lo - 2 && lo - F[i].mouth[1] > up) { up = lo - F[i].mouth[1]; upAt = `@${i} (from ${e}) ${F[i].cls}|${F[i].bcl}`; } lo = Math.max(lo, F[i].mouth[1]); } }
+      for (let i = e; i < sn; i++) { if (F[i].mouth) { if (F[i].mouth[1] < lo - 2 && lo - F[i].mouth[1] > up) { up = lo - F[i].mouth[1]; upAt = `@${i} (from ${e}) ${F[i].cls}|${F[i].bcl}`; } lo = Math.max(lo, F[i].mouth[1]); } }
     }
     ok(drift <= 1, `${tag}: paws stay planted while eating (max drift ${drift.toFixed(1)}px)`, todoOf("paws", st));
-    ok(steps === 0, `${tag}: no extra step between arriving at the berry and swallowing (${steps} frames)`, todoOf("step", st));
+    ok(steps === 0, `${tag}: walks to each berry in one go — no extra adjusting step before the bite (${steps} extra walks)`, todoOf("step", st));
     ok(up <= 2, `${tag}: from arriving to the bite the head only goes down, never back up (${up.toFixed(1)}px ${upAt})`, todoOf("lean", st));
   }
   // 2) 咬下那一格：嘴在果實上（蝶看口器、蛋不咬）

@@ -353,20 +353,8 @@ window.PetStage = (function () {
         // 低頭要低多少：量嘴到果實的高度差（換成 SVG 單位），夠不到的最後一點由果實「跳」進嘴裡
         let bowTo = null;
         if (box.classList.contains("standing")) {   // 站著（狐、虎）：找「身體前傾多少」嘴才碰到果實（脖子先維持自然角度，不夠才再往下）
-          const em = emEl();
-          const gap = (pt, nk) => { PetWalk.bowSet(box, pt, nk); void em.offsetWidth; const m = PetWalk.cpt(box, "mouth"), br = b.getBoundingClientRect(); return [br.left + br.width / 2 - m[0], br.top + br.height * BITE_Y - m[1]]; };   // 嘴碰果實的上半部（咬住邊緣、一部分留在嘴外），不是正中間
-          const solve = (f, lo, hi, x0, x1) => {   // 割線法：f(x)=0，x 限制在 [lo, hi]
-            let y0 = f(x0), y1 = f(x1);
-            for (let it = 0; it < 4 && Math.abs(y1) > 1.5 && y1 !== y0; it++) { const x2 = Math.max(lo, Math.min(hi, x1 - y1 * (x1 - x0) / (y1 - y0))); x0 = x1; y0 = y1; x1 = x2; y1 = f(x1); }
-            return [x1, y1];
-          };
-          const NK = stg === 4 ? -46 : -54;   // 虎脖子短、粗：轉少一點
-          let [pt, dy] = solve(v => gap(v, NK)[1], -40, 0, -12, -26);
-          let nk = NK;
-          if (dy > 1.5) [nk, dy] = solve(v => gap(-40, v)[1], -100, NK, NK, NK - 20), pt = -40;   // 趴到底還不夠：脖子再往下
-          const dx = gap(pt, nk)[0];
-          PetWalk.bowClear(box); void em.offsetWidth;
-          if (Math.abs(dx) > 4) await PetWalk.goTo(box, at() + dx, { keepFace: true });   // 左右差一點：小碎步挪過去（真的動物也會這樣調整）
+          // 站位已經在 goEat 一次算好、走過去了（只走一次）；這裡只重算「趴多低」（走過去時前後深度變了一點），不再挪腳
+          const sol = PetWalk.solveBow(box, b, stg, BITE_Y), pt = sol.pt, nk = sol.nk;
           bowTo = [pt, nk];
         } else if (!egg && !fly && stg !== 5 && !onCloud) await reach(b, stg);
         if (egg) await absorb(b, x >= 0 ? "r" : "l");   // 蛋：不走路，原地把果實化成光吸進裂縫
