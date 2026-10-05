@@ -283,7 +283,7 @@ const KM=[0,5,20,40,90,150,260];
   h.remove();
   const load=src=>new Promise(r=>{const im=new Image();im.onload=()=>r(im);im.src=src});const cv=document.createElement("canvas");cv.width=cv.height=200;const g=cv.getContext("2d");
   const px=async src=>{g.clearRect(0,0,200,200);g.drawImage(await load(src),0,0);return g.getImageData(0,0,200,200).data};
-  const shown=[];for(let i=1;i<7;i++){const a=await px(PET_ART.dataUri(i,200)),hid=PET_ART.dataUri(i,200);const b2=await px("data:image/svg+xml;charset=utf-8,"+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><style>.pc-eh,.pc-eye{}.pc-eh{display:none!important}</style>`+decodeURIComponent(hid.split(",")[1]).replace(/^<svg[^>]*>/,"")));
+  const shown=[];for(let i=1;i<7;i++){const a=await px(PET_ART.dataUri(i,200)),hid=PET_ART.dataUri(i,200);const vbx=(/viewBox="([^"]+)"/.exec(decodeURIComponent(hid))||[,"0 0 200 200"])[1];const b2=await px("data:image/svg+xml;charset=utf-8,"+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="${vbx}"><style>.pc-eh,.pc-eye{}.pc-eh{display:none!important}</style>`+decodeURIComponent(hid.split(",")[1]).replace(/^<svg[^>]*>/,"")));
    let d=0;for(let k=0;k<a.length;k+=4)if(Math.abs(a[k]-b2[k])>40)d++;shown.push(d)}
   const c=document.querySelector("#petEmoji .pet-critter").getBoundingClientRect();
   return {out,shown,zone:[PetStage.zoneOf(c.top+c.height*.6),PetStage.zoneOf(c.top+c.height*.8)]};});
@@ -293,7 +293,7 @@ const KM=[0,5,20,40,90,150,260];
  await p.close();}
 
 // ── 2026-10-04 第二輪（使用者：不能飄、腳下的葉子／雲不能跟著跳、帽子戴在頭上）──
-for(const [km,st] of [[5,1],[150,5],[260,6]]){const p=await mk({km});
+for(const [km,st] of [[5,1],[260,6]]){const p=await mk({km});
  const r=await p.evaluate(async()=>{const pr=document.querySelector("#petEmoji .pet-prop"),c=document.querySelector("#petEmoji .pet-critter");if(!pr)return {none:true};
   const b0=pr.getBoundingClientRect(),c0=c.getBoundingClientRect();document.querySelector("#petEmoji").classList.add("pb-hop");await new Promise(r=>setTimeout(r,380));
   const b1=pr.getBoundingClientRect(),c1=c.getBoundingClientRect();const moved=Math.abs(c1.top-c0.top)+Math.abs(c1.left-c0.left)+Math.abs(c1.height-c0.height)+Math.abs(Math.atan2(0,1));
@@ -393,6 +393,39 @@ for(const [km,st] of [[0,0],[20,2]]){const p=await mk({km,berries:20});
  const r=await p.evaluate(()=>{const v=c=>getComputedStyle(document.querySelector("#petEmoji "+c)).display!=="none";const a=[document.querySelector(".ps-box").dataset.evo,v(".pc-crack2"),v(".pc-crack3")];
   localStorage.setItem("tt_debug_km","0.3");renderPet();const b=[document.querySelector(".ps-box").dataset.evo||"",v(".pc-crack2"),v(".pc-crack3")];return {a,b};});
  ok(r.a.join()==="2,true,true"&&r.b.join()===",false,false","egg: more cracks appear as it gets closer to hatching "+JSON.stringify(r));
+ await p.close();}
+
+// ── 2026-10-05 幼龍：腳下沒有雲（走在地上），慶祝跳才噗出雲；咬兩口（第一口後手上拿著剩下的）、吞完拍肚子 ──
+{const p=await mk({km:150,berries:20});
+ const r=await p.evaluate(async()=>{window.__psNoIdle=true;const em=document.querySelector("#petEmoji"),pr=em.querySelector(".pet-prop"),c=em.querySelector(".pet-critter");
+  const feet=[...em.querySelectorAll(".pr-foot ellipse")].map(e=>e.getBoundingClientRect().bottom),cb=c.getBoundingClientRect();
+  const rest=+getComputedStyle(pr).opacity;em.classList.add("pb-hop");await new Promise(r=>setTimeout(r,420));const hop=+getComputedStyle(pr).opacity;em.classList.remove("pb-hop");
+  return {rest,hop,ground:+(cb.top+cb.height*196/200-Math.max(...feet)).toFixed(1)};});
+ ok(r.rest===0&&r.hop>.5,"baby dragon: no cloud under its feet at rest, the cloud puffs up only when it jumps "+JSON.stringify(r));
+ ok(Math.abs(r.ground)<=2.5,"baby dragon: feet stand on the same ground line as the other pets (px off) "+r.ground);
+ await p.evaluate(()=>{localStorage.removeItem("tt_pet_fed_t");renderPet();document.querySelector(".ps-box").scrollIntoView({block:"center"});});await p.waitForTimeout(300);await p.click("#petFeed");
+ const s2=await p.evaluate(async()=>{const seq=[];const t0=performance.now();const seen=new Set();
+  while(performance.now()-t0<30000){const em=document.querySelector("#petEmoji"),bs=[...document.querySelectorAll(".ps-berry")];
+   for(const b of bs){const k=(b.classList.contains("bit1")?"b":"")+(b.classList.contains("eaten")?"e":"")+(b.classList.contains("held")?"h":"");const key=b.style.cssText.slice(0,12)+k;if(k&&!seen.has(key)){seen.add(key);seq.push(k);}}
+   if(em.classList.contains("pb-belly")&&seq[seq.length-1]!=="belly")seq.push("belly");
+   if(!bs.length&&seq.length)break;await new Promise(r=>setTimeout(r,20));}return seq.join(">");});
+ ok((s2.match(/h>bh>beh>belly/g)||[]).length===3,"baby dragon: picks up each berry, bites a chunk, holds the rest while chewing, eats it, pats its belly "+s2);
+ await p.close();}
+// ── 2026-10-05 神龍：果實落在雲上、尾巴托到嘴前；游的時候身體走頭走過的路、雲座晚一點跟上 ──
+{const p=await mk({km:260,berries:20});
+ await p.evaluate(()=>{window.__psNoIdle=true;localStorage.removeItem("tt_pet_fed_t");renderPet();document.querySelector(".ps-box").scrollIntoView({block:"center"});});await p.waitForTimeout(300);await p.click("#petFeed");
+ const r=await p.evaluate(async()=>{await new Promise(r=>setTimeout(r,1200));const pr=document.querySelector("#petEmoji .pet-prop").getBoundingClientRect(),k=pr.width/200;
+  const on=[...document.querySelectorAll(".ps-berry")].map(b=>{const x=(PetWalk.groundY(b)-pr.top)/k,q=b.getBoundingClientRect(),lx=(q.left+q.width/2-pr.left)/k;return +(x-(PET_ART.cloudTop6(lx)+3)).toFixed(1)});
+  let carried=0,tipGap=99;const t0=performance.now();while(performance.now()-t0<25000){const bs=[...document.querySelectorAll(".ps-berry")];const c=bs.find(b=>b.classList.contains("carried")&&!b.classList.contains("eaten"));if(c)carried++;if(!bs.length)break;await new Promise(r=>setTimeout(r,30));}
+  return {on,carried};});
+ ok(r.on.length===3&&r.on.every(d=>Math.abs(d)<=3),"divine dragon: berries land on the cloud surface (units off) "+JSON.stringify(r.on));
+ ok(r.carried>5,"divine dragon: carries each berry to its mouth with the tail ("+r.carried+" frames)");
+ const w=await p.evaluate(async()=>{const box=document.querySelector(".ps-box"),pr=box.querySelector("#petEmoji .pet-prop"),c=box.querySelector("#petEmoji .pet-critter");const cx=e=>{const q=e.getBoundingClientRect();return q.left+q.width/2};
+  for(let i=0;i<200&&(box.classList.contains("walking")||document.querySelector("#petEmoji").className.includes("pb-")||Math.abs(parseFloat(box.style.getPropertyValue("--wx"))||0)>.5);i++)await new Promise(r=>setTimeout(r,50));await new Promise(r=>setTimeout(r,600));   // 等吃完的慶祝（游一小段、回來、跳）結束
+  const x0=cx(pr);const p1=PetWalk.goTo(box,-70);let lag=0,hy=new Set();const t0=performance.now();while(performance.now()-t0<3000){if(box.__wx!=null)lag=Math.max(lag,(cx(pr)-x0)-box.__wx);hy.add(Math.round(parseFloat(box.querySelector("#petEmoji .pr-head").style.transform.split(",")[1])||0));if(!box.classList.contains("walking"))break;await new Promise(r=>requestAnimationFrame(r));}
+  await p1;const end=Math.abs(cx(pr)-x0+70);await PetWalk.home(box);return {lag:+lag.toFixed(1),end:+end.toFixed(1),heads:hy.size};});
+ ok(w.lag>8&&w.end<1.5,"divine dragon: the cloud seat trails behind while swimming and is right under it when it stops "+JSON.stringify(w));
+ ok(w.heads>=4,"divine dragon: the head rides the same wave the body follows "+JSON.stringify(w));
  await p.close();}
 
 // ── 2026-10-04 走過去吃：蠕動／游動的身體變形走完要還原；站姿走路要坐回去 ──

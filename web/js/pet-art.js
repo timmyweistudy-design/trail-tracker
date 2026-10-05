@@ -292,7 +292,7 @@ ${tigerHead()}
     </g>`;
 
   // 5 初醒幼龍（2026-10-04 重畫）：東方小龍坐姿——拿掉蝙蝠翼（那是西方龍，跟神龍接不起來）。
-  // 短圓吻部往前突、小鹿角只分一岔、牛耳、火焰鬃、兩根短捲龍鬚、節狀腹甲、尾巴上的背鰭、三爪、腳下小雲、旁邊一顆小光珠（預告龍珠）
+  // 短圓吻部往前突、小鹿角只分一岔、牛耳、火焰鬃、兩根短捲龍鬚、節狀腹甲、尾巴上的背鰭、三爪、旁邊一顆小光珠（預告龍珠）；2026-10-05 拿掉腳下的雲（走在地上，慶祝跳時才噗出雲）
   const JADE = "#4fae7e", JD = "#2f7c56", BELLY = "#efdca4", GOLD = "#dfbf72", MANE = "#358f82";
   const HTAIL = [[[118, 166], [146, 176], [166, 158], [158, 138]], [[158, 138], [154, 128], [146, 126], [140, 130]]];
   const hatchFins = spine(HTAIL, 8).filter((p, k) => k % 3 === 1 && p.f < .8).map(p => {
@@ -360,21 +360,23 @@ ${tigerHead()}
       P(Pa(tube(DSP, [[0, 12], [.34, 11], [.7, 7], [1, 2]], .3, 14)), BELLY, { sw: 1.6, dx: 2, dy: 2, sk: .14 }) + `<path d="${plates}" stroke="${sh(BELLY, .3)}" stroke-width="1.6" stroke-linecap="round"/>` +
       `<path d="${tube(DSP, [[0, 4], [.5, 4], [1, 1]], -.22, 14)}" fill="${tn(JADE, .35)}" opacity=".7"/>` + `<path class="pc-d2" d="${scales}" stroke="${JD}" stroke-width="1.3" fill="none" opacity=".55"/>`;
   })();
-  const DRAGON_CLOUD = cloud([[34, 178, 16], [58, 172, 20], [84, 180, 15], [16, 186, 10], [104, 186, 10]], [[46, 182, 6, 1], [76, 184, 5, -1]]) +
-    cloud([[150, 176, 14], [170, 170, 16], [188, 178, 11], [130, 184, 9]], [[162, 178, 5, 1]]);
+  const DC1 = [[34, 178, 16], [58, 172, 20], [84, 180, 15], [16, 186, 10], [104, 186, 10]], DC2 = [[150, 176, 14], [170, 170, 16], [188, 178, 11], [130, 184, 9]];
+  const DRAGON_CLOUD = cloud(DC1, [[46, 182, 6, 1], [76, 184, 5, -1]]) + cloud(DC2, [[162, 178, 5, 1]]);
+  // 雲面高度（圖上 x 處雲的頂；沒有雲＝null）：神龍的果實落在雲上（pet-stage.js）
+  const cloudTop6 = x => { let t = null; for (const [cx, cy, r] of DC1.concat(DC2)) if (Math.abs(x - cx) < r) { const y = cy - Math.sqrt(r * r - (x - cx) * (x - cx)); t = t == null ? y : Math.min(t, y); } return t; };
   const DRAGON = `
     <g class="pc-hover pc-soar">
       <g class="pr-deform"><g class="pc-tail">${P(Pa("M172 160 C180 168 184 180 176 192 C172 184 166 182 160 184 C166 178 164 170 166 164Z"), MANE, { dx: 2, dy: 2 })}
         <path class="pc-d" d="M172 168 q4 8 2 16 M167 172 q0 6 -3 9" stroke="${tn(MANE, .5)}" stroke-width="1.6" fill="none" stroke-linecap="round"/></g>
             ${dragonBody}
       ${P(Pa(tube([[[150, 146], [154, 152], [156, 158], [158, 164]]], [[0, 12], [1, 9]])), JADE, { dx: 2, dy: 2 })}${claw(159, 166, 70, 3, JADE)}</g>
-      ${P(Pa(tube([[[104, 134], [96, 146], [88, 152], [78, 156]]], [[0, 13], [1, 9]])), JADE, { dx: 2, dy: 2 })}
+      <g class="pr-pearl">${P(Pa(tube([[[104, 134], [96, 146], [88, 152], [78, 156]]], [[0, 13], [1, 9]])), JADE, { dx: 2, dy: 2 })}
       <g class="pc-tw"><circle cx="62" cy="160" r="19" fill="#ffd36a" opacity=".28"/></g>
       ${P(Pa("M46 160 Q42 142 52 134 Q53 144 58 145 Q56 130 66 122 Q67 136 73 140 Q77 134 80 128 Q86 144 78 160Z"), "#ffa94a", { sw: 2, dx: 2, dy: 2, sk: .15 })}
       <path class="pc-d" d="M54 150 Q53 142 57 138 Q60 146 64 146 Q63 136 67 131 Q70 142 74 146" fill="none" stroke="#ffe39a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
       ${P(C(62, 162, 14), "#ffdf86", { hl: [56, 155, 5, 3.5], dx: 3, dy: 3, sk: .25 })}
       <path class="pc-d" d="M54 164 q6 6 14 -2 q2 -6 -4 -7" stroke="#e0a83a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
-      ${claw(76, 157, 160, 4, JADE)}
+      ${claw(76, 157, 160, 4, JADE)}</g>
       <g class="pr-head" style="--ox:86px;--oy:108px">
       ${[[-160, 22, 10, -6], [-136, 26, 11, -4], [-112, 22, 9, 3], [-30, 26, 11, 5], [-5, 34, 13, 7], [22, 36, 14, 8], [48, 32, 12, 7], [74, 22, 10, 5]].map(([a, L, w, b]) => { const r = a * Math.PI / 180, x0 = 66 + Math.cos(r) * 22, y0 = 78 + Math.sin(r) * 20; return tpo(rd(x0), rd(y0), rd(x0 + Math.cos(r) * L), rd(y0 + Math.sin(r) * L), w, MANE, b); }).join("")}
       <g class="pc-d">${[[-140, 18, 5, -4], [-112, 18, 5, 2], [8, 22, 5, 5], [38, 22, 5, 5]].map(([a, L, w, b]) => { const r = a * Math.PI / 180, x0 = 66 + Math.cos(r) * 26, y0 = 78 + Math.sin(r) * 24; return tp(rd(x0), rd(y0), rd(x0 + Math.cos(r) * L), rd(y0 + Math.sin(r) * L), w, tn(MANE, .45), b); }).join("")}</g>
@@ -512,8 +514,11 @@ ${tigerHead()}
   // 戴帽子時拿掉 <!--O-->…<!--/O-->（幼蟲的臭角）：帽子要戴在頭上，不是戴在臭角上
   function body(i, hatId) { const pre = "p" + (++U).toString(36) + "_"; let a = A[clamp(i)]; if (HATS[hatId]) a = a.replace(/<!--O-->[\s\S]*?<!--\/O-->/, ""); return a.replace("<!--H-->", hatG(hatId, i)).replace("<!--H2-->", hatG(hatId, i)).replace(/§/g, pre); }
   function prop(i) { const p = PROP[clamp(i)]; if (!p) return ""; const pre = "q" + (++U).toString(36) + "_"; return `<svg class="pet-prop" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${p.replace(/§/g, pre)}</svg>`; }
+  // 幼龍（2026-10-05 拿掉腳下的雲）：腳底原本踩在雲上（y≈183），整張往下 13 讓腳底落在跟其他夥伴同一條地面線（y≈196）。
+  // 用 viewBox 平移而不是包一層 transform：各部位的支點（transform-box: view-box）座標不用改
+  const vb = i => (clamp(i) === 5 ? "0 -13 200 200" : "0 0 200 200");
   function svg(i, cls, hatId) {
-    return `<svg class="pet-critter ${cls || ""}" viewBox="0 0 200 200" role="img" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${body(i, hatId)}</svg>`;
+    return `<svg class="pet-critter ${cls || ""}" viewBox="${vb(i)}" role="img" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${body(i, hatId)}</svg>`;
   }
   function byEmoji(e) { return EMOJI.indexOf(e); }   // 找不到回 -1
   // 給 canvas 用：帶 width/height 的獨立 SVG data URI（靜態一幀，供 new Image().src 光柵化畫進分享圖卡）
@@ -521,7 +526,7 @@ ${tigerHead()}
   function dataUri(i, size, hatId) {
     const s = size || 120;
     // 圖片裡吃不到 style.css：開心瞇眼要自己藏起來（以前分享圖卡會同時畫出睜眼和 ^^ 眼）；質感細節 .pc-d2 照畫（圖卡夠大）
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 200 200"><style>.pc-eh,.m-o,.m-t,.m-p,.pr-ext,.pr-stand,.pr-front,.pr-legs,.pc-crack2,.pc-crack3{display:none}</style>${body(i, hatId)}</svg>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="${vb(i)}"><style>.pc-eh,.m-o,.m-t,.m-p,.pr-ext,.pr-stand,.pr-front,.pr-legs,.pc-crack2,.pc-crack3{display:none}</style>${body(i, hatId)}</svg>`;
     return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
   }
   function habitatUri(i, w, h) {
@@ -532,5 +537,6 @@ ${tigerHead()}
   // 以前一律用 0.5，但幼蟲的頭在畫面下半部（y 97～143），點頭會被當成搔癢
   const HEAD_LINE = [.5, .8, .5, .68, .68, .62, .64];
   const headLine = i => HEAD_LINE[clamp(i)];
-  return { svg, count: A.length, byEmoji, dataUri, habitat, habitatUri, hat, HAT_IDS, HAT_LABEL, headLine, prop };
+  const dragonSpine = n => spine(DSP, n).map(q => ({ x: q.x, y: q.y }));   // 神龍身體的中心線（pet-walk.js 用來讓尾巴彎過去）
+  return { dragonSpine, cloudTop6, svg, count: A.length, byEmoji, dataUri, habitat, habitatUri, hat, HAT_IDS, HAT_LABEL, headLine, prop };
 })();

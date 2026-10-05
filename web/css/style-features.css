@@ -2244,7 +2244,23 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 
 /* ════ 走過去吃（pet-walk.js 每一格寫變數，這裡套到骨架上）════ */
 .ps-box .pet-shadow { translate: var(--wx, 0px) var(--wy, 0px); }
-.ps-box[data-stage="5"] #petEmoji .pet-prop { translate: calc(-50% + var(--wx, 0px)) var(--wy, 0px); }   /* 幼龍的雲跟著飄 */
+.ps-box[data-stage="5"] #petEmoji .pet-prop { translate: calc(-50% + var(--wx, 0px)) var(--wy, 0px); }
+.ps-box[data-stage="6"] #petEmoji .pet-prop { translate: calc(-50% + var(--wx, 0px)) 0; }   /* 神龍的雲座：停下來時在身體正下方（游的時候 pet-walk.js 讓它晚 0.25 秒跟上） */
+.ps-berry.carried { animation: none; }   /* 神龍用尾巴托著：位置由 pet-walk.js 每格寫 translate */
+.ps-berry.carried.eaten { animation: psBerryEat .36s cubic-bezier(.5, 0, .9, .4) forwards; }
+.ps-berry.carried::after { opacity: 0; animation: none; }
+.ps-berry.held.bit1 { animation: none; }   /* 幼龍手上的果實被咬一口：不要用啃的晃動（會蓋掉跟著爪子的位置） */
+/* 幼龍（2026-10-05）：平常走在地上、腳下沒有雲；慶祝跳起來時雲才「噗」地冒出來托一下再散掉 */
+.ps-box[data-stage="5"] #petEmoji .pet-prop { opacity: 0; transform-origin: 50% 92%; }
+.ps-box[data-stage="5"] #petEmoji.pb-hop .pet-prop { animation: hatchPoof 1.3s ease-out; }
+@keyframes hatchPoof { 0%, 8% { opacity: 0; scale: .35 .25; } 22% { opacity: 1; scale: 1.12 1.05; } 34% { scale: .96 1; } 46% { scale: 1; opacity: 1; } 78% { opacity: .9; scale: 1.04; } 100% { opacity: 0; scale: 1.2 1.1; } }
+/* 吃完拍拍肚子：兩隻前爪往肚子收、拍兩下，開心瞇眼 */
+.ps-box .pb-belly .pr-paw.l { animation: pbBellyL .64s ease-in-out; } .ps-box .pb-belly .pr-paw.r { animation: pbBellyR .64s ease-in-out; }
+.ps-box .pb-belly .pc-bob { animation: pbBellyB .64s ease-in-out; }
+.ps-box .pb-belly .pc-eye { display: none; } .ps-box .pb-belly .pc-eh { display: inline; }
+@keyframes pbBellyL { 0%, 100% { transform: none; } 25%, 65% { transform: rotate(-40deg); } 45%, 85% { transform: rotate(-26deg); } }
+@keyframes pbBellyR { 0%, 100% { transform: none; } 25%, 65% { transform: rotate(40deg); } 45%, 85% { transform: rotate(26deg); } }
+@keyframes pbBellyB { 0%, 100% { transform: none; } 25%, 65% { transform: scale(1.02, .98); } }
 .ps-box.walking .pc-bob, .ps-box.walking .pc-hover { animation: none; transform: translate(var(--gsx, 0px), var(--gby, 0px)) rotate(var(--gbr, 0deg)); scale: calc(1 + var(--gpre, 0) * .03) calc(1 - var(--gpre, 0) * .07); transition: scale .15s ease-out; }
 .ps-box.walking .pc-bob.pc-egg { transform-origin: 50% 96%; }
 .ps-box.walking .pr-head { transform: translateY(var(--ghy, 0px)) rotate(var(--ghr, 0deg)); }
