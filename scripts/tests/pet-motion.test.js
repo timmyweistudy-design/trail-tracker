@@ -137,7 +137,7 @@ function judge(st, tag, R) {
     let both = 0; const w0 = {}; for (const f of F) for (const x of f.berries) if (/melt/.test(x.cls)) { const key = Math.round(x.c[0] / 4); if (w0[key] == null) w0[key] = x.w; if (f.sparks >= 3 && x.op > .8 && x.w >= w0[key] * .9) both++; }
     ok(both === 0, `${tag}: the berry shrinks as the sparks leave it (frames with a full berry and ≥3 sparks: ${both})`, todoOf("egg", st));
   }
-  const lim = st === 1 ? (/ C$/.test(tag) ? 18 : 27) : st === 4 ? 23 : st === 5 ? 21 : st === 3 || st === 6 ? 17.9 : 16;   // 幼蟲爬得像真的毛毛蟲（慢）：A、B 刻意讓果實落在兩邊（測掉頭）放寬；C＝遊戲真的落點（頭的前方）   // 幼龍：撿起來、舉到嘴邊、咬兩口、吞完才放手（步驟本來就多）；虎：每顆都趴下去吃再站起來（2026-10-06 人面獅身）   // 幼蟲：左右兩邊都有果實時要掉頭兩次（頭不動、身體繞過去＝每次多爬 80px）   // 含判定結束的 0.7 秒；狐、虎要走去左右兩端（A、C 組）；虎刻意慢、有重量（ChatGPT 看錄影的建議）
+  const lim = st === 1 ? (/ C$/.test(tag) ? 18 : 27) : st === 4 ? 23 : st === 5 ? 25 : st === 3 || st === 6 ? 17.9 : 16;   // 幼蟲爬得像真的毛毛蟲（慢）：A、B 刻意讓果實落在兩邊（測掉頭）放寬；C＝遊戲真的落點（頭的前方）   // 幼龍：撿起來、舉到嘴邊、咬兩口、吞完才放手（步驟本來就多）；虎：每顆都趴下去吃再站起來（2026-10-06 人面獅身）   // 幼蟲：左右兩邊都有果實時要掉頭兩次（頭不動、身體繞過去＝每次多爬 80px）   // 含判定結束的 0.7 秒；狐、虎要走去左右兩端（A、C 組）；虎刻意慢、有重量（ChatGPT 看錄影的建議）
   ok(sec <= lim, `${tag}: one feeding (3 berries, walk home, celebrate) takes ≤${lim} s (${sec.toFixed(1)} s)`, todoOf("time", st));
   const spill = Math.max(...F.map(f => f.spill || 0)), si = F.findIndex(f => (f.spill || 0) === spill);
   ok(spill <= 0, `${tag}: nothing is drawn outside the canvas (iOS WebKit clips there; worst ${spill.toFixed(1)}px${spill > 0 ? ` @${si} ${F[si].spillWhat} ${F[si].cls}|${F[si].bcl}` : ""})`);

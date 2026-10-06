@@ -518,7 +518,7 @@ window.PetWalk = (function () {
       await goTo(box, Math.round(berryX - side * 50), { wy: Math.round((curY(box) + groundY(berryEl) - tipY) * 10) / 10 });
       return;
     }
-    if (st === 5) { const pw = em.querySelector(side > 0 ? ".pr-paw.r" : ".pr-paw.l"); if (pw) { const q = pw.getBoundingClientRect(); mouthDx = (q.left + q.width / 2) - (c.left + c.width / 2) + side * 6; } }   // 幼龍：用前爪撿起來
+    if (st === 5) mouthDx = 0;   // 幼龍（2026-10-06）：走到果實在兩腳正前方，蹲下用雙手捧起來
     const tx = Math.round(berryX - mouthDx);
     if (Math.abs(tx - cur) >= 3) await face(box, Math.sign(tx - cur), 200);
     await goTo(box, tx);
@@ -682,6 +682,7 @@ window.PetWalk = (function () {
   // 接觸點的畫面座標：mouth＝嘴（.pr-mouth 的支點，跟著頭的所有變換）；其他＝pet-art.js 畫的 .cp-*（手掌、尾尖、裂紋）
   function cpt(box, name) {
     const em = box.querySelector("#petEmoji"); if (!em) return null;
+    if (name === "palms") { const a = cpt(box, "palm-l"), b = cpt(box, "palm-r"); return a && b ? [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2] : a || b; }   // 幼龍雙手捧著：兩個手掌的中點
     let el = name === "mouth" ? part(box, ".pr-mouth") : em.querySelector(".cp-" + name); if (!el || !el.getScreenCTM) return null;
     const M = el.getScreenCTM(); if (!M) return null;
     const x = name === "mouth" ? parseFloat(el.style.getPropertyValue("--ox")) : +el.getAttribute("cx"), y = name === "mouth" ? parseFloat(el.style.getPropertyValue("--oy")) : +el.getAttribute("cy");

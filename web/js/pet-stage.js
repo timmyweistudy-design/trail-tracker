@@ -425,26 +425,31 @@ window.PetStage = (function () {
           cls(false, "st-sip"); resetProboscis();
           cls(false, "st-land", "st-legs"); await sleep(220);   // 翅膀打開再飛
         } else {
-          if (stg === 5) {   // 幼龍：用前爪撿起來再送到嘴邊（短腿彎不下去，撿起來吃最自然）
-            const side = x - at() >= 0 ? "r" : "l";
-            cls(true, "st-crouch", "st-reach-" + side); await sleep(340);       // 蹲下、那隻爪子伸下去
-            b.classList.add("held"); follow(b, "palm-" + side, { ay: .38, ms: 220 }); await sleep(220);   // 抓住：從現在起果實歸手掌（最後幾 px 慢慢收進手心）
-            // 舉到嘴邊：爪子由 JS 逐格寫、同一格把果實對齊手掌（以前爪子用 CSS 過渡、果實在另一個 rAF 追，機器忙時差一格會晃）
-            const paw = emEl().querySelector(".pr-paw." + side), sg = side === "r" ? -1 : 1;
-            const P0 = [-sg * 4, 14, sg * 28], P1 = [sg * 2, -22, -sg * 60];   // [x, y, 角度]：伸下去 → 舉到嘴邊（跟 CSS 的 st-reach／st-lift 同一組數字）
-            paw.style.transition = "none"; cls(false, "st-reach-" + side);
-            await PetWalk.tween(500, e => { const v = P0.map((a, i) => a + (P1[i] - a) * e); paw.style.transform = `translate(${v[0].toFixed(2)}px, ${v[1].toFixed(2)}px) rotate(${v[2].toFixed(2)}deg)`; ownTick(true); });
-            cls(true, "st-lift-" + side); paw.style.transform = ""; paw.style.transition = "";
-            // 咬兩口：第一口咬掉一角（剩 2/3）、手拿著嚼；第二口吃掉、嚼、吞——吞完手才放下、才拍肚子（2026-10-05 第二輪照 ChatGPT 看錄影的建議：以前第二口咬下去手就放下了）
-            b.style.setProperty("--nx", side === "r" ? "28%" : "72%");          // 缺口在靠嘴的那一側
-            cls(true, "st-open"); await sleep(120);
+          if (stg === 5) {   // 幼龍（2026-10-06 像松鼠）：走到果實在兩腳正前方 → 蹲下、雙手往前下方伸到果實 → 雙手捧住 → 坐直把果實捧到下巴前 → 小口啃兩口 → 吞完才放下手
+            const em = emEl(), pl = em.querySelector(".pr-paw.l"), pr = em.querySelector(".pr-paw.r");
+            const put = (l, r) => { pl.style.transform = `translate(${l[0].toFixed(2)}px, ${l[1].toFixed(2)}px) rotate(${l[2].toFixed(2)}deg)`; pr.style.transform = `translate(${r[0].toFixed(2)}px, ${r[1].toFixed(2)}px) rotate(${r[2].toFixed(2)}deg)`; };
+            const mir = q => [-q[0], q[1], -q[2]], lerp = (a, b, e) => a.map((v, i) => v + (b[i] - v) * e);
+            pl.style.transition = pr.style.transition = "none";
+            cls(true, "st-crouch"); await sleep(200);
+            // 伸手：先套上「伸下去」的姿勢量兩個手掌的中點，差多少就再往那邊伸一點（同一格量完，不會畫出來）
+            let R0 = [9, 24, -26];
+            { put(R0, mir(R0)); void em.offsetWidth; const p = PetWalk.cpt(box, "palms"), q = b.getBoundingClientRect(), u = 1 / PetWalk.pxu(box);
+              R0 = [R0[0], R0[1] + Math.max(-10, Math.min(18, (q.top + q.height * .55 - p[1]) * u)), R0[2]]; put([0, 0, 0], [0, 0, 0]); void em.offsetWidth; }
+            await PetWalk.tween(380, e => put(lerp([0, 0, 0], R0, e), lerp([0, 0, 0], mir(R0), e)));
+            b.classList.add("held"); follow(b, "palms", { ay: .55, ms: 240 }); await sleep(240);   // 雙手捧住：果實歸兩個手掌的中點
+            const H = [-4, -6, -80];   // 捧到下巴前（手掌在下巴下面一點，果實上緣碰到嘴）
+            cls(false, "st-crouch");
+            await PetWalk.tween(560, e => { put(lerp(R0, H, e), lerp(mir(R0), mir(H), e)); ownTick(true); });
+            b.style.setProperty("--nx", "50%");          // 缺口在正上方（嘴從上面咬）
+            cls(true, "st-open"); await sleep(150);
             cls(false, "st-open"); b.classList.add("bit1"); await flash("pb-snap", 220);
-            cls(true, "chew2"); await flash("pb-chew", 600); cls(false, "chew2");   // 手拿著果實嚼（等兩下嚼完：0.3 秒 × 2）
-            cls(true, "st-open"); await sleep(110);
+            cls(true, "chew2"); await flash("pb-chew", 600); cls(false, "chew2");   // 捧著嚼
+            cls(true, "st-open"); await sleep(130);
             toMouth(b, false); b.classList.add("eaten");
             cls(false, "st-open"); await flash("pb-snap", 220);
             cls(true, "chew2"); await flash("pb-chew", 600); cls(false, "chew2"); await flash("pb-gulp", 340);
-            cls(false, "st-lift-" + side, "st-crouch");                          // 吞完才放下手、站起來
+            await PetWalk.tween(360, e => put(lerp(H, [0, 0, 0], e), lerp(mir(H), [0, 0, 0], e)));   // 吞完才放下手
+            pl.style.transform = pr.style.transform = ""; pl.style.transition = pr.style.transition = "";
             if (!todo.length) await flash("pb-belly", 640);                      // 最後一顆吞下去才拍拍肚子
             if (bal && isFinite(left)) { left = Math.max(0, left - 1); bal.textContent = left; bal.classList.remove("tick"); void bal.offsetWidth; bal.classList.add("tick"); }
             if (typeof ttBuzz === "function") ttBuzz(8);
