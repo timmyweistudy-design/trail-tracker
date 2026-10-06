@@ -129,7 +129,7 @@ window.PetWalk = (function () {
   // 現在每種狀態是一個「時間 → 角度」的函式，換狀態時從「換的那一格的角度」平滑接到新函式（B 毫秒），角度永遠連續：
   //   idle 平常慢慢搧、fly 跟著身體一拍一升（pose 寫 box.__wfly）、rest 停著吃＝半合只微動（不再週期性大張）、flap 起飛前在原地用力拍
   const WING = {
-    idle: t => [.86 + .14 * Math.cos(2 * Math.PI * t / 1.1), .86 + .14 * Math.cos(2 * Math.PI * (t + .92) / 1.1)],
+    idle: t => [.78 + .22 * Math.cos(2 * Math.PI * t / .8), .78 + .22 * Math.cos(2 * Math.PI * (t - .06) / .8)],   // 2026-10-06 第五輪（使用者）：待機也要看得出在拍——跟飛行同一種節奏（以前 1.1 秒只收到 0.72，像沒在動）
     rest: () => [.45, .45],   // 2026-10-06 第五輪（使用者）：落地吃東西時翅膀完全停住
     flap: (t, w) => [.5 + .5 * Math.abs(Math.sin(Math.PI * (t - w.t0) / .34)), .5 + .5 * Math.abs(Math.sin(Math.PI * (t - w.t0 - .04) / .34))],
     fly: (t, w, box) => box.__wfly || WING.idle(t),
