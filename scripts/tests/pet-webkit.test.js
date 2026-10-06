@@ -1,5 +1,5 @@
 // 夥伴餵食在 WebKit（Safari 的引擎）上的冒煙測試（2026-10-06）：iOS 的 WebKit 會把有 3D 轉動的 SVG 照畫布裁切（不管 overflow:visible），
-// 老虎趴下時頭被一條看不見的線切掉——Chromium 看不到這個問題。這裡用真的 WebKit 跑狐、虎、神龍、幼蟲的餵食，邊跑邊檢查畫出來的東西都在畫布裡。
+// 老虎趴下時頭被一條看不見的線切掉——Chromium 看不到這個問題。這裡用真的 WebKit 跑七隻的餵食，邊跑邊檢查畫出來的東西都在畫布裡。
 // 沒裝 WebKit 的機器（CI）就略過（FAILS 0）。本機裝法見記憶 playwright-needs-ld-library-path：系統庫解到 ~/pwlibs/root、改 MiniBrowser 包裝腳本
 const path = require("path"), fs = require("fs");
 const ROOT = path.resolve(__dirname, "../.."); const { webkit } = require(ROOT + "/node_modules/playwright"); const { spawn } = require("child_process");
@@ -10,7 +10,7 @@ let fails = 0; const errs = []; const ok = (c, m) => { console.log((c ? "PASS " 
 (async () => {
   let b; try { b = await webkit.launch(); } catch (e) { console.log("SKIP webkit not available: " + e.message.split("\n")[0]); console.log("ERRS []"); console.log("FAILS 0"); return; }
   const srv = spawn("python3", ["-m", "http.server", String(PORT)], { cwd: ROOT + "/web", stdio: "ignore" }); await new Promise(r => setTimeout(r, 1200));
-  for (const [km, st, spots] of [[40, 3, [-62, 8, 66]], [90, 4, [66, 40, 18]], [260, 6, [104, 150, 176]], [5, 1, [66, 40, 18]]]) {
+  for (const [km, st, spots] of [[0, 0, [-34, 2, 34]], [5, 1, null], [20, 2, [-62, 8, 66]], [40, 3, [-62, 8, 66]], [90, 4, [66, 40, 18]], [150, 5, [-62, 8, 66]], [260, 6, [104, 150, 176]]]) {   // 七隻全部（幼蟲用遊戲真的落點）
     const ctx = await b.newContext({ viewport: { width: 390, height: 844 } }); const p = await ctx.newPage(); p.on("pageerror", e => errs.push(st + ": " + e.message));
     await p.addInitScript(o => { localStorage.setItem("tt_lang", "zh"); ["tt_onboarded_v2", "tt_coach_trail", "tt_locperm_prompted", "tt_coach_record", "tt_coach_record_tools", "tt_coach_peaks", "tt_coach_team", "tt_coach_pet"].forEach(k => localStorage.setItem(k, "1")); localStorage.setItem("tt_debug_km", String(o.km)); localStorage.setItem("tt_pet_berry_bonus", "20"); }, { km });
     await p.addInitScript(MOCK); await p.goto(`http://localhost:${PORT}/`); await p.waitForTimeout(3000);
