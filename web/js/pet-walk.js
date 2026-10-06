@@ -170,7 +170,7 @@ window.PetWalk = (function () {
   // 從第 I0 節以後可以動。每一格從「上一格的姿勢」出發往目標逼近（FABRIK：從尾尖拉到目標、再從根部拉回來），所以前後兩格一定連續；
   // 每個關節相對原本的彎度最多多彎 14°——不會打結、不會折出尖角。以前用「等曲率＋二次」的公式整條重解，解出來可能繞好幾圈，內插時尾巴整條在甩。
   // 每個路徑點跟著離它最近的那一節一起平移、旋轉，所以尾鰭、後爪也跟著彎過去（不是被拉長）
-  let SP6 = null, REST = null; const NEAR = new Map(), TIP6 = [172, 182], I0 = 20, BEND = 14 * Math.PI / 180;
+  let SP6 = null, REST = null; const NEAR = new Map(), TIP6 = [172, 182], I0 = 28, BEND = 14 * Math.PI / 180;   // 2026-10-06 第四輪：I0 20 → 28（可以動的從背上的拱開始；以前整個下半身都跟著甩）
   const sp6 = () => SP6 || (SP6 = typeof PET_ART !== "undefined" && PET_ART.dragonSpine ? PET_ART.dragonSpine(16) : null);
   const rest = () => REST || (REST = sp6().map(q => [q.x, q.y]).concat([TIP6.slice()]));   // 最後一節＝尾尖（.cp-tail）
   const ang = (a, b) => Math.atan2(b[1] - a[1], b[0] - a[0]), wrap = a => Math.atan2(Math.sin(a), Math.cos(a));
@@ -209,23 +209,50 @@ window.PetWalk = (function () {
   // tgt：果實元素（尾尖去托它）／"mouth"（送到下巴前的交接點）／null（尾巴放回原位）
   // 尾尖走一條弧線：去托果實時微微抬起；送到嘴前時從身體下方繞過去（不從臉、角或身體中間穿過）；收回時往下回到原位
   const mouthLocal = box => { const m = cpt(box, "mouth"); return toLocal(box, m[0] - 5, m[1] + 6); };   // 下巴前面一點點（交接點）
-  async function tailTo(box, tgt, ms, onFrame) {   // onFrame：尾巴每寫一格就呼叫（pet-stage.js 在同一格把果實對齊尾尖）   // 果實跟著尾尖走由 pet-stage.js 的 follow() 負責（尾尖是 .cp-tail，在變形群組裡）
+  // 2026-10-06 第四輪：尾巴改在「角度」上動——每一節的角度每格最多轉一點點，而且越靠根部越慢（尾尖先動、根部晚一點才跟上）；
+  // 每格做完再把每個關節的彎度夾回「原本 ±BEND」。以前是每個點的位置限速 6 單位：夾完節與節的距離會變，尾巴一下長一下短。
+  // 收回原位也在角度上混（不是位置），所以全程每一節長度不變。ms 沒給＝照尾尖要走的路長給時間（遠的久一點），緩入緩出、不彈
+  const tailAngles = P => P.slice(0, -1).map((q, i) => ang(q, P[i + 1]));
+  function tailFk(A) { const R = rest(), P = R.map(q => q.slice()); let x = R[I0][0], y = R[I0][1]; for (let i = I0; i < R.length - 1; i++) { const L = Math.hypot(R[i + 1][0] - R[i][0], R[i + 1][1] - R[i][1]); x += Math.cos(A[i]) * L; y += Math.sin(A[i]) * L; P[i + 1] = [x, y]; } return P; }
+  function tailClamp(A) {   // 每個關節相對原本的彎度最多多彎 BEND（從根部往尾尖：夾住一節，後面整段跟著轉）
+    const R = rest(), RA = tailAngles(R);
+    for (let i = I0; i < A.length; i++) { const prev = i === I0 ? RA[I0 - 1] : A[i - 1], r = wrap(A[i] - prev), rr = wrap(RA[i] - (i === I0 ? RA[I0 - 1] : RA[i - 1])), c = Math.max(rr - BEND, Math.min(rr + BEND, r)); if (c !== r) for (let j = i; j < A.length; j++) A[j] += c - r; }
+    return A;
+  }
+  const tailRate = i => (1.6 + 3.4 * Math.pow((i - I0) / (rest().length - 2 - I0), 1.2)) * Math.PI / 180;   // 每格最多轉幾度：根部 1.6°、尾尖 5°
+  function tailMs(box, tgt) {   // 照路長給時間（毫秒）：去托 0.7～1 秒、送到嘴前 0.9～1.2、收回 0.9～1.3
+    const P = box.__chain || rest(), tip = P[P.length - 1], g = !tgt ? TIP6 : tgt === "mouth" ? mouthLocal(box) : (() => { const r = tgt.getBoundingClientRect(); return toLocal(box, r.left + r.width / 2, r.top + r.height * .62); })();
+    const d = Math.hypot(g[0] - tip[0], g[1] - tip[1]), [lo, hi] = !tgt ? [900, 1300] : tgt === "mouth" ? [900, 1200] : [700, 1000];
+    return Math.round(lo + (hi - lo) * Math.min(1, d / 110));
+  }
+  async function tailTo(box, tgt, ms, onFrame) {   // onFrame：尾巴每寫一格就呼叫（pet-stage.js 在同一格把果實對齊尾尖）；果實跟著尾尖走由 pet-stage.js 的 follow() 負責
     if (!sp6()) return;
-    let P = (box.__chain || rest()).map(q => q.slice());
-    const st = P[P.length - 1].slice();
-    // 每一格：從上一格的姿勢做 FABRIK，再限制每個關節點這一格最多移 6 個單位（FABRIK 偶爾會換一種彎法，限速讓它換得過去、不會一格跳到底）
-    const step = T => { const prev = P.map(q => q.slice()); fabrik(P, T, 8); P = P.map((q, i) => { const dx = q[0] - prev[i][0], dy = q[1] - prev[i][1], d = Math.hypot(dx, dy), m = 6; return d > m ? [prev[i][0] + dx / d * m, prev[i][1] + dy / d * m] : q; }); };
+    if (ms == null) ms = tailMs(box, tgt);
+    let P = (box.__chain || rest()).map(q => q.slice()), A = tailAngles(P);
+    const st = P[P.length - 1].slice(), RA = tailAngles(rest());
+    let tl = performance.now();
+    const step = (T, w) => {   // w：收回時混回原形的比例（0..1）
+      const now = performance.now(), f = Math.min(3, Math.max(.25, (now - tl) / 16.7)); tl = now;   // 限速照「時間」算（每 1/60 秒轉幾度）：以前照「每次呼叫」算，一格裡呼叫一次或三次，尾尖就一格快一格慢
+      const Q = P.map(q => q.slice()); fabrik(Q, T, 8); const S = tailAngles(Q);
+      for (let i = I0; i < A.length; i++) { let d = wrap(S[i] - A[i]); if (w) d = d * (1 - w) + wrap(RA[i] - A[i]) * w; const m = tailRate(i) * f; A[i] += Math.max(-m, Math.min(m, d)); }
+      tailClamp(A); P = tailFk(A);
+    };
     const goal = () => { if (!tgt) return TIP6; if (tgt === "mouth") return mouthLocal(box); const r = tgt.getBoundingClientRect(); return toLocal(box, r.left + r.width / 2, r.top + r.height * .62); };
+    if (!tgt) {   // 收回原形：不用 CCD（目標和「混回原形」會互相拉扯，尾尖一格快一格慢），每一節的角度從現在直接緩緩轉回原本的角度——尾尖先、根部晚 35%
+      const A0 = A.slice(), N = A.length - 1 - I0;
+      await tween(ms, (e, k) => { for (let i = I0; i < A.length; i++) { const lag = .35 * (1 - (i - I0) / N), u = ss01((k - lag) / (1 - lag)); A[i] = A0[i] + wrap(RA[i] - A0[i]) * u; } tailClamp(A); P = tailFk(A); applyChain(box, P); if (onFrame) onFrame(); });
+      resetField(box); box.__chain = null; return;
+    }
     await tween(ms, (e, k) => {
       const g = goal(), c = tgt === "mouth" ? [(st[0] + g[0]) / 2, Math.max(st[1], g[1]) + 26] : tgt ? [(st[0] + g[0]) / 2, Math.min(st[1], g[1]) - 16] : [(st[0] + g[0]) / 2, Math.max(st[1], g[1]) + 10];
       const u = 1 - e, T = [u * u * st[0] + 2 * u * e * c[0] + e * e * g[0], u * u * st[1] + 2 * u * e * c[1] + e * e * g[1]];
-      step(T);
-      if (!tgt) { const R = rest(), w = e * e; P = P.map((q, i) => [q[0] + (R[i][0] - q[0]) * w, q[1] + (R[i][1] - q[1]) * w]); }   // 收回：一路混回原本的形狀（最後一格剛好是原形，不會跳）
+      step(T, tgt ? 0 : e * e);   // 收回：一路混回原本的形狀（角度）
       applyChain(box, P); if (onFrame) onFrame();
     });
-    for (let f = 0; tgt && f < 12; f++) {   // 每格限速可能讓尾尖晚一點到：多跟幾格，真的碰到目標才結束
-      const g = goal(); if (Math.hypot(P[P.length - 1][0] - g[0], P[P.length - 1][1] - g[1]) < 1) break;
-      step(g); applyChain(box, P); if (onFrame) onFrame(); await new Promise(r => requestAnimationFrame(r));
+    for (let f = 0; f < 20; f++) {   // 根部轉得慢、尾尖可能晚一點到：多跟幾格，真的碰到目標（收回：真的回到原形）才結束
+      const g = goal(), err = tgt ? Math.hypot(P[P.length - 1][0] - g[0], P[P.length - 1][1] - g[1]) : Math.max(...A.slice(I0).map((v, i) => Math.abs(wrap(v - RA[I0 + i]))));
+      if (tgt ? err < 1 : err < .002) break;
+      step(g, tgt ? 0 : 1); applyChain(box, P); if (onFrame) onFrame(); await new Promise(r => requestAnimationFrame(r));
     }
     if (!tgt) { resetField(box); box.__chain = null; }
   }
@@ -700,5 +727,5 @@ window.PetWalk = (function () {
   }
   // 現在看得到的那一份身體（站著時是 .pr-stand）裡找部位
   const part = (box, sel) => { const em = box.querySelector("#petEmoji"); if (!em) return null; return (box.classList.contains("standing") && em.querySelector(".pr-stand " + sel)) || em.querySelector(sel); };
-  return { rope, wings, wingMode, pxu, svgY, tween, goTo, goEat, home, face, stop, standUp, sitDown, turnStand, setQ, larvaTurn, bend, part, bow, bowSet, bowClear, solveBow, groundY, cpt, tailTo, tailReach, GAIT, _pose: pose };   // _pose：測試逐相位檢查用
+  return { rope, wings, wingMode, tailMs, pxu, svgY, tween, goTo, goEat, home, face, stop, standUp, sitDown, turnStand, setQ, larvaTurn, bend, part, bow, bowSet, bowClear, solveBow, groundY, cpt, tailTo, tailReach, GAIT, _pose: pose, _tail: () => ({ I0, BEND, rest: sp6() ? rest() : null }) };   // _pose：測試逐相位檢查用
 })();

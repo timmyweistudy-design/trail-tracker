@@ -12,7 +12,7 @@ let fails = 0, todos = 0; const errs = [];
 const ok = (c, m, todo) => { if (c) console.log((todo ? "PASS(已修好，可拿掉 todo " + todo + ") " : "PASS ") + m); else if (todo) { todos++; console.log("TODO(" + todo + ") " + m); } else { fails++; console.log("FAIL " + m); } };
 const KM = [0, 5, 20, 40, 90, 150, 260];
 // 落點：px（相對舞台中間）；神龍是雲上「圖上的 x」
-const SPOTS = { 0: [[-34, 2, 34], [36, 12, -20]], 1: [[-62, 8, 66], [66, 40, 18], null], 3: [[-62, 8, 66], [66, 40, 18], [-30, 27, -64]], 4: [[-62, 8, 66], [66, 40, 18], [23, -62, 79]], 6: [[96, 140, 186], [104, 150, 176]] };   // 狐、虎的 C＝第一次錄影時的落點（會出現量完補小碎步）
+const SPOTS = { 0: [[-34, 2, 34], [36, 12, -20]], 1: [[-62, 8, 66], [66, 40, 18], null], 3: [[-62, 8, 66], [66, 40, 18], [-30, 27, -64]], 4: [[-62, 8, 66], [66, 40, 18], [23, -62, 79]], 6: [[124, 154, 188], [130, 162, 194]] };   // 神龍 2026-10-06 第四輪：尾巴從 I0=28 才動，只搆得到雲的右半邊   // 狐、虎的 C＝第一次錄影時的落點（會出現量完補小碎步）
 const DEF = [[-62, 8, 66], [66, 40, 18]];
 // 還沒修好的（階段名）：key＝檢查代號:階段
 const TODO = {};   // 2026-10-06 第二輪 P0～P6 全部修好；之後新加的檢查還沒修好時放這裡（"檢查代號:階段": "Pn"）
@@ -49,6 +49,12 @@ const probe = () => {
     o.extOn = +getComputedStyle(em.querySelector(".pr-ext")).opacity > .1;
     const ext = em.querySelector(".pr-ext"); if (+getComputedStyle(ext).opacity > .5) { const pt = ext.getPointAtLength(ext.getTotalLength()), s = new DOMPoint(pt.x, pt.y).matrixTransform(ext.getScreenCTM()); o.prob = [s.x, s.y]; }
     const hw = [...em.querySelectorAll(".pc-hw")].map(e => e.getBoundingClientRect()); o.hw = [Math.min(...hw.map(r => r.left)), Math.min(...hw.map(r => r.top)), Math.max(...hw.map(r => r.right)), Math.max(...hw.map(r => r.bottom))]; }
+  if (st === 6 && box.__chain) {   // 2026-10-06 第四輪：尾巴的鏈（身體座標）——每節長度、每個關節多彎了多少、尾尖、根部附近
+    const T = PetWalk._tail(), P = box.__chain, R = T.rest, a = (u, v) => Math.atan2(v[1] - u[1], v[0] - u[0]), w = x => Math.atan2(Math.sin(x), Math.cos(x));
+    let L = 0, L0 = 0, ex = 0; for (let i = T.I0; i < P.length - 1; i++) { L += Math.hypot(P[i + 1][0] - P[i][0], P[i + 1][1] - P[i][1]); L0 += Math.hypot(R[i + 1][0] - R[i][0], R[i + 1][1] - R[i][1]);
+      const r = w(a(P[i], P[i + 1]) - a(P[i - 1], P[i])), rr = w(a(R[i], R[i + 1]) - a(R[i - 1], R[i])); ex = Math.max(ex, Math.abs(w(r - rr)) - T.BEND); }
+    o.tail = { len: L / L0, ex: ex * 180 / Math.PI, tip: P[P.length - 1].slice(), root: Math.hypot(P[T.I0 + 3][0] - R[T.I0 + 3][0], P[T.I0 + 3][1] - R[T.I0 + 3][1]), tipD: Math.hypot(P[P.length - 1][0] - R[R.length - 1][0], P[P.length - 1][1] - R[R.length - 1][1]) };
+  }
   if (st === 6) { const d = em.querySelector(".pr-deform").getBoundingClientRect(), b = box.getBoundingClientRect(); o.deform = [d.left, d.top, d.right, d.bottom]; o.boxr = [b.left, b.top, b.right, b.bottom]; }
   return o;
 };
@@ -152,6 +158,15 @@ function judge(st, tag, R) {
   if (st === 6) {
     let out = 0, thr = 0, thAt = ""; for (let i = 1; i < n; i++) { const d = F[i].deform, b = F[i].boxr; out = Math.max(out, b[0] - d[0], d[2] - b[2], b[1] - d[1]); const t = Math.max(...d.map((q, k) => Math.abs(q - F[i - 1].deform[k]))); if (t > thr) { thr = t; thAt = `@${i} ${F[i].cls}`; } }
     ok(out <= 0 && thr <= 14, `${tag}: the tail stays in frame and moves smoothly (out ${out.toFixed(0)}px, bbox change ${thr.toFixed(0)}px/frame ≤14 ${thAt})`, todoOf("tail", st));
+    const TF = F.map(f => f.tail);   // 尾巴的鏈（只有托果實那幾段有）
+    const lenE = Math.max(0, ...TF.filter(Boolean).map(t => Math.abs(t.len - 1))), bendE = Math.max(0, ...TF.filter(Boolean).map(t => t.ex));
+    ok(TF.some(Boolean) && lenE <= .005 && bendE <= .05, `${tag}: the tail keeps its length (max change ${(lenE * 100).toFixed(2)}% ≤0.5%) and no joint bends past its limit (excess ${bendE.toFixed(2)}°)`);
+    const sp = TF.map((t, i) => (t && TF[i - 1] ? Math.hypot(t.tip[0] - TF[i - 1].tip[0], t.tip[1] - TF[i - 1].tip[1]) : 0)); let spk = 0, spAt = -1;
+    for (let i = 2; i < n - 1; i++) { const v = sp[i] - Math.max(sp[i - 1], sp[i + 1]); if (TF[i] && TF[i - 1] && TF[i + 1] && v > spk) { spk = v; spAt = i; } }
+    if (process.env.PM_SEQ && spAt > 0) for (let i = spAt - 5; i <= spAt + 4; i++) console.log("   tip", i, sp[i].toFixed(2), F[i].cls, TF[i] ? TF[i].tip.map(v => v.toFixed(1)).join(",") : "-");
+    ok(spk <= 2.5, `${tag}: the tail tip moves without speed spikes (worst ${spk.toFixed(2)} units/frame over its neighbours @${spAt})`);
+    const rootR = Math.max(0, ...TF.filter(Boolean).map(t => t.root)) / Math.max(1, ...TF.filter(Boolean).map(t => t.tipD));
+    ok(rootR <= .25, `${tag}: near the root the tail hardly moves — the tip does the work (root/tip displacement ${rootR.toFixed(2)})`);
   }
   if (st === 5) {   // 吞下最後一口之前不閉眼享受
     let bad = 0; for (const f of F) { const tb = f.berries.find(x => /target/.test(x.cls) && !/eaten/.test(x.cls)); if (tb && f.happy && D(f.mouth, tb.c) > tb.w / 2) bad++; }
@@ -167,7 +182,7 @@ function judge(st, tag, R) {
     let both = 0; const w0 = {}; for (const f of F) for (const x of f.berries) if (/melt/.test(x.cls)) { const key = Math.round(x.c[0] / 4); if (w0[key] == null) w0[key] = x.w; if (f.sparks >= 3 && x.op > .8 && x.w >= w0[key] * .9) both++; }
     ok(both === 0, `${tag}: the berry shrinks as the sparks leave it (frames with a full berry and ≥3 sparks: ${both})`, todoOf("egg", st));
   }
-  const lim = st === 1 ? (/ C$/.test(tag) ? 18 : 27) : st === 4 ? 23 : st === 5 ? 25 : st === 3 || st === 6 ? 17.9 : st === 2 ? 17.5 : 16;   /* 蝶 2026-10-06 第四輪：停穩半合翅＋起飛前原地拍兩下，多 1 秒 */   // 幼蟲爬得像真的毛毛蟲（慢）：A、B 刻意讓果實落在兩邊（測掉頭）放寬；C＝遊戲真的落點（頭的前方）   // 幼龍：撿起來、舉到嘴邊、咬兩口、吞完才放手（步驟本來就多）；虎：每顆都趴下去吃再站起來（2026-10-06 人面獅身）   // 幼蟲：左右兩邊都有果實時要掉頭兩次（頭不動、身體繞過去＝每次多爬 80px）   // 含判定結束的 0.7 秒；狐、虎要走去左右兩端（A、C 組）；虎刻意慢、有重量（ChatGPT 看錄影的建議）
+  const lim = st === 1 ? (/ C$/.test(tag) ? 18 : 27) : st === 4 ? 23 : st === 5 ? 25 : st === 3 ? 17.9 : st === 6 ? 20.5 : st === 2 ? 17.5 : 16;   /* 蝶 2026-10-06 第四輪：停穩半合翅＋起飛前原地拍兩下，多 1 秒 */   // 幼蟲爬得像真的毛毛蟲（慢）：A、B 刻意讓果實落在兩邊（測掉頭）放寬；C＝遊戲真的落點（頭的前方）   // 幼龍：撿起來、舉到嘴邊、咬兩口、吞完才放手（步驟本來就多）；虎：每顆都趴下去吃再站起來（2026-10-06 人面獅身）   // 幼蟲：左右兩邊都有果實時要掉頭兩次（頭不動、身體繞過去＝每次多爬 80px）   // 含判定結束的 0.7 秒；狐、虎要走去左右兩端（A、C 組）；虎刻意慢、有重量（ChatGPT 看錄影的建議）
   ok(sec <= lim, `${tag}: one feeding (3 berries, walk home, celebrate) takes ≤${lim} s (${sec.toFixed(1)} s)`, todoOf("time", st));
   const spill = Math.max(...F.map(f => f.spill || 0)), si = F.findIndex(f => (f.spill || 0) === spill);
   ok(spill <= 0, `${tag}: nothing is drawn outside the canvas (iOS WebKit clips there; worst ${spill.toFixed(1)}px${spill > 0 ? ` @${si} ${F[si].spillWhat} ${F[si].cls}|${F[si].bcl}` : ""})`);

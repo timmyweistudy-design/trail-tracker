@@ -219,7 +219,7 @@ window.PetStage = (function () {
     const q = pr.getBoundingClientRect(), a = actor.getBoundingClientRect(), k = q.width / 200, out = [];
     const forced = Array.isArray(window.__psSpots) && window.__psSpots.length >= n ? window.__psSpots.slice(0, n) : null;   // 測試：指定雲上的落點（圖上的 x）
     for (let tries = 0; out.length < n && tries < 120; tries++) {
-      const lx = forced ? forced[out.length] : 84 + Math.random() * 112, top = PET_ART.cloudTop6(lx); if (top == null) continue;   // 尾巴那一側（頭那邊要繞過整個身體，太勉強）
+      const lx = forced ? forced[out.length] : 122 + Math.random() * 74, top = PET_ART.cloudTop6(lx); if (top == null) continue;   // 尾巴那一側（2026-10-06 第四輪：尾巴從背上的拱才開始動，左半邊搆不到；硬搆就是整個下半身在甩）
       const x = Math.round(q.left + lx * k - (a.left + a.width / 2));
       if (!forced && (out.some(o => Math.abs(o.x - x) < 26) || PetWalk.tailReach(lx, top + 3 - 15) > 3)) continue;
       out.push({ x, by: Math.round(a.bottom - (q.top + (top + 3) * k)) });
@@ -389,15 +389,17 @@ window.PetStage = (function () {
         } else if (!egg && !fly && stg !== 5 && !onCloud) await reach(b, stg);
         if (egg) await absorb(b, x >= 0 ? "r" : "l");   // 蛋：不走路，原地把果實化成光吸進裂縫
         else if (onCloud) {   // 神龍：尾尖托住果實 → 沿身體下方送到下巴前的交接點 → 停一下、頭往前、張嘴 → 果實改歸嘴、尾巴鬆開退回 → 咬、嚼
-          await PetWalk.tailTo(box, b, 650);
+          // 2026-10-06 第四輪：每一段的時間照尾尖要走的路長（PetWalk.tailMs）：去托 0.7～1 秒 → 托住停 0.2 → 送 0.9～1.2 → 等嘴 0.2 → 鬆開收回 0.9～1.3
+          await PetWalk.tailTo(box, b);
           b.classList.add("carried"); follow(b, "tail", { ay: .62, ms: 120 });   // 托住之後果實歸尾尖（尾巴拿著時跟尾尖）
-          await PetWalk.tailTo(box, "mouth", 900, () => ownTick(true));   // 同一格把果實對齊尾尖（不等下一個 rAF：機器忙時會差一格、果實晃一下）
-          await sleep(120);                                                     // 到了交接點停一下
+          await sleep(200);                                                     // 托穩了才抬
+          await PetWalk.tailTo(box, "mouth", null, () => ownTick(true));   // 同一格把果實對齊尾尖（不等下一個 rAF：機器忙時會差一格、果實晃一下）
+          await sleep(200);                                                     // 到了交接點停一下
           const hd = PetWalk.part(box, ".pr-hfx");   // 迎上去畫在頭的內層（外層由繩波逐格寫）
           const lean = hd && hd.animate([{ transform: "none" }, { transform: "translate(-3px, 3px)" }], { duration: 180, easing: "ease-out", fill: "forwards" });   // 頭略往前迎上去
           cls(true, "st-open"); await sleep(150);
           follow(b, "mouth", { ay: .38, ms: 140 });                             // 嘴碰到了：果實改歸嘴（交接只發生一次，從現在的位置接過來）
-          const relax = PetWalk.tailTo(box, null, 620);                         // 尾尖鬆開、退回
+          const relax = PetWalk.tailTo(box, null);                              // 尾尖鬆開、退回
           await sleep(110);
           toMouth(b, false); b.classList.add("eaten"); cls(false, "st-open"); await flash("pb-snap", 240);
           if (lean) { const back = hd.animate([{ transform: "translate(-3px, 3px)" }, { transform: "none" }], { duration: 220, easing: "ease-in-out" }); lean.cancel(); await back.finished.catch(() => {}); }
