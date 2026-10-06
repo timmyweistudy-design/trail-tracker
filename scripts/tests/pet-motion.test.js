@@ -12,7 +12,7 @@ let fails = 0, todos = 0; const errs = [];
 const ok = (c, m, todo) => { if (c) console.log((todo ? "PASS(已修好，可拿掉 todo " + todo + ") " : "PASS ") + m); else if (todo) { todos++; console.log("TODO(" + todo + ") " + m); } else { fails++; console.log("FAIL " + m); } };
 const KM = [0, 5, 20, 40, 90, 150, 260];
 // 落點：px（相對舞台中間）；神龍是雲上「圖上的 x」
-const SPOTS = { 0: [[-34, 2, 34], [36, 12, -20]], 1: [[-62, 8, 66], [66, 40, 18], null], 3: [[-62, 8, 66], [66, 40, 18], [-30, 27, -64]], 4: [[-62, 8, 66], [66, 40, 18], [23, -62, 79]], 6: [[124, 154, 188], [130, 162, 194]] };   // 神龍 2026-10-06 第四輪：尾巴從 I0=28 才動，只搆得到雲的右半邊   // 狐、虎的 C＝第一次錄影時的落點（會出現量完補小碎步）
+const SPOTS = { 0: [[-34, 2, 34], [36, 12, -20]], 1: [[-62, 8, 66], [66, 40, 18], null], 3: [[-62, 8, 66], [66, 40, 18], [-20, 0, 21]], 4: [[-62, 8, 66], [66, 40, 18], [-21, 1, 20]], 6: [[124, 154, 188], [130, 162, 194]] };   // 神龍 2026-10-06 第四輪：尾巴從 I0=28 才動，只搆得到雲的右半邊   // 狐、虎的 C＝第一次錄影時的落點（會出現量完補小碎步）
 const DEF = [[-62, 8, 66], [66, 40, 18]];
 // 還沒修好的（階段名）：key＝檢查代號:階段
 const TODO = {};   // 2026-10-06 第二輪 P0～P6 全部修好；之後新加的檢查還沒修好時放這裡（"檢查代號:階段": "Pn"）
@@ -116,6 +116,8 @@ function judge(st, tag, R) {
       for (let i = e; i < sn; i++) { if (F[i].mouth) { if (F[i].mouth[1] < lo - 2 && lo - F[i].mouth[1] > up) { up = lo - F[i].mouth[1]; upAt = `@${i} (from ${e}) ${F[i].cls}|${F[i].bcl}`; } lo = Math.max(lo, F[i].mouth[1]); } }
     }
     ok(drift <= 1, `${tag}: paws stay planted while eating (max drift ${drift.toFixed(1)}px)`, todoOf("paws", st));
+    { const sideOrWalk = F.filter(f => /standing|walking/.test(f.bcl)).length, xs = F.map(f => f.wx || 0), mv = Math.max(...xs) - Math.min(...xs);
+      ok(sideOrWalk === 0 && mv <= 1, `${tag}: faces us the whole time — never turns side-on or walks (${sideOrWalk} frames side-on/walking, moved ${mv.toFixed(1)}px)`); }   // 2026-10-06 第五輪（使用者：臉朝向我們、趴著吃、不要移動）
     { let hipR = 0; for (let a = 1; a < n; a++) { if (!(/st-lean/.test(F[a].cls) && !/st-lean/.test(F[a - 1].cls))) continue; let g = a; while (g < n - 1 && (/st-lean|pb-snap/.test(F[g].cls) || walk(g) === false && F[g].hip && g < a + 60 && !/pb-chew|pb-gulp/.test(F[g].cls))) g++;
       const hs = F.slice(a, g).filter(f => f.hip).map(f => f.hip); if (hs.length) for (const h of hs) hipR = Math.max(hipR, D(h, hs[0])); }
       ok(hipR <= 4, `${tag}: lowering the head to eat, the pelvis stays put (hip moves ${hipR.toFixed(1)}px ≤4)`); }   // 2026-10-06 第四輪：以前以後腳掌為支點整隻往前倒（髖往前下方移約 15px）

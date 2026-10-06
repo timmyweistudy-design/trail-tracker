@@ -195,6 +195,10 @@ window.PetStage = (function () {
   // 蛋不會吃也不會走：果實掉在蛋前面，化成光點飛進裂縫。減少動態效果或舞台不在畫面上時，pet.js 直接結算。回傳播完的 promise
   function dropSpots(n, egg) {   // egg：蛋不會走路，果實掉在蛋的前方 ±40 以內（在蛋前面、不會被擋住）
     if (Array.isArray(window.__psSpots) && window.__psSpots.length >= n) return window.__psSpots.slice(0, n);   // 測試／除錯：指定落點（px，相對舞台中間）
+    if (egg === "front") {   // 狐、虎（2026-10-06 第五輪）：三顆排在兩隻前掌前面（左、中、右），趴下來轉頭、低頭就吃得到，不用走
+      const u = PetWalk.pxu(box), wx = parseFloat(box.style.getPropertyValue("--wx")) || 0;
+      return [-1, 0, 1].map(k => Math.round(wx + (k * 24 + (Math.random() * 2 - 1) * 3) * u));
+    }
     if (egg === "larva") {   // 幼蟲（2026-10-06）：爬得慢（像真的毛毛蟲），果實落在頭的前方、一路往前吃——不用掉頭、不用爬遠
       const f = box.classList.contains("lv-l") ? -1 : 1, wx = parseFloat(box.style.getPropertyValue("--wx")) || 0, hx = wx + f * 48 * PetWalk.pxu(box);
       const xs = [20, 44, 68].map(d => Math.round(Math.max(-112, Math.min(112, hx + f * (d + (Math.random() * 2 - 1) * 6)))));
@@ -219,7 +223,7 @@ window.PetStage = (function () {
     const q = pr.getBoundingClientRect(), a = actor.getBoundingClientRect(), k = q.width / 200, out = [];
     const forced = Array.isArray(window.__psSpots) && window.__psSpots.length >= n ? window.__psSpots.slice(0, n) : null;   // 測試：指定雲上的落點（圖上的 x）
     for (let tries = 0; out.length < n && tries < 120; tries++) {
-      const lx = forced ? forced[out.length] : 122 + Math.random() * 74, top = PET_ART.cloudTop6(lx); if (top == null) continue;   // 尾巴那一側（2026-10-06 第四輪：尾巴從背上的拱才開始動，左半邊搆不到；硬搆就是整個下半身在甩）
+      const lx = forced ? forced[out.length] : [129, 159, 188][out.length] + (Math.random() * 2 - 1) * (tries < 60 ? 5 : 2), top = PET_ART.cloudTop6(lx); if (top == null) continue;   // 分三區各一顆（隨機挑三個互隔 24 單位的點，運氣不好 120 次都湊不齊、退回掉在地上）   // 尾巴那一側（2026-10-06 第四輪：尾巴從背上的拱才開始動，左半邊搆不到；硬搆就是整個下半身在甩）
       const x = Math.round(q.left + lx * k - (a.left + a.width / 2));
       if (!forced && (out.some(o => Math.abs(o.lx - lx) < 24) || PetWalk.tailReach(lx, top + 3 - 15) > 3)) continue;   // 間距用圖上的單位（尾巴那側只有 74 單位寬，用 px 算小舞台放不下三顆）
       out.push({ x, lx, by: Math.round(a.bottom - (q.top + (top + 3) * k)) });
@@ -345,16 +349,17 @@ window.PetStage = (function () {
     if (!box || reduce() || !visible || feeding) return;   // 正在吃就不再開一輪（餵食鈕本來就會鎖住＋8 小時冷卻；測試面板連按才會進來）
     clearTimeout(beat); busy = true; feeding = true; box.classList.add("feeding");
     const actor = box.querySelector(".ps-actor"), stg = +box.dataset.stage, egg = stg === 0, fly = stg === 2;
+    const front = (stg === 3 || stg === 4) && typeof PetWalk !== "undefined" && !!PetWalk.frontLie;   // 狐、虎：正面趴著吃（不走路）
     const bal = document.querySelector("#petFeed .feed-bal");
     let left = bal ? +bal.textContent : NaN;
     const berries = []; let aborted = false;
     try {
       const onCloud = stg === 6 && typeof PetWalk !== "undefined" ? cloudSpots(3) : null;   // 神龍：果實落在雲上（跟著雲走）
-      (onCloud ? onCloud.map(o => o.x) : dropSpots(3, egg || (stg === 1 && typeof PetWalk !== "undefined" ? "larva" : false))).forEach((x, k) => {
+      (onCloud ? onCloud.map(o => o.x) : dropSpots(3, egg || (stg === 1 && typeof PetWalk !== "undefined" ? "larva" : front ? "front" : false))).forEach((x, k) => {
         const b = document.createElement("span");
         b.className = "ps-berry";
         b.innerHTML = berrySvg || "";
-        const size = 26 + Math.round(Math.random() * 7), by = onCloud ? onCloud[k].by : egg ? 3 + Math.round(Math.random() * 5) : 10 + Math.round(Math.random() * 12);
+        const size = 26 + Math.round(Math.random() * 7), by = onCloud ? onCloud[k].by : egg ? 3 + Math.round(Math.random() * 5) : front ? 4 + Math.round(Math.random() * 3) : 10 + Math.round(Math.random() * 12);   // 狐虎：落在前掌前面（比腳底線靠鏡頭）
         b.style.cssText = `--bx:${x};--by:${by}px;--bs:${size}px;--br:${Math.round((Math.random() * 2 - 1) * 22)}deg;--bh:${-(200 + Math.round(Math.random() * 70))}px;animation-delay:${k * 170}ms;z-index:${by < 16 ? 4 : 3}`;
         actor.appendChild(b); berries.push({ b, x });
       });
@@ -371,6 +376,7 @@ window.PetStage = (function () {
         const f = box.classList.contains("lv-l") ? -1 : 1, hx = at() + f * 48 * PetWalk.pxu(box), front = todo.filter(o => (o.x - hx) * f > -10).sort((a, b) => (a.x - b.x) * f), back = todo.filter(o => (o.x - hx) * f <= -10).sort((a, b) => (b.x - a.x) * f);
         todo.splice(0, todo.length, ...front, ...back);
       }
+      if (front) { box.style.setProperty("--ey", "1"); await PetWalk.frontLie(box, 1, stg === 4 ? 820 : 680); }   // 趴下（虎慢一點）
       while (todo.length) {
         if (!box || !visible || document.hidden) { aborted = true; break; }   // 滑走或切到背景：直接結算（pet.js 的 done 會更新數字），角色回到坐姿
         const { b, x } = todo.shift(), later = todo.length < 2;   // 第二、三顆：嚼兩下、停頓短一點（整段不要拖太久）
@@ -379,9 +385,23 @@ window.PetStage = (function () {
         box.style.setProperty("--ex", String(Math.sign(x - at()) * Math.min(1, Math.abs(x - at()) / 60)));   // 頭和眼睛轉過去看這一顆（轉身時一起轉，不另外停）
         await sleep(W ? 60 : 240);
         if (fly) cls(true, "st-legs");   // 蝶：快到的時候腳先伸出來
-        if (W && !egg && !onCloud) { await PetWalk.goEat(box, b, x); box.style.setProperty("--ex", "0"); box.style.setProperty("--ey", "1"); }   // 走過去：停在嘴剛好在果實上方
+        if (W && !egg && !onCloud && !front) { await PetWalk.goEat(box, b, x); box.style.setProperty("--ex", "0"); box.style.setProperty("--ey", "1"); }   // 走過去：停在嘴剛好在果實上方
         // 低頭要低多少：量嘴到果實的高度差（換成 SVG 單位），夠不到的最後一點由果實「跳」進嘴裡
         let bowTo = null;
+        if (front) {   // 狐、虎趴著：頭轉向這一顆、低頭，最後一段才張嘴，一碰到就咬 → 咬住後果實跟著嘴抬起來 → 抬頭嚼、吞
+          const h = PetWalk.frontHeadSolve(box, b, BITE_Y), D = stg === 4 ? 640 : 520;
+          cls(true, "st-lean"); const down = PetWalk.frontHead(box, h, D);
+          await sleep(D * .68); cls(true, "st-open"); await down;
+          cls(false, "st-open"); await flash("pb-snap", 200);
+          b.classList.add("held"); follow(b, "mouth", { ay: .3, ms: 120 });
+          cls(false, "st-lean"); const up = PetWalk.frontHead(box, [h[0] * .25, 6, h[2] * .25], stg === 4 ? 760 : 640);   // 抬頭（留一點點低頭、轉向那邊）
+          await sleep(stg === 4 ? 320 : 260); toMouth(b, false); b.classList.add("eaten"); await up;
+          cls(true, "chew2"); await flash("pb-chew", (stg === 4 ? 1050 : 900) * .67); cls(false, "chew2");
+          await flash("pb-gulp", 340);
+          if (bal && isFinite(left)) { left = Math.max(0, left - 1); bal.textContent = left; bal.classList.remove("tick"); void bal.offsetWidth; bal.classList.add("tick"); }
+          if (typeof ttBuzz === "function") ttBuzz(8);
+          b.remove(); continue;
+        }
         if (box.classList.contains("standing")) {   // 站著（狐、虎）：找「肩膀沉多少、脖子往下多少」嘴才碰到果實
           // 站位已經在 goEat 一次算好、走過去了（只走一次）；這裡只重算低頭的角度（走過去時前後深度變了一點），不再挪腳
           const sol = PetWalk.solveBow(box, b, stg, BITE_Y);
@@ -498,12 +518,14 @@ window.PetStage = (function () {
         box.style.removeProperty("--ld"); box.style.removeProperty("--lx");
       }
       if (box) { box.style.setProperty("--ex", "0"); box.style.setProperty("--ey", "0"); }
+      if (front && box && !aborted) { await PetWalk.frontHead(box, null, 360); await PetWalk.frontLie(box, 0, stg === 4 ? 820 : 680); }   // 吃完：頭回正、起身坐好
       if (aborted || !box) return;
       if (!egg && !fly) await flash("pb-lick", 640);                  // 舔舔嘴
       if (onCloud && W && box) { box.__riders = null; await PetWalk.goTo(box, -22); }   // 神龍：吃飽在雲上游一小段（身體走頭走過的路、雲座晚一點跟上）
       if (W && box) await PetWalk.home(box);                          // 走回中間
       await flash("pb-hop", 1300);   // 各自的慶祝（style-features.css 依階段換動作）
-    } finally { berries.forEach(o => { release(o.b); o.b.remove(); }); cls(false, "st-lean", "st-open", "st-sip", "st-land", "st-legs", "pb-sip", "st-glow", "st-tilt-l", "st-tilt-r"); resetProboscis(); if (box) { box.__riders = null; if (box.__chain && typeof PetWalk !== "undefined") PetWalk.tailTo(box, null, 1); box.style.removeProperty("--ld"); box.style.removeProperty("--lx"); if (typeof PetWalk !== "undefined" && (reduce() || aborted)) { PetWalk.stop(box); box.classList.remove("standing", "face-r"); } } feeding = false; busy = false; if (box) { box.classList.remove("feeding"); schedule(mood); } }
+    } finally { if (front && box && (box.__lie || box.__fh)) { PetWalk.frontHead(box, null, 1); PetWalk.frontLie(box, 0, 1); }
+      berries.forEach(o => { release(o.b); o.b.remove(); }); cls(false, "st-lean", "st-open", "st-sip", "st-land", "st-legs", "pb-sip", "st-glow", "st-tilt-l", "st-tilt-r"); resetProboscis(); if (box) { box.__riders = null; if (box.__chain && typeof PetWalk !== "undefined") PetWalk.tailTo(box, null, 1); box.style.removeProperty("--ld"); box.style.removeProperty("--lx"); if (typeof PetWalk !== "undefined" && (reduce() || aborted)) { PetWalk.stop(box); box.classList.remove("standing", "face-r"); } } feeding = false; busy = false; if (box) { box.classList.remove("feeding"); schedule(mood); } }
   }
 
   // ── 天氣：用使用者所在位置（探索頁拿過的）或最後一趟走的步道；拿不到就不畫天氣，絕不在這裡要定位 ──

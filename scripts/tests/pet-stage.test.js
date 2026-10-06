@@ -101,8 +101,8 @@ const KM=[0,5,20,40,90,150,260];
  const shown0=await p.evaluate(()=>+(document.querySelector("#petFeed .feed-bal")||{}).textContent);
  await p.evaluate(()=>{window.__psBefore=document.querySelector(".ps-box");window.__psParts=[...document.querySelectorAll(".ps-p")].map(e=>e.style.left).join();});
  await p.click("#petFeed");await p.waitForTimeout(350);
- const f1=await p.evaluate(()=>{const bs=[...document.querySelectorAll(".ps-box .ps-berry")].map(b=>+b.style.getPropertyValue("--bx"));return {n:bs.length,xs:bs,minGap:Math.min(...bs.flatMap((a,i)=>bs.slice(i+1).map(b=>Math.abs(a-b)))),dis:document.getElementById("petFeed").disabled};});
- ok(f1.n===3&&f1.minGap>=34&&f1.dis,"feed: three berries drop at separate random spots, button locked "+JSON.stringify(f1));
+ const f1=await p.evaluate(()=>{const bs=[...document.querySelectorAll(".ps-box .ps-berry")].map(b=>+b.style.getPropertyValue("--bx"));return {n:bs.length,st:+document.querySelector(".ps-box").dataset.stage,xs:bs,minGap:Math.min(...bs.flatMap((a,i)=>bs.slice(i+1).map(b=>Math.abs(a-b)))),dis:document.getElementById("petFeed").disabled};});
+ ok(f1.n===3&&f1.minGap>=(f1.st===3||f1.st===4?16:34)&&f1.dis,"feed: three berries drop at separate spots (fox/tiger: lined up in front of the paws), button locked "+JSON.stringify(f1));
  await p.screenshot({path:O+"p2-feed-drop.png"});
  const seq=await p.evaluate(async()=>{const vals=[],steps=[],c0=document.querySelector("#petEmoji .pet-critter"),b=document.querySelector(".ps-box").getBoundingClientRect();let bite=false,off=0,feet=null,feetMove=0,wasOpen=false;const aims=[];
   for(let k=0;k<420;k++){const e=document.querySelector("#petFeed .feed-bal");if(e){const v=+e.textContent;if(vals[vals.length-1]!==v)vals.push(v);}
