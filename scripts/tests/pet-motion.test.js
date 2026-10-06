@@ -12,7 +12,7 @@ let fails = 0, todos = 0; const errs = [];
 const ok = (c, m, todo) => { if (c) console.log((todo ? "PASS(已修好，可拿掉 todo " + todo + ") " : "PASS ") + m); else if (todo) { todos++; console.log("TODO(" + todo + ") " + m); } else { fails++; console.log("FAIL " + m); } };
 const KM = [0, 5, 20, 40, 90, 150, 260];
 // 落點：px（相對舞台中間）；神龍是雲上「圖上的 x」
-const SPOTS = { 0: [[-34, 2, 34], [36, 12, -20]], 3: [[-62, 8, 66], [66, 40, 18], [-30, 27, -64]], 4: [[-62, 8, 66], [66, 40, 18], [23, -62, 79]], 6: [[96, 140, 186], [104, 150, 176]] };   // 狐、虎的 C＝第一次錄影時的落點（會出現量完補小碎步）
+const SPOTS = { 0: [[-34, 2, 34], [36, 12, -20]], 1: [[-62, 8, 66], [66, 40, 18], null], 3: [[-62, 8, 66], [66, 40, 18], [-30, 27, -64]], 4: [[-62, 8, 66], [66, 40, 18], [23, -62, 79]], 6: [[96, 140, 186], [104, 150, 176]] };   // 狐、虎的 C＝第一次錄影時的落點（會出現量完補小碎步）
 const DEF = [[-62, 8, 66], [66, 40, 18]];
 // 還沒修好的（階段名）：key＝檢查代號:階段
 const TODO = {};   // 2026-10-06 第二輪 P0～P6 全部修好；之後新加的檢查還沒修好時放這裡（"檢查代號:階段": "Pn"）
@@ -32,13 +32,12 @@ const probe = () => {
     o.spill = sp; o.spillWhat = sw; }
   const eh = [...em.querySelectorAll(".pc-eh")].find(e => !e.closest(".pr-stand") || standing); o.happy = !!eh && getComputedStyle(eh).display !== "none";
   if (standing) o.paws = [...em.querySelectorAll(".pr-stand .pr-leg .pr-shin")].map(sh => { const e = [...sh.querySelectorAll("ellipse")].find(x => !x.closest("clipPath") && !x.closest("defs")); const pt = new DOMPoint(+e.getAttribute("cx"), +e.getAttribute("cy") + +e.getAttribute("ry")).matrixTransform(e.getScreenCTM()); return [pt.x, pt.y]; });
-  if (st === 1) {   // 頭跟身體有沒有分開：頭（半徑 23 的圓）的中心到身體外框最近的點有多遠——身體外框在頭底下（≤23）就看不到縫
+  if (st === 1) {   // 頭跟身體有沒有分開：頭（半徑 23）的中心到最前面那一節中心的距離（身體座標；平常約 17，>25＝看得到縫）
     const svg = em.querySelector(".pet-critter"), inv = svg.getScreenCTM().inverse(), hd = em.querySelector(".pr-head");
     const hc = new DOMPoint(148, 136).matrixTransform(hd.getScreenCTM()).matrixTransform(inv);
-    const tube = [...em.querySelectorAll(".pr-deform path")].sort((a, b) => b.getAttribute("d").length - a.getAttribute("d").length)[0], tm = tube.getScreenCTM();
-    const n = tube.getAttribute("d").match(/-?\d*\.?\d+/g).map(Number); let best = 1e9;
-    for (let i = 0; i + 1 < n.length; i += 2) { const q = new DOMPoint(n[i], n[i + 1]).matrixTransform(tm).matrixTransform(inv); best = Math.min(best, Math.hypot(q.x - hc.x, q.y - hc.y)); }
-    o.neck = best;
+    const segs = [...em.querySelectorAll(".lv-seg")], fr = segs.reduce((a, b) => (+b.dataset.u > +a.dataset.u ? b : a));
+    const fc = new DOMPoint(+fr.dataset.u, +fr.dataset.v).matrixTransform(fr.getScreenCTM()).matrixTransform(inv);
+    o.neck = Math.hypot(hc.x - fc.x, hc.y - fc.y);
   }
   if (st === 2) { const ext = em.querySelector(".pr-ext"); if (+getComputedStyle(ext).opacity > .5) { const pt = ext.getPointAtLength(ext.getTotalLength()), s = new DOMPoint(pt.x, pt.y).matrixTransform(ext.getScreenCTM()); o.prob = [s.x, s.y]; }
     const hw = [...em.querySelectorAll(".pc-hw")].map(e => e.getBoundingClientRect()); o.hw = [Math.min(...hw.map(r => r.left)), Math.min(...hw.map(r => r.top)), Math.max(...hw.map(r => r.right)), Math.max(...hw.map(r => r.bottom))]; }
@@ -123,7 +122,7 @@ function judge(st, tag, R) {
   if (st === 1) {
     const v = F.filter(f => f.neck != null).map(f => f.neck), dv = Math.max(...v), i0 = F.findIndex(f => f.neck === dv);
     if (process.env.PM_SEQ) for (let i = i0 - 6; i <= i0 + 4; i++) console.log("   neck", i, F[i].neck.toFixed(1), F[i].raw);
-    ok(dv <= 25, `${tag}: the head never comes off the body (head centre to body outline ≤25 units, head radius 23; max ${dv.toFixed(1)} @${i0} ${F[i0] ? F[i0].cls + "|" + F[i0].bcl : ""})`, todoOf("neck", st));
+    ok(dv <= 25, `${tag}: the head never comes off the body (head centre to the front segment ≤25 units, head radius 23; max ${dv.toFixed(1)} @${i0} ${F[i0] ? F[i0].cls + "|" + F[i0].bcl : ""})`, todoOf("neck", st));
   }
   if (st === 6) {
     let out = 0, thr = 0, thAt = ""; for (let i = 1; i < n; i++) { const d = F[i].deform, b = F[i].boxr; out = Math.max(out, b[0] - d[0], d[2] - b[2], b[1] - d[1]); const t = Math.max(...d.map((q, k) => Math.abs(q - F[i - 1].deform[k]))); if (t > thr) { thr = t; thAt = `@${i} ${F[i].cls}`; } }
@@ -138,7 +137,7 @@ function judge(st, tag, R) {
     let both = 0; const w0 = {}; for (const f of F) for (const x of f.berries) if (/melt/.test(x.cls)) { const key = Math.round(x.c[0] / 4); if (w0[key] == null) w0[key] = x.w; if (f.sparks >= 3 && x.op > .8 && x.w >= w0[key] * .9) both++; }
     ok(both === 0, `${tag}: the berry shrinks as the sparks leave it (frames with a full berry and ≥3 sparks: ${both})`, todoOf("egg", st));
   }
-  const lim = st === 4 || st === 5 ? 19 : st === 3 || st === 1 ? 17.9 : 16;   // 幼龍：撿起來、舉到嘴邊、咬兩口、吞完才放手（步驟本來就多）   // 幼蟲：左右兩邊都有果實時要掉頭兩次（頭不動、身體繞過去＝每次多爬 80px）   // 含判定結束的 0.7 秒；狐、虎要走去左右兩端（A、C 組）；虎刻意慢、有重量（ChatGPT 看錄影的建議）
+  const lim = st === 1 ? (/ C$/.test(tag) ? 18 : 27) : st === 4 || st === 5 ? 19 : st === 3 ? 17.9 : 16;   // 幼蟲爬得像真的毛毛蟲（慢）：A、B 刻意讓果實落在兩邊（測掉頭）放寬；C＝遊戲真的落點（頭的前方）   // 幼龍：撿起來、舉到嘴邊、咬兩口、吞完才放手（步驟本來就多）   // 幼蟲：左右兩邊都有果實時要掉頭兩次（頭不動、身體繞過去＝每次多爬 80px）   // 含判定結束的 0.7 秒；狐、虎要走去左右兩端（A、C 組）；虎刻意慢、有重量（ChatGPT 看錄影的建議）
   ok(sec <= lim, `${tag}: one feeding (3 berries, walk home, celebrate) takes ≤${lim} s (${sec.toFixed(1)} s)`, todoOf("time", st));
   const spill = Math.max(...F.map(f => f.spill || 0)), si = F.findIndex(f => (f.spill || 0) === spill);
   ok(spill <= 0, `${tag}: nothing is drawn outside the canvas (iOS WebKit clips there; worst ${spill.toFixed(1)}px${spill > 0 ? ` @${si} ${F[si].spillWhat} ${F[si].cls}|${F[si].bcl}` : ""})`);

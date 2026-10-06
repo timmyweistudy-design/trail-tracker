@@ -137,18 +137,22 @@ window.PET_ART = (function () {
 
   // 1 草叢幼蟲：鳳蝶終齡幼蟲——翠綠、一節一節、胸部假眼紋（大圖）、小黑珠眼；臭角在頭後面（<!--O-->，戴帽子時拿掉，帽子戴在頭上）
   const LV = "#86c95a", LVS = [[[44, 166], [72, 180], [110, 176], [134, 146]]], LVW = [[0, 24], [.55, 32], [1, 36]];
-  const lvFolds = spine(LVS, 10).filter((q, k) => k > 0 && k < 10 && k % 2 === 0).map(q => { const w = wAt(LVW, q.f) / 2; return `M${rd(q.x + q.nx * w * .95)} ${rd(q.y + q.ny * w * .95)}Q${rd(q.x + q.nx * w * .1 + Math.cos(q.a * Math.PI / 180) * 3)} ${rd(q.y + q.ny * w * .1 + Math.sin(q.a * Math.PI / 180) * 3)} ${rd(q.x - q.nx * w * .95)} ${rd(q.y - q.ny * w * .95)}`; }).join("");
+  // 2026-10-06 改成一節一節畫（9 節，尾→頭）：每一節是自己的橢圓（明暗、描邊、氣門），有腹足的節底下有腳——
+  // 動作時每一節各自移動（pet-walk.js 排位置），掉頭時依遠近重新排序，近的那節蓋在遠的上面（以前整條是一條 path，U 型迴轉時兩段的描邊會交叉成一團）
+  function lvSegs() {
+    return spine(LVS, 8).map((q, k) => {
+      const w = wAt(LVW, q.f) / 2 + 1, rx = k === 0 ? 11 : 12, ry = k === 0 ? 11.5 : w, x = rd(q.x), y = rd(q.y), a = rd(q.a);
+      const legs = k >= 1 && k <= 6 ? P(E(rd(x + 1), rd(y + ry * .98), k === 1 ? 6.2 : 5.4, k === 1 ? 5 : 4.4), "#6faa48", { sw: 1.8, dx: 1, dy: 1 }).replace("<ellipse", '<ellipse class="lv-pro"')   // 腹足（尾端那一對比較大）
+        : k >= 7 ? `<path d="M${rd(x - 1)} ${rd(y + ry - 3)} l1.6 5.4" stroke="#3a4a20" stroke-width="2.8" stroke-linecap="round"/>` : "";   // 胸足
+      const eye = k === 7 ? `<g class="pc-d2" opacity=".85"><ellipse cx="${rd(x - 1)}" cy="${rd(y - ry * .2)}" rx="5.4" ry="4.2" fill="#b89a5a"/><ellipse cx="${rd(x - .4)}" cy="${rd(y - ry * .16)}" rx="3" ry="2.4" fill="#3a2c1c"/></g>` : "";   // 假眼紋
+      const spot = k >= 1 && k <= 7 ? `<circle class="pc-d" cx="${rd(x + 2)}" cy="${rd(y + ry * .3)}" r="1.4" fill="${sh(LV, .45)}"/>` : "";   // 氣門
+      const band = `<path class="pc-d" d="M${rd(x - rx * .7)} ${rd(y + ry * .45)} Q${x} ${rd(y + ry * .78)} ${rd(x + rx * .7)} ${rd(y + ry * .45)}" stroke="${tn(LV, .45)}" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".7"/>`;   // 肚子那一側的淺色帶
+      return `<g class="lv-seg" data-u="${x}" data-v="${y}" style="--ox:${x}px;--oy:${y}px">${legs}<g transform="rotate(${a} ${x} ${y})">${P(E(x, y, rx, ry), LV, { hl: [rd(x - 2), rd(y - ry * .5), rd(rx * .55), rd(ry * .2)], dx: 2, dy: 2, sw: 2.1 })}${band}${spot}${eye}</g></g>`;
+    }).join("");
+  }
   const LARVA = `
     <g class="pc-bob pc-larva">
-      <g class="pr-deform">
-      ${[[62, 186], [82, 189], [102, 187]].map(([x, y]) => P(E(x, y, 6, 5), "#6faa48", { sw: 2, dx: 1, dy: 1 })).join("")}
-      ${P(C(44, 166, 12), LV, { dx: 3, dy: 3 })}
-      ${P(Pa(tube(LVS, LVW, 0, 10)), LV, { hl: [84, 160, 14, 4] })}
-      <path class="pc-d" d="${lvFolds}" stroke="${sh(LV, .3)}" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-      <path class="pc-d" d="M50 176 Q80 190 118 180" stroke="${tn(LV, .45)}" stroke-width="3" fill="none" stroke-linecap="round" opacity=".7"/>
-      <g class="pc-d2" opacity=".85"><ellipse cx="112" cy="156" rx="5.4" ry="4.2" fill="#b89a5a"/><ellipse cx="112.6" cy="156.4" rx="3" ry="2.4" fill="#3a2c1c"/></g>
-      ${[[134, 172], [142, 168], [150, 162]].map(([x, y]) => `<path d="M${x} ${y} l2 5" stroke="#3a4a20" stroke-width="3" stroke-linecap="round"/>`).join("")}
-      </g>
+      <g class="pr-deform lv-body">${lvSegs()}</g>
       <g class="pr-head" style="--ox:132px;--oy:152px">
       <!--O--><g class="pc-tail">${tp(132, 128, 120, 116, 3.6, "#f29a3a", -2)}${tp(132, 128, 126, 112, 3.6, "#f29a3a", 2)}</g><!--/O-->
       ${P(C(148, 136, 23), "#a6d978", { hl: [138, 123, 8, 5], dx: 4, dy: 4 })}
@@ -556,6 +560,7 @@ ${tigerHead()}
   // 以前一律用 0.5，但幼蟲的頭在畫面下半部（y 97～143），點頭會被當成搔癢
   const HEAD_LINE = [.5, .8, .5, .68, .68, .62, .64];
   const headLine = i => HEAD_LINE[clamp(i)];
-  const dragonSpine = n => spine(DSP, n).map(q => ({ x: q.x, y: q.y }));   // 神龍身體的中心線（pet-walk.js 用來讓尾巴彎過去）
-  return { dragonSpine, cloudTop6, svg, count: A.length, byEmoji, dataUri, habitat, habitatUri, hat, HAT_IDS, HAT_LABEL, headLine, prop };
+  const dragonSpine = n => spine(DSP, n).map(q => ({ x: q.x, y: q.y }));
+  const larvaSpine = n => spine(LVS, n).map(q => ({ x: q.x, y: q.y }));   // 幼蟲身體的中心線（pet-walk.js 的 U 型迴轉：身體每一點沿這條線的位置）   // 神龍身體的中心線（pet-walk.js 用來讓尾巴彎過去）
+  return { larvaSpine, dragonSpine, cloudTop6, svg, count: A.length, byEmoji, dataUri, habitat, habitatUri, hat, HAT_IDS, HAT_LABEL, headLine, prop };
 })();

@@ -430,7 +430,7 @@ for(const [km,st] of [[0,0],[20,2]]){const p=await mk({km,berries:20});
 
 // ── 2026-10-04 走過去吃：蠕動／游動的身體變形走完要還原；站姿走路要坐回去 ──
 for(const [km,st] of [[5,1],[260,6]]){const p=await mk({km});
- const r=await p.evaluate(async()=>{const box=document.querySelector(".ps-box"),sig=()=>[...box.querySelectorAll("#petEmoji .pr-deform path")].map(e=>e.getAttribute("d")).join("|");
+ const r=await p.evaluate(async()=>{const box=document.querySelector(".ps-box"),sig=()=>[...box.querySelectorAll("#petEmoji .pr-deform path")].map(e=>e.getAttribute("d")).join("|")+[...box.querySelectorAll("#petEmoji .lv-seg")].map(e=>e.style.transform).join("|");   // 幼蟲一節一節：看每一節的位移
   const before=sig();let mid="";const t=setTimeout(()=>{mid=sig()},500);await PetWalk.goTo(box,60);clearTimeout(t);const after=sig();await PetWalk.home(box);
   return {changedMid:mid!==""&&mid!==before,restored:after===before&&sig()===before,wx:box.style.getPropertyValue("--wx")};});
  ok(r.changedMid&&r.restored,"stage "+st+": body bends while moving and is restored exactly afterwards "+JSON.stringify(r));
@@ -462,7 +462,7 @@ for(const [km,st] of [[5,1],[260,6]]){const p=await mk({km});
 // ── 2026-10-04 腳要踩住：走路時支撐腳的著地點在畫面上不能滑（狐、虎用 IK：中位數 ≤1px；幼龍有 3D 轉身：≤3px）──
 {const p=await mk({km:5});
  const r=await p.evaluate(async()=>{const out={};
-  for(const [st,sel,cfg] of [[3,".pr-stand .pr-leg.fl .pr-shin ellipse",1],[4,".pr-stand .pr-leg.hl .pr-shin ellipse",1],[5,".pr-foot.l ellipse",0],[1,".pr-deform ellipse[cy='189']",0]]){
+  for(const [st,sel,cfg] of [[3,".pr-stand .pr-leg.fl .pr-shin ellipse",1],[4,".pr-stand .pr-leg.hl .pr-shin ellipse",1],[5,".pr-foot.l ellipse",0],[1,".lv-seg:nth-child(5) ellipse",0]]){
    const host=document.createElement("div");host.innerHTML=`<div class="ps-box" data-stage="${st}" style="position:fixed;left:0;top:0;width:900px;height:380px;margin:0;padding:20px 0 0;z-index:99"><div class="ps-actor" style="position:absolute;left:0;right:0;bottom:24px"><div id="petEmojiT"></div></div></div>`;document.body.appendChild(host);
    const box=host.firstChild,em=box.querySelector("#petEmojiT");em.id="petEmoji";em.innerHTML=PET_ART.svg(st);em.querySelector(".pet-critter").style.cssText="width:200px;height:200px;max-width:none;max-height:none";box.style.setProperty("--wx","-200px");
    const S=[];let on=true;const el0=[...box.querySelectorAll(sel)].find(x=>!x.closest("clipPath")&&!x.closest("defs")),pick=()=>el0;   // 先抓好（幼蟲的變形會改 cy，選擇器之後就對不到了）

@@ -191,13 +191,21 @@ window.PetStage = (function () {
   // 蛋不會吃也不會走：果實掉在蛋前面，化成光點飛進裂縫。減少動態效果或舞台不在畫面上時，pet.js 直接結算。回傳播完的 promise
   function dropSpots(n, egg) {   // egg：蛋不會走路，果實掉在蛋的前方 ±40 以內（在蛋前面、不會被擋住）
     if (Array.isArray(window.__psSpots) && window.__psSpots.length >= n) return window.__psSpots.slice(0, n);   // 測試／除錯：指定落點（px，相對舞台中間）
-    const out = [], R = egg ? 40 : 84, gap = egg ? 26 : 34;
+    if (egg === "larva") {   // 幼蟲（2026-10-06）：爬得慢（像真的毛毛蟲），果實落在頭的前方、一路往前吃——不用掉頭、不用爬遠
+      const f = box.classList.contains("lv-l") ? -1 : 1, wx = parseFloat(box.style.getPropertyValue("--wx")) || 0, hx = wx + f * 48 * PetWalk.pxu(box);
+      const xs = [20, 44, 68].map(d => Math.round(Math.max(-112, Math.min(112, hx + f * (d + (Math.random() * 2 - 1) * 6)))));
+      if (new Set(xs).size === n) return xs;   // 太靠邊被夾成同一點：退回一般的落點
+    }
+    const out = [], R = egg === true ? 40 : 84, gap = egg === true ? 26 : 34;
     for (let tries = 0; out.length < n && tries < 80; tries++) {
       const x = Math.round((Math.random() * 2 - 1) * R);
-      if ((!egg && Math.abs(x) < 18) || out.some(o => Math.abs(o - x) < gap)) continue;   // 不要剛好在正中間（被身體擋住）、彼此不要疊在一起
+      if ((egg !== true && Math.abs(x) < 18) || out.some(o => Math.abs(o - x) < gap)) continue;   // 不要剛好在正中間（被身體擋住）、彼此不要疊在一起
       out.push(x);
     }
-    while (out.length < n) out.push((egg ? [-32, 30, -2] : [-60, 58, -28])[out.length]);   // 保底
+    while (out.length < n) {   // 保底：掃一遍、挑離現有的點最遠的位置（以前塞固定值，可能跟已經有的點只差 24px）
+      let best = 0, bd = -1; for (let x = -R; x <= R; x += 2) { if (egg !== true && Math.abs(x) < 18) continue; const d = Math.min(...out.map(o => Math.abs(o - x)), 999); if (d > bd) { bd = d; best = x; } }
+      out.push(best);
+    }
     return out;
   }
   // 神龍：果實落在雲面上（雲的頂＋陷進去 3），只挑尾巴搆得到、彼此分開的位置。回傳 [{x, by}]（px，相對舞台中間／舞台底）
@@ -327,7 +335,7 @@ window.PetStage = (function () {
     const berries = []; let aborted = false;
     try {
       const onCloud = stg === 6 && typeof PetWalk !== "undefined" ? cloudSpots(3) : null;   // 神龍：果實落在雲上（跟著雲走）
-      (onCloud ? onCloud.map(o => o.x) : dropSpots(3, egg)).forEach((x, k) => {
+      (onCloud ? onCloud.map(o => o.x) : dropSpots(3, egg || (stg === 1 && typeof PetWalk !== "undefined" ? "larva" : false))).forEach((x, k) => {
         const b = document.createElement("span");
         b.className = "ps-berry";
         b.innerHTML = berrySvg || "";
@@ -344,7 +352,10 @@ window.PetStage = (function () {
       const todo = berries.slice().sort((a, b) => a.x - b.x);
       if (Math.abs(todo[todo.length - 1].x - at()) < Math.abs(todo[0].x - at())) todo.reverse();
       // 幼蟲掉頭很花時間（頭不動、身體繞過去，等於多走 80px）：從頭朝的那一端開始吃，少掉一次頭（2026-10-05 第二輪）
-      if (stg === 1 && (todo[0].x > todo[todo.length - 1].x) !== !box.classList.contains("lv-l")) todo.reverse();   // 頭朝右＝從最右邊開始
+      if (stg === 1) {   // 頭前方的由近到遠吃，背後的（如果有）最後掉一次頭再吃（2026-10-06：以前先去最遠那顆，最後回頭吃最近的，多掉一次頭）
+        const f = box.classList.contains("lv-l") ? -1 : 1, hx = at() + f * 48 * PetWalk.pxu(box), front = todo.filter(o => (o.x - hx) * f > -10).sort((a, b) => (a.x - b.x) * f), back = todo.filter(o => (o.x - hx) * f <= -10).sort((a, b) => (b.x - a.x) * f);
+        todo.splice(0, todo.length, ...front, ...back);
+      }
       while (todo.length) {
         if (!box || !visible || document.hidden) { aborted = true; break; }   // 滑走或切到背景：直接結算（pet.js 的 done 會更新數字），角色回到坐姿
         const { b, x } = todo.shift(), later = todo.length < 2;   // 第二、三顆：嚼兩下、停頓短一點（整段不要拖太久）
