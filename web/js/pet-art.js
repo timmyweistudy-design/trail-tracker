@@ -534,8 +534,10 @@ ${tigerHead()}
   // 幼龍（2026-10-05 拿掉腳下的雲）：腳底原本踩在雲上（y≈183），整張往下 13 讓腳底落在跟其他夥伴同一條地面線（y≈196）。
   // 用 viewBox 平移而不是包一層 transform：各部位的支點（transform-box: view-box）座標不用改
   const vb = i => (clamp(i) === 5 ? "0 -13 200 200" : "0 0 200 200");
-  function svg(i, cls, hatId) {
-    return `<svg class="pet-critter ${cls || ""}" viewBox="${vb(i)}" role="img" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${body(i, hatId)}</svg>`;
+  // pad：畫布四周多留白（舞台上的主角用：趴下、伸長脖子、尾巴捲起來都不會超出畫框——iOS 的 WebKit 會照畫框裁切，不管 overflow:visible）
+  function svg(i, cls, hatId, pad) {
+    const v = vb(i).split(" ").map(Number), p = pad || 0, box = p ? `${v[0] - p} ${v[1] - p} ${v[2] + 2 * p} ${v[3] + 2 * p}` : vb(i);
+    return `<svg class="pet-critter ${cls || ""}${p ? " pc-pad" : ""}" viewBox="${box}" role="img" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${body(i, hatId)}</svg>`;
   }
   function byEmoji(e) { return EMOJI.indexOf(e); }   // 找不到回 -1
   // 給 canvas 用：帶 width/height 的獨立 SVG data URI（靜態一幀，供 new Image().src 光柵化畫進分享圖卡）

@@ -311,7 +311,7 @@ function renderPet() {
   const km = totalKm(), i = petStageIndex(km), st = PET_STAGES[i], next = PET_STAGES[i + 1];
   const nm = petName(), mood = petMood(), days = petDaysTogether(), streak = weeksStreak(), en = energy();
   const berries = berriesBalance(), h = petHearts(), canFeed = canFeedNow(), cd = feedCooldownMs();
-  const art = (typeof PET_ART !== "undefined") ? PET_ART.svg(i, "", petHat()) : `<span style="font-size:70px">${st.e}</span>`;   // 帽子畫在角色裡面，跟著同一個動畫動
+  const art = (typeof PET_ART !== "undefined") ? PET_ART.svg(i, "", petHat(), 140) : `<span style="font-size:70px">${st.e}</span>`;   // 帽子畫在角色裡面，跟著同一個動畫動
   let evoTop, prog = "";
   if (next) {
     const pct = Math.max(2, Math.min(100, Math.round((km - st.km) / (next.km - st.km) * 100)));

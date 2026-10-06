@@ -27,6 +27,9 @@ const probe = () => {
     mouth: m ? C(m.getBoundingClientRect()) : null, crit: [crit.left, crit.top, crit.width, crit.height], wx: box.__wx,
     berries: [...document.querySelectorAll(".ps-berry")].map(b => { const r = b.getBoundingClientRect(); return { c: C(r), w: r.width, op: +getComputedStyle(b).opacity, cls: b.className.replace("ps-berry", "").trim() }; }),
     sparks: [...document.querySelectorAll(".ps-spark")].filter(e => +getComputedStyle(e).opacity > .3).length };   // 只算看得到的（還沒輪到的光點是透明的）
+  { const sv = em.querySelector(".pet-critter"), R = sv.getBoundingClientRect(); let sp = 0;   // 畫出來的東西有沒有超出畫布（iOS WebKit 會照畫布裁掉）
+    let sw = ""; [...sv.children].filter(g => g.tagName === "g" && getComputedStyle(g).display !== "none").forEach(g => { const q = g.getBoundingClientRect(); const v = Math.max(R.left - q.left, q.right - R.right, R.top - q.top, q.bottom - R.bottom); if (q.width && v > sp) { sp = v; sw = g.getAttribute("class") + " L" + (R.left - q.left).toFixed(0) + " R" + (q.right - R.right).toFixed(0) + " T" + (R.top - q.top).toFixed(0) + " B" + (q.bottom - R.bottom).toFixed(0); } });
+    o.spill = sp; o.spillWhat = sw; }
   const eh = [...em.querySelectorAll(".pc-eh")].find(e => !e.closest(".pr-stand") || standing); o.happy = !!eh && getComputedStyle(eh).display !== "none";
   if (standing) o.paws = [...em.querySelectorAll(".pr-stand .pr-leg .pr-shin")].map(sh => { const e = [...sh.querySelectorAll("ellipse")].find(x => !x.closest("clipPath") && !x.closest("defs")); const pt = new DOMPoint(+e.getAttribute("cx"), +e.getAttribute("cy") + +e.getAttribute("ry")).matrixTransform(e.getScreenCTM()); return [pt.x, pt.y]; });
   if (st === 1) {   // 頭跟身體有沒有分開：頭（半徑 23 的圓）的中心到身體外框最近的點有多遠——身體外框在頭底下（≤23）就看不到縫
@@ -137,6 +140,8 @@ function judge(st, tag, R) {
   }
   const lim = st === 4 || st === 5 ? 19 : st === 3 || st === 1 ? 17.9 : 16;   // 幼龍：撿起來、舉到嘴邊、咬兩口、吞完才放手（步驟本來就多）   // 幼蟲：左右兩邊都有果實時要掉頭兩次（頭不動、身體繞過去＝每次多爬 80px）   // 含判定結束的 0.7 秒；狐、虎要走去左右兩端（A、C 組）；虎刻意慢、有重量（ChatGPT 看錄影的建議）
   ok(sec <= lim, `${tag}: one feeding (3 berries, walk home, celebrate) takes ≤${lim} s (${sec.toFixed(1)} s)`, todoOf("time", st));
+  const spill = Math.max(...F.map(f => f.spill || 0)), si = F.findIndex(f => (f.spill || 0) === spill);
+  ok(spill <= 0, `${tag}: nothing is drawn outside the canvas (iOS WebKit clips there; worst ${spill.toFixed(1)}px${spill > 0 ? ` @${si} ${F[si].spillWhat} ${F[si].cls}|${F[si].bcl}` : ""})`);
   const last = F[n - 1];
   ok(!last.berries.length && !last.cls && Math.abs(R.end.wx) < 1 && R.end.bal === R.bal0 - 3, `${tag}: ends clean — no berries, no leftover pose, back in the middle, exactly 3 berries spent ${JSON.stringify({ cls: last.cls, wx: R.end.wx, spent: R.bal0 - R.end.bal })}`);
 }

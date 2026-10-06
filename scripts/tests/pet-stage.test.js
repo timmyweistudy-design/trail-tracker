@@ -77,13 +77,13 @@ const KM=[0,5,20,40,90,150,260];
  const ctr=await p.evaluate(async()=>{for(const k of ["hop","look","stretch"])await PetStage.act(k);const em=document.querySelector("#petEmoji"),bx=document.querySelector(".ps-box"),c=em.querySelector(".pet-critter").getBoundingClientRect(),b=bx.getBoundingClientRect();
   return {walkApi:typeof PetStage.walkTo,wx:bx.style.getPropertyValue("--wx"),off:Math.abs((c.left+c.width/2)-(b.left+b.width/2))}});
  ok(ctr.walkApi==="undefined"&&!ctr.wx&&ctr.off<3,"critter stays centered, no walking "+JSON.stringify(ctr));
- const ex=await p.evaluate(()=>{const r=document.querySelector("#petEmoji .pet-critter").getBoundingClientRect();return r.left+r.width*1.15});   // 角色在中間：1.15 倍寬還在卡片內
+ const ex=await p.evaluate(()=>{const c=document.querySelector("#petEmoji .pet-critter"),r0=c.getBoundingClientRect(),k=c.classList.contains("pc-pad")?140/480:0,r={left:r0.left+r0.width*k,width:r0.width*(1-2*k)};return r.left+r.width*1.15});   // 角色在中間：1.15 倍寬還在卡片內（主角畫布四周留白不算）
  const ey=await p.evaluate(()=>{const r=document.querySelector("#petEmoji .pet-critter").getBoundingClientRect();return r.top+r.height*.4});
  await p.mouse.move(ex,ey);await p.waitForTimeout(300);
  const exv=await p.evaluate(()=>document.querySelector(".ps-box").style.getPropertyValue("--ex"));ok(+exv>0.5,"eyes follow the finger (--ex "+exv+")");
  ok(await p.evaluate(async()=>{const pr=PetStage.act("hop");await new Promise(r=>setTimeout(r,100));const on=document.querySelector("#petEmoji").classList.contains("pb-hop");await pr;return on&&!document.querySelector("#petEmoji").classList.contains("pb-hop")}),"hop plays and clears");
  // 分區：點頭＝摸頭、點身體＝搔癢
- const head=await p.evaluate(()=>{const r=document.querySelector("#petEmoji .pet-critter").getBoundingClientRect();return {x:r.left+r.width/2,top:r.top+r.height*.25,low:r.top+r.height*.8}});
+ const head=await p.evaluate(()=>{const c=document.querySelector("#petEmoji .pet-critter"),r0=c.getBoundingClientRect(),k=c.classList.contains("pc-pad")?140/480:0,r={left:r0.left+r0.width*k,top:r0.top+r0.height*k,width:r0.width*(1-2*k),height:r0.height*(1-2*k)};return {x:r.left+r.width/2,top:r.top+r.height*.25,low:r.top+r.height*.8}});   // 圖案本身的範圍（主角畫布四周留白不算）
  await p.mouse.click(head.x,head.top);await p.waitForTimeout(120);
  ok(await p.evaluate(()=>document.querySelector("#petEmoji").classList.contains("pb-pat")),"tap head → pat");
  await p.waitForTimeout(900);await p.mouse.click(head.x,head.low);await p.waitForTimeout(120);
@@ -245,7 +245,7 @@ const KM=[0,5,20,40,90,150,260];
  ok(r.max<40000&&r.ms<10,"character SVG size & speed budget (max "+r.max+" chars, "+r.ms+" ms per dragon)");
  ok(r.imgs.every(Boolean),"dataUri (share cards / widgets) loads for 7 stages with hat");
  await p.evaluate(()=>{window.__psNoIdle=true;renderPet();document.querySelector(".ps-box").scrollIntoView({block:"center"})});
- const hb=await p.evaluate(()=>{const c=document.querySelector("#petEmoji .pet-critter").getBoundingClientRect();return {x:c.left+c.width/2,y:c.top+c.height*.25}});
+ const hb=await p.evaluate(()=>{const sv=document.querySelector("#petEmoji .pet-critter"),c=sv.getBoundingClientRect(),k=sv.classList.contains("pc-pad")?140/480:0;return {x:c.left+c.width/2,y:c.top+c.height*(k+(1-2*k)*.25)}});   // 圖案本身的 25% 高（主角畫布四周留白不算）
  await p.mouse.click(hb.x,hb.y);await p.waitForTimeout(150);
  const ex=await p.evaluate(()=>({eh:getComputedStyle(document.querySelector("#petEmoji .pc-eh")).display,eye:getComputedStyle(document.querySelector("#petEmoji .pc-eye")).display}));
  ok(ex.eh!=="none"&&ex.eye==="none","pat → happy ^^ eyes replace open eyes "+JSON.stringify(ex));
@@ -400,7 +400,7 @@ for(const [km,st] of [[0,0],[20,2]]){const p=await mk({km,berries:20});
  const r=await p.evaluate(async()=>{window.__psNoIdle=true;const em=document.querySelector("#petEmoji"),pr=em.querySelector(".pet-prop"),c=em.querySelector(".pet-critter");
   const feet=[...em.querySelectorAll(".pr-foot ellipse")].map(e=>e.getBoundingClientRect().bottom),cb=c.getBoundingClientRect();
   const rest=+getComputedStyle(pr).opacity;em.classList.add("pb-hop");await new Promise(r=>setTimeout(r,420));const hop=+getComputedStyle(pr).opacity;em.classList.remove("pb-hop");
-  return {rest,hop,ground:+(cb.top+cb.height*196/200-Math.max(...feet)).toFixed(1)};});
+  return {rest,hop,ground:+(PetWalk.svgY(c,cb,183)-Math.max(...feet)).toFixed(1)};});
  ok(r.rest===0&&r.hop>.5,"baby dragon: no cloud under its feet at rest, the cloud puffs up only when it jumps "+JSON.stringify(r));
  ok(Math.abs(r.ground)<=2.5,"baby dragon: feet stand on the same ground line as the other pets (px off) "+r.ground);
  await p.evaluate(()=>{localStorage.removeItem("tt_pet_fed_t");renderPet();document.querySelector(".ps-box").scrollIntoView({block:"center"});});await p.waitForTimeout(300);await p.click("#petFeed");

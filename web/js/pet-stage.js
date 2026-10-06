@@ -92,7 +92,8 @@ window.PetStage = (function () {
   // 眼睛看向手指（以角色中心為準，-1～1）
   function look(cx, cy) {
     const c = box && box.querySelector("#petEmoji .pet-critter"); if (!c) return;
-    const r = c.getBoundingClientRect();
+    const r0 = c.getBoundingClientRect(), k = c.classList.contains("pc-pad") ? 140 / 480 : 0;   // 畫布四周留白的部分不算（圖案本身的範圍）
+    const r = { left: r0.left + r0.width * k, top: r0.top + r0.height * k, width: r0.width * (1 - 2 * k), height: r0.height * (1 - 2 * k) };
     const ex = Math.max(-1, Math.min(1, (cx - (r.left + r.width / 2)) / (r.width * .8)));
     const ey = Math.max(-1, Math.min(1, (cy - (r.top + r.height * .45)) / (r.height * .8)));
     box.style.setProperty("--ex", ex.toFixed(2)); box.style.setProperty("--ey", ey.toFixed(2));
@@ -178,7 +179,7 @@ window.PetStage = (function () {
     const c = box && box.querySelector("#petEmoji .pet-critter"); if (!c) return "pat";
     const r = c.getBoundingClientRect();
     const line = typeof PET_ART !== "undefined" && PET_ART.headLine ? PET_ART.headLine(+box.dataset.stage || 0) : .5;   // 每階段的頭高度不同（幼蟲的頭在下半部）
-    return clientY < r.top + r.height * line ? "pat" : "tickle";
+    return clientY < (typeof PetWalk !== "undefined" ? PetWalk.svgY(c, r, line * 200) : r.top + r.height * line) ? "pat" : "tickle";
   }
   function react(kind) {
     if (reduce()) return sleep(0);
@@ -297,7 +298,7 @@ window.PetStage = (function () {
   // 差太多（頭伸不到）就先小碎步挪過去再量——**果實絕不自己飛過去**，沒碰到不准咬
   async function reach(b, stg) {
     const em = emEl(); if (!em) return;
-    const c = em.querySelector(".pet-critter"), u = 200 / ((c && c.clientWidth) || 168);
+    const u = 1 / PetWalk.pxu(box);
     const gap = (lx, ld) => { box.style.setProperty("--lx", lx + "px"); box.style.setProperty("--ld", ld + "px"); void em.offsetWidth;
       const m = PetWalk.cpt(box, "mouth"), r = b.getBoundingClientRect();
       return [(r.left + r.width / 2 - m[0]) * u, (r.top + r.height * BITE_Y - m[1]) * u]; };   // 嘴碰果實的上半部

@@ -73,7 +73,7 @@ window.PetWalk = (function () {
   // 頭、抓龍珠的前爪跟著同一條路起伏；龍鬚晚一點跟上（低通濾波）；s＝起步／停下的漸變
   const SW_A = 5, SW_L = 96;
   function swimField(box, s, dt) {
-    const u = 200 / critterPx(box), xw = (box.__wx || 0) * u, Y = x => SW_A * s * Math.sin(2 * Math.PI * (x + xw) / SW_L);
+    const u = (1 / pxu(box)), xw = (box.__wx || 0) * u, Y = x => SW_A * s * Math.sin(2 * Math.PI * (x + xw) / SW_L);
     applyField(box, (x, y) => [x, y + Y(x)]);
     const hy = Y(70), E = els(box);
     set(box, "--ghy", hy.toFixed(2) + "px");
@@ -219,6 +219,9 @@ window.PetWalk = (function () {
     if (E.stand && !box.__bow) { E.stand.style.translate = ""; E.stand.style.transform = ""; E.stand.style.transition = ""; }
   };
   // 角色的版面寬度（px）：用 clientWidth，不能用 getBoundingClientRect——轉身（rotateY）時畫面上的寬度會變窄，步幅就會算錯
+  // 1 個 SVG 單位＝幾 px（主角的畫布四周有留白，viewBox 不一定是 200 寬）；svgY：圖上的 y → 畫面 y
+  const pxu = box => { const c = box.querySelector("#petEmoji .pet-critter"); if (!c) return .84; const w = (c.viewBox && c.viewBox.baseVal && c.viewBox.baseVal.width) || 200; return (c.clientWidth || c.getBoundingClientRect().width || 168) / w; };
+  const svgY = (c, r, y) => { const vb = c.viewBox && c.viewBox.baseVal; return vb && vb.height ? r.top + (y - vb.y) / vb.height * r.height : r.top + r.height * y / 200; };
   const critterPx = box => { const c = box.querySelector("#petEmoji .pet-critter"); return c ? (c.clientWidth || c.getBoundingClientRect().width || 168) : 168; };
   // 每條腿的長度（髖→膝、膝→腳掌著地點），從骨架讀一次記起來
   const GEO = new WeakMap(), PREVB = new WeakMap();
@@ -236,9 +239,9 @@ window.PetWalk = (function () {
     GEO.set(st, o); return o;
   }
   // 站姿走路的步伐長度：腳在支撐期掃過的距離＝2·腿長·sin(擺角)，換成 px（u＝SVG 單位／px）
-  const strideD = (box, g) => (g.stride / g.duty) * critterPx(box) / 200;   // 一個步伐週期身體走多遠（支撐期剛好走一個步幅）
+  const strideD = (box, g) => (g.stride / g.duty) * pxu(box);   // 一個步伐週期身體走多遠（支撐期剛好走一個步幅）
   function pose(box, g, p, s, dir) {   // p＝步伐相位（可以超過 1）、s＝走路的程度 0..1（起步／停下時漸變）、dir＝±1
-    const TAU = Math.PI * 2, f = x => (x % 1 + 1) % 1, u = 200 / critterPx(box);
+    const TAU = Math.PI * 2, f = x => (x % 1 + 1) % 1, u = (1 / pxu(box));
     if (g.mode === "stand") {   // 側身四條腿：橫向步序 左後 → 左前 → 右後 → 右前
       // 兩節腿的反向運動學（IK）：每條腿有一個「腳掌目標點」——
       //   支撐期：目標是地上固定的一點，在身體座標裡剛好以身體前進的速度往後退（腳完全不滑）
@@ -343,7 +346,7 @@ window.PetWalk = (function () {
   async function larvaTurn(box, dir) {
     const f = lvFace(box); if (f === dir) return;
     box.classList.add("walking"); box.dataset.walk = "crawl";
-    const u = 200 / critterPx(box), x0 = curX(box);
+    const u = (1 / pxu(box)), x0 = curX(box);
     const tuck = (k, arch) => { applyField(box, (x, y) => { const t = Math.max(0, Math.min(1, (LV_HEAD - x) / 114)); return [LV_HEAD + (x - LV_HEAD) * k, y - arch * Math.sin(Math.PI * t) * (1 - k)]; }); };
     // 收：尾巴先收（離頭越遠收越多）、背拱起來；頭微微抬起、往前看
     await tween(300, e => { tuck(1 - .86 * e, 10); set(box, "--ghy", (-5 * e).toFixed(2) + "px"); flush(box); });
@@ -384,7 +387,7 @@ window.PetWalk = (function () {
     else if (g.mode === "crawl") {   // 幼蟲：頭在前面爬（以前往左走是尾巴先走）；要換方向先原地掉頭
       if (!opts.keepFace && lvFace(box) !== dir) { box.classList.remove("walking"); await larvaTurn(box, dir); return goTo(box, x, Object.assign({}, opts, { keepFace: true })); }
       rev = lvFace(box) !== dir;   // 小碎步往後退：波從頭傳到尾
-      const n = Math.max(1, Math.round(Math.abs(dist) / (g.Du / (200 / critterPx(box)))));   // 整數道波
+      const n = Math.max(1, Math.round(Math.abs(dist) / (g.Du / ((1 / pxu(box))))));   // 整數道波
       g = Object.assign({}, g, { D: Math.abs(dist) / n });
     }
     else if (!opts.keepFace && g.mode !== "fly") await face(box, dir);   // 蝶不轉身（正面對稱、靠身體內傾表示方向）：rotateY 會讓量口器位置的 getScreenCTM 不準
@@ -406,7 +409,7 @@ window.PetWalk = (function () {
         if (g.mode === "swim") swimField(box, Math.max(.15, ease), dt);   // 先算（寫 --ghy），pose() 結尾一起寫到元素
         moveTo(box, x0 + dir * Math.abs(dist) * kk, y0 + (y1 - y0) * (g.mode === "fly" ? kk * kk * (3 - 2 * kk) : kk) - arc * Math.sin(Math.PI * kk));
         lastS = Math.max(.15, ease); pose(box, g, p, lastS, dir);
-        if (g.mode === "crawl") { crawlField(box, Math.min(.99999, p - Math.floor(p)) , 1, g.D * 200 / critterPx(box), rev); flush(box); }   // 波的高度不跟著加減速縮（每一節的位移要剛好抵掉身體的移動，腳才不滑）
+        if (g.mode === "crawl") { crawlField(box, Math.min(.99999, p - Math.floor(p)) , 1, g.D * (1 / pxu(box)), rev); flush(box); }   // 波的高度不跟著加減速縮（每一節的位移要剛好抵掉身體的移動，腳才不滑）
         if (left - ds > .2) raf = requestAnimationFrame(step); else res();
       };
       raf = requestAnimationFrame(step);
@@ -453,7 +456,7 @@ window.PetWalk = (function () {
       // 只走一次（2026-10-05 第二輪）：轉好方向後，在原地把「趴多低、嘴還差多少」算好，直接走到最後的位置——
       // 以前用 CSS 的低頭姿勢估站位，到了再量一次、差幾 px 就補一小步（低頭前插一個抬腳）
       const sol = solveBow(box, berryEl, st, .32), tx = Math.round(cur + sol.dx), back = Math.sign(tx - cur) === -f;   // 嘴已經超過果實一點：往後退一小步（不轉身）
-      const bb = berryEl.getBoundingClientRect(), wy = Math.round(Math.max(-6, Math.min(6, curY(box) + bb.bottom - (c.top + c.height * .98))));   // 前後（深度）：站到果實那條線上（最多 ±6px）
+      const bb = berryEl.getBoundingClientRect(), wy = Math.round(Math.max(-6, Math.min(6, curY(box) + bb.bottom - svgY(em.querySelector(".pet-critter"), c, 196))));   // 前後（深度）：站到果實那條線上（最多 ±6px）
       await goTo(box, tx, { wy, keepFace: back });
       return;
     }
@@ -464,7 +467,7 @@ window.PetWalk = (function () {
       return;
     }
     if (st === 2) {   // 蝶：落在果實旁邊約 50px（2026-10-05 第二輪從 30 拉開：果實常被後翅蓋住，看不出在吸哪一顆）（口器斜斜伸過去吸），腳尖（圖上 y≈160）剛好踩在果實的那條地面線上
-      const tipY = c.top + c.height * 160 / 200;
+      const tipY = svgY(em.querySelector(".pet-critter"), c, 160);
       await goTo(box, Math.round(berryX - side * 50), { wy: Math.round((curY(box) + groundY(berryEl) - tipY) * 10) / 10 });
       return;
     }
@@ -591,5 +594,5 @@ window.PetWalk = (function () {
   }
   // 現在看得到的那一份身體（站著時是 .pr-stand）裡找部位
   const part = (box, sel) => { const em = box.querySelector("#petEmoji"); if (!em) return null; return (box.classList.contains("standing") && em.querySelector(".pr-stand " + sel)) || em.querySelector(sel); };
-  return { tween, goTo, goEat, home, face, stop, standUp, sitDown, turnStand, setQ, larvaTurn, bend, part, bow, bowSet, bowClear, solveBow, groundY, cpt, tailTo, tailReach, GAIT, _pose: pose };   // _pose：測試逐相位檢查用
+  return { pxu, svgY, tween, goTo, goEat, home, face, stop, standUp, sitDown, turnStand, setQ, larvaTurn, bend, part, bow, bowSet, bowClear, solveBow, groundY, cpt, tailTo, tailReach, GAIT, _pose: pose };   // _pose：測試逐相位檢查用
 })();

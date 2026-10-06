@@ -2317,6 +2317,15 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .ps-box .pb-sit .pc-bob { animation: pbSitDown .42s cubic-bezier(.3,.7,.4,1); }
 @keyframes pbSitDown { 0% { transform: scale(1.06, .82); } 60% { transform: scale(.98, 1.04); } 100% { transform: none; } }
 .ps-box #petEmoji .pet-critter { overflow: visible; }   /* 趴下吃、走到邊邊時頭會超出 200×200 的畫框，不要切掉 */
+/* 2026-10-06 主角的畫布四周留白 140（viewBox 480×480，pet-art.js svg(..., 140)）：畫面上一樣大、一樣的位置——
+   iOS 的 WebKit 會把有 3D 轉動的 SVG 照畫布裁切（不管 overflow:visible），老虎趴下時頭被一條看不見的線切掉。
+   狐狸咬的時候頭會伸到圖案外 120 單位（身體前傾＋脖子往下），留白要夠（50、90 都不夠，逐格測試量的） */
+#petEmoji .pet-critter.pc-pad { --pb: min(calc(168px * var(--fs, 1)), 62vw); width: calc(var(--pb) * 2.4); height: calc(var(--pb) * 2.4); max-width: none; max-height: none; margin: calc(var(--pb) * -0.70); pointer-events: none; }
+#petEmoji .pet-critter.pc-pad > g { pointer-events: visiblePainted; }   /* 留白的地方不接手指（只有畫出來的角色可以摸） */
+.ps-box #petEmoji .pet-critter.pc-pad { transform-origin: 50% 70.0%; }   /* 腳底（圖上 y 196） */
+.ps-box[data-stage="0"] .pb-hop .pet-critter.pc-pad { transform-origin: 50% 69.6%; }
+.ps-box[data-stage="1"] .pb-hop .pet-critter.pc-pad { transform-origin: 37.5% 68.8%; }
+.ps-box[data-stage="1"] .pb-stretch .pet-critter.pc-pad { transform-origin: 33.3% 68.8%; }
 /* 後兩顆只嚼兩下 */
 .ps-box .chew2.pb-chew .m-o, .ps-box .chew2.pb-chew .m-c, .ps-box .chew2.pb-chew .m-p, .ps-box .chew2.pb-chew .pr-hfx, .ps-box .chew2.pb-chew .pr-jaw { animation-iteration-count: 2; }
 /* ── 2026-10-05 正面站姿（狐、虎）：坐著 → 站起來（正面）→ 四分之三面 → 側身；轉身也經過正面（不再壓扁成紙片）── */
