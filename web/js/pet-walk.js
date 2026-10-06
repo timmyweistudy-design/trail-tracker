@@ -215,7 +215,7 @@ window.PetWalk = (function () {
       fw: em ? [...em.querySelectorAll(".pc-fw")] : [], hw: em ? [...em.querySelectorAll(".pc-hw")] : [],
       pearl: q(".pr-pearl"), sway: em ? [...em.querySelectorAll(".pr-head .pc-sway")].filter(e => !e.closest(".pr-stand")) : [],
       pawL: q(".pr-paw.l"), pawR: q(".pr-paw.r"), footL: q(".pr-foot.l"), footR: q(".pr-foot.r"),
-      stand: st, neck: st && st.querySelector(".pr-neck"), head2: st && st.querySelector(".pr-head2 .pr-head"), h2g: st && st.querySelector(".pr-head2"), stail: st && st.querySelector(":scope > .pc-tail"),
+      stand: st, neck: st && st.querySelector(".pr-neck"), head2: st && st.querySelector(".pr-head2 .pr-head"), h2g: st && st.querySelector(".pr-head2"), stail: st && st.querySelector(":scope > .pc-tail"), scap: st && st.querySelector(".pr-scap"),
       legs: st ? Object.fromEntries(["fl", "fr", "hl", "hr"].map(n => { const lg = st.querySelector(".pr-leg." + n); return [n, [lg, lg && lg.querySelector(".pr-shin")]]; })) : {} };
     ELS.set(box, o); return o;
   }
@@ -255,7 +255,7 @@ window.PetWalk = (function () {
     const em = box.querySelector("#petEmoji"); if (em) GAITV.forEach(k => em.style.removeProperty(k));
     box.__gv = null; const E = ELS.get(box); if (!E) return;
     [E.body, E.head, E.tail, E.earL, E.earR, E.pawL, E.pawR, E.footL, E.footR, E.neck, E.head2, E.stail, ...E.fw, ...E.hw, E.pearl, ...E.sway, ...Object.values(E.legs || {}).flat()].forEach(el => { if (el) { el.style.transform = ""; el.style.animation = ""; el.style.scale = ""; } });
-    if (E.stand && !box.__bow && !box.__lie) { E.stand.style.translate = ""; E.stand.style.transform = ""; E.stand.style.transition = ""; }
+    if (E.stand && !box.__bow) { E.stand.style.translate = ""; E.stand.style.transform = ""; E.stand.style.transition = ""; }
   };
   // 角色的版面寬度（px）：用 clientWidth，不能用 getBoundingClientRect——轉身（rotateY）時畫面上的寬度會變窄，步幅就會算錯
   // 1 個 SVG 單位＝幾 px（主角的畫布四周有留白，viewBox 不一定是 200 寬）；svgY：圖上的 y → 畫面 y
@@ -504,7 +504,7 @@ window.PetWalk = (function () {
       await turnStand(box, f);
       // 只走一次（2026-10-05 第二輪）：轉好方向後，在原地把「趴多低、嘴還差多少」算好，直接走到最後的位置——
       // 以前用 CSS 的低頭姿勢估站位，到了再量一次、差幾 px 就補一小步（低頭前插一個抬腳）
-      const sol = st === 4 ? solveLie(box, berryEl, .32) : solveBow(box, berryEl, st, .32), tx = Math.round(cur + sol.dx), back = Math.sign(tx - cur) === -f;   // 虎：用趴姿算站位   // 嘴已經超過果實一點：往後退一小步（不轉身）
+      const sol = solveBow(box, berryEl, st, .32), tx = Math.round(cur + sol.dx), back = Math.sign(tx - cur) === -f;   // 嘴已經超過果實一點：往後退一小步（不轉身）
       const bb = berryEl.getBoundingClientRect(), wy = Math.round(Math.max(-6, Math.min(6, curY(box) + bb.bottom - svgY(em.querySelector(".pet-critter"), c, 196))));   // 前後（深度）：站到果實那條線上（最多 ±6px）
       await goTo(box, tx, { wy, keepFace: back });
       return;
@@ -527,103 +527,63 @@ window.PetWalk = (function () {
   }
   // 果實那一條地面線（畫面座標）：用版面位置算，不受果實落下／旋轉的動畫影響
   function groundY(b) { const ar = b.offsetParent.getBoundingClientRect(); return ar.top + b.offsetTop + b.offsetHeight; }
-  // 狐、虎要趴多低嘴才碰得到果實（嘴碰果實的上半部 biteY）：先維持自然的脖子角度、找身體前傾多少；趴到底還不夠才讓脖子再往下。
-  // 同一格套上姿勢量、量完還原（不會畫出來）。回傳 { pt 前傾, nk 脖子, dx 嘴還差多少（畫面 px，往右為正）}
+  // 狐、虎要低多少嘴才碰得到果實（嘴碰果實的上半部 biteY）。2026-10-06 第四輪：脖子先——肩膀先沉一個固定的量（狐 8°、虎蹲低 18°），
+  // 其餘全靠脖子往下；脖子轉到底還不夠才讓肩膀再沉。同一格套上姿勢量、量完還原（不會畫出來）。回傳 { pt 肩膀沉多少（角度）, nk 脖子, dx 嘴還差多少（畫面 px）}
   function solveBow(box, b, st, biteY) {
     const em = box.querySelector("#petEmoji");
     const gap = (pt, nk) => { bowSet(box, pt, nk); void em.offsetWidth; const m = cpt(box, "mouth"), br = b.getBoundingClientRect(); return [br.left + br.width / 2 - m[0], br.top + br.height * biteY - m[1]]; };
     const solve = (f, lo, hi, x0, x1) => {   // 割線法：f(x)=0，x 限制在 [lo, hi]
       let y0 = f(x0), y1 = f(x1);
-      for (let it = 0; it < 4 && Math.abs(y1) > 1.5 && y1 !== y0; it++) { const x2 = Math.max(lo, Math.min(hi, x1 - y1 * (x1 - x0) / (y1 - y0))); x0 = x1; y0 = y1; x1 = x2; y1 = f(x1); }
+      for (let it = 0; it < 5 && Math.abs(y1) > 1.2 && y1 !== y0; it++) { const x2 = Math.max(lo, Math.min(hi, x1 - y1 * (x1 - x0) / (y1 - y0))); x0 = x1; y0 = y1; x1 = x2; y1 = f(x1); }
       return [x1, y1];
     };
-    const prev = box.__bow, NK = st === 4 ? -46 : -54;   // 虎脖子短、粗：轉少一點
-    let [pt, dy] = solve(v => gap(v, NK)[1], -40, 0, -12, -26), nk = NK;
-    if (dy > 1.5) [nk, dy] = solve(v => gap(-40, v)[1], -100, NK, NK, NK - 20), pt = -40;   // 趴到底還不夠：脖子再往下
+    const prev = box.__bow, PT = st === 4 ? -18 : -8, NKX = st === 4 ? -92 : -104;
+    let [nk, dy] = solve(v => gap(PT, v)[1], NKX, 0, -40, -70), pt = PT;
+    if (dy > 1.5) [pt, dy] = solve(v => gap(v, NKX)[1], st === 4 ? -28 : -22, PT, PT, PT - 6), nk = NKX;   // 脖子到底還不夠：肩膀再沉
     const dx = gap(pt, nk)[0];
     if (prev) bowSet(box, prev[0], prev[1]); else bowClear(box);
     void em.offsetWidth;
     return { pt, nk, dx, dy };
   }
-  // ── 低頭吃（狐、虎）：像狗趴下去吃東西——胸口往下（身體以後腳為支點往前傾）、前腳彎、四隻腳掌留在原地 ──
-  // 以前只有脖子往下轉，地上的果實搆不到，脖子轉到 -112° 頭整個倒過來。現在：身體前傾 pitch、脖子 nk 轉自然的角度，
-  // 每條腿用兩節 IK 解出「腳掌還在原本著地點」的大腿／小腿角度（跟走路同一套公式）
-  const PIV = [148, 196];
+  // ── 低頭吃（狐、虎）。2026-10-06 第四輪：骨盆不動——身體以「髖關節」為支點往前傾（以前以後腳掌為支點，整個身體連骨盆一起往前倒），
+  // 肩膀沉下去、前腿的肘往後折（貓狗低頭喝水時肘是往後上方頂的；以前往前折，像人跪下去）、四隻腳掌留在原地；後腿幾乎不動。
+  // 虎（大貓喝水的蹲姿，取代上一輪的趴姿）：肩膀沉得多、肩胛骨頂出背線（.pr-scap 隨下沉往上推）
+  const PIV = [148, 196];   // 站姿身體的 transform-origin（CSS）
   function bowSet(box, pitch, nk) {
     const E = els(box), geo = legGeo(box); if (!E.stand) return;
-    const R = Math.PI / 180, th = -pitch * R, cs = Math.cos(th), sn = Math.sin(th);
+    // 支點在兩個髖關節稍微後面一點：兩條後腿前傾時都只會變短一點點（支點在近側髖上時，遠側的髖會被抬高、腿拉不到、腳掌滑開）
+    const hips = ["hl", "hr"].map(n => E.legs[n] && E.legs[n][0]).filter(Boolean).map(h => [parseFloat(h.style.getPropertyValue("--ox")), parseFloat(h.style.getPropertyValue("--oy"))]);
+    const H = hips.length ? [Math.max(...hips.map(h => h[0])) + 4, hips.reduce((a, h) => a + h[1], 0) / hips.length] : PIV;
+    const R = Math.PI / 180, th = -pitch * R, cs = Math.cos(th), sn = Math.sin(th), ox = H[0] - PIV[0], oy = H[1] - PIV[1];
     E.stand.style.transition = "none";
-    E.stand.style.transform = `${box.classList.contains("face-r") ? "translateX(-96px) scale(-1, 1) " : ""}rotate(${pitch.toFixed(2)}deg)`;
+    E.stand.style.transform = `${box.classList.contains("face-r") ? "translateX(-96px) scale(-1, 1) " : ""}translate(${ox}px, ${oy}px) rotate(${pitch.toFixed(2)}deg) translate(${-ox}px, ${-oy}px)`;
     for (const n of ["fl", "fr", "hl", "hr"]) {
       const [lg, sh] = E.legs[n] || []; const G = geo[n]; if (!lg || !G) continue;
       const hx = parseFloat(lg.style.getPropertyValue("--ox")), hy = parseFloat(lg.style.getPropertyValue("--oy")), [L1, L2, dx] = G, front = n[0] === "f";
       const Tx = hx + dx, Ty = hy + L1 + L2;   // 站直時的著地點（世界座標，不動）
-      const bx = PIV[0] + cs * (Tx - PIV[0]) - sn * (Ty - PIV[1]), by = PIV[1] + sn * (Tx - PIV[0]) + cs * (Ty - PIV[1]);   // 換到身體（已前傾）的座標
+      const bx = H[0] + cs * (Tx - H[0]) - sn * (Ty - H[1]), by = H[1] + sn * (Tx - H[0]) + cs * (Ty - H[1]);   // 換到身體（已前傾）的座標
       const tx = bx - hx, ty = by - hy, Rr = Math.hypot(dx, L2), dd = Math.atan2(-dx, L2);
       const d = Math.min(Math.hypot(tx, ty), L1 + Rr - .01);
       const thT = Math.atan2(-tx, ty) / R, al = Math.acos(Math.max(-1, Math.min(1, (L1 * L1 + d * d - Rr * Rr) / (2 * L1 * d)))) / R;
-      const a = front ? thT + al : thT - al, kx = -L1 * Math.sin(a * R), ky = L1 * Math.cos(a * R);
+      const a = front ? thT - al : thT + al, kx = -L1 * Math.sin(a * R), ky = L1 * Math.cos(a * R);   // 前腿：肘往後（+x）；後腿：膝往前
       const b = (Math.atan2(-(tx - kx), ty - ky) - dd) / R - a;
       lg.style.transform = `rotate(${a.toFixed(2)}deg)`; if (sh) sh.style.transform = `rotate(${b.toFixed(2)}deg)`;
     }
+    if (E.scap) E.scap.style.transform = `translate(${(-pitch * .12).toFixed(2)}px, ${(pitch * .32).toFixed(2)}px)`;   // 肩胛骨：身體往前傾越多頂得越高
     if (E.neck) { E.neck.style.transition = "none"; E.neck.style.transform = `rotate(${nk.toFixed(2)}deg)`; }
-    if (E.head2) { E.head2.style.transition = "none"; E.head2.style.transform = `rotate(${(-nk * .8).toFixed(2)}deg)`; }   // 頭幾乎轉回正（以前只轉回 55%，虎低頭時頭歪 21°；現在剩 9°，鼻口朝下對著果實）
+    if (E.head2) { E.head2.style.transition = "none"; E.head2.style.transform = `rotate(${(-nk * .8).toFixed(2)}deg)`; }   // 頭幾乎轉回正，鼻口朝下對著果實
     box.__bow = [pitch, nk];
-  }
-  // ── 老虎趴著吃（2026-10-06，像人面獅身）：eh＝後腿收起來（臀部沉下去）、ef＝前腿往前伸平（胸口沉下去），0..1；nk＝脖子往下。
-  // 身體整個往下 LIE_D（肚子貼地），後面先沉時前端微微抬起（pitch）；四條腿用跟走路同一套兩節 IK：
-  // 前掌往前伸到身體前方的地上、後掌收在髖下面（膝蓋往上折），腳掌都在地面線上
-  const LIE_D = 27;
-  function lieSet(box, eh, ef, nk) {
-    const E = els(box), geo = legGeo(box); if (!E.stand) return;
-    const R = Math.PI / 180, drop = (eh + ef) / 2 * LIE_D, pitch = (eh - ef) * 12, th = -pitch * R, cs = Math.cos(th), sn = Math.sin(th);
-    E.stand.style.transition = "none"; E.stand.style.translate = "";
-    E.stand.style.transform = `${box.classList.contains("face-r") ? "translateX(-96px) scale(-1, 1) " : ""}translate(0px, ${drop.toFixed(2)}px) rotate(${pitch.toFixed(2)}deg)`;
-    for (const n of ["fl", "fr", "hl", "hr"]) {
-      const [lg, sh] = E.legs[n] || []; const G = geo[n]; if (!lg || !G) continue;
-      const hx = parseFloat(lg.style.getPropertyValue("--ox")), hy = parseFloat(lg.style.getPropertyValue("--oy")), [L1, L2, dx] = G, front = n[0] === "f";
-      const Tx = hx + dx + (front ? -34 * ef : 5 * eh), Ty = hy + L1 + L2;   // 地上的目標點（世界座標）
-      const wx = Tx - PIV[0], wy = Ty - drop - PIV[1], bx = PIV[0] + cs * wx - sn * wy, by = PIV[1] + sn * wx + cs * wy;   // 換到身體座標（先扣掉下沉，再轉回傾斜）
-      const tx = bx - hx, ty = by - hy, Rr = Math.hypot(dx, L2), dd = Math.atan2(-dx, L2);
-      const d = Math.min(Math.hypot(tx, ty), L1 + Rr - .01);
-      const thT = Math.atan2(-tx, ty) / R, al = Math.acos(Math.max(-1, Math.min(1, (L1 * L1 + d * d - Rr * Rr) / (2 * L1 * d)))) / R;
-      const a = front ? thT + al : thT - al, kx = -L1 * Math.sin(a * R), ky = L1 * Math.cos(a * R);
-      lg.style.transform = `rotate(${a.toFixed(2)}deg)`; if (sh) sh.style.transform = `rotate(${((Math.atan2(-(tx - kx), ty - ky) - dd) / R - a).toFixed(2)}deg)`;
-    }
-    if (E.neck) { E.neck.style.transition = "none"; E.neck.style.transform = `rotate(${nk.toFixed(2)}deg)`; }
-    if (E.head2) { E.head2.style.transition = "none"; E.head2.style.transform = `rotate(${(-nk * .8).toFixed(2)}deg)`; }
-    box.__lie = [eh, ef, nk];
-  }
-  function lie(box, eh, ef, nk, ms) {   // 從現在的姿勢平滑過去；趴下：後腿先、前腿晚 30%；站起來：前腿先、後腿晚
-    const [h0, f0, n0] = box.__lie || [0, 0, 0], t0 = performance.now(), D = ms || 600, down = eh + ef > h0 + f0;
-    const ss = v => { v = Math.max(0, Math.min(1, v)); return v * v * (3 - 2 * v); };
-    return new Promise(res => { const step = () => { const k = Math.min(1, (performance.now() - t0) / D), a = ss(k / .7), b = ss((k - .3) / .7);
-      const eH = h0 + (eh - h0) * (down ? a : b), eF = f0 + (ef - f0) * (down ? b : a);
-      lieSet(box, eH, eF, n0 + (nk - n0) * ss(k)); if (k < 1) raf = requestAnimationFrame(step); else { if (!eh && !ef && !nk) { bowClear(box); box.__lie = null; } res(); } };
-      raf = requestAnimationFrame(step); });
-  }
-  // 趴著的時候脖子要往下多少，嘴才碰到果實上緣；dx＝嘴還差多少（畫面 px）——在原地套上趴姿量、量完還原（不會畫出來）
-  function solveLie(box, b, biteY) {
-    const em = box.querySelector("#petEmoji"), prev = box.__lie;
-    const gap = nk => { lieSet(box, 1, 1, nk); void em.offsetWidth; const m = cpt(box, "mouth"), br = b.getBoundingClientRect(); return [br.left + br.width / 2 - m[0], br.top + br.height * biteY - m[1]]; };
-    let x0 = -10, x1 = -40, y0 = gap(x0)[1], y1 = gap(x1)[1];
-    for (let it = 0; it < 5 && Math.abs(y1) > 1.2 && y1 !== y0; it++) { const x2 = Math.max(-95, Math.min(25, x1 - y1 * (x1 - x0) / (y1 - y0))); x0 = x1; y0 = y1; x1 = x2; y1 = gap(x1)[1]; }
-    const dx = gap(x1)[0];
-    if (prev) lieSet(box, prev[0], prev[1], prev[2]); else { bowClear(box); box.__lie = null; }
-    void em.offsetWidth;
-    return { nk: x1, dx, dy: y1 };
   }
   function bowClear(box) {
     const E = els(box); box.__bow = null;
-    [E.stand, E.neck, E.head2, ...Object.values(E.legs || {}).flat()].forEach(el => { if (el) { el.style.transform = ""; el.style.transition = ""; } });
+    [E.stand, E.neck, E.head2, E.scap, ...Object.values(E.legs || {}).flat()].forEach(el => { if (el) { el.style.transform = ""; el.style.transition = ""; } });
   }
-  // 從現在的姿勢平滑過去；pitch＝nk＝0 是站直。2026-10-05 第二輪：身體和脖子錯開——
-  // 往下：肩膀先沉（前傾），脖子晚 30% 才往前下方伸；往上：脖子先抬，肩膀晚一點才回正（ChatGPT 看錄影的建議；以前兩個同時動，抬頭像整隻彈回去）
+  // 從現在的姿勢平滑過去；pitch＝nk＝0 是站直。身體和脖子錯開（以前兩個同時動，抬頭像整隻彈回去）
   function bow(box, pitch, nk, ms) {
-    const [p0, n0] = box.__bow || [0, 0], t0 = performance.now(), D = ms || 360, up = Math.abs(pitch) + Math.abs(nk) < Math.abs(p0) + Math.abs(n0);
+    const [p0, n0] = box.__bow || [0, 0], t0 = performance.now(), D = ms || 360;
     const ss = v => { v = Math.max(0, Math.min(1, v)); return v * v * (3 - 2 * v); };
     return new Promise(res => { const step = () => { const k = Math.min(1, (performance.now() - t0) / D);
-      const a = ss(k / .7), b = ss((k - .3) / .7), ep = up ? b : a, en = up ? a : b;   // ep＝身體、en＝脖子
+      const a = ss(k / .7), b = ss((k - .3) / .7), ep = b, en = a;   // ep＝肩膀、en＝脖子：2026-10-06 第四輪改成往下、往上都是脖子先（往下：頭先伸下去、肩膀才跟著沉；往上：頭先抬、肩膀晚一點回正）
       bowSet(box, p0 + (pitch - p0) * ep, n0 + (nk - n0) * en); if (k < 1) raf = requestAnimationFrame(step); else { if (!pitch && !nk) bowClear(box); res(); } };
       raf = requestAnimationFrame(step); });
   }
@@ -634,42 +594,54 @@ window.PetWalk = (function () {
   // 兩者不保證同一個時鐘（Chrome 虛擬時間差了 25 秒、補間卡在起點；WebKit 也不保證），起點又是用 performance.now() 記的
   const tween = (ms, fn) => new Promise(res => { const t0 = performance.now(); const step = () => { const now = performance.now(); const k = Math.min(1, (now - t0) / ms); fn(k * k * (3 - 2 * k), k); if (k < 1) raf = requestAnimationFrame(step); else res(); }; raf = requestAnimationFrame(step); });
   const H2 = new WeakMap();
-  function setQ(box, q) {   // q：0＝側身、1＝四分之三面（頭移到正面站姿的頭的位置、大小）
+  function setQ(box, q, qh) {   // q：0＝側身、1＝四分之三面（身體）；qh：頭（臉、頭的位置大小）——2026-10-06 第四輪：頭可以比身體晚（或早）轉
     const E = els(box); if (!E.stand || !E.h2g) return;
+    if (qh == null) qh = q;
     let h = H2.get(E.h2g); if (!h) { const m = /translate\(([-\d.]+) ([-\d.]+)\) scale\(([-\d.]+)\)/.exec(E.h2g.getAttribute("transform")) || [0, 62, 80, .78]; h = [+m[1], +m[2], +m[3]]; H2.set(E.h2g, h); }
-    const F = [100, 102.6, .86], L = (a, b) => a + (b - a) * q;
-    E.stand.style.setProperty("--q", q.toFixed(3));
-    E.h2g.style.transform = q > 0 ? `translate(${L(h[0], F[0]).toFixed(2)}px, ${L(h[1], F[1]).toFixed(2)}px) scale(${L(h[2], F[2]).toFixed(3)}) translate(-100px, -100px)` : "";
+    const F = [100, 102.6, .86], L = (a, b) => a + (b - a) * qh;
+    E.stand.style.setProperty("--q", q.toFixed(3)); E.stand.style.setProperty("--qh", qh.toFixed(3));
+    E.h2g.style.transform = qh > 0 ? `translate(${L(h[0], F[0]).toFixed(2)}px, ${L(h[1], F[1]).toFixed(2)}px) scale(${L(h[2], F[2]).toFixed(3)}) translate(-100px, -100px)` : "";
     box.__q = q;
   }
-  const slow = box => (stage(box) === 4 ? 1.2 : 1);   // 虎比較慢、比較沉
-  async function crossTo(box, toStand) {   // 正面 ↔ 四分之三：0.13 秒交叉淡入
-    if (toStand) { box.classList.add("standing", "pf-x"); await sleep(130); box.classList.remove("pf-x"); }
-    else { box.classList.add("pf-y"); await sleep(130); box.classList.remove("standing", "pf-y", "face-r"); }
-  }
+  const slow = box => (stage(box) === 4 ? 1.35 : 1);   // 虎比較慢、比較沉
+  // 正面站姿 ↔ 站姿骨架（q=1）：2026-10-06 第四輪改成同一格直接換（以前 0.13 秒交叉淡入，兩張半透明疊在一起看得到重影）——
+  // 兩張在這一格的輪廓重疊 ≥85%（量過：狐 0.87、虎 0.90，兩個朝向都是），所以直接換看不出來
+  function swapTo(box, toStand) { if (toStand) box.classList.add("standing"); else box.classList.remove("standing", "face-r"); }
+  const ss01 = v => { v = Math.max(0, Math.min(1, v)); return v * v * (3 - 2 * v); };
+  // 轉向側面：身體先轉、頭和肩膀最後才轉過去；轉向鏡頭：頭先轉過來、身體跟上
+  const turnSide = (box, ms) => tween(ms, (e, k) => setQ(box, 1 - ss01(k / .7), 1 - ss01((k - .3) / .7)));
+  const turnFront = (box, ms) => tween(ms, (e, k) => setQ(box, ss01((k - .3) / .7), ss01(k / .7)));
   async function standUp(box, dir) {
     if (box.classList.contains("standing")) return;
     box.style.setProperty("--nk", "0deg");
-    box.classList.add("pf-front"); await sleep(240 * slow(box));             // 站起來（正面）：臀部抬起、後腿和背出現
-    box.classList.toggle("face-r", (dir || -1) > 0); setQ(box, 1);         // 轉成四分之三面（頭先轉、身體跟上）
-    await crossTo(box, true);
-    await tween(300 * slow(box), e => setQ(box, 1 - e));                    // 身體轉到側面
+    const sl = slow(box), em = box.querySelector("#petEmoji"), bob = em && em.querySelector(".pc-bob");
+    // 1) 重心往前：身體微微前傾下壓、前腿撐住（坐著的臀部還在）；2) 後腿伸直、臀部抬起（換成正面站姿），身體回正
+    const K = { transformBox: "view-box", transformOrigin: "100px 196px" };
+    const a1 = bob && bob.animate([{ ...K, transform: "none" }, { ...K, transform: "translate(0px, 3px) scale(1.025, .955)" }], { duration: 200 * sl, easing: "ease-in-out", fill: "forwards" });
+    await sleep(200 * sl);
+    box.classList.add("pf-front");
+    const a2 = bob && bob.animate([{ ...K, transform: "translate(0px, 3px) scale(1.025, .955)" }, { ...K, transform: "translate(0px, -1px) scale(.995, 1.01)", offset: .7 }, { ...K, transform: "none" }], { duration: 260 * sl, easing: "ease-out", fill: "forwards" });
+    if (a1) a1.cancel();
+    await sleep(260 * sl); if (a2) a2.cancel();
+    box.classList.toggle("face-r", (dir || -1) > 0); setQ(box, 1);
+    swapTo(box, true);
+    await turnSide(box, 380 * sl);                                         // 3) 身體轉到側面，頭最後才轉
     setQ(box, 0);
   }
   async function turnStand(box, dir) {   // 站著原地轉身：經過正面，不壓扁
     if (!box.classList.contains("standing") || box.classList.contains("face-r") === dir > 0) return;
     bowClear(box); clearGait(box);
-    await tween(240 * slow(box), e => setQ(box, e));
-    await crossTo(box, false); box.classList.add("pf-front"); await sleep(60);
+    await turnFront(box, 260 * slow(box));
+    swapTo(box, false); box.classList.add("pf-front"); await sleep(60);
     box.classList.toggle("face-r", dir > 0); setQ(box, 1);
-    await crossTo(box, true);
-    await tween(260 * slow(box), e => setQ(box, 1 - e)); setQ(box, 0);
+    swapTo(box, true);
+    await turnSide(box, 300 * slow(box)); setQ(box, 0);
   }
   async function sitDown(box) {
     if (!box.classList.contains("standing")) { box.classList.remove("pf-front"); return; }
     bowClear(box); clearGait(box); box.style.removeProperty("--nk");
-    await tween(260 * slow(box), e => setQ(box, e));                        // 轉回四分之三面
-    await crossTo(box, false); setQ(box, 0);                                // → 正面站姿
+    await turnFront(box, 280 * slow(box));                                  // 轉回四分之三面（頭先轉過來）
+    swapTo(box, false); setQ(box, 0);                                       // → 正面站姿
     await sleep(60);
     box.classList.remove("pf-front");                                       // 先彎後腿、臀部坐下去
     const em = box.querySelector("#petEmoji"); if (em) { em.classList.add("pb-sit"); await sleep(420); em.classList.remove("pb-sit"); }
@@ -680,7 +652,7 @@ window.PetWalk = (function () {
     const back = stage(box) === 1 && Math.sign(0 - curX(box)) === -lvFace(box) && Math.abs(curX(box)) <= 100;
     await goTo(box, 0, { wy: 0, keepFace: back }); await sitDown(box); await face(box, 0, 300);
   }
-  function stop(box) { cancelAnimationFrame(raf); if (box) { box.classList.remove("walking", "pf-front", "pf-x", "pf-y"); setQ(box, 0); ["--wx", "--wy", "--face"].forEach(k => box.style.removeProperty(k)); clearGait(box); } }
+  function stop(box) { cancelAnimationFrame(raf); if (box) { box.classList.remove("walking", "pf-front"); setQ(box, 0); ["--wx", "--wy", "--face"].forEach(k => box.style.removeProperty(k)); clearGait(box); } }
   // 接觸點的畫面座標：mouth＝嘴（.pr-mouth 的支點，跟著頭的所有變換）；其他＝pet-art.js 畫的 .cp-*（手掌、尾尖、裂紋）
   function cpt(box, name) {
     const em = box.querySelector("#petEmoji"); if (!em) return null;
@@ -692,5 +664,5 @@ window.PetWalk = (function () {
   }
   // 現在看得到的那一份身體（站著時是 .pr-stand）裡找部位
   const part = (box, sel) => { const em = box.querySelector("#petEmoji"); if (!em) return null; return (box.classList.contains("standing") && em.querySelector(".pr-stand " + sel)) || em.querySelector(sel); };
-  return { rope, pxu, svgY, tween, goTo, goEat, home, face, stop, standUp, sitDown, turnStand, setQ, larvaTurn, bend, part, bow, bowSet, bowClear, solveBow, lie, lieSet, solveLie, groundY, cpt, tailTo, tailReach, GAIT, _pose: pose };   // _pose：測試逐相位檢查用
+  return { rope, pxu, svgY, tween, goTo, goEat, home, face, stop, standUp, sitDown, turnStand, setQ, larvaTurn, bend, part, bow, bowSet, bowClear, solveBow, groundY, cpt, tailTo, tailReach, GAIT, _pose: pose };   // _pose：測試逐相位檢查用
 })();

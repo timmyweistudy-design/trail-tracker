@@ -2339,24 +2339,26 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 /* 站起來：頭微微抬高、變小一點點（離鏡頭遠了一點；接著轉成四分之三面時頭的大小剛好接得上側身的頭） */
 .ps-box[data-stage="3"] #petEmoji .pc-bob > .pr-head, .ps-box[data-stage="4"] #petEmoji .pc-bob > .pr-head { transition: translate .26s cubic-bezier(.3,.7,.4,1), scale .26s cubic-bezier(.3,.7,.4,1); }
 .ps-box.pf-front #petEmoji .pc-bob > .pr-head { translate: 0 -2px; scale: .86; }
-/* 正面 ↔ 四分之三面：兩張重疊、短短 0.13 秒交叉淡入（形狀幾乎一樣：頭同位置同大小） */
-.ps-box.standing.pf-x #petEmoji .pc-bob, .ps-box.standing.pf-y #petEmoji .pc-bob { display: inline; }
-/* 底下那張（正面）一直是不透明的，只有上面那張（四分之三面）淡入／淡出——兩張都半透明會看到背景透過來（像鬼） */
-.ps-box.standing.pf-x #petEmoji .pr-stand { animation: pfIn .13s linear; }
-.ps-box.standing.pf-y #petEmoji .pr-stand { animation: pfOut .13s linear forwards; }
-@keyframes pfIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes pfOut { from { opacity: 1; } to { opacity: 0; } }
+/* 正面 ↔ 四分之三面：同一格直接換（2026-10-06 第四輪拿掉 0.13 秒交叉淡入；兩張輪廓重疊 ≥85%，見 pet-walk.js swapTo） */
 /* 側臉 ↔ 正臉（2026-10-06）：側身（--q 0）看側臉；轉成四分之三面（--q 1）時正臉淡入、接上坐姿那顆頭。側臉在底下、到一半才開始淡出（兩張都半透明會透出背景） */
-.ps-box .pr-stand .pr-face-f { opacity: var(--q, 0); }
-.ps-box .pr-stand .pr-face-s { opacity: clamp(0, calc(2 - 2 * var(--q, 0)), 1); }
+/* 2026-10-06 第四輪：頭（臉）有自己的 --qh，比身體晚轉（起身時身體先轉成側面、頭和肩最後才轉過去）；沒給就跟身體一樣 */
+/* 換臉只在轉到一半的一小段（qh .42～.55）：以前整段都在交叉淡入，兩張臉疊著（看得到四隻眼睛）好幾格；四分之三的頭跟正臉已經很接近，短短換過去就好 */
+.ps-box .pr-stand .pr-face-f { opacity: clamp(0, calc((var(--qh, var(--q, 0)) - .42) * 8), 1); }
+.ps-box .pr-stand .pr-face-s { opacity: clamp(0, calc((.6 - var(--qh, var(--q, 0))) * 20), 1); }
 /* 四分之三面（--q：0＝側身、1＝四分之三）：身體往鏡頭方向縮短（前端不動、後端往前收），腿不變粗細、只是位置收攏，
    遠側的腿往後上方錯開一點（有深度）；頭（pet-walk.js 直接寫）往中間移、變大一點、轉向鏡頭 */
 .ps-box .pr-stand .pr-torso { --ox: 70px; --oy: 140px; scale: calc(1 - .42 * var(--q, 0)) 1; }
+.ps-box[data-stage="3"] .pr-stand .pr-torso { --ox: 84px; scale: calc(1 - .55 * var(--q, 0)) 1; }   /* 狐的正面身體比較窄（2026-10-06 第四輪：q=1 輪廓要對上正面站姿） */
+.ps-box[data-stage="3"] .pr-stand { --nq: .6; }
 .ps-box .pr-stand .pr-leg.fl { translate: calc(var(--q, 0) * -4.2px) 0; }
 .ps-box .pr-stand .pr-leg.fr { translate: calc(var(--q, 0) * -5px) calc(var(--q, 0) * -3px); }
 .ps-box .pr-stand .pr-leg.hl { translate: calc(var(--q, 0) * -29.4px) 0; }
 .ps-box .pr-stand .pr-leg.hr { translate: calc(var(--q, 0) * -28px) calc(var(--q, 0) * -3px); }
-.ps-box .pr-stand > .pc-tail { translate: calc(var(--q, 0) * -36px) calc(var(--q, 0) * -4px); }
+/* 尾巴（2026-10-06 第四輪）：q=1 時直直豎在身體後面（大半被頭擋住）、跟正面站姿的尾巴同一個位置（pet-art.js FTQ/TTQ），身體轉成側面時才甩出去 */
+.ps-box[data-stage="3"] .pr-stand > .pc-tail { translate: calc(var(--q, 0) * -56px) calc(var(--q, 0) * -6px); rotate: calc(var(--q, 0) * -38deg); }
+.ps-box[data-stage="4"] .pr-stand > .pc-tail { translate: calc(var(--q, 0) * -60px) calc(var(--q, 0) * -6px); rotate: calc(var(--q, 0) * -33deg); }
+/* 脖子和胸前那撮白毛：q=1 時往中間收窄（正面站姿的胸口沒有往左伸出去的脖子），輪廓才對得上 */
+.ps-box .pr-stand .pr-nkb, .ps-box .pr-stand .pr-bib { transform-box: view-box; transform-origin: 100px 140px; scale: calc(1 - var(--nq, .45) * var(--q, 0)) 1; }
 /* 幼蟲往左爬：整隻鏡像（頭在前）；掉頭由 pet-walk.js larvaTurn() 演出 */
 .ps-box.lv-l #petEmoji .pet-critter { scale: -1 1; }
 /* 一口一個缺口（幼蟲啃三口、幼龍咬兩口）：缺口在嘴靠過來的那一側（--nx），用遮罩挖掉圓形 */
