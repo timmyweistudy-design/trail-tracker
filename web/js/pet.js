@@ -100,7 +100,7 @@ function feedPet() {
   };
   // 果實從天上掉下來、牠走過去吃（pet-stage.js）；舞台不在畫面上或減少動態效果時直接結算
   const fb = $("#petFeed"); if (fb) fb.disabled = true;
-  if (typeof PetStage !== "undefined") PetStage.feed(BERRY_SVG).then(done, done);
+  if (typeof PetStage !== "undefined") PetStage.feed(BERRY_SVG).then(done, e => { done(); setTimeout(() => { throw e; }); });   // 2026-10-06：失敗照樣結算，但把錯誤丟出來（以前安靜吞掉，幼蟲掉頭壞了好幾個版本都沒人知道）
   else done();
 }
 // 帽子要用果實解鎖（果實除了餵食之外多一個用途）；解過的永久擁有

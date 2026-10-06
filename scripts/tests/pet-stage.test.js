@@ -107,7 +107,7 @@ const KM=[0,5,20,40,90,150,260];
  const seq=await p.evaluate(async()=>{const vals=[],steps=[],c0=document.querySelector("#petEmoji .pet-critter"),b=document.querySelector(".ps-box").getBoundingClientRect();let bite=false,off=0,feet=null,feetMove=0,wasOpen=false;const aims=[];
   for(let k=0;k<420;k++){const e=document.querySelector("#petFeed .feed-bal");if(e){const v=+e.textContent;if(vals[vals.length-1]!==v)vals.push(v);}
    const em=document.querySelector("#petEmoji");if(em){const top=["pb-lick","pb-gulp","pb-chew","pb-snap","st-open","st-lean"].find(k=>em.classList.contains(k));if(top&&steps[steps.length-1]!==top)steps.push(top);
-    if(em.classList.contains("st-lean")){bite=true;const f=em.querySelector(".pc-bob").getBoundingClientRect();feet=feet==null?f.bottom:feet;feetMove=Math.max(feetMove,Math.abs(f.bottom-feet));}
+    if(em.classList.contains("st-lean")){bite=true;const f={bottom:Math.max(...[...em.querySelectorAll(".pc-bob > .pr-paw")].map(e=>e.getBoundingClientRect().bottom))};feet=feet==null?f.bottom:feet;feetMove=Math.max(feetMove,Math.abs(f.bottom-feet));   /* 2026-10-06 第五輪：量前掌（趴著低頭時頭會低過腳，整個身體的外框不準） */}
     if(!em.classList.contains("st-open")&&wasOpen){const mc=PetWalk.cpt(document.querySelector(".ps-box"),"mouth");   // 嘴的接觸點對果實上緣——2026-10-06 第四輪：低頭的最後一段才張嘴，所以量「閉上嘴咬下」那一刻
      const bs=[...document.querySelectorAll(".ps-berry:not(.eaten)")].map(x=>{const q=x.getBoundingClientRect();return [q.left+q.width/2-mc[0],q.top+q.height*.32-mc[1]]}).sort((u,v)=>Math.hypot(...u)-Math.hypot(...v));if(bs[0])aims.push(bs[0].map(Math.round));}
     wasOpen=em.classList.contains("st-open");if(!em.classList.contains("st-lean"))feet=null;}
@@ -483,7 +483,7 @@ for(const [km,st] of [[5,1],[260,6]]){const p=await mk({km});
 // ── 2026-10-04 腳要踩住：走路時支撐腳的著地點在畫面上不能滑（狐、虎用 IK：中位數 ≤1px；幼龍有 3D 轉身：≤3px）──
 {const p=await mk({km:5});
  const r=await p.evaluate(async()=>{const out={};
-  for(const [st,sel,cfg] of [[3,".pr-stand .pr-leg.fl .pr-shin ellipse",1],[4,".pr-stand .pr-leg.hl .pr-shin ellipse",1],[5,".pr-foot.l ellipse",0],[1,".lv-sl:nth-child(5) .lv-pro path",0]]){
+  for(const [st,sel,cfg] of [[3,".pr-stand .pr-leg.fl .pr-shin ellipse",1],[4,".pr-stand .pr-leg.hl .pr-shin ellipse",1],[5,".pr-foot.l ellipse",0],[1,".lv-sl:nth-child(2) .lv-pro path",0]]){
    const host=document.createElement("div");host.innerHTML=`<div class="ps-box" data-stage="${st}" style="position:fixed;left:0;top:0;width:900px;height:380px;margin:0;padding:20px 0 0;z-index:99"><div class="ps-actor" style="position:absolute;left:0;right:0;bottom:24px"><div id="petEmojiT"></div></div></div>`;document.body.appendChild(host);
    const box=host.firstChild,em=box.querySelector("#petEmojiT");em.id="petEmoji";em.innerHTML=PET_ART.svg(st);em.querySelector(".pet-critter").style.cssText="width:200px;height:200px;max-width:none;max-height:none";box.style.setProperty("--wx","-200px");
    const S=[];let on=true;const el0=[...box.querySelectorAll(sel)].find(x=>!x.closest("clipPath")&&!x.closest("defs")),pick=()=>el0;   // 先抓好（幼蟲的變形會改 cy，選擇器之後就對不到了）
