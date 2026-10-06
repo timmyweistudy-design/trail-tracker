@@ -466,9 +466,13 @@ window.PetStage = (function () {
               b.classList.add("bit" + k); await flash("pb-snap", 220);           // 咬下去：果實多一個缺口
               cls(true, "chew2"); await flash("pb-chew", 360); cls(false, "chew2");  // 快快啃兩下（0.18 秒 × 2）
             }
+            // 最後一口（2026-10-06 第四輪）：咬住的那一刻果實歸嘴（離開地面），頭抬起時一起帶起來，抬到位才縮進嘴裡——
+            // 以前縮進去的目標點在咬下那一刻就算死了，頭抬起後果實還留在地上慢慢消失（像先站起來、食物才被清掉）
             cls(true, "st-open"); await sleep(130);
-            toMouth(b, false); b.classList.add("eaten"); cls(false, "st-open"); await flash("pb-snap", 220);
-            cls(false, "st-lean"); await PetWalk.bend(box, 0, 0, later ? 220 : 280);
+            b.classList.add("held"); follow(b, "mouth", { ay: .3, ms: 120 });
+            cls(false, "st-open"); await flash("pb-snap", 220);
+            cls(false, "st-lean"); await PetWalk.bend(box, 0, 0, later ? 300 : 360, () => ownTick(true));
+            toMouth(b, false); b.classList.add("eaten");
             cls(true, "chew2"); await flash("pb-chew", 400); cls(false, "chew2"); await flash("pb-gulp", 340);
             if (bal && isFinite(left)) { left = Math.max(0, left - 1); bal.textContent = left; bal.classList.remove("tick"); void bal.offsetWidth; bal.classList.add("tick"); }
             if (typeof ttBuzz === "function") ttBuzz(8);

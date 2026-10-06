@@ -125,6 +125,10 @@ function judge(st, tag, R) {
   // 3) 果實不亂跳：地上的不動；拿著／托著的每格最多 10px
   let bj = 0, bjAt = ""; for (let i = 45; i < n; i++) { if (F[i].berries.length !== F[i - 1].berries.length) continue; F[i].berries.forEach((x, k) => { if (/eaten|sipped|melt/.test(x.cls)) return; const d = D(x.c, F[i - 1].berries[k].c), held = /held|carried/.test(x.cls), ex = held ? d - 10 : d - 1; if (ex > bj) { bj = ex; bjAt = `@${i} ${x.cls} ${F[i].cls}`; } }); }
   ok(bj <= 0, `${tag}: berries never jump (ground berries still, held ones ≤10px/frame; worst excess ${bj.toFixed(1)}px ${bjAt})`, todoOf("berry", st));
+  if (st === 1) {   // 最後一口咬住之後（held）：頭抬起時果實跟著嘴，不留在地上（2026-10-06 第四輪）
+    let far = 0, nHeld = 0; for (const f of F) { const hb = f.berries.find(x => /held/.test(x.cls) && !/eaten/.test(x.cls)); if (hb && f.mouth) { nHeld++; far = Math.max(far, D(f.mouth, hb.c) / hb.w); } }
+    ok(nHeld > 5 && far <= .6, `${tag}: after the last bite the berry rises with the mouth (max distance / berry size ${far.toFixed(2)}, ${nHeld} frames)`);
+  }
   if (st === 1) {
     const v = F.filter(f => f.neck != null).map(f => f.neck), dv = Math.max(...v), i0 = F.findIndex(f => f.neck === dv);
     if (process.env.PM_SEQ) for (let i = i0 - 6; i <= i0 + 4; i++) console.log("   neck", i, F[i].neck.toFixed(1), F[i].raw);
