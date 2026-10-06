@@ -856,8 +856,9 @@ body.rec-running.rec-resting #recMap .pm-e .pet-critter, body.rec-running.rec-re
 /* 2026-10-04：地上的動物待機只「呼吸」——以腳底為原點微微撐高，腳不離地（以前整隻往上飄 6px，像浮在空中） */
 @keyframes pcbob { 0%,100% { transform: scale(1, 1); } 50% { transform: scale(1.012, 1.026); } }
 .pc-bob.pc-heavy { animation-duration: 4.6s; }   /* 虎：大貓呼吸慢 */
-.pc-bob.pc-egg { animation: pcrock 5.2s ease-in-out infinite; }   /* 蛋：偶爾晃一下（以底部為支點） */
-@keyframes pcrock { 0%,62%,100% { transform: rotate(0); } 70% { transform: rotate(-4deg); } 78% { transform: rotate(3deg); } 86% { transform: rotate(-1.5deg); } }
+/* 蛋：偶爾晃一下——圓底在地上「滾」（2026-10-06）：繞著底部的曲率中心（100,157；半徑 38.4）轉 θ、同時往同一邊移 r·θ，接觸點跟著走（以前繞底部一個點轉，像釘在地上） */
+.pc-bob.pc-egg { transform-box: view-box; transform-origin: 100px 157px; animation: pcrock 5.2s ease-in-out infinite; }
+@keyframes pcrock { 0%,60%,100% { transform: none; } 68% { transform: translateX(-2.68px) rotate(-4deg); } 76% { transform: translateX(2.01px) rotate(3deg); } 84% { transform: translateX(-1.07px) rotate(-1.6deg); } 91% { transform: translateX(0.40px) rotate(0.6deg); } }
 .pc-bob.pc-larva { transform-origin: 0% 100%; animation: pcinch 3.8s ease-in-out infinite; }   /* 幼蟲：從尾巴往前伸一下再縮回來 */
 @keyframes pcinch { 0%,100% { transform: scale(1, 1); } 40% { transform: scale(1.04, .97); } 60% { transform: scale(.99, 1.02); } }
 .pc-ear { transform-box: fill-box; animation: pcear 6s ease-in-out infinite; }   /* 狐：耳朵偶爾抖一下 */

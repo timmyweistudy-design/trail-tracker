@@ -1890,7 +1890,9 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 @keyframes pbHug { 0%, 100% { transform: none; } 25% { transform: scale(1.16, .82); } 55% { transform: scale(.92, 1.1); } 76% { transform: scale(1.04, .97); } }
 @keyframes pbChomp { 0%, 30%, 60%, 100% { transform: none; } 15%, 45%, 75% { transform: translateY(5px) scale(1.04, .9); } }
 /* 2026-10-04：各自的動作（同一個「跳」「伸懶腰」，每隻用自己合理的方式做） */
-.ps-box[data-stage="0"] .pb-hop .pet-critter { animation: pbRock 1.1s ease-in-out; transform-origin: 50% 97%; }        /* 蛋不會跳：左右搖晃 */
+.ps-box[data-stage="0"] .pb-hop .pet-critter { animation: none; }        /* 蛋不會跳：圓底左右滾著晃，一次比一次小（阻尼） */
+.ps-box[data-stage="0"] .pb-hop .pc-egg { animation: pbRoll 1.4s ease-out; }
+@keyframes pbRoll { 0%, 100% { transform: none; } 16% { transform: translateX(-6.03px) rotate(-9deg); } 34% { transform: translateX(4.36px) rotate(6.5deg); } 52% { transform: translateX(-2.68px) rotate(-4deg); } 68% { transform: translateX(1.47px) rotate(2.2deg); } 82% { transform: translateX(-0.67px) rotate(-1deg); } 92% { transform: translateX(0.27px) rotate(0.4deg); } }
 .ps-box[data-stage="0"] .pb-stretch .pet-critter { animation: pbSquish 1.2s ease-in-out; }
 .ps-box[data-stage="1"] .pb-hop .pet-critter { animation: pbRear 1.3s ease-in-out; transform-origin: 20% 95%; }      /* 幼蟲：抬起上半身 */
 .ps-box[data-stage="1"] .pb-stretch .pet-critter { animation: pbInch 1.4s ease-in-out; transform-origin: 10% 95%; }  /* 幼蟲：一伸一縮 */
@@ -2155,12 +2157,12 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 @keyframes pbLick { 0% { opacity: 0; transform: scale(.4) rotate(-10deg); } 20% { opacity: 1; transform: scale(1) rotate(-6deg); } 55% { opacity: 1; transform: scale(1.05) rotate(10deg); } 85% { opacity: 1; transform: scale(.8) rotate(0); } 100% { opacity: 0; transform: scale(.3); } }
 /* 蛋：吸收果實時裂縫亮起來 */
 /* 2026-10-05 蛋吸收果實：往果實那邊傾（支點在底部）→ 裂縫亮起來 → 果實化成光點沿弧線飛進裂縫（pet-stage.js 用 WAAPI）→ 鼓起來晃兩下 → 光退 */
-.ps-box .st-tilt-l .pc-egg, .ps-box .st-tilt-r .pc-egg { animation: none; transform-origin: 50% 96%; transition: transform .38s cubic-bezier(.3,.7,.4,1); }
-.ps-box .st-tilt-l .pc-egg { transform: rotate(-7deg); } .ps-box .st-tilt-r .pc-egg { transform: rotate(7deg); }
+.ps-box .st-tilt-l .pc-egg, .ps-box .st-tilt-r .pc-egg { animation: none; transition: transform .38s cubic-bezier(.3,.7,.4,1); }
+.ps-box .st-tilt-l .pc-egg { transform: translateX(-4.69px) rotate(-7deg); } .ps-box .st-tilt-r .pc-egg { transform: translateX(4.69px) rotate(7deg); }   /* 往果實那邊滾過去一點 */
 .ps-box .pc-egg .pr-glow { transition: opacity .25s ease-out, stroke-width .25s ease-out, stroke .25s; }
 .ps-box .st-glow .pc-egg .pr-glow { opacity: 1; stroke: #fff1c4; stroke-width: 9px; filter: drop-shadow(0 0 4px #ffe08a); }
-.ps-box .pb-swell .pc-egg { animation: pbSwell .72s ease-in-out; transform-origin: 50% 96%; }
-@keyframes pbSwell { 0%, 100% { transform: none; } 30% { transform: scale(1.04, 1.03); } 55% { transform: scale(1.015) rotate(-2.5deg); } 78% { transform: rotate(2deg); } 90% { transform: rotate(-.8deg); } }   /* 吃飽微微鼓起、晃兩下（只一次，不反覆縮放） */
+.ps-box .pb-swell .pc-egg { animation: pbSwell .72s ease-in-out; }
+@keyframes pbSwell { 0%, 100% { transform: none; } 30% { transform: translateY(-1.1px) scale(1.04, 1.03); } 55% { transform: translateY(-.4px) scale(1.015) translateX(-1.68px) rotate(-2.5deg); } 78% { transform: translateX(1.34px) rotate(2deg); } 90% { transform: translateX(-0.54px) rotate(-0.8deg); } }   /* 吃飽微微鼓起（往上補回去，底不陷進地面）、滾著晃兩下 */
 .ps-berry.melt { animation: none; transform-origin: 50% 60%; }   /* 縮小由 pet-stage.js 依光點一顆一顆飛走來推（光點＋剩下的果實＝原本那一份） */
 .ps-berry.melt::after, .ps-berry.sipped::after { opacity: 0; animation: none; }
 @keyframes psMelt { 0% { transform: none; filter: none; } 35% { transform: scale(1.06, .9); filter: brightness(1.5); } 100% { transform: scale(.25, .15); filter: brightness(2.2); opacity: 0; } }

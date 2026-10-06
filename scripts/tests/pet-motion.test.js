@@ -39,6 +39,12 @@ const probe = () => {
     const fc = new DOMPoint(+fr.dataset.u, +fr.dataset.v).matrixTransform(fr.getScreenCTM()).matrixTransform(inv);
     o.neck = Math.hypot(hc.x - fc.x, hc.y - fc.y);
   }
+  if (st === 0) {   // 蛋殼最低點：取蛋殼橢圓上的點、用真的變換算（群組外框在旋轉時會把四個角轉下去，量出來偏大）
+    const eg = [...em.querySelectorAll(".pc-egg ellipse")].find(e => !e.closest("clipPath") && !e.closest("defs")), M = eg.getScreenCTM(); let lo = -1e9;
+    const cx = +eg.getAttribute("cx"), cy = +eg.getAttribute("cy"), rx = +eg.getAttribute("rx"), ry = +eg.getAttribute("ry");
+    for (let k = 0; k < 64; k++) { const t = k / 64 * Math.PI * 2, q = new DOMPoint(cx + rx * Math.cos(t), cy + ry * Math.sin(t)).matrixTransform(M); lo = Math.max(lo, q.y); }
+    o.eggBottom = lo;
+  }
   if (st === 2) { const ext = em.querySelector(".pr-ext"); if (+getComputedStyle(ext).opacity > .5) { const pt = ext.getPointAtLength(ext.getTotalLength()), s = new DOMPoint(pt.x, pt.y).matrixTransform(ext.getScreenCTM()); o.prob = [s.x, s.y]; }
     const hw = [...em.querySelectorAll(".pc-hw")].map(e => e.getBoundingClientRect()); o.hw = [Math.min(...hw.map(r => r.left)), Math.min(...hw.map(r => r.top)), Math.max(...hw.map(r => r.right)), Math.max(...hw.map(r => r.bottom))]; }
   if (st === 6) { const d = em.querySelector(".pr-deform").getBoundingClientRect(), b = box.getBoundingClientRect(); o.deform = [d.left, d.top, d.right, d.bottom]; o.boxr = [b.left, b.top, b.right, b.bottom]; }
@@ -131,6 +137,11 @@ function judge(st, tag, R) {
   if (st === 5) {   // 吞下最後一口之前不閉眼享受
     let bad = 0; for (const f of F) { const tb = f.berries.find(x => /target/.test(x.cls) && !/eaten/.test(x.cls)); if (tb && f.happy && D(f.mouth, tb.c) > tb.w / 2) bad++; }
     ok(bad === 0, `${tag}: no happy closed eyes while the berry is still away from the mouth (${bad} frames)`, todoOf("happy", st));
+  }
+  if (st === 0) {   // 圓底滾動：蛋殼最低點一直貼著地面（上下變動 ≤2px）
+    const bs = F.map(f => f.eggBottom).filter(v => v != null), rng = Math.max(...bs) - Math.min(...bs);
+    if (process.env.PM_SEQ) { const mx = Math.max(...bs), mn = Math.min(...bs); console.log(tag, "egg bottom max", mx.toFixed(1), F.filter(f => f.eggBottom === mx).map(f => f.cls).slice(0, 3), "min", mn.toFixed(1), F.filter(f => f.eggBottom === mn).map(f => f.cls).slice(0, 3), "rest", bs[0].toFixed(1)); }
+    ok(rng <= 2, `${tag}: the egg rolls on its round bottom — its lowest point stays on the ground (range ${rng.toFixed(1)}px)`);
   }
   if (st === 0) {   // 果實跟光點不能同時「完整」存在
     // 每顆跟「它自己開始融化那一格」的大小比（以前拿這一格的第一顆比，融化的剛好是第一顆時＝自己跟自己比）
