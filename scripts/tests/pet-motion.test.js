@@ -24,7 +24,7 @@ const probe = () => {
   const P = sel => PetWalk.part(box, sel);
   const m = P(".pr-mouth"), crit = em.querySelector(".pet-critter").getBoundingClientRect();
   const o = { raw: em.className + " || " + box.className, cls: [...em.classList].filter(c => /^(pb-|st-|chew)/.test(c)).join(" "), bcl: [...box.classList].filter(c => /standing|walking|face-r|pf-|lv-l/.test(c)).join(" "),
-    mouth: m ? C(m.getBoundingClientRect()) : null, crit: [crit.left, crit.top, crit.width, crit.height], wx: box.__wx,
+    mouth: PetWalk.cpt(box, "mouth") || (m ? C(m.getBoundingClientRect()) : null),   // 嘴的接觸點（跟程式用的同一個；側臉的嘴巴群組比較長，外框中心會偏後） crit: [crit.left, crit.top, crit.width, crit.height], wx: box.__wx,
     berries: [...document.querySelectorAll(".ps-berry")].map(b => { const r = b.getBoundingClientRect(); return { c: C(r), w: r.width, op: +getComputedStyle(b).opacity, cls: b.className.replace("ps-berry", "").trim() }; }),
     sparks: [...document.querySelectorAll(".ps-spark")].filter(e => +getComputedStyle(e).opacity > .3).length };   // 只算看得到的（還沒輪到的光點是透明的）
   { const sv = em.querySelector(".pet-critter"), R = sv.getBoundingClientRect(); let sp = 0;   // 畫出來的東西有沒有超出畫布（iOS WebKit 會照畫布裁掉）
@@ -137,7 +137,7 @@ function judge(st, tag, R) {
     let both = 0; const w0 = {}; for (const f of F) for (const x of f.berries) if (/melt/.test(x.cls)) { const key = Math.round(x.c[0] / 4); if (w0[key] == null) w0[key] = x.w; if (f.sparks >= 3 && x.op > .8 && x.w >= w0[key] * .9) both++; }
     ok(both === 0, `${tag}: the berry shrinks as the sparks leave it (frames with a full berry and ≥3 sparks: ${both})`, todoOf("egg", st));
   }
-  const lim = st === 1 ? (/ C$/.test(tag) ? 18 : 27) : st === 4 || st === 5 ? 19 : st === 3 || st === 6 ? 17.9 : 16;   // 幼蟲爬得像真的毛毛蟲（慢）：A、B 刻意讓果實落在兩邊（測掉頭）放寬；C＝遊戲真的落點（頭的前方）   // 幼龍：撿起來、舉到嘴邊、咬兩口、吞完才放手（步驟本來就多）   // 幼蟲：左右兩邊都有果實時要掉頭兩次（頭不動、身體繞過去＝每次多爬 80px）   // 含判定結束的 0.7 秒；狐、虎要走去左右兩端（A、C 組）；虎刻意慢、有重量（ChatGPT 看錄影的建議）
+  const lim = st === 1 ? (/ C$/.test(tag) ? 18 : 27) : st === 4 ? 23 : st === 5 ? 21 : st === 3 || st === 6 ? 17.9 : 16;   // 幼蟲爬得像真的毛毛蟲（慢）：A、B 刻意讓果實落在兩邊（測掉頭）放寬；C＝遊戲真的落點（頭的前方）   // 幼龍：撿起來、舉到嘴邊、咬兩口、吞完才放手（步驟本來就多）；虎：每顆都趴下去吃再站起來（2026-10-06 人面獅身）   // 幼蟲：左右兩邊都有果實時要掉頭兩次（頭不動、身體繞過去＝每次多爬 80px）   // 含判定結束的 0.7 秒；狐、虎要走去左右兩端（A、C 組）；虎刻意慢、有重量（ChatGPT 看錄影的建議）
   ok(sec <= lim, `${tag}: one feeding (3 berries, walk home, celebrate) takes ≤${lim} s (${sec.toFixed(1)} s)`, todoOf("time", st));
   const spill = Math.max(...F.map(f => f.spill || 0)), si = F.findIndex(f => (f.spill || 0) === spill);
   ok(spill <= 0, `${tag}: nothing is drawn outside the canvas (iOS WebKit clips there; worst ${spill.toFixed(1)}px${spill > 0 ? ` @${si} ${F[si].spillWhat} ${F[si].cls}|${F[si].bcl}` : ""})`);

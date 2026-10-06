@@ -254,7 +254,7 @@ window.PetWalk = (function () {
     const em = box.querySelector("#petEmoji"); if (em) GAITV.forEach(k => em.style.removeProperty(k));
     box.__gv = null; const E = ELS.get(box); if (!E) return;
     [E.body, E.head, E.tail, E.earL, E.earR, E.pawL, E.pawR, E.footL, E.footR, E.neck, E.head2, E.stail, ...E.fw, ...E.hw, E.pearl, ...E.sway, ...Object.values(E.legs || {}).flat()].forEach(el => { if (el) { el.style.transform = ""; el.style.animation = ""; el.style.scale = ""; } });
-    if (E.stand && !box.__bow) { E.stand.style.translate = ""; E.stand.style.transform = ""; E.stand.style.transition = ""; }
+    if (E.stand && !box.__bow && !box.__lie) { E.stand.style.translate = ""; E.stand.style.transform = ""; E.stand.style.transition = ""; }
   };
   // 角色的版面寬度（px）：用 clientWidth，不能用 getBoundingClientRect——轉身（rotateY）時畫面上的寬度會變窄，步幅就會算錯
   // 1 個 SVG 單位＝幾 px（主角的畫布四周有留白，viewBox 不一定是 200 寬）；svgY：圖上的 y → 畫面 y
@@ -502,7 +502,7 @@ window.PetWalk = (function () {
       await turnStand(box, f);
       // 只走一次（2026-10-05 第二輪）：轉好方向後，在原地把「趴多低、嘴還差多少」算好，直接走到最後的位置——
       // 以前用 CSS 的低頭姿勢估站位，到了再量一次、差幾 px 就補一小步（低頭前插一個抬腳）
-      const sol = solveBow(box, berryEl, st, .32), tx = Math.round(cur + sol.dx), back = Math.sign(tx - cur) === -f;   // 嘴已經超過果實一點：往後退一小步（不轉身）
+      const sol = st === 4 ? solveLie(box, berryEl, .32) : solveBow(box, berryEl, st, .32), tx = Math.round(cur + sol.dx), back = Math.sign(tx - cur) === -f;   // 虎：用趴姿算站位   // 嘴已經超過果實一點：往後退一小步（不轉身）
       const bb = berryEl.getBoundingClientRect(), wy = Math.round(Math.max(-6, Math.min(6, curY(box) + bb.bottom - svgY(em.querySelector(".pet-critter"), c, 196))));   // 前後（深度）：站到果實那條線上（最多 ±6px）
       await goTo(box, tx, { wy, keepFace: back });
       return;
@@ -567,6 +567,49 @@ window.PetWalk = (function () {
     if (E.neck) { E.neck.style.transition = "none"; E.neck.style.transform = `rotate(${nk.toFixed(2)}deg)`; }
     if (E.head2) { E.head2.style.transition = "none"; E.head2.style.transform = `rotate(${(-nk * .8).toFixed(2)}deg)`; }   // 頭幾乎轉回正（以前只轉回 55%，虎低頭時頭歪 21°；現在剩 9°，鼻口朝下對著果實）
     box.__bow = [pitch, nk];
+  }
+  // ── 老虎趴著吃（2026-10-06，像人面獅身）：eh＝後腿收起來（臀部沉下去）、ef＝前腿往前伸平（胸口沉下去），0..1；nk＝脖子往下。
+  // 身體整個往下 LIE_D（肚子貼地），後面先沉時前端微微抬起（pitch）；四條腿用跟走路同一套兩節 IK：
+  // 前掌往前伸到身體前方的地上、後掌收在髖下面（膝蓋往上折），腳掌都在地面線上
+  const LIE_D = 27;
+  function lieSet(box, eh, ef, nk) {
+    const E = els(box), geo = legGeo(box); if (!E.stand) return;
+    const R = Math.PI / 180, drop = (eh + ef) / 2 * LIE_D, pitch = (eh - ef) * 12, th = -pitch * R, cs = Math.cos(th), sn = Math.sin(th);
+    E.stand.style.transition = "none"; E.stand.style.translate = "";
+    E.stand.style.transform = `${box.classList.contains("face-r") ? "translateX(-96px) scale(-1, 1) " : ""}translate(0px, ${drop.toFixed(2)}px) rotate(${pitch.toFixed(2)}deg)`;
+    for (const n of ["fl", "fr", "hl", "hr"]) {
+      const [lg, sh] = E.legs[n] || []; const G = geo[n]; if (!lg || !G) continue;
+      const hx = parseFloat(lg.style.getPropertyValue("--ox")), hy = parseFloat(lg.style.getPropertyValue("--oy")), [L1, L2, dx] = G, front = n[0] === "f";
+      const Tx = hx + dx + (front ? -34 * ef : 5 * eh), Ty = hy + L1 + L2;   // 地上的目標點（世界座標）
+      const wx = Tx - PIV[0], wy = Ty - drop - PIV[1], bx = PIV[0] + cs * wx - sn * wy, by = PIV[1] + sn * wx + cs * wy;   // 換到身體座標（先扣掉下沉，再轉回傾斜）
+      const tx = bx - hx, ty = by - hy, Rr = Math.hypot(dx, L2), dd = Math.atan2(-dx, L2);
+      const d = Math.min(Math.hypot(tx, ty), L1 + Rr - .01);
+      const thT = Math.atan2(-tx, ty) / R, al = Math.acos(Math.max(-1, Math.min(1, (L1 * L1 + d * d - Rr * Rr) / (2 * L1 * d)))) / R;
+      const a = front ? thT + al : thT - al, kx = -L1 * Math.sin(a * R), ky = L1 * Math.cos(a * R);
+      lg.style.transform = `rotate(${a.toFixed(2)}deg)`; if (sh) sh.style.transform = `rotate(${((Math.atan2(-(tx - kx), ty - ky) - dd) / R - a).toFixed(2)}deg)`;
+    }
+    if (E.neck) { E.neck.style.transition = "none"; E.neck.style.transform = `rotate(${nk.toFixed(2)}deg)`; }
+    if (E.head2) { E.head2.style.transition = "none"; E.head2.style.transform = `rotate(${(-nk * .8).toFixed(2)}deg)`; }
+    box.__lie = [eh, ef, nk];
+  }
+  function lie(box, eh, ef, nk, ms) {   // 從現在的姿勢平滑過去；趴下：後腿先、前腿晚 30%；站起來：前腿先、後腿晚
+    const [h0, f0, n0] = box.__lie || [0, 0, 0], t0 = performance.now(), D = ms || 600, down = eh + ef > h0 + f0;
+    const ss = v => { v = Math.max(0, Math.min(1, v)); return v * v * (3 - 2 * v); };
+    return new Promise(res => { const step = () => { const k = Math.min(1, (performance.now() - t0) / D), a = ss(k / .7), b = ss((k - .3) / .7);
+      const eH = h0 + (eh - h0) * (down ? a : b), eF = f0 + (ef - f0) * (down ? b : a);
+      lieSet(box, eH, eF, n0 + (nk - n0) * ss(k)); if (k < 1) raf = requestAnimationFrame(step); else { if (!eh && !ef && !nk) { bowClear(box); box.__lie = null; } res(); } };
+      raf = requestAnimationFrame(step); });
+  }
+  // 趴著的時候脖子要往下多少，嘴才碰到果實上緣；dx＝嘴還差多少（畫面 px）——在原地套上趴姿量、量完還原（不會畫出來）
+  function solveLie(box, b, biteY) {
+    const em = box.querySelector("#petEmoji"), prev = box.__lie;
+    const gap = nk => { lieSet(box, 1, 1, nk); void em.offsetWidth; const m = cpt(box, "mouth"), br = b.getBoundingClientRect(); return [br.left + br.width / 2 - m[0], br.top + br.height * biteY - m[1]]; };
+    let x0 = -10, x1 = -40, y0 = gap(x0)[1], y1 = gap(x1)[1];
+    for (let it = 0; it < 5 && Math.abs(y1) > 1.2 && y1 !== y0; it++) { const x2 = Math.max(-95, Math.min(25, x1 - y1 * (x1 - x0) / (y1 - y0))); x0 = x1; y0 = y1; x1 = x2; y1 = gap(x1)[1]; }
+    const dx = gap(x1)[0];
+    if (prev) lieSet(box, prev[0], prev[1], prev[2]); else { bowClear(box); box.__lie = null; }
+    void em.offsetWidth;
+    return { nk: x1, dx, dy: y1 };
   }
   function bowClear(box) {
     const E = els(box); box.__bow = null;
@@ -646,5 +689,5 @@ window.PetWalk = (function () {
   }
   // 現在看得到的那一份身體（站著時是 .pr-stand）裡找部位
   const part = (box, sel) => { const em = box.querySelector("#petEmoji"); if (!em) return null; return (box.classList.contains("standing") && em.querySelector(".pr-stand " + sel)) || em.querySelector(sel); };
-  return { rope, pxu, svgY, tween, goTo, goEat, home, face, stop, standUp, sitDown, turnStand, setQ, larvaTurn, bend, part, bow, bowSet, bowClear, solveBow, groundY, cpt, tailTo, tailReach, GAIT, _pose: pose };   // _pose：測試逐相位檢查用
+  return { rope, pxu, svgY, tween, goTo, goEat, home, face, stop, standUp, sitDown, turnStand, setQ, larvaTurn, bend, part, bow, bowSet, bowClear, solveBow, lie, lieSet, solveLie, groundY, cpt, tailTo, tailReach, GAIT, _pose: pose };   // _pose：測試逐相位檢查用
 })();

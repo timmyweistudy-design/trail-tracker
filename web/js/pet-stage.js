@@ -368,12 +368,24 @@ window.PetStage = (function () {
         if (W && !egg && !onCloud) { await PetWalk.goEat(box, b, x); box.style.setProperty("--ex", "0"); box.style.setProperty("--ey", "1"); }   // 走過去：停在嘴剛好在果實上方
         // 低頭要低多少：量嘴到果實的高度差（換成 SVG 單位），夠不到的最後一點由果實「跳」進嘴裡
         let bowTo = null;
-        if (box.classList.contains("standing")) {   // 站著（狐、虎）：找「身體前傾多少」嘴才碰到果實（脖子先維持自然角度，不夠才再往下）
+        let lieTo = null;
+        if (stg === 4 && box.classList.contains("standing")) lieTo = PetWalk.solveLie(box, b, BITE_Y);   // 虎：趴著吃（人面獅身），只算脖子要往下多少
+        else if (box.classList.contains("standing")) {   // 站著（狐）：找「身體前傾多少」嘴才碰到果實（脖子先維持自然角度，不夠才再往下）
           // 站位已經在 goEat 一次算好、走過去了（只走一次）；這裡只重算「趴多低」（走過去時前後深度變了一點），不再挪腳
           const sol = PetWalk.solveBow(box, b, stg, BITE_Y), pt = sol.pt, nk = sol.nk;
           bowTo = [pt, nk];
         } else if (!egg && !fly && stg !== 5 && !onCloud) await reach(b, stg);
-        if (egg) await absorb(b, x >= 0 ? "r" : "l");   // 蛋：不走路，原地把果實化成光吸進裂縫
+        if (lieTo) {   // 虎（2026-10-06）：後腿先收、前腿往前伸平、肚子貼地 → 果實在兩隻前掌之間，脖子往下咬 → 抬頭在原地嚼 → 還有下一顆就站起來再走
+          await PetWalk.lie(box, 1, 1, 0, 760);
+          await PetWalk.lie(box, 1, 1, lieTo.nk, 480); await sleep(90);
+          cls(true, "st-open"); await sleep(170);
+          toMouth(b, false); b.classList.add("eaten"); cls(false, "st-open"); await flash("pb-snap", 220);
+          await PetWalk.lie(box, 1, 1, 0, 520);
+          cls(true, "chew2"); await flash("pb-chew", 700); cls(false, "chew2");
+          await flash("pb-gulp", 340);
+          await PetWalk.lie(box, 0, 0, 0, 640);   // 站起來（前腿先撐起、後腿再站）
+        }
+        else if (egg) await absorb(b, x >= 0 ? "r" : "l");   // 蛋：不走路，原地把果實化成光吸進裂縫
         else if (onCloud) {   // 神龍：尾尖托住果實 → 沿身體下方送到下巴前的交接點 → 停一下、頭往前、張嘴 → 果實改歸嘴、尾巴鬆開退回 → 咬、嚼
           await PetWalk.tailTo(box, b, 650);
           b.classList.add("carried"); follow(b, "tail", { ay: .62, ms: 120 });   // 托住之後果實歸尾尖（尾巴拿著時跟尾尖）
@@ -387,7 +399,7 @@ window.PetStage = (function () {
           await sleep(110);
           toMouth(b, false); b.classList.add("eaten"); cls(false, "st-open"); await flash("pb-snap", 240);
           if (lean) { const back = hd.animate([{ transform: "translate(-3px, 3px)" }, { transform: "none" }], { duration: 220, easing: "ease-in-out" }); lean.cancel(); await back.finished.catch(() => {}); }
-          cls(true, "chew2"); await flash("pb-chew", 520); cls(false, "chew2"); await relax;   // 嚼兩下
+          cls(true, "chew2"); await flash("pb-chew", 600); cls(false, "chew2"); await relax;   // 嚼兩下（0.3 秒 × 2，要等嚼完）
           await flash("pb-gulp", 340);
         }
         else if (fly) {   // 蝶：落在果實旁（腳伸出來、翅膀半收慢拍）→ 口器彎過去吸 → 果實原地縮小淡出 → 收口器、起飛
@@ -411,11 +423,11 @@ window.PetStage = (function () {
             b.style.setProperty("--nx", side === "r" ? "28%" : "72%");          // 缺口在靠嘴的那一側
             cls(true, "st-open"); await sleep(120);
             cls(false, "st-open"); b.classList.add("bit1"); await flash("pb-snap", 220);
-            cls(true, "chew2"); await flash("pb-chew", 380); cls(false, "chew2");   // 手拿著果實嚼
+            cls(true, "chew2"); await flash("pb-chew", 600); cls(false, "chew2");   // 手拿著果實嚼（等兩下嚼完：0.3 秒 × 2）
             cls(true, "st-open"); await sleep(110);
             toMouth(b, false); b.classList.add("eaten");
             cls(false, "st-open"); await flash("pb-snap", 220);
-            cls(true, "chew2"); await flash("pb-chew", 380); cls(false, "chew2"); await flash("pb-gulp", 300);
+            cls(true, "chew2"); await flash("pb-chew", 600); cls(false, "chew2"); await flash("pb-gulp", 340);
             cls(false, "st-lift-" + side, "st-crouch");                          // 吞完才放下手、站起來
             if (!todo.length) await flash("pb-belly", 640);                      // 最後一顆吞下去才拍拍肚子
             if (bal && isFinite(left)) { left = Math.max(0, left - 1); bal.textContent = left; bal.classList.remove("tick"); void bal.offsetWidth; bal.classList.add("tick"); }
@@ -431,12 +443,12 @@ window.PetStage = (function () {
             for (let k = 1; k <= 1; k++) {   // 2026-10-05 第二輪：兩口（咬一口留缺口、第二口吃掉），以前三口——一次餵食 23～29 秒太長
               cls(true, "st-open"); await sleep(130); cls(false, "st-open");
               b.classList.add("bit" + k); await flash("pb-snap", 220);           // 咬下去：果實多一個缺口
-              cls(true, "chew2"); await flash("pb-chew", 320); cls(false, "chew2");  // 快快啃兩下
+              cls(true, "chew2"); await flash("pb-chew", 360); cls(false, "chew2");  // 快快啃兩下（0.18 秒 × 2）
             }
             cls(true, "st-open"); await sleep(130);
             toMouth(b, false); b.classList.add("eaten"); cls(false, "st-open"); await flash("pb-snap", 220);
             cls(false, "st-lean"); await PetWalk.bend(box, 0, 0, later ? 220 : 280);
-            cls(true, "chew2"); await flash("pb-chew", 400); cls(false, "chew2"); await flash("pb-gulp", 300);
+            cls(true, "chew2"); await flash("pb-chew", 400); cls(false, "chew2"); await flash("pb-gulp", 340);
             if (bal && isFinite(left)) { left = Math.max(0, left - 1); bal.textContent = left; bal.classList.remove("tick"); void bal.offsetWidth; bal.classList.add("tick"); }
             if (typeof ttBuzz === "function") ttBuzz(8);
             b.remove(); box.style.removeProperty("--ld"); box.style.removeProperty("--lx"); continue;
@@ -445,9 +457,9 @@ window.PetStage = (function () {
           cls(true, "st-open"); await sleep(170);   // 張嘴
           toMouth(b, false); b.classList.add("eaten");               // 果實被咬進嘴裡
           cls(false, "st-open"); await flash("pb-snap", bowTo ? 200 : 240);   // 咬！
-          cls(false, "st-lean"); if (bowTo) await PetWalk.bow(box, 0, 0, stg === 4 ? 580 : 480); else await sleep(later ? 200 : 280);   // 抬頭（脖子先帶起來、肩膀再回正）
+          cls(false, "st-lean"); if (bowTo) await PetWalk.bow(box, 0, 0, stg === 4 ? 580 : 560); else await sleep(later ? 200 : 280);   // 抬頭（脖子先帶起來、肩膀再回正）
           { const two = later || !!bowTo; cls(two, "chew2"); await flash("pb-chew", (stg === 1 ? 900 : stg === 4 ? 1050 : 900) * (two ? .67 : 1)); cls(false, "chew2"); }   // 嚼三下（後兩顆、以及狐虎每一顆都兩下：整段控制在 16 秒內）   // 嚼三下（後兩顆兩下；幼蟲快快啃、虎慢慢嚼）
-          await flash("pb-gulp", bowTo ? 280 : 340);                 // 吞
+          await flash("pb-gulp", 340);                               // 吞（要等動畫播完：0.28 秒就拿掉會切掉最後一段，頭跳回去）
         }
         if (bal && isFinite(left)) { left = Math.max(0, left - 1); bal.textContent = left; bal.classList.remove("tick"); void bal.offsetWidth; bal.classList.add("tick"); }
         if (typeof ttBuzz === "function") ttBuzz(8);

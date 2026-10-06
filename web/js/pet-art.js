@@ -223,6 +223,43 @@ window.PET_ART = (function () {
       ${brow(72, 83, 88, 85, "#8a3f16")}${brow(128, 83, 112, 85, "#8a3f16")}
       ${eyeOf("almond", 81, 95, 9.2, 10.4, -1, "#b8702a", { pupil: "round", pr: .6, tilt: .18 })}${eyeOf("almond", 119, 95, 9.2, 10.4, 1, "#b8702a", { pupil: "round", pr: .6, tilt: .18 })}
 `;   // 坐著和站著兩份身體共用同一顆頭（每次呼叫都有自己的 id）
+
+  // ── 側臉（2026-10-06）：側身站著、走路、低頭吃的時候用——朝左、吻部往前伸，嘴的支點在吻部最前端（咬的接觸點）。
+  // 以前側身也配正臉：低頭咬的時候張開的嘴是對著鏡頭。轉成四分之三面時正臉淡入接上（CSS 讀 --q），頭的大小位置不變
+  const foxSide = () => `
+      <g class="pc-ear r">${P(Pa("M112 70 L120 30 L140 62Z"), sh(FX, .15), { dx: 2, dy: 2 })}${P(Pa("M120 30 L122 46 Q128 46 133 41Z"), FXK, { sw: 0, dx: 1, dy: 1 })}</g>
+      <g class="pc-ear l">${P(Pa("M98 72 L92 26 L124 58Z"), FX, { dx: 3, dy: 3 })}${P(Pa("M92 26 L94.6 44 Q101 44 107 38Z"), FXK, { sw: 0, dx: 1, dy: 1 })}${P(Pa("M100 66 L96 42 L116 58Z"), "#efdac6", { sw: 0, dx: 2, dy: 2 })}</g>
+      ${P(Pa("M150 100 Q152 64 116 58 Q88 56 76 78 Q68 92 48 102 Q40 106 42 112 Q58 118 84 120 Q104 132 128 128 Q150 120 150 100Z"), "#e2783a", { hl: [112, 70, 14, 7], dx: 6, dy: 6 })}
+      ${P(Pa("M42 112 Q58 118 84 120 Q104 132 128 128 Q120 142 98 142 Q72 140 52 126 Q42 120 42 112Z"), FXC, { sw: 2.2, dx: 3, dy: 3 })}
+      <g class="pc-d">${tp(128, 128, 140, 134, 4, FXC, 2)}${tp(122, 134, 130, 142, 3.4, FXC, -2)}</g>
+      ${tp(80, 96, 58, 108, 3, "#9a4518", 2)}
+      ${mouth(50, 116, `<path d="M47 114 Q62 121 80 120" stroke="#2a1810" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+        `<path d="M47 113 Q64 117 82 118 Q70 132 52 126 Q46 121 47 113Z" fill="${MOUTH_IN}" stroke="#2a1810" stroke-width="1.6" stroke-linejoin="round"/><path d="M54 122 Q64 122 74 124 Q66 129 57 126Z" fill="${TONGUE}"/><path d="M52 114 l1.4 3.6 l1.8 -3.2Z" fill="#fff"/>`,
+        `<path d="M48 116 q-6 3 -7 8 q2 3 6 0 q2 -4 4 -6Z" fill="${TONGUE}" stroke="#9a3a30" stroke-width="1"/>`,
+        `<ellipse cx="92" cy="124" rx="7" ry="5" fill="${FXC}"/>`)}
+      <g class="pr-nose" style="--ox:44px;--oy:108px">${P(E(44, 108, 5.4, 4.4), "#2a1810", { sw: 0, dx: 1, dy: 1 })}<ellipse cx="42.4" cy="106.6" rx="1.8" ry="1.1" fill="#fff" opacity=".6"/></g>
+      <g class="pc-d">${[[58, 115], [62, 118], [56, 119]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.1" fill="#9a7a5a"/>`).join("")}</g>
+      ${brow(74, 80, 92, 79, "#8a3f16")}
+      ${eyeOf("almond", 84, 91, 8.6, 9.6, -1, "#b8702a", { pupil: "round", pr: .6, tilt: .18 })}
+`;
+  const tigerSide = () => `
+      <g class="pc-ear r">${P(C(132, 60, 12), sh(TG, .15), { sw: 2.4, dx: 2, dy: 2 })}</g>
+      <g class="pc-ear l">${P(C(116, 58, 14), TG, { sw: 2.6, dx: 2, dy: 2 })}<path d="M104 62 A12 12 0 0 1 122 46.5" stroke="${TGK}" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="108" cy="51" r="2.4" fill="${TGC}"/>${P(E(117, 61, 6.2, 6.6), "#f6e3cd", { sw: 0, dx: 1, dy: 1 })}</g>
+      ${P(Pa("M154 104 Q156 64 116 58 Q86 56 74 74 Q64 82 54 86 Q42 90 42 104 Q42 116 56 120 Q76 126 92 124 Q110 136 134 132 Q154 124 154 104Z"), TG, { hl: [108, 70, 14, 7], dx: 6, dy: 7 })}
+      ${P(Pa("M42 104 Q42 116 56 120 Q76 126 92 124 Q110 136 134 132 Q124 146 98 146 Q72 146 54 134 Q40 122 42 104Z"), TGC, { sw: 2.2, dx: 3, dy: 3 })}
+      ${P(Pa("M44 100 Q46 90 58 88 Q66 92 62 102 Q54 106 44 100Z"), TGC, { sw: 0, dx: 1, dy: 1 })}
+      ${P(Pa("M70 82 Q78 76 90 80 Q84 86 72 86Z"), TGC, { sw: 0, dx: 1, dy: 1 })}
+      ${stripe(102, 62, 106, 80, 4.6, 2)}${stripe(116, 64, 118, 82, 4.2, 2)}${stripe(130, 70, 128, 86, 4, 2)}
+      ${stripe(132, 98, 148, 94, 4.4, 1)}${stripe(128, 110, 148, 110, 4.4, 1)}${stripe(130, 122, 146, 126, 3.8, 1)}
+      ${mouth(48, 113, `<path d="M45 110 Q50 117 62 118 Q74 120 86 120" stroke="#2a1810" stroke-width="2.2" fill="none" stroke-linecap="round"/>`,
+        `<path d="M45 110 Q64 115 86 118 Q74 134 54 130 Q44 124 45 110Z" fill="${MOUTH_IN}" stroke="#2a1810" stroke-width="1.8" stroke-linejoin="round"/><path d="M55 123 Q66 123 78 125 Q68 131 58 128Z" fill="${TONGUE}"/><path d="M53 113 l1.6 4.2 l2 -3.8Z M58 126 l1.2 -3.4 l1.6 3.2Z" fill="#fff"/>`,
+        `<path d="M48 116 q-6 3 -7 8 q2 3 6 0 q2 -4 4 -6Z" fill="${TONGUE}" stroke="#9a3a30" stroke-width="1"/>`,
+        `<ellipse cx="94" cy="126" rx="8" ry="5.6" fill="${TGC}"/>`)}
+      <g class="pr-nose" style="--ox:42px;--oy:98px">${P(Pa("M38 94 Q44 90 50 95 Q48 102 42 103 Q37 100 38 94Z"), "#3a2014", { sw: 0, dx: 1, dy: 1 })}<ellipse cx="41" cy="95" rx="1.8" ry="1.1" fill="#fff" opacity=".6"/></g>
+      <g class="pc-d">${[[58, 114], [63, 117], [57, 119]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.2" fill="#9a7a5a"/>`).join("")}</g>
+      ${brow(74, 76, 94, 76, TGK)}
+      ${eyeOf("round", 86, 88, 8.4, 9.4, -1, "#c9922a", { pupil: "round", pr: .5 })}
+`;
   // 正面站姿（2026-10-05）：坐著 ↔ 側身走路之間的橋——同一顆頭、同兩隻前腿，換掉坐著的臀部：
   // 後面露出往遠處延伸的背（暗一點）、兩條後腿在前腿外側（比較遠，腳底高一點、顏色暗）、尾巴從身後翹到一側
   const FOX_FRONT = `<g class="pr-front">
@@ -431,7 +468,7 @@ ${tigerHead()}
       ${jleg("fl near", 80, 142, 26, 28, 13, 8.5, FX, FXK, 7.5)}${jleg("hl near", 140, 140, 27, 29, 16, 8.5, FX, FXK, 7.5)}
       ${P(Pa("M62 130 Q58 146 70 158 L74 150 L78 160 L82 148 Q82 136 74 126Z"), FXC, { sw: 2, dx: 2, dy: 2 })}
       <g class="pr-neck" style="--ox:84px;--oy:128px">${P(Pa("M56 142 Q50 122 60 104 Q74 92 90 100 Q100 116 108 136 Q86 152 56 142Z"), FX, { dx: 2, dy: 2, sw: 0 })}${P(Pa("M58 140 Q52 124 60 108 Q66 124 74 140 Q66 144 58 140Z"), FXC, { sw: 0, dx: 1, dy: 1 })}
-        <g class="pr-head2" transform="translate(62 80) scale(.78) translate(-100 -100)"><g class="pr-head" style="--ox:100px;--oy:132px">${foxHead()}<!--H2--></g></g></g>
+        <g class="pr-head2" transform="translate(62 80) scale(.78) translate(-100 -100)"><g class="pr-head" style="--ox:100px;--oy:132px"><g class="pr-face-s">${foxSide()}<!--H3--></g><g class="pr-face-f">${foxHead()}<!--H2--></g></g></g></g>
     </g>`;
   const TIGER_STAND = `
     <g class="pr-stand">
@@ -445,7 +482,7 @@ ${tigerHead()}
       ${jleg("fl near", 80, 142, 25, 26, 16, 11.5, TG, "", 10)}${jleg("hl near", 144, 138, 27, 28, 19, 11.5, TG, "", 10)}
       ${P(Pa("M60 128 Q54 146 68 160 L72 152 L76 162 L80 150 Q80 136 72 124Z"), TGC, { sw: 2, dx: 2, dy: 2 })}
       <g class="pr-neck" style="--ox:84px;--oy:126px">${P(Pa("M54 142 Q46 120 58 100 Q74 88 92 96 Q104 114 110 136 Q86 152 54 142Z"), TG, { dx: 2, dy: 2, sw: 0 })}${P(Pa("M56 140 Q48 122 58 106 Q64 124 74 140 Q64 144 56 140Z"), TGC, { sw: 0, dx: 1, dy: 1 })}${stripe(76, 100, 90, 106, 4, 1)}${stripe(84, 114, 98, 120, 4, 1)}${stripe(92, 126, 104, 132, 3.6, 1)}
-        <g class="pr-head2" transform="translate(60 78) scale(.78) translate(-100 -100)"><g class="pr-head" style="--ox:100px;--oy:134px">${tigerHead()}<!--H2--></g></g></g>
+        <g class="pr-head2" transform="translate(60 78) scale(.78) translate(-100 -100)"><g class="pr-head" style="--ox:100px;--oy:134px"><g class="pr-face-s">${tigerSide()}<!--H3--></g><g class="pr-face-f">${tigerHead()}<!--H2--></g></g></g></g>
     </g>`;
   // 頭裡面再包一層 .pr-hfx（2026-10-05 第二輪「控制權分層」）：外層 .pr-head 給姿勢（低頭、走路、看手指——JS 或狀態 class），
   // 內層給咬、嚼、吞、摸頭這些 CSS 小動作。以前兩種都寫在同一個元素的 transform 上，誰後寫誰贏：嚼的動畫一播，低頭的位移就被蓋掉（頭彈起來離開身體）
@@ -533,7 +570,7 @@ ${tigerHead()}
   }
   let U = 0;   // 每份 SVG 自己的 id 前綴（§ → p1_、p2_…），避免同頁多份角色的裁切互相串
   // 戴帽子時拿掉 <!--O-->…<!--/O-->（幼蟲的臭角）：帽子要戴在頭上，不是戴在臭角上
-  function body(i, hatId) { const pre = "p" + (++U).toString(36) + "_"; let a = A[clamp(i)]; if (HATS[hatId]) a = a.replace(/<!--O-->[\s\S]*?<!--\/O-->/, ""); return a.replace("<!--H-->", hatG(hatId, i)).replace("<!--H2-->", hatG(hatId, i)).replace(/§/g, pre); }
+  function body(i, hatId) { const pre = "p" + (++U).toString(36) + "_"; let a = A[clamp(i)]; if (HATS[hatId]) a = a.replace(/<!--O-->[\s\S]*?<!--\/O-->/, ""); return a.replace("<!--H-->", hatG(hatId, i)).replace("<!--H2-->", hatG(hatId, i)).replace("<!--H3-->", HATS[hatId] ? `<g transform="translate(14 12) rotate(8 100 46)">${hatG(hatId, i)}</g>` : "").replace(/§/g, pre); }
   function prop(i) { const p = PROP[clamp(i)]; if (!p) return ""; const pre = "q" + (++U).toString(36) + "_"; return `<svg class="pet-prop" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${p.replace(/§/g, pre)}</svg>`; }
   // 幼龍（2026-10-05 拿掉腳下的雲）：腳底原本踩在雲上（y≈183），整張往下 13 讓腳底落在跟其他夥伴同一條地面線（y≈196）。
   // 用 viewBox 平移而不是包一層 transform：各部位的支點（transform-box: view-box）座標不用改

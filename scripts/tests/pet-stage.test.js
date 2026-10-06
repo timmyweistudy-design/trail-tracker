@@ -108,8 +108,8 @@ const KM=[0,5,20,40,90,150,260];
   for(let k=0;k<420;k++){const e=document.querySelector("#petFeed .feed-bal");if(e){const v=+e.textContent;if(vals[vals.length-1]!==v)vals.push(v);}
    const em=document.querySelector("#petEmoji");if(em){const top=["pb-lick","pb-gulp","pb-chew","pb-snap","st-open","st-lean"].find(k=>em.classList.contains(k));if(top&&steps[steps.length-1]!==top)steps.push(top);
     if(em.classList.contains("st-lean")){bite=true;const f=em.querySelector(".pc-bob").getBoundingClientRect();feet=feet==null?f.bottom:feet;feetMove=Math.max(feetMove,Math.abs(f.bottom-feet));}
-    if(em.classList.contains("st-open")&&!wasOpen){const m=PetWalk.part(document.querySelector(".ps-box"),".pr-mouth").getBoundingClientRect(),mc=[m.left+m.width/2,m.top+m.height/2];
-     const bs=[...document.querySelectorAll(".ps-berry:not(.eaten)")].map(x=>{const q=x.getBoundingClientRect();return [q.left+q.width/2-mc[0],q.top+q.height/2-mc[1]]}).sort((u,v)=>Math.hypot(...u)-Math.hypot(...v));if(bs[0])aims.push(bs[0].map(Math.round));}
+    if(em.classList.contains("st-open")&&!wasOpen){const mc=PetWalk.cpt(document.querySelector(".ps-box"),"mouth");   // 嘴的接觸點對果實上緣（咬的位置，2026-10-06 側臉）
+     const bs=[...document.querySelectorAll(".ps-berry:not(.eaten)")].map(x=>{const q=x.getBoundingClientRect();return [q.left+q.width/2-mc[0],q.top+q.height*.32-mc[1]]}).sort((u,v)=>Math.hypot(...u)-Math.hypot(...v));if(bs[0])aims.push(bs[0].map(Math.round));}
     wasOpen=em.classList.contains("st-open");if(!em.classList.contains("st-lean"))feet=null;}
    if(!document.querySelector(".ps-berry"))break;await new Promise(r=>setTimeout(r,70));}
   return {vals,bite,steps:steps.join(">"),feetMove:+feetMove.toFixed(1),aims};});
@@ -242,7 +242,7 @@ const KM=[0,5,20,40,90,150,260];
  ok(r.uniq&&!r.leftover,"each SVG copy gets its own ids, no § left");
  // 2026-10-04 龍重畫：東方龍要有鬃、鬚、鹿角、背鰭、鱗才像龍，預算 12K→24K；另外量實際插進頁面的時間（列表一次畫很多隻）
  // 2026-10-04 走過去吃：狐、虎多了一份側身站姿（四條有關節的腿＋脖子＋同一顆頭），預算 24K→40K；插入時間照量
- ok(r.max<40000&&r.ms<10,"character SVG size & speed budget (max "+r.max+" chars, "+r.ms+" ms per dragon)");
+ ok(r.max<60000&&r.ms<10,"character SVG size & speed budget (max "+r.max+" chars, "+r.ms+" ms per dragon)");
  ok(r.imgs.every(Boolean),"dataUri (share cards / widgets) loads for 7 stages with hat");
  await p.evaluate(()=>{window.__psNoIdle=true;renderPet();document.querySelector(".ps-box").scrollIntoView({block:"center"})});
  const hb=await p.evaluate(()=>{const sv=document.querySelector("#petEmoji .pet-critter"),c=sv.getBoundingClientRect(),k=sv.classList.contains("pc-pad")?140/480:0;return {x:c.left+c.width/2,y:c.top+c.height*(k+(1-2*k)*.25)}});   // 圖案本身的 25% 高（主角畫布四周留白不算）

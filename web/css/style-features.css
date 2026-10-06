@@ -2344,6 +2344,9 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .ps-box.standing.pf-y #petEmoji .pr-stand { animation: pfOut .13s linear forwards; }
 @keyframes pfIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes pfOut { from { opacity: 1; } to { opacity: 0; } }
+/* 側臉 ↔ 正臉（2026-10-06）：側身（--q 0）看側臉；轉成四分之三面（--q 1）時正臉淡入、接上坐姿那顆頭。側臉在底下、到一半才開始淡出（兩張都半透明會透出背景） */
+.ps-box .pr-stand .pr-face-f { opacity: var(--q, 0); }
+.ps-box .pr-stand .pr-face-s { opacity: clamp(0, calc(2 - 2 * var(--q, 0)), 1); }
 /* 四分之三面（--q：0＝側身、1＝四分之三）：身體往鏡頭方向縮短（前端不動、後端往前收），腿不變粗細、只是位置收攏，
    遠側的腿往後上方錯開一點（有深度）；頭（pet-walk.js 直接寫）往中間移、變大一點、轉向鏡頭 */
 .ps-box .pr-stand .pr-torso { --ox: 70px; --oy: 140px; scale: calc(1 - .42 * var(--q, 0)) 1; }
