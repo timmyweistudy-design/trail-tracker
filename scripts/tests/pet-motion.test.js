@@ -24,7 +24,7 @@ const probe = () => {
   const P = sel => PetWalk.part(box, sel);
   const m = P(".pr-mouth"), crit = em.querySelector(".pet-critter").getBoundingClientRect();
   const o = { raw: em.className + " || " + box.className, cls: [...em.classList].filter(c => /^(pb-|st-|chew)/.test(c)).join(" "), bcl: [...box.classList].filter(c => /standing|walking|face-r|pf-|lv-l/.test(c)).join(" "),
-    mouth: PetWalk.cpt(box, "mouth") || (m ? C(m.getBoundingClientRect()) : null),   // 嘴的接觸點（跟程式用的同一個；側臉的嘴巴群組比較長，外框中心會偏後） crit: [crit.left, crit.top, crit.width, crit.height], wx: box.__wx,
+    mouth: PetWalk.cpt(box, "mouth") || (m ? C(m.getBoundingClientRect()) : null),   /* 嘴的接觸點（跟程式用的同一個；側臉的嘴巴群組比較長，外框中心會偏後） */ crit: [crit.left, crit.top, crit.width, crit.height], wx: box.__wx,
     berries: [...document.querySelectorAll(".ps-berry")].map(b => { const r = b.getBoundingClientRect(); return { c: C(r), w: r.width, op: +getComputedStyle(b).opacity, cls: b.className.replace("ps-berry", "").trim() }; }),
     sparks: [...document.querySelectorAll(".ps-spark")].filter(e => +getComputedStyle(e).opacity > .3).length };   // 只算看得到的（還沒輪到的光點是透明的）
   { const sv = em.querySelector(".pet-critter"), R = sv.getBoundingClientRect(); let sp = 0;   // 畫出來的東西有沒有超出畫布（iOS WebKit 會照畫布裁掉）
@@ -45,7 +45,9 @@ const probe = () => {
     for (let k = 0; k < 64; k++) { const t = k / 64 * Math.PI * 2, q = new DOMPoint(cx + rx * Math.cos(t), cy + ry * Math.sin(t)).matrixTransform(M); lo = Math.max(lo, q.y); }
     o.eggBottom = lo;
   }
-  if (st === 2) { const ext = em.querySelector(".pr-ext"); if (+getComputedStyle(ext).opacity > .5) { const pt = ext.getPointAtLength(ext.getTotalLength()), s = new DOMPoint(pt.x, pt.y).matrixTransform(ext.getScreenCTM()); o.prob = [s.x, s.y]; }
+  if (st === 2) { const fw = em.querySelector(".pc-fw"); o.wf = fw ? +((/scaleX\(([-\d.]+)\)/.exec(fw.style.transform) || [0, NaN])[1]) : NaN;   // 2026-10-06 第四輪：前翅張開的程度（wings() 每格寫）
+    o.extOn = +getComputedStyle(em.querySelector(".pr-ext")).opacity > .1;
+    const ext = em.querySelector(".pr-ext"); if (+getComputedStyle(ext).opacity > .5) { const pt = ext.getPointAtLength(ext.getTotalLength()), s = new DOMPoint(pt.x, pt.y).matrixTransform(ext.getScreenCTM()); o.prob = [s.x, s.y]; }
     const hw = [...em.querySelectorAll(".pc-hw")].map(e => e.getBoundingClientRect()); o.hw = [Math.min(...hw.map(r => r.left)), Math.min(...hw.map(r => r.top)), Math.max(...hw.map(r => r.right)), Math.max(...hw.map(r => r.bottom))]; }
   if (st === 6) { const d = em.querySelector(".pr-deform").getBoundingClientRect(), b = box.getBoundingClientRect(); o.deform = [d.left, d.top, d.right, d.bottom]; o.boxr = [b.left, b.top, b.right, b.bottom]; }
   return o;
@@ -115,7 +117,19 @@ function judge(st, tag, R) {
     const bites = []; for (let i = 1; i < n; i++) if (/pb-snap/.test(F[i].cls) && !/pb-snap/.test(F[i - 1].cls)) { const tb = F[i].berries.find(x => /target/.test(x.cls)); if (tb) bites.push(+(D(F[i].mouth, tb.c) / (tb.w / 2)).toFixed(2)); }
     ok(bites.length >= 3 && bites.every(v => v <= 1), `${tag}: at every bite the mouth is on the berry (distance / berry radius ${JSON.stringify(bites)})`, todoOf("bite", st));
   }
-  if (st === 2) {
+  if (st === 2) {   // 2026-10-06 第四輪：翅膀單一控制器
+    const W = F.map(f => f.wf), dw = W.map((v, i) => (i ? Math.abs(v - W[i - 1]) : 0));
+    let wj = 0, wat = -1; for (let i = 2; i < n - 1; i++) { const sp = Math.max(dw[i] - Math.max(dw[i - 1], dw[i + 1]) > .12 ? dw[i] : 0, dw[i] > .3 ? dw[i] : 0); if (sp > wj) { wj = sp; wat = i; } }
+    if (process.env.PM_SEQ && wat > 0) for (let i = wat - 4; i <= wat + 3; i++) console.log("   wing", i, W[i].toFixed(3), F[i].cls, "|", F[i].bcl, F[i].crit[1].toFixed(1));
+    ok(W.every(v => isFinite(v)) && wj === 0, `${tag}: the wings never jump to a fixed pose (wing opening changes smoothly every frame; worst ${wj.toFixed(2)} @${wat} ${wat >= 0 ? F[wat].cls : ""})`);
+    let sipR = 0; { let lo = 9, hi = -9; for (let i = 0; i < n; i++) { if (/pb-sip/.test(F[i].cls)) { lo = Math.min(lo, W[i]); hi = Math.max(hi, W[i]); } else if (hi > -9) { sipR = Math.max(sipR, hi - lo); lo = 9; hi = -9; } } }
+    ok(sipR <= .08, `${tag}: while sipping the wings only move a little (opening range ${sipR.toFixed(3)} ≤ 0.08) — no big opening`);
+    const take = []; for (let i = 1; i < n; i++) if (!/st-sip/.test(F[i].cls) && /st-sip/.test(F[i - 1].cls)) {   // 口器收好 → 起飛前：要先在原地拍兩下以上，口器收著
+      const y0 = F[i].crit[1]; let r = i; while (r < n && F[r].crit[1] > y0 - 2) r++;
+      let beats = 0; for (let k = i + 1; k < r - 1; k++) if (W[k] < W[k - 1] && W[k] <= W[k + 1] && W[k] < .62) beats++;
+      take.push({ beats, ext: F.slice(r, r + 4).some(f => f.extOn) ? 1 : 0 });   // 升起來的那一刻口器已經收好（收回去之後淡出要 0.18 秒，不算）
+    }
+    ok(take.length >= 3 && take.every(t => t.beats >= 2 && !t.ext), `${tag}: before every takeoff it flaps at least twice with the proboscis rolled up ${JSON.stringify(take)}`);
     const g = F.map((f, i) => [f, i]).filter(([f]) => f.prob && /pb-sip/.test(f.cls)).map(([f, i]) => { const tb = f.berries.find(x => /target/.test(x.cls)); return [tb ? D(f.prob, tb.c) : 0, i]; });
     const gw = g.reduce((a, b) => (b[0] > a[0] ? b : a), [0, -1]);
     if (process.env.PM_SEQ) console.log(tag, "sip", g.filter((_, k) => k % 3 === 0).map(([d, i]) => { const tb = F[i].berries.find(x => /target/.test(x.cls)); return i + ":" + d.toFixed(1) + " tip" + F[i].prob.map(v => v.toFixed(0)) + " b" + tb.c.map(v => v.toFixed(0)) + " w" + tb.w.toFixed(0); }).join("  "));
@@ -153,7 +167,7 @@ function judge(st, tag, R) {
     let both = 0; const w0 = {}; for (const f of F) for (const x of f.berries) if (/melt/.test(x.cls)) { const key = Math.round(x.c[0] / 4); if (w0[key] == null) w0[key] = x.w; if (f.sparks >= 3 && x.op > .8 && x.w >= w0[key] * .9) both++; }
     ok(both === 0, `${tag}: the berry shrinks as the sparks leave it (frames with a full berry and ≥3 sparks: ${both})`, todoOf("egg", st));
   }
-  const lim = st === 1 ? (/ C$/.test(tag) ? 18 : 27) : st === 4 ? 23 : st === 5 ? 25 : st === 3 || st === 6 ? 17.9 : 16;   // 幼蟲爬得像真的毛毛蟲（慢）：A、B 刻意讓果實落在兩邊（測掉頭）放寬；C＝遊戲真的落點（頭的前方）   // 幼龍：撿起來、舉到嘴邊、咬兩口、吞完才放手（步驟本來就多）；虎：每顆都趴下去吃再站起來（2026-10-06 人面獅身）   // 幼蟲：左右兩邊都有果實時要掉頭兩次（頭不動、身體繞過去＝每次多爬 80px）   // 含判定結束的 0.7 秒；狐、虎要走去左右兩端（A、C 組）；虎刻意慢、有重量（ChatGPT 看錄影的建議）
+  const lim = st === 1 ? (/ C$/.test(tag) ? 18 : 27) : st === 4 ? 23 : st === 5 ? 25 : st === 3 || st === 6 ? 17.9 : st === 2 ? 17.5 : 16;   /* 蝶 2026-10-06 第四輪：停穩半合翅＋起飛前原地拍兩下，多 1 秒 */   // 幼蟲爬得像真的毛毛蟲（慢）：A、B 刻意讓果實落在兩邊（測掉頭）放寬；C＝遊戲真的落點（頭的前方）   // 幼龍：撿起來、舉到嘴邊、咬兩口、吞完才放手（步驟本來就多）；虎：每顆都趴下去吃再站起來（2026-10-06 人面獅身）   // 幼蟲：左右兩邊都有果實時要掉頭兩次（頭不動、身體繞過去＝每次多爬 80px）   // 含判定結束的 0.7 秒；狐、虎要走去左右兩端（A、C 組）；虎刻意慢、有重量（ChatGPT 看錄影的建議）
   ok(sec <= lim, `${tag}: one feeding (3 berries, walk home, celebrate) takes ≤${lim} s (${sec.toFixed(1)} s)`, todoOf("time", st));
   const spill = Math.max(...F.map(f => f.spill || 0)), si = F.findIndex(f => (f.spill || 0) === spill);
   ok(spill <= 0, `${tag}: nothing is drawn outside the canvas (iOS WebKit clips there; worst ${spill.toFixed(1)}px${spill > 0 ? ` @${si} ${F[si].spillWhat} ${F[si].cls}|${F[si].bcl}` : ""})`);

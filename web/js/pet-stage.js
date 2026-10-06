@@ -118,9 +118,11 @@ window.PetStage = (function () {
     else visible = true;
     schedule(mood);
     if (+el.dataset.stage === 6 && typeof PetWalk !== "undefined" && PetWalk.rope) PetWalk.rope(el, true);   // 神龍：身體一直有繩波流過
+    if (+el.dataset.stage === 2 && typeof PetWalk !== "undefined" && PetWalk.wings) PetWalk.wings(el, true);   // 蝶：翅膀由同一個控制器每格寫（2026-10-06 第四輪）
   }
   function unbind() {
     if (box && typeof PetWalk !== "undefined" && PetWalk.rope) PetWalk.rope(box, false);
+    if (box && typeof PetWalk !== "undefined" && PetWalk.wings) PetWalk.wings(box, false);
     if (box) { box.removeEventListener("pointermove", onMove); box.removeEventListener("pointerleave", onLeave); box.removeEventListener("pointerup", onLeave); }
     window.removeEventListener("deviceorientation", onOrient);
     if (io) { io.disconnect(); io = null; }
@@ -402,8 +404,10 @@ window.PetStage = (function () {
           cls(true, "chew2"); await flash("pb-chew", 600); cls(false, "chew2"); await relax;   // 嚼兩下（0.3 秒 × 2，要等嚼完）
           await flash("pb-gulp", 340);
         }
-        else if (fly) {   // 蝶（2026-10-06）：腳先伸出來落地 → 翅膀合起來立在背上 → 腳碰到才把口器一圈一圈攤開 → 一下一下探進果實吸 → 捲回去 → 翅膀打開才起飛
-          cls(true, "st-land"); await sleep(260);
+        else if (fly) {   // 蝶（2026-10-06 第四輪）：弧線降落 → 停穩、翅膀慢慢半合 → 口器一圈一圈攤開碰到果實 → 一下一下吸（翅膀只微動、身體高度不變）
+          // → 口器捲回去 → 翅膀打開、在原地用力拍兩下以上 → 才起飛（以前翅膀一打開就直接升起來）
+          PetWalk.wingMode(box, "rest", 560);
+          cls(true, "st-land"); await sleep(420);
           aimProboscis(b, 0); cls(true, "st-sip");
           await proboscis(b, 0, 1, 420);
           b.classList.add("sipped"); cls(true, "pb-sip");
@@ -411,7 +415,8 @@ window.PetStage = (function () {
           cls(false, "pb-sip");
           await proboscis(b, 1, 0, 360);
           cls(false, "st-sip"); resetProboscis();
-          cls(false, "st-land", "st-legs"); await sleep(220);   // 翅膀打開再飛
+          PetWalk.wingMode(box, "flap", 200); await sleep(200 + 2 * 340 + 60);   // 拍兩下（一下 0.34 秒）
+          cls(false, "st-land", "st-legs");
         } else {
           if (stg === 5) {   // 幼龍（2026-10-06 像松鼠）：走到果實在兩腳正前方 → 蹲下、雙手往前下方伸到果實 → 雙手捧住 → 坐直把果實捧到下巴前 → 小口啃兩口 → 吞完才放下手
             const em = emEl(), pl = em.querySelector(".pr-paw.l"), pr = em.querySelector(".pr-paw.r");

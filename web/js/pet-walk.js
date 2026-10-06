@@ -124,6 +124,38 @@ window.PetWalk = (function () {
     const tick = () => { if (!box.isConnected || stage(box) !== 6) { ropeRaf = 0; return; } ropeRender(box, performance.now()); ropeRaf = requestAnimationFrame(tick); };
     ropeRaf = requestAnimationFrame(tick);
   }
+  // ── 蝶的翅膀（2026-10-06 第四輪）：單一個 JS 控制器每格寫前翅、後翅的 scaleX（1＝全開）。
+  // 以前三方輪流管：平常 CSS pcflut、停下來 CSS bfRest、飛的時候 JS——每換一次手翅膀就從那個動畫的固定姿勢重來（一格跳一大段）。
+  // 現在每種狀態是一個「時間 → 角度」的函式，換狀態時從「換的那一格的角度」平滑接到新函式（B 毫秒），角度永遠連續：
+  //   idle 平常慢慢搧、fly 跟著身體一拍一升（pose 寫 box.__wfly）、rest 停著吃＝半合只微動（不再週期性大張）、flap 起飛前在原地用力拍
+  const WING = {
+    idle: t => [.86 + .14 * Math.cos(2 * Math.PI * t / 1.1), .86 + .14 * Math.cos(2 * Math.PI * (t + .92) / 1.1)],
+    rest: t => [.45 + .02 * Math.sin(2 * Math.PI * t / 2.6), .45 + .02 * Math.sin(2 * Math.PI * (t - .25) / 2.6)],
+    flap: (t, w) => [.5 + .5 * Math.abs(Math.sin(Math.PI * (t - w.t0) / .34)), .5 + .5 * Math.abs(Math.sin(Math.PI * (t - w.t0 - .04) / .34))],
+    fly: (t, w, box) => box.__wfly || WING.idle(t),
+  };
+  let wingRaf = 0;
+  function wingNow(box, t) {
+    const w = box.__wing || (box.__wing = { mode: "idle", from: null, ts: 0, B: 1, t0: 0 });
+    const cur = WING[w.mode](t, w, box); if (!w.from) return cur;
+    const k = Math.min(1, (t - w.ts) / w.B); if (k >= 1) { w.from = null; return cur; }
+    const e = k * k * (3 - 2 * k); return [w.from[0] + (cur[0] - w.from[0]) * e, w.from[1] + (cur[1] - w.from[1]) * e];
+  }
+  function wingMode(box, mode, ms) {   // 換狀態：從現在的角度接過去
+    if (!box) return; const t = performance.now() / 1000, w = box.__wing || (box.__wing = { mode: "idle", from: null, ts: 0, B: 1, t0: 0 });
+    if (w.mode === mode) return;
+    w.from = wingNow(box, t); w.mode = mode; w.ts = t; w.B = Math.max(.001, (ms == null ? 300 : ms) / 1000); w.t0 = t;
+  }
+  function wingRender(box) {
+    const E = els(box); if (!E.fw.length) return;
+    const v = wingNow(box, performance.now() / 1000); box.__wv = v;
+    E.fw.forEach(el => { el.style.transform = `scaleX(${v[0].toFixed(3)})`; }); E.hw.forEach(el => { el.style.transform = `scaleX(${v[1].toFixed(3)})`; });
+  }
+  function wings(box, on) {
+    cancelAnimationFrame(wingRaf); wingRaf = 0; if (!box || !on || reduce()) return;
+    const tick = () => { if (!box.isConnected || stage(box) !== 2) { wingRaf = 0; return; } wingRender(box); wingRaf = requestAnimationFrame(tick); };
+    wingRaf = requestAnimationFrame(tick);
+  }
   // ── 神龍的雲座：晚 0.25 秒跟著重心走；落在雲上的果實（box.__riders）跟著雲一起移 ──
   function cloudTick(box, x) {
     const now = performance.now(), tr = box.__trail || (box.__trail = []);
@@ -238,7 +270,6 @@ window.PetWalk = (function () {
     if (E.earR) { E.earR.style.animation = "none"; T(E.earR, `rotate(calc(${d("--gear")} * -1))`); }
     T(E.pawL, `translate(${g("--pLx")}, ${g("--pLy")}) rotate(${d("--pLr")})`); T(E.pawR, `translate(${g("--pRx")}, ${g("--pRy")}) rotate(${d("--pRr")})`);
     T(E.footL, `translate(${g("--hLx")}, ${g("--hLy")})`); T(E.footR, `translate(${g("--hRx")}, ${g("--hRy")})`);
-    if (v["--wf"] != null) { E.fw.forEach(el => { el.style.animation = "none"; el.style.transform = `scaleX(${v["--wf"]})`; }); E.hw.forEach(el => { el.style.animation = "none"; el.style.transform = `scaleX(${v["--wh"]})`; }); }   // 蝶：拍翅跟身體起伏同一個相位
   }
   // y＝前後（深度）：果實落在比較靠鏡頭的地方（畫面上比較低）時，往前站一點點，腳底線跟果實在同一個深度
   function moveTo(box, x, y) {   // 位置直接寫到角色、影子、幼龍的雲（不用 .ps-box 上的變數，免得整個舞台每格重算）
@@ -254,7 +285,7 @@ window.PetWalk = (function () {
   const clearGait = box => {
     const em = box.querySelector("#petEmoji"); if (em) GAITV.forEach(k => em.style.removeProperty(k));
     box.__gv = null; const E = ELS.get(box); if (!E) return;
-    [E.body, E.head, E.tail, E.earL, E.earR, E.pawL, E.pawR, E.footL, E.footR, E.neck, E.head2, E.stail, ...E.fw, ...E.hw, E.pearl, ...E.sway, ...Object.values(E.legs || {}).flat()].forEach(el => { if (el) { el.style.transform = ""; el.style.animation = ""; el.style.scale = ""; } });
+    [E.body, E.head, E.tail, E.earL, E.earR, E.pawL, E.pawR, E.footL, E.footR, E.neck, E.head2, E.stail, E.pearl, ...E.sway, ...Object.values(E.legs || {}).flat()].forEach(el => { if (el) { el.style.transform = ""; el.style.animation = ""; el.style.scale = ""; } });
     if (E.stand && !box.__bow) { E.stand.style.translate = ""; E.stand.style.transform = ""; E.stand.style.transition = ""; }
   };
   // 角色的版面寬度（px）：用 clientWidth，不能用 getBoundingClientRect——轉身（rotateY）時畫面上的寬度會變窄，步幅就會算錯
@@ -347,8 +378,11 @@ window.PetWalk = (function () {
     // 各種走法的身體
     if (g.mode === "rock") { br = dir * 4 * s + (g.roll) * Math.sin(TAU * p) * s; by = (g.bob) * Math.abs(Math.sin(TAU * p)) * s; }
     if (g.mode === "fly") {   // 一拍一升：翅膀往下拍（收→張）時身體上升、往上收時落下；後翅晚一點跟上
-      by = -(g.bob) * Math.abs(Math.sin(TAU * p)) * s; br = dir * (g.bank) * s;
-      set(box, "--wf", (.7 + .3 * Math.abs(Math.sin(TAU * p))).toFixed(3)); set(box, "--wh", (.7 + .3 * Math.abs(Math.sin(TAU * (p - .05)))).toFixed(3));
+      // 2026-10-06 第四輪：一個步幅拍一下（以前兩下＝每秒 7.4 下，30fps 一下只有四格，翅膀一格跳 0.16，看起來在抖）
+      by = -(g.bob) * Math.abs(Math.sin(Math.PI * p)) * s; br = dir * (g.bank) * s;
+      box.__wfly = [.7 + .3 * Math.abs(Math.sin(Math.PI * p)), .7 + .3 * Math.abs(Math.sin(Math.PI * (p - .06)))];   // 翅膀由 wings() 寫（同一個控制器，角度連續）
+      if (!box.__wing || box.__wing.mode !== "fly") wingMode(box, "fly", 200);   // 第一次有飛行的拍子才交給飛行（以前起步就交，還沒有拍子時先用平常的搧法，下一格一跳）
+      wingRender(box);   // 跟身體同一格寫（不等翅膀自己的迴圈，晚一格會看起來一頓一跳）
     }
     if (g.mode === "crawl") { set(box, "--gwave", f(p).toFixed(3)); by = 0; }
     if (g.mode === "swim") { set(box, "--gwave", f(p).toFixed(3)); br = (g.roll) * Math.sin(TAU * p) * s; by = (g.bob) * Math.sin(TAU * p) * s; }
@@ -404,6 +438,7 @@ window.PetWalk = (function () {
     box.classList.toggle("lv-l", dir < 0); lvReset(box); clearGait(box);
     set(box, "--wx", wx + "px"); set(box, "--wy", wy + "px"); box.__wy = null; { const E = els(box); [E.critter, E.shadow, E.prop].forEach(el => { if (el) el.style.translate = ""; }); }
     box.classList.remove("walking"); delete box.dataset.walk;
+    if (g.mode === "fly") wingMode(box, "idle", 300);
   }
   // 幼蟲低頭吃：頭往下 ld、往前 lx（跟 CSS .st-lean 移頭的量一樣），身體前段跟著彎（x 從 78 到頭漸增），不會在中間拱出尖角
   async function bend(box, ld, lx, ms, onFrame) {   // onFrame：每寫一格就呼叫（咬住的果實在同一格跟著嘴）
@@ -426,9 +461,10 @@ window.PetWalk = (function () {
     if (Math.abs(dist) < 3) {   // 左右幾乎不用動、只要往前（深度）挪：原地踏一小步過去
       const vd = g.mode === "fly" ? Math.max(300, Math.abs(y1 - y0) / g.v * 1000 * 1.6) : 300;   // 蝶原地降落／起飛：依高度給時間（以前一律 0.3 秒，降 38px 擠在兩格）
       if (Math.abs(y1 - y0) >= 1.5) await new Promise(res => { const t0 = performance.now(); const step = () => { const now = performance.now(); const k = Math.min(1, (now - t0) / vd), e = k * k * (3 - 2 * k); moveTo(box, x0 + (x - x0) * e, y0 + (y1 - y0) * e); if (k < 1) raf = requestAnimationFrame(step); else res(); }; raf = requestAnimationFrame(step); });
-      set(box, "--wx", x + "px"); set(box, "--wy", y1 + "px"); box.__wy = null; const E = els(box); [E.critter, E.shadow, E.prop].forEach(el => { if (el) el.style.translate = ""; }); return;
+      set(box, "--wx", x + "px"); set(box, "--wy", y1 + "px"); box.__wy = null; const E = els(box); [E.critter, E.shadow, E.prop].forEach(el => { if (el) el.style.translate = ""; }); if (g.mode === "fly") wingMode(box, "idle", 300); return;
     }
     box.classList.add("walking"); box.dataset.walk = g.mode;
+    if (g.mode === "fly") box.__wfly = null;
     box.__k = 0;   // 起步後（轉完身）再量
     let rev = false;
     if (g.mode === "stand") { if (!box.classList.contains("standing")) await standUp(box, dir); else if (!opts.keepFace) await turnStand(box, dir); g = Object.assign({}, g, { D: strideD(box, g) }); }
@@ -652,7 +688,7 @@ window.PetWalk = (function () {
     const back = stage(box) === 1 && Math.sign(0 - curX(box)) === -lvFace(box) && Math.abs(curX(box)) <= 100;
     await goTo(box, 0, { wy: 0, keepFace: back }); await sitDown(box); await face(box, 0, 300);
   }
-  function stop(box) { cancelAnimationFrame(raf); if (box) { box.classList.remove("walking", "pf-front"); setQ(box, 0); ["--wx", "--wy", "--face"].forEach(k => box.style.removeProperty(k)); clearGait(box); } }
+  function stop(box) { cancelAnimationFrame(raf); if (box) { if (stage(box) === 2) wingMode(box, "idle", 300); box.classList.remove("walking", "pf-front"); setQ(box, 0); ["--wx", "--wy", "--face"].forEach(k => box.style.removeProperty(k)); clearGait(box); } }
   // 接觸點的畫面座標：mouth＝嘴（.pr-mouth 的支點，跟著頭的所有變換）；其他＝pet-art.js 畫的 .cp-*（手掌、尾尖、裂紋）
   function cpt(box, name) {
     const em = box.querySelector("#petEmoji"); if (!em) return null;
@@ -664,5 +700,5 @@ window.PetWalk = (function () {
   }
   // 現在看得到的那一份身體（站著時是 .pr-stand）裡找部位
   const part = (box, sel) => { const em = box.querySelector("#petEmoji"); if (!em) return null; return (box.classList.contains("standing") && em.querySelector(".pr-stand " + sel)) || em.querySelector(sel); };
-  return { rope, pxu, svgY, tween, goTo, goEat, home, face, stop, standUp, sitDown, turnStand, setQ, larvaTurn, bend, part, bow, bowSet, bowClear, solveBow, groundY, cpt, tailTo, tailReach, GAIT, _pose: pose };   // _pose：測試逐相位檢查用
+  return { rope, wings, wingMode, pxu, svgY, tween, goTo, goEat, home, face, stop, standUp, sitDown, turnStand, setQ, larvaTurn, bend, part, bow, bowSet, bowClear, solveBow, groundY, cpt, tailTo, tailReach, GAIT, _pose: pose };   // _pose：測試逐相位檢查用
 })();
