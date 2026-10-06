@@ -130,7 +130,7 @@ window.PetWalk = (function () {
   //   idle 平常慢慢搧、fly 跟著身體一拍一升（pose 寫 box.__wfly）、rest 停著吃＝半合只微動（不再週期性大張）、flap 起飛前在原地用力拍
   const WING = {
     idle: t => [.86 + .14 * Math.cos(2 * Math.PI * t / 1.1), .86 + .14 * Math.cos(2 * Math.PI * (t + .92) / 1.1)],
-    rest: t => [.45 + .02 * Math.sin(2 * Math.PI * t / 2.6), .45 + .02 * Math.sin(2 * Math.PI * (t - .25) / 2.6)],
+    rest: () => [.45, .45],   // 2026-10-06 第五輪（使用者）：落地吃東西時翅膀完全停住
     flap: (t, w) => [.5 + .5 * Math.abs(Math.sin(Math.PI * (t - w.t0) / .34)), .5 + .5 * Math.abs(Math.sin(Math.PI * (t - w.t0 - .04) / .34))],
     fly: (t, w, box) => box.__wfly || WING.idle(t),
   };
@@ -406,7 +406,7 @@ window.PetWalk = (function () {
     if (g.mode === "rock") { br = dir * 4 * s + (g.roll) * Math.sin(TAU * p) * s; by = (g.bob) * Math.abs(Math.sin(TAU * p)) * s; }
     if (g.mode === "fly") {   // 一拍一升：翅膀往下拍（收→張）時身體上升、往上收時落下；後翅晚一點跟上
       // 2026-10-06 第四輪：一個步幅拍一下（以前兩下＝每秒 7.4 下，30fps 一下只有四格，翅膀一格跳 0.16，看起來在抖）
-      by = -(g.bob) * Math.abs(Math.sin(Math.PI * p)) * s; br = dir * (g.bank) * s;
+      by = -(g.bob) * (.5 - .5 * Math.cos(2 * Math.PI * p)) * s; br = dir * (g.bank) * s;   // 起伏用平滑的波（|sin| 在谷底是尖的，身體一格反向、嘴跳一下）
       box.__wfly = [.7 + .3 * Math.abs(Math.sin(Math.PI * p)), .7 + .3 * Math.abs(Math.sin(Math.PI * (p - .06)))];   // 翅膀由 wings() 寫（同一個控制器，角度連續）
       if (!box.__wing || box.__wing.mode !== "fly") wingMode(box, "fly", 200);   // 第一次有飛行的拍子才交給飛行（以前起步就交，還沒有拍子時先用平常的搧法，下一格一跳）
       wingRender(box);   // 跟身體同一格寫（不等翅膀自己的迴圈，晚一格會看起來一頓一跳）
@@ -505,9 +505,9 @@ window.PetWalk = (function () {
     // 預備：往下蹲、往後縮一點
     if (!opts.keepFace && g.mode !== "crawl") { set(box, "--gpre", "1"); await sleep(150); set(box, "--gpre", "0"); }   // 小碎步不用預備；幼蟲的預備就是第一道波
     box.__k = g.mode === "stand" || g.mode === "crawl" ? 0 : calib(box);   // 站姿用 IK（SVG 單位、沒有 3D 轉身），不用量
-    const Lp = g.mode === "fly" ? Math.hypot(Math.abs(dist), Math.abs(y1 - y0)) : Math.abs(dist);   // 蝶按「真的飛過的路」推進（水平近、垂直遠時以前會兩格就掉到底）
+    const arc = g.mode === "fly" ? Math.max(24, Math.min(46, Math.abs(dist) * .5)) : 0;   // 蝶：一段一段「跳」過去——高高的拋物線（2026-10-06 第五輪：以前 ≤28 像貼著地面滑）
+    const Lp = g.mode === "fly" ? Math.hypot(Math.abs(dist), Math.abs(y1 - y0)) + arc * 1.6 : Math.abs(dist);   // 蝶按「真的飛過的路」推進（水平近、垂直遠時以前會兩格就掉到底）
     const ramp = Math.min(Lp * .35, 26);   // 起步／停下的緩衝距離
-    const arc = g.mode === "fly" ? Math.min(28, Math.abs(dist) * .3) : 0;   // 蝶：飛一道弧線過去（不是貼著直線滑）
     let p = 0, t = performance.now(), done = 0, lastS = .15;
     await new Promise(res => {
       const step = () => { const now = performance.now();
@@ -518,7 +518,7 @@ window.PetWalk = (function () {
         const v = g.v * m * (.25 + .75 * ease), ds = Math.min(left, v * dt);
         done += ds; p += ds / g.D * (Math.abs(dist) / Lp);
         const kk = Math.min(1, done / Lp);
-        moveTo(box, x0 + dir * Math.abs(dist) * kk, y0 + (y1 - y0) * (g.mode === "fly" ? kk * kk * (3 - 2 * kk) : kk) - arc * Math.sin(Math.PI * kk));
+        moveTo(box, x0 + dir * Math.abs(dist) * (g.mode === "fly" ? kk * kk * (3 - 2 * kk) : kk), y0 + (y1 - y0) * (g.mode === "fly" ? kk * kk * (3 - 2 * kk) : kk) - arc * Math.sin(Math.PI * kk));
         lastS = Math.max(.15, ease); pose(box, g, p, lastS, dir);
         if (g.mode === "crawl") { crawlField(box, Math.min(.99999, p - Math.floor(p)) , 1, g.D * (1 / pxu(box)), rev); flush(box); }   // 波的高度不跟著加減速縮（每一節的位移要剛好抵掉身體的移動，腳才不滑）
         if (left - ds > .2) raf = requestAnimationFrame(step); else res();
@@ -580,6 +580,7 @@ window.PetWalk = (function () {
     }
     if (st === 2) {   // 蝶：落在果實旁邊約 50px（2026-10-05 第二輪從 30 拉開：果實常被後翅蓋住，看不出在吸哪一顆）（口器斜斜伸過去吸），腳尖（圖上 y≈160）剛好踩在果實的那條地面線上
       const tipY = svgY(em.querySelector(".pet-critter"), c, 160);
+      if (!box.__wing || box.__wing.mode !== "flap") { wingMode(box, "flap", 160); await sleep(160 + 2 * 340); }   // 先在原地拍兩下才騰空（2026-10-06 第五輪）
       await goTo(box, Math.round(berryX - side * 50), { wy: Math.round((curY(box) + groundY(berryEl) - tipY) * 10) / 10 });
       return;
     }

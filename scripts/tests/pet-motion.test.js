@@ -31,6 +31,7 @@ const probe = () => {
     let sw = ""; [...sv.children].filter(g => g.tagName === "g" && getComputedStyle(g).display !== "none").forEach(g => { const q = g.getBoundingClientRect(); const v = Math.max(R.left - q.left, q.right - R.right, R.top - q.top, q.bottom - R.bottom); if (q.width && v > sp) { sp = v; sw = g.getAttribute("class") + " L" + (R.left - q.left).toFixed(0) + " R" + (q.right - R.right).toFixed(0) + " T" + (R.top - q.top).toFixed(0) + " B" + (q.bottom - R.bottom).toFixed(0); } });
     o.spill = sp; o.spillWhat = sw; }
   const eh = [...em.querySelectorAll(".pc-eh")].find(e => !e.closest(".pr-stand") || standing); o.happy = !!eh && getComputedStyle(eh).display !== "none";
+  if (standing) { const sg = em.querySelector(".pr-stand"), hl = sg.querySelector(".pr-leg.hl"), q = new DOMPoint(parseFloat(hl.style.getPropertyValue("--ox")), parseFloat(hl.style.getPropertyValue("--oy"))).matrixTransform(sg.getScreenCTM()); o.hip = [q.x, q.y]; }   // 骨盆（近側髖關節）在畫面上的位置
   if (standing) o.paws = [...em.querySelectorAll(".pr-stand .pr-leg .pr-shin")].map(sh => { const e = [...sh.querySelectorAll("ellipse")].find(x => !x.closest("clipPath") && !x.closest("defs")); const pt = new DOMPoint(+e.getAttribute("cx"), +e.getAttribute("cy") + +e.getAttribute("ry")).matrixTransform(e.getScreenCTM()); return [pt.x, pt.y]; });
   if (st === 1) {   // 頭跟身體有沒有分開：頭（半徑 23）的中心到最前面那一節中心的距離（身體座標；平常約 17，>25＝看得到縫）
     const svg = em.querySelector(".pet-critter"), inv = svg.getScreenCTM().inverse(), hd = em.querySelector(".pr-head");
@@ -115,6 +116,9 @@ function judge(st, tag, R) {
       for (let i = e; i < sn; i++) { if (F[i].mouth) { if (F[i].mouth[1] < lo - 2 && lo - F[i].mouth[1] > up) { up = lo - F[i].mouth[1]; upAt = `@${i} (from ${e}) ${F[i].cls}|${F[i].bcl}`; } lo = Math.max(lo, F[i].mouth[1]); } }
     }
     ok(drift <= 1, `${tag}: paws stay planted while eating (max drift ${drift.toFixed(1)}px)`, todoOf("paws", st));
+    { let hipR = 0; for (let a = 1; a < n; a++) { if (!(/st-lean/.test(F[a].cls) && !/st-lean/.test(F[a - 1].cls))) continue; let g = a; while (g < n - 1 && (/st-lean|pb-snap/.test(F[g].cls) || walk(g) === false && F[g].hip && g < a + 60 && !/pb-chew|pb-gulp/.test(F[g].cls))) g++;
+      const hs = F.slice(a, g).filter(f => f.hip).map(f => f.hip); if (hs.length) for (const h of hs) hipR = Math.max(hipR, D(h, hs[0])); }
+      ok(hipR <= 4, `${tag}: lowering the head to eat, the pelvis stays put (hip moves ${hipR.toFixed(1)}px ≤4)`); }   // 2026-10-06 第四輪：以前以後腳掌為支點整隻往前倒（髖往前下方移約 15px）
     ok(steps === 0, `${tag}: walks to each berry in one go — no extra adjusting step before the bite (${steps} extra walks)`, todoOf("step", st));
     ok(up <= 2, `${tag}: from arriving to the bite the head only goes down, never back up (${up.toFixed(1)}px ${upAt})`, todoOf("lean", st));
   }
@@ -146,7 +150,7 @@ function judge(st, tag, R) {
   // 3) 果實不亂跳：地上的不動；拿著／托著的每格最多 10px
   let bj = 0, bjAt = ""; for (let i = 45; i < n; i++) { if (F[i].berries.length !== F[i - 1].berries.length) continue; F[i].berries.forEach((x, k) => { if (/eaten|sipped|melt/.test(x.cls)) return; const d = D(x.c, F[i - 1].berries[k].c), held = /held|carried/.test(x.cls), ex = held ? d - 10 : d - 1; if (ex > bj) { bj = ex; bjAt = `@${i} ${x.cls} ${F[i].cls}`; } }); }
   ok(bj <= 0, `${tag}: berries never jump (ground berries still, held ones ≤10px/frame; worst excess ${bj.toFixed(1)}px ${bjAt})`, todoOf("berry", st));
-  if (st === 1) {   // 最後一口咬住之後（held）：頭抬起時果實跟著嘴，不留在地上（2026-10-06 第四輪）
+  if (st === 1 || st === 3 || st === 4) {   // 咬住之後（held）：頭抬起時果實跟著嘴，不留在地上（2026-10-06 第四輪：幼蟲最後一口、狐虎每一口）
     let far = 0, nHeld = 0; for (const f of F) { const hb = f.berries.find(x => /held/.test(x.cls) && !/eaten/.test(x.cls)); if (hb && f.mouth) { nHeld++; far = Math.max(far, D(f.mouth, hb.c) / hb.w); } }
     ok(nHeld > 5 && far <= .6, `${tag}: after the last bite the berry rises with the mouth (max distance / berry size ${far.toFixed(2)}, ${nHeld} frames)`);
   }
@@ -182,7 +186,7 @@ function judge(st, tag, R) {
     let both = 0; const w0 = {}; for (const f of F) for (const x of f.berries) if (/melt/.test(x.cls)) { const key = Math.round(x.c[0] / 4); if (w0[key] == null) w0[key] = x.w; if (f.sparks >= 3 && x.op > .8 && x.w >= w0[key] * .9) both++; }
     ok(both === 0, `${tag}: the berry shrinks as the sparks leave it (frames with a full berry and ≥3 sparks: ${both})`, todoOf("egg", st));
   }
-  const lim = st === 1 ? (/ C$/.test(tag) ? 18 : 27) : st === 4 ? 23 : st === 5 ? 25 : st === 3 ? 17.9 : st === 6 ? 20.5 : st === 2 ? 17.5 : 16;   /* 蝶 2026-10-06 第四輪：停穩半合翅＋起飛前原地拍兩下，多 1 秒 */   // 幼蟲爬得像真的毛毛蟲（慢）：A、B 刻意讓果實落在兩邊（測掉頭）放寬；C＝遊戲真的落點（頭的前方）   // 幼龍：撿起來、舉到嘴邊、咬兩口、吞完才放手（步驟本來就多）；虎：每顆都趴下去吃再站起來（2026-10-06 人面獅身）   // 幼蟲：左右兩邊都有果實時要掉頭兩次（頭不動、身體繞過去＝每次多爬 80px）   // 含判定結束的 0.7 秒；狐、虎要走去左右兩端（A、C 組）；虎刻意慢、有重量（ChatGPT 看錄影的建議）
+  const lim = st === 1 ? (/ C$/.test(tag) ? 18 : 27) : st === 4 ? 23 : st === 5 ? 25 : st === 3 ? 17.9 : st === 6 ? 20.5 : st === 2 ? 20 : 16;   /* 蝶 2026-10-06 第四、五輪：停穩半合翅＋每段起飛前原地拍兩下 */   // 幼蟲爬得像真的毛毛蟲（慢）：A、B 刻意讓果實落在兩邊（測掉頭）放寬；C＝遊戲真的落點（頭的前方）   // 幼龍：撿起來、舉到嘴邊、咬兩口、吞完才放手（步驟本來就多）；虎：每顆都趴下去吃再站起來（2026-10-06 人面獅身）   // 幼蟲：左右兩邊都有果實時要掉頭兩次（頭不動、身體繞過去＝每次多爬 80px）   // 含判定結束的 0.7 秒；狐、虎要走去左右兩端（A、C 組）；虎刻意慢、有重量（ChatGPT 看錄影的建議）
   ok(sec <= lim, `${tag}: one feeding (3 berries, walk home, celebrate) takes ≤${lim} s (${sec.toFixed(1)} s)`, todoOf("time", st));
   const spill = Math.max(...F.map(f => f.spill || 0)), si = F.findIndex(f => (f.spill || 0) === spill);
   ok(spill <= 0, `${tag}: nothing is drawn outside the canvas (iOS WebKit clips there; worst ${spill.toFixed(1)}px${spill > 0 ? ` @${si} ${F[si].spillWhat} ${F[si].cls}|${F[si].bcl}` : ""})`);
