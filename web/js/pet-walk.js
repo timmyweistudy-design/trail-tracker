@@ -77,19 +77,51 @@ window.PetWalk = (function () {
     set(box, "--ghx", (nk[0] - 146).toFixed(2) + "px");
     set(box, "--ghy", (nk[1] - 150).toFixed(2) + "px");
   }
-  // 神龍游（2026-10-05 改 follow-the-leader）：波固定在「世界」裡（跟著舞台位置 x，不跟著時間）——
-  // 頭經過哪裡高、哪裡低，身體每一節經過同一個地方時就一樣高、一樣低，整條身體走頭走過的路（以前是原地扭的正弦波）。
-  // 頭、抓龍珠的前爪跟著同一條路起伏；龍鬚晚一點跟上（低通濾波）；s＝起步／停下的漸變
-  const SW_A = 5, SW_L = 96;
-  function swimField(box, s, dt) {
-    const u = (1 / pxu(box)), xw = (box.__wx || 0) * u, Y = x => SW_A * s * Math.sin(2 * Math.PI * (x + xw) / SW_L);
-    applyField(box, (x, y) => [x, y + Y(x)]);
-    const hy = Y(70), E = els(box);
-    set(box, "--ghy", hy.toFixed(2) + "px");
-    if (E.pearl) E.pearl.style.transform = `translateY(${Y(80).toFixed(2)}px)`;
+  // ── 神龍的繩波（2026-10-06）：整條身體一道從頭傳到尾的行進波（像甩繩子、像舞龍），位移垂直於身體中心線、越往尾巴越大。
+  // 平常懸浮也有一道慢波流過身體（空中的緞帶）；游的時候波更大更快，相位加上「走了多遠」——身體每一點走頭走過的路。
+  // 頭、抓龍珠的前爪跟著頸部的波；龍鬚晚一點跟上。用尾巴送果實時，尾巴那段的波慢慢收掉（交給 CCD，接觸點才準）。
+  // 常駐迴圈（rope()）每格畫；尾巴的 CCD 只改 box.__chain，再叫 ropeRender 在同一格畫（果實才跟得上尾尖）
+  const ROPE = { lam: 140, T: 2.8, a0: 1.2, a1: 8 };
+  let RINFO = null;
+  function ropeInfo() {
+    if (RINFO) return RINFO; const S = sp6(); if (!S) return null;
+    const sl = [0]; for (let i = 1; i < S.length; i++) sl.push(sl[i - 1] + Math.hypot(S[i].x - S[i - 1].x, S[i].y - S[i - 1].y));
+    const n = S.map((q, i) => { const a = S[Math.max(0, i - 1)], b = S[Math.min(S.length - 1, i + 1)], tx = b.x - a.x, ty = b.y - a.y, L = Math.hypot(tx, ty) || 1; return [-ty / L, tx / L]; });
+    return (RINFO = { sl, n, L: sl[sl.length - 1] });
+  }
+  function ropeRender(box, now) {
+    const S = sp6(), I = ropeInfo(); if (!S || !I) return;
+    const swim = box.classList.contains("walking"), travel = (box.__wx || 0) / pxu(box);
+    const k0 = box.__ropeK == null ? 1 : box.__ropeK, k = box.__ropeK = k0 + ((swim ? 1.8 : 1) - k0) * .08;   // 幅度慢慢變（起步、停下不跳）
+    const dt = box.__ropeT ? Math.min(.05, (now - box.__ropeT) / 1000) : 0; box.__ropeT = now; box.__ropePh = (box.__ropePh || 0) + dt / (swim ? 1.5 : ROPE.T);   // 相位一路累加（換速度不跳）
+    const t0 = box.__ropeTail == null ? 1 : box.__ropeTail, tf = box.__ropeTail = t0 + ((box.__chain ? 0 : 1) - t0) * .15;
+    const D = S.map((_, j) => (ROPE.a0 + ROPE.a1 * Math.pow(I.sl[j] / I.L, 1.3)) * k * Math.sin(2 * Math.PI * ((I.sl[j] + travel) / ROPE.lam - box.__ropePh)) * (j > I0 ? tf : 1));
+    const P = box.__chain, R = rest(), phi = P ? S.map((_, j) => wrap(ang(P[j], P[j + 1]) - ang(R[j], R[j + 1]))) : null, zero = P ? null : S.map(() => 0);
+    // 每一節的位移向量；尾巴（I0 以後）＝交界那一節的位移（整段跟著平移，交界不會斷開）＋自己的波 × tf（送果實時收掉）
+    const base = [I.n[I0][0] * D[I0], I.n[I0][1] * D[I0]];
+    const OFF = S.map((_, j) => {
+      let nx = I.n[j][0], ny = I.n[j][1]; if (phi) { const c = Math.cos(phi[j]), sn = Math.sin(phi[j]); [nx, ny] = [c * nx - sn * ny, sn * nx + c * ny]; }
+      const w = [nx * D[j], ny * D[j]]; if (j <= I0) return w;
+      const raw = (ROPE.a0 + ROPE.a1 * Math.pow(I.sl[j] / I.L, 1.3)) * k * Math.sin(2 * Math.PI * ((I.sl[j] + travel) / ROPE.lam - box.__ropePh));
+      return [base[0] + (nx * raw - base[0]) * tf, base[1] + (ny * raw - base[1]) * tf];
+    });
+    applyField(box, (x, y) => {
+      const key = x + "," + y; if (!NEAR.has(key)) mapPt(R, zero || phi, x, y);
+      const j = NEAR.get(key), b = P ? mapPt(P, phi, x, y) : [x, y];
+      return [b[0] + OFF[j][0], b[1] + OFF[j][1]];
+    });
+    const E = els(box), hx = I.n[0][0] * D[0], hy = I.n[0][1] * D[0];
+    if (E.head) E.head.style.transform = `translate(${hx.toFixed(2)}px, ${hy.toFixed(2)}px)`;
+    if (E.pearl) E.pearl.style.transform = `translate(${(I.n[4][0] * D[4]).toFixed(2)}px, ${(I.n[4][1] * D[4]).toFixed(2)}px)`;
     const hs = box.__hys == null ? hy : box.__hys + (hy - box.__hys) * Math.min(1, (dt || .016) / .16);   // 龍鬚：頭往下時鬚尖往上飄、晚一點才跟上
-    box.__hys = hs; const wa = Math.max(-14, Math.min(14, (hy - hs) * 4));
+    box.__hys = hs; const wa = Math.max(-14, Math.min(14, (hy - hs) * 6));
     E.sway.forEach(el => { el.style.animation = "none"; el.style.transform = `rotate(${(el.classList.contains("l") ? wa : -wa).toFixed(2)}deg)`; });
+  }
+  let ropeRaf = 0;
+  function rope(box, on) {
+    cancelAnimationFrame(ropeRaf); ropeRaf = 0; if (!box || !on || reduce()) return;
+    const tick = () => { if (!box.isConnected || stage(box) !== 6) { ropeRaf = 0; return; } ropeRender(box, performance.now()); ropeRaf = requestAnimationFrame(tick); };
+    ropeRaf = requestAnimationFrame(tick);
   }
   // ── 神龍的雲座：晚 0.25 秒跟著重心走；落在雲上的果實（box.__riders）跟著雲一起移 ──
   function cloudTick(box, x) {
@@ -135,10 +167,7 @@ window.PetWalk = (function () {
     const a = phi[j], c = Math.cos(a), sn = Math.sin(a), dx = x - S[j].x, dy = y - S[j].y;
     return [P[j][0] + c * dx - sn * dy, P[j][1] + sn * dx + c * dy];
   }
-  function applyChain(box, P) {   // 每一節轉了多少＝新的這一節方向－原本的方向
-    const R = rest(), phi = sp6().map((_, j) => wrap(ang(P[j], P[j + 1]) - ang(R[j], R[j + 1])));
-    applyField(box, (x, y) => mapPt(P, phi, x, y)); box.__chain = P;
-  }
+  function applyChain(box, P) { box.__chain = P; ropeRender(box, performance.now()); }   // 尾巴的姿勢＋繩波一起畫（同一格，果實才跟得上尾尖）
   // 目標（畫面座標）→ 身體座標
   function toLocal(box, X, Y) { const g = box.querySelector("#petEmoji .pr-deform"), m = g && g.getScreenCTM(); if (!m) return [X, Y]; const q = new DOMPoint(X, Y).matrixTransform(m.inverse()); return [q.x, q.y]; }
   // 尾尖到得了這一點嗎（身體座標）：pet-stage.js 挑果實落點用
@@ -309,7 +338,7 @@ window.PetWalk = (function () {
     set(box, "--hRx", HR.x.toFixed(2) + "px"); set(box, "--hRy", HR.y.toFixed(2) + "px");
     // 頭：比身體晚一點才下沉；虎的頭反向補償（保持水平）
     const lag = .5 + .5 * Math.cos(TAU * 2 * (p - .07));
-    if (g.mode !== "swim") set(box, "--ghy", ((g.head || 0) * lag * s).toFixed(2) + "px");   // 神龍的頭跟著世界裡的波（swimField）
+    if (g.mode !== "swim") set(box, "--ghy", ((g.head || 0) * lag * s).toFixed(2) + "px");   // 神龍的頭跟著繩波（ropeRender）
     set(box, "--ghr", (dir * 1.5 * Math.sin(TAU * (p - .1)) * s).toFixed(2) + "deg");
     // 尾巴反向擺、耳朵晚一點彈
     set(box, "--gtr", ((g.tail || 0) * Math.sin(TAU * (p + .25)) * s).toFixed(2) + "deg");
@@ -424,7 +453,6 @@ window.PetWalk = (function () {
         const v = g.v * (.25 + .75 * ease), ds = Math.min(left, v * dt);
         done += ds; p += ds / g.D * (Math.abs(dist) / Lp);
         const kk = Math.min(1, done / Lp);
-        if (g.mode === "swim") swimField(box, Math.max(.15, ease), dt);   // 先算（寫 --ghy），pose() 結尾一起寫到元素
         moveTo(box, x0 + dir * Math.abs(dist) * kk, y0 + (y1 - y0) * (g.mode === "fly" ? kk * kk * (3 - 2 * kk) : kk) - arc * Math.sin(Math.PI * kk));
         lastS = Math.max(.15, ease); pose(box, g, p, lastS, dir);
         if (g.mode === "crawl") { crawlField(box, Math.min(.99999, p - Math.floor(p)) , 1, g.D * (1 / pxu(box)), rev); flush(box); }   // 波的高度不跟著加減速縮（每一節的位移要剛好抵掉身體的移動，腳才不滑）
@@ -438,7 +466,7 @@ window.PetWalk = (function () {
     if (g.mode !== "crawl") await new Promise(res => {
       const step = () => { const now = performance.now();
         const k = Math.min(1, (now - t1) / (opts.keepFace && g.mode !== "swim" ? 160 : 320)), s = (1 - k);   // 神龍至少 0.32 秒：雲座晚 0.25 秒才跟到
-        if (g.mode === "swim") { swimField(box, Math.max(0, .9 * (1 - k)), .016); cloudTick(box, x); }   // 身體的起伏慢慢收平、雲座趕上來
+        if (g.mode === "swim") cloudTick(box, x);   // 雲座趕上來（身體的繩波由 rope() 一直畫）
         // 往前多衝一點再回來、尾巴再擺一下：交給 pose() 一起寫（以前 pose() 寫完再 flush 一次，那一次其他值都是空的——站姿的腿和下沉、幼龍的腳都被歸零，頭也跟著跳）
         box.__xtra = { "--gsx": (dir * 5 * Math.sin(k * Math.PI * 1.6) * (1 - k)).toFixed(2) + "px", "--gtr": ((g.tail || 0) * 1.2 * Math.sin(k * Math.PI * 2.4) * (1 - k)).toFixed(2) + "deg" };
         pose(box, g, p1 + k * .25, s * Math.min(.6, lastS), dir);   // 從走路最後的幅度接著收（以前一律從 0.6 開始，停下那一格步伐突然變大）
@@ -618,5 +646,5 @@ window.PetWalk = (function () {
   }
   // 現在看得到的那一份身體（站著時是 .pr-stand）裡找部位
   const part = (box, sel) => { const em = box.querySelector("#petEmoji"); if (!em) return null; return (box.classList.contains("standing") && em.querySelector(".pr-stand " + sel)) || em.querySelector(sel); };
-  return { pxu, svgY, tween, goTo, goEat, home, face, stop, standUp, sitDown, turnStand, setQ, larvaTurn, bend, part, bow, bowSet, bowClear, solveBow, groundY, cpt, tailTo, tailReach, GAIT, _pose: pose };   // _pose：測試逐相位檢查用
+  return { rope, pxu, svgY, tween, goTo, goEat, home, face, stop, standUp, sitDown, turnStand, setQ, larvaTurn, bend, part, bow, bowSet, bowClear, solveBow, groundY, cpt, tailTo, tailReach, GAIT, _pose: pose };   // _pose：測試逐相位檢查用
 })();

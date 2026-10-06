@@ -422,7 +422,7 @@ for(const [km,st] of [[0,0],[20,2]]){const p=await mk({km,berries:20});
  ok(r.carried>5,"divine dragon: carries each berry to its mouth with the tail ("+r.carried+" frames)");
  const w=await p.evaluate(async()=>{const box=document.querySelector(".ps-box"),pr=box.querySelector("#petEmoji .pet-prop"),c=box.querySelector("#petEmoji .pet-critter");const cx=e=>{const q=e.getBoundingClientRect();return q.left+q.width/2};
   for(let i=0;i<200&&(box.classList.contains("walking")||document.querySelector("#petEmoji").className.includes("pb-")||Math.abs(parseFloat(box.style.getPropertyValue("--wx"))||0)>.5);i++)await new Promise(r=>setTimeout(r,50));await new Promise(r=>setTimeout(r,600));   // 等吃完的慶祝（游一小段、回來、跳）結束
-  const x0=cx(pr);const p1=PetWalk.goTo(box,-70);let lag=0,hy=new Set();const t0=performance.now();while(performance.now()-t0<3000){if(box.__wx!=null)lag=Math.max(lag,(cx(pr)-x0)-box.__wx);hy.add(Math.round(parseFloat(box.querySelector("#petEmoji .pr-head").style.transform.split(",")[1])||0));if(!box.classList.contains("walking"))break;await new Promise(r=>requestAnimationFrame(r));}
+  const x0=cx(pr);const p1=PetWalk.goTo(box,-70);let lag=0,hy=new Set();const t0=performance.now();while(performance.now()-t0<3000){if(box.__wx!=null)lag=Math.max(lag,(cx(pr)-x0)-box.__wx);hy.add(+(parseFloat(box.querySelector("#petEmoji .pr-head").style.transform.split(",")[1])||0).toFixed(1));if(!box.classList.contains("walking"))break;await new Promise(r=>requestAnimationFrame(r));}
   await p1;const end=Math.abs(cx(pr)-x0+70);await PetWalk.home(box);return {lag:+lag.toFixed(1),end:+end.toFixed(1),heads:hy.size};});
  ok(w.lag>8&&w.end<1.5,"divine dragon: the cloud seat trails behind while swimming and is right under it when it stops "+JSON.stringify(w));
  ok(w.heads>=4,"divine dragon: the head rides the same wave the body follows "+JSON.stringify(w));
@@ -432,8 +432,9 @@ for(const [km,st] of [[0,0],[20,2]]){const p=await mk({km,berries:20});
 for(const [km,st] of [[5,1],[260,6]]){const p=await mk({km});
  const r=await p.evaluate(async()=>{const box=document.querySelector(".ps-box"),sig=()=>[...box.querySelectorAll("#petEmoji .pr-deform path")].map(e=>e.getAttribute("d")).join("|")+[...box.querySelectorAll("#petEmoji .lv-seg")].map(e=>e.style.transform).join("|");   // 幼蟲一節一節：看每一節的位移
   const before=sig();let mid="";const t=setTimeout(()=>{mid=sig()},500);await PetWalk.goTo(box,60);clearTimeout(t);const after=sig();await PetWalk.home(box);
-  return {changedMid:mid!==""&&mid!==before,restored:after===before&&sig()===before,wx:box.style.getPropertyValue("--wx")};});
- ok(r.changedMid&&r.restored,"stage "+st+": body bends while moving and is restored exactly afterwards "+JSON.stringify(r));
+  await new Promise(r=>setTimeout(r,400));const idle=sig();   // 神龍（2026-10-06 繩波）：停下來身體還在流動，本來就不會停在原形
+  return {changedMid:mid!==""&&mid!==before,restored:after===before&&sig()===before,alive:idle!==after,wx:box.style.getPropertyValue("--wx")};});
+ ok(r.changedMid&&(st===6?r.alive:r.restored),"stage "+st+(st===6?": body ripples while moving and keeps rippling at rest (rope wave) ":": body bends while moving and is restored exactly afterwards ")+JSON.stringify(r));
  await p.close();}
 {const p=await mk({km:90});
  const r=await p.evaluate(async()=>{const box=document.querySelector(".ps-box");const p1=PetWalk.goTo(box,-50);await new Promise(r=>setTimeout(r,450));const standing=box.classList.contains("standing"),vis=getComputedStyle(box.querySelector(".pr-stand")).display;

@@ -117,8 +117,10 @@ window.PetStage = (function () {
     if ("IntersectionObserver" in window) { io = new IntersectionObserver(es => { visible = es.some(x => x.isIntersecting); if (!visible) base = null; }); io.observe(el); }
     else visible = true;
     schedule(mood);
+    if (+el.dataset.stage === 6 && typeof PetWalk !== "undefined" && PetWalk.rope) PetWalk.rope(el, true);   // 神龍：身體一直有繩波流過
   }
   function unbind() {
+    if (box && typeof PetWalk !== "undefined" && PetWalk.rope) PetWalk.rope(box, false);
     if (box) { box.removeEventListener("pointermove", onMove); box.removeEventListener("pointerleave", onLeave); box.removeEventListener("pointerup", onLeave); }
     window.removeEventListener("deviceorientation", onOrient);
     if (io) { io.disconnect(); io = null; }
@@ -375,9 +377,9 @@ window.PetStage = (function () {
         else if (onCloud) {   // 神龍：尾尖托住果實 → 沿身體下方送到下巴前的交接點 → 停一下、頭往前、張嘴 → 果實改歸嘴、尾巴鬆開退回 → 咬、嚼
           await PetWalk.tailTo(box, b, 650);
           b.classList.add("carried"); follow(b, "tail", { ay: .62, ms: 120 });   // 托住之後果實歸尾尖（尾巴拿著時跟尾尖）
-          await PetWalk.tailTo(box, "mouth", 820, () => ownTick(true));   // 同一格把果實對齊尾尖（不等下一個 rAF：機器忙時會差一格、果實晃一下）
+          await PetWalk.tailTo(box, "mouth", 900, () => ownTick(true));   // 同一格把果實對齊尾尖（不等下一個 rAF：機器忙時會差一格、果實晃一下）
           await sleep(120);                                                     // 到了交接點停一下
-          const hd = PetWalk.part(box, ".pr-head");
+          const hd = PetWalk.part(box, ".pr-hfx");   // 迎上去畫在頭的內層（外層由繩波逐格寫）
           const lean = hd && hd.animate([{ transform: "none" }, { transform: "translate(-3px, 3px)" }], { duration: 180, easing: "ease-out", fill: "forwards" });   // 頭略往前迎上去
           cls(true, "st-open"); await sleep(150);
           follow(b, "mouth", { ay: .38, ms: 140 });                             // 嘴碰到了：果實改歸嘴（交接只發生一次，從現在的位置接過來）
