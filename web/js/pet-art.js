@@ -139,16 +139,25 @@ window.PET_ART = (function () {
   const LV = "#86c95a", LVS = [[[44, 166], [72, 180], [110, 176], [134, 146]]], LVW = [[0, 24], [.55, 32], [1, 36]];
   // 2026-10-06 改成一節一節畫（9 節，尾→頭）：每一節是自己的橢圓（明暗、描邊、氣門），有腹足的節底下有腳——
   // 動作時每一節各自移動（pet-walk.js 排位置），掉頭時依遠近重新排序，近的那節蓋在遠的上面（以前整條是一條 path，U 型迴轉時兩段的描邊會交叉成一團）
+  // 2026-10-06 第四輪改「管片」：分兩層畫——下層 .lv-ln 是每一片的外框（粗描邊）＋腳，上層 .lv-seg 是每一片的填色。
+  // 所有填色蓋在所有外框上面，所以外框只剩身體最外圈那一條、連續柔軟（以前每節都是完整的圓圈，像一串珠子）；節與節之間只剩淡淡的摺線。
+  // 兩層的第 k 片一起移動（pet-walk lvPose），U 型迴轉時兩層各自依遠近排先後
   function lvSegs() {
-    return spine(LVS, 8).map((q, k) => {
-      const w = wAt(LVW, q.f) / 2 + 1, rx = k === 0 ? 11 : 12, ry = k === 0 ? 11.5 : w, x = rd(q.x), y = rd(q.y), a = rd(q.a);
-      const legs = k >= 1 && k <= 6 ? P(E(rd(x + 1), rd(y + ry * .98), k === 1 ? 6.2 : 5.4, k === 1 ? 5 : 4.4), "#6faa48", { sw: 1.8, dx: 1, dy: 1 }).replace("<ellipse", '<ellipse class="lv-pro"')   // 腹足（尾端那一對比較大）
-        : k >= 7 ? `<path d="M${rd(x - 1)} ${rd(y + ry - 3)} l1.6 5.4" stroke="#3a4a20" stroke-width="2.8" stroke-linecap="round"/>` : "";   // 胸足
+    const S = spine(LVS, 8), ln = [], fl = [];
+    S.forEach((q, k) => {
+      const w = wAt(LVW, q.f) / 2 + 1, rx = 11.5, ry = k === 0 ? 11.5 : w, ryb = ry * .8, x = rd(q.x), y = rd(q.y), a = rd(q.a);
+      const shape = `M${rd(x - rx)} ${y} A${rx} ${rd(ry)} 0 0 1 ${rd(x + rx)} ${y} A${rx} ${rd(ryb)} 0 0 1 ${rd(x - rx)} ${y}Z`;   // 上面是弧、肚子比較平
+      const yb = rd(y + ryb), st = `data-u="${x}" data-v="${y}" style="--ox:${x}px;--oy:${y}px"`;
+      const legs = k >= 1 && k <= 6 ? `<g class="lv-pro"><path d="M${rd(x - 4.4)} ${rd(yb - 3)} L${rd(x + 4.4)} ${rd(yb - 3)} L${rd(x + 3.2)} ${rd(yb + 5)} L${rd(x - 3.2)} ${rd(yb + 5)}Z" fill="#6aa646" stroke="${sh(LV, .5)}" stroke-width="1.8" stroke-linejoin="round"/><path d="M${rd(x - 3.4)} ${rd(yb + 5.6)} h6.8" stroke="#2f4a1c" stroke-width="1.8" stroke-linecap="round"/></g>`   // 肉足：短胖、底下一排小鉤
+        : k >= 7 ? `<path d="M${rd(x - 2)} ${rd(yb - 2)} l2.4 6.6 l1.8 -1" stroke="#33461c" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>` : "";   // 胸足（尖的）
+      ln.push(`<g class="lv-sl" ${st}>${legs}<path transform="rotate(${a} ${x} ${y})" d="${shape}" fill="${sh(LV, .48)}" stroke="${sh(LV, .48)}" stroke-width="4.4" stroke-linejoin="round"/></g>`);
+      const fold = k > 0 ? `<path class="pc-d" d="M${rd(x - rx * .62)} ${rd(y - ry * .8)} Q${rd(x - rx * .9)} ${rd(y + ryb * .1)} ${rd(x - rx * .62)} ${rd(y + ryb * .8)}" stroke="${sh(LV, .22)}" stroke-width="1.4" fill="none" stroke-linecap="round" opacity=".5"/>` : "";   // 摺線（在這一片的後緣、前一片的上面）
       const eye = k === 7 ? `<g class="pc-d2" opacity=".85"><ellipse cx="${rd(x - 1)}" cy="${rd(y - ry * .2)}" rx="5.4" ry="4.2" fill="#b89a5a"/><ellipse cx="${rd(x - .4)}" cy="${rd(y - ry * .16)}" rx="3" ry="2.4" fill="#3a2c1c"/></g>` : "";   // 假眼紋
-      const spot = k >= 1 && k <= 7 ? `<circle class="pc-d" cx="${rd(x + 2)}" cy="${rd(y + ry * .3)}" r="1.4" fill="${sh(LV, .45)}"/>` : "";   // 氣門
-      const band = `<path class="pc-d" d="M${rd(x - rx * .7)} ${rd(y + ry * .45)} Q${x} ${rd(y + ry * .78)} ${rd(x + rx * .7)} ${rd(y + ry * .45)}" stroke="${tn(LV, .45)}" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".7"/>`;   // 肚子那一側的淺色帶
-      return `<g class="lv-seg" data-u="${x}" data-v="${y}" style="--ox:${x}px;--oy:${y}px">${legs}<g transform="rotate(${a} ${x} ${y})">${P(E(x, y, rx, ry), LV, { hl: [rd(x - 2), rd(y - ry * .5), rd(rx * .55), rd(ry * .2)], dx: 2, dy: 2, sw: 2.1 })}${band}${spot}${eye}</g></g>`;
-    }).join("");
+      const spot = k >= 1 && k <= 7 ? `<circle class="pc-d" cx="${rd(x + 1)}" cy="${rd(y + ryb * .3)}" r="1.4" fill="${sh(LV, .45)}"/>` : "";   // 氣門
+      const band = `<path class="pc-d" d="M${rd(x - rx - 1)} ${rd(y + ryb * .55)} L${rd(x + rx + 1)} ${rd(y + ryb * .55)}" stroke="${tn(LV, .45)}" stroke-width="2.6" fill="none" opacity=".6"/>`;   // 肚子那一側的淺色帶（相鄰幾片接成一條）
+      fl.push(`<g class="lv-seg" ${st}><g transform="rotate(${a} ${x} ${y})">${P(Pa(shape), LV, { hl: [rd(x), rd(y - ry * .5), rd(rx * .85), rd(ry * .18)], dx: 2, dy: 2, sw: 0 })}${band}${fold}${spot}${eye}</g></g>`);
+    });
+    return `<g class="lv-ln">${ln.join("")}</g>${fl.join("")}`;
   }
   const LARVA = `
     <g class="pc-bob pc-larva">

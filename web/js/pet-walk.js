@@ -55,13 +55,14 @@ window.PetWalk = (function () {
   }
   // ── 幼蟲一節一節（2026-10-06）：每一節（.lv-seg）的中心 (u, v)；F(u, v) 回傳新的中心 [x, y]，這一節整個平移過去（腳跟著那一節）──
   const LVSEG = new WeakMap();
-  function lvSegs(box) { const g = box.querySelector("#petEmoji .lv-body"); if (!g) return null; let o = LVSEG.get(g); if (!o) { o = [...g.querySelectorAll(":scope > .lv-seg")].map(el => ({ el, u: +el.dataset.u, v: +el.dataset.v })); LVSEG.set(g, o); } return o; }
+  // 2026-10-06 第四輪：每一節分兩層（.lv-ln 裡的外框＋腳、.lv-seg 填色），第 k 片兩層一起移動
+  function lvSegs(box) { const g = box.querySelector("#petEmoji .lv-body"); if (!g) return null; let o = LVSEG.get(g); if (!o) { const L = [...g.querySelectorAll(":scope > .lv-ln > .lv-sl")]; o = [...g.querySelectorAll(":scope > .lv-seg")].map((el, i) => ({ el, ln: L[i], u: +el.dataset.u, v: +el.dataset.v })); LVSEG.set(g, o); } return o; }
   function lvPose(box, F, order) {   // order：依遠近重新排先後（U 型迴轉時近的那節蓋在遠的上面）
     const S = lvSegs(box); if (!S) return;
-    for (const q of S) { const [x, y] = F(q.u, q.v); q.el.style.transform = `translate(${(x - q.u).toFixed(2)}px, ${(y - q.v).toFixed(2)}px)`; q.z = order ? order(q.u) : 0; }
-    if (order) { const g = S[0].el.parentNode; S.slice().sort((a, b) => a.z - b.z).forEach(q => g.appendChild(q.el)); }
+    for (const q of S) { const [x, y] = F(q.u, q.v), t = `translate(${(x - q.u).toFixed(2)}px, ${(y - q.v).toFixed(2)}px)`; q.el.style.transform = t; if (q.ln) q.ln.style.transform = t; q.z = order ? order(q.u) : 0; }
+    if (order) { const g = S[0].el.parentNode; S.slice().sort((a, b) => a.z - b.z).forEach(q => { g.appendChild(q.el); if (q.ln) q.ln.parentNode.appendChild(q.ln); }); }
   }
-  function lvReset(box) { const S = lvSegs(box); if (!S) return; const g = S[0].el.parentNode; S.forEach(q => { q.el.style.transform = ""; g.appendChild(q.el); }); }   // 回到原位、原本的先後（尾→頭）
+  function lvReset(box) { const S = lvSegs(box); if (!S) return; const g = S[0].el.parentNode; S.forEach(q => { q.el.style.transform = ""; g.appendChild(q.el); if (q.ln) { q.ln.style.transform = ""; q.ln.parentNode.appendChild(q.ln); } }); }   // 回到原位、原本的先後（尾→頭）
   const hump = (x, c, w) => Math.exp(-Math.pow((x - c) / w, 2));
   const sstep = v => { v = Math.max(0, Math.min(1, v)); return v * v * (3 - 2 * v); };
   // 幼蟲的蠕動（2026-10-05 重做）：真的鳳蝶幼蟲是一道收縮波從尾巴傳到頭——波經過的那一節抬起來往前移 Du，其他節貼在地上不動。
@@ -450,7 +451,8 @@ window.PetWalk = (function () {
         const dt = Math.min(.05, (now - t) / 1000); t = now;
         const left = Lp - done;
         const ease = Math.min(1, (done + 2) / ramp, (left + 2) / ramp);   // 起步加速、快到時減速
-        const v = g.v * (.25 + .75 * ease), ds = Math.min(left, v * dt);
+        const fr = p - Math.floor(p), m = g.mode === "crawl" ? 1.2 * (.45 + 1.1 * Math.sin(Math.PI * fr) ** 2) : 1;   // 2026-10-06 第四輪：幼蟲一道波一道波地走——波在尾巴起頭、到頭收尾時慢下來（兩道波之間像停一下），波走到身體中段最快；乘 1.2 讓一道波花的時間不變（∫dp/m＝1/√(.45×1.55)≈1.2）。踩住的腳不會滑：每一節的位移本來就是用 p 算的
+        const v = g.v * m * (.25 + .75 * ease), ds = Math.min(left, v * dt);
         done += ds; p += ds / g.D * (Math.abs(dist) / Lp);
         const kk = Math.min(1, done / Lp);
         moveTo(box, x0 + dir * Math.abs(dist) * kk, y0 + (y1 - y0) * (g.mode === "fly" ? kk * kk * (3 - 2 * kk) : kk) - arc * Math.sin(Math.PI * kk));
