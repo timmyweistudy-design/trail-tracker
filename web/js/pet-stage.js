@@ -226,13 +226,24 @@ window.PetStage = (function () {
   }
   // ── 蝶：口器伸向果實（量果實在口器座標裡的位置，把伸直的口器改成一條彎過去的線）──
   const PROB0 = "M100 95 Q101 118 100 142 q-1 4 -3 3";
-  function aimProboscis(b) {
+  // 口器（2026-10-06 改螺旋展開）：最後的形狀＝從嘴往下垂、再彎到果實的曲線；u＝展開了多少（0＝整條捲成螺旋收在嘴下、1＝整條伸直到果實）。
+  // 還沒展開的那段在「已經伸出去的尖端」捲成越來越小的螺旋——像真的蝴蝶口器靠血壓一圈一圈攤開。dip＝吸的時候尖端一下一下探進果實
+  function aimProboscis(b, u, dip) {
     const em = emEl(), ext = em && em.querySelector(".pr-ext"); if (!ext || !ext.getScreenCTM) return;
     const m = ext.getScreenCTM(); if (!m) return;
     const r = b.getBoundingClientRect(), q = new DOMPoint(r.left + r.width / 2, r.top + r.height * .5).matrixTransform(m.inverse());
-    const tx = q.x, ty = q.y;   // 從嘴往下先垂一點、再彎向果實（像真的蝴蝶口器展開）
-    ext.setAttribute("d", `M100 95 Q${(100 + (tx - 100) * .12).toFixed(1)} ${(95 + (ty - 95) * .9).toFixed(1)} ${tx.toFixed(1)} ${ty.toFixed(1)}`);
+    const tx = q.x, ty = q.y + (dip || 0), cx = 100 + (tx - 100) * .12, cy = 95 + (ty - 95) * .9, U = u == null ? 1 : u;
+    const B = t => [(1 - t) * (1 - t) * 100 + 2 * (1 - t) * t * cx + t * t * tx, (1 - t) * (1 - t) * 95 + 2 * (1 - t) * t * cy + t * t * ty];
+    const N = 26, pts = []; for (let i = 0; i <= N; i++) { const t = i / N * U; pts.push(B(t)); }
+    let L = 0; for (let i = 1; i <= 40; i++) { const a = B((i - 1) / 40), c = B(i / 40); L += Math.hypot(c[0] - a[0], c[1] - a[1]); }
+    const rest = L * (1 - U);
+    if (rest > .5) {   // 還捲著的那段：從尖端沿切線往內捲，半徑 5 → 1
+      const e = B(U), e2 = B(Math.max(0, U - .02)); let ang = Math.atan2(e[1] - e2[1], e[0] - e2[0]) || Math.PI / 2, x = e[0], y = e[1], done = 0;
+      while (done < rest) { const rad = 1 + 4 * (1 - done / Math.max(rest, 1)), st = 1.6; ang += st / rad; x += Math.cos(ang) * st; y += Math.sin(ang) * st; done += st; pts.push([x, y]); }
+    }
+    ext.setAttribute("d", "M" + pts.map(p => p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" L"));
   }
+  async function proboscis(b, from, to, ms) { await (typeof PetWalk !== "undefined" ? PetWalk.tween(ms, e => aimProboscis(b, from + (to - from) * e)) : sleep(ms)); }
   function resetProboscis() { const em = emEl(), ext = em && em.querySelector(".pr-ext"); if (ext) ext.setAttribute("d", PROB0); }
   // ── 蛋：往果實那邊傾、正面那道裂縫亮起來、果實化成 5～7 顆光點沿弧線飛進裂縫（每飛出一顆果實就縮一級）、鼓起來晃兩下 ──
   async function absorb(b, side) {
@@ -365,6 +376,7 @@ window.PetStage = (function () {
         b.classList.add("target"); todo.forEach(o => o.b.classList.add("wait")); b.classList.remove("wait");
         box.style.setProperty("--ex", String(Math.sign(x - at()) * Math.min(1, Math.abs(x - at()) / 60)));   // 頭和眼睛轉過去看這一顆（轉身時一起轉，不另外停）
         await sleep(W ? 60 : 240);
+        if (fly) cls(true, "st-legs");   // 蝶：快到的時候腳先伸出來
         if (W && !egg && !onCloud) { await PetWalk.goEat(box, b, x); box.style.setProperty("--ex", "0"); box.style.setProperty("--ey", "1"); }   // 走過去：停在嘴剛好在果實上方
         // 低頭要低多少：量嘴到果實的高度差（換成 SVG 單位），夠不到的最後一點由果實「跳」進嘴裡
         let bowTo = null;
@@ -402,12 +414,16 @@ window.PetStage = (function () {
           cls(true, "chew2"); await flash("pb-chew", 600); cls(false, "chew2"); await relax;   // 嚼兩下（0.3 秒 × 2，要等嚼完）
           await flash("pb-gulp", 340);
         }
-        else if (fly) {   // 蝶：落在果實旁（腳伸出來、翅膀半收慢拍）→ 口器彎過去吸 → 果實原地縮小淡出 → 收口器、起飛
-          cls(true, "st-land"); await sleep(340);
-          aimProboscis(b); cls(true, "st-sip"); await sleep(240);
-          b.classList.add("sipped"); await flash("pb-sip", later ? 820 : 1000);
-          cls(false, "st-sip"); await sleep(200); resetProboscis();
-          cls(false, "st-land");
+        else if (fly) {   // 蝶（2026-10-06）：腳先伸出來落地 → 翅膀合起來立在背上 → 腳碰到才把口器一圈一圈攤開 → 一下一下探進果實吸 → 捲回去 → 翅膀打開才起飛
+          cls(true, "st-land"); await sleep(260);
+          aimProboscis(b, 0); cls(true, "st-sip");
+          await proboscis(b, 0, 1, 420);
+          b.classList.add("sipped"); cls(true, "pb-sip");
+          { const t0 = performance.now(), D = later ? 900 : 1100; await PetWalk.tween(D, () => aimProboscis(b, 1, 2.6 * Math.sin((performance.now() - t0) / 1000 * Math.PI * 2 / .45))); }
+          cls(false, "pb-sip");
+          await proboscis(b, 1, 0, 360);
+          cls(false, "st-sip"); resetProboscis();
+          cls(false, "st-land", "st-legs"); await sleep(220);   // 翅膀打開再飛
         } else {
           if (stg === 5) {   // 幼龍：用前爪撿起來再送到嘴邊（短腿彎不下去，撿起來吃最自然）
             const side = x - at() >= 0 ? "r" : "l";
@@ -472,7 +488,7 @@ window.PetStage = (function () {
       if (onCloud && W && box) { box.__riders = null; await PetWalk.goTo(box, -22); }   // 神龍：吃飽在雲上游一小段（身體走頭走過的路、雲座晚一點跟上）
       if (W && box) await PetWalk.home(box);                          // 走回中間
       await flash("pb-hop", 1300);   // 各自的慶祝（style-features.css 依階段換動作）
-    } finally { berries.forEach(o => { release(o.b); o.b.remove(); }); cls(false, "st-lean", "st-open", "st-sip", "st-land", "st-glow", "st-tilt-l", "st-tilt-r"); resetProboscis(); if (box) { box.__riders = null; if (box.__chain && typeof PetWalk !== "undefined") PetWalk.tailTo(box, null, 1); box.style.removeProperty("--ld"); box.style.removeProperty("--lx"); if (typeof PetWalk !== "undefined" && (reduce() || aborted)) { PetWalk.stop(box); box.classList.remove("standing", "face-r"); } } feeding = false; busy = false; if (box) { box.classList.remove("feeding"); schedule(mood); } }
+    } finally { berries.forEach(o => { release(o.b); o.b.remove(); }); cls(false, "st-lean", "st-open", "st-sip", "st-land", "st-legs", "pb-sip", "st-glow", "st-tilt-l", "st-tilt-r"); resetProboscis(); if (box) { box.__riders = null; if (box.__chain && typeof PetWalk !== "undefined") PetWalk.tailTo(box, null, 1); box.style.removeProperty("--ld"); box.style.removeProperty("--lx"); if (typeof PetWalk !== "undefined" && (reduce() || aborted)) { PetWalk.stop(box); box.classList.remove("standing", "face-r"); } } feeding = false; busy = false; if (box) { box.classList.remove("feeding"); schedule(mood); } }
   }
 
   // ── 天氣：用使用者所在位置（探索頁拿過的）或最後一趟走的步道；拿不到就不畫天氣，絕不在這裡要定位 ──

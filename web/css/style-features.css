@@ -2098,13 +2098,13 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .ps-box.feeding .pc-hover { --hv: .3; }
 /* 蝶落地（2026-10-05）：停住上下飄、六隻腳淡入、翅膀半收慢慢拍（落在果實旁，由 pet-walk.js 算好高度讓腳尖踩在地面線上） */
 .ps-box .st-land .pc-hover { animation: none; transform: none; }
-.ps-box .st-land .pr-legs { display: inline; animation: bfLegs .3s ease-out; }
-.ps-box .st-land .pc-fw, .ps-box .st-land .pc-hw { animation: bfRest 2.4s ease-in-out infinite; }
+.ps-box .st-land .pr-legs, .ps-box .st-legs .pr-legs { display: inline; animation: bfLegs .3s ease-out; }   /* 快降落時腳先伸出來 */
+.ps-box .st-land .pc-fw, .ps-box .st-land .pc-hw { animation: bfRest 3.4s ease-in-out infinite; transition: transform .35s ease-out; }
 .ps-box .st-land .pc-hw { animation-delay: -.25s; }
 .ps-box .pc-wing { transform-box: view-box; transform-origin: 100px 96px; transition: transform .3s ease-out; }
 .ps-box .st-land .pc-wing { transform: scaleY(.8); }   /* 停下來翅膀往上收一點：尾突不會插進地面（腳尖在 y≈160，尾突原本到 178） */
 @keyframes bfLegs { from { opacity: 0; } to { opacity: 1; } }
-@keyframes bfRest { 0%, 100% { transform: scaleX(.6); } 50% { transform: scaleX(.74); } }
+@keyframes bfRest { 0%, 38%, 72%, 100% { transform: scaleX(.42); } 54% { transform: scaleX(.62); } }   /* 2026-10-06：停著吃時翅膀半合（真的蝴蝶停著是合起來的；正面圖合到 0.2 會像螞蟻、看不到翅紋），偶爾慢慢張開一點再合上 */
 .ps-box[data-stage="2"] .pet-shadow { translate: var(--wx, 0px) 0; }   /* 蝶飛高飛低，影子都留在地上 */
 .ps-berry.sipped { animation: psSipped 1s ease-in forwards; animation-delay: 0s; transform-origin: 50% 50%; }   /* 縮向口器尖端對準的那一點（果實正中間）   /* 被吸：原地慢慢縮小、淡出（不飛走） */
 @keyframes psSipped { 0% { transform: none; } 18% { transform: scale(1.03, .9); } 30% { transform: scale(.98, .94); } 100% { transform: scale(.3); opacity: 0; } }   /* 先被吸得凹一下，再慢慢變小 */

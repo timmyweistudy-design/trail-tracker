@@ -373,7 +373,7 @@ for(const [km,st] of [[0,0],[20,2]]){const p=await mk({km,berries:20});
    out.wx.add(parseFloat(box.style.getPropertyValue("--wx"))||0);out.face=Math.max(out.face,Math.abs(parseFloat(box.style.getPropertyValue("--face"))||0));
    if(box.classList.contains("walking")){const pos=bs.filter(b=>!b.classList.contains("sipped")).map(b=>{const q=b.getBoundingClientRect();return Math.round(q.left)+","+Math.round(q.top)});if(prev&&prev.length===pos.length&&pos.some((x,i)=>x!==prev[i]))out.moved++;prev=pos;}else prev=null;
    const tb=bs.find(b=>b.classList.contains("target"));
-   if(tb&&em.classList.contains("st-sip")&&!seen.has(tb)){seen.add(tb);await new Promise(r=>setTimeout(r,200));
+   if(tb&&em.classList.contains("pb-sip")&&!seen.has(tb)){seen.add(tb);await new Promise(r=>setTimeout(r,120));   // 口器一圈一圈攤開要 0.42 秒，開始吸（pb-sip）時才量
     const ext=em.querySelector(".pr-ext"),pt=ext.getPointAtLength(ext.getTotalLength()),sp=new DOMPoint(pt.x,pt.y).matrixTransform(ext.getScreenCTM()),q=tb.getBoundingClientRect();out.tips.push(+Math.hypot(sp.x-(q.left+q.width/2),sp.y-(q.top+q.height/2)).toFixed(1));
     let lo=-1e9;em.querySelectorAll(".pr-legs path").forEach(l=>{const pp=l.getPointAtLength(l.getTotalLength()),s2=new DOMPoint(pp.x,pp.y).matrixTransform(l.getScreenCTM());lo=Math.max(lo,s2.y)});out.feet.push(+(lo-PetWalk.groundY(tb)).toFixed(1));}
    const mb=bs.find(b=>b.classList.contains("melt"));
