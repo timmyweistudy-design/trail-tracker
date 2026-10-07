@@ -188,6 +188,7 @@ const Store = (() => {
   // 備份 / 還原（避免換手機或清快取資料遺失）
   // 完整鍵清單：寵物、果實、成就、每日任務、外觀主題、篩選預設全都備份（新增鍵記得加進來）
   const BACKUP_KEYS = [
+    "tt_pet_diary",   // 夥伴日記（2026-10-07）
     "tt_crowd_off",   // 步道人氣：不分享出發時間（隱私偏好，換手機要跟著走）
     "tt_rules_ok",    // 已同意社群規範（換手機不用再問一次）
     "tt_pet_name", "tt_pet_hat", "tt_pet_hatch", "tt_pet_stage", "tt_pet_base",

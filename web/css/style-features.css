@@ -2353,3 +2353,18 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .pet-btn.feed.cd .fb-ring { display: block; }
 @media (prefers-reduced-motion: reduce) { .pet-card.evo-near .pet-track i, .pet-card.evo-near .pet-evo-sil, .pet-bump, .pet-track.pet-hit::after { animation: none !important; } }
 .pet-bubble.say { box-shadow: 0 0 0 2px rgba(255,214,120,.55); }
+
+/* 夥伴卡的空狀態（2026-10-07 收尾輪）：沒有活力資料時條換成一句說明；0 的數字淡一點；「？？？」可以點 */
+.pet-meter .m-hint { display: none; flex: 1 1 auto; min-width: 0; font-style: normal; font-size: .92em; line-height: 7px; color: rgba(215,228,211,.62); white-space: nowrap; overflow: visible; }
+.pet-meter.no-en .mtrack, .pet-meter.no-en > span b { display: none; } .pet-meter.no-en .m-hint { display: inline; }
+.pet-chip.zero .cv { opacity: .5; }
+.pet-evo-next { cursor: pointer; }
+
+/* 夥伴日記（手冊最上面） */
+.diary-list { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 14px; }
+.diary-row { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 12px; background: var(--card-2, rgba(0,0,0,.04)); }
+.diary-ic { width: 34px; height: 34px; flex: none; display: flex; align-items: center; justify-content: center; }
+.diary-ic .pet-critter { width: 34px; height: 34px; max-width: none; max-height: none; }
+.diary-t { flex: 1; font-weight: 600; font-size: calc(13px * var(--fs, 1)); }
+.diary-row time { font-family: var(--num); font-size: calc(11.5px * var(--fs, 1)); color: var(--muted, #888); white-space: nowrap; }
+.diary-empty { color: var(--muted, #888); font-size: calc(12.5px * var(--fs, 1)); padding: 6px 2px 12px; }
