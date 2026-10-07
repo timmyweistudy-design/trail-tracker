@@ -83,8 +83,8 @@ const FEED_COOLDOWN = 8 * 3600e3;   // 餵食冷卻 8 小時
 function feedCooldownMs() { return Math.max(0, FEED_COOLDOWN - (Date.now() - (+(localStorage.getItem("tt_pet_fed_t") || 0)))); }
 function canFeedNow() { return berriesBalance() >= 3 && feedCooldownMs() === 0; }   // 「現在能不能餵」（看 8h 冷卻，非每日）
 function feedPet() {
-  if (feedCooldownMs() > 0) { toast(`${ttT("牠還飽著，約")} ${Math.ceil(feedCooldownMs() / 3600e3)} ${ttT("小時後再餵")}`); return; }
-  if (berriesBalance() < 3) { toast(ttT("果實不夠，再多走一點就有")); return; }
+  if (feedCooldownMs() > 0) { petSay(`${ttT("牠還飽著，約")} ${Math.ceil(feedCooldownMs() / 3600e3)} ${ttT("小時後再餵")}`); return; }
+  if (berriesBalance() < 3) { petSay(ttT("果實不夠，再多走一點就有")); return; }
   const heartsBefore = petHearts();
   localStorage.setItem("tt_pet_berry_spent", String((+(localStorage.getItem("tt_pet_berry_spent") || 0)) + 3));
   bumpAffinity(15);
@@ -96,7 +96,7 @@ function feedPet() {
     petBurst("❤️", 2);   // 先冒愛心
     checkPetEvolve();    // 進化了會整張重畫（被進化儀式蓋住，看不到跳動）
     renderPet();         // 沒進化：只更新數字（成長里程往上跳、進度條長大）
-    setTimeout(() => toast(`${ttT("牠吃得好開心")}・${ttT("成長")} +${gain} km`), 450);
+    setTimeout(() => { petSay(ttT("牠吃得好開心")); petFloat(`+${gain} km`, ".pet-card .pet-track"); }, 250);   // 在卡片裡說、數字飄進成長進度條（以前是畫面底部的提示框）
   };
   // 果實從天上掉下來、牠走過去吃（pet-stage.js）；舞台不在畫面上或減少動態效果時直接結算
   const fb = $("#petFeed"); if (fb) fb.disabled = true;
@@ -373,20 +373,25 @@ function renderPet() {
   const em = $("#petEmoji");
   // 點頭＝摸摸頭（瞇眼）、點身體＝搔癢（扭一扭）、長按＝抱抱（壓扁回彈＋三顆心，每天第一次抱親密 +2）
   const S = typeof PetStage !== "undefined";
+  // 餵食中不能摸、不能抱（2026-10-07 使用者）：點了只在泡泡說一句（最多每 3 秒一次），不打斷吃東西的動作
+  let busyT = 0;
+  const eating = () => { if (!(S && PetStage.isFeeding && PetStage.isFeeding())) return false; if (Date.now() - busyT > 3000) { busyT = Date.now(); petSay(ttT("在吃東西，等我一下～"), 1800); } return true; };
   const poke = (zone) => {
+    if (eating()) return;
     if (S) PetStage.react(zone); else { em.classList.remove("tap"); void em.offsetWidth; em.classList.add("tap"); }
     ttBuzz(20);
     petBurst("❤️", 1);
-    toast(petTapLine(petMood().k));   // 現在的心情（卡片不再每次重畫，不能用畫的那時候的）
+    petSay(petTapLine(petMood().k));   // 現在的心情（在泡泡裡說；以前是畫面底部的提示框）
   };
   const hug = () => {
+    if (eating()) return;
     if (S) PetStage.react("hug");
     ttBuzz([20, 40, 20]);
     petBurst("❤️", 3);
     if (localStorage.getItem("tt_pet_hug_day") !== todayStr()) {
       localStorage.setItem("tt_pet_hug_day", todayStr()); bumpAffinity(2);
-      toast(ttT("抱抱！今天的親密增加了"));
-    } else toast(ttT("抱抱！"));
+      petSay(ttT("抱抱！今天的親密增加了")); petFloat(`${ttT("親密")} +2`, ".pet-card .m-love");
+    } else petSay(`${ttT("抱抱！")} ${ttT("今天已經抱過囉")}`);
   };
   if (em) {
     let pressT = 0, hugged = false;
@@ -426,6 +431,24 @@ function petCountUp(el, to, digits) {
   requestAnimationFrame(step);
   el.closest(".pet-chip, .pet-meter")?.classList.add("bump"); setTimeout(() => el.closest(".pet-chip, .pet-meter")?.classList.remove("bump"), 700);
 }
+// 夥伴說的話、飄起來的數字（2026-10-07：寵物頁的回饋都在卡片裡——以前用畫面底部的提示框，在 iPhone 上會偏到右下、還壓在卡片下緣）
+let _sayT = 0;
+function petSay(text, ms) {
+  const b = document.querySelector(".pet-card .pet-bubble"); if (!b) return;
+  clearTimeout(_sayT); b.classList.add("say"); petSwapText(b, escHtml(text));
+  _sayT = setTimeout(() => { b.classList.remove("say"); petSwapText(b, ttT(petMood().t)); }, ms || 2600);
+}
+function petFloat(text, toSel) {   // 從角色飄到某個數字（成長進度條、親密條），到了那裡閃一下
+  const em = document.getElementById("petEmoji"), to = document.querySelector(toSel); if (!em || !to) return;
+  const a = em.getBoundingClientRect(), z = to.getBoundingClientRect(), f = document.createElement("span");
+  f.className = "pet-float"; f.textContent = text; document.body.appendChild(f);
+  const x0 = a.left + a.width / 2, y0 = a.top + a.height * .3, x1 = z.left + z.width / 2, y1 = z.top + z.height / 2;
+  f.style.left = x0 + "px"; f.style.top = y0 + "px";
+  const reduceM = matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const an = f.animate(reduceM ? [{ opacity: 1 }, { opacity: 0 }] : [{ transform: "translate(-50%, -50%) scale(.8)", opacity: 0 }, { transform: "translate(-50%, -110%) scale(1.05)", opacity: 1, offset: .25 },
+    { transform: `translate(calc(-50% + ${x1 - x0}px), calc(-50% + ${y1 - y0}px)) scale(.9)`, opacity: .95, offset: .85 }, { transform: `translate(calc(-50% + ${x1 - x0}px), calc(-50% + ${y1 - y0}px)) scale(.6)`, opacity: 0 }], { duration: reduceM ? 900 : 1300, easing: "cubic-bezier(.3,.7,.4,1)" });
+  an.onfinish = () => { f.remove(); to.classList.remove("pet-hit"); void to.offsetWidth; to.classList.add("pet-hit"); };
+}
 function petSwapText(el, html) {
   if (!el || el.innerHTML === html) return;
   el.classList.add("swap");
@@ -434,7 +457,7 @@ function petSwapText(el, html) {
 function petCardUpdate(box, v) {
   const em = box.querySelector("#petEmoji");
   // 心情：對話泡、角色的心情 class、旁邊的小裝飾
-  petSwapText(box.querySelector(".pet-bubble"), ttT(v.mood.t));
+  { const bb = box.querySelector(".pet-bubble"); if (bb && !bb.classList.contains("say")) petSwapText(bb, ttT(v.mood.t)); }   // 正在說話（餵食、抱抱的回饋）時不蓋掉
   const k = v.mood.k || "content";
   if (!em.classList.contains("pet-m-" + k)) {
     em.className = em.className.replace(/\bpet-m-\S+/g, "").trim() + " pet-m-" + k;

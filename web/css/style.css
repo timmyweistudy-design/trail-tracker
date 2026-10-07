@@ -1175,16 +1175,18 @@ body.map-fs-open { overflow: hidden; }
 .tab.active::after { content: ""; position: absolute; top: -9px; width: 18px; height: 3px; border-radius: 3px; background: var(--accent); }
 
 .toast {
-  position: fixed; bottom: calc(100px + var(--safe-b)); left: 50%; transform: translateX(-50%) translateY(20px);
+  /* 2026-10-07：置中不靠 translateX(-50%)——iOS Safari 在過場一開始用「舊文字的寬度」把 -50% 換成固定像素，換成較長的句子後整個偏右（使用者錄影：寵物頁「牠吃得好開心」）。
+     改成左右 0＋margin auto＋fit-content，transform 只做固定像素的上下移動 */
+  position: fixed; bottom: calc(100px + var(--safe-b)); left: 0; right: 0; margin: 0 auto; transform: translateY(20px);
   background: var(--brand-deep); color: #f2efe4; padding: 12px 20px; border-radius: var(--r-pill); font-size: calc(13.5px * var(--fs, 1));
   opacity: 0; pointer-events: none; transition: var(--dur-m) var(--ease-out); z-index: 60;
   box-shadow: var(--sh-lg); font-weight: 500;
   /* left:50% 會讓瀏覽器只給它「半個畫面」寬 → 短句也被擠成兩行、而且靠左。
      改成按文字實寬、最多 90vw，置中對齊；兩行時膠囊圓角看起來歪，改一般圓角 */
-  width: max-content; max-width: min(90vw, 440px); text-align: center; text-wrap: balance; line-height: 1.45;
+  width: fit-content; width: -webkit-fit-content; max-width: min(90vw, 440px); text-align: center; text-wrap: balance; line-height: 1.45;
   border-radius: 18px;
 }
-.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.show { opacity: 1; transform: translateY(0); }
 
 /* 足跡熱力圖 */
 .foot-modal { position: fixed; inset: 0; z-index: 92; background: var(--bg); animation: tt-fade var(--dur-m) var(--ease-out); }

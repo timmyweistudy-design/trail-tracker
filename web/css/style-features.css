@@ -1298,8 +1298,8 @@ body.hdr-compact .brand-mark { width: 36px; height: 36px; }
 .btn.lock-btn { flex: 0 0 auto; width: auto; min-width: 58px; padding-inline: 12px; flex-direction: column; gap: 2px; font-size: calc(11px * var(--fs, 1)); }
 .btn.lock-btn .ic { width: 17px; height: 17px; }
 /* 提示訊息：在記錄頁移到上方，不要蓋住暫停／結束 */
-body[data-view="record"] .toast { bottom: auto; top: calc(var(--hdr-h, 60px) + 10px + var(--safe-t)); transform: translateX(-50%) translateY(-12px); }
-body[data-view="record"] .toast.show { transform: translateX(-50%) translateY(0); }
+body[data-view="record"] .toast { bottom: auto; top: calc(var(--hdr-h, 60px) + 10px + var(--safe-t)); transform: translateY(-12px); }
+body[data-view="record"] .toast.show { transform: translateY(0); }
 /* 大字時狀態列不要被分頁列蓋住 */
 .view { padding-bottom: calc(104px + 36px * var(--fs, 1) + var(--safe-b, 0px)); }   /* 捲到底時最後一張卡要高過「回到頂部」浮鈕（84+44px） */
 /* 深色：里程卡原本是淺色漸層，淡綠數字幾乎看不到 */
@@ -1729,8 +1729,8 @@ html .hero-cap .badge.ghost, html .hero-cap .badge.family, html[data-theme="dark
 .dex-d { overflow-wrap: anywhere; }
 .fp-gift { display: inline-flex; align-items: center; gap: 3px; }
 .fp-gift .berry { width: 1.05em; height: 1.05em; }
-.toast.top { bottom: auto; top: calc(10px + var(--safe-t)); z-index: 1250;   /* 貼最上緣：底下是剛打開的面板，壓在標題上會擋字 */ transform: translateX(-50%) translateY(-12px); }
-.toast.top.show { transform: translateX(-50%) translateY(0); }
+.toast.top { bottom: auto; top: calc(10px + var(--safe-t)); z-index: 1250;   /* 貼最上緣：底下是剛打開的面板，壓在標題上會擋字 */ transform: translateY(-12px); }
+.toast.top.show { transform: translateY(0); }
 .ach-fchips.more { -webkit-mask-image: linear-gradient(90deg, #000 82%, transparent); mask-image: linear-gradient(90deg, #000 82%, transparent); }
 .ach-pgnav-t { font-family: var(--num); letter-spacing: 0; color: var(--ink-soft); }
 html[data-theme="dark"] .ach-modal .sheet-close { background: rgba(255,255,255,.14); color: #fff; }
@@ -2322,3 +2322,9 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 
 /* 長按抱抱時不要跳出文字選取的藍框、長按選單、點擊的藍色閃光（2026-10-07 使用者回報：以前只有角色本身設了，旁邊的泡泡、名字會被選到） */
 .ps-box, .ps-box * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+
+/* 飄起來的數字（餵食 +km、抱抱 親密 +2）：從角色飄到對應的條，到了閃一下（pet.js petFloat） */
+.pet-float { position: fixed; z-index: 96; pointer-events: none; transform: translate(-50%, -50%); padding: 3px 10px; border-radius: 999px; background: rgba(255,253,246,.96); color: #2f5a2b; font-weight: 700; font-size: calc(13px * var(--fs, 1)); box-shadow: 0 3px 10px rgba(0,0,0,.18); white-space: nowrap; }
+.pet-hit { animation: petHit .6s ease-out; }
+@keyframes petHit { 0% { filter: brightness(1); } 30% { filter: brightness(1.45) saturate(1.2); } 100% { filter: brightness(1); } }
+.pet-bubble.say { box-shadow: 0 0 0 2px rgba(255,214,120,.55); }

@@ -600,5 +600,5 @@ window.PetStage = (function () {
 
   // 心情變了但卡片沒重畫（pet.js 的 petCardUpdate）：待機動作的機率跟著換
   function setMood(m) { mood = m || "content"; if (box) schedule(mood); }
-  return { debug, setMood, html, bind, unbind, tod, season, wxOf, weather, cachedWx, count: STAGES, zoneOf, react, feed, act };
+  return { debug, setMood, html, bind, unbind, tod, season, wxOf, weather, cachedWx, count: STAGES, zoneOf, react, feed, act, isFeeding: () => feeding };
 })();

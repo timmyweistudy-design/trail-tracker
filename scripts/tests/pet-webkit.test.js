@@ -30,5 +30,12 @@ let fails = 0; const errs = []; const ok = (c, m) => { console.log((c ? "PASS " 
     ok(r.done && r.padded && r.spill <= 0, `webkit stage ${st}: feeds to the end and nothing is drawn outside the canvas ${JSON.stringify(r)}`);
     await ctx.close();
   }
+  // 2026-10-07 使用者錄影：提示框（寵物頁「牠吃得好開心」）在 iPhone 上偏右——iOS 在過場一開始用舊文字寬度把 translateX(-50%) 換成固定像素。先短句再長句，量中心有沒有偏
+  { const ctx = await b.newContext({ viewport: { width: 390, height: 844 } }); const p = await ctx.newPage();
+    await p.addInitScript(() => { localStorage.setItem("tt_lang", "zh"); ["tt_onboarded_v2", "tt_coach_trail", "tt_locperm_prompted"].forEach(k => localStorage.setItem(k, "1")); });
+    await p.addInitScript(MOCK); await p.goto(`http://localhost:${PORT}/`); await p.waitForTimeout(2500);
+    const off = await p.evaluate(async () => { toast("好"); await new Promise(r => setTimeout(r, 2600)); toast("牠吃得好開心・成長 +0.3 km"); let worst = 0; const t0 = performance.now();
+      while (performance.now() - t0 < 900) { const r = document.getElementById("toast").getBoundingClientRect(); worst = Math.max(worst, Math.abs(r.left + r.width / 2 - innerWidth / 2)); await new Promise(r => requestAnimationFrame(r)); } return +worst.toFixed(1); });
+    ok(off <= 1.5, `webkit: the toast stays centred when its text changes (worst ${off}px off centre)`); await ctx.close(); }
   console.log("ERRS", JSON.stringify(errs)); console.log("FAILS", fails + (errs.length ? 1 : 0)); await b.close(); srv.kill();
 })();

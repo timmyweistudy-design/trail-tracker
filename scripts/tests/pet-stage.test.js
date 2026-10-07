@@ -96,10 +96,10 @@ if(sh()){const p=await mk({km:40,berries:20});
  // 長按＝抱抱：每天第一次 +2 親密
  await p.waitForTimeout(900);const a0=await p.evaluate(()=>{localStorage.removeItem("tt_pet_hug_day");return +(localStorage.getItem("tt_pet_aff")||0)});
  await p.mouse.move(head.x,head.top);await p.mouse.down();await p.waitForTimeout(750);await p.mouse.up();await p.waitForTimeout(150);
- const h1=await p.evaluate(()=>({hug:document.querySelector("#petEmoji").classList.contains("pb-hug"),aff:+(localStorage.getItem("tt_pet_aff")||0),day:localStorage.getItem("tt_pet_hug_day")===todayStr(),t:document.getElementById("toast").textContent,pat:document.querySelector("#petEmoji").classList.contains("pb-pat")}));
+ const h1=await p.evaluate(()=>({hug:document.querySelector("#petEmoji").classList.contains("pb-hug"),aff:+(localStorage.getItem("tt_pet_aff")||0),day:localStorage.getItem("tt_pet_hug_day")===todayStr(),t:document.querySelector(".pet-card .pet-bubble").textContent,pat:document.querySelector("#petEmoji").classList.contains("pb-pat")}));
  ok(h1.hug&&!h1.pat&&h1.day&&h1.aff===a0+2&&/親密/.test(h1.t),"long press → hug, +2 bond once, no pat "+JSON.stringify(h1));
  await p.waitForTimeout(1100);await p.mouse.down();await p.waitForTimeout(750);await p.mouse.up();await p.waitForTimeout(150);
- ok(await p.evaluate(a=>+(localStorage.getItem("tt_pet_aff")||0)===a,h1.aff)&&/^抱抱！$/.test(await p.evaluate(()=>document.getElementById("toast").textContent.trim())),"second hug same day: no extra bond");
+ ok(await p.evaluate(a=>+(localStorage.getItem("tt_pet_aff")||0)===a,h1.aff)&&/抱抱！.*今天已經抱過囉/.test(await p.evaluate(()=>document.querySelector(".pet-card .pet-bubble").textContent.trim())),"second hug same day: no extra bond, and it says so");
  // 餵食（2026-10-04）：一次扣三顆 → 掉三顆（隨機、彼此分開）→ 一顆一顆吃、餵食鈕上的數字一顆一顆減 → 結算
  await p.evaluate(()=>localStorage.removeItem("tt_pet_fed_t"));await p.evaluate(()=>renderPet());await p.waitForTimeout(300);
  const bal0=await p.evaluate(()=>berriesBalance());
@@ -125,8 +125,8 @@ if(sh()){const p=await mk({km:40,berries:20});
  ok(/st-lean>st-open>pb-snap>pb-chew>pb-gulp/.test(seq.steps),"feed: each berry = lean > open mouth > snap > chew > gulp "+seq.steps);
  const lick=await p.evaluate(async()=>{for(let k=0;k<80;k++){if(document.querySelector("#petEmoji.pb-lick"))return true;await new Promise(r=>setTimeout(r,50));}return false;});
  ok(lick,"feed: licks its lips after the last berry");
- await p.waitForFunction(()=>/吃得好開心/.test(document.getElementById("toast").textContent),null,{timeout:12000}).catch(()=>{});   // 走回中間、慶祝、愛心先冒、0.45 秒後才跳提示
- const f2=await p.evaluate(()=>({berry:!!document.querySelector(".ps-berry"),bal:berriesBalance(),t:document.getElementById("toast").textContent}));
+ await p.waitForFunction(()=>/吃得好開心/.test(document.querySelector(".pet-card .pet-bubble").textContent),null,{timeout:12000}).catch(()=>{});   // 走回中間、慶祝、愛心先冒、0.45 秒後才跳提示
+ const f2=await p.evaluate(()=>({berry:!!document.querySelector(".ps-berry"),bal:berriesBalance(),t:document.querySelector(".pet-card .pet-bubble").textContent}));
  ok(!f2.berry&&f2.bal===bal0-3&&/吃得好開心/.test(f2.t),"feed: all three eaten, settled (−3) "+JSON.stringify(f2));
 
  ok(await p.evaluate(()=>Math.abs(parseFloat(document.querySelector(".ps-box").style.getPropertyValue("--wx"))||0)<1),"feed: walks back to the middle afterwards");
@@ -462,6 +462,19 @@ if(sh()){const p=await mk({km:5});
    const d=runs.map(r=>Math.max(...r)-Math.min(...r)).sort((a,b)=>a-b);out[st]={runs:runs.length,med:+(d[Math.floor(d.length/2)]||99).toFixed(2)};host.remove();}
   return out;});
  ok(r[5].runs>=4&&r[5].med<=3&&r[1].runs>=4&&r[1].med<=1,"planted feet (and the larva's prolegs) do not slide while walking (median stance drift px) "+JSON.stringify(r));
+ await p.close();}
+
+// ── 2026-10-07 使用者：餵食的過程中不能摸、不能抱——點了只在泡泡說一句，不打斷吃東西 ──
+if(sh()){const p=await mk({km:40,berries:20});
+ await p.evaluate(()=>{window.__psNoIdle=true;localStorage.removeItem("tt_pet_fed_t");localStorage.removeItem("tt_pet_hug_day");renderPet();document.querySelector(".ps-box").scrollIntoView({block:"center"});});await p.waitForTimeout(400);
+ await p.click("#petFeed");await p.waitForTimeout(1800);
+ const c=await p.evaluate(()=>{const r=document.querySelector("#petEmoji .pet-critter").getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height*.62};});
+ const a0=await p.evaluate(()=>+(localStorage.getItem("tt_pet_aff")||0));
+ await p.mouse.click(c.x,c.y);await p.waitForTimeout(300);
+ const t1=await p.evaluate(()=>({pat:/pb-pat|pb-tickle/.test(document.querySelector("#petEmoji").className),say:document.querySelector(".pet-card .pet-bubble").textContent,feeding:PetStage.isFeeding()}));
+ await p.mouse.move(c.x,c.y);await p.mouse.down();await p.waitForTimeout(750);await p.mouse.up();await p.waitForTimeout(200);
+ const t2=await p.evaluate(()=>({hug:/pb-hug/.test(document.querySelector("#petEmoji").className),aff:+(localStorage.getItem("tt_pet_aff")||0),day:localStorage.getItem("tt_pet_hug_day")}));
+ ok(t1.feeding&&!t1.pat&&/在吃東西/.test(t1.say)&&!t2.hug&&t2.aff===a0&&!t2.day,"while feeding: tapping and long-press do nothing except a line in the bubble "+JSON.stringify({t1,t2}));
  await p.close();}
 
 console.log("ERRS",JSON.stringify(errs));console.log("FAILS",fails);await b.close();srv.kill();})();
