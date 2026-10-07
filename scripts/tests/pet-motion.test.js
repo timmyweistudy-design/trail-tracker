@@ -78,14 +78,24 @@ async function run(b, st, spots, tag) {
   // 單一擁有者（2026-10-07 優化輪 #16）：攔截每一次寫 style.transform，記下是哪個函式寫的；同一格同一個元素被兩個不同函式寫＝衝突
   // （這幾輪的 bug 多半是兩個地方搶同一個 transform：一個寫完另一個蓋掉，畫面就跳）
   await p.addInitScript(() => {
-    const d = Object.getOwnPropertyDescriptor(CSSStyleDeclaration.prototype, "transform"); if (!d || !d.set) return;
-    window.__wr = new Map(); window.__wc = []; let fr = 0; const tick = () => { fr++; window.__wr = new Map(); requestAnimationFrame(tick); }; requestAnimationFrame(tick);
-    Object.defineProperty(CSSStyleDeclaration.prototype, "transform", { configurable: true, get: d.get, set(v) {
-      const st = (new Error().stack || "").split("\n").slice(2).find(l => /pet-(walk|stage)\.js/.test(l)) || "?", fn = (st.match(/at (\S+)/) || [])[1] || "?";
-      let m = window.__wr.get(this); if (!m) window.__wr.set(this, m = new Set()); m.add(fn);
-      if (m.size > 1 && window.__wc.length < 40) window.__wc.push(fr + ":" + [...m].join("+"));
-      d.set.call(this, v); } });
+    // 2026-10-07：Chromium 149 起 style.transform 是每個 style 物件「自己的」資料屬性、不在 CSSStyleDeclaration.prototype 上——以前攔原型的 setter 整段直接 return，
+    // 這個偵測器其實一直沒在跑（「一格只有一個人寫」永遠空的通過）。改成每一格把舞台裡還沒裝的元素，在它自己的 style 物件上裝 getter/setter
+    window.__wr = new Map(); window.__wh = new WeakMap(); window.__wc = []; window.__wsame = {}; window.__wn = 0; let fr = 0;
+    const rec = (el, fn) => {
+      window.__wn++;
+      let m = window.__wr.get(el); if (!m) window.__wr.set(el, m = new Set()); m.add(fn);
+      if (m.size > 1) { const k = [...m].join("+"), o = window.__wsame[k] || (window.__wsame[k] = { n: 0, fr: [] }); if (o.fr[o.fr.length - 1] !== fr) { o.n++; if (o.fr.length < 400) o.fr.push(fr); } }   // 同一格兩個人寫：記下是哪幾格（收步那一格「最後一筆＋重設」只發生一次＝轉場、無害；連續好幾格都在蓋＝在搶）
+      // 隔格輪流寫也算搶（A 這格寫、B 下一格寫、A 又寫回來——每一格都只有一個人寫，上面那條抓不到，畫面一樣會跳）。只記「換人」：A→B→A 在 4 格內＝在搶；A→B 之後不再回來＝正常交接
+      const h = window.__wh.get(el) || []; if (!h.length || h[h.length - 1].fn !== fn) { h.push({ fr, fn }); if (h.length > 3) h.shift(); window.__wh.set(el, h);
+        if (h.length === 3 && h[0].fn === h[2].fn && h[2].fr - h[0].fr <= 4 && window.__wc.length < 40) window.__wc.push(fr + ":" + h.map(x => x.fn).join("~")); }
+    };
+    const patch = el => { const st = el.style; if (!st || st.__pw) return; st.__pw = 1;
+      Object.defineProperty(st, "transform", { configurable: true, get() { return st.getPropertyValue("transform"); }, set(v) {
+        const line = (new Error().stack || "").split("\n").slice(2).find(l => /pet-(walk|stage)\.js/.test(l)) || "?", fn = (line.match(/at (\S+)/) || [])[1] || "?";
+        rec(el, fn); st.setProperty("transform", v); } }); };
+    const tick = () => { fr++; window.__wr = new Map(); document.querySelectorAll(".ps-box, .ps-box *").forEach(patch); requestAnimationFrame(tick); }; requestAnimationFrame(tick);
   });
+
   if (process.env.PM_MOOD) await p.addInitScript(m => { const d = new Date(Date.now() - ({ happy: 0, content: 3, longing: 7 }[m] || 0) * 864e5).toISOString(); localStorage.setItem("tt_records", JSON.stringify([{ id: "pm1", date: d, trailName: "x", distanceKm: .1, elapsedMs: 6e5 }]));   /* 距離要很小：不然里程超過門檻、階段就變了 */ }, process.env.PM_MOOD);   // 2026-10-07：心情跟最近一次健行有關（沒有紀錄＝睏）；PM_MOOD=happy|content|longing 換心情跑
   await p.addInitScript(() => addEventListener("unhandledrejection", e => setTimeout(() => { throw e.reason; })));   // 2026-10-06：async 裡丟出的錯（例如呼叫已刪掉的函式）以前是安靜的——果實消失、角色卡住，測試只看到逾時
   await p.addInitScript(MOCK); await p.goto(`http://localhost:${PORT}/`); await p.waitForTimeout(2500);
@@ -107,7 +117,7 @@ async function run(b, st, spots, tag) {
   }
   await cdp.send("Emulation.setVirtualTimePolicy", { policy: "advance" });
   const writers = await p.evaluate(() => window.__wc || []);
-  const end = await p.evaluate(() => ({ writers: window.__wc || [], bal: berriesBalance(), wx: parseFloat(document.querySelector(".ps-box").style.getPropertyValue("--wx")) || 0 }));
+  const end = await p.evaluate(() => ({ writers: (window.__wc || []).concat(Object.entries(window.__wsame || {}).map(([k, o]) => [k, o.fr.find((f, i) => o.fr[i + 2] != null && o.fr[i + 2] - f < 10)]).filter(([k, f]) => f != null).map(([k, f]) => f + ":" + k + " (3+ of 10 frames)")), same: window.__wsame, nw: window.__wn || 0, bal: berriesBalance(), wx: parseFloat(document.querySelector(".ps-box").style.getPropertyValue("--wx")) || 0 }));
   await ctx.close();
   return { F, I, bal0, end };
 }
@@ -182,7 +192,7 @@ function judge(st, tag, R) {
   if (st === 1) {   // 2026-10-06 第五輪：尺蠖式——走路的每一格至少一端抓地不動（不滑），而且中段真的拱起來
     let slip = 0, slipAt = -1, arch = 0;
     for (let i = 1; i < n; i++) { if (!/walking/.test(F[i].bcl) || !/walking/.test(F[i - 1].bcl) || /lv-l/.test(F[i].bcl) !== /lv-l/.test(F[i - 1].bcl) || !F[i].lvR || F[i].turn || F[i - 1].turn) continue;
-      const v = Math.min(Math.abs(F[i].lvR[0] - F[i - 1].lvR[0]), Math.abs(F[i].lvF[0] - F[i - 1].lvF[0]));   // 水平方向（走回家時同時調整前後深度，整隻會往下移一點，那不是滑） if (v > slip) { slip = v; slipAt = i; }
+      const v = Math.min(Math.abs(F[i].lvR[0] - F[i - 1].lvR[0]), Math.abs(F[i].lvF[0] - F[i - 1].lvF[0])); if (v > slip) { slip = v; slipAt = i; }   // 水平方向（走回家時同時調整前後深度，整隻會往下移一點，那不是滑）——2026-10-07 check.js 新規則抓到：以前 if 被這行註解吃掉，slip 永遠 0（假通過）
       }
     { const ms = F.filter(f => /walking/.test(f.bcl) && f.lvM != null).map(f => f.lvM - (f.lvR[1] + f.lvF[1]) / 2); if (ms.length) arch = Math.max(...ms) - Math.min(...ms); }
     if (process.env.PM_SEQ && slipAt > 0) for (let i = slipAt - 3; i <= slipAt + 2; i++) console.log("   lv", i, F[i].bcl, F[i].lvR.map(v => v.toFixed(1)), F[i].lvF.map(v => v.toFixed(1)));
@@ -240,7 +250,8 @@ function judge(st, tag, R) {
   ok(spill <= 0, `${tag}: nothing is drawn outside the canvas (iOS WebKit clips there; worst ${spill.toFixed(1)}px${spill > 0 ? ` @${si} ${F[si].spillWhat} ${F[si].cls}|${F[si].bcl}` : ""})`);
   const last = F[n - 1];
   { const w = (R.end.writers || []).map(x => x.replace(/^\d+:/, "")), uniq = [...new Set(w)];
-    ok(uniq.length === 0, `${tag}: each element's transform has one writer per frame (conflicts: ${JSON.stringify(uniq.slice(0, 6))})`); }
+    if (process.env.PM_SEQ) console.log(tag, "same-frame writers", JSON.stringify(R.end.same));
+    ok((R.end.nw > 20 || st === 0) && uniq.length === 0, `${tag}: each element's transform has one writer per frame, and no two writers take turns (conflicts: ${JSON.stringify(uniq.slice(0, 6))}; ${R.end.nw} writes seen — 0 means the detector is blind; a one-off same-frame write (last pose + reset when a walk ends) is a hand-off; 3+ within 10 frames is a fight)`); }
   { const I = R.I || [], di = I.map((f, i) => (i ? D(f.mouth, I[i - 1].mouth) : 0)); let wj = 0; for (let i = 2; i < I.length - 1; i++) wj = Math.max(wj, di[i] - Math.max(di[i - 1], di[i + 1]) > 3 ? di[i] : 0, di[i] > 8 ? di[i] : 0);
     ok(I.length >= 40 && wj === 0, `${tag}: idle before feeding is smooth too (mouth never pops; worst ${wj.toFixed(1)}px)`); }
   if (process.env.PM_TRACE) { const [a, b] = process.env.PM_TRACE.split("-").map(Number); for (let i = a; i <= Math.min(b, n - 1); i++) console.log("  tr", i, F[i].bcl, F[i].cls, F[i].deform ? F[i].deform.map(v => v.toFixed(0)).join(",") : "", F[i].wx != null ? (+F[i].wx).toFixed(1) : ""); }

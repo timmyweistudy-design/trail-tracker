@@ -37,6 +37,24 @@ for (const f of files.concat([path.join(WEB, "sw.js")])) {
   catch (e) { err(`[語法] ${rel(f)}\n${String(e.stderr || e.message).trim()}`); }
 }
 
+// A2. 行中間的 // 註解吃掉後面的程式（2026-10-07：這種錯犯了 5 次——在一行中間插「// 說明」，同一行後面的 else …; } 變成註解，
+//     語法還是對的、測試不一定抓得到，只是那段程式靜靜不跑）。註解裡中文說明後面那段 ASCII 若像程式（有 ; 結尾＋else/return/=>/呼叫/賦值）就擋下；要在行內寫註解請用 /* */
+{
+  const TAIL = /[;{}]\s*\}*\)*;?\s*$/, CODEY = /(\belse\b|\breturn\b|=>|\(\)|[A-Za-z_$][\w$]*\s*\(|[A-Za-z_$][\w$.]*\s*=[^=])/;
+  const testDir = path.join(ROOT, "scripts", "tests");
+  for (const f of files.concat(fs.readdirSync(testDir).filter(x => x.endsWith(".js")).map(x => path.join(testDir, x)))) read(f).split("\n").forEach((line, i) => {
+    let q = null, esc = false, at = -1;
+    for (let k = 0; k < line.length; k++) { const c = line[k];
+      if (esc) { esc = false; continue; } if (c === "\\") { esc = true; continue; }
+      if (q) { if (c === q) q = null; continue; }
+      if (c === '"' || c === "'" || c === "`") { q = c; continue; }
+      if (c === "/" && line[k + 1] === "/" && line[k - 1] !== ":") { at = k; break; } }
+    if (at < 0 || q || !line.slice(0, at).trim()) return;
+    const tail = line.slice(at + 2).replace(/^.*[^\x00-\x7f]/, "");
+    if (tail.length > 6 && tail.includes(";") && TAIL.test(tail) && CODEY.test(tail)) err(`[註解吃掉程式] ${rel(f)}:${i + 1} 行內 // 後面還有程式：「${tail.trim().slice(0, 70)}」——改用 /* */ 或把註解移到行尾`);
+  });
+}
+
 // B. 行內按鈕寬度覆蓋
 const css = ["style.css", "style-features.css", "style-waves.css"].map(f => read(path.join(WEB, "css", f))).join("\n");   // 樣式拆成三個檔（2026-10）
 const ROW_CONTAINERS = ["disc-row", "team-row", "fp", "set-block-row", "notif-acts", "im-btns", "backup-row", "rec-controls"];
@@ -274,4 +292,4 @@ if (errors.length) {
   for (const e of errors) console.error("• " + e + "\n");
   process.exit(1);
 }
-console.log(`✓ 檢查通過：${files.length + 1} 個 JS 檔語法、單元測試、按鈕寬度/日期/備份鍵/HTML id/SW 版本規則皆符合`);
+console.log(`✓ 檢查通過：${files.length + 1} 個 JS 檔語法、行內註解、單元測試、按鈕寬度/日期/備份鍵/HTML id/SW 版本規則皆符合`);

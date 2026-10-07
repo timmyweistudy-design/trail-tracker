@@ -66,6 +66,24 @@ window.ttDebug = (() => {
       const tick = () => { n++; const t = performance.now(); if (t - t0 >= 1000) { el.textContent = `${Math.round(n * 1000 / (t - t0))} fps` + (lt.length ? ` · 長任務 ${lt.length}（${Math.round(Math.max(...lt))}ms）` : ""); n = 0; t0 = t; lt = []; } window.__ttFpsRaf = requestAnimationFrame(tick); };
       window.__ttFpsRaf = requestAnimationFrame(tick); return "效能浮標：開";
     },
+    // 餵食效能紀錄（2026-10-07 寵物新一輪 #1：使用者錄影裡神龍 18～58 fps，要能在手機上自己量）：
+    // 餵一次、記下每一格的間隔，依當下在做什麼分段（游／尾巴送／吃），結束時跳出：平均 fps、最慢 1% 的 fps、最慢一格、超過 33ms（掉到 30fps 以下）的格數
+    feedPerf() {
+      const box = document.querySelector(".ps-box"), f = document.getElementById("petFeed"); if (!box || !f) return "先切到夥伴頁";
+      ttDebug.addBerries(10); ttDebug.resetFeed();
+      const seg = {}, phase = () => box.classList.contains("walking") ? "游／走" : box.__chain ? "尾巴送果實" : "吃、嚼、等";
+      let last = 0, started = false, raf = 0;
+      const tick = t => { if (last) { const k = phase(), d = t - last; (seg[k] || (seg[k] = [])).push(d); (seg.all || (seg.all = [])).push(d); } last = t;
+        if (box.classList.contains("feeding")) started = true; else if (started) return report(); raf = requestAnimationFrame(tick); };
+      const stat = a => { const s = a.slice().sort((x, y) => x - y), sum = a.reduce((x, y) => x + y, 0), p99 = s[Math.floor(s.length * .99)] || 0;
+        return `${Math.round(a.length * 1000 / sum)} fps（最慢 1%：${Math.round(1000 / p99)} fps，最慢一格 ${Math.round(s[s.length - 1])}ms，掉到 30fps 以下 ${a.filter(x => x > 34).length} 格／${a.length}）`; };
+      const report = () => { cancelAnimationFrame(raf); const st = +box.dataset.stage;
+        const lines = Object.keys(seg).filter(k => k !== "all").map(k => `${k}：${stat(seg[k])}`);
+        const msg = `第 ${st} 階 · 整段 ${stat(seg.all || [16])}\n` + lines.join("\n") + `\n（${navigator.userAgent.includes("iPhone") ? "iPhone" : "這台裝置"}；截圖傳給開發者對照）`;
+        console.log("[feedPerf]", msg); if (typeof ttAlertBox === "function") ttAlertBox(msg); };
+      setTimeout(() => { f.click(); raf = requestAnimationFrame(tick); }, 300);
+      return "開始記錄：餵一次，結束時跳出結果";
+    },
     resetHug() { ls.removeItem("tt_pet_hug_day"); return "今天可以再抱一次（親密 +2）"; },
     // 加「走過某條步道」的測試行程（dbg:true，清測試行程會一起清掉）→ 明信片、生物、地區配件、舞台裝飾都從這裡推
     addTrail(t, daysAgo) {
@@ -306,9 +324,9 @@ async function toggleDebugPanel() {
       ["🍓看餵食", closeAnd(() => { ttDebug.addBerries(10); ttDebug.resetFeed(); document.querySelector('.tab[data-view="pet"]').click(); setTimeout(() => { const f = document.getElementById("petFeed"); if (f) { f.scrollIntoView({ block: "center" }); setTimeout(() => f.click(), 400); } }, 500); })],
       ["🐢0.25×", () => ttDebug.slow(.25)], ["🚶0.5×", () => ttDebug.slow(.5)], ["▶1×", () => ttDebug.slow(1)],
       ["😴睏", seePet(() => ttDebug.mood("sleepy"))], ["🙂普通", seePet(() => ttDebug.mood("content"))], ["😄開心", seePet(() => ttDebug.mood("happy"))], ["🥺想念", seePet(() => ttDebug.mood("longing"))], ["↺心情回真實", seePet(() => ttDebug.mood(null))],
-      ["📍餵：左中右", feedWith([-62, 8, 66])], ["📍餵：都在後面", feedWith([-74, -50, -26])], ["📍餵：都在前面", feedWith([22, 46, 70])], ["📍餵：神龍雲上", feedWith([129, 159, 188])], ["📍餵：隨機", feedWith(null)],
+      ["📍餵：左中右", feedWith([-62, 8, 66])], ["📍餵：都在後面", feedWith([-74, -50, -26])], ["📍餵：都在前面", feedWith([22, 46, 70])], ["📍餵：神龍雲上", feedWith([82, 108, 136])], ["📍餵：隨機", feedWith(null)],
       ["🤗抱抱", seePet(() => ttDebug.react("hug"))], ["✋摸頭", seePet(() => ttDebug.react("pat"))], ["🫳搔癢", seePet(() => ttDebug.react("tickle"))], ["🐾跳", seePet(() => ttDebug.act("hop"))], ["🙆伸懶腰", seePet(() => ttDebug.act("stretch"))], ["😮‍💨嘆氣", seePet(() => ttDebug.act("sigh"))], ["👀東張西望", seePet(() => ttDebug.act("look"))], ["✨專屬小動作", seePet(() => ttDebug.act("special"))],
-      ["🎩換帽子", seePet(() => ttDebug.hat())], ["📈效能浮標", () => ttDebug.fps()], ["🎯除錯標記", () => (typeof PetStage !== "undefined" && PetStage.debug() ? "餵食除錯標記：開（紅＝嘴、綠＝果實、藍＝腳掌、黃＝接觸點）" : "餵食除錯標記：關")],
+      ["🎩換帽子", seePet(() => ttDebug.hat())], ["📈效能浮標", () => ttDebug.fps()], ["📊餵食效能紀錄", seePet(() => ttDebug.feedPerf())], ["🎯除錯標記", () => (typeof PetStage !== "undefined" && PetStage.debug() ? "餵食除錯標記：開（紅＝嘴、綠＝果實、藍＝腳掌、黃＝接觸點）" : "餵食除錯標記：關")],
     ]],
     ["夥伴舞台與旅行", [
       ["🌅清晨", () => ttDebug.stage("tod", "dawn")], ["☀白天", () => ttDebug.stage("tod", "day")], ["🌇黃昏", () => ttDebug.stage("tod", "dusk")], ["🌙夜晚", () => ttDebug.stage("tod", "night")],
