@@ -465,7 +465,7 @@ window.PetStage = (function () {
           await sleep(200);                                                     // 到了交接點停一下
           // 頭迎上去：尾巴盡量送，剩下的距離由頭補（2026-10-07：尾巴從背上的拱才動，嘴在頭的左下方幾乎是尾巴全長，搆不太到）——量果實和嘴還差多少，頭往那邊移（最多 24 單位）。
           // 位移交給繩波寫頭的那一行（box.__lean）：以前用 Web Animations 寫在頭的內層，跟咬的 CSS 動畫搶同一個元素，偶爾某一格頭彈回去 20px
-          const mm = PetWalk.cpt(box, "mouth"), br = b.getBoundingClientRect(), uu = 1 / PetWalk.pxu(box), cl = v => Math.max(-24, Math.min(24, v));
+          const mm = PetWalk.cpt(box, "mouth"), br = b.getBoundingClientRect(), uu = 1 / PetWalk.pxu(box), cl = v => Math.max(-8, Math.min(8, v));   // 尾巴會伸長送到嘴前，頭最多只補 8 單位（2026-10-07 使用者：頭不用動）
           const LN = [cl((br.left + br.width / 2 - mm[0]) * uu), cl((br.top + br.height * BITE_Y - mm[1]) * uu)];
           const lean = PetWalk.tween(Math.round(220 + 8 * Math.hypot(LN[0], LN[1])), e => { box.__lean = [LN[0] * e, LN[1] * e]; });   // 距離越遠迎得越久（不然嘴一格跳一大段）
           await lean; cls(true, "st-open"); await sleep(150);   // 頭迎到位了才張嘴

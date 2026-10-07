@@ -55,6 +55,7 @@ const probe = () => {
     o.extOn = +getComputedStyle(em.querySelector(".pr-ext")).opacity > .1;
     const ext = em.querySelector(".pr-ext"); if (+getComputedStyle(ext).opacity > .5) { const pt = ext.getPointAtLength(ext.getTotalLength()), s = new DOMPoint(pt.x, pt.y).matrixTransform(ext.getScreenCTM()); o.prob = [s.x, s.y]; }
     const hw = [...em.querySelectorAll(".pc-hw")].map(e => e.getBoundingClientRect()); o.hw = [Math.min(...hw.map(r => r.left)), Math.min(...hw.map(r => r.top)), Math.max(...hw.map(r => r.right)), Math.max(...hw.map(r => r.bottom))]; }
+  if (st === 6) { const cr = em.querySelector(".pet-critter"); o.cx = cr ? +(parseFloat((cr.style.translate || "0").split(" ")[0]) || 0).toFixed(2) : 0; }   // 角色本身的水平位移（游的時候不能前後抖）
   if (st === 6 && box.__chain) {   // 2026-10-06 第四輪：尾巴的鏈（身體座標）——每節長度、每個關節多彎了多少、尾尖、根部附近
     const T = PetWalk._tail(), P = box.__chain, R = T.rest, a = (u, v) => Math.atan2(v[1] - u[1], v[0] - u[0]), w = x => Math.atan2(Math.sin(x), Math.cos(x));
     let L = 0, L0 = 0, ex = 0; for (let i = T.I0; i < P.length - 1; i++) { L += Math.hypot(P[i + 1][0] - P[i][0], P[i + 1][1] - P[i][1]); L0 += Math.hypot(R[i + 1][0] - R[i][0], R[i + 1][1] - R[i][1]);
@@ -198,9 +199,12 @@ function judge(st, tag, R) {
     { const hand = []; for (let i = 1; i < n; i++) if (/st-open/.test(F[i].cls) && !/st-open/.test(F[i - 1].cls)) { const cb = F[i].berries.find(x => /carried/.test(x.cls)); if (cb) hand.push(+(D(cb.c, F[i].mouth) / cb.w).toFixed(2)); }
       if (process.env.PM_SEQ) console.log(tag, "handoff berry→mouth / size", JSON.stringify(hand));
       ok(hand.length >= 3 && hand.every(v => v <= .4), `${tag}: the tail brings each berry right to the mouth before it opens (distance / berry size ${JSON.stringify(hand)} ≤0.4; touching the top of the berry is ~0.18)`); }   // 2026-10-07 使用者回報：遞到嘴邊沒對準
+    { let rev = 0, at = -1; const X = F.map(f => (f.cx != null ? f.cx : 0)); for (let i = 2; i < n; i++) { const a = X[i - 1] - X[i - 2], b = X[i] - X[i - 1]; if (/walking/.test(F[i].bcl) && Math.abs(a) > .05 && Math.abs(b) > .05 && Math.sign(a) !== Math.sign(b) && Math.abs(b) > rev) { rev = Math.abs(b); at = i; } }
+      ok(rev <= .3, `${tag}: swimming left/right has no little jerk forward or back (biggest reversal ${rev.toFixed(2)}px @${at})`); }   // 2026-10-07 使用者：吃完左右游往前抖一下、往後抖一下
     const TF = F.map(f => f.tail);   // 尾巴的鏈（只有托果實那幾段有）
     const lenE = Math.max(0, ...TF.filter(Boolean).map(t => Math.abs(t.len - 1))), bendE = Math.max(0, ...TF.filter(Boolean).map(t => t.ex));
-    ok(TF.some(Boolean) && lenE <= .005 && bendE <= .05, `${tag}: the tail keeps its length (max change ${(lenE * 100).toFixed(2)}% ≤0.5%) and no joint bends past its limit (excess ${bendE.toFixed(2)}°)`);
+    const lens = TF.map(t => t ? t.len : null), dl = Math.max(0, ...lens.map((v, i) => (v != null && lens[i - 1] != null ? Math.abs(v - lens[i - 1]) : 0)));   // 2026-10-07：象鼻會伸長（最多 1.3 倍），但要慢慢伸
+    ok(TF.some(Boolean) && lenE <= .31 && dl <= .03 && bendE <= .05, `${tag}: the tail stretches at most 30% and smoothly (max ${(lenE * 100).toFixed(1)}%, per frame ${(dl * 100).toFixed(2)}%) and no joint bends past its limit (excess ${bendE.toFixed(2)}°)`);
     const sp = TF.map((t, i) => (t && TF[i - 1] ? Math.hypot(t.tip[0] - TF[i - 1].tip[0], t.tip[1] - TF[i - 1].tip[1]) : 0)); let spk = 0, spAt = -1;
     for (let i = 2; i < n - 1; i++) { const v = sp[i] - Math.max(sp[i - 1], sp[i + 1]); if (TF[i] && TF[i - 1] && TF[i + 1] && v > spk) { spk = v; spAt = i; } }
     if (process.env.PM_SEQ && spAt > 0) for (let i = spAt - 5; i <= spAt + 4; i++) console.log("   tip", i, sp[i].toFixed(2), F[i].cls, TF[i] ? TF[i].tip.map(v => v.toFixed(1)).join(",") : "-");
