@@ -71,7 +71,7 @@ if(sh()){const p=await mk({km:150,reduce:true});
 
 // ── 第 2 階段：行為、互動分區、抱抱、眼睛、餵食動作、進化儀式 ──
 if(sh()){const p=await mk({km:40,records:[{id:"r1",date:new Date().toISOString(),trailName:"x",distanceKm:3}]});
- await p.evaluate(()=>document.querySelector(".ps-box").scrollIntoView({block:"center"}));
+ await p.evaluate(()=>{window.__ps={tod:"day"};renderPet();document.querySelector(".ps-box").scrollIntoView({block:"center"});});   // 固定白天：深夜跑測試時「夜晚多發呆」會讓 13 秒內剛好都抽到 idle
  const seen=new Set();for(let k=0;k<26;k++){await p.waitForTimeout(500);const c=await p.evaluate(()=>[...document.querySelector("#petEmoji").classList].filter(x=>x.startsWith("pb-")).join(",")+"|"+document.querySelector(".ps-box").style.getPropertyValue("--wx")+"|"+document.querySelector(".ps-box").style.getPropertyValue("--ex"));seen.add(c);}
  ok(seen.size>1,"idle behaviour runs on its own within 13s: "+[...seen].join(" / "));
  await p.close();}
@@ -550,7 +550,8 @@ if(sh()){const p=await mk({km:260,berries:20});
 
 // ── 2026-10-04 走過去吃：蠕動／游動的身體變形走完要還原；站姿走路要坐回去 ──
 if(sh())for(const [km,st] of [[5,1],[260,6]]){const p=await mk({km});
- const r=await p.evaluate(async()=>{const box=document.querySelector(".ps-box"),sig=()=>[...box.querySelectorAll("#petEmoji .pr-deform path")].map(e=>e.getAttribute("d")).join("|")+[...box.querySelectorAll("#petEmoji .lv-seg")].map(e=>e.style.transform).join("|");   // 幼蟲一節一節：看每一節的位移
+ const r=await p.evaluate(async()=>{window.__psNoIdle=true;   /* 量的時候不要有隨機待機動作（幼蟲「啃一口葉子」會彎身體；負載高時剛好撞上就假失敗） */
+  const box=document.querySelector(".ps-box"),sig=()=>[...box.querySelectorAll("#petEmoji .pr-deform path")].map(e=>e.getAttribute("d")).join("|")+[...box.querySelectorAll("#petEmoji .lv-seg")].map(e=>e.style.transform).join("|");   // 幼蟲一節一節：看每一節的位移
   const before=sig();let mid="";const t=setTimeout(()=>{mid=sig()},500);await PetWalk.goTo(box,60);clearTimeout(t);const after=sig();await PetWalk.home(box);
   await new Promise(r=>setTimeout(r,400));const idle=sig();   // 神龍（2026-10-06 繩波）：停下來身體還在流動，本來就不會停在原形
   return {changedMid:mid!==""&&mid!==before,restored:after===before&&sig()===before,alive:idle!==after,wx:box.style.getPropertyValue("--wx")};});

@@ -536,7 +536,7 @@ ${tigerHead()}
   const vb = i => (clamp(i) === 5 ? "0 -13 200 200" : "0 0 200 200");
   // pad：畫布四周多留白（舞台上的主角用：趴下、伸長脖子、尾巴捲起來都不會超出畫框——iOS 的 WebKit 會照畫框裁切，不管 overflow:visible）
   // 2026-10-07 優化輪：留白每隻不同（實測餵食全程超出 200×200 多少＋15，至少 40 給帽子）——以前一律 140（畫布 2.4 倍），蛋／毛毛蟲／蝶的畫布面積剩 34%
-  const PADS = [40, 40, 40, 55, 55, 140, 100];
+  const PADS = [40, 40, 40, 55, 55, 140, 125];   // 神龍 100→125（2026-10-07 尾巴加長、往上捲時 WebKit 會在畫布外裁 13px）
   const padFor = i => PADS[clamp(i)];
   function svg(i, cls, hatId, pad) {
     if (pad === true) pad = padFor(i);
