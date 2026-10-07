@@ -85,6 +85,7 @@ for (const f of files) {
 
 // D. 備份完整性：setItem 的 tt_* 鍵要嘛在 BACKUP_KEYS、要嘛在豁免清單
 const BACKUP_EXEMPT = new Set([
+  "tt_pet_pat_day", "tt_pet_seen", "tt_pet_recap", "tt_pet_woke",   // 寵物新一輪：今天摸了幾次、上次打開夥伴頁、聊過哪一趟、深夜被叫醒的時間（裝置上的小狀態，丟了只是多說一句）
   "tt_pet_pats",   // 今天摸過哪些好友的夥伴：隔天就沒用
   "tt_pet_hug_day",   // 今天抱過自己的夥伴了沒（每天第一次抱才加親密）：隔天就沒用
   "tt_splash_day",   // 今天看過完整進場動畫了沒（同一天再開播精簡版）：裝置性、隔天就沒用

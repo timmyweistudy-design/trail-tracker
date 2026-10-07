@@ -276,6 +276,45 @@ if(sh()){const p=await mk({km:40});
  ok(r.after===0,"debug: clear test trails removes postcards");
  await p.close();}
 
+// ── 2026-10-07 寵物新一輪 #4 作息：深夜睡著（閉眼、飄 Z、泡泡提示）→ 點一下醒來（不算摸頭、記住醒了）→ 醒了 15 分鐘內重畫不會又睡；睡著時按餵食先醒來再吃 ──
+if(sh()){const p=await mk({km:40});
+ const r=await p.evaluate(async()=>{const box=()=>document.querySelector(".ps-box"),em=()=>document.querySelector("#petEmoji");
+  window.__ps={tod:"night",asleep:true};renderPet();const a={sl:PetStage.isAsleep(),cls:em().classList.contains("pb-asleep"),zz:!!em().querySelector(".ps-zz"),eyes:getComputedStyle(em().querySelector(".pc-eye")).display,bub:document.querySelector(".pet-bubble").textContent};
+  const aff0=localStorage.getItem("tt_pet_aff");em().click();await new Promise(r=>setTimeout(r,200));
+  const b={sl:PetStage.isAsleep(),zz:!!em().querySelector(".ps-zz"),woke:!!localStorage.getItem("tt_pet_woke"),aff:localStorage.getItem("tt_pet_aff")===aff0,say:(document.querySelector(".pet-bubble")||{}).textContent};
+  await new Promise(r=>setTimeout(r,2900));window.__ps={tod:"night"};renderPet();const c=PetStage.isAsleep();
+  localStorage.setItem("tt_pet_berry_bonus","20");window.__ps={tod:"night",asleep:true};renderPet();localStorage.removeItem("tt_pet_fed_t");window.__psNoIdle=true;box().scrollIntoView({block:"center"});await new Promise(r=>setTimeout(r,400));const fb=document.getElementById("petFeed");fb.disabled=false;fb.click();
+  await new Promise(r=>setTimeout(r,600));const d={sl:PetStage.isAsleep(),feeding:box().classList.contains("feeding")||document.querySelectorAll(".ps-berry").length>0,berries:document.querySelectorAll(".ps-berry").length};
+  window.__ps=null;return {a,b,c,d};});
+ ok(r.a.sl&&r.a.cls&&r.a.zz&&r.a.eyes==="none"&&/叫醒/.test(r.a.bub),"routine: late at night the pet is asleep (eyes closed, Z's, bubble says tap to wake) "+JSON.stringify(r.a));
+ ok(!r.b.sl&&!r.b.zz&&r.b.woke&&r.b.aff&&r.b.say&&!/輕輕點一下/.test(r.b.say),"routine: one tap wakes it (says something, remembered, not counted as a pat) "+JSON.stringify(r.b));
+ ok(r.c===false,"routine: re-rendering within 15 minutes of waking doesn't put it back to sleep");
+ ok(r.d.sl===false&&r.d.berries===0,"routine: feeding a sleeping pet wakes it first (berries drop after the wake-up) "+JSON.stringify(r.d));
+ await p.close();}
+
+// ── 2026-10-07 寵物新一輪 #5 #8 #9 #10：陪伴 ──
+if(sh()){const p=await mk({km:40});
+ const r=await p.evaluate(async()=>{const em=()=>document.querySelector("#petEmoji"),bub=()=>document.querySelector(".pet-bubble").textContent,w=ms=>new Promise(r=>setTimeout(r,ms));window.__psNoIdle=true;
+  const a0=affinity();for(let k=0;k<5;k++){em().click();await w(80);}const pat={gain:affinity()-a0,day:localStorage.getItem("tt_pet_pat_day")};
+  const rows=petAffRows().length;
+  await w(2800);   /* 摸頭說的話說完（說話中不換泡泡） */
+  localStorage.setItem("tt_pet_seen",String(Date.now()-5*3600e3));window.__petLine=null;renderPet();await w(250);const away=bub();
+  window.__petLine=null;renderPet();await w(250);const again=bub();
+  Store.addRecord({id:"recap1",date:new Date().toISOString(),dbg:true,trailName:"x",distanceKm:12.3,elapsedMs:4*3600e3,ascent:300,steps:9000,track:[]});
+  window.__petLine=null;renderPet();await w(250);const recap=bub();window.__petLine=null;renderPet();await w(250);const recap2=bub();
+  localStorage.setItem("tt_pet_aff","100");localStorage.setItem("tt_pet_aff_t",new Date().toISOString());localStorage.removeItem("tt_pet_gift_t");renderPet();
+  await w(3000);const dlg=!!document.querySelector(".gift-show"),owned=petGiftsOwned().length;document.querySelectorAll(".ttdlg-ov .btn").forEach(b=>b.click());await w(400);
+  renderPet();await w(3000);const dlg2=!!document.querySelector(".gift-show");
+  document.getElementById("petDex").click();await w(500);const grid=[...document.querySelectorAll(".gift-it")].map(e=>e.classList.contains("no")?0:1);
+  const diary=[...document.querySelectorAll(".diary-list *")].some(e=>/帶回來一個/.test(e.textContent));
+  return {pat,rows,away,again,recap,recap2,dlg,owned,dlg2,grid,diary};});
+ ok(r.pat.gain===3&&/:3$/.test(r.pat.day),"companion: head pats add friendship, at most 3 a day "+JSON.stringify(r.pat));
+ ok(r.rows===5,"companion: the ? explains every friendship source with today's progress");
+ ok(/松果|尾巴|午覺/.test(r.away)&&r.again!==r.away,"companion: after 3+ hours away the bubble says what it did (once) "+JSON.stringify([r.away,r.again]));
+ ok(/12\.3 km/.test(r.recap)&&!/12\.3/.test(r.recap2),"companion: after a hike it comments with real numbers, only once "+JSON.stringify([r.recap,r.recap2]));
+ ok(r.dlg&&r.owned===1&&!r.dlg2&&r.grid.filter(Boolean).length===1&&r.grid.length===8&&r.diary,"companion: at 5 hearts it brings back a gift (dialog, handbook, diary), not again right away "+JSON.stringify(r));
+ await p.close();}
+
 // ── 2026-10-04 角色重畫：結構檢查（id 引用、畫框、開心眼對位、動畫掛點）、分享圖卡不畫瞇眼、幼蟲的頭在下半部 ──
 if(sh()){const p=await mk({km:5});
  const r=await p.evaluate(async()=>{const out=[],h=document.createElement("div");document.body.appendChild(h);

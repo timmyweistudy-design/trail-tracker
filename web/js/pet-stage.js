@@ -119,6 +119,7 @@ window.PetStage = (function () {
     else visible = true;
     document.addEventListener("visibilitychange", live);
     if (+el.dataset.stage === 6) warmReach6();
+    setAsleep(sleepNow()); firstAct = !asleep && (window.__ps && window.__ps.tod || tod()) === "dawn" ? "stretch" : null;   // 清晨打開：先伸個懶腰
     schedule(mood);
     live();
   }
@@ -141,13 +142,43 @@ window.PetStage = (function () {
     window.removeEventListener("deviceorientation", onOrient);
     if (io) { io.disconnect(); io = null; }
     if (raf) cancelAnimationFrame(raf);
-    clearTimeout(beat); beat = 0; busy = false;
+    clearTimeout(beat); beat = 0; busy = false; asleep = false;
     raf = 0; box = null; visible = false;
   }
 
   // ── 行為狀態機：待機 → 隨機挑一個動作 → 回待機。角色固定站在舞台中間（走動試過，看起來不自然，2026-10-04 拿掉）。
   // 心情決定機率：睏的多半不動、開心的會跳、想念的東張西望。
   // 2026-10-04：多了連眨兩下、打哈欠（睏）、嘆氣（想念）；看的時候頭跟著轉（CSS 讀 --ex）
+  // ── 作息（2026-10-07 寵物新一輪 #4，參考 Finch：讓牠有自己的一天）──
+  // 深夜 22:00～06:00 打開是睡著的（閉眼、呼吸放慢、頭一點一點、飄 Z），點牠、抱牠、餵牠會先醒來（揉眼、伸懶腰），醒了 15 分鐘內再打開不會又睡回去；
+  // 清晨第一個動作是伸懶腰、白天比較愛動、黃昏比較安靜。除錯面板可以強制（window.__ps.asleep）
+  let asleep = false, firstAct = null;
+  function sleepNow() {
+    const f = window.__ps && window.__ps.asleep; if (f != null) return !!f;
+    let w = 0; try { w = +localStorage.getItem("tt_pet_woke") || 0; } catch (e) { /* 私密瀏覽 */ }
+    const h = new Date().getHours(); return (h >= 22 || h < 6) && Date.now() - w > 15 * 60e3;
+  }
+  function setAsleep(on) {
+    asleep = !!on && !reduce(); const em = emEl(); if (!box || !em) return;
+    em.classList.toggle("pb-asleep", asleep); box.classList.toggle("ps-asleep", asleep);
+    const old = box.querySelector(".ps-zz"); if (old) old.remove();
+    if (asleep) { const z = document.createElement("div"); z.className = "ps-zz"; z.setAttribute("aria-hidden", "true"); z.innerHTML = "<i>z</i><i>z</i><i>Z</i>"; em.appendChild(z); }
+  }
+  async function wake() {
+    if (!asleep || !box) return false;
+    try { localStorage.setItem("tt_pet_woke", String(Date.now())); } catch (e) { /* 私密瀏覽 */ }
+    if (window.__ps && window.__ps.asleep) window.__ps.asleep = false;
+    setAsleep(false); busy = true;
+    try { await flash("pb-wake", 1300); await flash("pb-stretch", 1400); } finally { busy = false; }
+    return true;
+  }
+  const TOD_W = { dawn: { add: { stretch: 3, yawn: 2 } }, day: { mul: { hop: 1.6, special: 1.5 } }, dusk: { add: { idle: 2, look: 1 } }, night: { add: { idle: 3, yawn: 1 } } };
+  function weights(m) {   // 心情的機率，再照時段加減（清晨多伸懶腰、白天愛跳、黃昏多發呆）
+    const w = Object.assign({}, WEIGHTS[m] || WEIGHTS.content), t = TOD_W[(window.__ps && window.__ps.tod) || tod()] || {};
+    for (const k in t.add || {}) w[k] = (w[k] || 0) + t.add[k];
+    for (const k in t.mul || {}) if (w[k]) w[k] *= t.mul[k];
+    return w;
+  }
   const WEIGHTS = {
     sleepy: { idle: 5, yawn: 3, stretch: 1, look: 1, special: 1 },
     happy: { hop: 4, look: 2, stretch: 1, blink2: 1, idle: 1, special: 3 },
@@ -211,7 +242,7 @@ window.PetStage = (function () {
     if (box) box.style.setProperty("--bk", (3.2 + Math.random() * 3).toFixed(2) + "s");   // 眨眼間隔每輪換一次（不要像節拍器）
     beat = setTimeout(async () => {
       if (window.__psNoIdle) return;   // 已經排好的那一次也要停（以前只在排程時檢查，測試關掉後還會再跳一次）
-      if (box && box.isConnected && visible && !document.hidden && !busy) await act(pick(WEIGHTS[m] || WEIGHTS.content));
+      if (box && box.isConnected && visible && !document.hidden && !busy && !asleep) { const k = firstAct || pick(weights(m)); firstAct = null; await act(k); }   // 睡著時不做動作（呼吸、點頭、飄 Z 是 CSS）
       if (box && box.isConnected) schedule(m);
     }, 3500 + Math.random() * 4500);
   }
@@ -397,7 +428,10 @@ window.PetStage = (function () {
   let feeding = false;
   async function feed(berrySvg) {
     if (!box || reduce() || !visible || feeding) return;   // 正在吃就不再開一輪（餵食鈕本來就會鎖住＋8 小時冷卻；測試面板連按才會進來）
-    clearTimeout(beat); busy = true; feeding = true; box.classList.add("feeding");
+    clearTimeout(beat);
+    if (asleep) await wake();   // 睡著時按餵食：先醒來（揉眼、伸懶腰）再吃
+    if (!box) return;
+    busy = true; feeding = true; box.classList.add("feeding");
     const actor = box.querySelector(".ps-actor"), stg = +box.dataset.stage, egg = stg === 0, fly = stg === 2;
     const front = (stg === 3 || stg === 4) && typeof PetWalk !== "undefined" && !!PetWalk.frontLie;   // 狐、虎：正面趴著吃（不走路）
     const bal = document.querySelector("#petFeed .feed-bal");
@@ -624,5 +658,5 @@ window.PetStage = (function () {
 
   // 心情變了但卡片沒重畫（pet.js 的 petCardUpdate）：待機動作的機率跟著換
   function setMood(m) { mood = m || "content"; if (box) schedule(mood); }
-  return { debug, setMood, html, bind, unbind, tod, season, wxOf, weather, cachedWx, count: STAGES, zoneOf, react, feed, act, isFeeding: () => feeding };
+  return { debug, setMood, html, bind, unbind, tod, season, wxOf, weather, cachedWx, count: STAGES, zoneOf, react, feed, act, isFeeding: () => feeding, isAsleep: () => asleep, wake, sleep: () => setAsleep(true) };
 })();
