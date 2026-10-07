@@ -149,10 +149,10 @@ window.PetStage = (function () {
   // 心情決定機率：睏的多半不動、開心的會跳、想念的東張西望。
   // 2026-10-04：多了連眨兩下、打哈欠（睏）、嘆氣（想念）；看的時候頭跟著轉（CSS 讀 --ex）
   const WEIGHTS = {
-    sleepy: { idle: 5, yawn: 3, stretch: 1, look: 1 },
-    happy: { hop: 4, look: 2, stretch: 1, blink2: 1, idle: 1 },
-    content: { look: 3, hop: 1, stretch: 2, blink2: 1, idle: 2 },
-    longing: { look: 3, sigh: 2, blink2: 1, idle: 2 },
+    sleepy: { idle: 5, yawn: 3, stretch: 1, look: 1, special: 1 },
+    happy: { hop: 4, look: 2, stretch: 1, blink2: 1, idle: 1, special: 3 },
+    content: { look: 3, hop: 1, stretch: 2, blink2: 1, idle: 2, special: 3 },
+    longing: { look: 3, sigh: 2, blink2: 1, idle: 2, special: 1 },
   };
   let beat = 0, busy = false;
   const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -167,6 +167,29 @@ window.PetStage = (function () {
     em.classList.remove(cls); void em.offsetWidth; em.classList.add(cls);
     return sleep(ms).then(() => em.classList.remove(cls));
   }
+  // 每隻專屬的待機小動作（2026-10-07 收尾輪：讓牠平常也有事做）——只動不會被繩波、步態每格寫的元素（單一擁有者）
+  async function special() {
+    const em = emEl(); if (!em || typeof PetWalk === "undefined") return sleep(400);
+    const st = +box.dataset.stage, A = (el, kf, o) => el && el.animate ? el.animate(kf, o).finished.catch(() => {}) : sleep(o.duration || 400);
+    if (st === 0) {   // 蛋：左右晃一下、裂縫亮起來
+      const eg = em.querySelector(".pc-egg"); cls(true, "st-glow");
+      await A(eg, [{ transform: "rotate(0)" }, { transform: "rotate(-6deg)" }, { transform: "rotate(5deg)" }, { transform: "rotate(-2deg)" }, { transform: "rotate(0)" }].map(k => ({ ...k, transformBox: "view-box", transformOrigin: "100px 157px" })), { duration: 900, easing: "ease-in-out" });
+      cls(false, "st-glow");
+    } else if (st === 1) {   // 毛毛蟲：低頭啃一口葉子
+      await PetWalk.bend(box, 8, 3, 380); cls(true, "chew2"); await flash("pb-chew", 600); cls(false, "chew2"); await PetWalk.bend(box, 0, 0, 380);
+    } else if (st === 2) {   // 蝴蝶：用力拍一陣
+      PetWalk.wingMode(box, "flap", 180); await sleep(1300); PetWalk.wingMode(box, "idle", 300); await sleep(300);
+    } else if (st === 3) {   // 狐：回頭看尾巴、尾巴甩兩下
+      box.style.setProperty("--ex", "1"); await sleep(300); PetWalk.tailFlick(box); await sleep(520); PetWalk.tailFlick(box); await sleep(600); box.style.setProperty("--ex", "0"); await sleep(300);
+    } else if (st === 4) {   // 虎：前爪交替踩踏（貓的踏踏）
+      const L = em.querySelector(".pc-bob > .pr-paw.l"), R = em.querySelector(".pc-bob > .pr-paw.r"), kf = d => [{ translate: "0 0" }, { translate: "0 -3px", offset: .3 }, { translate: "0 0", offset: .6 }, { translate: "0 0" }];
+      for (let k = 0; k < 3; k++) { A(L, kf(), { duration: 420 }); await sleep(210); await A(R, kf(), { duration: 420 }); }
+    } else if (st === 5) { await flash("pb-hop", 1100); await flash("pb-hop", 1100); }   // 幼龍：連跳兩下
+    else if (st === 6) {   // 神龍：龍珠光芒脹大、亮一下
+      const tw = em.querySelector(".pr-pearl .pc-tw");
+      await A(tw, [{ transform: "scale(1)", opacity: .6 }, { transform: "scale(1.9)", opacity: 1, offset: .4 }, { transform: "scale(1)", opacity: .6 }].map(k => ({ ...k, transformBox: "view-box", transformOrigin: "62px 160px" })), { duration: 1400, easing: "ease-in-out" });
+    } else await sleep(400);
+  }
   async function act(kind) {
     if (!box) return;
     busy = true;
@@ -178,6 +201,7 @@ window.PetStage = (function () {
       else if (kind === "yawn") await flash("pb-yawn", 1400);
       else if (kind === "sigh") await flash("pb-sigh", 1600);
       else if (kind === "blink2") await flash("pb-blink2", 500);
+      else if (kind === "special") await special();
       else await sleep(400);
     } finally { busy = false; }
   }
