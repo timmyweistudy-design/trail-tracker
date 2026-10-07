@@ -494,8 +494,13 @@ ${tigerHead()}
     wave: `<path d="M62 54 q38-24 76 0 l-2 8 q-36-14 -72 0Z" fill="#3a86c8"/><path d="M70 50 q8-12 18-4 q6-10 16-2 q8-10 18 0 q6-6 12 2" stroke="#eaf6ff" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M122 46 q8-18 26-12 q-12 4 -11 14 q-7-6 -15-2Z" fill="#7cc0ea"/>`,
     shell: `<g transform="translate(112 40)"><path d="M-19 9 q0-27 19-27 q19 0 19 27 q-19 6 -38 0Z" fill="#f4c7b0"/><path d="M0 -16 v22 M-9 -12 l4 19 M9 -12 l-4 19 M-15 -2 l9 9 M15 -2 l-9 9" stroke="#d99a80" stroke-width="1.8" stroke-linecap="round"/><rect x="-8" y="7" width="16" height="6" rx="3" fill="#e2a68c"/></g>`,
   });
-  const HAT_LABEL = { none: "不戴", straw: "草帽", party: "派對帽", crown: "花冠", bow: "蝴蝶結", bandana: "登山頭巾", silvergrass: "芒草穗", maple: "楓葉", pineapple: "鳳梨帽", wave: "浪花頭巾", shell: "貝殼髮夾" };
-  const HAT_IDS = ["none", "straw", "party", "crown", "bow", "bandana", "silvergrass", "maple", "pineapple", "wave", "shell"];
+  // 季節限定（2026-10-07 寵物新一輪 #17）：聖誕帽（12/1～1/6）、玉兔耳（中秋前後一週）——當季才拿得到，拿了就永遠擁有（pet.js 的 hatSeason）
+  Object.assign(HATS, {
+    santa: `<path d="M64 53 q20-38 52-34 q22 4 26 20 l-6 4 q-6-12 -22-14 q-20 0 -28 24Z" fill="#d6372f"/><path d="M64 53 q26-30 52-26 q14 2 20 12" stroke="#a8241e" stroke-width="2" fill="none" opacity=".5"/><path d="M58 54 q42-14 84 0 l-1 10 q-41-13 -82 0Z" fill="#fbf7ee" stroke="#d9cfc0" stroke-width="1.6"/><circle cx="141" cy="43" r="8" fill="#fbf7ee" stroke="#d9cfc0" stroke-width="1.6"/>`,
+    rabbit: `<path d="M84 50 q-16-36 -6-46 q14 2 14 46Z" fill="#fbf7ee" stroke="#d2c6b5" stroke-width="2"/><path d="M85 44 q-9-26 -4-34 q7 2 7 34Z" fill="#f2b8c6"/><path d="M116 50 q16-36 6-46 q-14 2 -14 46Z" fill="#fbf7ee" stroke="#d2c6b5" stroke-width="2"/><path d="M115 44 q9-26 4-34 q-7 2 -7 34Z" fill="#f2b8c6"/><path d="M80 52 q20-8 40 0" stroke="#e8c45a" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="100" cy="49" r="4" fill="#f39a3d"/>`,
+  });
+  const HAT_LABEL = { none: "不戴", santa: "聖誕帽", rabbit: "玉兔耳", straw: "草帽", party: "派對帽", crown: "花冠", bow: "蝴蝶結", bandana: "登山頭巾", silvergrass: "芒草穗", maple: "楓葉", pineapple: "鳳梨帽", wave: "浪花頭巾", shell: "貝殼髮夾" };
+  const HAT_IDS = ["none", "straw", "party", "crown", "bow", "bandana", "silvergrass", "maple", "pineapple", "wave", "shell", "santa", "rabbit"];
   // 各階段頭頂錨點 [x, y, scale]：帽子以自身參考點(x100,y45)對到該階段頭頂。逐一調過位。
   const HAT_ANCHOR = [
     [100, 81, 1.0],   // 0 卵：蛋坐在地上（2026-10-04 往下移）

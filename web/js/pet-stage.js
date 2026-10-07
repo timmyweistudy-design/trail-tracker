@@ -62,6 +62,15 @@ window.PetStage = (function () {
       : `<ellipse cx="20" cy="32" rx="${k === "ma" ? 14 : 12}" ry="${k === "ma" ? 13 : 15}" fill="${k === "ma" ? "#f39a3d" : "#d8362b"}" stroke="${k === "ma" ? "#b0601a" : "#8e1d16"}" stroke-width="1.6"/><path d="M8 32h24M11 24c6 2 12 2 18 0M11 40c6-2 12-2 18 0" stroke="${k === "ma" ? "#ffd9a0" : "#f1b04a"}" stroke-width="1.2" fill="none" opacity=".8"/><rect x="15" y="15" width="10" height="4" rx="1" fill="#e8c45a"/><rect x="15" y="45" width="10" height="4" rx="1" fill="#e8c45a"/><path d="M20 49v9" stroke="#e8c45a" stroke-width="2"/><ellipse cx="20" cy="32" rx="6" ry="7" fill="#fff3c4" opacity=".35"/>`;
     return `<div class="ps-fest ps-fest-${k}" aria-hidden="true"><svg viewBox="0 -40 40 100"><path d="M20 -40v55" stroke="#6b5a3a" stroke-width="1.4"/>${body}</svg></div>`;
   }
+  // 拍照用（2026-10-07 寵物新一輪 #18）：舞台的場景畫成兩張獨立的 SVG（後景＝天空漸層＋天空小物＋遠山＋中景、前景），pet.js 疊在 canvas 上、中間畫角色
+  const SKY = { dawn: ["#f2b7a0", "#fde9d6"], day: ["#8cc4ea", "#e4f3f2"], dusk: ["#6c5a96", "#f4a878"], night: ["#0f1b36", "#2b4566"] };
+  function photoSvgs(stage, t, w, h) {
+    const i = clamp(stage), se = season(), sc = StageArt.scene(i, t, se, []), [a, b] = SKY[t] || SKY.day, V = `viewBox="0 0 400 300" preserveAspectRatio="xMidYMax slice"`;
+    const wrap = inner => `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" ${V}>${inner}</svg>`;
+    const strip = x => x.replace(/<svg[^>]*>/, `<svg ${V} width="400" height="300">`);
+    return { back: wrap(`<defs><linearGradient id="sk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${a}"/><stop offset=".78" stop-color="${b}"/></linearGradient></defs><rect x="-400" y="-300" width="1200" height="900" fill="url(#sk)"/>${strip(sky(t)).replace(/class="ps-moonbite"/g, `fill="${a}"`).replace(/class="ps-star"/g, 'fill="#f3f0d8"')}${sc.far}${sc.mid}`)   /* 月亮缺角、星星的顏色原本在 CSS（圖片裡讀不到） */,
+      front: wrap(sc.front) };
+  }
   // 舞台 HTML：actorHtml 是角色那一層的內容（對話泡＋角色＋影子），由 pet.js 組好傳進來
   function html(stage, actorHtml, o) {
     o = Object.assign({}, o, window.__ps || {});   // window.__ps＝測試／除錯面板強制指定時段、季節、天氣
@@ -214,6 +223,7 @@ window.PetStage = (function () {
   function emEl() { return box && box.querySelector("#petEmoji"); }
   function flash(cls, ms) {   // 加一個動作 class，播完拿掉
     const em = emEl(); if (!em) return sleep(0);
+    if (cls === "pb-snap" || cls === "pb-hug" || cls === "pb-rub") window.dispatchEvent(new CustomEvent("pet-fx", { detail: cls === "pb-snap" ? "bite" : "hug" }));   // 音效（pet.js，預設關；寵物新一輪 #23）
     em.classList.remove(cls); void em.offsetWidth; em.classList.add(cls);
     return sleep(ms).then(() => em.classList.remove(cls));
   }
@@ -687,5 +697,5 @@ window.PetStage = (function () {
 
   // 心情變了但卡片沒重畫（pet.js 的 petCardUpdate）：待機動作的機率跟著換
   function setMood(m) { mood = m || "content"; if (box) schedule(mood); }
-  return { debug, setMood, html, bind, unbind, tod, season, wxOf, weather, cachedWx, count: STAGES, zoneOf, react, feed, act, isFeeding: () => feeding, isAsleep: () => asleep, wake, sleep: () => setAsleep(true) };
+  return { debug, setMood, html, photoSvgs, bind, unbind, tod, season, wxOf, weather, cachedWx, count: STAGES, zoneOf, react, feed, act, isFeeding: () => feeding, isAsleep: () => asleep, wake, sleep: () => setAsleep(true) };
 })();

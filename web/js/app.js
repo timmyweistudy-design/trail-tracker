@@ -567,7 +567,7 @@ document.querySelectorAll(".tab").forEach(btn => {
     if (view === "pet") {
       renderPet(); renderQuests(); renderBadges();
       if (typeof Pets !== "undefined") {
-        Pets.claimGifts().then(n => { if (n > 0) { toast(`收到好友送的 ${n} 🍓！`); renderPet(); } });
+        Pets.claimGifts().then(n => { if (n > 0) { if (typeof petGiftBerries === "function") petGiftBerries(n); else { toast(`收到好友送的 ${n} 🍓！`); renderPet(); } } });   // 寵物新一輪 #20：果實從舞台上方飄下來
         Pets.renderFriends();
       }
     }

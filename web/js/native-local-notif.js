@@ -1,10 +1,11 @@
 // 留存提醒（本地排程通知，Capacitor: @capacitor/local-notifications）：
 //   ① 連續天數快中斷 → 當天晚上 19:00 提醒（今天已走 or 沒連續就不排）
 //   ② 每週足跡回顧 → 每週日晚上 19:00
+//   ③ 夥伴想你了（2026-10-07 寵物新一輪 #7，參考 Finch：溫和、不給罪惡感）→ 3 天以上沒出門，隔天早上 10:00 牠說一句；一天最多一則
 // 全部在裝置本地排程，不需後端。預設「關」，要使用者到設定主動開（並授權通知）。網頁版無外掛 → 隱藏開關。
 const Reminders = (() => {
   const KEY = "tt_reminders";                 // "1" 開 / 其他 = 關
-  const ID_STREAK = 101, ID_WEEKLY = 102;
+  const ID_STREAK = 101, ID_WEEKLY = 102, ID_PET = 103;
   function P() {
     const w = window;
     return (w.Capacitor && w.Capacitor.isNativePlatform && w.Capacitor.isNativePlatform()
@@ -55,22 +56,33 @@ const Reminders = (() => {
       }] });
     } catch (e) { /* */ }
   }
+  const PET_NUDGE = ["%s 在步道口等你，天氣不錯喔", "%s 把背包整理好了，隨時可以出發", "%s 說：走一小段也很好", "%s 想去看看山上的雲"];
+  async function refreshPet() {
+    const p = P(); if (!p || !on()) return;
+    try { await p.cancel({ notifications: [{ id: ID_PET }] }); } catch (e) { /* */ }
+    const recs = (typeof realRecords === "function") ? realRecords() : []; if (!recs.length) return;   // 還沒出過門：不催
+    const last = recs.reduce((m, r) => (r.date > m ? r.date : m), recs[0].date), idle = (Date.now() - new Date(last).getTime()) / 864e5;
+    if (idle < 2) return;   // 隔天 10 點時已經滿 3 天才提醒
+    const at = new Date(); at.setDate(at.getDate() + 1); at.setHours(10, 0, 0, 0);
+    const nm = (typeof petStats === "function" && petStats().name) || tt("夥伴");
+    try { await p.schedule({ notifications: [{ id: ID_PET, title: tt("循徑拾光"), body: tt(PET_NUDGE[Math.floor(Math.random() * PET_NUDGE.length)]).replace("%s", nm), schedule: { at } }] }); } catch (e) { /* */ }
+  }
   async function syncAll() {                                  // 開機時：有開才重排（權限沒了就靜默跳過）
     if (!P() || !on()) return;
     if (!(await ensurePermission())) return;
-    refreshStreak(); scheduleWeekly();
+    refreshStreak(); scheduleWeekly(); refreshPet();
   }
   async function enable() {
     if (!P()) { if (typeof toast === "function") toast(tt("這個版本不支援提醒")); return false; }
     if (!(await ensurePermission())) { if (typeof toast === "function") toast(tt("請到系統設定開啟通知權限")); return false; }
     try { localStorage.setItem(KEY, "1"); } catch (e) { /* */ }
-    refreshStreak(); scheduleWeekly();
+    refreshStreak(); scheduleWeekly(); refreshPet();
     return true;
   }
   async function disable() {
     try { localStorage.setItem(KEY, "0"); } catch (e) { /* */ }
-    const p = P(); if (p) { try { await p.cancel({ notifications: [{ id: ID_STREAK }, { id: ID_WEEKLY }] }); } catch (e) { /* */ } }
+    const p = P(); if (p) { try { await p.cancel({ notifications: [{ id: ID_STREAK }, { id: ID_WEEKLY }, { id: ID_PET }] }); } catch (e) { /* */ } }
   }
-  return { available, on, enable, disable, syncAll, refreshStreak };
+  return { available, on, enable, disable, syncAll, refreshStreak, refreshPet };
 })();
 if (typeof window !== "undefined") window.Reminders = Reminders;

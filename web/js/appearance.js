@@ -204,7 +204,8 @@ function renderReminderToggle() {
   if (typeof Reminders === "undefined" || !Reminders.available()) { el.innerHTML = ""; return; }
   const isOn = Reminders.on();
   el.innerHTML = `<div class="accent-head" style="margin-top:16px">${ttT("健行提醒")}</div>
-    <label class="sim-toggle"><input type="checkbox" id="reminderToggle" ${isOn ? "checked" : ""}> ${ttT("提醒我保持連續天數、每週看足跡回顧")}</label>`;
+    <label class="sim-toggle"><input type="checkbox" id="reminderToggle" ${isOn ? "checked" : ""}> ${ttT("提醒我保持連續天數、每週看足跡回顧")}</label>
+    <div class="set-hint" style="font-size:12px;opacity:.7;margin:2px 0 0 26px">${ttT("夥伴三天沒見到你，也會溫和地說一聲（一天最多一則）")}</div>`;
   const cb = el.querySelector("#reminderToggle");
   if (cb) cb.addEventListener("change", async () => {
     if (cb.checked) { const ok = await Reminders.enable(); cb.checked = ok; if (ok && typeof toast === "function") toast(ttT("已開啟健行提醒")); }

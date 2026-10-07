@@ -17,6 +17,14 @@ struct WidgetData: Codable {
     /// 非 PRO：小工具只顯示「PRO 會員專屬」（舊版 App 寫的資料沒有這欄 → 視為沒鎖）
     var locked: Bool? = nil
     var labels: [String: String] = [:]
+    /// 夥伴現在在做什麼（寵物新一輪 #6）：dawn／day／dusk／eve／night 各一句，照當下時間挑（舊版 App 沒有這欄＝不顯示）
+    var petStatus: [String: String]? = nil
+
+    static func part(_ d: Date) -> String {   // 跟 App 的舞台同一套時段：5～8 清晨、8～16 白天、16～19 黃昏、19～22 晚上、22～5 夥伴在睡
+        let h = Calendar.current.component(.hour, from: d)
+        return h >= 5 && h < 8 ? "dawn" : h >= 8 && h < 16 ? "day" : h >= 16 && h < 19 ? "dusk" : h >= 19 && h < 22 ? "eve" : "night"
+    }
+    func status(at d: Date) -> String? { petStatus?[WidgetData.part(d)] }
 
     func t(_ key: String, _ fallback: String) -> String { labels[key] ?? fallback }
 
@@ -46,11 +54,14 @@ struct HomeProvider: TimelineProvider {
         completion(HomeEntry(date: Date(), data: WidgetData.load(), pet: WidgetData.petImage()))
     }
     func getTimeline(in context: Context, completion: @escaping (Timeline<HomeEntry>) -> Void) {
-        let entry = HomeEntry(date: Date(), data: WidgetData.load(), pet: WidgetData.petImage())
-        // 過了午夜「今天走了沒」會變，隔天清晨重畫一次；平常靠 App 寫入後主動 reload
-        let cal = Calendar.current
-        let next = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: Date()))?.addingTimeInterval(5 * 60) ?? Date().addingTimeInterval(3600)
-        completion(Timeline(entries: [entry], policy: .after(next)))
+        let data = WidgetData.load(), pet = WidgetData.petImage(), cal = Calendar.current, now = Date()
+        // 夥伴的時段（5、8、16、19、22 點）各排一筆，到點就換那一句；過了午夜「今天走了沒」會變，隔天清晨重畫一次；平常靠 App 寫入後主動 reload
+        var entries = [HomeEntry(date: now, data: data, pet: pet)]
+        for h in [5, 8, 16, 19, 22] {
+            if let t = cal.date(bySettingHour: h, minute: 0, second: 0, of: now), t > now { entries.append(HomeEntry(date: t, data: data, pet: pet)) }
+        }
+        let next = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: now))?.addingTimeInterval(5 * 60) ?? now.addingTimeInterval(3600)
+        completion(Timeline(entries: entries, policy: .after(next)))
     }
 }
 
@@ -107,6 +118,7 @@ struct HomeWidgetView: View {
                 VStack(spacing: 4) {
                     PetView(image: entry.pet).frame(width: 82, height: 82)
                     Text(d.petName.isEmpty ? " " : "\(d.petName) Lv.\(d.petLevel)").font(.caption2).foregroundStyle(TT.cream.opacity(0.85)).lineLimit(1)
+                    if let st = d.status(at: entry.date) { Text(st).font(.system(size: 9)).foregroundStyle(TT.gold).lineLimit(1).minimumScaleFactor(0.8) }
                 }
                 VStack(alignment: .leading, spacing: 8) {
                     stat(d.t("streak", "連續"), "\(d.streak)", d.t("days", "天"))

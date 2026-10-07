@@ -2455,3 +2455,26 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 @keyframes psFest { 0%, 100% { rotate: -4deg; } 50% { rotate: 4deg; } }
 .ps-box.ps-off .ps-fest { animation-play-state: paused; }
 @media (prefers-reduced-motion: reduce) { .ps-fest { animation: none; } }
+
+/* 拍照模式（2026-10-07 寵物新一輪 #18） */
+.pp-card { text-align: center; }
+.pp-prev { margin: 6px auto 10px; max-width: 300px; aspect-ratio: 4 / 5; border-radius: 16px; overflow: hidden; background: #1d3a28; box-shadow: 0 6px 18px rgba(0,0,0,.18); }
+.pp-prev img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.pp-tods { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-bottom: 12px; }
+.pp-tod { border: 1px solid var(--line, rgba(0,0,0,.12)); background: transparent; color: inherit; border-radius: 999px; padding: 6px 14px; font: inherit; font-size: calc(13px * var(--fs, 1)); cursor: pointer; }
+.pp-tod.on { background: var(--brand, #2f6b47); border-color: transparent; color: #fff; }
+
+/* 好友送的果實飄下來（2026-10-07 寵物新一輪 #20） */
+.ps-giftb { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+.ps-giftb i { position: absolute; top: -12%; width: calc(26px * var(--fs, 1)); height: calc(26px * var(--fs, 1)); animation: psGiftB 1.1s var(--dl) cubic-bezier(.3,.6,.5,1) both; filter: drop-shadow(0 3px 4px rgba(0,0,0,.25)); }
+.ps-giftb i svg { width: 100%; height: 100%; }
+@keyframes psGiftB { 0% { transform: translateY(0) rotate(0); opacity: 0; } 15% { opacity: 1; } 70% { transform: translateY(260%) rotate(var(--r)); } 85% { transform: translateY(240%) rotate(var(--r)); } 100% { transform: translateY(255%) rotate(var(--r)); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ps-giftb { display: none; } }
+.ah-sw { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: .5em 0; border-top: 1px solid var(--line, rgba(0,0,0,.08)); font-size: calc(13.5px * var(--fs, 1)); }
+
+/* 減少動態效果（2026-10-07 寵物新一輪 #24）：上面的新進化儀式寫在這個檔，會蓋過 style.css 那條「不播」——這裡再宣告一次；
+   摸、抱、來回摸在減少動態時沒有動作，改成角色亮一下（不位移、不縮放） */
+@media (prefers-reduced-motion: reduce) {
+  .evolve-from { display: none; } .evolve-to, .evolve-flash { animation: none; } .evolve-to { opacity: 1; filter: none; transform: none; } .evolve-flash { opacity: 0; }
+  #petEmoji.rm-fb .pet-critter { filter: brightness(1.12) drop-shadow(0 0 10px rgba(255, 214, 120, .85)); }
+}

@@ -1066,7 +1066,7 @@ async function finishRecording(autoVehicle) {
       safeRun("sync-stats", () => syncMyStatsToCloud());
       safeRun("confetti", () => confetti());
       safeRun("review-ask", () => { if (typeof ReviewPrompt !== "undefined") ReviewPrompt.maybeAsk(rec); });   // 走完有意義的一趟＝請評分的好時機
-      safeRun("reminder-refresh", () => { if (typeof Reminders !== "undefined") Reminders.refreshStreak(); });   // 今天走了→取消今晚的連續提醒、更新連續數
+      safeRun("reminder-refresh", () => { if (typeof Reminders !== "undefined") { Reminders.refreshStreak(); if (Reminders.refreshPet) Reminders.refreshPet(); } });   // 今天走了→取消今晚的連續提醒、更新連續數
     }
     safeRun("pet-evolve", () => checkPetEvolve());
     safeRun("render-idle", () => renderRecIdle());

@@ -339,6 +339,31 @@ if(sh()){const p=await mk({km:40});
  ok(r.evo[0]&&r.evo[1]==="evoFrom2","evolution ceremony: silhouette morph sequence + 'written in the diary' "+JSON.stringify(r.evo));
  await p.close();}
 
+// ── 2026-10-07 寵物新一輪 #15 #17 #18 #20 #23 #24 ──
+if(sh()){const p=await mk({km:40});
+ const r=await p.evaluate(async()=>{const w=ms=>new Promise(r=>setTimeout(r,ms)),em=()=>document.querySelector("#petEmoji");window.__psNoIdle=true;document.querySelector(".ps-box").scrollIntoView({block:"center"});await w(300);
+  const cv=await drawPetPhoto("night");const px=cv.getContext("2d").getImageData(540,200,1,1).data;const photo=[cv.width,cv.height,px[2]>px[0]];
+  document.getElementById("petPhoto").click();await w(1500);const prev=(document.querySelector(".pp-prev img")||{}).src||"";document.querySelector('[data-ov="petphoto"] #ppClose').click();
+  window.__hatSeasonAll=false;openHatPicker();await w(200);const santaLocked=document.querySelector('.hat-opt[data-hat="santa"]').classList.contains("locked");
+  document.querySelector('.hat-opt[data-hat="santa"]').click();await w(200);const notOwned=!hatsOwned().has("santa");document.querySelector('[data-ov="pethat"] #hatClose').click();
+  window.__hatSeasonAll=true;openHatPicker();await w(200);document.querySelector('.hat-opt[data-hat="santa"]').click();await w(300);const owned=hatsOwned().has("santa")&&localStorage.getItem("tt_pet_hat")==="santa";document.querySelector('[data-ov="pethat"] #hatClose').click();window.__hatSeasonAll=false;
+  localStorage.setItem("tt_pet_mood_last","longing");window.__petLine=null;renderPet();await w(900);const moodAct=[...em().classList].filter(c=>/^pb-/.test(c));
+  petGiftBerries(4);await w(300);const fall=document.querySelectorAll(".ps-giftb i").length;await w(2600);const fallGone=!document.querySelector(".ps-giftb");
+  localStorage.setItem("tt_pet_haptic","0");const calls=[];const ob=window.ttBuzz;window.ttBuzz=x=>calls.push(x);petBuzz(20);window.ttBuzz=ob;
+  return {photo,prev:prev.length,santaLocked,notOwned,owned,moodAct,fall,fallGone,hapticOff:calls.length===0};});
+ ok(r.photo[0]===1080&&r.photo[1]===1350&&r.photo[2]&&r.prev>10000,"photo mode: 1080x1350 card with the night sky, preview shows "+JSON.stringify(r.photo));
+ ok(r.santaLocked&&r.notOwned&&r.owned,"seasonal hat: locked out of season, free and kept once picked in season "+JSON.stringify([r.santaLocked,r.notOwned,r.owned]));
+ ok(r.moodAct.length>0,"mood change plays a small transition action "+JSON.stringify(r.moodAct));
+ ok(r.fall===4&&r.fallGone,"friend berries fall onto the stage, then fly into the feed button");
+ ok(r.hapticOff,"pet vibration can be switched off");
+ await p.close();}
+if(sh()){const p=await mk({km:40});await p.emulateMedia({reducedMotion:"reduce"});
+ const r=await p.evaluate(async()=>{renderPet();await new Promise(r=>setTimeout(r,200));const em=document.querySelector("#petEmoji");em.click();await new Promise(r=>setTimeout(r,100));const on=em.classList.contains("rm-fb");
+  celebrateEvolve(PET_STAGES[3],4);await new Promise(r=>setTimeout(r,100));const to=getComputedStyle(document.querySelector(".evolve-to"));const evo=[to.animationName,to.opacity];document.querySelector('[data-ov="evolve"]').remove();return {on,evo};});
+ ok(r.on,"reduced motion: tapping gives a still glow instead of a motion");
+ ok(r.evo[0]==="none"&&r.evo[1]==="1","reduced motion: evolution shows the new form straight away (no morph) "+JSON.stringify(r.evo));
+ await p.close();}
+
 // ── 2026-10-04 角色重畫：結構檢查（id 引用、畫框、開心眼對位、動畫掛點）、分享圖卡不畫瞇眼、幼蟲的頭在下半部 ──
 if(sh()){const p=await mk({km:5});
  const r=await p.evaluate(async()=>{const out=[],h=document.createElement("div");document.body.appendChild(h);
