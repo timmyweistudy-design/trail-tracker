@@ -290,6 +290,10 @@ async function toggleDebugPanel() {
   p = document.createElement("div");
   p.id = "debugPanel"; p.className = "debug-panel";
   const closeAnd = fn => () => { const dp = document.getElementById("debugPanel"); if (dp) dp.remove(); return fn(); };
+  // 看得到效果的夥伴按鈕：收起面板（面板會蓋住夥伴卡）→ 切到夥伴頁 → 把舞台捲到畫面中間 → 再做（2026-10-07 使用者：新的按鈕有些沒反應＝被面板擋住）
+  const seePet = fn => closeAnd(() => { const tab = document.querySelector('.tab[data-view="pet"]'); if (tab && document.body.dataset.view !== "pet") tab.click();
+    setTimeout(() => { const b = document.querySelector(".ps-box"); if (b) b.scrollIntoView({ block: "center", behavior: "smooth" }); setTimeout(fn, 450); }, 250); });
+  const feedWith = xs => seePet(() => { ttDebug.spots(xs); ttDebug.addBerries(10); ttDebug.resetFeed(); setTimeout(() => { const f = document.getElementById("petFeed"); if (f) f.click(); }, 300); });
   const tourReset = () => { ["tt_onboarded_v2", "tt_tour_resume"].forEach(k => localStorage.removeItem(k)); };
   const SECTIONS = [
     ["夥伴", [
@@ -298,20 +302,20 @@ async function toggleDebugPanel() {
       ["重置🥚", () => ttDebug.resetPet()], ["清debug", () => ttDebug.clearDebug()],
     ]],
     ["夥伴動畫（調動畫用）", [
-      ["🥚蛋", () => ttDebug.setLevel(0)], ["🐛毛毛蟲", () => ttDebug.setLevel(1)], ["🦋蝴蝶", () => ttDebug.setLevel(2)], ["🦊狐", () => ttDebug.setLevel(3)], ["🐯虎", () => ttDebug.setLevel(4)], ["🐲幼龍", () => ttDebug.setLevel(5)], ["🐉神龍", () => ttDebug.setLevel(6)],
+      ["🥚蛋", seePet(() => ttDebug.setLevel(0))], ["🐛毛毛蟲", seePet(() => ttDebug.setLevel(1))], ["🦋蝴蝶", seePet(() => ttDebug.setLevel(2))], ["🦊狐", seePet(() => ttDebug.setLevel(3))], ["🐯虎", seePet(() => ttDebug.setLevel(4))], ["🐲幼龍", seePet(() => ttDebug.setLevel(5))], ["🐉神龍", seePet(() => ttDebug.setLevel(6))],
       ["🍓看餵食", closeAnd(() => { ttDebug.addBerries(10); ttDebug.resetFeed(); document.querySelector('.tab[data-view="pet"]').click(); setTimeout(() => { const f = document.getElementById("petFeed"); if (f) { f.scrollIntoView({ block: "center" }); setTimeout(() => f.click(), 400); } }, 500); })],
       ["🐢0.25×", () => ttDebug.slow(.25)], ["🚶0.5×", () => ttDebug.slow(.5)], ["▶1×", () => ttDebug.slow(1)],
-      ["😴睏", () => ttDebug.mood("sleepy")], ["🙂普通", () => ttDebug.mood("content")], ["😄開心", () => ttDebug.mood("happy")], ["🥺想念", () => ttDebug.mood("longing")], ["↺心情回真實", () => ttDebug.mood(null)],
-      ["📍落點：左中右", () => ttDebug.spots([-62, 8, 66])], ["📍落點：都在後面", () => ttDebug.spots([-74, -50, -26])], ["📍落點：都在前面", () => ttDebug.spots([22, 46, 70])], ["📍神龍雲上", () => ttDebug.spots([129, 159, 188])], ["📍落點：隨機", () => ttDebug.spots(null)],
-      ["🤗抱抱", () => ttDebug.react("hug")], ["✋摸頭", () => ttDebug.react("pat")], ["🫳搔癢", () => ttDebug.react("tickle")], ["🐾跳", () => ttDebug.act("hop")], ["🙆伸懶腰", () => ttDebug.act("stretch")], ["😮‍💨嘆氣", () => ttDebug.act("sigh")], ["👀東張西望", () => ttDebug.act("look")],
-      ["🎩換帽子", () => ttDebug.hat()], ["📈效能浮標", () => ttDebug.fps()], ["🎯除錯標記", () => (typeof PetStage !== "undefined" && PetStage.debug() ? "餵食除錯標記：開（紅＝嘴、綠＝果實、藍＝腳掌、黃＝接觸點）" : "餵食除錯標記：關")],
+      ["😴睏", seePet(() => ttDebug.mood("sleepy"))], ["🙂普通", seePet(() => ttDebug.mood("content"))], ["😄開心", seePet(() => ttDebug.mood("happy"))], ["🥺想念", seePet(() => ttDebug.mood("longing"))], ["↺心情回真實", seePet(() => ttDebug.mood(null))],
+      ["📍餵：左中右", feedWith([-62, 8, 66])], ["📍餵：都在後面", feedWith([-74, -50, -26])], ["📍餵：都在前面", feedWith([22, 46, 70])], ["📍餵：神龍雲上", feedWith([129, 159, 188])], ["📍餵：隨機", feedWith(null)],
+      ["🤗抱抱", seePet(() => ttDebug.react("hug"))], ["✋摸頭", seePet(() => ttDebug.react("pat"))], ["🫳搔癢", seePet(() => ttDebug.react("tickle"))], ["🐾跳", seePet(() => ttDebug.act("hop"))], ["🙆伸懶腰", seePet(() => ttDebug.act("stretch"))], ["😮‍💨嘆氣", seePet(() => ttDebug.act("sigh"))], ["👀東張西望", seePet(() => ttDebug.act("look"))],
+      ["🎩換帽子", seePet(() => ttDebug.hat())], ["📈效能浮標", () => ttDebug.fps()], ["🎯除錯標記", () => (typeof PetStage !== "undefined" && PetStage.debug() ? "餵食除錯標記：開（紅＝嘴、綠＝果實、藍＝腳掌、黃＝接觸點）" : "餵食除錯標記：關")],
     ]],
     ["夥伴舞台與旅行", [
       ["🌅清晨", () => ttDebug.stage("tod", "dawn")], ["☀白天", () => ttDebug.stage("tod", "day")], ["🌇黃昏", () => ttDebug.stage("tod", "dusk")], ["🌙夜晚", () => ttDebug.stage("tod", "night")],
       ["🌸春", () => ttDebug.stage("season", "spring")], ["🌿夏", () => ttDebug.stage("season", "summer")], ["🍁秋", () => ttDebug.stage("season", "autumn")], ["❄冬", () => ttDebug.stage("season", "winter")],
       ["🎯餵食除錯標記", () => (typeof PetStage !== "undefined" && PetStage.debug() ? "餵食除錯標記：開（紅＝嘴、綠＝果實、藍＝腳掌、黃＝接觸點）" : "餵食除錯標記：關")], ["🌧下雨", () => ttDebug.stage("wx", "rain")], ["☁陰天", () => ttDebug.stage("wx", "cloud")], ["🌨下雪", () => ttDebug.stage("wx", "snow")], ["🌤晴", () => ttDebug.stage("wx", "")],
       ["↺回真實時間天氣", () => ttDebug.stage(null)],
-      ["🐾跳一下", () => ttDebug.act("hop")], ["🙆伸懶腰", () => ttDebug.act("stretch")], ["👀東張西望", () => ttDebug.act("look")], ["🤗今天可再抱", () => ttDebug.resetHug()],
+      ["🐾跳一下", seePet(() => ttDebug.act("hop"))], ["🙆伸懶腰", seePet(() => ttDebug.act("stretch"))], ["👀東張西望", seePet(() => ttDebug.act("look"))], ["🤗今天可再抱", () => ttDebug.resetHug()],
       ["🍓看餵食動畫", closeAnd(() => { ttDebug.addBerries(10); ttDebug.resetFeed(); document.querySelector('.tab[data-view="pet"]').click(); setTimeout(() => { const f = document.getElementById("petFeed"); if (f) { f.scrollIntoView({ block: "center" }); setTimeout(() => f.click(), 500); } }, 600); })],
       ["✨看進化動畫", closeAnd(() => { const i = petStageIndex(totalKm()); celebrateEvolve(PET_STAGES[i], i + 1); })],
       ["📮＋明信片(隨機)", () => ttDebug.addRandomTrail()], ["🗾五區全走過", () => ttDebug.allRegions()],

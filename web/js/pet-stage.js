@@ -449,7 +449,7 @@ window.PetStage = (function () {
           const relax = PetWalk.tailTo(box, null);                              // 尾尖鬆開、退回
           await sleep(110);
           toMouth(b, false); b.classList.add("eaten"); cls(false, "st-open"); await flash("pb-snap", 240);
-          await lean; await PetWalk.tween(260, e => { box.__lean = [LN[0] * (1 - e), LN[1] * (1 - e)]; }); box.__lean = null;
+          await lean; await PetWalk.tween(380, e => { box.__lean = [LN[0] * (1 - e), LN[1] * (1 - e)]; }); box.__lean = null;
           cls(true, "chew2"); await flash("pb-chew", 600); cls(false, "chew2"); await relax;   // 嚼兩下（0.3 秒 × 2，要等嚼完）
           await flash("pb-gulp", 340);
         }

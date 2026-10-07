@@ -231,6 +231,7 @@ function judge(st, tag, R) {
     ok(uniq.length === 0, `${tag}: each element's transform has one writer per frame (conflicts: ${JSON.stringify(uniq.slice(0, 6))})`); }
   { const I = R.I || [], di = I.map((f, i) => (i ? D(f.mouth, I[i - 1].mouth) : 0)); let wj = 0; for (let i = 2; i < I.length - 1; i++) wj = Math.max(wj, di[i] - Math.max(di[i - 1], di[i + 1]) > 3 ? di[i] : 0, di[i] > 8 ? di[i] : 0);
     ok(I.length >= 40 && wj === 0, `${tag}: idle before feeding is smooth too (mouth never pops; worst ${wj.toFixed(1)}px)`); }
+  if (process.env.PM_TRACE) { const [a, b] = process.env.PM_TRACE.split("-").map(Number); for (let i = a; i <= Math.min(b, n - 1); i++) console.log("  tr", i, F[i].bcl, F[i].cls, F[i].deform ? F[i].deform.map(v => v.toFixed(0)).join(",") : "", F[i].wx != null ? (+F[i].wx).toFixed(1) : ""); }
   if (process.env.PM_NEED) console.log("NEED", tag, Math.max(...F.map(f => f.need || 0)).toFixed(1));
   ok(!last.berries.length && !last.cls && Math.abs(R.end.wx) < 1 && R.end.bal === R.bal0 - 3, `${tag}: ends clean — no berries, no leftover pose, back in the middle, exactly 3 berries spent ${JSON.stringify({ cls: last.cls, wx: R.end.wx, spent: R.bal0 - R.end.bal })}`);
 }

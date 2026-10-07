@@ -2346,6 +2346,10 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 @keyframes petNear { 0%, 100% { box-shadow: 0 0 8px rgba(232,200,122,.4); } 50% { box-shadow: 0 0 16px rgba(255,220,130,.95); filter: brightness(1.15); } }
 @keyframes petSilWiggle { 0%, 70%, 100% { transform: rotate(0); } 78% { transform: rotate(-7deg); } 86% { transform: rotate(6deg); } 93% { transform: rotate(-3deg); } }
 /* 餵食鈕冷卻：果實外一圈環狀倒數（--cdp：0＝剛餵、1＝可以餵） */
-.pet-btn.feed.cd .berry { border-radius: 50%; padding: 2px; background: conic-gradient(#e8c87a calc(var(--cdp, 1) * 360deg), rgba(255,255,255,.16) 0); }
+.pet-btn.feed .fb-ic { position: relative; display: inline-flex; font-weight: inherit; }
+.pet-btn.feed .fb-ring { display: none; position: absolute; inset: -4px; border-radius: 50%; pointer-events: none;   /* 疊在果實外的一圈細環：不改圖示大小、不佔版面（2026-10-07：以前用背景＋內距，圖示變大、多一塊深色圓底，使用者說跑版） */
+  background: conic-gradient(#e8c87a calc(var(--cdp, 1) * 360deg), rgba(255,255,255,.18) 0);
+  -webkit-mask: radial-gradient(circle, transparent 62%, #000 64%); mask: radial-gradient(circle, transparent 62%, #000 64%); }
+.pet-btn.feed.cd .fb-ring { display: block; }
 @media (prefers-reduced-motion: reduce) { .pet-card.evo-near .pet-track i, .pet-card.evo-near .pet-evo-sil, .pet-bump, .pet-track.pet-hit::after { animation: none !important; } }
 .pet-bubble.say { box-shadow: 0 0 0 2px rgba(255,214,120,.55); }

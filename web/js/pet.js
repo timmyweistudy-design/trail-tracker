@@ -363,7 +363,7 @@ function renderPet() {
       <div class="pet-chip"><div class="cv">${streak}<small> ${ttT("週")}</small></div><div class="cl">${ttT("週週有走")}</div></div>
     </div>
     <div class="pet-acts">
-      <button class="pet-btn feed" id="petFeed"${canFeed ? "" : " disabled"}>${BERRY_SVG}<span>${feedLbl}</span>${need > 0 || cd > 0 ? "" : `<b class="feed-bal">${berries}</b>`}</button>
+      <button class="pet-btn feed" id="petFeed"${canFeed ? "" : " disabled"}><b class="fb-ic">${BERRY_SVG}<i class="fb-ring"></i></b><span>${feedLbl}</span>${need > 0 || cd > 0 ? "" : `<b class="feed-bal">${berries}</b>`}</button>
       <button class="pet-btn" id="petDex">${ic("book")} ${ttT("手冊")}</button>
       <button class="pet-btn" id="petRec">${ic("compass")} ${ttT("去走")}</button>
     </div>
@@ -464,7 +464,7 @@ function petFloat(text, toSel, onArrive, icon) {
   // 弧線：先往上彈出來、停一下讓人看清楚，再沿著往上拱的弧線飛下去（取樣 6 點的二次貝茲）
   const cx = (x0 + x1) / 2 + (x1 - x0) * .15, cy = Math.min(y0, y1) - 46, kf = [{ transform: "translate(-50%, -50%) scale(.6)", opacity: 0, offset: 0 }, { transform: "translate(-50%, -150%) scale(1.12)", opacity: 1, offset: .16 }, { transform: "translate(-50%, -150%) scale(1)", opacity: 1, offset: .32 }];
   for (let k = 1; k <= 6; k++) { const t = k / 6, u = 1 - t, X = u * u * x0 + 2 * u * t * cx + t * t * x1, Y = u * u * (y0 - 20) + 2 * u * t * cy + t * t * y1;
-    kf.push({ transform: `translate(calc(-50% + ${(X - x0).toFixed(1)}px), calc(-50% + ${(Y - y0).toFixed(1)}px)) scale(${(1 - .45 * t).toFixed(3)})`, opacity: k === 6 ? .2 : 1, offset: +(.32 + .68 * t).toFixed(3) }); }
+    kf.push({ transform: `translate(calc(-50% + ${(X - x0).toFixed(1)}px), calc(-50% + ${(Y - y0).toFixed(1)}px)) scale(${(1 - .85 * Math.pow(t, 1.6)).toFixed(3)})`, opacity: k === 6 ? 0 : k === 5 ? .75 : 1, offset: +(.32 + .68 * t).toFixed(3) }); }   // 越接近條縮得越快，最後被吸進去（2026-10-07 使用者）
   f.animate(kf, { duration: 1250, easing: "cubic-bezier(.45,.05,.55,.95)" }).onfinish = land;
 }
 function petSwapText(el, html) {

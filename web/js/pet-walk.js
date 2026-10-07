@@ -17,7 +17,7 @@ window.PetWalk = (function () {
     3: { mode: "rock", v: 70, D: 26, bob: 2, roll: 3, lift: 5, duty: .6 },     // 狐（2026-10-07：不再側身走——萬一要挪位置，臉朝我們、左右晃著小碎步挪過去）
     4: { mode: "rock", v: 58, D: 30, bob: 2.6, roll: 2.4, lift: 5, duty: .64 },   // 虎：同上、慢一點沉一點
     5: { mode: "waddle", v: 100, D: 28, bob: 4.5, roll: 7, lift: 11, duty: .56, tail: 12, ear: 6, head: 2.4 },        // 幼龍：短腿搖搖擺擺
-    6: { mode: "swim", v: 80, D: 70, bob: 3, roll: 1.5, tail: 8, head: 1.5 },                 // 神龍：在雲上游（2026-10-07 第六輪 125→80：繩波往後傳的速度≈前進速度，尾巴跟得上）
+    6: { mode: "swim", v: 80, D: 70, bob: 3, roll: 1.5, tail: 0, head: 1.5 },   // tail 0（2026-10-07 使用者回報吃完左右游時尾巴抽兩下）：通用步態會轉 .pc-tail＝神龍尾端那片鰭、支點不在鰭上，起步和停下各甩一大圈；尾巴交給繩波                 // 神龍：在雲上游（2026-10-07 第六輪 125→80：繩波往後傳的速度≈前進速度，尾巴跟得上）
   };
   let raf = 0;
   // ── 身體變形（幼蟲蠕動、神龍游）：.pr-deform 裡的路徑座標每一格依「變形場」移動，走完還原 ──
@@ -485,7 +485,7 @@ window.PetWalk = (function () {
       const n = Math.max(1, Math.round(Math.abs(dist) / (g.Du / ((1 / pxu(box))))));   // 整數道波
       g = Object.assign({}, g, { D: Math.abs(dist) / n });
     }
-    else if (!opts.keepFace && g.mode !== "fly") await face(box, dir);   // 蝶不轉身（正面對稱、靠身體內傾表示方向）：rotateY 會讓量口器位置的 getScreenCTM 不準
+    else if (!opts.keepFace && g.mode !== "fly" && g.mode !== "swim") await face(box, dir);   // 神龍也不轉身（2026-10-07：平面的身體一轉，尾巴往內縮再往外甩，看起來像抽動；方向由繩波表現）   // 蝶不轉身（正面對稱、靠身體內傾表示方向）：rotateY 會讓量口器位置的 getScreenCTM 不準
     // 預備：往下蹲、往後縮一點
     if (!opts.keepFace && g.mode !== "crawl") { set(box, "--gpre", "1"); await sleep(150); set(box, "--gpre", "0"); }   // 小碎步不用預備；幼蟲的預備就是第一道波
     box.__k = g.mode === "crawl" ? 0 : calib(box);
