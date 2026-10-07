@@ -498,9 +498,15 @@ ${tigerHead()}
   // 用 viewBox 平移而不是包一層 transform：各部位的支點（transform-box: view-box）座標不用改
   const vb = i => (clamp(i) === 5 ? "0 -13 200 200" : "0 0 200 200");
   // pad：畫布四周多留白（舞台上的主角用：趴下、伸長脖子、尾巴捲起來都不會超出畫框——iOS 的 WebKit 會照畫框裁切，不管 overflow:visible）
+  // 2026-10-07 優化輪：留白每隻不同（實測餵食全程超出 200×200 多少＋15，至少 40 給帽子）——以前一律 140（畫布 2.4 倍），蛋／毛毛蟲／蝶的畫布面積剩 34%
+  const PADS = [40, 40, 40, 55, 55, 140, 100];
+  const padFor = i => PADS[clamp(i)];
   function svg(i, cls, hatId, pad) {
+    if (pad === true) pad = padFor(i);
     const v = vb(i).split(" ").map(Number), p = pad || 0, box = p ? `${v[0] - p} ${v[1] - p} ${v[2] + 2 * p} ${v[3] + 2 * p}` : vb(i);
-    return `<svg class="pet-critter ${cls || ""}${p ? " pc-pad" : ""}" viewBox="${box}" role="img" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${body(i, hatId)}</svg>`;
+    const W = 200 + 2 * p, pc = u => ((p + u) / W * 100).toFixed(2) + "%";   // 圖上的座標 → 畫布的百分比（轉動支點用）
+    const st = p ? ` data-pad="${p}" style="--pf:${(W / 200).toFixed(4)};--pm:${(p / 200).toFixed(4)};--o196:${pc(196)};--o194:${pc(194)};--o190:${pc(190)};--x40:${pc(40)};--x20:${pc(20)}"` : "";
+    return `<svg class="pet-critter ${cls || ""}${p ? " pc-pad" : ""}" viewBox="${box}"${st} role="img" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${body(i, hatId)}</svg>`;
   }
   function byEmoji(e) { return EMOJI.indexOf(e); }   // 找不到回 -1
   // 給 canvas 用：帶 width/height 的獨立 SVG data URI（靜態一幀，供 new Image().src 光柵化畫進分享圖卡）
@@ -521,5 +527,5 @@ ${tigerHead()}
   const headLine = i => HEAD_LINE[clamp(i)];
   const dragonSpine = n => spine(DSP, n).map(q => ({ x: q.x, y: q.y }));
   const larvaSpine = n => spine(LVS, n).map(q => ({ x: q.x, y: q.y }));   // 幼蟲身體的中心線（pet-walk.js 的 U 型迴轉：身體每一點沿這條線的位置）   // 神龍身體的中心線（pet-walk.js 用來讓尾巴彎過去）
-  return { larvaSpine, dragonSpine, cloudTop6, svg, count: A.length, byEmoji, dataUri, habitat, habitatUri, hat, HAT_IDS, HAT_LABEL, headLine, prop };
+  return { larvaSpine, dragonSpine, cloudTop6, svg, padFor, count: A.length, byEmoji, dataUri, habitat, habitatUri, hat, HAT_IDS, HAT_LABEL, headLine, prop };
 })();

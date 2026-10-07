@@ -29,7 +29,10 @@ const probe = () => {
     sparks: [...document.querySelectorAll(".ps-spark")].filter(e => +getComputedStyle(e).opacity > .3).length };   // 只算看得到的（還沒輪到的光點是透明的）
   { const sv = em.querySelector(".pet-critter"), R = sv.getBoundingClientRect(); let sp = 0;   // 畫出來的東西有沒有超出畫布（iOS WebKit 會照畫布裁掉）
     let sw = ""; [...sv.children].filter(g => g.tagName === "g" && getComputedStyle(g).display !== "none").forEach(g => { const q = g.getBoundingClientRect(); const v = Math.max(R.left - q.left, q.right - R.right, R.top - q.top, q.bottom - R.bottom); if (q.width && v > sp) { sp = v; sw = g.getAttribute("class") + " L" + (R.left - q.left).toFixed(0) + " R" + (q.right - R.right).toFixed(0) + " T" + (R.top - q.top).toFixed(0) + " B" + (q.bottom - R.bottom).toFixed(0); } });
-    o.spill = sp; o.spillWhat = sw; }
+    o.spill = sp; o.spillWhat = sw;
+    { const vb = sv.viewBox.baseVal, k = R.width / vb.width, pad = -vb.x, ix = R.left + pad * k, iy = R.top + (pad + (vb.y + pad)) * k, iw = 200 * k; let need = 0;   // 超出原本 200×200 多少單位（決定留白要多大）
+      [...sv.children].filter(g => g.tagName === "g" && getComputedStyle(g).display !== "none").forEach(g => { const q = g.getBoundingClientRect(); if (!q.width) return; need = Math.max(need, (ix - q.left) / k, (q.right - ix - iw) / k, (iy - q.top) / k, (q.bottom - iy - iw) / k); });
+      o.need = need; } }
   const eh = [...em.querySelectorAll(".pc-eh")].find(e => !e.closest(".pr-stand") || standing); o.happy = !!eh && getComputedStyle(eh).display !== "none";
   if (standing) { const sg = em.querySelector(".pr-stand"), hl = sg.querySelector(".pr-leg.hl"), q = new DOMPoint(parseFloat(hl.style.getPropertyValue("--ox")), parseFloat(hl.style.getPropertyValue("--oy"))).matrixTransform(sg.getScreenCTM()); o.hip = [q.x, q.y]; }   // 骨盆（近側髖關節）在畫面上的位置
   if (standing) o.paws = [...em.querySelectorAll(".pr-stand .pr-leg .pr-shin")].map(sh => { const e = [...sh.querySelectorAll("ellipse")].find(x => !x.closest("clipPath") && !x.closest("defs")); const pt = new DOMPoint(+e.getAttribute("cx"), +e.getAttribute("cy") + +e.getAttribute("ry")).matrixTransform(e.getScreenCTM()); return [pt.x, pt.y]; });
@@ -206,6 +209,7 @@ function judge(st, tag, R) {
   const spill = Math.max(...F.map(f => f.spill || 0)), si = F.findIndex(f => (f.spill || 0) === spill);
   ok(spill <= 0, `${tag}: nothing is drawn outside the canvas (iOS WebKit clips there; worst ${spill.toFixed(1)}px${spill > 0 ? ` @${si} ${F[si].spillWhat} ${F[si].cls}|${F[si].bcl}` : ""})`);
   const last = F[n - 1];
+  if (process.env.PM_NEED) console.log("NEED", tag, Math.max(...F.map(f => f.need || 0)).toFixed(1));
   ok(!last.berries.length && !last.cls && Math.abs(R.end.wx) < 1 && R.end.bal === R.bal0 - 3, `${tag}: ends clean — no berries, no leftover pose, back in the middle, exactly 3 berries spent ${JSON.stringify({ cls: last.cls, wx: R.end.wx, spent: R.bal0 - R.end.bal })}`);
 }
 

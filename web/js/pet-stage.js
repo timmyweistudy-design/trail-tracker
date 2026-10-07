@@ -92,7 +92,7 @@ window.PetStage = (function () {
   // 眼睛看向手指（以角色中心為準，-1～1）
   function look(cx, cy) {
     const c = box && box.querySelector("#petEmoji .pet-critter"); if (!c) return;
-    const r0 = c.getBoundingClientRect(), k = c.classList.contains("pc-pad") ? 140 / 480 : 0;   // 畫布四周留白的部分不算（圖案本身的範圍）
+    const r0 = c.getBoundingClientRect(), pd = +c.dataset.pad || 0, k = pd / (200 + 2 * pd);   // 畫布四周留白的部分不算（圖案本身的範圍）
     const r = { left: r0.left + r0.width * k, top: r0.top + r0.height * k, width: r0.width * (1 - 2 * k), height: r0.height * (1 - 2 * k) };
     const ex = Math.max(-1, Math.min(1, (cx - (r.left + r.width / 2)) / (r.width * .8)));
     const ey = Math.max(-1, Math.min(1, (cy - (r.top + r.height * .45)) / (r.height * .8)));
