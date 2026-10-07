@@ -15,9 +15,11 @@ const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:o.w||390,he
  await p.evaluate(()=>document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove()));await p.click('.tab[data-view="pet"]');await p.waitForTimeout(1500);
  await p.evaluate(()=>document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove()));return p;};
 const KM=[0,5,20,40,90,150,260];
+// 分組平行跑（2026-10-07 優化輪 #19）：PS_SHARD="i/n" 只跑第 i 組（每個最上層的測試區塊輪流分配；區塊彼此獨立、各開各的頁面）
+const __SH=(process.env.PS_SHARD||"0/1").split("/").map(Number);let __blk=0;const sh=()=>(__blk++%__SH[1])===__SH[0];
 
 // ── 第 0 階段：帽子跟角色同一組、不遮眼；尺寸 ──
-{const p=await mk({km:40,hat:"straw"});
+if(sh()){const p=await mk({km:40,hat:"straw"});
  const r=await p.evaluate(()=>{const out=[];const box=document.createElement("div");box.style.cssText="position:fixed;left:0;top:0;width:400px;height:400px";document.body.appendChild(box);
   for(let i=0;i<7;i++)for(const id of PET_ART.HAT_IDS.filter(h=>h!=="none")){box.innerHTML=PET_ART.svg(i,"",id);const sv=box.querySelector("svg");sv.style.cssText="width:400px;height:400px;animation:none";sv.querySelectorAll("*").forEach(e=>e.style.animation="none");
    const hat=sv.querySelector(".pc-hat");const grp=hat&&hat.parentElement.closest(".pc-bob,.pc-hover");const sameAsEyes=!!grp&&!!grp.querySelector(".pc-eye")||i===0;
@@ -32,7 +34,7 @@ const KM=[0,5,20,40,90,150,260];
  await p.screenshot({path:O+"p0-card.png"});await p.close();}
 
 // ── 第 1 階段：2.5D 分層舞台 ──
-{const p=await mk({km:40});
+if(sh()){const p=await mk({km:40});
  ok(await p.evaluate(()=>{const b=document.querySelector(".pet-card .ps-box");return !!b&&b.dataset.tod===PetStage.tod()&&b.dataset.season===PetStage.season()}),"stage box follows real time-of-day and season");
  ok(await p.evaluate(()=>["ps-sky","ps-far","ps-mid","ps-fx","ps-actor","ps-front"].every(c=>document.querySelector(".ps-box ."+c))),"six layers present");
  ok(await p.evaluate(()=>!!document.querySelector(".ps-actor #petEmoji .pet-critter")),"critter lives in the actor layer");
@@ -57,7 +59,7 @@ const KM=[0,5,20,40,90,150,260];
  const pv2=await p.evaluate(()=>+getComputedStyle(document.querySelector(".ps-box")).getPropertyValue("--px"));ok(Math.abs(pv2)<0.08,"parallax eases back after leave ("+pv2+")");
  ok(await p.evaluate(()=>document.scrollingElement.scrollWidth<=innerWidth),"no horizontal overflow");
  await p.screenshot({path:O+"p1-stage.png"});await p.close();}
-{const p=await mk({km:150,reduce:true});
+if(sh()){const p=await mk({km:150,reduce:true});
  await p.evaluate(()=>{window.__ps={tod:"night",season:"spring",wx:"rain"};renderPet();});
  ok(await p.evaluate(()=>[...document.querySelectorAll(".ps-p")].every(e=>getComputedStyle(e).display==="none")),"reduced motion: no particles");
  const r=await p.evaluate(()=>{const b=document.querySelector(".ps-box").getBoundingClientRect();return {x:b.left+b.width*.9,y:b.top+20}});await p.mouse.move(r.x,r.y);await p.waitForTimeout(500);
@@ -65,12 +67,12 @@ const KM=[0,5,20,40,90,150,260];
  await p.close();}
 
 // ── 第 2 階段：行為、互動分區、抱抱、眼睛、餵食動作、進化儀式 ──
-{const p=await mk({km:40,records:[{id:"r1",date:new Date().toISOString(),trailName:"x",distanceKm:3}]});
+if(sh()){const p=await mk({km:40,records:[{id:"r1",date:new Date().toISOString(),trailName:"x",distanceKm:3}]});
  await p.evaluate(()=>document.querySelector(".ps-box").scrollIntoView({block:"center"}));
  const seen=new Set();for(let k=0;k<26;k++){await p.waitForTimeout(500);const c=await p.evaluate(()=>[...document.querySelector("#petEmoji").classList].filter(x=>x.startsWith("pb-")).join(",")+"|"+document.querySelector(".ps-box").style.getPropertyValue("--wx")+"|"+document.querySelector(".ps-box").style.getPropertyValue("--ex"));seen.add(c);}
  ok(seen.size>1,"idle behaviour runs on its own within 13s: "+[...seen].join(" / "));
  await p.close();}
-{const p=await mk({km:40,berries:20});
+if(sh()){const p=await mk({km:40,berries:20});
  await p.evaluate(()=>{window.__psNoIdle=true;renderPet();document.querySelector(".ps-box").scrollIntoView({block:"center"})});await p.waitForTimeout(400);
  // 走動：位置、面向、走路 class；重繪後位置保留
  // 角色固定在中間：沒有走動 class、沒有位移變數；跳和東張西望照樣會播
@@ -133,7 +135,7 @@ const KM=[0,5,20,40,90,150,260];
  ok(await p.evaluate(()=>!!document.querySelector(".evolve-bg .ps-box.ps-bg[data-stage='4']")&&document.querySelectorAll(".evolve-burst i").length===16&&!!document.querySelector(".evolve-rays")),"evolve: new stage scene + rays + burst");
  await p.screenshot({path:O+"p2-evolve.png"});await p.click("#evolveOk");
  await p.close();}
-{const p=await mk({km:40,berries:20,reduce:true});
+if(sh()){const p=await mk({km:40,berries:20,reduce:true});
  const bal0=await p.evaluate(()=>{localStorage.removeItem("tt_pet_fed_t");renderPet();return berriesBalance()});
  await p.click("#petFeed");await p.waitForTimeout(300);
  ok(await p.evaluate(b=>!document.querySelector(".ps-berry")&&berriesBalance()===b-3,bal0),"reduced motion: feed settles instantly, no berry animation");
@@ -202,7 +204,7 @@ const KM=[0,5,20,40,90,150,260];
  await p.click("#petDress");await p.waitForTimeout(500);
  ok(await p.evaluate(()=>{const b=document.querySelector('.hat-opt[data-hat="silvergrass"]');return b.classList.contains("locked")&&!!b.querySelector(".pro-tag")}),"free: regional hat shows PRO");
  await p.close();}
-{const p=await mk({km:40,lang:"en",records:[{id:"e1",date:new Date().toISOString(),trailName:"x",trailId:"forestry-002",distanceKm:3}]});
+if(sh()){const p=await mk({km:40,lang:"en",records:[{id:"e1",date:new Date().toISOString(),trailName:"x",trailId:"forestry-002",distanceKm:3}]});
  await p.waitForTimeout(800);
  const t=await p.evaluate(()=>[document.getElementById("petJourney").textContent,document.querySelector("#petJourney .pj-stats").textContent]);
  ok(/Buddy's Travels/.test(t[0])&&/Postcards/.test(t[1])&&/Counties walked/.test(t[1])&&!/[一-鿿]/.test(t[1]),"English journey section translated: "+t[1].replace(/\s+/g," ").slice(0,90));
@@ -211,7 +213,7 @@ const KM=[0,5,20,40,90,150,260];
  await p.close();}
 
 // ── 美工輪 第 1 階段：明信片插畫（7 主題 × 3 構圖、時段、季節） ──
-{const p=await mk({km:40});
+if(sh()){const p=await mk({km:40});
  const r=await p.evaluate(()=>{const th=Object.keys(PostcardArt.THEMES),bad=[],sizes=[];let n=0;const t0=performance.now();
   for(const t of th)for(let v=0;v<3;v++)for(const tod of ["dawn","day","dusk","night"]){const s=PostcardArt.draw("x"+t+v,t,"2026-07-10T10:00:00",{variant:v,tod});n++;sizes.push(s.length);if(/NaN|undefined/.test(s))bad.push(t+v+tod);}
   const ms=(performance.now()-t0)/n;
@@ -224,7 +226,7 @@ const KM=[0,5,20,40,90,150,260];
  await p.close();}
 
 // ── 美工輪 第 2 階段：舞台背景（StageArt） ──
-{const p=await mk({km:40});
+if(sh()){const p=await mk({km:40});
  const r=await p.evaluate(()=>{const bad=[];let n=0,max=0;const t0=performance.now();
   for(let i=0;i<7;i++)for(const tod of ["dawn","day","dusk","night"])for(const d of [[],["fall","old"],["sea","lake"],["forest"]]){const o=StageArt.scene(i,tod,"autumn",d);n++;const s=o.far+o.mid+o.front;max=Math.max(max,s.length);if(/NaN|undefined/.test(s))bad.push(i+tod+d);}
   return {n,bad,max,ms:+((performance.now()-t0)/n).toFixed(2)};});
@@ -233,7 +235,7 @@ const KM=[0,5,20,40,90,150,260];
  await p.close();}
 
 // ── 美工輪 第 3 階段：角色（外框＋明暗＋眼睛＋表情＋小尺寸） ──
-{const p=await mk({km:40});
+if(sh()){const p=await mk({km:40});
  const r=await p.evaluate(async()=>{const a=PET_ART.svg(3),b=PET_ART.svg(3);const ida=(a.match(/id="([^"]+)"/)||[])[1],idb=(b.match(/id="([^"]+)"/)||[])[1];
   const sizes=[0,1,2,3,4,5,6].map(i=>PET_ART.svg(i,"","straw").length);
   const imgs=await Promise.all([0,1,2,3,4,5,6].map(i=>new Promise(res=>{const im=new Image();im.onload=()=>res(im.width===120);im.onerror=()=>res(false);im.src=PET_ART.dataUri(i,120,"maple")})));
@@ -257,7 +259,7 @@ const KM=[0,5,20,40,90,150,260];
  await p.close();}
 
 // ── debug 面板：夥伴舞台與旅行 ──
-{const p=await mk({km:40});
+if(sh()){const p=await mk({km:40});
  await p.evaluate(()=>ensureScript("js/debug.js"));await p.waitForTimeout(300);
  const r=await p.evaluate(()=>{ttDebug.stage("tod","night");ttDebug.stage("wx","rain");const a=[document.querySelector(".ps-box").dataset.tod,document.querySelector(".ps-box").dataset.wx];
   ttDebug.stage(null);const b=document.querySelector(".ps-box").dataset.tod===PetStage.tod()&&!document.querySelector(".ps-box").dataset.wx;
@@ -270,7 +272,7 @@ const KM=[0,5,20,40,90,150,260];
  await p.close();}
 
 // ── 2026-10-04 角色重畫：結構檢查（id 引用、畫框、開心眼對位、動畫掛點）、分享圖卡不畫瞇眼、幼蟲的頭在下半部 ──
-{const p=await mk({km:5});
+if(sh()){const p=await mk({km:5});
  const r=await p.evaluate(async()=>{const out=[],h=document.createElement("div");document.body.appendChild(h);
   for(let i=0;i<7;i++)for(const hat of PET_ART.HAT_IDS){const s=PET_ART.svg(i,"",hat);if(/NaN|undefined|Infinity/.test(s))out.push([i,hat,"NaN"]);
    h.innerHTML=s;const sv=h.firstChild;sv.style.cssText="width:200px;height:200px;animation:none";sv.querySelectorAll("*").forEach(e=>e.style.animation="none");
@@ -293,24 +295,24 @@ const KM=[0,5,20,40,90,150,260];
  await p.close();}
 
 // ── 2026-10-04 第二輪（使用者：不能飄、腳下的葉子／雲不能跟著跳、帽子戴在頭上）──
-for(const [km,st] of [[5,1],[260,6]]){const p=await mk({km});
+if(sh())for(const [km,st] of [[5,1],[260,6]]){const p=await mk({km});
  const r=await p.evaluate(async()=>{const pr=document.querySelector("#petEmoji .pet-prop"),c=document.querySelector("#petEmoji .pet-critter");if(!pr)return {none:true};
   const b0=pr.getBoundingClientRect(),c0=c.getBoundingClientRect();document.querySelector("#petEmoji").classList.add("pb-hop");await new Promise(r=>setTimeout(r,380));
   const b1=pr.getBoundingClientRect(),c1=c.getBoundingClientRect();const moved=Math.abs(c1.top-c0.top)+Math.abs(c1.left-c0.left)+Math.abs(c1.height-c0.height)+Math.abs(Math.atan2(0,1));
   const style=getComputedStyle(c).transform;return {prop:Math.abs(b1.top-b0.top)+Math.abs(b1.left-b0.left),anim:style!=="none"}});
  ok(!r.none&&r.prop<.5&&r.anim,"stage "+st+": the leaf/cloud under the pet stays put while the pet moves "+JSON.stringify(r));
  await p.close();}
-{const p=await mk({km:40});
+if(sh()){const p=await mk({km:40});
  const r=await p.evaluate(async()=>{window.__psNoIdle=true;const em0=document.querySelector("#petEmoji");em0.className=em0.className.replace(/\bpb-\S+/g,"");await new Promise(r=>setTimeout(r,1500));   // 只量呼吸：關掉隨機動作（伸懶腰會抬前腳，那是故意的）
   const g=document.querySelector("#petEmoji .pc-bob");let lo=1e9,hi=-1e9;for(let k=0;k<12;k++){const b=g.getBoundingClientRect();lo=Math.min(lo,b.bottom);hi=Math.max(hi,b.bottom);await new Promise(r=>setTimeout(r,300));}return hi-lo;});
  ok(r<1,"fox idle: feet stay on the ground (bottom moves "+r.toFixed(2)+"px over 3.6 s)");
  await p.close();}
-{const p=await mk({km:5,hat:"straw"});
+if(sh()){const p=await mk({km:5,hat:"straw"});
  ok(await p.evaluate(()=>{const s=PET_ART.svg(1,"","straw"),n=PET_ART.svg(1);return !/f29a3a/.test(s)&&/f29a3a/.test(n)}),"larva: the osmeterium is removed when wearing a hat (hat sits on the head)");
  await p.close();}
 
 // ── 2026-10-04 明信片定格：郵票是「第一次去的時候」的夥伴，之後進化也不變；郵戳每趟一個、角度固定 ──
-{const p=await mk({km:0,hat:"straw"});
+if(sh()){const p=await mk({km:0,hat:"straw"});
  const r=await p.evaluate(()=>{const t=TRAILS.find(x=>x.region&&tagsOf(x)[0]);const add=(days,km)=>{const d=new Date();d.setDate(d.getDate()-days);Store.addRecord({id:"dbg"+Math.random(),date:d.toISOString(),dbg:true,trailId:t.id,trailName:t.name,distanceKm:km,elapsedMs:3600e3,ascent:50,descent:50,steps:100,kcal:10,track:[]})};
   const u=TRAILS.find(x=>x.region&&x.id!==t.id);const addU=(days,km)=>{const d=new Date();d.setDate(d.getDate()-days);Store.addRecord({id:"dbg"+Math.random(),date:d.toISOString(),dbg:true,trailId:u.id,trailName:u.name,distanceKm:km,elapsedMs:3600e3,ascent:50,descent:50,steps:100,kcal:10,track:[]})};
   addU(90,4);add(60,20);add(20,2);   // 90 天前累積 4 km＝幼蟲；60 天前累積 24 km＝彩蝶
@@ -326,7 +328,7 @@ for(const [km,st] of [[5,1],[260,6]]){const p=await mk({km});
  await p.close();}
 
 // ── 2026-10-04 動作優化：骨架、嘴、帽子跟著頭、小圖與分享圖卡不受影響 ──
-{const p=await mk({km:40,hat:"straw"});
+if(sh()){const p=await mk({km:40,hat:"straw"});
  const r=await p.evaluate(()=>{const out={};const d=document.createElement("div");document.body.appendChild(d);
   for(let i=1;i<7;i++){d.innerHTML=PET_ART.svg(i,"","straw");const q=k=>d.querySelector(k);out[i]={head:!!q(".pr-head"),mouth:i===0||!!q(".pr-mouth .m-c")&&!!q(".pr-mouth .m-o"),hatInHead:!!q(".pr-head .pc-hat"),eyesInHead:[...d.querySelectorAll(".pr-head .pc-eye")].filter(e=>!e.closest(".pr-stand")).length===2};}
   d.remove();return out;});
@@ -340,13 +342,13 @@ for(const [km,st] of [[5,1],[260,6]]){const p=await mk({km});
  const share=await p.evaluate(()=>/\.m-o,\.m-t,\.m-p,\.pr-ext,\.pr-legs,\.pc-crack2,\.pc-crack3\{display:none\}/.test(decodeURIComponent(PET_ART.dataUri(3,120))));
  ok(share,"share cards (no stylesheet) always draw the closed mouth");
  await p.close();}
-{const p=await mk({km:40,reduce:true});
+if(sh()){const p=await mk({km:40,reduce:true});
  const r=await p.evaluate(async()=>{const em=document.querySelector("#petEmoji");em.classList.add("pb-pat");await new Promise(r=>setTimeout(r,250));const t=getComputedStyle(em.querySelector(".pr-head")).animationName;em.classList.remove("pb-pat");return t;});
  ok(r==="none","reduced motion: no part animation ("+r+")");
  await p.close();}
 
 // ── 2026-10-05 餵食骨架：咬下那一刻嘴真的碰到果實（果實不再自己飛過去）、走路時地上的果實不動、一次只標一顆、最多轉身兩次 ──
-for(const [km,st] of [[5,1],[40,3],[90,4],[260,6]]){const p=await mk({km});
+if(sh())for(const [km,st] of [[5,1],[40,3],[90,4],[260,6]]){const p=await mk({km});
  await p.evaluate(()=>{localStorage.removeItem("tt_pet_fed_t");renderPet();});await p.waitForTimeout(300);
  await p.evaluate(()=>document.querySelector(".ps-box").scrollIntoView());await p.click("#petFeed");
  const r=await p.evaluate(async()=>{const bite=[],seen=new Set();let moved=0,prev=null,maxTarget=0,dirs=[],lastX=null;const t0=performance.now();
@@ -365,7 +367,7 @@ for(const [km,st] of [[5,1],[40,3],[90,4],[260,6]]){const p=await mk({km});
  await p.close();}
 
 // ── 2026-10-05 蛋、蝶：蛋不走路、果實化成光點飛進裂縫；蝶落在果實旁、腳尖踩地、口器彎過去吸（尖端在果實上） ──
-for(const [km,st] of [[0,0],[20,2]]){const p=await mk({km,berries:20});
+if(sh())for(const [km,st] of [[0,0],[20,2]]){const p=await mk({km,berries:20});
  await p.evaluate(()=>{window.__psNoIdle=true;localStorage.removeItem("tt_pet_fed_t");renderPet();document.querySelector(".ps-box").scrollIntoView({block:"center"});});await p.waitForTimeout(300);await p.click("#petFeed");
  const r=await p.evaluate(async()=>{const out={xs:[],tips:[],feet:[],sparks:[],sparkGap:[],wx:new Set(),face:0,moved:0};const seen=new Set();let prev=null;const t0=performance.now();
   while(performance.now()-t0<30000){const box=document.querySelector(".ps-box"),em=document.querySelector("#petEmoji"),bs=[...document.querySelectorAll(".ps-berry")];
@@ -389,14 +391,14 @@ for(const [km,st] of [[0,0],[20,2]]){const p=await mk({km,berries:20});
   ok(r.feet.length===3&&r.feet.every(d=>Math.abs(d)<=3),"butterfly: lands with its leg tips on the ground line (≤3px) "+JSON.stringify(r.feet));
   ok(r.face<1&&r.moved===0,"butterfly: flies without the 3D turn and never pushes the berries "+JSON.stringify({face:r.face,moved:r.moved}));}
  await p.close();}
-{const p=await mk({km:2.4});   // 蛋 0→3 km：走到 80%＝三道裂縫
+if(sh()){const p=await mk({km:2.4});   // 蛋 0→3 km：走到 80%＝三道裂縫
  const r=await p.evaluate(()=>{const v=c=>getComputedStyle(document.querySelector("#petEmoji "+c)).display!=="none";const a=[document.querySelector(".ps-box").dataset.evo,v(".pc-crack2"),v(".pc-crack3")];
   localStorage.setItem("tt_debug_km","0.3");renderPet();const b=[document.querySelector(".ps-box").dataset.evo||"",v(".pc-crack2"),v(".pc-crack3")];return {a,b};});
  ok(r.a.join()==="2,true,true"&&r.b.join()===",false,false","egg: more cracks appear as it gets closer to hatching "+JSON.stringify(r));
  await p.close();}
 
 // ── 2026-10-05 幼龍：腳下沒有雲（走在地上），慶祝跳才噗出雲；咬兩口（第一口後手上拿著剩下的）、吞完拍肚子 ──
-{const p=await mk({km:150,berries:20});
+if(sh()){const p=await mk({km:150,berries:20});
  const r=await p.evaluate(async()=>{window.__psNoIdle=true;const em=document.querySelector("#petEmoji"),pr=em.querySelector(".pet-prop"),c=em.querySelector(".pet-critter");
   const feet=[...em.querySelectorAll(".pr-foot ellipse")].map(e=>e.getBoundingClientRect().bottom),cb=c.getBoundingClientRect();
   const rest=+getComputedStyle(pr).opacity;em.classList.add("pb-hop");await new Promise(r=>setTimeout(r,420));const hop=+getComputedStyle(pr).opacity;em.classList.remove("pb-hop");
@@ -409,10 +411,10 @@ for(const [km,st] of [[0,0],[20,2]]){const p=await mk({km,berries:20});
    for(const b of bs){const k=(b.classList.contains("bit1")?"b":"")+(b.classList.contains("eaten")?"e":"")+(b.classList.contains("held")?"h":"");const key=b.style.cssText.slice(0,12)+k;if(k&&!seen.has(key)){seen.add(key);seq.push(k);}}
    if(em.classList.contains("pb-belly")&&seq[seq.length-1]!=="belly")seq.push("belly");
    if(!bs.length&&seq.length)break;await new Promise(r=>setTimeout(r,20));}return seq.join(">");});
- ok(s2==="h>bh>beh>h>bh>beh>h>bh>beh>belly","baby dragon: picks up each berry, bites a chunk, holds the rest while chewing, eats it; pats its belly after the last one "+s2);
+ ok(s2==="h>bh>beh>h>eh>h>eh>belly","baby dragon: picks up each berry; the first one it bites a chunk, holds the rest while chewing, then eats it (the next two in one bite — 2026-10-07 shorter feeding); pats its belly after the last one "+s2);
  await p.close();}
 // ── 2026-10-05 神龍：果實落在雲上、尾巴托到嘴前；游的時候身體走頭走過的路、雲座晚一點跟上 ──
-{const p=await mk({km:260,berries:20});
+if(sh()){const p=await mk({km:260,berries:20});
  await p.evaluate(()=>{window.__psNoIdle=true;localStorage.removeItem("tt_pet_fed_t");renderPet();document.querySelector(".ps-box").scrollIntoView({block:"center"});});await p.waitForTimeout(300);await p.click("#petFeed");
  const r=await p.evaluate(async()=>{await new Promise(r=>setTimeout(r,1200));const pr=document.querySelector("#petEmoji .pet-prop").getBoundingClientRect(),k=pr.width/200;
   const on=[...document.querySelectorAll(".ps-berry")].map(b=>{const x=(PetWalk.groundY(b)-pr.top)/k,q=b.getBoundingClientRect(),lx=(q.left+q.width/2-pr.left)/k;return +(x-(PET_ART.cloudTop6(lx)+3)).toFixed(1)});
@@ -429,7 +431,7 @@ for(const [km,st] of [[0,0],[20,2]]){const p=await mk({km,berries:20});
  await p.close();}
 
 // ── 2026-10-04 走過去吃：蠕動／游動的身體變形走完要還原；站姿走路要坐回去 ──
-for(const [km,st] of [[5,1],[260,6]]){const p=await mk({km});
+if(sh())for(const [km,st] of [[5,1],[260,6]]){const p=await mk({km});
  const r=await p.evaluate(async()=>{const box=document.querySelector(".ps-box"),sig=()=>[...box.querySelectorAll("#petEmoji .pr-deform path")].map(e=>e.getAttribute("d")).join("|")+[...box.querySelectorAll("#petEmoji .lv-seg")].map(e=>e.style.transform).join("|");   // 幼蟲一節一節：看每一節的位移
   const before=sig();let mid="";const t=setTimeout(()=>{mid=sig()},500);await PetWalk.goTo(box,60);clearTimeout(t);const after=sig();await PetWalk.home(box);
   await new Promise(r=>setTimeout(r,400));const idle=sig();   // 神龍（2026-10-06 繩波）：停下來身體還在流動，本來就不會停在原形
@@ -437,7 +439,7 @@ for(const [km,st] of [[5,1],[260,6]]){const p=await mk({km});
  ok(r.changedMid&&(st===6?r.alive:r.restored),"stage "+st+(st===6?": body ripples while moving and keeps rippling at rest (rope wave) ":": body bends while moving and is restored exactly afterwards ")+JSON.stringify(r));
  await p.close();}
 // ── 2026-10-07：狐、虎不再側身走——萬一要挪位置，臉一直朝向我們（不轉身、沒有站姿），走完回到原位 ──
-{const p=await mk({km:90});
+if(sh()){const p=await mk({km:90});
  const r=await p.evaluate(async()=>{const box=document.querySelector(".ps-box");let side=0,face=0;const on=()=>{side+=box.classList.contains("standing")||!!box.querySelector(".pr-stand")?1:0;face=Math.max(face,Math.abs(parseFloat(box.style.getPropertyValue("--face"))||0));};
   const p1=PetWalk.goTo(box,-50);const t=setInterval(on,30);await p1;const moved=Math.abs((parseFloat(box.style.getPropertyValue("--wx"))||0)+50);await PetWalk.home(box);clearInterval(t);
   return {side,face,moved:+moved.toFixed(1),home:+(parseFloat(box.style.getPropertyValue("--wx"))||0).toFixed(1)};});
@@ -445,7 +447,7 @@ for(const [km,st] of [[5,1],[260,6]]){const p=await mk({km});
  await p.close();}
 
 // ── 2026-10-04 腳要踩住：走路時支撐腳的著地點在畫面上不能滑（狐、虎用 IK：中位數 ≤1px；幼龍有 3D 轉身：≤3px）──
-{const p=await mk({km:5});
+if(sh()){const p=await mk({km:5});
  const r=await p.evaluate(async()=>{const out={};
   for(const [st,sel,cfg] of [[5,".pr-foot.l ellipse",0],[1,".lv-sl:nth-child(2) .lv-pro path",0]]){
    const host=document.createElement("div");host.innerHTML=`<div class="ps-box" data-stage="${st}" style="position:fixed;left:0;top:0;width:900px;height:380px;margin:0;padding:20px 0 0;z-index:99"><div class="ps-actor" style="position:absolute;left:0;right:0;bottom:24px"><div id="petEmojiT"></div></div></div>`;document.body.appendChild(host);

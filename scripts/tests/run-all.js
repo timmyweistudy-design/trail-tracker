@@ -29,7 +29,9 @@ const jobs = [];
 if (!sqlOnly) {
   jobs.push({ name: "check", file: "scripts/check.js", kind: "check" });
   if (!quick) for (const f of ["e2e", "qa-crawl", "audit-ui", "audit-center", "social-e2e", "record-e2e"]) jobs.push({ name: f, file: `scripts/${f}.js`, kind: "suite" });
-  for (const f of fs.readdirSync(__dirname).filter(f => f.endsWith(".test.js")).sort()) jobs.push({ name: f.replace(".test.js", ""), file: `scripts/tests/${f}`, kind: "fn" });
+  const SHARD = { "pet-stage": 3 };   // 單跑很久的測試拆成幾組平行跑（測試檔讀 PS_SHARD；2026-10-07：pet-stage 單跑 8～10 分鐘）
+  for (const f of fs.readdirSync(__dirname).filter(f => f.endsWith(".test.js")).sort()) { const nm = f.replace(".test.js", ""), k = SHARD[nm] || 1;
+    for (let i = 0; i < k; i++) jobs.push({ name: k > 1 ? `${nm}#${i + 1}` : nm, file: `scripts/tests/${f}`, kind: "fn", env: k > 1 ? { PS_SHARD: `${i}/${k}` } : null }); }
 }
 let pgOk = true; try { require.resolve("embedded-postgres", { paths: [ROOT] }); require.resolve("pg", { paths: [ROOT] }); } catch (e) { pgOk = false; }
 if (pgOk) for (const f of fs.readdirSync(path.join(__dirname, "pg")).filter(f => f.endsWith(".sql.test.js")).sort()) jobs.push({ name: "sql:" + f.replace(".sql.test.js", ""), file: `scripts/tests/pg/${f}`, kind: "fn", pg: true });
@@ -65,7 +67,7 @@ function pickChanged() {
     else if (/^web\//.test(f)) ["e2e", "qa-crawl"].forEach(n => want.add(n));
   }
   console.log(`只跑跟改動有關的（${files.length} 個檔案）：${[...want].join("、")}`);
-  return j => [...want].some(n => n.endsWith(":") ? j.name.startsWith(n) : j.name === n);
+  return j => [...want].some(n => n.endsWith(":") ? j.name.startsWith(n) : j.name === n || j.name.startsWith(n + "#"));
 }
 const keep = changed ? pickChanged() : () => true;
 const list = jobs.filter(j => (!only || j.name.includes(only)) && keep(j));
@@ -85,7 +87,7 @@ let portSeq = 0;
 function run(j) {
   return new Promise(res => {
     const t0 = Date.now(), port = 9100 + (portSeq++ % 200);
-    const ch = spawn(process.execPath, [j.file], { cwd: ROOT, env: { ...env, TT_PORT: String(port) } });
+    const ch = spawn(process.execPath, [j.file], { cwd: ROOT, env: { ...env, ...(j.env || {}), TT_PORT: String(port) } });
     let out = "";
     ch.stdout.on("data", d => { out += d; }); ch.stderr.on("data", d => { out += d; });
     const kill = setTimeout(() => ch.kill("SIGKILL"), 20 * 60000);

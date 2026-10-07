@@ -113,10 +113,12 @@ window.PetStage = (function () {
     el.addEventListener("pointermove", onMove);
     el.addEventListener("pointerleave", onLeave);
     el.addEventListener("pointerup", onLeave);
+    el.addEventListener("contextmenu", noMenu);   // 長按不要跳出瀏覽器的選單（抱抱是長按）
     window.addEventListener("deviceorientation", onOrient);
     if ("IntersectionObserver" in window) { io = new IntersectionObserver(es => { visible = es.some(x => x.isIntersecting); if (!visible) base = null; live(); }); io.observe(el); }
     else visible = true;
     document.addEventListener("visibilitychange", live);
+    if (+el.dataset.stage === 6) warmReach6();
     schedule(mood);
     live();
   }
@@ -129,7 +131,9 @@ window.PetStage = (function () {
     if (st === 6 && PetWalk.rope) PetWalk.rope(box, on);    // 神龍：身體一直有繩波流過
     if (st === 2 && PetWalk.wings) PetWalk.wings(box, on);  // 蝶：翅膀由同一個控制器每格寫
   }
+  const noMenu = e => e.preventDefault();
   function unbind() {
+    if (box) box.removeEventListener("contextmenu", noMenu);
     document.removeEventListener("visibilitychange", live);
     if (box && typeof PetWalk !== "undefined" && PetWalk.rope) PetWalk.rope(box, false);
     if (box && typeof PetWalk !== "undefined" && PetWalk.wings) PetWalk.wings(box, false);
@@ -226,6 +230,16 @@ window.PetStage = (function () {
     }
     return out;
   }
+  // 尾巴搆不搆得到雲上某一點：雲面高度固定，所以結果只跟 x 有關——閒置時先算好一張表（2026-10-07 優化輪：以前按下餵食那一刻同步解好幾次，4 倍降速下卡 75ms）
+  const R6 = new Map();
+  const reach6 = (lx, top) => { const k = Math.round(lx); if (!R6.has(k)) R6.set(k, PetWalk.tailReach(k, top + 3 - 15)); return R6.get(k); };
+  function warmReach6() {
+    if (typeof PetWalk === "undefined" || typeof PET_ART === "undefined" || !PET_ART.cloudTop6) return;
+    const xs = []; for (let x = 120; x <= 198; x++) if (!R6.has(x) && PET_ART.cloudTop6(x) != null) xs.push(x);
+    const idle = window.requestIdleCallback || (f => setTimeout(() => f({ timeRemaining: () => 8 }), 200));
+    const run = d => { while (xs.length && d.timeRemaining() > 2) { const x = xs.shift(); reach6(x, PET_ART.cloudTop6(x)); } if (xs.length) idle(run); };
+    idle(run);
+  }
   // 神龍：果實落在雲面上（雲的頂＋陷進去 3），只挑尾巴搆得到、彼此分開的位置。回傳 [{x, by}]（px，相對舞台中間／舞台底）
   function cloudSpots(n) {
     const pr = box.querySelector("#petEmoji .pet-prop"), actor = box.querySelector(".ps-actor");
@@ -235,7 +249,7 @@ window.PetStage = (function () {
     for (let tries = 0; out.length < n && tries < 120; tries++) {
       const lx = forced ? forced[out.length] : [129, 159, 188][out.length] + (Math.random() * 2 - 1) * (tries < 60 ? 5 : 2), top = PET_ART.cloudTop6(lx); if (top == null) continue;   // 分三區各一顆（隨機挑三個互隔 24 單位的點，運氣不好 120 次都湊不齊、退回掉在地上）   // 尾巴那一側（2026-10-06 第四輪：尾巴從背上的拱才開始動，左半邊搆不到；硬搆就是整個下半身在甩）
       const x = Math.round(q.left + lx * k - (a.left + a.width / 2));
-      if (!forced && (out.some(o => Math.abs(o.lx - lx) < 24) || PetWalk.tailReach(lx, top + 3 - 15) > 3)) continue;   // 間距用圖上的單位（尾巴那側只有 74 單位寬，用 px 算小舞台放不下三顆）
+      if (!forced && (out.some(o => Math.abs(o.lx - lx) < 24) || reach6(lx, top) > 3)) continue;   // 間距用圖上的單位（尾巴那側只有 74 單位寬，用 px 算小舞台放不下三顆）
       out.push({ x, lx, by: Math.round(a.bottom - (q.top + (top + 3) * k)) });
     }
     return out.length === n ? out : null;
@@ -341,13 +355,15 @@ window.PetStage = (function () {
       return [(r.left + r.width / 2 - m[0]) * u, (r.top + r.height * BITE_Y - m[1]) * u]; };   // 嘴碰果實的上半部
     const LIM = { 1: [-14, 40], 3: [-8, 40], 4: [-8, 40], 6: [-14, 64] }[stg] || [-10, 40];
     let lx = 0, ld = 0;
+    const hd = stg === 1 ? PetWalk.part(box, ".pr-head") : null, hdT = hd ? hd.style.transform : "";   // 幼蟲趴平時頭是 JS 寫的位置（會蓋掉 CSS 的低頭）：量的時候先拿掉，量完放回去
+    if (hd) hd.style.transform = "";
     box.classList.add("no-tr"); em.classList.add("st-lean");
     for (let it = 0; it < 3; it++) {
       const [gx, gy] = gap(lx, ld); if (Math.abs(gx) < 1.5 && Math.abs(gy) < 1.5) break;
       lx = Math.max(-12, Math.min(12, lx + gx)); ld = Math.max(LIM[0], Math.min(LIM[1], ld + gy));
     }
     const [rx] = gap(lx, ld);
-    em.classList.remove("st-lean"); void em.offsetWidth; box.classList.remove("no-tr"); void em.offsetWidth;
+    em.classList.remove("st-lean"); void em.offsetWidth; box.classList.remove("no-tr"); if (hd) hd.style.transform = hdT; void em.offsetWidth;
     box.style.setProperty("--lx", Math.round(lx) + "px"); box.style.setProperty("--ld", Math.round(ld) + "px");
     if (Math.abs(rx) > 4 && typeof PetWalk !== "undefined") {   // 頭往旁邊伸不到：小碎步挪過去
       await PetWalk.goTo(box, (parseFloat(box.style.getPropertyValue("--wx")) || 0) + rx / u, { keepFace: true });
@@ -409,6 +425,7 @@ window.PetStage = (function () {
           await flash("pb-gulp", 340);
           if (bal && isFinite(left)) { left = Math.max(0, left - 1); bal.textContent = left; bal.classList.remove("tick"); void bal.offsetWidth; bal.classList.add("tick"); }
           if (typeof ttBuzz === "function") ttBuzz(8);
+          if (todo.length && PetWalk.tailFlick) PetWalk.tailFlick(box);   // 下一顆之前尾巴輕甩一下
           b.remove(); continue;
         }
         if (!egg && !fly && stg !== 5 && !onCloud) await reach(b, stg);
@@ -418,16 +435,21 @@ window.PetStage = (function () {
           await PetWalk.tailTo(box, b, null, null, .34);   // 快到時尾尖捲起來勾住（2026-10-06 第五輪：像象鼻）
           b.classList.add("carried"); follow(b, "tail", { ay: .62, ms: 120 });   // 托住之後果實歸尾尖（尾巴拿著時跟尾尖）
           await sleep(200);                                                     // 托穩了才抬
-          await PetWalk.tailTo(box, "mouth", null, () => ownTick(true));   // 同一格把果實對齊尾尖（不等下一個 rAF：機器忙時會差一格、果實晃一下）
+          // 送到嘴前：尾尖勾在果實 62% 高的地方，果實上緣要碰到嘴（嘴在果實 BITE_Y 高的位置，跟其他角色咬的地方一樣）——2026-10-07 使用者回報沒對準：以前目標寫死「嘴往左 5、往下 6」
+          const bh = b.getBoundingClientRect().height, atMouth = () => { const m = PetWalk.cpt(box, "mouth"); return [m[0], m[1] + bh * (.62 - BITE_Y)]; };
+          await PetWalk.tailTo(box, atMouth, null, () => ownTick(true));   // 同一格把果實對齊尾尖（不等下一個 rAF：機器忙時會差一格、果實晃一下）
           await sleep(200);                                                     // 到了交接點停一下
-          const hd = PetWalk.part(box, ".pr-hfx");   // 迎上去畫在頭的內層（外層由繩波逐格寫）
-          const lean = hd && hd.animate([{ transform: "none" }, { transform: "translate(-3px, 3px)" }], { duration: 180, easing: "ease-out", fill: "forwards" });   // 頭略往前迎上去
-          cls(true, "st-open"); await sleep(150);
+          // 頭迎上去：尾巴盡量送，剩下的距離由頭補（2026-10-07：尾巴從背上的拱才動，嘴在頭的左下方幾乎是尾巴全長，搆不太到）——量果實和嘴還差多少，頭往那邊移（最多 24 單位）。
+          // 位移交給繩波寫頭的那一行（box.__lean）：以前用 Web Animations 寫在頭的內層，跟咬的 CSS 動畫搶同一個元素，偶爾某一格頭彈回去 20px
+          const mm = PetWalk.cpt(box, "mouth"), br = b.getBoundingClientRect(), uu = 1 / PetWalk.pxu(box), cl = v => Math.max(-24, Math.min(24, v));
+          const LN = [cl((br.left + br.width / 2 - mm[0]) * uu), cl((br.top + br.height * BITE_Y - mm[1]) * uu)];
+          const lean = PetWalk.tween(220, e => { box.__lean = [LN[0] * e, LN[1] * e]; });
+          await sleep(120); cls(true, "st-open"); await sleep(150);
           follow(b, "mouth", { ay: .38, ms: 220 });                             // 嘴碰到了：果實改歸嘴（交接只發生一次，從現在的位置接過來）
           const relax = PetWalk.tailTo(box, null);                              // 尾尖鬆開、退回
           await sleep(110);
           toMouth(b, false); b.classList.add("eaten"); cls(false, "st-open"); await flash("pb-snap", 240);
-          if (lean) { const back = hd.animate([{ transform: "translate(-3px, 3px)" }, { transform: "none" }], { duration: 220, easing: "ease-in-out" }); lean.cancel(); await back.finished.catch(() => {}); }
+          await lean; await PetWalk.tween(260, e => { box.__lean = [LN[0] * (1 - e), LN[1] * (1 - e)]; }); box.__lean = null;
           cls(true, "chew2"); await flash("pb-chew", 600); cls(false, "chew2"); await relax;   // 嚼兩下（0.3 秒 × 2，要等嚼完）
           await flash("pb-gulp", 340);
         }
@@ -456,14 +478,16 @@ window.PetStage = (function () {
             { put(R0, mir(R0)); void em.offsetWidth; const p = PetWalk.cpt(box, "palms"), q = b.getBoundingClientRect(), u = 1 / PetWalk.pxu(box);
               R0 = [R0[0], R0[1] + Math.max(-10, Math.min(18, (q.top + q.height * .55 - p[1]) * u)), R0[2]]; put([0, 0, 0], [0, 0, 0]); void em.offsetWidth; }
             await PetWalk.tween(380, e => put(lerp([0, 0, 0], R0, e), lerp([0, 0, 0], mir(R0), e)));
-            b.classList.add("held"); follow(b, "palms", { ay: .55, ms: 240 }); await sleep(240);   // 雙手捧住：果實歸兩個手掌的中點
+            b.classList.add("held"); follow(b, "palms", { ay: .55, ms: 180 }); await sleep(180);   // 雙手捧住：果實歸兩個手掌的中點
             const H = [-4, -6, -80];   // 捧到下巴前（手掌在下巴下面一點，果實上緣碰到嘴）
             cls(false, "st-crouch");
-            await PetWalk.tween(560, e => { put(lerp(R0, H, e), lerp(mir(R0), mir(H), e)); ownTick(true); });
+            await PetWalk.tween(480, e => { put(lerp(R0, H, e), lerp(mir(R0), mir(H), e)); ownTick(true); });
             b.style.setProperty("--nx", "50%");          // 缺口在正上方（嘴從上面咬）
-            cls(true, "st-open"); await sleep(150);
-            cls(false, "st-open"); b.classList.add("bit1"); await flash("pb-snap", 220);
-            cls(true, "chew2"); await flash("pb-chew", 600); cls(false, "chew2");   // 捧著嚼
+            if (!later) {   // 第一顆咬兩口（先咬一口留缺口、捧著嚼）；第二、三顆一口吃掉（2026-10-07 優化輪 #8：一次餵食 22～24 秒太長）
+              cls(true, "st-open"); await sleep(150);
+              cls(false, "st-open"); b.classList.add("bit1"); await flash("pb-snap", 220);
+              cls(true, "chew2"); await flash("pb-chew", 600); cls(false, "chew2");   // 捧著嚼
+            }
             cls(true, "st-open"); await sleep(130);
             toMouth(b, false); b.classList.add("eaten");
             cls(false, "st-open"); await flash("pb-snap", 220);
@@ -477,8 +501,9 @@ window.PetStage = (function () {
           }
           if (stg === 1) {   // 幼蟲：一小口一小口啃——每一口果實多一個缺口（缺口在嘴靠過來的那一側），第三口整顆吞下
             // 低頭：不是只有頭往下（那樣身體中間會拱成尖角），前面幾節一起彎下去（頭那一端彎最多、往後漸少）
-            const ld = parseFloat(box.style.getPropertyValue("--ld")) || 0, lx = parseFloat(box.style.getPropertyValue("--lx")) || 0;
-            { const hd = PetWalk.part(box, ".pr-head"); if (hd) hd.style.transform = "translate(0px, 0px)"; }   // 頭先由 JS 接手（不然加上 st-lean 那一格，CSS 會先把頭移到低頭的位置，身體還沒彎）
+            const hf = PetWalk.lvHeadFlat ? PetWalk.lvHeadFlat(box) : 0;   // 趴平時頭已經放低 hf（2026-10-07 優化輪 #6）
+            const ld = (parseFloat(box.style.getPropertyValue("--ld")) || 0) - hf, lx = parseFloat(box.style.getPropertyValue("--lx")) || 0;
+            { const hd = PetWalk.part(box, ".pr-head"); if (hd) hd.style.transform = `translate(0px, ${hf.toFixed(2)}px)`; }   // 頭先由 JS 接手（不然加上 st-lean 那一格，CSS 會先把頭移到低頭的位置，身體還沒彎）
             cls(true, "st-lean"); await PetWalk.bend(box, ld, lx, 320);
             b.style.setProperty("--nx", box.classList.contains("lv-l") ? "38%" : "62%");   // 缺口在上面、偏嘴那一側
             for (let k = 1; k <= 1; k++) {   // 2026-10-05 第二輪：兩口（咬一口留缺口、第二口吃掉），以前三口——一次餵食 23～29 秒太長
@@ -520,7 +545,8 @@ window.PetStage = (function () {
       if (onCloud && W && box) { box.__riders = null; await PetWalk.goTo(box, -22); }   // 神龍：吃飽在雲上游一小段（身體走頭走過的路、雲座晚一點跟上）
       if (W && box) await PetWalk.home(box);                          // 走回中間
       await flash("pb-hop", 1300);   // 各自的慶祝（style-features.css 依階段換動作）
-    } finally { if (front && box && (box.__lie || box.__fh)) { PetWalk.frontHead(box, null, 1); PetWalk.frontLie(box, 0, 1); }
+    } finally { if (box) box.__lean = null;
+      if (front && box && (box.__lie || box.__fh)) { PetWalk.frontHead(box, null, 1); PetWalk.frontLie(box, 0, 1); }
       berries.forEach(o => { release(o.b); o.b.remove(); }); cls(false, "st-lean", "st-open", "st-sip", "st-land", "st-legs", "pb-sip", "st-glow", "st-tilt-l", "st-tilt-r"); resetProboscis(); if (box) { box.__riders = null; if (box.__chain && typeof PetWalk !== "undefined") PetWalk.tailTo(box, null, 1); box.style.removeProperty("--ld"); box.style.removeProperty("--lx"); if (typeof PetWalk !== "undefined" && (reduce() || aborted)) { PetWalk.stop(box); box.classList.remove("standing", "face-r"); } } feeding = false; busy = false; if (box) { box.classList.remove("feeding"); schedule(mood); } }
   }
 

@@ -2319,3 +2319,6 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 
 /* 看不到的舞台（pet-stage.js live()：捲出畫面、分頁在背景）：所有 CSS 動畫暫停，不再每格重算樣式（2026-10-07 優化輪） */
 .ps-box.ps-off, .ps-box.ps-off * { animation-play-state: paused !important; }
+
+/* 長按抱抱時不要跳出文字選取的藍框、長按選單、點擊的藍色閃光（2026-10-07 使用者回報：以前只有角色本身設了，旁邊的泡泡、名字會被選到） */
+.ps-box, .ps-box * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }

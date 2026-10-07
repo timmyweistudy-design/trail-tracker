@@ -68,6 +68,18 @@ const probe = () => {
 async function run(b, st, spots, tag) {
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 } }); const p = await ctx.newPage(); await require(__dirname + "/fake-weather")(p); p.on("pageerror", e => errs.push(tag + ": " + e.message));
   await p.addInitScript(o => { localStorage.setItem("tt_lang", "zh"); ["tt_onboarded_v2", "tt_coach_trail", "tt_locperm_prompted", "tt_coach_record", "tt_coach_record_tools", "tt_coach_peaks", "tt_coach_team", "tt_coach_pet"].forEach(k => localStorage.setItem(k, "1")); localStorage.setItem("tt_debug_km", String(o.km)); localStorage.setItem("tt_pet_berry_bonus", "20"); }, { km: KM[st] });
+  // 單一擁有者（2026-10-07 優化輪 #16）：攔截每一次寫 style.transform，記下是哪個函式寫的；同一格同一個元素被兩個不同函式寫＝衝突
+  // （這幾輪的 bug 多半是兩個地方搶同一個 transform：一個寫完另一個蓋掉，畫面就跳）
+  await p.addInitScript(() => {
+    const d = Object.getOwnPropertyDescriptor(CSSStyleDeclaration.prototype, "transform"); if (!d || !d.set) return;
+    window.__wr = new Map(); window.__wc = []; let fr = 0; const tick = () => { fr++; window.__wr = new Map(); requestAnimationFrame(tick); }; requestAnimationFrame(tick);
+    Object.defineProperty(CSSStyleDeclaration.prototype, "transform", { configurable: true, get: d.get, set(v) {
+      const st = (new Error().stack || "").split("\n").slice(2).find(l => /pet-(walk|stage)\.js/.test(l)) || "?", fn = (st.match(/at (\S+)/) || [])[1] || "?";
+      let m = window.__wr.get(this); if (!m) window.__wr.set(this, m = new Set()); m.add(fn);
+      if (m.size > 1 && window.__wc.length < 40) window.__wc.push(fr + ":" + [...m].join("+"));
+      d.set.call(this, v); } });
+  });
+  if (process.env.PM_MOOD) await p.addInitScript(m => { const d = new Date(Date.now() - ({ happy: 0, content: 3, longing: 7 }[m] || 0) * 864e5).toISOString(); localStorage.setItem("tt_records", JSON.stringify([{ id: "pm1", date: d, trailName: "x", distanceKm: 3, elapsedMs: 3.6e6 }])); }, process.env.PM_MOOD);   // 2026-10-07：心情跟最近一次健行有關（沒有紀錄＝睏）；PM_MOOD=happy|content|longing 換心情跑
   await p.addInitScript(() => addEventListener("unhandledrejection", e => setTimeout(() => { throw e.reason; })));   // 2026-10-06：async 裡丟出的錯（例如呼叫已刪掉的函式）以前是安靜的——果實消失、角色卡住，測試只看到逾時
   await p.addInitScript(MOCK); await p.goto(`http://localhost:${PORT}/`); await p.waitForTimeout(2500);
   await p.evaluate(() => document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e => e.remove())); await p.click('.tab[data-view="pet"]'); await p.waitForTimeout(1500);
@@ -85,7 +97,8 @@ async function run(b, st, spots, tag) {
     if (!o.berries.length && f > 60 && !/standing|walking/.test(o.bcl) && !o.cls) { if (++idle > 20) break; } else idle = 0;
   }
   await cdp.send("Emulation.setVirtualTimePolicy", { policy: "advance" });
-  const end = await p.evaluate(() => ({ bal: berriesBalance(), wx: parseFloat(document.querySelector(".ps-box").style.getPropertyValue("--wx")) || 0 }));
+  const writers = await p.evaluate(() => window.__wc || []);
+  const end = await p.evaluate(() => ({ writers: window.__wc || [], bal: berriesBalance(), wx: parseFloat(document.querySelector(".ps-box").style.getPropertyValue("--wx")) || 0 }));
   await ctx.close();
   return { F, bal0, end };
 }
@@ -180,6 +193,9 @@ function judge(st, tag, R) {
   if (st === 6) {
     let out = 0, thr = 0, thAt = ""; for (let i = 1; i < n; i++) { const d = F[i].deform, b = F[i].boxr; out = Math.max(out, b[0] - d[0], d[2] - b[2], b[1] - d[1]); const t = Math.max(...d.map((q, k) => Math.abs(q - F[i - 1].deform[k]))); if (t > thr) { thr = t; thAt = `@${i} ${F[i].cls}`; } }
     ok(out <= 0 && thr <= 14, `${tag}: the tail stays in frame and moves smoothly (out ${out.toFixed(0)}px, bbox change ${thr.toFixed(0)}px/frame ≤14 ${thAt})`, todoOf("tail", st));
+    { const hand = []; for (let i = 1; i < n; i++) if (/st-open/.test(F[i].cls) && !/st-open/.test(F[i - 1].cls)) { const cb = F[i].berries.find(x => /carried/.test(x.cls)); if (cb) hand.push(+(D(cb.c, F[i].mouth) / cb.w).toFixed(2)); }
+      if (process.env.PM_SEQ) console.log(tag, "handoff berry→mouth / size", JSON.stringify(hand));
+      ok(hand.length >= 3 && hand.every(v => v <= .4), `${tag}: the tail brings each berry right to the mouth before it opens (distance / berry size ${JSON.stringify(hand)} ≤0.4; touching the top of the berry is ~0.18)`); }   // 2026-10-07 使用者回報：遞到嘴邊沒對準
     const TF = F.map(f => f.tail);   // 尾巴的鏈（只有托果實那幾段有）
     const lenE = Math.max(0, ...TF.filter(Boolean).map(t => Math.abs(t.len - 1))), bendE = Math.max(0, ...TF.filter(Boolean).map(t => t.ex));
     ok(TF.some(Boolean) && lenE <= .005 && bendE <= .05, `${tag}: the tail keeps its length (max change ${(lenE * 100).toFixed(2)}% ≤0.5%) and no joint bends past its limit (excess ${bendE.toFixed(2)}°)`);
@@ -209,6 +225,8 @@ function judge(st, tag, R) {
   const spill = Math.max(...F.map(f => f.spill || 0)), si = F.findIndex(f => (f.spill || 0) === spill);
   ok(spill <= 0, `${tag}: nothing is drawn outside the canvas (iOS WebKit clips there; worst ${spill.toFixed(1)}px${spill > 0 ? ` @${si} ${F[si].spillWhat} ${F[si].cls}|${F[si].bcl}` : ""})`);
   const last = F[n - 1];
+  { const w = (R.end.writers || []).map(x => x.replace(/^\d+:/, "")), uniq = [...new Set(w)];
+    ok(uniq.length === 0, `${tag}: each element's transform has one writer per frame (conflicts: ${JSON.stringify(uniq.slice(0, 6))})`); }
   if (process.env.PM_NEED) console.log("NEED", tag, Math.max(...F.map(f => f.need || 0)).toFixed(1));
   ok(!last.berries.length && !last.cls && Math.abs(R.end.wx) < 1 && R.end.bal === R.bal0 - 3, `${tag}: ends clean — no berries, no leftover pose, back in the middle, exactly 3 berries spent ${JSON.stringify({ cls: last.cls, wx: R.end.wx, spent: R.bal0 - R.end.bal })}`);
 }
