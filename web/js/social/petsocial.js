@@ -76,6 +76,21 @@ const Pets = (() => {
     }).join("")}</div>`;
     box.querySelectorAll(".fp-visit").forEach(b => b.addEventListener("click", () => { const p = list.find(x => x.id === b.dataset.id); if (p) visit(p, sentToday.has(p.id), () => renderFriends()); }));
     box.querySelectorAll(".fp-gift").forEach(b => b.addEventListener("click", () => giftClick(b, giftLbl)));
+    guestVisit(list);
+  }
+  // 朋友的夥伴來串門子（2026-10-07 寵物新一輪 #19）：一天最多一次，打開夥伴頁幾秒後隨機一位好友的夥伴走進舞台、待一會兒再走
+  function guestVisit(list) {
+    if (!list.length || typeof PetStage === "undefined" || !PetStage.guest || typeof PET_ART === "undefined") return;
+    const day = typeof todayStr === "function" ? todayStr() : new Date().toDateString();
+    if (localStorage.getItem("tt_pet_guest_day") === day && !window.__petGuestForce) return;
+    const p = list[Math.floor(Math.random() * list.length)], lvl = Math.max(1, Math.min(7, p.pet_level || 1));
+    const nm = p.pet_name ? T(p.pet_name) : (p.display_name || p.handle || T("好友的夥伴")), who = p.display_name || p.handle || "";
+    setTimeout(async () => {
+      if (document.body.dataset.view !== "pet") return;
+      const ok = await PetStage.guest({ svg: PET_ART.svg(lvl - 1, "", HAT_OK(p.pet_hat) ? p.pet_hat : undefined), stay: 3600 });
+      if (ok) localStorage.setItem("tt_pet_guest_day", day);
+    }, 2500);
+    setTimeout(() => { if (document.body.dataset.view === "pet" && typeof petSay === "function" && document.querySelector(".ps-guest")) petSay(T("{who} 的 {pet} 來串門子了！").replace("{who}", who).replace("{pet}", nm), 3200); }, 4300);
   }
   async function giftClick(b, giftLbl) {
     if (b._busy || b.disabled) return;   // 鎖要在第一個 await 之前上，連點不會送兩次

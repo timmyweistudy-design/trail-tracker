@@ -18,7 +18,7 @@ window.ttDebug = (() => {
     setAffinity(n = 100) { ls.setItem("tt_pet_aff", String(Math.max(0, Math.min(100, +n)))); ls.setItem("tt_pet_aff_t", new Date().toISOString()); refresh(); return api.state(); },
     resetFeed() { ls.removeItem("tt_pet_fed_t"); refresh(); return "可再餵食"; },   // 冷卻 key 是 tt_pet_fed_t（原本刪錯 key 所以沒用）
     addDays(n = 10) { const h = new Date(petHatch()); h.setDate(h.getDate() - (+n)); ls.setItem("tt_pet_hatch", h.toISOString()); refresh(); return api.state(); },
-    clearDebug() { ls.removeItem("tt_debug_km"); ls.removeItem("tt_debug_mood"); window.__psSpots = null; if (window.__ttSlow) api.slow(1); refresh(); return api.state(); },
+    clearDebug() { ls.removeItem("tt_debug_km"); ls.removeItem("tt_debug_mood"); window.__psSpots = null; window.__ps = null; window.__hatSeasonAll = false; window.__petPropsAll = false; window.__petDbg = false; try { ls.setItem("tt_pet_diary", JSON.stringify(JSON.parse(ls.getItem("tt_pet_diary") || "[]").filter(x => !x.dbg))); ls.setItem("tt_pet_gifts", JSON.stringify(JSON.parse(ls.getItem("tt_pet_gifts") || "[]").filter(x => !x.dbg))); } catch (e) { /* */ } if (window.__ttSlow) api.slow(1); refresh(); return api.state(); },
     resetPet() {
       ls.setItem("tt_pet_base", String(realTotalKm())); ls.setItem("tt_pet_hatch", new Date().toISOString());
       ls.setItem("tt_pet_stage", "0"); ls.setItem("tt_pet_berry_spent", String(berriesEarned()));
@@ -319,6 +319,23 @@ async function toggleDebugPanel() {
       ["+50🍓", () => ttDebug.addBerries(50)], ["❤️滿", () => ttDebug.setAffinity(100)], ["可再餵", () => ttDebug.resetFeed()], ["+30天", () => ttDebug.addDays(30)],
       ["重置🥚", () => ttDebug.resetPet()], ["清debug", () => ttDebug.clearDebug()],
     ]],
+    // 2026-10-07 寵物新一輪：每一樣新東西都能在這裡直接試（不會寫進日記：測試期間的日記標 dbg、清 debug 一起刪）
+    ["夥伴新功能（試玩用）", [
+      ["😴睡著→點牠叫醒", seePet(() => ttDebug.stage("asleep", true))],
+      ["🌲不在時做了什麼", seePet(() => { ls.setItem("tt_pet_seen", String(Date.now() - 5 * 3600e3)); window.__petLine = null; refresh(); return ""; })],
+      ["🥾健行感想", seePet(() => { ls.removeItem("tt_pet_recap"); Store.addRecord({ id: "dbg" + Date.now(), date: new Date().toISOString(), dbg: true, note: "測試行程", trailName: "測試", distanceKm: 12.3, elapsedMs: 4 * 3600e3, ascent: 820, steps: 9000, track: [] }); window.__petLine = null; refresh(); return "（測試行程，清測試行程會一起清掉）"; })],
+      ["🎁帶禮物回來", seePet(() => { ls.setItem("tt_pet_aff", "100"); ls.setItem("tt_pet_aff_t", new Date().toISOString()); ls.removeItem("tt_pet_gift_t"); window.__petGiftT = 0; refresh(); return "親密設成滿、2.6 秒後牠帶東西回來"; })],
+      ["🎂相遇第100天", seePet(() => { ls.setItem("tt_pet_hatch", new Date(Date.now() - 100 * 864e5).toISOString()); window.__petLine = null; refresh(); return "相遇日改成 100 天前（重置🥚會還原）"; })],
+      ["🍓好友送果實", seePet(() => { if (typeof petGiftBerries === "function") { ttDebug.addBerries(4); setTimeout(() => petGiftBerries(4), 300); } return ""; })],
+      ["🦊朋友來串門子", seePet(() => { if (typeof PetStage !== "undefined" && PetStage.guest) PetStage.guest({ svg: PET_ART.svg(Math.floor(Math.random() * 7), "", "crown"), stay: 3600 }).then(ok => { if (!ok) toast("牠在忙或睡著，等一下再試"); }); return ""; })],
+      ["🌰玩松果", seePet(() => { const b = document.getElementById("petPlay"); if (b) b.click(); return ""; })],
+      ["📷拍照", seePet(() => { if (typeof openPetPhoto === "function") openPetPhoto(); return ""; })],
+      ["🏕擺設全解鎖", () => { ls.setItem("tt_pet_gifts", JSON.stringify(Object.keys(PET_GIFTS).map(id => ({ id, t: new Date().toISOString() })))); window.__petPropsAll = true; refresh(); return "8 個小東西都有了；四個里程碑小物照真實條件（加里程／測試行程可達成）"; }],
+      ["😵搖手機頭暈", seePet(() => ttDebug.react("dizzy"))], ["🤲來回摸", seePet(() => ttDebug.react("rub"))],
+      ["🔄心情過場", seePet(() => { ls.setItem("tt_pet_mood_last", "x"); window.__petLine = null; refresh(); return ""; })],
+      ["🔊音效開關", () => { const on = ls.getItem("tt_pet_sound") === "1"; ls.setItem("tt_pet_sound", on ? "0" : "1"); return "夥伴音效：" + (on ? "關" : "開"); }],
+      ["🧹清空夥伴日記", () => { ls.removeItem("tt_pet_diary"); return "日記清空了（相遇、第一次出門會從資料重新算）"; }],
+    ].map(([l, f]) => [l, (...a) => { window.__petDbg = true; return f(...a); }])],   // 按過這一組＝在測試：之後寫的日記、拿到的小東西都標 dbg
     ["夥伴動畫（調動畫用）", [
       ["🥚蛋", seePet(() => ttDebug.setLevel(0))], ["🐛毛毛蟲", seePet(() => ttDebug.setLevel(1))], ["🦋蝴蝶", seePet(() => ttDebug.setLevel(2))], ["🦊狐", seePet(() => ttDebug.setLevel(3))], ["🐯虎", seePet(() => ttDebug.setLevel(4))], ["🐲幼龍", seePet(() => ttDebug.setLevel(5))], ["🐉神龍", seePet(() => ttDebug.setLevel(6))],
       ["🍓看餵食", closeAnd(() => { ttDebug.addBerries(10); ttDebug.resetFeed(); document.querySelector('.tab[data-view="pet"]').click(); setTimeout(() => { const f = document.getElementById("petFeed"); if (f) { f.scrollIntoView({ block: "center" }); setTimeout(() => f.click(), 400); } }, 500); })],

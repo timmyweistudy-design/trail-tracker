@@ -2478,3 +2478,23 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
   .evolve-from { display: none; } .evolve-to, .evolve-flash { animation: none; } .evolve-to { opacity: 1; filter: none; transform: none; } .evolve-flash { opacity: 0; }
   #petEmoji.rm-fb .pet-critter { filter: brightness(1.12) drop-shadow(0 0 10px rgba(255, 214, 120, .85)); }
 }
+
+/* 玩松果（2026-10-07 寵物新一輪 #12）：被鼻子頂一下滾開、玩完淡出 */
+.ps-toy::after { display: none; }
+.ps-toy.toy-roll { margin-left: calc(var(--bs, 30px) / -2 + var(--rx, 30px)); rotate: calc(var(--br, 0deg) + 240deg); transition: margin-left .75s cubic-bezier(.2,.7,.3,1), rotate .75s cubic-bezier(.2,.7,.3,1); }
+.ps-toy.toy-gone { opacity: 0; transition: opacity .4s; }
+
+/* 舞台擺設（2026-10-07 寵物新一輪 #16）：左右下角各一個小物，跟前景一起有一點視差 */
+.ps-props { position: absolute; inset: auto 0 6% 0; height: 0; pointer-events: none; z-index: 3; translate: calc(var(--px) * -18px) 0; }
+.ps-pp { position: absolute; bottom: 0; width: calc(40px * var(--fs, 1)); height: calc(40px * var(--fs, 1)); filter: drop-shadow(0 3px 4px rgba(0,0,0,.3)); }
+.ps-pp.l { left: 7%; } .ps-pp.r { right: 7%; }
+.ps-pp svg { width: 100%; height: 100%; display: block; }
+.prop-it { border: 2px solid transparent; cursor: pointer; font: inherit; color: inherit; }
+.prop-it.on { border-color: var(--brand, #2f6b47); background: rgba(47,107,71,.1); }
+.prop-it.no { cursor: default; }
+@media (prefers-reduced-motion: reduce) { .ps-props { translate: none; } }
+
+/* 朋友的夥伴來串門子（2026-10-07 寵物新一輪 #19） */
+.ps-guest { position: absolute; bottom: 4px; left: calc(50% + var(--gx, 30%)); width: 34%; max-width: 150px; translate: 0 0; margin-left: -17%; z-index: 1; pointer-events: none; transform-origin: 50% 100%; filter: drop-shadow(0 6px 8px rgba(0,0,0,.25)); }
+.ps-guest .pet-critter, .ps-guest svg { width: 100%; height: auto; display: block; }
+.ps-box.ps-off .ps-guest { animation-play-state: paused; }

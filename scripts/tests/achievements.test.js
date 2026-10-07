@@ -6,7 +6,7 @@ const errs=[];let fails=0;const ok=(c,m)=>{console.log((c?"PASS ":"FAIL ")+m);if
 const PORT = +process.env.TT_PORT || 8897;   // run-all 並行時會分配不重複的 port
 (async()=>{const srv=spawn("python3",["-m","http.server",String(PORT)],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
 const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:390,height:844},reducedMotion:o.reduce?"reduce":"no-preference"});const p=await ctx.newPage();await require(__dirname+"/fake-weather")(p);p.on("pageerror",e=>errs.push(e.message));
- await p.addInitScript(o=>{localStorage.setItem("tt_lang",o.lang||"zh");["tt_onboarded_v2","tt_coach_trail","tt_locperm_prompted","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_coach_team","tt_coach_pet"].forEach(k=>localStorage.setItem(k,"1"));},o);
+ await p.addInitScript(o=>{localStorage.setItem("tt_lang",o.lang||"zh");["tt_onboarded_v2","tt_coach_trail","tt_locperm_prompted","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_coach_team","tt_coach_pet"].forEach(k=>localStorage.setItem(k,"1")); localStorage.setItem("tt_pet_woke", String(Date.now())); localStorage.setItem("tt_test_diary", "1");},o);
  await p.goto(`http://localhost:${PORT}/`);await p.waitForTimeout(2500);await p.evaluate(()=>document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove()));
  await p.evaluate(n=>{for(let i=0;i<n;i++){const d=new Date();d.setDate(d.getDate()-i*3);d.setHours(i%2?6:10);Store.addRecord({id:"dbg"+i,date:d.toISOString(),dbg:true,distanceKm:6+i%5,elapsedMs:3*3600e3,ascent:300+i*10,descent:300,steps:9000,kcal:400,track:[],trailId:TRAILS[i*7%TRAILS.length].id})}},o.recs==null?40:o.recs);
  return p;};

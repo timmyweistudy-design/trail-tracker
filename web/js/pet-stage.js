@@ -84,6 +84,7 @@ window.PetStage = (function () {
       <div class="ps-actor" style="--d:.72">${actorHtml}</div>
       <div class="ps-l ps-front" style="--d:1.35"><svg class="ps-svg" ${VB}>${sc.front}</svg></div>
       ${o.fest && !o.bg ? lantern(o.fest) : ""}
+      ${(o.props || []).length && !o.bg ? `<div class="ps-props" aria-hidden="true">${o.props.map((p, k) => `<i class="ps-pp ${k ? "r" : "l"}">${p}</i>`).join("")}</div>` : ""}
     </div>`;
   }
 
@@ -463,10 +464,69 @@ window.PetStage = (function () {
       await PetWalk.goTo(box, (parseFloat(box.style.getPropertyValue("--wx")) || 0) + rx / u, { keepFace: true });
     }
   }
+  // ── 玩（2026-10-07 寵物新一輪 #12）：丟一顆松果，每隻用自己的方式去玩——走得動的走過去用鼻子頂一下（松果滾開、開心跳）、
+  // 蝶飛過去在上面拍翅、神龍用尾巴勾起來甩一下再放回、蛋原地搖一搖。松果用果實同一套落下動畫；玩完走回中間、松果淡出
+  let playing = false;
+  async function play(toySvg) {
+    if (!box || reduce() || !visible || feeding || playing || typeof PetWalk === "undefined") return false;
+    clearTimeout(beat); if (asleep) await wake(); if (!box) return false;
+    playing = true; busy = true; box.classList.add("playing");
+    const actor = box.querySelector(".ps-actor"), stg = +box.dataset.stage, b = document.createElement("span");
+    try {
+      const cloud = stg === 6 ? cloudSpots(1) : null, x = cloud ? cloud[0].x : stg === 0 ? (Math.random() < .5 ? -1 : 1) * 34 : dropSpots(1, stg === 1 ? "larva" : (stg === 3 || stg === 4) ? false : false)[0];
+      b.className = "ps-berry ps-toy"; b.innerHTML = toySvg || "";
+      b.style.cssText = `--bx:${x};--by:${cloud ? cloud[0].by : 8}px;--bs:28px;--br:${Math.round(Math.random() * 40 - 20)}deg;--bh:-230px;z-index:4`;
+      actor.appendChild(b);
+      if (cloud) { const c0 = parseFloat(box.style.getPropertyValue("--wx")) || 0; box.__cloud = c0; box.__riders = [{ el: b, bx: x, c0 }]; b.__rx = x; }
+      box.style.setProperty("--ex", String(Math.sign(x) * Math.min(1, Math.abs(x) / 60))); box.style.setProperty("--ey", "1");
+      await sleep(1000);
+      if (stg === 0) { await special(); }
+      else if (stg === 6) {
+        const r0 = b.getBoundingClientRect(), back = [r0.left + r0.width / 2, r0.top + r0.height * .62];   // 玩完放回原地
+        await PetWalk.tailTo(box, b, null, null, .34); b.classList.add("carried"); follow(b, "tail", { ay: .62, ms: 120 });
+        await PetWalk.tailTo(box, () => { const r = box.getBoundingClientRect(); return [r.left + r.width * .62, r.top + r.height * .32]; });   // 舉高甩一下
+        await flash("pb-hop", 900);
+        await PetWalk.tailTo(box, () => back);
+        release(b); await PetWalk.tailTo(box, null);
+      } else {
+        await PetWalk.goEat(box, b, x);
+        box.style.setProperty("--ex", "0"); box.style.setProperty("--ey", "1");
+        if (stg === 2) { PetWalk.wingMode(box, "flap", 160); await sleep(1100); PetWalk.wingMode(box, "idle", 300); }
+        else { await sleep(250); b.classList.add("toy-roll"); b.style.setProperty("--rx", (Math.sign(x || 1) * 34) + "px"); await flash("pb-hop", 1100); }
+        await PetWalk.home(box);
+      }
+      b.classList.add("toy-gone"); await sleep(450);
+      return true;
+    } finally {
+      release(b); b.remove(); if (box) { box.__riders = null; box.classList.remove("playing"); box.style.setProperty("--ex", "0"); box.style.setProperty("--ey", "0"); }
+      playing = false; busy = false; if (box) schedule(mood);
+    }
+  }
+  // ── 朋友的夥伴來串門子（2026-10-07 寵物新一輪 #19）：從舞台邊走進來站在旁邊，兩隻一起跳一下，待一會兒再走出去（自己一個元素，不碰主角的骨架） ──
+  async function guest(o) {
+    if (!box || reduce() || !visible || feeding || playing || asleep || !o || !o.svg) return false;
+    const actor = box.querySelector(".ps-actor"); if (!actor || box.querySelector(".ps-guest")) return false;
+    const side = Math.random() < .5 ? -1 : 1, g = document.createElement("div"); g.className = "ps-guest"; g.setAttribute("aria-hidden", "true"); g.innerHTML = o.svg;
+    g.style.setProperty("--gx", `${side * 33}%`); actor.appendChild(g); busy = true; clearTimeout(beat);
+    const W = box.getBoundingClientRect().width, off = side * W * .7;
+    const walk = (from, to, ms) => g.animate([{ translate: `${from}px 0` }, { translate: `${to}px 0` }], { duration: ms, easing: "cubic-bezier(.3,.6,.4,1)", fill: "forwards" }).finished.catch(() => {});
+    try {
+      g.animate([{ rotate: "-5deg" }, { rotate: "5deg" }], { duration: 260, iterations: 6, direction: "alternate" });   // 走路時左右晃
+      await walk(off, 0, 1500);
+      box.style.setProperty("--ex", String(side)); await sleep(300);
+      g.animate([{ transform: "none" }, { transform: "translateY(-14%)", offset: .4 }, { transform: "none" }], { duration: 650, easing: "ease-out" });
+      await flash("pb-hop", 1100);
+      await sleep(Math.max(0, (o.stay || 3200) - 1100));
+      box.style.setProperty("--ex", "0");
+      g.animate([{ rotate: "-5deg" }, { rotate: "5deg" }], { duration: 260, iterations: 6, direction: "alternate" });
+      await walk(0, off, 1500);
+      return true;
+    } finally { g.remove(); busy = false; if (box) schedule(mood); }
+  }
   const BITE_Y = .32;   // 咬的位置：果實由上往下 32%（咬住上緣、一部分留在嘴外）
   let feeding = false;
   async function feed(berrySvg) {
-    if (!box || reduce() || !visible || feeding) return;   // 正在吃就不再開一輪（餵食鈕本來就會鎖住＋8 小時冷卻；測試面板連按才會進來）
+    if (!box || reduce() || !visible || feeding || playing) return;   // 正在吃就不再開一輪（正在玩也等玩完）（餵食鈕本來就會鎖住＋8 小時冷卻；測試面板連按才會進來）
     clearTimeout(beat);
     if (asleep) await wake();   // 睡著時按餵食：先醒來（揉眼、伸懶腰）再吃
     if (!box) return;
@@ -697,5 +757,5 @@ window.PetStage = (function () {
 
   // 心情變了但卡片沒重畫（pet.js 的 petCardUpdate）：待機動作的機率跟著換
   function setMood(m) { mood = m || "content"; if (box) schedule(mood); }
-  return { debug, setMood, html, photoSvgs, bind, unbind, tod, season, wxOf, weather, cachedWx, count: STAGES, zoneOf, react, feed, act, isFeeding: () => feeding, isAsleep: () => asleep, wake, sleep: () => setAsleep(true) };
+  return { debug, setMood, html, photoSvgs, bind, unbind, tod, season, wxOf, weather, cachedWx, count: STAGES, zoneOf, react, feed, act, isFeeding: () => feeding, isAsleep: () => asleep, isPlaying: () => playing, play, guest, wake, sleep: () => setAsleep(true) };
 })();

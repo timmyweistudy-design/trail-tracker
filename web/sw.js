@@ -1,5 +1,5 @@
 // 離線快取：app shell + 地圖圖磚
-const CACHE = "trail-tracker-v660";
+const CACHE = "trail-tracker-v662";
 const TILE_CACHE = "tt-tiles";
 const SAVED_CACHE = "tt-tiles-saved";   // 使用者下載的離線地圖（不隨版本清除、不受上限）   // 地圖圖磚（不隨版本清除，保留離線地圖）
 const ASSETS = [

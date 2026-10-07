@@ -7,7 +7,7 @@ const MOCK=__fs.readFileSync(__dirname+"/soc-mock.js","utf8");const errs=[];let 
 const PORT = +process.env.TT_PORT || 8899;   // run-all 並行時會分配不重複的 port
 (async()=>{const srv=spawn("python3",["-m","http.server",String(PORT)],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
 const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:o.w||390,height:844},colorScheme:o.dark?"dark":"light",reducedMotion:o.reduce?"reduce":"no-preference"});const p=await ctx.newPage();await require(__dirname+"/fake-weather")(p);p.on("pageerror",e=>errs.push(e.message));
- await p.addInitScript(o=>{localStorage.setItem("tt_lang",o.lang||"zh");["tt_onboarded_v2","tt_coach_trail","tt_locperm_prompted","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_coach_team","tt_coach_pet"].forEach(k=>localStorage.setItem(k,"1"));
+ await p.addInitScript(o=>{localStorage.setItem("tt_lang",o.lang||"zh");["tt_onboarded_v2","tt_coach_trail","tt_locperm_prompted","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_coach_team","tt_coach_pet"].forEach(k=>localStorage.setItem(k,"1")); localStorage.setItem("tt_pet_woke", String(Date.now())); localStorage.setItem("tt_test_diary", "1");
   localStorage.setItem("tt_debug_km",String(o.km||0));if(o.hat)localStorage.setItem("tt_pet_hat",o.hat);if(o.berries)localStorage.setItem("tt_pet_berry_bonus",String(o.berries));
   if(o.records)localStorage.setItem("tt_records",JSON.stringify(o.records));},o);
  if(o.free)await p.addInitScript(()=>{window.PERSONAL_MODE=false;localStorage.removeItem("tt_premium");});
@@ -362,6 +362,31 @@ if(sh()){const p=await mk({km:40});await p.emulateMedia({reducedMotion:"reduce"}
   celebrateEvolve(PET_STAGES[3],4);await new Promise(r=>setTimeout(r,100));const to=getComputedStyle(document.querySelector(".evolve-to"));const evo=[to.animationName,to.opacity];document.querySelector('[data-ov="evolve"]').remove();return {on,evo};});
  ok(r.on,"reduced motion: tapping gives a still glow instead of a motion");
  ok(r.evo[0]==="none"&&r.evo[1]==="1","reduced motion: evolution shows the new form straight away (no morph) "+JSON.stringify(r.evo));
+ await p.close();}
+
+// ── 2026-10-07 寵物新一輪 #12 #16 #19：玩松果、舞台擺設、朋友的夥伴來串門子 ──
+for(const km of [40,260])if(sh()){const p=await mk({km});
+ const r=await p.evaluate(async()=>{const w=ms=>new Promise(r=>setTimeout(r,ms));window.__psNoIdle=true;window.__ps={asleep:false};renderPet();document.querySelector(".ps-box").scrollIntoView({block:"center"});await w(500);
+  const t0=Date.now();document.getElementById("petPlay").click();await w(1200);const toy=document.querySelectorAll(".ps-toy").length,busy=PetStage.isPlaying();
+  localStorage.removeItem("tt_pet_fed_t");feedPet();await w(100);const noFeed=!document.querySelector(".ps-box").classList.contains("feeding");
+  while(PetStage.isPlaying()&&Date.now()-t0<20000)await w(200);const done={left:document.querySelectorAll(".ps-toy").length,wx:parseFloat(document.querySelector(".ps-box").style.getPropertyValue("--wx"))||0,ms:Date.now()-t0};
+  localStorage.setItem("tt_pet_gifts",JSON.stringify([{id:"maple",t:"x"}]));localStorage.setItem("tt_pet_props",JSON.stringify(["maple","tent"]));renderPet();await w(200);const props=document.querySelectorAll(".ps-props .ps-pp").length;
+  document.getElementById("petDress").click();await w(300);const pick=[...document.querySelectorAll(".prop-it")].map(b=>b.classList.contains("on")?2:b.classList.contains("no")?0:1);document.querySelector('[data-ov="pethat"] #hatClose').click();
+  await w(300);const g=PetStage.guest({svg:PET_ART.svg(3),stay:800});await w(900);const mid=!!document.querySelector(".ps-guest");const gok=await g;
+  return {toy,busy,noFeed,done,props,pick,mid,gok,gone:!document.querySelector(".ps-guest")};});
+ ok(r.toy===1&&r.busy&&r.noFeed,"play: a pinecone drops, feeding waits until playtime is over "+JSON.stringify(r));
+ ok(r.done.left===0&&Math.abs(r.done.wx)<1&&r.done.ms<15000,"play: the pet plays and comes back to the middle, the pinecone goes away "+JSON.stringify(r.done));
+ ok(r.props===1&&r.pick.length===12&&r.pick.filter(v=>v===2).length===1,"stage decor: only unlocked items show (maple yes, tent not yet), picker marks it "+JSON.stringify([r.props,r.pick]));
+ ok(r.mid&&r.gok&&r.gone,"a friend's pet walks in, stays a bit, and walks out");
+ await p.close();}
+
+// ── 2026-10-07 使用者：日記會記到 debug 的數據——測試資料開著時寫的日記標 dbg、不顯示，「清 debug」一起刪 ──
+if(sh()){const p=await mk({km:40});
+ const r=await p.evaluate(async()=>{localStorage.removeItem("tt_test_diary");await ensureScript("js/debug.js");petDiaryAdd("evo",4);petDiaryAdd("hug1");
+  const d1=JSON.parse(localStorage.getItem("tt_pet_diary")||"[]"),shown=petDiaryHtml();
+  ttDebug.clearDebug();const d2=JSON.parse(localStorage.getItem("tt_pet_diary")||"[]");petDiaryAdd("hug1");const d3=JSON.parse(localStorage.getItem("tt_pet_diary")||"[]");
+  return {tagged:d1.every(x=>x.dbg),hidden:!/進化成|第一次抱抱/.test(shown),cleared:d2.length===0,real:d3.length===1&&!d3[0].dbg};});
+ ok(r.tagged&&r.hidden&&r.cleared&&r.real,"diary: entries written while debug data is on are tagged, hidden, and removed by clear-debug; real ones stay "+JSON.stringify(r));
  await p.close();}
 
 // ── 2026-10-04 角色重畫：結構檢查（id 引用、畫框、開心眼對位、動畫掛點）、分享圖卡不畫瞇眼、幼蟲的頭在下半部 ──

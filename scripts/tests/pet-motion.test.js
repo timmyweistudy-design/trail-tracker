@@ -74,7 +74,7 @@ const probe = () => {
 
 async function run(b, st, spots, tag) {
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 } }); const p = await ctx.newPage(); await require(__dirname + "/fake-weather")(p); p.on("pageerror", e => errs.push(tag + ": " + e.message));
-  await p.addInitScript(o => { localStorage.setItem("tt_lang", "zh"); ["tt_onboarded_v2", "tt_coach_trail", "tt_locperm_prompted", "tt_coach_record", "tt_coach_record_tools", "tt_coach_peaks", "tt_coach_team", "tt_coach_pet"].forEach(k => localStorage.setItem(k, "1")); localStorage.setItem("tt_debug_km", String(o.km)); localStorage.setItem("tt_pet_berry_bonus", "20"); }, { km: KM[st] });
+  await p.addInitScript(o => { localStorage.setItem("tt_lang", "zh"); ["tt_onboarded_v2", "tt_coach_trail", "tt_locperm_prompted", "tt_coach_record", "tt_coach_record_tools", "tt_coach_peaks", "tt_coach_team", "tt_coach_pet"].forEach(k => localStorage.setItem(k, "1")); localStorage.setItem("tt_pet_woke", String(Date.now())); localStorage.setItem("tt_test_diary", "1"); localStorage.setItem("tt_debug_km", String(o.km)); localStorage.setItem("tt_pet_berry_bonus", "20"); }, { km: KM[st] });
   // 單一擁有者（2026-10-07 優化輪 #16）：攔截每一次寫 style.transform，記下是哪個函式寫的；同一格同一個元素被兩個不同函式寫＝衝突
   // （這幾輪的 bug 多半是兩個地方搶同一個 transform：一個寫完另一個蓋掉，畫面就跳）
   await p.addInitScript(() => {
@@ -270,7 +270,7 @@ function judge(st, tag, R) {
   // 中途滑走：直接結算，果實、姿勢都收乾淨，只扣一次；連按兩下：只開一輪
   if (!ONLY.length || ONLY.includes(3)) {
     const ctx = await b.newContext({ viewport: { width: 390, height: 844 } }); const p = await ctx.newPage(); await require(__dirname + "/fake-weather")(p);
-    await p.addInitScript(() => { localStorage.setItem("tt_lang", "zh"); ["tt_onboarded_v2", "tt_coach_trail", "tt_locperm_prompted", "tt_coach_record", "tt_coach_record_tools", "tt_coach_peaks", "tt_coach_team", "tt_coach_pet"].forEach(k => localStorage.setItem(k, "1")); localStorage.setItem("tt_debug_km", "40"); localStorage.setItem("tt_pet_berry_bonus", "20"); });
+    await p.addInitScript(() => { localStorage.setItem("tt_lang", "zh"); ["tt_onboarded_v2", "tt_coach_trail", "tt_locperm_prompted", "tt_coach_record", "tt_coach_record_tools", "tt_coach_peaks", "tt_coach_team", "tt_coach_pet"].forEach(k => localStorage.setItem(k, "1")); localStorage.setItem("tt_pet_woke", String(Date.now())); localStorage.setItem("tt_test_diary", "1"); localStorage.setItem("tt_debug_km", "40"); localStorage.setItem("tt_pet_berry_bonus", "20"); });
     await p.addInitScript(MOCK); await p.goto(`http://localhost:${PORT}/`); await p.waitForTimeout(2500);
     await p.evaluate(() => document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e => e.remove())); await p.click('.tab[data-view="pet"]'); await p.waitForTimeout(1500);
     const r = await p.evaluate(async () => { window.__psNoIdle = true; document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e => e.remove()); localStorage.removeItem("tt_pet_fed_t"); renderPet(); document.querySelector(".ps-box").scrollIntoView({ block: "center" }); await new Promise(r => setTimeout(r, 500));
