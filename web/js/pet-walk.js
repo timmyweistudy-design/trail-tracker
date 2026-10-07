@@ -28,24 +28,27 @@ window.PetWalk = (function () {
     const g = box.querySelector("#petEmoji .pr-deform"); if (!g) return null;
     if (ORIG.has(g)) return ORIG.get(g);
     const items = [];
-    g.querySelectorAll("path,ellipse,circle,g[transform]").forEach(el => {
+    for (const root of [g, box.querySelector("#petEmoji .pr-tailtop")]) if (root) root.querySelectorAll("path,ellipse,circle,g[transform]").forEach(el => {   // .pr-tailtop：神龍尾巴的上層那份（只在送果實時畫）
+      const top = root !== g;
       const rg = el.closest(".pr-rigid"); if (rg && rg !== el) return;   // 剛體群組（神龍的後腳，2026-10-06 第五輪）：裡面的東西不各自變形，整組跟著群組的錨點平移
       if (el.tagName === "path") {   // 2026-10-07 優化輪：第一次就把路徑切好、轉成數字（以前每一格都重新切字串、轉數字、再查一次在不在平移群組裡）
         const d = el.getAttribute("d"); if (!d) return;
         const segs = []; let cur = null;
         for (const t of d.match(TOK)) { if (/[A-Za-z]/.test(t)) { cur = { c: t, n: [], pair: "MLTQSC".includes(t) }; segs.push(cur); } else if (cur) cur.n.push(+t); }
         const tg = el.closest("g[transform]");
-        items.push({ el, d, segs, skip: !!tg && tg !== g });   // 在平移群組裡的（爪子）跟著群組走
+        items.push({ el, d, segs, top, skip: !!tg && tg !== g && tg !== root });   // 在平移群組裡的（爪子）跟著群組走
       }
-      else if (el.tagName === "g") { const m = /^translate\(([-\d.]+)[ ,]+([-\d.]+)\)(.*)$/.exec(el.getAttribute("transform")); if (m) items.push({ el, gx: +m[1], gy: +m[2], rest: m[3] }); }
-      else if (!el.closest("g[transform]") || el.closest("g[transform]") === g) items.push({ el, cx: +el.getAttribute("cx"), cy: +el.getAttribute("cy") });
+      else if (el.tagName === "g") { const m = /^translate\(([-\d.]+)[ ,]+([-\d.]+)\)(.*)$/.exec(el.getAttribute("transform")); if (m) items.push({ el, top, gx: +m[1], gy: +m[2], rest: m[3] }); }
+      else if (!el.closest("g[transform]") || el.closest("g[transform]") === g) items.push({ el, top, cx: +el.getAttribute("cx"), cy: +el.getAttribute("cy") });
     });
     ORIG.set(g, items); return items;
   }
   function applyField(box, F) {
     const items = snapshot(box); if (!items) return;
     const r = v => Math.round(v * 10) / 10;
+    const topOn = !!box.__tailTop;
     for (const it of items) {
+      if (it.top && !topOn) continue;   // 尾巴上層那份透明時不算
       if (it.segs) {
         if (it.skip) continue;
         let out = "";
@@ -134,6 +137,7 @@ window.PetWalk = (function () {
     // 幅度、尾巴那段的波都照「時間」慢慢變（2026-10-07 優化輪 #9/#17：以前每次呼叫乘 .08／.15，一格呼叫幾次、機器快慢都會改變收放的速度；停下來時波也收得不平均）
     const k0 = box.__ropeK == null ? 1 : box.__ropeK, k = box.__ropeK = k0 + ((swim ? 1.8 : 1) - k0) * (1 - Math.exp(-dt / .45));
     const t0 = box.__ropeTail == null ? 1 : box.__ropeTail, tf = box.__ropeTail = t0 + ((box.__chain ? 0 : 1) - t0) * (1 - Math.exp(-dt / .12));
+    { const tt = els(box).tailTop, on = tf < .995; if (tt) { if (on !== !!box.__tailTop || on) tt.setAttribute("opacity", on ? Math.min(1, (1 - tf) * 1.6).toFixed(3) : "0"); } box.__tailTop = on; }   // 尾巴送果實時上層那份淡入
     const D = S.map((_, j) => (ROPE.a0 + ROPE.a1 * Math.pow(I.sl[j] / I.L, 1.3)) * k * Math.sin(2 * Math.PI * ((I.sl[j] + travel) / ROPE.lam - box.__ropePh)) * (j > I0 ? tf : 1));
     const P = box.__chain, R = rest(), phi = P ? S.map((_, j) => wrap(ang(P[j], P[j + 1]) - ang(R[j], R[j + 1]))) : null, zero = P ? null : S.map(() => 0);
     // 每一節的位移向量；尾巴（I0 以後）＝交界那一節的位移（整段跟著平移，交界不會斷開）＋自己的波 × tf（送果實時收掉）
@@ -313,7 +317,7 @@ window.PetWalk = (function () {
       earL: q(".pc-ear.l"), earR: q(".pc-ear.r"),
       fw: em ? [...em.querySelectorAll(".pc-fw")] : [], hw: em ? [...em.querySelectorAll(".pc-hw")] : [],
       pearl: q(".pr-pearl"), sway: em ? [...em.querySelectorAll(".pr-head .pc-sway")] : [],
-      pawL: q(".pr-paw.l"), pawR: q(".pr-paw.r"), footL: q(".pr-foot.l"), footR: q(".pr-foot.r") };
+      pawL: q(".pr-paw.l"), pawR: q(".pr-paw.r"), footL: q(".pr-foot.l"), footR: q(".pr-foot.r"), tailTop: q(".pr-tailtop") };
     ELS.set(box, o); return o;
   }
   function flush(box) {

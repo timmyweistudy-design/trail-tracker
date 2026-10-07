@@ -443,13 +443,13 @@ window.PetStage = (function () {
           // 位移交給繩波寫頭的那一行（box.__lean）：以前用 Web Animations 寫在頭的內層，跟咬的 CSS 動畫搶同一個元素，偶爾某一格頭彈回去 20px
           const mm = PetWalk.cpt(box, "mouth"), br = b.getBoundingClientRect(), uu = 1 / PetWalk.pxu(box), cl = v => Math.max(-24, Math.min(24, v));
           const LN = [cl((br.left + br.width / 2 - mm[0]) * uu), cl((br.top + br.height * BITE_Y - mm[1]) * uu)];
-          const lean = PetWalk.tween(220, e => { box.__lean = [LN[0] * e, LN[1] * e]; });
-          await sleep(120); cls(true, "st-open"); await sleep(150);
+          const lean = PetWalk.tween(Math.round(220 + 8 * Math.hypot(LN[0], LN[1])), e => { box.__lean = [LN[0] * e, LN[1] * e]; });   // 距離越遠迎得越久（不然嘴一格跳一大段）
+          await lean; cls(true, "st-open"); await sleep(150);   // 頭迎到位了才張嘴
           follow(b, "mouth", { ay: .38, ms: 220 });                             // 嘴碰到了：果實改歸嘴（交接只發生一次，從現在的位置接過來）
           const relax = PetWalk.tailTo(box, null);                              // 尾尖鬆開、退回
           await sleep(110);
           toMouth(b, false); b.classList.add("eaten"); cls(false, "st-open"); await flash("pb-snap", 240);
-          await lean; await PetWalk.tween(380, e => { box.__lean = [LN[0] * (1 - e), LN[1] * (1 - e)]; }); box.__lean = null;
+          await PetWalk.tween(380, e => { box.__lean = [LN[0] * (1 - e), LN[1] * (1 - e)]; }); box.__lean = null;
           cls(true, "chew2"); await flash("pb-chew", 600); cls(false, "chew2"); await relax;   // 嚼兩下（0.3 秒 × 2，要等嚼完）
           await flash("pb-gulp", 340);
         }

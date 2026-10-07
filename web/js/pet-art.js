@@ -342,7 +342,7 @@ ${tigerHead()}
   // 分層後飄的鬃、背鰭、前爪抓火焰龍珠；身體穿進穿出祥雲。配色接幼龍的玉綠＋金米色。
   const DSP = [[[86, 104], [100, 140], [114, 166], [138, 160]], [[138, 160], [158, 154], [146, 106], [166, 98]], [[166, 98], [186, 90], [190, 142], [172, 162]]];
   const DW = [[0, 30], [.34, 28], [.7, 19], [1, 8]];
-  const dragonBody = (() => {
+  const dragonBodyFn = () => {
     const pts = spine(DSP, 14);
     // 背鰭：沿背（右法線那側＝上方）一排小三角，往尾巴方向斜
     const fins = pts.filter((p, k) => k % 3 === 1 && p.f > .08 && p.f < .95).map(p => {
@@ -363,7 +363,18 @@ ${tigerHead()}
     return `<path d="${fins}" fill="${MANE}" stroke="${sh(MANE, .45)}" stroke-width="2" stroke-linejoin="round"/>` + P(Pa(tube(DSP, DW, 0, 14)), JADE, { dx: 4, dy: 5 }) +
       P(Pa(tube(DSP, [[0, 12], [.34, 11], [.7, 7], [1, 2]], .3, 14)), BELLY, { sw: 1.6, dx: 2, dy: 2, sk: .14 }) + `<path d="${plates}" stroke="${sh(BELLY, .3)}" stroke-width="1.6" stroke-linecap="round"/>` +
       `<path d="${tube(DSP, [[0, 4], [.5, 4], [1, 1]], -.22, 14)}" fill="${tn(JADE, .35)}" opacity=".7"/>` + `<path class="pc-d2" d="${scales}" stroke="${JD}" stroke-width="1.3" fill="none" opacity=".55"/>`;
+  };
+  const dragonBody = dragonBodyFn();
+  // 用尾巴送果實時，尾巴要在最上層（2026-10-07 使用者：被龍珠、爪子擋住）：在頭之前再畫一份身體，用只框住尾巴那段的剪裁形狀裁出來；
+  // 剪裁形狀也在 .pr-tailtop 裡，跟著尾巴一起變形（pet-walk 的 snapshot 一起處理），平常透明、不處理
+  const tailTopClip = (() => {
+    const S = spine(DSP, 16), I = 26, L = [], R = [];
+    for (let j = I; j < S.length; j++) { const p = S[j], q = S[Math.min(S.length - 1, j + 1)], o = S[Math.max(0, j - 1)], tx = q.x - o.x, ty = q.y - o.y, l = Math.hypot(tx, ty) || 1, nx = -ty / l, ny = tx / l, w = wAt(DW, j / (S.length - 1)) / 2 + 9;
+      L.push([p.x + nx * w, p.y + ny * w]); R.push([p.x - nx * w, p.y - ny * w]); }
+    const e = S[S.length - 1]; L.push([e.x + 14, e.y + 34]); R.push([e.x - 18, e.y + 34]);   // 尾端連尾鰭一起框進來
+    return "M" + L.concat(R.reverse()).map(p => rd(p[0]) + " " + rd(p[1])).join("L") + "Z";
   })();
+
   const DC1 = [[34, 178, 16], [58, 172, 20], [84, 180, 15], [16, 186, 10], [104, 186, 10]], DC2 = [[150, 176, 14], [170, 170, 16], [188, 178, 11], [130, 184, 9]];
   const DRAGON_CLOUD = cloud(DC1, [[46, 182, 6, 1], [76, 184, 5, -1]]) + cloud(DC2, [[162, 178, 5, 1]]);
   // 雲面高度（圖上 x 處雲的頂；沒有雲＝null）：神龍的果實落在雲上（pet-stage.js）
@@ -381,6 +392,7 @@ ${tigerHead()}
       ${P(C(62, 162, 14), "#ffdf86", { hl: [56, 155, 5, 3.5], dx: 3, dy: 3, sk: .25 })}
       <path class="pc-d" d="M54 164 q6 6 14 -2 q2 -6 -4 -7" stroke="#e0a83a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
       ${claw(76, 157, 160, 4, JADE)}</g>
+      <g class="pr-tailtop" opacity="0" clip-path="url(#§tt)"><clipPath id="§tt"><path d="${tailTopClip}"/></clipPath>${P(Pa("M172 160 C180 168 184 180 176 192 C172 184 166 182 160 184 C166 178 164 170 166 164Z"), MANE, { dx: 2, dy: 2 })}${dragonBodyFn()}</g>
       <g class="pr-head" style="--ox:86px;--oy:108px">
       ${[[-160, 22, 10, -6], [-136, 26, 11, -4], [-112, 22, 9, 3], [-30, 26, 11, 5], [-5, 34, 13, 7], [22, 36, 14, 8], [48, 32, 12, 7], [74, 22, 10, 5]].map(([a, L, w, b]) => { const r = a * Math.PI / 180, x0 = 66 + Math.cos(r) * 22, y0 = 78 + Math.sin(r) * 20; return tpo(rd(x0), rd(y0), rd(x0 + Math.cos(r) * L), rd(y0 + Math.sin(r) * L), w, MANE, b); }).join("")}
       <g class="pc-d">${[[-140, 18, 5, -4], [-112, 18, 5, 2], [8, 22, 5, 5], [38, 22, 5, 5]].map(([a, L, w, b]) => { const r = a * Math.PI / 180, x0 = 66 + Math.cos(r) * 26, y0 = 78 + Math.sin(r) * 24; return tp(rd(x0), rd(y0), rd(x0 + Math.cos(r) * L), rd(y0 + Math.sin(r) * L), w, tn(MANE, .45), b); }).join("")}</g>
