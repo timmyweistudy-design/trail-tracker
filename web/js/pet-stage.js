@@ -56,6 +56,12 @@ window.PetStage = (function () {
     return h;
   }
 
+  // 節日燈籠（2026-10-07 寵物新一輪 #22）：新年紅燈籠、端午掛艾草香包、中秋橘色圓燈籠，掛在舞台右上角輕輕晃
+  function lantern(k) {
+    const body = k === "db" ? `<path d="M20 18 C10 24 10 40 20 46 C30 40 30 24 20 18Z" fill="#5d9b4a" stroke="#2f5a2a" stroke-width="1.6"/><path d="M14 30h12" stroke="#e8c45a" stroke-width="2"/><path d="M20 46v8M17 54l3 4 3-4" stroke="#c0392b" stroke-width="1.6" fill="none"/>`
+      : `<ellipse cx="20" cy="32" rx="${k === "ma" ? 14 : 12}" ry="${k === "ma" ? 13 : 15}" fill="${k === "ma" ? "#f39a3d" : "#d8362b"}" stroke="${k === "ma" ? "#b0601a" : "#8e1d16"}" stroke-width="1.6"/><path d="M8 32h24M11 24c6 2 12 2 18 0M11 40c6-2 12-2 18 0" stroke="${k === "ma" ? "#ffd9a0" : "#f1b04a"}" stroke-width="1.2" fill="none" opacity=".8"/><rect x="15" y="15" width="10" height="4" rx="1" fill="#e8c45a"/><rect x="15" y="45" width="10" height="4" rx="1" fill="#e8c45a"/><path d="M20 49v9" stroke="#e8c45a" stroke-width="2"/><ellipse cx="20" cy="32" rx="6" ry="7" fill="#fff3c4" opacity=".35"/>`;
+    return `<div class="ps-fest ps-fest-${k}" aria-hidden="true"><svg viewBox="0 -40 40 100"><path d="M20 -40v55" stroke="#6b5a3a" stroke-width="1.4"/>${body}</svg></div>`;
+  }
   // 舞台 HTML：actorHtml 是角色那一層的內容（對話泡＋角色＋影子），由 pet.js 組好傳進來
   function html(stage, actorHtml, o) {
     o = Object.assign({}, o, window.__ps || {});   // window.__ps＝測試／除錯面板強制指定時段、季節、天氣
@@ -68,6 +74,7 @@ window.PetStage = (function () {
       <div class="ps-l ps-fx" aria-hidden="true">${particles(i, t, se, wx)}</div>
       <div class="ps-actor" style="--d:.72">${actorHtml}</div>
       <div class="ps-l ps-front" style="--d:1.35"><svg class="ps-svg" ${VB}>${sc.front}</svg></div>
+      ${o.fest && !o.bg ? lantern(o.fest) : ""}
     </div>`;
   }
 
@@ -104,6 +111,13 @@ window.PetStage = (function () {
     if (!base) base = { g: e.gamma, b: e.beta };
     aim((e.gamma - base.g) / 18, (e.beta - base.b) / 24);
   }
+  // 搖手機（寵物新一輪 #11）：加速度突然變很大＝在搖，夥伴頭暈晃一晃（4 秒最多一次；iOS 要先授權動作感測，跟陀螺儀視差同一個授權）
+  let shakeT = 0;
+  function onMotion(e) {
+    const a = e.accelerationIncludingGravity || e.acceleration; if (!visible || !a || feeding || asleep) return;
+    const g = Math.hypot(a.x || 0, a.y || 0, a.z || 0); if (g < 24 || Date.now() - shakeT < 4000) return;
+    shakeT = Date.now(); react("dizzy"); if (box) box.dispatchEvent(new CustomEvent("pet-shaken", { bubbles: true }));
+  }
   let mood = "content";
   function bind(el, m) {
     unbind();
@@ -115,6 +129,7 @@ window.PetStage = (function () {
     el.addEventListener("pointerup", onLeave);
     el.addEventListener("contextmenu", noMenu);   // 長按不要跳出瀏覽器的選單（抱抱是長按）
     window.addEventListener("deviceorientation", onOrient);
+    window.addEventListener("devicemotion", onMotion);
     if ("IntersectionObserver" in window) { io = new IntersectionObserver(es => { visible = es.some(x => x.isIntersecting); if (!visible) base = null; live(); }); io.observe(el); }
     else visible = true;
     document.addEventListener("visibilitychange", live);
@@ -140,6 +155,7 @@ window.PetStage = (function () {
     if (box && typeof PetWalk !== "undefined" && PetWalk.wings) PetWalk.wings(box, false);
     if (box) { box.removeEventListener("pointermove", onMove); box.removeEventListener("pointerleave", onLeave); box.removeEventListener("pointerup", onLeave); }
     window.removeEventListener("deviceorientation", onOrient);
+    window.removeEventListener("devicemotion", onMotion);
     if (io) { io.disconnect(); io = null; }
     if (raf) cancelAnimationFrame(raf);
     clearTimeout(beat); beat = 0; busy = false; asleep = false;
@@ -177,6 +193,9 @@ window.PetStage = (function () {
     const w = Object.assign({}, WEIGHTS[m] || WEIGHTS.content), t = TOD_W[(window.__ps && window.__ps.tod) || tod()] || {};
     for (const k in t.add || {}) w[k] = (w[k] || 0) + t.add[k];
     for (const k in t.mul || {}) if (w[k]) w[k] *= t.mul[k];
+    // 天氣（2026-10-07 寵物新一輪 #14）：下雨會甩水、下雪會發抖、晴朗的白天會晒太陽
+    const wx = box && box.dataset.wx, td = (window.__ps && window.__ps.tod) || tod();
+    if (wx === "rain") w.shake = 3; else if (wx === "snow") w.shiver = 3; else if (!wx && (td === "day" || td === "dawn")) w.bask = 2;
     return w;
   }
   const WEIGHTS = {
@@ -221,6 +240,11 @@ window.PetStage = (function () {
       await A(tw, [{ transform: "scale(1)", opacity: .6 }, { transform: "scale(1.9)", opacity: 1, offset: .4 }, { transform: "scale(1)", opacity: .6 }].map(k => ({ ...k, transformBox: "view-box", transformOrigin: "62px 160px" })), { duration: 1400, easing: "ease-in-out" });
     } else await sleep(400);
   }
+  function drops() {   // 甩水：幾滴水珠從身上往外飛（播完就拿掉）
+    const em = emEl(); if (!em || reduce()) return;
+    const g = document.createElement("div"); g.className = "ps-drops"; g.setAttribute("aria-hidden", "true");
+    g.innerHTML = Array.from({ length: 7 }, (_, k) => `<i style="--a:${-160 + k * 23}deg;--dl:${(k % 3) * 60}ms"></i>`).join(""); em.appendChild(g); setTimeout(() => g.remove(), 1100);
+  }
   async function act(kind) {
     if (!box) return;
     busy = true;
@@ -233,6 +257,9 @@ window.PetStage = (function () {
       else if (kind === "sigh") await flash("pb-sigh", 1600);
       else if (kind === "blink2") await flash("pb-blink2", 500);
       else if (kind === "special") await special();
+      else if (kind === "shake") { drops(); await flash("pb-shake", 900); }
+      else if (kind === "shiver") await flash("pb-shiver", 1300);
+      else if (kind === "bask") await flash("pb-bask", 2200);
       else await sleep(400);
     } finally { busy = false; }
   }
@@ -256,6 +283,8 @@ window.PetStage = (function () {
   }
   function react(kind) {
     if (reduce()) return sleep(0);
+    if (kind === "rub") return flash("pb-rub", 1200);     // 來回摸（2026-10-07 寵物新一輪 #11）：瞇眼、身體跟著手扭
+    if (kind === "dizzy") return flash("pb-dizzy", 1400); // 搖手機：頭暈晃一晃
     return flash(kind === "hug" ? "pb-hug" : kind === "tickle" ? "pb-tickle" : "pb-pat", kind === "hug" ? 1000 : 800);
   }
 

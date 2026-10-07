@@ -2400,3 +2400,58 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .gift-it.no b { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: rgba(0,0,0,.06); color: var(--muted, #999); }
 .gift-it.no span { color: var(--muted, #999); font-size: .9em; }
 @media (prefers-reduced-motion: reduce) { .gift-show .pg-big, .gift-show > svg { animation: none; } }
+
+/* ── 進化儀式重做（2026-10-07 寵物新一輪 #13）：舊樣子發光變成白色剪影 → 新舊剪影交替、越換越快 → 白光一閃 → 新樣子帶著顏色亮相 → 文字最後才出來（3.6 秒；點背景可略過） ── */
+.evolve-from { animation: evoFrom2 3.6s linear both; }
+.evolve-to { animation: evoTo2 3.6s linear both; }
+.evolve-flash { animation: evoFlash2 3.6s ease-out both; }
+@keyframes evoFrom2 {
+  0% { opacity: 1; filter: brightness(1) invert(0); transform: scale(1); } 8% { transform: scale(1.04) rotate(-3deg); } 16% { transform: scale(1.02) rotate(3deg); }
+  24% { opacity: 1; filter: brightness(0) invert(1); transform: scale(1.06); }
+  30%, 35.9% { opacity: 0; } 36%, 40.9% { opacity: 1; } 41%, 44.9% { opacity: 0; } 45%, 48.4% { opacity: 1; } 48.5%, 51.4% { opacity: 0; } 51.5%, 53.9% { opacity: 1; } 54%, 55.9% { opacity: 0; } 56%, 57.4% { opacity: 1; }
+  57.5%, 100% { opacity: 0; filter: brightness(0) invert(1); transform: scale(1.06); } }
+@keyframes evoTo2 {
+  0%, 29.9% { opacity: 0; filter: brightness(0) invert(1); transform: scale(1.06); } 30%, 35.9% { opacity: 1; } 36%, 40.9% { opacity: 0; } 41%, 44.9% { opacity: 1; } 45%, 48.4% { opacity: 0; } 48.5%, 51.4% { opacity: 1; } 51.5%, 53.9% { opacity: 0; } 54%, 55.9% { opacity: 1; } 56%, 57.4% { opacity: 0; }
+  57.5% { opacity: 1; filter: brightness(0) invert(1); transform: scale(1.06); } 63% { filter: brightness(0) invert(1); transform: scale(1.18); }
+  72% { opacity: 1; filter: brightness(1) invert(0); transform: scale(.94) rotate(-3deg); } 82% { transform: scale(1.05) rotate(2deg); } 100% { opacity: 1; filter: brightness(1) invert(0); transform: none; } }
+@keyframes evoFlash2 { 0%, 55% { opacity: 0; transform: scale(.4); } 62% { opacity: 1; transform: scale(1); } 74% { opacity: .5; transform: scale(1.35); } 100% { opacity: 0; transform: scale(1.8); } }
+.evolve-stage::before { content: ""; position: absolute; inset: -20%; border-radius: 50%; background: radial-gradient(circle, rgba(255,246,210,.55), transparent 65%); opacity: 0; animation: evoGlow 3.6s ease-in-out both; pointer-events: none; }
+@keyframes evoGlow { 0%, 10% { opacity: 0; transform: scale(.7); } 30%, 55% { opacity: 1; transform: scale(1.05); } 62% { opacity: 1; transform: scale(1.3); } 100% { opacity: .35; transform: scale(1); } }
+.evolve-rays { animation: evoRaysIn .8s 2.2s ease-out forwards, evoRaysSpin 24s linear infinite; }
+.evolve-burst i { animation-delay: calc(var(--dl, 1s) + 1.15s); }
+.evolve-h, .evolve-n, .evolve-d, .evolve-diary, .evolve-card .btn { animation: evoTxt .5s ease-out both; }
+.evolve-h { animation-delay: 2.5s; } .evolve-n { animation-delay: 2.7s; } .evolve-d { animation-delay: 2.85s; } .evolve-diary { animation-delay: 3s; } .evolve-card .btn { animation-delay: 3.1s; }
+@keyframes evoTxt { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.evolve-diary { font-size: calc(12px * var(--fs, 1)); opacity: .7; margin-top: 8px; }
+@media (prefers-reduced-motion: reduce) { .evolve-stage::before { animation: none; } .evolve-h, .evolve-n, .evolve-d, .evolve-diary, .evolve-card .btn { animation: none; } }
+
+/* ── 天氣反應（2026-10-07 寵物新一輪 #14）：甩水（雨）、發抖（雪）、晒太陽（晴朗白天） ── */
+.ps-box .pb-shake :is(.pc-bob, .pc-hover) { animation: pbShake .9s ease-in-out; }
+@keyframes pbShake { 0%, 100% { transform: none; } 10% { transform: rotate(-7deg); } 22% { transform: rotate(7deg); } 34% { transform: rotate(-6deg); } 46% { transform: rotate(5deg); } 58% { transform: rotate(-3deg); } 70% { transform: rotate(2deg); } }
+.ps-drops { position: absolute; left: 50%; top: 42%; width: 0; height: 0; pointer-events: none; }
+.ps-drops i { position: absolute; left: -3px; top: -4px; width: 6px; height: 8px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: #bfe3f7; box-shadow: 0 0 2px rgba(60,120,170,.6); opacity: 0;
+  animation: psDrop .8s var(--dl) ease-out forwards; }
+@keyframes psDrop { 0% { opacity: 0; transform: rotate(var(--a)) translateX(14px); } 20% { opacity: 1; } 100% { opacity: 0; transform: rotate(var(--a)) translateX(58px) translateY(14px); } }
+.ps-box .pb-shiver :is(.pc-bob, .pc-hover) { animation: pbShiver .13s linear 10; }
+@keyframes pbShiver { 0%, 100% { translate: 0 0; } 25% { translate: -1.2px 0; } 75% { translate: 1.2px 0; } }
+.ps-box .pb-bask .pc-eye { display: none; } .ps-box .pb-bask .pc-eh { display: inline; }
+.ps-box .pb-bask :is(.pc-bob, .pc-hover) { animation: pbBask 2.2s ease-in-out; }
+@keyframes pbBask { 0%, 100% { transform: none; } 30%, 70% { transform: scale(1.025, 1.04) rotate(-2deg); } }
+@media (prefers-reduced-motion: reduce) { .ps-drops { display: none; } }
+
+/* ── 更多互動（2026-10-07 寵物新一輪 #11）：來回摸（瞇眼、身體跟著扭）、搖手機（頭暈晃） ── */
+.ps-box .pb-rub .pc-eye { display: none; } .ps-box .pb-rub .pc-eh { display: inline; }
+.ps-box .pb-rub :is(.pc-bob, .pc-hover) { animation: pbRub 1.2s ease-in-out; }
+@keyframes pbRub { 0%, 100% { transform: none; } 20% { transform: rotate(-4deg) scale(1.02, .98); } 45% { transform: rotate(4deg) scale(1.02, .98); } 70% { transform: rotate(-2deg); } }
+.ps-box .pb-dizzy :is(.pc-bob, .pc-hover) { animation: pbDizzy 1.4s ease-in-out; }
+@keyframes pbDizzy { 0%, 100% { transform: none; } 15% { transform: rotate(-9deg) translateX(-3px); } 35% { transform: rotate(8deg) translateX(3px); } 55% { transform: rotate(-6deg); } 75% { transform: rotate(4deg); } }
+.ps-box .pb-dizzy .pc-eye { animation: pbDizzyEye .35s linear 4; }
+@keyframes pbDizzyEye { 0%, 100% { translate: 0 0; } 25% { translate: 1px -1px; } 50% { translate: 0 -2px; } 75% { translate: -1px -1px; } }
+
+/* 節日燈籠（2026-10-07 寵物新一輪 #22） */
+.ps-fest { position: absolute; right: 6%; top: 10%; width: calc(34px * var(--fs, 1)); z-index: 3; pointer-events: none; transform-origin: 50% 0; animation: psFest 4.2s ease-in-out infinite; filter: drop-shadow(0 3px 6px rgba(0,0,0,.25)); }
+.ps-fest svg { width: 100%; display: block; }
+.ps-box[data-tod="night"] .ps-fest-ny, .ps-box[data-tod="night"] .ps-fest-ma { filter: drop-shadow(0 0 10px rgba(255,190,90,.75)); }
+@keyframes psFest { 0%, 100% { rotate: -4deg; } 50% { rotate: 4deg; } }
+.ps-box.ps-off .ps-fest { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .ps-fest { animation: none; } }

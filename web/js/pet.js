@@ -20,9 +20,19 @@ const PET_TAPS = {
   sleepy: ["呼…（翻身）", "再五分鐘…", "夢到在山頂看日出", "等你帶我出門，我就醒了"],
 };
 const PET_TAPS_TIME = [[5, 9, "早安！清晨的山最安靜"], [11, 13, "午餐吃飽了嗎？"], [17, 19, "黃昏的光好好看"], [21, 24, "這麼晚了，早點休息喔"], [0, 5, "都半夜了還不睡？"]];
+// 每隻自己的個性台詞（2026-10-07 寵物新一輪 #21）：混進心情那一組一起抽
+const PET_TAPS_SP = [
+  ["（咚咚）裡面好像在回應你", "暖暖的，再抱一下", "快了，就快出來了", "（殼上的花紋亮了一下）"],
+  ["我一步可以量 3 公分喔", "葉子是世界上最好吃的東西", "等我長大要變成什麼呢？", "慢慢走也會到的"],
+  ["風一吹我就想飛", "花蜜今天特別甜", "翅膀上的花紋是我的名片", "你看，我飛得很穩吧"],
+  ["我聞到前面有松鼠", "尾巴蓬蓬的，要摸嗎？", "我的耳朵什麼都聽得到", "跟著我，我知道捷徑"],
+  ["我會保護你的", "肚子餓的時候吼一聲最有用", "爬坡交給我", "條紋每天都要整理"],
+  ["我噴出火了嗎？沒有？", "等我翅膀長大就載你飛", "鱗片又硬一點了", "我是很勇敢的小龍"],
+  ["雲是我的家，山是我的院子", "龍珠今天很亮", "要不要我幫你把雲吹開？", "千山萬水，有你同行"],
+];
 function petTapLine(k) {
   const h = new Date().getHours(), tm = PET_TAPS_TIME.find(([a, b]) => h >= a && h < b);
-  const pool = (PET_TAPS[k] || PET_TAPS.content).concat(tm ? [tm[2]] : []);
+  const pool = (PET_TAPS[k] || PET_TAPS.content).concat(tm ? [tm[2]] : [], PET_TAPS_SP[petStageIndex(totalKm())] || []);
   return ttT(pool[Math.floor(Math.random() * pool.length)]);
 }
 // 棲息地背景（隨進化升級）
@@ -149,10 +159,30 @@ function petCompanion(box, i, upd) {
   if (sb && !sb.classList.contains("say")) { const ln = sl ? ttT("呼…呼…（輕輕點一下叫醒牠）") : petStickyLine(i); if (ln) { if (upd) petSwapText(sb, escHtml(ln)); else sb.textContent = ln; } }   // upd：只更新數字那條路（泡泡剛排了換回心情那句，要接在它後面換）   // 深夜睡著（#4）／剛健行完的感想、你不在時牠做了什麼（#10 #5）
   if (!sl && petGiftDue() && !window.__petGiftT) { const id = petGiftGive(); window.__petGiftT = setTimeout(() => { window.__petGiftT = 0; petGiftShow(id); }, 2600); }   // 親密滿：帶禮物回來（#9）
 }
+// 紀念日與節日（2026-10-07 寵物新一輪 #22）：相遇滿 30／100 天、一年、兩年那天說一句、寫進日記；
+// 農曆新年、端午、中秋（前後一天）舞台掛一盞燈籠、泡泡說祝福。農曆日期先內建到 2030 年
+const PET_FEST = { ny: ["2026-02-17", "2027-02-06", "2028-01-26", "2029-02-13", "2030-02-03"], db: ["2026-06-19", "2027-06-09", "2028-05-28", "2029-06-16", "2030-06-05"], ma: ["2026-09-25", "2027-09-15", "2028-10-03", "2029-09-22", "2030-09-12"] };
+const PET_FEST_LINE = { ny: "新年快樂！今年也一起去好多地方", db: "端午節快樂！粽子分我一口好不好", ma: "中秋節快樂！今晚的月亮好圓" };
+function petFestival(d) {
+  if (window.__ps && window.__ps.fest) return window.__ps.fest;   // 測試面板強制
+  const t = (d || new Date()).getTime();
+  for (const k in PET_FEST) if (PET_FEST[k].some(x => Math.abs(new Date(x + "T12:00:00").getTime() - t) <= 1.5 * 864e5)) return k;
+  return null;
+}
+function petAnniversary() {
+  const h = new Date(petHatch()), now = new Date(); if (isNaN(h)) return null;
+  const days = Math.floor((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - new Date(h.getFullYear(), h.getMonth(), h.getDate())) / 864e5);
+  const yr = now.getMonth() === h.getMonth() && now.getDate() === h.getDate() ? now.getFullYear() - h.getFullYear() : 0;
+  return yr >= 1 ? { k: "y" + yr, n: yr, y: true } : [30, 100, 365, 500].includes(days) ? { k: "d" + days, n: days } : null;
+}
+function petSpecialDay() {
+  const a = petAnniversary(); if (a) { petDiaryAdd("ann:" + a.k); return ttT(a.y ? "今天是我們相遇 {n} 週年！" : "今天是我們相遇第 {n} 天！").replace("{n}", a.n); }
+  const f = petFestival(); return f ? ttT(PET_FEST_LINE[f]) : null;
+}
 // 打開夥伴頁時泡泡先說什麼：剛健行完的感想 > 你不在時牠做了什麼；說了就留 25 秒（期間天氣回來重畫也不換掉）
 function petStickyLine(i) {
   const w = window.__petLine; if (w && w.until > Date.now()) return w.t;
-  const away = petAwayLine(i), t = petRecapLine() || (away ? ttT(away) : null);
+  const away = petAwayLine(i), t = petSpecialDay() || petRecapLine() || (away ? ttT(away) : null);
   if (t) window.__petLine = { t, until: Date.now() + 25000 };
   return t;
 }
@@ -416,7 +446,7 @@ function renderPet() {
   // 2.5D 舞台（pet-stage.js）：角色那一層包在分層場景裡；沒載到就退回舊的平面棲地
   // 2026-10-04：舞台、角色沒變（同一階、同一頂帽子、同一個名字、天氣與裝飾一樣）就只更新數字和文字——
   // 以前餵完、摸完都整張重畫：粒子位置重抽、待機動作重來、對話泡重彈，看起來像頁面刷新了一次
-  const sig = [i, petHat(), nm, (typeof Premium !== "undefined" && Premium.isOn()) ? 1 : 0, typeof PetStage !== "undefined" ? PetStage.cachedWx() : "", typeof PetJourney !== "undefined" ? PetJourney.decor().join(",") : "", document.documentElement.lang || "", JSON.stringify(window.__ps || null)].join("|");   // __ps＝測試面板強制的時段／季節／天氣
+  const sig = [i, petHat(), nm, (typeof Premium !== "undefined" && Premium.isOn()) ? 1 : 0, typeof PetStage !== "undefined" ? PetStage.cachedWx() : "", typeof PetJourney !== "undefined" ? PetJourney.decor().join(",") : "", document.documentElement.lang || "", JSON.stringify(window.__ps || null), petFestival() || ""].join("|");   // __ps＝測試面板強制的時段／季節／天氣
   if (box.dataset.sig === sig && box.querySelector("#petEmoji")) {
     petCardUpdate(box, { km, mood, days, streak, en, h, left: next ? next.km - km : null, lovePct: Math.round(h / 5 * 100), canFeed, cd, berries, evoTop, pct: next ? Math.max(2, Math.min(100, Math.round((km - st.km) / (next.km - st.km) * 100))) : null });
     if (typeof PetJourney !== "undefined") PetJourney.render();
@@ -429,7 +459,7 @@ function renderPet() {
       <div id="petEmoji" class="pet-m-${mood.k || "content"}" role="button" tabindex="0" aria-label="${ttT("摸摸")} ${escHtml(nm || ttT(st.n))}">${typeof PET_ART !== "undefined" && PET_ART.prop ? PET_ART.prop(i) : ""}${art}${petMoodFx(mood.k)}</div>
       <div class="pet-shadow"></div>`;
   const stageHtml = (typeof PetStage !== "undefined")
-    ? PetStage.html(i, actorHtml, { evo: next ? petEvoLv(Math.round((km - st.km) / (next.km - st.km) * 100)) : 0, wx: PetStage.cachedWx(), decor: typeof PetJourney !== "undefined" ? PetJourney.decor() : [] })
+    ? PetStage.html(i, actorHtml, { evo: next ? petEvoLv(Math.round((km - st.km) / (next.km - st.km) * 100)) : 0, wx: PetStage.cachedWx(), decor: typeof PetJourney !== "undefined" ? PetJourney.decor() : [], fest: petFestival() })
     : `<div class="pet-habitat">${(typeof PET_ART !== "undefined" && PET_ART.habitat) ? PET_ART.habitat(i) : ""}</div>${actorHtml}`;
   box.innerHTML = `<div class="pet-card${i >= 6 ? " final" : ""}" style="--habitat:${PET_BG[i]}">
     ${stageHtml}
@@ -494,8 +524,20 @@ function renderPet() {
   };
   if (em) {
     let pressT = 0, hugged = false;
-    em.addEventListener("pointerdown", () => { hugged = false; clearTimeout(pressT); pressT = setTimeout(() => { hugged = true; hug(); }, 550); });
-    ["pointerup", "pointerleave", "pointercancel"].forEach(t => em.addEventListener(t, () => clearTimeout(pressT)));
+    // 來回摸（2026-10-07 寵物新一輪 #11）：按著在牠身上左右來回滑 3 次＝摸摸（瞇眼扭一扭，也算一次摸頭的親密）；一動起來就不是長按抱抱
+    let rub = null;
+    em.addEventListener("pointerdown", e => { hugged = false; clearTimeout(pressT); pressT = setTimeout(() => { hugged = true; hug(); }, 550); rub = { x: e.clientX, x0: e.clientX, dir: 0, n: 0, t: Date.now() }; });
+    em.addEventListener("pointermove", e => {
+      if (!rub || !e.buttons && e.pointerType === "mouse") return;
+      if (Math.abs(e.clientX - rub.x0) > 10) clearTimeout(pressT);
+      const d = Math.sign(e.clientX - rub.x); if (Math.abs(e.clientX - rub.x) < 6) return;
+      if (d && d !== rub.dir) { if (rub.dir) rub.n++; rub.dir = d; } rub.x = e.clientX;
+      if (rub.n >= 3 && Date.now() - rub.t < 2000) { rub = null; hugged = true;   /* 放開時的 click 不再當成點一下 */
+        if (eating() || woke()) return; if (S) PetStage.react("rub"); ttBuzz([10, 30, 10]); petBurst("❤️", 2); petSay(ttT(["好舒服～", "再摸一下嘛", "呼嚕呼嚕…"][Math.floor(Math.random() * 3)]));
+        if (petPatAff()) petFloat(`${ttT("親密")} +1`, ".pet-card .pet-meter:nth-child(2) .mtrack", null, PET_HEART_SVG); }
+    });
+    ["pointerup", "pointerleave", "pointercancel"].forEach(t => em.addEventListener(t, () => { clearTimeout(pressT); rub = null; }));
+    em.closest(".ps-box") && em.closest(".ps-box").addEventListener("pet-shaken", () => petSay(ttT(["哇～頭好暈", "別搖啦～", "地震了嗎？！"][Math.floor(Math.random() * 3)])));
     em.addEventListener("contextmenu", e => e.preventDefault());   // 長按不要跳出系統選單
     em.addEventListener("click", e => { if (hugged) { hugged = false; return; } poke(S ? PetStage.zoneOf(e.clientY) : "pat"); });
     em.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); poke("pat"); } });
@@ -657,7 +699,7 @@ function petDiaryHtml() {
   const recs = realRecords(), first = recs.length ? recs[recs.length - 1] : null;
   const all = d.slice(); all.push({ t: petHatch(), k: "meet", i: 0 }); if (first) all.push({ t: first.date, k: "hike1", i: null });
   all.sort((a, b) => String(b.t).localeCompare(String(a.t)));
-  const txt = x => x.k === "meet" ? ttT("我們相遇了") : x.k === "evo" ? `${ttT("進化成")} ${ttT(PET_STAGES[x.i] ? PET_STAGES[x.i].n : "")}` : x.k === "feed1" ? ttT("第一次吃果實") : x.k === "hug1" ? ttT("第一次抱抱") : x.k === "hike1" ? ttT("第一次一起出門") : /^gift:/.test(x.k) && PET_GIFTS[x.k.slice(5)] ? `${ttT("帶回來一個")}${ttCJK() ? "" : " "}${ttT(PET_GIFTS[x.k.slice(5)][0])}` : "";
+  const txt = x => x.k === "meet" ? ttT("我們相遇了") : x.k === "evo" ? `${ttT("進化成")} ${ttT(PET_STAGES[x.i] ? PET_STAGES[x.i].n : "")}` : x.k === "feed1" ? ttT("第一次吃果實") : x.k === "hug1" ? ttT("第一次抱抱") : x.k === "hike1" ? ttT("第一次一起出門") : /^ann:y/.test(x.k) ? ttT("相遇 {n} 週年").replace("{n}", x.k.slice(5)) : /^ann:d/.test(x.k) ? ttT("相遇第 {n} 天").replace("{n}", x.k.slice(5)) : /^gift:/.test(x.k) && PET_GIFTS[x.k.slice(5)] ? `${ttT("帶回來一個")}${ttCJK() ? "" : " "}${ttT(PET_GIFTS[x.k.slice(5)][0])}` : "";
   const dt = t => { const z = new Date(t); return isNaN(z) ? "" : `${z.getFullYear()}/${z.getMonth() + 1}/${z.getDate()}`; };
   const rows = all.filter(x => txt(x)).map(x => `<div class="diary-row"><span class="diary-ic">${x.i != null && typeof PET_ART !== "undefined" ? PET_ART.svg(x.i) : `<span class="inline-ic">${ic("footprints")}</span>`}</span><span class="diary-t">${escHtml(txt(x))}</span><time>${dt(x.t)}</time></div>`).join("");
   return rows || `<div class="diary-empty">${ttT("還沒有紀錄")}</div>`;
@@ -722,10 +764,11 @@ function celebrateEvolve(st, lv) {
     <div class="evolve-h">${ttT("進化了！")}</div>
     <div class="evolve-n">${escHtml(petName() || ttT(st.n))} <span class="lv-chip lvt-${Math.min(lv, 7)}">Lv.${lv}</span></div>
     <div class="evolve-d">${ttT(st.d)}</div>
+    <div class="evolve-diary">${ttT("已經寫進夥伴日記")}</div>
     <button class="btn primary" id="evolveOk">${ttT("太棒了")}</button>
   </div>`;
   document.body.appendChild(ov);
-  ttBuzz([40, 60, 30, 40, 120]);
+  ttBuzz([30, 80, 30]); setTimeout(() => { if (ov.isConnected) ttBuzz([60, 40, 140]); }, 2150);   // 白光那一刻再震一次（#13）
   const close = () => ov.remove();
   ov.querySelector("#evolveOk").addEventListener("click", close);
   ov.addEventListener("click", e => { if (e.target === ov) close(); });

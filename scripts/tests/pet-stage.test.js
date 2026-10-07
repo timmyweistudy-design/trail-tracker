@@ -315,6 +315,30 @@ if(sh()){const p=await mk({km:40});
  ok(r.dlg&&r.owned===1&&!r.dlg2&&r.grid.filter(Boolean).length===1&&r.grid.length===8&&r.diary,"companion: at 5 hearts it brings back a gift (dialog, handbook, diary), not again right away "+JSON.stringify(r));
  await p.close();}
 
+// ── 2026-10-07 寵物新一輪 #11 #13 #14 #21 #22：互動、進化儀式、天氣、每隻台詞、紀念日與節日 ──
+if(sh()){const p=await mk({km:40});
+ await p.evaluate(()=>{window.__psNoIdle=true;document.querySelector(".ps-box").scrollIntoView({block:"center"});});await p.waitForTimeout(300);
+ const c=await p.evaluate(()=>{const r=document.querySelector("#petEmoji .pet-critter").getBoundingClientRect();return [r.left+r.width/2,r.top+r.height*.6];});
+ await p.mouse.move(c[0],c[1]);await p.mouse.down();for(let k=0;k<7;k++){await p.mouse.move(c[0]+(k%2?40:-40),c[1],{steps:4});}
+ const rub=await p.evaluate(()=>[document.querySelector("#petEmoji").classList.contains("pb-rub"),localStorage.getItem("tt_pet_pat_day")]);await p.mouse.up();
+ const r=await p.evaluate(async()=>{const w=ms=>new Promise(r=>setTimeout(r,ms)),em=()=>document.querySelector("#petEmoji");
+  await w(1400);window.dispatchEvent(new DeviceMotionEvent("devicemotion",{accelerationIncludingGravity:{x:30,y:4,z:9}}));await w(100);const dizzy=em().classList.contains("pb-dizzy");
+  await w(1500);PetStage.act("shake");await w(150);const drops=em().querySelectorAll(".ps-drops i").length;
+  window.__ps={fest:"ma"};window.__petLine=null;renderPet();await w(250);const fest=[!!document.querySelector(".ps-fest-ma"),document.querySelector(".pet-bubble").textContent];
+  window.__ps=null;localStorage.setItem("tt_pet_hatch",new Date(Date.now()-100*864e5).toISOString());window.__petLine=null;renderPet();await w(250);
+  const ann=[document.querySelector(".pet-bubble").textContent,(localStorage.getItem("tt_pet_diary")||"").includes("ann:d100")];
+  const lines=new Set();for(let k=0;k<300;k++)lines.add(petTapLine("content"));const own=lines.has("跟著我，我知道捷徑")&&!lines.has("爬坡交給我");
+  celebrateEvolve(PET_STAGES[3],4);await w(100);const evo=[!!document.querySelector(".evolve-diary"),getComputedStyle(document.querySelector(".evolve-from")).animationName];document.querySelector('[data-ov="evolve"]').remove();
+  return {dizzy,drops,fest,ann,own,evo};});
+ ok(rub[0]&&/:1$/.test(rub[1]||""),"interaction: rubbing back and forth = a rub (squint + wiggle, counts as a pat) "+JSON.stringify(rub));
+ ok(r.dizzy,"interaction: shaking the phone makes it dizzy");
+ ok(r.drops===7,"weather: in the rain it shakes off water (droplets fly out)");
+ ok(r.fest[0]&&/中秋/.test(r.fest[1]),"festival: a lantern hangs on the stage and it says a greeting "+JSON.stringify(r.fest));
+ ok(/第 100 天/.test(r.ann[0])&&r.ann[1],"anniversary: day 100 since meeting is said and written in the diary "+JSON.stringify(r.ann));
+ ok(r.own,"each pet has its own lines (the fox says fox things, never the tiger's)");
+ ok(r.evo[0]&&r.evo[1]==="evoFrom2","evolution ceremony: silhouette morph sequence + 'written in the diary' "+JSON.stringify(r.evo));
+ await p.close();}
+
 // ── 2026-10-04 角色重畫：結構檢查（id 引用、畫框、開心眼對位、動畫掛點）、分享圖卡不畫瞇眼、幼蟲的頭在下半部 ──
 if(sh()){const p=await mk({km:5});
  const r=await p.evaluate(async()=>{const out=[],h=document.createElement("div");document.body.appendChild(h);
