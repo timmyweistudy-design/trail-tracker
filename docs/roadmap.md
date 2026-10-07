@@ -1,6 +1,6 @@
 # 循徑拾光：目前進度與待辦
 
-最後更新：2026-10-07（**寵物頁收尾輪**——測試面板夥伴動畫、餵食中不能摸、提示框 iPhone 偏右下、+km 飛進進度條、神龍尾巴最上層＋象鼻伸長＋左右游不閃、專屬待機小動作、夥伴日記；SW `trail-tracker-v655`）
+最後更新：2026-10-07（**寵物新一輪 26 項＋神龍尾巴全面重新設計**全部完成；SW `trail-tracker-v663`；`test:all` 40/40）。**山林夥伴的交接與下一輪 38 項待辦見 [pet-handoff.md](pet-handoff.md)**
 上架細節清單見 [launch-checklist.md](launch-checklist.md)。
 
 ## 現況
@@ -8,7 +8,7 @@
 - **定位**：自用（`PERSONAL_MODE=true`，PRO 全開），暫不公開上架；新帳號註冊在 Supabase 關閉中。
 - **平台**：iOS 用 Capacitor 6 + Codemagic（Xcode latest）出 TestFlight；網頁版在 Render（自動部署 main）；Android 未上架。
 - **資料**：步道 2,939 條（林業署 118、OSM 關係 827、OSM 路徑 1,994）。林業署每月自動比對，OSM 每季自動比對，有差異會開 GitHub issue，比對一致時自動關閉。
-- **品質**：`npm run check`（語法、i18n 覆蓋、單元測試、SW 版本、不當字詞清單同步）＋ `npm run test:all` 37 組全過；CI 每天跑。
+- **品質**：`npm run check`（語法、i18n 覆蓋、單元測試、SW 版本、不當字詞清單同步）＋ `npm run test:all` 40 組全過（`--jobs=3` 約 13 分）；CI 每天跑。
 - **健康度**（10/03～10/04 實測）：一般手機 0.55 秒出現步道清單，CPU 降速 4 倍（App 檔案在本機）0.65 秒；近 30 天使用者端錯誤 9 筆，已修 8 筆（剩 1 筆是舊版 debug）；資料庫 15 MB。
 
 ## 2026-10-07 完成：寵物新一輪（26 項＋神龍尾巴全面重新設計）
@@ -211,7 +211,7 @@
 
 ### 有期限
 - [ ] **Android：升 Capacitor 8＋target API 36**。Google Play 2026-08-31 起強制，可申請延到 **11-01**（只有要上架 Android 才需要）。iOS 最低版本會跟著從 13 調到 15，要實機測。
-- [ ] **重新出 iOS build（Codemagic）**：要 build 才有的原生改動＝低電量提醒（`TrailLive.battery`）、品牌啟動圖＋深綠底色、`@capacitor/splash-screen`（Codemagic 會自動 `cap sync`＋`pod install`）；網頁部分（10/01 之後所有改版、10/04 夥伴與進場動畫、10/05～10/06 餵食三輪修正）也是打包進 App 的，不重 build 看不到。TestFlight 每個 build 90 天到期。
+- [ ] **重新出 iOS build（Codemagic）**：要 build 才有的原生改動＝低電量提醒（`TrailLive.battery`）、品牌啟動圖＋深綠底色、`@capacitor/splash-screen`、**10/07 小工具「夥伴現在在做什麼」（Swift 還沒編譯過）、3 天沒出門的夥伴提醒**（Codemagic 會自動 `cap sync`＋`pod install`）；網頁部分（10/01 之後所有改版、10/04 夥伴與進場動畫、10/05～10/06 餵食三輪修正）也是打包進 App 的，不重 build 看不到。TestFlight 每個 build 90 天到期。
 - [ ] **Apple 登入 secret 2027-04-01 到期**：用 .p8 重產（步驟 `docs/apple-sign-in.md`）。
 
 ### 要你操作的
@@ -227,6 +227,9 @@
 - [ ] **社群端對端測試**：要另開一個 Supabase 測試專案，才能用真資料庫跑測試（目前用假資料＋本機 Postgres）。
 - [ ] 小語種翻譯（高棉、緬甸、蒙古、尼泊爾等）要不要找母語者校；或上架時先只開中英日韓。
 
+### 山林夥伴下一輪（交接）
+- [ ] 38 項優化清單（使用者 10/07 要的，尚未開工）＋建議順序：**[pet-handoff.md](pet-handoff.md) 第 3 節**。先做第一組（這輪新功能的已知不足）與備份還原測試、效能預算。
+
 ### 之後可以做
 - [ ] 原生計步器（CMPedometer）讀真步數、寫入 Apple 健康（現在步數是距離÷步幅估算）。
 - [ ] 沿途標記點：社群回報水源、營地、觀景點（從山友路況回報延伸）。
@@ -241,7 +244,7 @@
 
 ## 維護備忘
 
-- **測試指令**（2026-10-04 並行化）：`npm run test:all` 36 組並行約 **4 分鐘**（以前排隊跑 27 分）；`npm run test:changed` 只跑跟還沒推上去的改動有關的（對照表在 `scripts/tests/run-all.js` 的 `MAP`）；`--only=名稱`、`--jobs=N`、`--serial`、`--no-retry`。失敗的那組會在大家跑完後**單獨重跑一次**：過了列為「不穩定」（不擋、但會印出第一次失敗的項目），兩次都失敗才算沒過。**新測試要讀 `process.env.TT_PORT`**（並行時分配不重複的 port；單獨跑時用自己的預設 port）。
+- **測試指令**（2026-10-04 並行化；10/07 已 40 組，建議 `--jobs=3`，全開會記憶體不足）：`npm run test:all` 並行約 **4～13 分鐘**（以前排隊跑 27 分）；`npm run test:changed` 只跑跟還沒推上去的改動有關的（對照表在 `scripts/tests/run-all.js` 的 `MAP`）；`--only=名稱`、`--jobs=N`、`--serial`、`--no-retry`。失敗的那組會在大家跑完後**單獨重跑一次**：過了列為「不穩定」（不擋、但會印出第一次失敗的項目），兩次都失敗才算沒過。**新測試要讀 `process.env.TT_PORT`**（並行時分配不重複的 port；單獨跑時用自己的預設 port）。
 
 - **新增外部網域**（API、圖磚）：要加進 `web/index.html` 的 CSP `connect-src`，不然會被擋；被擋的會出現在錯誤紀錄（`CSP connect-src ...`）。
 - **改不當字詞清單**：只改 `web/js/moderation.js` 的 `TT_BAD` → `node scripts/gen-badwords-sql.mjs` 重產 phase37 → 到 Supabase 執行 → 測試詞在 `scripts/tests/badwords-cases.json`。`npm run check` 會擋兩邊不同步。
@@ -250,8 +253,10 @@
 - **山林夥伴**（各檔分工）：
   - `art-kit.js`／`postcard-art.js`／`stage-art.js`：美工（色票、明信片、舞台背景），只產生 SVG 字串。
   - `pet-art.js`：角色與帽子的 SVG（每份用 `§` 換成自己的 id 前綴；`.pc-eh` 開心眼、`.pc-d` 小尺寸藏起來的細節、`.pc-d2` 只在舞台／進化儀式顯示的質感細節、`.pc-sway` 龍鬚擺動）。長身體（龍、幼蟲、鬍鬚）用 `spine()`／`tube()` 沿貝茲曲線產生輪廓，背鰭、腹甲、鱗片沿同一條曲線排；長形狀在 `P()` 裡只寫一次、其他用 `<use>`（不然一隻龍 46 KB）。點擊的頭身分界在 `HEAD_LINE`（換造型時頭的位置變了要一起改）。腳下的葉子／雲放 `PROP`（另一層、不跟著動）；眼睛用 `eyeOf(種類…)`，每隻自己的；**地上的動物腳底要對齊 y≈196**，待機只能用 `.pc-bob`（以腳底為原點縮放），不要再用往上平移。**12 個地方**直接讀它（地圖標記、分享圖卡、動態島、好友…），介面 `svg(i, cls, hatId)`／`dataUri(i, size, hatId)` 不能改。帽子要畫在 `<!--H-->` 標記的位置（頭部那一組）；新帽子加進 `HATS`／`HAT_LABEL`／`HAT_IDS`，`pet-stage.test.js` 會自動檢查 7 階都不遮眼。
-  - `pet-stage.js`：2.5D 舞台＋行為狀態機＋餵食動畫。只用在夥伴卡和進化儀式背景。平常站在中間不亂走；餵食時才用 `pet-walk.js` 走過去吃、再走回中間。測試用 `window.__ps={tod,season,wx}` 強制時段／季節／天氣、`window.__psNoIdle=true` 關掉隨機動作；`window.__recPet="fast"|"rest"` 強制記錄地圖上的夥伴小跑／坐下（模擬記錄沒有真實速度）。測試面板「夥伴舞台與旅行」都有按鈕。
+  - **10/07 起神龍尾巴是程序產生的**（`PET_ART.dragon.tail(中心線)`、`.pr-tail6` 畫在最上層、`pet-walk.js` 的 `tailDraw`）；改身體形狀要同時看 `DSP`、`DI0/DT0/DB` 和 `pet-walk.js` 的 `I0`、`TW`。細節與這輪新系統（作息、玩、禮物、擺設、串門子、拍照、音效）都在 [pet-handoff.md](pet-handoff.md)。
+  - `pet-stage.js`：2.5D 舞台＋行為狀態機＋餵食動畫。只用在夥伴卡和進化儀式背景。平常站在中間不亂走；餵食時才用 `pet-walk.js` 走過去吃、再走回中間。測試用 `window.__ps={tod,season,wx,asleep,fest}` 強制時段／季節／天氣／睡著／節日、`window.__psNoIdle=true` 關掉隨機動作；`window.__recPet="fast"|"rest"` 強制記錄地圖上的夥伴小跑／坐下（模擬記錄沒有真實速度）。測試面板「夥伴舞台與旅行」都有按鈕。
   - `pet-journey.js`（PRO）：明信片／縣市地圖／地區配件／裝飾，**全部從紀錄推**，唯一存的是 `tt_pj_seen`（看過哪幾張，進備份）；推出來的地區配件不能寫進 `tt_pet_hats_owned`，沒 PRO 時 `petHat()` 不回傳地區配件。縣市方格位置在 `TILE`（示意，不是比例），外語介面顯示 ISO 3166-2:TW 代碼。
-  - 改了夥伴的中文文案：補 24 語＋重跑 `python3 scripts/build-font-subset.py`。
+  - 改了夥伴的中文文案：補 24 語＋重跑 `python3 scripts/build-font-subset.py`（要用系統的 python3，scratch venv 沒有 fontTools）。
+  - **自動測試的兩個開頭設定**（10/07）：`tt_pet_woke=現在`（深夜跑測試夥伴會睡著）、`tt_test_diary=1`（用測試里程切階段時日記照常寫）。
   - **作畫守則**（都是使用者截圖抓到的）：每排樹先鋪地面帶，樹不能站在霧／遠山／水面上；大樹頂用 `ArtKit.crown`（`broadleaf` 自帶一截樹幹，會像樹幹頂上長了小樹）；杉木、圓柏用常綠色、不跟季節變色；雪要貼山頂成雪冠；水裡放蘆葦不放草叢；圖層順序是遠景樹先畫、裝飾後畫；眼睛要中性（反光小、不畫睫毛感的眼皮線）。改完用 `scripts/tests/pet-stage.test.js` 之外，**一定要把 21 張 × 4 時段渲染出來用眼睛看**（測試抓不到「看起來怪」）。
 - **進場畫面**：樣式在 `web/index.html` 內聯、控制在 `web/js/splash.js`、預載在 `web/js/warmup.js`。自動化測試瀏覽器（`navigator.webdriver`）預設走快速精簡版，免得每個測試多等；測完整版設 `localStorage.tt_splash_test=1`（`tt_splash_mode` 可強制 full／compact）。動畫不能靠 JS 計時器（開機時會被延後），要用純 CSS。品牌字型是內嵌 base64：改了 `brand-serif.woff2` 要重新內嵌。原生啟動圖＝純深綠漸層（不放 logo，讓網頁動畫畫），`assets/splash*.png` 跟 iOS `Splash.imageset` 同一張；做 Android 時跑 `npm run assets` 同步（Android 的還是舊圖）。

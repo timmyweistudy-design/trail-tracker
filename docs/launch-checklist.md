@@ -44,7 +44,7 @@
 
 ### 商店素材
 - [x] iOS 截圖 7 張（1290×2796）
-- [ ] **夥伴那張截圖要重拍**：2026-10-04 夥伴外觀全面改版（角色、2.5D 舞台、明信片），`store-assets/ios-6.9/` 第 4 張是舊外觀（`npm run store:shots`）
+- [ ] **夥伴那張截圖要重拍**：2026-10-04 夥伴外觀全面改版（角色、2.5D 舞台、明信片），10/07 神龍尾巴又重畫（加長、繞過身體下方）、多了拍照／擺設／節日燈籠，`store-assets/ios-6.9/` 第 4 張是舊外觀（`npm run store:shots`）
 - [x] 商店文案中英（`docs/store-listing.md`）
 - [x] 隱私權政策頁 `/privacy.html`、支援頁 `/support.html`（線上）
 - [x] App Privacy 問卷答案（`docs/app-privacy-answers.md`）
