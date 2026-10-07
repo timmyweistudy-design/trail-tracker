@@ -2323,8 +2323,29 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 /* 長按抱抱時不要跳出文字選取的藍框、長按選單、點擊的藍色閃光（2026-10-07 使用者回報：以前只有角色本身設了，旁邊的泡泡、名字會被選到） */
 .ps-box, .ps-box * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
 
-/* 飄起來的數字（餵食 +km、抱抱 親密 +2）：從角色飄到對應的條，到了閃一下（pet.js petFloat） */
-.pet-float { position: fixed; z-index: 96; pointer-events: none; transform: translate(-50%, -50%); padding: 3px 10px; border-radius: 999px; background: rgba(255,253,246,.96); color: #2f5a2b; font-weight: 700; font-size: calc(13px * var(--fs, 1)); box-shadow: 0 3px 10px rgba(0,0,0,.18); white-space: nowrap; }
-.pet-hit { animation: petHit .6s ease-out; }
+/* 飛起來的數字（餵食 +km、抱抱 親密 +2）：帶果實／愛心的膠囊，從角色沿弧線飛到條的末端；到了炸開一圈光、條閃一道光、數字跳一下（pet.js petFloat） */
+.pet-float { position: fixed; z-index: 96; pointer-events: none; transform: translate(-50%, -50%); display: inline-flex; align-items: center; gap: 4px; padding: 4px 11px 4px 6px; border-radius: 999px;
+  background: linear-gradient(135deg, #fffdf4, #ffe9b0); color: #6b4a12; font-size: calc(13.5px * var(--fs, 1)); white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0,0,0,.22), 0 0 0 2px rgba(255,255,255,.7) inset, 0 0 18px rgba(255,214,120,.65); }
+.pet-float b { font-family: var(--num); font-weight: 800; letter-spacing: .01em; }
+.pet-float svg, .pet-float .berry { width: 18px; height: 18px; flex: none; }
+.pet-ring { position: fixed; z-index: 95; pointer-events: none; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; border: 2px solid rgba(255,226,140,.95); box-shadow: 0 0 12px rgba(255,214,120,.8); animation: petRing .65s ease-out forwards; }
+@keyframes petRing { from { transform: scale(.4); opacity: 1; } to { transform: scale(4.2); opacity: 0; } }
+.pet-track.pet-hit i { animation: petTrackHit .9s ease-out; }
+.pet-track { position: relative; }
+.pet-track.pet-hit::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.75) 50%, transparent 70%); background-size: 220% 100%; animation: petShine .9s ease-out; border-radius: inherit; pointer-events: none; }
+@keyframes petTrackHit { 0% { filter: brightness(1); } 25% { filter: brightness(1.5) saturate(1.3); } 100% { filter: brightness(1); } }
+@keyframes petShine { from { background-position: 120% 0; } to { background-position: -40% 0; } }
+.pet-hit:not(.pet-track) { animation: petHit .6s ease-out; }
 @keyframes petHit { 0% { filter: brightness(1); } 30% { filter: brightness(1.45) saturate(1.2); } 100% { filter: brightness(1); } }
+.pet-bump { display: inline-block; animation: petBump .55s cubic-bezier(.3,1.6,.5,1); }
+@keyframes petBump { 0% { transform: scale(1); } 35% { transform: scale(1.22); color: #fff3c4; } 100% { transform: scale(1); } }
+/* 差不到 1 km 就進化：進度條呼吸發光、下一階剪影輕晃 */
+.pet-card.evo-near .pet-track i { animation: petNear 1.8s ease-in-out infinite; }
+.pet-card.evo-near .pet-evo-sil { animation: petSilWiggle 2.4s ease-in-out infinite; display: inline-block; transform-origin: 50% 90%; }
+@keyframes petNear { 0%, 100% { box-shadow: 0 0 8px rgba(232,200,122,.4); } 50% { box-shadow: 0 0 16px rgba(255,220,130,.95); filter: brightness(1.15); } }
+@keyframes petSilWiggle { 0%, 70%, 100% { transform: rotate(0); } 78% { transform: rotate(-7deg); } 86% { transform: rotate(6deg); } 93% { transform: rotate(-3deg); } }
+/* 餵食鈕冷卻：果實外一圈環狀倒數（--cdp：0＝剛餵、1＝可以餵） */
+.pet-btn.feed.cd .berry { border-radius: 50%; padding: 2px; background: conic-gradient(#e8c87a calc(var(--cdp, 1) * 360deg), rgba(255,255,255,.16) 0); }
+@media (prefers-reduced-motion: reduce) { .pet-card.evo-near .pet-track i, .pet-card.evo-near .pet-evo-sil, .pet-bump, .pet-track.pet-hit::after { animation: none !important; } }
 .pet-bubble.say { box-shadow: 0 0 0 2px rgba(255,214,120,.55); }

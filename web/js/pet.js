@@ -94,9 +94,11 @@ function feedPet() {
   ttBuzz([20, 30, 20]);
   const done = () => {
     petBurst("❤️", 2);   // 先冒愛心
-    checkPetEvolve();    // 進化了會整張重畫（被進化儀式蓋住，看不到跳動）
-    renderPet();         // 沒進化：只更新數字（成長里程往上跳、進度條長大）
-    setTimeout(() => { petSay(ttT("牠吃得好開心")); petFloat(`+${gain} km`, ".pet-card .pet-track"); }, 250);   // 在卡片裡說、數字飄進成長進度條（以前是畫面底部的提示框）
+    window.__petEvolving = false; checkPetEvolve();    // 進化了會整張重畫（被進化儀式蓋住，看不到跳動）
+    if (window.__petEvolving) { renderPet(); return; }
+    // 沒進化：說一句、「+km」飛進成長進度條，飛到的那一格才更新卡片（進度條往前長、成長里程往上數、「再走 X km」跳一下）
+    petSay(ttT("牠吃得好開心"));
+    petFloat(`+${gain} km`, ".pet-card .pet-track", () => { renderPet(); document.querySelectorAll(".pet-card .pet-evo-top b, .pet-card .pet-chip .cv").forEach(e => { e.classList.remove("pet-bump"); void e.offsetWidth; e.classList.add("pet-bump"); }); }, BERRY_SVG);
   };
   // 果實從天上掉下來、牠走過去吃（pet-stage.js）；舞台不在畫面上或減少動態效果時直接結算
   const fb = $("#petFeed"); if (fb) fb.disabled = true;
@@ -331,7 +333,7 @@ function renderPet() {
   // 以前餵完、摸完都整張重畫：粒子位置重抽、待機動作重來、對話泡重彈，看起來像頁面刷新了一次
   const sig = [i, petHat(), nm, (typeof Premium !== "undefined" && Premium.isOn()) ? 1 : 0, typeof PetStage !== "undefined" ? PetStage.cachedWx() : "", typeof PetJourney !== "undefined" ? PetJourney.decor().join(",") : "", document.documentElement.lang || "", JSON.stringify(window.__ps || null)].join("|");   // __ps＝測試面板強制的時段／季節／天氣
   if (box.dataset.sig === sig && box.querySelector("#petEmoji")) {
-    petCardUpdate(box, { km, mood, days, streak, en, h, lovePct: Math.round(h / 5 * 100), canFeed, cd, berries, evoTop, pct: next ? Math.max(2, Math.min(100, Math.round((km - st.km) / (next.km - st.km) * 100))) : null });
+    petCardUpdate(box, { km, mood, days, streak, en, h, left: next ? next.km - km : null, lovePct: Math.round(h / 5 * 100), canFeed, cd, berries, evoTop, pct: next ? Math.max(2, Math.min(100, Math.round((km - st.km) / (next.km - st.km) * 100))) : null });
     if (typeof PetJourney !== "undefined") PetJourney.render();
     return;
   }
@@ -372,6 +374,8 @@ function renderPet() {
     PetStage.weather().then(w => { if (w !== had && document.body.dataset.view === "pet" && box.isConnected) renderPet(); if (typeof window.syncMyStatsToCloud === "function") window.syncMyStatsToCloud(); });   // 好友看到的天氣、配件跟著更新   // 天氣回來了才補畫（之後走快取，不會一直重畫）
   }
   if (typeof PetJourney !== "undefined") PetJourney.render();   // 夥伴的旅行（PRO：明信片／走過的縣市／地區配件）
+  { const card = box.querySelector(".pet-card"), fb0 = $("#petFeed"); if (card) card.classList.toggle("evo-near", !!next && next.km - km < 1); if (fb0) { fb0.classList.toggle("cd", cd > 0); fb0.style.setProperty("--cdp", cd > 0 ? (1 - cd / FEED_COOLDOWN).toFixed(3) : "1"); } }
+  clearInterval(window.__petCdT); if (cd > 0) window.__petCdT = setInterval(() => { if (document.body.dataset.view === "pet" && !document.hidden) renderPet(); }, 60000);   // 冷卻倒數：每分鐘更新一次環和文字
   const em = $("#petEmoji");
   // 點頭＝摸摸頭（瞇眼）、點身體＝搔癢（扭一扭）、長按＝抱抱（壓扁回彈＋三顆心，每天第一次抱親密 +2）
   const S = typeof PetStage !== "undefined";
@@ -387,12 +391,13 @@ function renderPet() {
   };
   const hug = () => {
     if (eating()) return;
-    if (S) PetStage.react("hug");
-    ttBuzz([20, 40, 20]);
-    petBurst("❤️", 3);
-    if (localStorage.getItem("tt_pet_hug_day") !== todayStr()) {
+    const first = localStorage.getItem("tt_pet_hug_day") !== todayStr();
+    if (S) PetStage.react(first ? "hug" : "pat");   // 今天已經抱過：蹭一下就好
+    ttBuzz(first ? [20, 40, 20] : 20);
+    petBurst("❤️", first ? 3 : 1);
+    if (first) {
       localStorage.setItem("tt_pet_hug_day", todayStr()); bumpAffinity(2);
-      petSay(ttT("抱抱！今天的親密增加了")); petFloat(`${ttT("親密")} +2`, ".pet-card .m-love");
+      petSay(ttT("抱抱！今天的親密增加了")); petFloat(`${ttT("親密")} +2`, ".pet-card .pet-meter:nth-child(2) .mtrack", null, PET_HEART_SVG);
     } else petSay(`${ttT("抱抱！")} ${ttT("今天已經抱過囉")}`);
   };
   if (em) {
@@ -440,16 +445,27 @@ function petSay(text, ms) {
   clearTimeout(_sayT); b.classList.add("say"); petSwapText(b, escHtml(text));
   _sayT = setTimeout(() => { b.classList.remove("say"); petSwapText(b, ttT(petMood().t)); }, ms || 2600);
 }
-function petFloat(text, toSel) {   // 從角色飄到某個數字（成長進度條、親密條），到了那裡閃一下
-  const em = document.getElementById("petEmoji"), to = document.querySelector(toSel); if (!em || !to) return;
-  const a = em.getBoundingClientRect(), z = to.getBoundingClientRect(), f = document.createElement("span");
-  f.className = "pet-float"; f.textContent = text; document.body.appendChild(f);
-  const x0 = a.left + a.width / 2, y0 = a.top + a.height * .3, x1 = z.left + z.width / 2, y1 = z.top + z.height / 2;
+// 從角色飛到某個條（成長進度條、親密條）：帶果實／愛心的膠囊走一道弧線，飛到條「現在的末端」；
+// 到了那一格炸開一圈光、條和數字才開始跳（onArrive 在那一格更新卡片——2026-10-07 使用者：「飛進去進度條裡面，數字和進度條再跳動，無縫連接」）
+function petFloat(text, toSel, onArrive, icon) {
+  const em = document.getElementById("petEmoji"), to = document.querySelector(toSel); if (!em || !to) { if (onArrive) onArrive(); return; }
+  const a = em.getBoundingClientRect(), z = to.getBoundingClientRect(), fill = to.querySelector("i"), fz = fill ? fill.getBoundingClientRect() : null;
+  const x0 = a.left + a.width / 2, y0 = a.top + a.height * .32, x1 = fz && fz.width ? fz.right : z.left + z.width / 2, y1 = z.top + z.height / 2;
+  const f = document.createElement("span"); f.className = "pet-float"; f.innerHTML = (icon || "") + `<b>${escHtml(text)}</b>`; document.body.appendChild(f);
   f.style.left = x0 + "px"; f.style.top = y0 + "px";
-  const reduceM = matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const an = f.animate(reduceM ? [{ opacity: 1 }, { opacity: 0 }] : [{ transform: "translate(-50%, -50%) scale(.8)", opacity: 0 }, { transform: "translate(-50%, -110%) scale(1.05)", opacity: 1, offset: .25 },
-    { transform: `translate(calc(-50% + ${x1 - x0}px), calc(-50% + ${y1 - y0}px)) scale(.9)`, opacity: .95, offset: .85 }, { transform: `translate(calc(-50% + ${x1 - x0}px), calc(-50% + ${y1 - y0}px)) scale(.6)`, opacity: 0 }], { duration: reduceM ? 900 : 1300, easing: "cubic-bezier(.3,.7,.4,1)" });
-  an.onfinish = () => { f.remove(); to.classList.remove("pet-hit"); void to.offsetWidth; to.classList.add("pet-hit"); };
+  const reduceM = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const land = () => {
+    f.remove();
+    if (!reduceM) { const r = document.createElement("span"); r.className = "pet-ring"; r.style.left = x1 + "px"; r.style.top = y1 + "px"; document.body.appendChild(r); setTimeout(() => r.remove(), 700); }
+    to.classList.remove("pet-hit"); void to.offsetWidth; to.classList.add("pet-hit");
+    if (onArrive) onArrive();
+  };
+  if (reduceM) { setTimeout(land, 500); return; }
+  // 弧線：先往上彈出來、停一下讓人看清楚，再沿著往上拱的弧線飛下去（取樣 6 點的二次貝茲）
+  const cx = (x0 + x1) / 2 + (x1 - x0) * .15, cy = Math.min(y0, y1) - 46, kf = [{ transform: "translate(-50%, -50%) scale(.6)", opacity: 0, offset: 0 }, { transform: "translate(-50%, -150%) scale(1.12)", opacity: 1, offset: .16 }, { transform: "translate(-50%, -150%) scale(1)", opacity: 1, offset: .32 }];
+  for (let k = 1; k <= 6; k++) { const t = k / 6, u = 1 - t, X = u * u * x0 + 2 * u * t * cx + t * t * x1, Y = u * u * (y0 - 20) + 2 * u * t * cy + t * t * y1;
+    kf.push({ transform: `translate(calc(-50% + ${(X - x0).toFixed(1)}px), calc(-50% + ${(Y - y0).toFixed(1)}px)) scale(${(1 - .45 * t).toFixed(3)})`, opacity: k === 6 ? .2 : 1, offset: +(.32 + .68 * t).toFixed(3) }); }
+  f.animate(kf, { duration: 1250, easing: "cubic-bezier(.45,.05,.55,.95)" }).onfinish = land;
 }
 function petSwapText(el, html) {
   if (!el || el.innerHTML === html) return;
@@ -470,6 +486,7 @@ function petCardUpdate(box, v) {
   // 進化進度
   petSwapText(box.querySelector(".pet-evo-top"), v.evoTop);
   const tr = box.querySelector(".pet-track"); if (tr && v.pct != null) { tr.querySelector("i").style.width = v.pct + "%"; tr.setAttribute("aria-valuenow", v.pct); }
+  { const card = box.querySelector(".pet-card"); if (card) card.classList.toggle("evo-near", v.left != null && v.left < 1); }   // 差不到 1 km 就進化：進度條呼吸發光、剪影輕晃
   const psb = box.querySelector(".ps-box"); if (psb) { const ev = petEvoLv(v.pct); if (ev) psb.dataset.evo = ev; else delete psb.dataset.evo; }   // 餵完長大：蛋上的裂縫當場多一道
   // 活力、親密
   const ms = box.querySelectorAll(".pet-meter");
@@ -486,6 +503,7 @@ function petCardUpdate(box, v) {
     const need = Math.max(0, 3 - v.berries);
     const lbl = v.cd > 0 ? `${v.cd >= 3600e3 ? `${Math.ceil(v.cd / 3600e3)} ${ttT("小時後可餵")}` : `${Math.ceil(v.cd / 6e4)} ${ttT("分鐘後可餵")}`}` : need > 0 ? `${ttT("還差")} ${need} ${ttT("顆果實")}` : `${ttT("餵食")}`;
     fb.disabled = !v.canFeed;
+    fb.classList.toggle("cd", v.cd > 0); fb.style.setProperty("--cdp", v.cd > 0 ? (1 - v.cd / FEED_COOLDOWN).toFixed(3) : "1");   // 冷卻：果實外一圈環狀倒數
     petSwapText(fb.querySelector("span"), lbl);
     let bal = fb.querySelector(".feed-bal");
     if (need > 0 || v.cd > 0) { if (bal) bal.remove(); }
@@ -603,7 +621,7 @@ function checkPetEvolve() {
   const i = petStageIndex(totalKm());
   const prev = +(localStorage.getItem("tt_pet_stage") || 0);
   if (i !== prev) localStorage.setItem("tt_pet_stage", i);
-  if (i > prev) { setTimeout(() => celebrateEvolve(PET_STAGES[i], i + 1), 800); try { if (typeof window !== "undefined" && window.scheduleCloudBackup) window.scheduleCloudBackup(); } catch (e) { /* */ } }   // 寵物進化也自動備份
+  if (i > prev) { setTimeout(() => celebrateEvolve(PET_STAGES[i], i + 1), 800); window.__petEvolving = true; try { if (typeof window !== "undefined" && window.scheduleCloudBackup) window.scheduleCloudBackup(); } catch (e) { /* */ } }   // 寵物進化也自動備份
 }
 // 記錄頁待機面板（未開始記錄時顯示夥伴/上次/推薦）
 function renderRecIdle() {

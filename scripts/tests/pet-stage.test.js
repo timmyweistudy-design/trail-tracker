@@ -130,6 +130,8 @@ if(sh()){const p=await mk({km:40,berries:20});
  ok(!f2.berry&&f2.bal===bal0-3&&/吃得好開心/.test(f2.t),"feed: all three eaten, settled (−3) "+JSON.stringify(f2));
 
  ok(await p.evaluate(()=>Math.abs(parseFloat(document.querySelector(".ps-box").style.getPropertyValue("--wx"))||0)<1),"feed: walks back to the middle afterwards");
+ await p.waitForFunction(()=>!document.querySelector(".pet-float")&&/小時後可餵/.test(document.querySelector("#petFeed span").textContent),null,{timeout:5000}).catch(()=>{});   /* 2026-10-07：「+km」飛進進度條那一格才更新卡片 */
+ await p.waitForTimeout(300);
  const keep=await p.evaluate(()=>({same:document.querySelector(".ps-box")===window.__psBefore,parts:[...document.querySelectorAll(".ps-p")].map(e=>e.style.left).join()===window.__psParts,
   km:document.querySelector(".pet-chip .cv").textContent,feedDis:document.getElementById("petFeed").disabled,lbl:document.querySelector("#petFeed span").textContent}));
  ok(keep.same&&keep.parts&&keep.feedDis&&/小時後可餵/.test(keep.lbl),"after eating the card is updated in place: same stage element, particles untouched, button shows the cooldown "+JSON.stringify(keep));
