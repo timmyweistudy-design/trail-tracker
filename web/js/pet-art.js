@@ -66,7 +66,7 @@ window.PET_ART = (function () {
   }
   // 有外框的漸細線（角、爪、鬃毛）：先畫深色粗一點的，再疊本色
   const tpo = (x0, y0, x1, y1, w, col, bend) => tp(x0, y0, x1, y1, w + 2.6, sh(col, .5), bend) + tp(x0, y0, x1, y1, w, col, bend);
-  const rd = v => Math.round(v * 10) / 10;
+  const rd = v => Math.round(v * 10) / 10, RD = rd;
   // ── 沿曲線長身體（2026-10-04 龍重畫）：segs＝一串三次貝茲 [[x,y],[x,y],[x,y],[x,y]]（首尾相接）──
   // spine() 等距取樣，回傳 {x,y,nx,ny,a,f}：n＝左法線（往行進方向的左手邊）、a＝切線角度、f＝全長比例 0..1
   function spine(segs, n) {
@@ -340,39 +340,61 @@ ${tigerHead()}
 
   // 6 騰雲神龍（2026-10-04 重畫）：東方龍「九似」——駝頭長吻、鹿角、牛耳、蛇身、蜃腹（節狀腹甲）、鯉鱗、鷹爪、龍鬚、
   // 分層後飄的鬃、背鰭、前爪抓火焰龍珠；身體穿進穿出祥雲。配色接幼龍的玉綠＋金米色。
-  const DSP = [[[86, 104], [100, 140], [114, 166], [138, 160]], [[138, 160], [158, 154], [146, 106], [166, 98]], [[166, 98], [186, 90], [190, 142], [172, 162]]];
-  const DW = [[0, 30], [.34, 28], [.7, 19], [1, 8]];
-  const dragonBodyFn = () => {
-    const pts = spine(DSP, 14);
-    // 背鰭：沿背（右法線那側＝上方）一排小三角，往尾巴方向斜
-    const fins = pts.filter((p, k) => k % 3 === 1 && p.f > .08 && p.f < .95).map(p => {
-      const w = wAt(DW, p.f) / 2, bx = p.x - p.nx * w, by = p.y - p.ny * w, h = 5 + w * .35, tx = Math.cos(p.a * Math.PI / 180), ty = Math.sin(p.a * Math.PI / 180);
-      return `M${Math.round(bx - tx * 4)} ${Math.round(by - ty * 4)}L${Math.round(bx - p.nx * h + tx * 3)} ${Math.round(by - p.ny * h + ty * 3)}L${Math.round(bx + tx * 5)} ${Math.round(by + ty * 5)}Z`;
+  // 2026-10-07 尾巴全面重新設計（使用者：「尾巴還是沒修好，要全方面重新設計」）：
+  //   以前尾巴是整條身體路徑的一部分，彎尾巴＝把身體上的每個點跟著最近的那一節搬過去（裝飾被剪歪），要畫在最上層還得把整條身體再畫一份、剪裁、淡入（雙重輪廓、繪圖量多一倍）；
+  //   尾巴從背上的拱才能動、全長只有 114，嘴離起點 96——送到嘴邊只能拉成一根直棍橫過身體。
+  //   現在：①尾巴加長兩段（沿著雲一路拖到龍珠下方），全長 114 → 約 210；平常尾尖就在嘴的下方不遠，送到嘴前可以像象鼻從胸前下方往上捲；
+  //   ②尾巴是一條獨立的管子，外形、腹帶、腹甲、鱗、背鰭都由「中心線」產生（dragonTail），pet-walk 每格給新的中心線就重畫——怎麼彎都不會剪歪；
+  //   ③尾巴只有一份、畫在頭和龍珠後面（最上層），不用淡入淡出。身體畫到尾巴根部多一點，接縫蓋在尾巴下面
+  const DSP = [[[86, 104], [100, 140], [114, 166], [138, 160]], [[138, 160], [158, 154], [146, 106], [166, 98]], [[166, 98], [188, 90], [182, 140], [172, 162]],
+    [[172, 162], [164.5, 178.5], [150, 194], [124, 188]], [[124, 188], [112, 185.2], [101, 183], [90, 177]]];   // 接點兩邊的控制點共線（切線連續，外框不會折一個角）
+  const DW = [[0, 30], [.204, 28], [.42, 19], [.6, 12], [.8, 8.5], [1, 5.5]], DBW = [[0, 12], [.204, 11], [.42, 7], [.6, 4], [1, 1.4]], DHW = [[0, 4], [.3, 4], [.6, 1.2], [1, .5]];
+  const DN = 16, DI0 = 28, DT0 = DI0 - 3, DB = DT0 - 4;   // DI0：尾巴從這一節起能動（pet-walk 的 I0）；DT0：尾巴的管子從這一節畫起；DB：底色多往回鋪 4 節（陰影錯位才不會在接縫露出一條暗邊）
+  const DPTS = spine(DSP, DN), DF = DPTS.map(p => p.f), DWK = [DW, DBW, DHW].map(ws => DF.map(f => wAt(ws, f) / 2)),   // 每一節的半寬先算好（尾巴每格重畫，不用每次內插）
+    FAN = "M172 160 C180 168 184 180 176 192 C172 184 166 182 160 184 C166 178 164 170 166 164Z", FAN_A = Math.atan2(20, -18) * 180 / Math.PI;
+  // pts：{x,y,nx,ny,a,f}，k0：第一個點是第幾節（背鰭、腹甲、鱗照節數挑，身體和尾巴兩段才接得起來）；from：裝飾從第幾節開始畫
+  function dragonDeco(pts, k0, from, X) {
+    const rd = X ? v => Math.round(v * X) : RD;   // X：輸出放大幾倍取整數（尾巴每格重畫：整數轉字串比小數快好幾倍，群組再 scale 回來）
+    const side = (ws, off, s) => { const L = [], R = [], hw = DWK[ws]; pts.slice(s || 0).forEach((p, i) => { const w = hw[k0 + (s || 0) + i], o = off * w * 2; L.push([p.x + p.nx * (o + w), p.y + p.ny * (o + w)]); R.push([p.x + p.nx * (o - w), p.y + p.ny * (o - w)]); }); return [L, R.reverse()]; };
+    const J = q => q.map(v => rd(v[0]) + " " + rd(v[1])).join(" "), Z = s => "M" + J(s[0].concat(s[1])) + "Z", O = s => "M" + J(s[0]) + "M" + J(s[1]);
+    const mine = (k, m, r) => k >= from && (k + k0) % m === r;
+    const fins = pts.map((p, i) => [p, i + k0]).filter(([p, k]) => mine(k - k0, 3, 1) && p.f > .05 && p.f < .97).map(([p, k]) => {
+      const w = DWK[0][k], bx = p.x - p.nx * w, by = p.y - p.ny * w, h = 5 + w * .35, tx = Math.cos(p.a * Math.PI / 180), ty = Math.sin(p.a * Math.PI / 180);
+      return `M${rd(bx - tx * 4)} ${rd(by - ty * 4)}L${rd(bx - p.nx * h + tx * 3)} ${rd(by - p.ny * h + ty * 3)}L${rd(bx + tx * 5)} ${rd(by + ty * 5)}Z`;
     }).join("");
-    // 腹甲：左法線那側一條米黃帶＋橫向分節
-    const plates = pts.filter((p, k) => k % 2 === 0 && p.f > .04 && p.f < .9).map(p => {
-      const w = wAt(DW, p.f) / 2;
-      return `M${rd(p.x + p.nx * w * .2)} ${rd(p.y + p.ny * w * .2)}L${rd(p.x + p.nx * w * .95)} ${rd(p.y + p.ny * w * .95)}`;
-    }).join("");
-    // 鯉鱗（大圖才畫）：沿身體幾排小弧
-    const scales = pts.filter((p, k) => k % 2 === 1 && p.f < .9).map(p => {
-      const w = wAt(DW, p.f) / 2;
-      const c = Math.cos((p.a + 90) * Math.PI / 180), si = Math.sin((p.a + 90) * Math.PI / 180), R = (x, y, u, v) => rd(x + u * c - v * si) + " " + rd(y + u * si + v * c);
+    const plates = pts.map((p, i) => [p, i]).filter(([p, i]) => mine(i, 2, 0) && p.f > .03 && p.f < .92).map(([p, i]) => { const w = DWK[0][k0 + i]; return `M${rd(p.x + p.nx * w * .2)} ${rd(p.y + p.ny * w * .2)}L${rd(p.x + p.nx * w * .95)} ${rd(p.y + p.ny * w * .95)}`; }).join("");
+    const scales = pts.map((p, i) => [p, i]).filter(([p, i]) => mine(i, 2, 1) && p.f < .9).map(([p, i]) => {
+      const w = DWK[0][k0 + i], c = Math.cos((p.a + 90) * Math.PI / 180), si = Math.sin((p.a + 90) * Math.PI / 180), R = (x, y, u, v) => rd(x + u * c - v * si) + " " + rd(y + u * si + v * c);
       return [-.62, -.12].map(o => { const x = p.x + p.nx * w * o, y = p.y + p.ny * w * o; return `M${R(x, y, -3.2, 0)}Q${R(x, y, 0, 3.6)} ${R(x, y, 3.2, 0)}`; }).join("");
     }).join("");
-    return `<path d="${fins}" fill="${MANE}" stroke="${sh(MANE, .45)}" stroke-width="2" stroke-linejoin="round"/>` + P(Pa(tube(DSP, DW, 0, 14)), JADE, { dx: 4, dy: 5 }) +
-      P(Pa(tube(DSP, [[0, 12], [.34, 11], [.7, 7], [1, 2]], .3, 14)), BELLY, { sw: 1.6, dx: 2, dy: 2, sk: .14 }) + `<path d="${plates}" stroke="${sh(BELLY, .3)}" stroke-width="1.6" stroke-linecap="round"/>` +
-      `<path d="${tube(DSP, [[0, 4], [.5, 4], [1, 1]], -.22, 14)}" fill="${tn(JADE, .35)}" opacity=".7"/>` + `<path class="pc-d2" d="${scales}" stroke="${JD}" stroke-width="1.3" fill="none" opacity=".55"/>`;
-  };
-  const dragonBody = dragonBodyFn();
-  // 用尾巴送果實時，尾巴要在最上層（2026-10-07 使用者：被龍珠、爪子擋住）：在頭之前再畫一份身體，用只框住尾巴那段的剪裁形狀裁出來；
-  // 剪裁形狀也在 .pr-tailtop 裡，跟著尾巴一起變形（pet-walk 的 snapshot 一起處理），平常透明、不處理
-  const tailTopClip = (() => {
-    const S = spine(DSP, 16), I = 26, L = [], R = [];
-    for (let j = I; j < S.length; j++) { const p = S[j], q = S[Math.min(S.length - 1, j + 1)], o = S[Math.max(0, j - 1)], tx = q.x - o.x, ty = q.y - o.y, l = Math.hypot(tx, ty) || 1, nx = -ty / l, ny = tx / l, w = wAt(DW, j / (S.length - 1)) / 2 + 9;
-      L.push([p.x + nx * w, p.y + ny * w]); R.push([p.x - nx * w, p.y - ny * w]); }
-    const e = S[S.length - 1]; L.push([e.x + 14, e.y + 34]); R.push([e.x - 18, e.y + 34]);   // 尾端連尾鰭一起框進來
-    return "M" + L.concat(R.reverse()).map(p => rd(p[0]) + " " + rd(p[1])).join("L") + "Z";
+    const body = side(0, 0, from), belly = side(1, .3, from);   // 0：外形、1：腹帶、2：亮帶（DWK 的順序）
+    return { fins, plates, scales, s: Z(body), ln: O(body), b: Z(side(0, 0)), e: Z(belly), el: O(belly), eb: Z(side(1, .3)), hl: Z(side(2, -.22, from)) };
+  }
+  // 中心線（[x,y] 陣列，從第 DB 節到尾尖）→ 尾巴每一個部件的 path，加上尾鰭的 transform
+  function dragonTail(xy) {
+    const n = xy.length, pts = xy.map((q, i) => { const a = xy[Math.max(0, i - 1)], b = xy[Math.min(n - 1, i + 1)], tx = b[0] - a[0], ty = b[1] - a[1], L = Math.hypot(tx, ty) || 1; return { x: q[0], y: q[1], nx: -ty / L, ny: tx / L, a: Math.atan2(ty, tx) * 180 / Math.PI, f: DF[DB + i] }; });
+    const o = dragonDeco(pts, DB, DT0 - DB, 10), t = pts[n - 1];   // 座標放大 10 倍（.pr-tail6 有 scale(.1)）
+    o.fl = `translate(${Math.round(t.x * 10)} ${Math.round(t.y * 10)}) rotate(${rd(t.a - FAN_A)}) scale(10) translate(-172 -162)`;
+    return o;
+  }
+  const dragonBody = (() => {   // 身體（頭到尾巴根部多一點，靜止不變；繩波由 pet-walk 逐點移）
+    const o = dragonDeco(DPTS.slice(0, DI0 + 2), 0, 0), d = dragonDeco(DPTS.slice(0, DT0 + 1), 0, 0);   // 外形畫到根部多兩節；裝飾只畫到 DT0（後面被尾巴蓋住）
+    return `<path d="${d.fins}" fill="${MANE}" stroke="${sh(MANE, .45)}" stroke-width="2" stroke-linejoin="round"/>` + P(Pa(o.b), JADE, { dx: 4, dy: 5 }) +
+      P(Pa(o.eb), BELLY, { sw: 1.6, dx: 2, dy: 2, sk: .14 }) + `<path d="${d.plates}" stroke="${sh(BELLY, .3)}" stroke-width="1.6" stroke-linecap="round"/>` +
+      `<path d="${d.hl}" fill="${tn(JADE, .35)}" opacity=".7"/>` + `<path class="pc-d2" d="${d.scales}" stroke="${JD}" stroke-width="1.3" fill="none" opacity=".55"/>`;
+  })();
+  const dragonTailSvg = (() => {
+    const o = dragonTail(DPTS.slice(DB).map(p => [p.x, p.y]));
+    return `<g class="pr-tail6" transform="scale(.1)"><path class="t6-fin" d="${o.fins}" fill="${MANE}" stroke="${sh(MANE, .45)}" stroke-width="20" stroke-linejoin="round"/>` +
+      `<defs><path id="§t6s" class="t6-s" d="${o.s}"/><path id="§t6b" class="t6-b" d="${o.b}"/><path id="§t6e" class="t6-e" d="${o.e}"/><path id="§t6eb" class="t6-eb" d="${o.eb}"/></defs>` +
+      `<clipPath id="§t6c"><use href="#§t6s"/></clipPath><clipPath id="§t6d"><use href="#§t6e"/></clipPath>` +
+      `<use href="#§t6s" fill="${sh(JADE, .2)}"/><g clip-path="url(#§t6c)"><use href="#§t6b" fill="${JADE}" transform="translate(-40 -50)"/>` +
+      `<use href="#§t6e" fill="${sh(BELLY, .14)}"/><g clip-path="url(#§t6d)"><use href="#§t6eb" fill="${BELLY}" transform="translate(-20 -20)"/></g></g>` +
+      `<path class="t6-ln" d="${o.ln}" fill="none" stroke="${sh(JADE, .48)}" stroke-width="30" stroke-linejoin="round" stroke-linecap="round"/>` +
+      `<path class="t6-el" d="${o.el}" fill="none" stroke="${sh(BELLY, .48)}" stroke-width="16" stroke-linejoin="round" stroke-linecap="round"/>` +
+      `<path class="t6-pl" d="${o.plates}" stroke="${sh(BELLY, .3)}" stroke-width="16" stroke-linecap="round"/><path class="t6-hl" d="${o.hl}" fill="${tn(JADE, .35)}" opacity=".7"/>` +
+      `<path class="pc-d2 t6-sc" d="${o.scales}" stroke="${JD}" stroke-width="13" fill="none" opacity=".55"/>` +
+      `<g class="pr-fluke" transform="${o.fl}"><g class="pc-tail">${P(Pa(FAN), MANE, { dx: 2, dy: 2 })}<path class="pc-d" d="M172 168 q4 8 2 16 M167 172 q0 6 -3 9" stroke="${tn(MANE, .5)}" stroke-width="1.6" fill="none" stroke-linecap="round"/></g>${CP("tail", 172, 162)}</g></g>`;   // 尾尖＝最後一節（尾巴的 IK 目標就是這一點）
   })();
 
   const DC1 = [[34, 178, 16], [58, 172, 20], [84, 180, 15], [16, 186, 10], [104, 186, 10]], DC2 = [[150, 176, 14], [170, 170, 16], [188, 178, 11], [130, 184, 9]];
@@ -381,10 +403,8 @@ ${tigerHead()}
   const cloudTop6 = x => { let t = null; for (const [cx, cy, r] of DC1.concat(DC2)) if (Math.abs(x - cx) < r) { const y = cy - Math.sqrt(r * r - (x - cx) * (x - cx)); t = t == null ? y : Math.min(t, y); } return t; };
   const DRAGON = `
     <g class="pc-hover pc-soar">
-      <g class="pr-deform"><g class="pc-tail">${P(Pa("M172 160 C180 168 184 180 176 192 C172 184 166 182 160 184 C166 178 164 170 166 164Z"), MANE, { dx: 2, dy: 2 })}
-        <path class="pc-d" d="M172 168 q4 8 2 16 M167 172 q0 6 -3 9" stroke="${tn(MANE, .5)}" stroke-width="1.6" fill="none" stroke-linecap="round"/></g>
-            ${dragonBody}${CP("tail", 172, 182)}
-      <g class="pr-rigid" transform="translate(154 150)"><g transform="matrix(1 0 0 1 -154 -150)">${P(Pa(tube([[[150, 146], [154, 152], [156, 158], [158, 164]]], [[0, 12], [1, 9]])), JADE, { dx: 2, dy: 2 })}${claw(159, 166, 70, 3, JADE)}</g></g></g>
+      <g class="pr-deform">${dragonBody}
+      <g class="pr-rigid" transform="translate(154 150)"><g transform="matrix(1 0 0 1 -154 -150)">${P(Pa(tube([[[150, 146], [152, 152], [152, 158], [151, 164]]], [[0, 12], [1, 9]])), JADE, { dx: 2, dy: 2 })}${claw(151, 166, 92, 3, JADE)}</g></g></g>
       <g class="pr-pearl">${P(Pa(tube([[[104, 134], [96, 146], [88, 152], [78, 156]]], [[0, 13], [1, 9]])), JADE, { dx: 2, dy: 2 })}
       <g class="pc-tw"><circle cx="62" cy="160" r="19" fill="#ffd36a" opacity=".28"/></g>
       ${P(Pa("M46 160 Q42 142 52 134 Q53 144 58 145 Q56 130 66 122 Q67 136 73 140 Q77 134 80 128 Q86 144 78 160Z"), "#ffa94a", { sw: 2, dx: 2, dy: 2, sk: .15 })}
@@ -415,7 +435,7 @@ ${tigerHead()}
       ${tp(40, 64, 63, 72, 6.4, sh(JADE, .55), -2)}${tp(92, 64, 69, 72, 6.4, sh(JADE, .55), 2)}
       ${eyeOf("almond", 52, 79, 8.4, 7.4, -1, "#d9a032", { pupil: "slit", pw: .36, lid: .3, cut: JADE, co: .95, ci: .7 })}${eyeOf("almond", 80, 79, 8.4, 7.4, 1, "#d9a032", { pupil: "slit", pw: .36, lid: .3, cut: JADE, co: .95, ci: .7 })}
       <!--H--></g>
-      <g class="pr-tailtop" data-z="top" opacity="0" clip-path="url(#§tt)"><clipPath id="§tt"><path d="${tailTopClip}"/></clipPath>${P(Pa("M172 160 C180 168 184 180 176 192 C172 184 166 182 160 184 C166 178 164 170 166 164Z"), MANE, { dx: 2, dy: 2 })}${dragonBodyFn()}</g>
+      ${dragonTailSvg}
     </g>`;
 
   // 頭裡面再包一層 .pr-hfx（2026-10-05 第二輪「控制權分層」）：外層 .pr-head 給姿勢（低頭、走路、看手指——JS 或狀態 class），
@@ -538,6 +558,7 @@ ${tigerHead()}
   const HEAD_LINE = [.5, .8, .5, .68, .68, .62, .64];
   const headLine = i => HEAD_LINE[clamp(i)];
   const dragonSpine = n => spine(DSP, n).map(q => ({ x: q.x, y: q.y }));
+  const dragon = { I0: DI0, DB, DT0, tail: dragonTail };   // pet-walk：尾巴從第 I0 節能動、每格用 tail(中心線) 重畫
   const larvaSpine = n => spine(LVS, n).map(q => ({ x: q.x, y: q.y }));   // 幼蟲身體的中心線（pet-walk.js 的 U 型迴轉：身體每一點沿這條線的位置）   // 神龍身體的中心線（pet-walk.js 用來讓尾巴彎過去）
-  return { larvaSpine, dragonSpine, cloudTop6, svg, padFor, count: A.length, byEmoji, dataUri, habitat, habitatUri, hat, HAT_IDS, HAT_LABEL, headLine, prop };
+  return { larvaSpine, dragonSpine, dragon, cloudTop6, svg, padFor, count: A.length, byEmoji, dataUri, habitat, habitatUri, hat, HAT_IDS, HAT_LABEL, headLine, prop };
 })();

@@ -259,7 +259,7 @@ window.PetStage = (function () {
   const reach6 = (lx, top) => { const k = Math.round(lx); if (!R6.has(k)) R6.set(k, PetWalk.tailReach(k, top + 3 - 15)); return R6.get(k); };
   function warmReach6() {
     if (typeof PetWalk === "undefined" || typeof PET_ART === "undefined" || !PET_ART.cloudTop6) return;
-    const xs = []; for (let x = 120; x <= 198; x++) if (!R6.has(x) && PET_ART.cloudTop6(x) != null) xs.push(x);
+    const xs = []; for (let x = 75; x <= 143; x++) if (!R6.has(x) && PET_ART.cloudTop6(x) != null) xs.push(x);
     const idle = window.requestIdleCallback || (f => setTimeout(() => f({ timeRemaining: () => 8 }), 200));
     const run = d => { while (xs.length && d.timeRemaining() > 2) { const x = xs.shift(); reach6(x, PET_ART.cloudTop6(x)); } if (xs.length) idle(run); };
     idle(run);
@@ -271,7 +271,7 @@ window.PetStage = (function () {
     const q = pr.getBoundingClientRect(), a = actor.getBoundingClientRect(), k = q.width / 200, out = [];
     const forced = Array.isArray(window.__psSpots) && window.__psSpots.length >= n ? window.__psSpots.slice(0, n) : null;   // 測試：指定雲上的落點（圖上的 x）
     for (let tries = 0; out.length < n && tries < 120; tries++) {
-      const lx = forced ? forced[out.length] : [129, 159, 188][out.length] + (Math.random() * 2 - 1) * (tries < 60 ? 5 : 2), top = PET_ART.cloudTop6(lx); if (top == null) continue;   // 分三區各一顆（隨機挑三個互隔 24 單位的點，運氣不好 120 次都湊不齊、退回掉在地上）   // 尾巴那一側（2026-10-06 第四輪：尾巴從背上的拱才開始動，左半邊搆不到；硬搆就是整個下半身在甩）
+      const lx = forced ? forced[out.length] : [82, 108, 136][out.length] + (Math.random() * 2 - 1) * (tries < 60 ? 5 : 2), top = PET_ART.cloudTop6(lx); if (top == null) continue;   // 分三區各一顆（隨機挑三個互隔 24 單位的點，運氣不好 120 次都湊不齊、退回掉在地上）；2026-10-07 尾巴重新設計後尾尖平常就在身體前下方，果實落在尾巴前段附近
       const x = Math.round(q.left + lx * k - (a.left + a.width / 2));
       if (!forced && (out.some(o => Math.abs(o.lx - lx) < 24) || reach6(lx, top) > 3)) continue;   // 間距用圖上的單位（尾巴那側只有 74 單位寬，用 px 算小舞台放不下三顆）
       out.push({ x, lx, by: Math.round(a.bottom - (q.top + (top + 3) * k)) });
@@ -465,7 +465,7 @@ window.PetStage = (function () {
           await sleep(200);                                                     // 到了交接點停一下
           // 頭迎上去：尾巴盡量送，剩下的距離由頭補（2026-10-07：尾巴從背上的拱才動，嘴在頭的左下方幾乎是尾巴全長，搆不太到）——量果實和嘴還差多少，頭往那邊移（最多 24 單位）。
           // 位移交給繩波寫頭的那一行（box.__lean）：以前用 Web Animations 寫在頭的內層，跟咬的 CSS 動畫搶同一個元素，偶爾某一格頭彈回去 20px
-          const mm = PetWalk.cpt(box, "mouth"), br = b.getBoundingClientRect(), uu = 1 / PetWalk.pxu(box), cl = v => Math.max(-8, Math.min(8, v));   // 尾巴會伸長送到嘴前，頭最多只補 8 單位（2026-10-07 使用者：頭不用動）
+          const mm = PetWalk.cpt(box, "mouth"), br = b.getBoundingClientRect(), uu = 1 / PetWalk.pxu(box), cl = v => Math.max(-8, Math.min(8, v));   // 尾巴自己送到嘴前（2026-10-07 重新設計：尾巴加長、尾端像象鼻往上捲），頭最多只補 8 單位（使用者：頭不用動）
           const LN = [cl((br.left + br.width / 2 - mm[0]) * uu), cl((br.top + br.height * BITE_Y - mm[1]) * uu)];
           const lean = PetWalk.tween(Math.round(220 + 8 * Math.hypot(LN[0], LN[1])), e => { box.__lean = [LN[0] * e, LN[1] * e]; });   // 距離越遠迎得越久（不然嘴一格跳一大段）
           await lean; cls(true, "st-open"); await sleep(150);   // 頭迎到位了才張嘴

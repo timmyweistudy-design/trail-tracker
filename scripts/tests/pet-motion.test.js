@@ -12,7 +12,7 @@ let fails = 0, todos = 0; const errs = [];
 const ok = (c, m, todo) => { if (c) console.log((todo ? "PASS(已修好，可拿掉 todo " + todo + ") " : "PASS ") + m); else if (todo) { todos++; console.log("TODO(" + todo + ") " + m); } else { fails++; console.log("FAIL " + m); } };
 const KM = [0, 5, 20, 40, 90, 150, 260];
 // 落點：px（相對舞台中間）；神龍是雲上「圖上的 x」
-const SPOTS = { 0: [[-34, 2, 34], [36, 12, -20]], 1: [[-62, 8, 66], [66, 40, 18], null], 3: [[-62, 8, 66], [66, 40, 18], [-20, 0, 21]], 4: [[-62, 8, 66], [66, 40, 18], [-21, 1, 20]], 6: [[124, 154, 188], [130, 162, 194]] };   // 神龍 2026-10-06 第四輪：尾巴從 I0=28 才動，只搆得到雲的右半邊   // 狐、虎的 C＝第一次錄影時的落點（會出現量完補小碎步）
+const SPOTS = { 0: [[-34, 2, 34], [36, 12, -20]], 1: [[-62, 8, 66], [66, 40, 18], null], 3: [[-62, 8, 66], [66, 40, 18], [-20, 0, 21]], 4: [[-62, 8, 66], [66, 40, 18], [-21, 1, 20]], 6: [[78, 108, 136], [86, 113, 141]] };   // 神龍 2026-10-07 尾巴重新設計：尾巴沿雲拖到龍珠下方，果實落在尾巴前段附近（pet-stage 的 cloudSpots 也是這一區）   // 狐、虎的 C＝第一次錄影時的落點（會出現量完補小碎步）
 const DEF = [[-62, 8, 66], [66, 40, 18]];
 // 還沒修好的（階段名）：key＝檢查代號:階段
 const TODO = {};   // 2026-10-06 第二輪 P0～P6 全部修好；之後新加的檢查還沒修好時放這裡（"檢查代號:階段": "Pn"）
@@ -65,6 +65,9 @@ const probe = () => {
       const r = w(a(P[i], P[i + 1]) - a(P[i - 1], P[i])), rr = w(a(R[i], R[i + 1]) - a(R[i - 1], R[i])); ex = Math.max(ex, Math.abs(w(r - rr)) - T.BEND); }
     o.tail = { len: L / L0, ex: ex * 180 / Math.PI, tip: P[P.length - 1].slice(), root: Math.hypot(P[T.I0 + 3][0] - R[T.I0 + 3][0], P[T.I0 + 3][1] - R[T.I0 + 3][1]), tipD: Math.hypot(P[P.length - 1][0] - R[R.length - 1][0], P[P.length - 1][1] - R[R.length - 1][1]) };
   }
+  if (st === 6) {   // 2026-10-07 尾巴重新設計（使用者：尾巴要在最上層，像用手把食物拿到嘴前）：尾巴只有一份，畫在頭、龍珠、爪子後面（SVG 越後面越上層）
+    const t6 = em.querySelectorAll(".pr-tail6"), k = t6.length === 1 ? [...t6[0].parentNode.children] : [], at = c => k.findIndex(e => e.matches(c));
+    o.top = t6.length === 1 && !em.querySelector(".pr-tailtop") && at(".pr-tail6") > Math.max(at(".pr-head"), at(".pr-pearl"), at(".pr-deform")) && at(".pr-head") >= 0; }
   if (st === 6) { const d = em.querySelector(".pr-deform").getBoundingClientRect(), b = box.getBoundingClientRect(); o.deform = [d.left, d.top, d.right, d.bottom]; o.boxr = [b.left, b.top, b.right, b.bottom]; }
   return o;
 };
@@ -207,8 +210,9 @@ function judge(st, tag, R) {
     { const fl = F.map((f, i) => (f.rest ? i : -1)).filter(i => i > 5); ok(fl.length === 0, `${tag}: the body never snaps back to its unwaved shape for a frame (flicker frames ${JSON.stringify(fl.slice(0, 6))})`); }
     const TF = F.map(f => f.tail);   // 尾巴的鏈（只有托果實那幾段有）
     const lenE = Math.max(0, ...TF.filter(Boolean).map(t => Math.abs(t.len - 1))), bendE = Math.max(0, ...TF.filter(Boolean).map(t => t.ex));
-    const lens = TF.map(t => t ? t.len : null), dl = Math.max(0, ...lens.map((v, i) => (v != null && lens[i - 1] != null ? Math.abs(v - lens[i - 1]) : 0)));   // 2026-10-07：象鼻會伸長（最多 1.3 倍），但要慢慢伸
-    ok(TF.some(Boolean) && lenE <= .31 && dl <= .03 && bendE <= .05, `${tag}: the tail stretches at most 30% and smoothly (max ${(lenE * 100).toFixed(1)}%, per frame ${(dl * 100).toFixed(2)}%) and no joint bends past its limit (excess ${bendE.toFixed(2)}°)`);
+    if (st === 6) ok(F.every(f => f.top), `${tag}: the tail is one single copy painted above the head, pearl and claws in every frame`);
+    // 2026-10-07 尾巴重新設計：尾巴本身夠長，不再伸長（以前最多伸到 1.3 倍＝像橡皮）
+    ok(TF.some(Boolean) && lenE <= .005 && bendE <= .05, `${tag}: the tail never stretches (max ${(lenE * 100).toFixed(2)}%) and no joint bends past its limit (excess ${bendE.toFixed(2)}°)`);
     const sp = TF.map((t, i) => (t && TF[i - 1] ? Math.hypot(t.tip[0] - TF[i - 1].tip[0], t.tip[1] - TF[i - 1].tip[1]) : 0)); let spk = 0, spAt = -1;
     for (let i = 2; i < n - 1; i++) { const v = sp[i] - Math.max(sp[i - 1], sp[i + 1]); if (TF[i] && TF[i - 1] && TF[i + 1] && v > spk) { spk = v; spAt = i; } }
     if (process.env.PM_SEQ && spAt > 0) for (let i = spAt - 5; i <= spAt + 4; i++) console.log("   tip", i, sp[i].toFixed(2), F[i].cls, TF[i] ? TF[i].tip.map(v => v.toFixed(1)).join(",") : "-");
