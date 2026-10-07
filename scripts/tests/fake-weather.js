@@ -28,4 +28,8 @@ module.exports = async function fakeWeather(page) {
     body.elevation = ele != null ? +ele : 1200;   // 真的 API 會回它用的海拔（有帶 elevation 就照帶的）
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
   });
+  // 地形高度圖磚（terrarium）也攔下來：回一張整片 300 公尺的假圖磚（2026-10-07：以前真的打 AWS，網路一慢 record-v2 的剖面／存檔就逾時失敗）
+  const TERR = require("fs").readFileSync(__dirname + "/fixtures/terrain-300m.png");
+  const ctx = page.context(); if (ctx.__terr) return; ctx.__terr = true;   // 用 context.route：圖磚是 Service Worker 發的請求，page.route 攔不到
+  await ctx.route(/elevation-tiles-prod[^/]*\/terrarium\//, route => route.fulfill({ status: 200, contentType: "image/png", headers: { "access-control-allow-origin": "*" }, body: TERR }));
 };

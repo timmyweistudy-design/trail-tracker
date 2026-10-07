@@ -68,7 +68,9 @@ const Elevation = (() => {
       for (const k of drop) { _tiles.delete(k); _ready.delete(k); }
     }
     const p = (async () => {
-      const r = await fetch(`${TILE}/${Z}/${x}/${y}.png`);   // SW 走圖磚快取 → 預載過/看過的路段離線也命中
+      // 2026-10-07：最多等 6 秒（山上網路慢時以前會一直等：結算頁剖面一直轉圈、停止記錄的存檔被拖住）；逾時就丟錯，呼叫端退回 API／GPS 高度
+      const ac = typeof AbortController === "function" ? new AbortController() : null, tm = ac ? setTimeout(() => ac.abort(), 6000) : 0;
+      let r; try { r = await fetch(`${TILE}/${Z}/${x}/${y}.png`, ac ? { signal: ac.signal } : undefined); } finally { clearTimeout(tm); }   // SW 走圖磚快取 → 預載過/看過的路段離線也命中
       if (!r.ok) throw new Error("tile " + r.status);
       const bmp = await createImageBitmap(await r.blob());
       const cv = document.createElement("canvas");

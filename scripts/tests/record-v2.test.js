@@ -25,7 +25,7 @@ const realRec=p=>p.evaluate(async()=>{const t=TRAILS.find(x=>x.id==="forestry-00
  ok(/移動時間/.test(t)&&/總時間 .+，休息 .+/.test(t)&&/最高海拔 344/.test(t)&&/地形校正/.test(t),"stats: moving time with total/rest, highest point, terrain-corrected");
  ok(/預估 .+，你移動了 .+/.test(t)||/官方長度/.test(t),"compares with trail estimate or official length");
  ok(await p.evaluate(()=>document.querySelectorAll(".trk-stats .dv-src").length===4),"every main stat has a source chip");
- await p.waitForTimeout(800);ok(await p.evaluate(()=>!!document.querySelector("#trkProfile svg path")),"hike elevation profile drawn");
+ await p.waitForTimeout(800);if(process.env.RV_DBG)console.log(await p.evaluate(async()=>{const t0=performance.now();while(performance.now()-t0<15000&&!document.querySelector("#trkProfile svg path"))await new Promise(r=>setTimeout(r,100));return "profile after "+Math.round(performance.now()-t0)+"ms tiles:"+performance.getEntriesByType("resource").filter(e=>/terrarium/.test(e.name)).map(e=>Math.round(e.duration)).join(",");}));ok(await p.evaluate(()=>!!document.querySelector("#trkProfile svg path")),"hike elevation profile drawn");
  ok(!/速度 km\/h 這次/.test(t),"speed comparison hidden with no history to compare");
  await p.click('[data-rsrc="kcal"]');await p.waitForTimeout(300);
  ok(/兩到三成/.test(await p.evaluate(()=>document.querySelector(".ttdlg")?.innerText||"")),"kcal chip explains accuracy");
