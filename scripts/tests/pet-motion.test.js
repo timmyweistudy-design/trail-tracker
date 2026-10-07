@@ -161,6 +161,8 @@ function judge(st, tag, R) {
       }
     { const ms = F.filter(f => /walking/.test(f.bcl) && f.lvM != null).map(f => f.lvM - (f.lvR[1] + f.lvF[1]) / 2); if (ms.length) arch = Math.max(...ms) - Math.min(...ms); }
     if (process.env.PM_SEQ && slipAt > 0) for (let i = slipAt - 3; i <= slipAt + 2; i++) console.log("   lv", i, F[i].bcl, F[i].lvR.map(v => v.toFixed(1)), F[i].lvF.map(v => v.toFixed(1)));
+    { const df = F.filter(f => /walking/.test(f.bcl) && !f.turn && f.lvR).map(f => f.lvR[1] - f.lvF[1]).sort((a, b) => a - b), med = df.length ? df[df.length >> 1] : 99;
+      ok(med <= 9, `${tag}: lies flat while crawling — the front end is down near the tail height (median ${med.toFixed(1)}px ≤9 — the front segment is thicker; sitting it is ~17px higher)`); }   // 2026-10-07 第六輪
     ok(slip <= .8 && arch >= 12, `${tag}: inchworm — one end always grips the ground while the other moves (worst ${slip.toFixed(2)}px @${slipAt}), and the middle arches up (${arch.toFixed(0)}px)`);
   }
   if (st === 1 || st === 3 || st === 4) {   // 咬住之後（held）：頭抬起時果實跟著嘴，不留在地上（2026-10-06 第四輪：幼蟲最後一口、狐虎每一口）
@@ -199,7 +201,7 @@ function judge(st, tag, R) {
     let both = 0; const w0 = {}; for (const f of F) for (const x of f.berries) if (/melt/.test(x.cls)) { const key = Math.round(x.c[0] / 4); if (w0[key] == null) w0[key] = x.w; if (f.sparks >= 3 && x.op > .8 && x.w >= w0[key] * .9) both++; }
     ok(both === 0, `${tag}: the berry shrinks as the sparks leave it (frames with a full berry and ≥3 sparks: ${both})`, todoOf("egg", st));
   }
-  const lim = st === 1 ? (/ C$/.test(tag) ? 20 : 27) : st === 4 ? 23 : st === 5 ? 25 : st === 3 ? 17.9 : st === 6 ? 20.5 : st === 2 ? 20 : 16;   /* 蝶 2026-10-06 第四、五輪：停穩半合翅＋每段起飛前原地拍兩下 */   // 幼蟲爬得像真的毛毛蟲（慢）：A、B 刻意讓果實落在兩邊（測掉頭）放寬；C＝遊戲真的落點（頭的前方）   // 幼龍：撿起來、舉到嘴邊、咬兩口、吞完才放手（步驟本來就多）；虎：每顆都趴下去吃再站起來（2026-10-06 人面獅身）   // 幼蟲：左右兩邊都有果實時要掉頭兩次（頭不動、身體繞過去＝每次多爬 80px）   // 含判定結束的 0.7 秒；狐、虎要走去左右兩端（A、C 組）；虎刻意慢、有重量（ChatGPT 看錄影的建議）
+  const lim = st === 1 ? (/ C$/.test(tag) ? 22 : 30) : st === 4 ? 23 : st === 5 ? 25 : st === 3 ? 17.9 : st === 6 ? 20.5 : st === 2 ? 20 : 16;   /* 蝶 2026-10-06 第四、五輪：停穩半合翅＋每段起飛前原地拍兩下 */   // 幼蟲爬得像真的毛毛蟲（慢）：A、B 刻意讓果實落在兩邊（測掉頭）放寬；C＝遊戲真的落點（頭的前方）   // 幼龍：撿起來、舉到嘴邊、咬兩口、吞完才放手（步驟本來就多）；虎：每顆都趴下去吃再站起來（2026-10-06 人面獅身）   // 幼蟲：左右兩邊都有果實時要掉頭兩次（頭不動、身體繞過去＝每次多爬 80px）   // 含判定結束的 0.7 秒；狐、虎要走去左右兩端（A、C 組）；虎刻意慢、有重量（ChatGPT 看錄影的建議）
   ok(sec <= lim, `${tag}: one feeding (3 berries, walk home, celebrate) takes ≤${lim} s (${sec.toFixed(1)} s)`, todoOf("time", st));
   const spill = Math.max(...F.map(f => f.spill || 0)), si = F.findIndex(f => (f.spill || 0) === spill);
   ok(spill <= 0, `${tag}: nothing is drawn outside the canvas (iOS WebKit clips there; worst ${spill.toFixed(1)}px${spill > 0 ? ` @${si} ${F[si].spillWhat} ${F[si].cls}|${F[si].bcl}` : ""})`);

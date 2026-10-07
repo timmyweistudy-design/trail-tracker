@@ -17,7 +17,7 @@ window.PetWalk = (function () {
     3: { mode: "stand", v: 150, stride: 34, lift: 11, sink: 3.6, duty: .6, bob: 2.4, tail: 15, ear: 7, neck: 3.5, sh: .7, legL: 58 },             // 狐：小步、輕、有彈性；尾巴大幅、晚一拍
     4: { mode: "stand", v: 115, stride: 36, lift: 12, sink: 5, duty: .68, bob: 3.6, lag: .06, tail: 5, ear: 2, neck: -1.2, sh: 1.6, legL: 56 },  // 虎：慢、步幅大、肩膀隨前腳起伏、落地後才沉（重）；尾巴小幅；頭穩
     5: { mode: "waddle", v: 100, D: 28, bob: 4.5, roll: 7, lift: 11, duty: .56, tail: 12, ear: 6, head: 2.4 },        // 幼龍：短腿搖搖擺擺
-    6: { mode: "swim", v: 125, D: 70, bob: 3, roll: 1.5, tail: 8, head: 1.5 },                 // 神龍：在雲上游
+    6: { mode: "swim", v: 80, D: 70, bob: 3, roll: 1.5, tail: 8, head: 1.5 },                 // 神龍：在雲上游（2026-10-07 第六輪 125→80：繩波往後傳的速度≈前進速度，尾巴跟得上）
   };
   let raf = 0;
   // ── 身體變形（幼蟲蠕動、神龍游）：.pr-deform 裡的路徑座標每一格依「變形場」移動，走完還原 ──
@@ -57,7 +57,7 @@ window.PetWalk = (function () {
   // ── 幼蟲一節一節（2026-10-06）：每一節（.lv-seg）的中心 (u, v)；F(u, v) 回傳新的中心 [x, y]，這一節整個平移過去（腳跟著那一節）──
   const LVSEG = new WeakMap();
   // 2026-10-06 第四輪：每一節分兩層（.lv-ln 裡的外框＋腳、.lv-seg 填色），第 k 片兩層一起移動
-  function lvSegs(box) { const g = box.querySelector("#petEmoji .lv-body"); if (!g) return null; let o = LVSEG.get(g); if (!o) { const L = [...g.querySelectorAll(":scope > .lv-ln > .lv-sl")]; o = [...g.querySelectorAll(":scope > .lv-seg")].map((el, i) => ({ el, ln: L[i], u: +el.dataset.u, v: +el.dataset.v })); LVSEG.set(g, o); } return o; }
+  function lvSegs(box) { const g = box.querySelector("#petEmoji .lv-body"); if (!g) return null; let o = LVSEG.get(g); if (!o) { const L = [...g.querySelectorAll(":scope > .lv-ln > .lv-sl")]; o = [...g.querySelectorAll(":scope > .lv-seg")].map((el, i) => ({ el, ln: L[i], u: +el.dataset.u, v: +el.dataset.v, b: +el.dataset.b || +el.dataset.v })); LVSEG.set(g, o); } return o; }
   function lvPose(box, F, order) {   // order：依遠近重新排先後（U 型迴轉時近的那節蓋在遠的上面）
     const S = lvSegs(box); if (!S) return;
     for (const q of S) { const [x, y] = F(q.u, q.v), t = `translate(${(x - q.u).toFixed(2)}px, ${(y - q.v).toFixed(2)}px)`; q.el.style.transform = t; if (q.ln) q.ln.style.transform = t; q.z = order ? order(q.u) : 0; }
@@ -73,17 +73,24 @@ window.PetWalk = (function () {
   //   前半（ph 0→.5）：前端抓地不動、尾端往前拖上來，中段拱成 Ω；後半（.5→1）：尾端抓地、前端往前伸出去，拱慢慢攤平、頭落地。
   // 拱的高度由「兩端距離縮短多少」反算（弧長≈身長，身體不會變長變短）；每一節在地上的位置＝尾端與前端的內插，跟身體的移動用同一個相位，所以抓地的那端不會滑。
   // 正在移動的那一端微微抬起（腳離地才往前）。rev＝倒退：前端先往後縮、尾端再退
+  // 趴平（2026-10-07 第六輪，使用者：「一開始就要全部趴下去」）：平常前半身翹著、頭抬高；走之前每一節往下移到肚子貼地（G＝最低那節的肚子），頭跟著前端放低
+  function lvFlatDy(box, x) {
+    const S = lvSegs(box); if (!S) return 0; const T = S.slice().sort((a, b) => a.u - b.u), G = Math.max(...T.map(q => q.b));
+    if (x <= T[0].u) return G - T[0].b; if (x >= T[T.length - 1].u) return G - T[T.length - 1].b;
+    for (let i = 1; i < T.length; i++) if (x <= T[i].u) { const k = (x - T[i - 1].u) / (T[i].u - T[i - 1].u); return (G - T[i - 1].b) * (1 - k) + (G - T[i].b) * k; }
+    return 0;
+  }
   function crawlField(box, ph, s, Du, rev) {
     const LB = 90, q = ph < .5 ? ph / .5 : (ph - .5) / .5, e = q * q * (3 - 2 * q), sg = rev ? -1 : 1;
     let aR, aF;   // 尾端、前端這一個循環已經往前了多少（世界座標，相對循環開始）
     if (!rev) { if (ph < .5) { aR = Du * e; aF = 0; } else { aR = Du; aF = Du * e; } }
     else { if (ph < .5) { aF = -Du * e; aR = 0; } else { aF = -Du; aR = -Du * e; } }
-    const LM = LB * .72, c = LM - Math.abs(aR - aF), h = (2 / Math.PI) * Math.sqrt(Math.max(0, c * (LM - c))) * s;   // 中段（72%）的弦變短 → 拱變高（弧長≈中段長）
+    const fl = box.__lvFlat == null ? 1 : box.__lvFlat, LM = LB * .66, c = LM - Math.abs(aR - aF), h = (2 / Math.PI) * Math.sqrt(Math.max(0, c * (LM - c))) * s;   // 中段（72%）的弦變短 → 拱變高（弧長≈中段長）
     const lift = 5 * Math.pow(Math.sin(Math.PI * q), .6) * s, movingRear = !rev ? ph < .5 : ph >= .5;
     const F = (x, y) => {
-      const t = Math.max(0, Math.min(1, (x - 44) / LB)), a = Math.max(0, Math.min(1, (t - .14) / .72)), adv = aR + (aF - aR) * a;   // 兩端各 14% 整段跟著自己那一端（抓地的那幾節完全不動、不被拱帶起來）
+      const t = Math.max(0, Math.min(1, (x - 44) / LB)), a = Math.max(0, Math.min(1, (t - .24) / .66)), adv = aR + (aF - aR) * a;   // 拱橋的兩根柱子：尾端三節（有肉足）、頭後面那一節，各自整段跟著自己那一端（抓地完全不動）
       const end = movingRear ? Math.max(0, 1 - t / .32) : Math.max(0, (t - .68) / .32);   // 正在移動的那一端抬起（肉足離地才往前）
-      return [x + adv - sg * ph * Du, y - h * 1.25 * Math.sin(Math.PI * a) - lift * end];
+      return [x + adv - sg * ph * Du, y + fl * lvFlatDy(box, x) - h * 1.15 * Math.pow(Math.sin(Math.PI * a), .55) - lift * end];   // 拱兩側陡（像柱子撐起拱橋）、頂比較平
     };
     lvPose(box, F);
     // 頭掛在第一節上（2026-10-05 第二輪）：頭的位移＝同一個變形場在頸部那一點（x≈146）的位移——以前用另一條公式，跟身體前端差到 11 個單位，看得到頭離開身體
@@ -107,7 +114,7 @@ window.PetWalk = (function () {
     const S = sp6(), I = ropeInfo(); if (!S || !I) return;
     const swim = box.classList.contains("walking"), travel = (box.__wx || 0) / pxu(box);
     const k0 = box.__ropeK == null ? 1 : box.__ropeK, k = box.__ropeK = k0 + ((swim ? 1.8 : 1) - k0) * .08;   // 幅度慢慢變（起步、停下不跳）
-    const dt = box.__ropeT ? Math.min(.05, (now - box.__ropeT) / 1000) : 0; box.__ropeT = now; box.__ropePh = (box.__ropePh || 0) + dt / (swim ? 1.5 : ROPE.T);   // 相位一路累加（換速度不跳）
+    const dt = box.__ropeT ? Math.min(.05, (now - box.__ropeT) / 1000) : 0; box.__ropeT = now; box.__ropePh = (box.__ropePh || 0) + dt / (swim ? 1.8 : ROPE.T);   // 相位一路累加（換速度不跳）
     const t0 = box.__ropeTail == null ? 1 : box.__ropeTail, tf = box.__ropeTail = t0 + ((box.__chain ? 0 : 1) - t0) * .15;
     const D = S.map((_, j) => (ROPE.a0 + ROPE.a1 * Math.pow(I.sl[j] / I.L, 1.3)) * k * Math.sin(2 * Math.PI * ((I.sl[j] + travel) / ROPE.lam - box.__ropePh)) * (j > I0 ? tf : 1));
     const P = box.__chain, R = rest(), phi = P ? S.map((_, j) => wrap(ang(P[j], P[j + 1]) - ang(R[j], R[j + 1]))) : null, zero = P ? null : S.map(() => 0);
@@ -517,6 +524,7 @@ window.PetWalk = (function () {
     const arc = g.mode === "fly" ? Math.max(24, Math.min(46, Math.abs(dist) * .5)) : 0;   // 蝶：一段一段「跳」過去——高高的拋物線（2026-10-06 第五輪：以前 ≤28 像貼著地面滑）
     const Lp = g.mode === "fly" ? Math.hypot(Math.abs(dist), Math.abs(y1 - y0)) + arc * 1.6 : Math.abs(dist);   // 蝶按「真的飛過的路」推進（水平近、垂直遠時以前會兩格就掉到底）
     const ramp = Math.min(Lp * .35, 26);   // 起步／停下的緩衝距離
+    if (g.mode === "crawl") { const Du0 = g.D * (1 / pxu(box)); await tween(340, e => { box.__lvFlat = e; crawlField(box, 0, 1, Du0, rev); flush(box); }); }   // 先整隻趴平（2026-10-07 第六輪）
     let p = 0, t = performance.now(), done = 0, lastS = .15;
     await new Promise(res => {
       const step = () => { const now = performance.now();
@@ -550,7 +558,7 @@ window.PetWalk = (function () {
       raf = requestAnimationFrame(step);
     });
     if (g.mode === "swim") resetField(box);
-    if (g.mode === "crawl") lvReset(box);
+    if (g.mode === "crawl") { const Du0 = g.D * (1 / pxu(box)); await tween(340, e => { box.__lvFlat = 1 - e; crawlField(box, .99999, 1, Du0, rev); flush(box); }); box.__lvFlat = null; lvReset(box); }   // 走完再抬起前半身
     if (g.mode === "swim") { box.__trail = null; box.__hys = null; box.__cloud = x; ride(box); }
     set(box, "--wx", x + "px"); set(box, "--wy", y1 + "px"); box.__wy = null; { const E = els(box); [E.critter, E.shadow, E.prop].forEach(el => { if (el) el.style.translate = ""; }); }
     clearGait(box);   // 走完就清掉（站著吃東西時脖子角度由 pet-stage.js 寫在 .ps-box，不能被這裡的舊值蓋掉）
@@ -676,7 +684,7 @@ window.PetWalk = (function () {
   const frontLie = (box, e1, ms) => { const e0 = box.__lie || 0; return tween(ms || 700, e => frontLieSet(box, e0 + (e1 - e0) * e)); };
   // 趴著時頭的姿勢：往下（低頭）、往左右（轉向那一顆）、微微轉、靠近鏡頭一點（變大）
   function frontHeadSet(box, h) {   // h＝相對「趴著時頭的位置」（趴下時頭本來就放低 16）
-    const E = els(box); if (!E.head) return; E.head.style.transition = "none"; const L = 16 * (box.__lie || 0), q = h || [0, 0, 0];
+    const E = els(box); if (!E.head) return; E.head.style.transition = "none"; const L = (stage(box) === 4 ? 24 : 21) * (box.__lie || 0), q = h || [0, 0, 0];   // 趴下時頭放低到下巴靠在胸口上（第六輪：以前 16，頭懸空）
     E.head.style.transform = h || L ? `translate(${q[0].toFixed(2)}px, ${(q[1] + L).toFixed(2)}px) rotate(${q[2].toFixed(2)}deg) scale(${(1 + .07 * Math.max(0, Math.min(1, q[1] / 40))).toFixed(3)})` : ""; box.__fh = h;
   }
   // 嘴要碰到果實上緣（biteY）：同一格套上姿勢量、量完還原，回傳頭的姿勢 [dx, dy, rot]
