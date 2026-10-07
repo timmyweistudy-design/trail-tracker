@@ -477,4 +477,18 @@ if(sh()){const p=await mk({km:40,berries:20});
  ok(t1.feeding&&!t1.pat&&/在吃東西/.test(t1.say)&&!t2.hug&&t2.aff===a0&&!t2.day,"while feeding: tapping and long-press do nothing except a line in the bubble "+JSON.stringify({t1,t2}));
  await p.close();}
 
+// ── 2026-10-07 收尾輪：測試面板「夥伴動畫」——每顆按鈕都按得動、不出錯，效果真的套上 ──
+if(sh()){const p=await mk({km:40,berries:20});
+ const r=await p.evaluate(async()=>{await window.openDebugPanel();await new Promise(r=>setTimeout(r,400));
+  const sec=[...document.querySelectorAll("#debugPanel *, .dbg-panel *, [id*=debug] *")].find(e=>/夥伴動畫/.test(e.textContent)&&e.children.length===0);
+  const out={found:!!sec};
+  ttDebug.setLevel(1);out.lv1=+document.querySelector(".ps-box").dataset.stage;
+  ttDebug.mood("happy");out.happy=document.querySelector("#petEmoji").className.includes("pet-m-happy");ttDebug.mood(null);
+  const t0=performance.now();ttDebug.slow(.5);await new Promise(r=>setTimeout(r,100));out.slow=Math.round(performance.now()-t0);ttDebug.slow(1);
+  out.spots=ttDebug.spots([1,2,3])&&JSON.stringify(window.__psSpots);ttDebug.spots(null);
+  out.hat=ttDebug.hat();out.fps=ttDebug.fps();out.fpsEl=!!document.getElementById("ttFps");ttDebug.fps();
+  ttDebug.setLevel(6);out.lv6=+document.querySelector(".ps-box").dataset.stage;ttDebug.clearDebug();return out;});
+ ok(r.lv1===1&&r.lv6===6&&r.happy&&r.slow>=90&&r.slow<=140&&r.spots==="[1,2,3]"&&r.fpsEl,"debug panel 夥伴動畫: jump to a stage, mood, slow motion, drop spots, hat, fps overlay all work "+JSON.stringify(r));
+ await p.close();}
+
 console.log("ERRS",JSON.stringify(errs));console.log("FAILS",fails);await b.close();srv.kill();})();

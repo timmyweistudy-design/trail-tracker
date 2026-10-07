@@ -18,7 +18,7 @@ window.ttDebug = (() => {
     setAffinity(n = 100) { ls.setItem("tt_pet_aff", String(Math.max(0, Math.min(100, +n)))); ls.setItem("tt_pet_aff_t", new Date().toISOString()); refresh(); return api.state(); },
     resetFeed() { ls.removeItem("tt_pet_fed_t"); refresh(); return "可再餵食"; },   // 冷卻 key 是 tt_pet_fed_t（原本刪錯 key 所以沒用）
     addDays(n = 10) { const h = new Date(petHatch()); h.setDate(h.getDate() - (+n)); ls.setItem("tt_pet_hatch", h.toISOString()); refresh(); return api.state(); },
-    clearDebug() { ls.removeItem("tt_debug_km"); refresh(); return api.state(); },
+    clearDebug() { ls.removeItem("tt_debug_km"); ls.removeItem("tt_debug_mood"); window.__psSpots = null; if (window.__ttSlow) api.slow(1); refresh(); return api.state(); },
     resetPet() {
       ls.setItem("tt_pet_base", String(realTotalKm())); ls.setItem("tt_pet_hatch", new Date().toISOString());
       ls.setItem("tt_pet_stage", "0"); ls.setItem("tt_pet_berry_spent", String(berriesEarned()));
@@ -43,6 +43,29 @@ window.ttDebug = (() => {
     // 強制時段／季節／天氣（window.__ps，pet-stage.js 讀）；null＝回到真實
     stage(k, v) { const cur = Object.assign({}, window.__ps || {}); if (k === null) window.__ps = null; else { cur[k] = v; window.__ps = cur; } refresh(); return window.__ps ? "舞台：" + JSON.stringify(window.__ps) : "舞台：跟真實時間／天氣"; },
     act(kind) { if (typeof PetStage === "undefined") return "沒有舞台"; PetStage.act(kind); return ""; },
+    // ── 夥伴動畫（2026-10-07 收尾輪：調動畫用） ──
+    mood(k) { if (k) ls.setItem("tt_debug_mood", k); else ls.removeItem("tt_debug_mood"); refresh(); return "心情：" + (k || "回到真實"); },
+    react(kind) { if (typeof PetStage === "undefined") return "沒有舞台"; PetStage.react(kind); return ""; },
+    spots(xs) { window.__psSpots = xs; return xs ? "下次餵食的落點（相對舞台中間 px；神龍是雲上的 x）：" + xs.join("、") : "落點：回到隨機"; },
+    hat() { const ids = PET_ART.HAT_IDS, cur = ls.getItem("tt_pet_hat") || "none", nx = ids[(ids.indexOf(cur) + 1) % ids.length]; ls.setItem("tt_pet_hat", nx); refresh(); return "帽子：" + (PET_ART.HAT_LABEL && PET_ART.HAT_LABEL[nx] || nx); },
+    // 慢動作：把 performance.now、setTimeout、所有 CSS／Web 動畫一起放慢（夥伴的逐格動畫都用 performance.now 算進度）
+    slow(k) {
+      const S = window.__ttSlow || (window.__ttSlow = { k: 1, pn: performance.now.bind(performance), st: window.setTimeout.bind(window), raf: 0 });
+      const real = S.pn(); if (!S.on) { S.v0 = real; S.t0 = real; S.on = true; performance.now = () => S.v0 + (S.pn() - S.t0) * S.k; window.setTimeout = (f, ms, ...a) => S.st(f, (ms || 0) / S.k, ...a); }
+      else { S.v0 = S.v0 + (real - S.t0) * S.k; S.t0 = real; }
+      S.k = k; cancelAnimationFrame(S.raf);
+      const loop = () => { document.getAnimations().forEach(a => { if (a.playbackRate !== S.k) a.playbackRate = S.k; }); if (S.k !== 1) S.raf = requestAnimationFrame(loop); };
+      loop(); return `慢動作 ${k}×`;
+    },
+    // 效能浮標：右上角每秒的 fps、這一秒的長任務（>50ms）數與最長
+    fps() {
+      let el = document.getElementById("ttFps"); if (el) { el.remove(); cancelAnimationFrame(window.__ttFpsRaf); return "效能浮標：關"; }
+      el = document.createElement("div"); el.id = "ttFps"; el.style.cssText = "position:fixed;top:calc(6px + env(safe-area-inset-top));right:6px;z-index:2000;background:rgba(0,0,0,.72);color:#bff5c0;font:600 11px/1.3 ui-monospace,monospace;padding:4px 7px;border-radius:8px;pointer-events:none";
+      document.body.appendChild(el); let n = 0, t0 = performance.now(), lt = [];
+      try { new PerformanceObserver(l => l.getEntries().forEach(e => lt.push(e.duration))).observe({ entryTypes: ["longtask"] }); } catch (e) { /* Safari 沒有 longtask */ }
+      const tick = () => { n++; const t = performance.now(); if (t - t0 >= 1000) { el.textContent = `${Math.round(n * 1000 / (t - t0))} fps` + (lt.length ? ` · 長任務 ${lt.length}（${Math.round(Math.max(...lt))}ms）` : ""); n = 0; t0 = t; lt = []; } window.__ttFpsRaf = requestAnimationFrame(tick); };
+      window.__ttFpsRaf = requestAnimationFrame(tick); return "效能浮標：開";
+    },
     resetHug() { ls.removeItem("tt_pet_hug_day"); return "今天可以再抱一次（親密 +2）"; },
     // 加「走過某條步道」的測試行程（dbg:true，清測試行程會一起清掉）→ 明信片、生物、地區配件、舞台裝飾都從這裡推
     addTrail(t, daysAgo) {
@@ -273,6 +296,15 @@ async function toggleDebugPanel() {
       ["+5km", () => ttDebug.addKm(5)], ["+20km", () => ttDebug.addKm(20)], ["進化➡", () => ttDebug.evolve()], ["神龍🐉", () => ttDebug.maxLevel()],
       ["+50🍓", () => ttDebug.addBerries(50)], ["❤️滿", () => ttDebug.setAffinity(100)], ["可再餵", () => ttDebug.resetFeed()], ["+30天", () => ttDebug.addDays(30)],
       ["重置🥚", () => ttDebug.resetPet()], ["清debug", () => ttDebug.clearDebug()],
+    ]],
+    ["夥伴動畫（調動畫用）", [
+      ["🥚蛋", () => ttDebug.setLevel(0)], ["🐛毛毛蟲", () => ttDebug.setLevel(1)], ["🦋蝴蝶", () => ttDebug.setLevel(2)], ["🦊狐", () => ttDebug.setLevel(3)], ["🐯虎", () => ttDebug.setLevel(4)], ["🐲幼龍", () => ttDebug.setLevel(5)], ["🐉神龍", () => ttDebug.setLevel(6)],
+      ["🍓看餵食", closeAnd(() => { ttDebug.addBerries(10); ttDebug.resetFeed(); document.querySelector('.tab[data-view="pet"]').click(); setTimeout(() => { const f = document.getElementById("petFeed"); if (f) { f.scrollIntoView({ block: "center" }); setTimeout(() => f.click(), 400); } }, 500); })],
+      ["🐢0.25×", () => ttDebug.slow(.25)], ["🚶0.5×", () => ttDebug.slow(.5)], ["▶1×", () => ttDebug.slow(1)],
+      ["😴睏", () => ttDebug.mood("sleepy")], ["🙂普通", () => ttDebug.mood("content")], ["😄開心", () => ttDebug.mood("happy")], ["🥺想念", () => ttDebug.mood("longing")], ["↺心情回真實", () => ttDebug.mood(null)],
+      ["📍落點：左中右", () => ttDebug.spots([-62, 8, 66])], ["📍落點：都在後面", () => ttDebug.spots([-74, -50, -26])], ["📍落點：都在前面", () => ttDebug.spots([22, 46, 70])], ["📍神龍雲上", () => ttDebug.spots([129, 159, 188])], ["📍落點：隨機", () => ttDebug.spots(null)],
+      ["🤗抱抱", () => ttDebug.react("hug")], ["✋摸頭", () => ttDebug.react("pat")], ["🫳搔癢", () => ttDebug.react("tickle")], ["🐾跳", () => ttDebug.act("hop")], ["🙆伸懶腰", () => ttDebug.act("stretch")], ["😮‍💨嘆氣", () => ttDebug.act("sigh")], ["👀東張西望", () => ttDebug.act("look")],
+      ["🎩換帽子", () => ttDebug.hat()], ["📈效能浮標", () => ttDebug.fps()], ["🎯除錯標記", () => (typeof PetStage !== "undefined" && PetStage.debug() ? "餵食除錯標記：開（紅＝嘴、綠＝果實、藍＝腳掌、黃＝接觸點）" : "餵食除錯標記：關")],
     ]],
     ["夥伴舞台與旅行", [
       ["🌅清晨", () => ttDebug.stage("tod", "dawn")], ["☀白天", () => ttDebug.stage("tod", "day")], ["🌇黃昏", () => ttDebug.stage("tod", "dusk")], ["🌙夜晚", () => ttDebug.stage("tod", "night")],

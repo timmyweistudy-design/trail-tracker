@@ -185,7 +185,9 @@ function weeksStreak() {
   while (weeks.has(w)) { s++; w--; }
   return s;
 }
+const PET_MOODS = { sleepy: { e: "", t: "好久沒出門，懶洋洋的", k: "sleepy" }, content: { e: "", t: "狀態不錯，隨時能出發", k: "content" }, happy: { e: "", t: "剛運動完，活力滿滿！", k: "happy" }, longing: { e: "", t: "有點想念山林了…", k: "longing" } };
 function petMood() {
+  const dm = localStorage.getItem("tt_debug_mood"); if (dm && PET_MOODS[dm]) return PET_MOODS[dm];   // 測試面板指定心情
   const last = realRecords()[0];   // 最新一筆（紀錄為新到舊）
   if (!last) return { e: "", t: "等你帶牠出門走走", k: "sleepy" };
   const d = daysSince(last.date);
