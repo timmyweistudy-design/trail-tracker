@@ -55,6 +55,9 @@ const probe = () => {
     o.extOn = +getComputedStyle(em.querySelector(".pr-ext")).opacity > .1;
     const ext = em.querySelector(".pr-ext"); if (+getComputedStyle(ext).opacity > .5) { const pt = ext.getPointAtLength(ext.getTotalLength()), s = new DOMPoint(pt.x, pt.y).matrixTransform(ext.getScreenCTM()); o.prob = [s.x, s.y]; }
     const hw = [...em.querySelectorAll(".pc-hw")].map(e => e.getBoundingClientRect()); o.hw = [Math.min(...hw.map(r => r.left)), Math.min(...hw.map(r => r.top)), Math.max(...hw.map(r => r.right)), Math.max(...hw.map(r => r.bottom))]; }
+  if (st === 6) {   // 2026-10-07：身體有沒有某一格被重設回原始形狀（繩波在跑時不該出現＝閃一下）
+    if (!window.__d0) { const t = document.createElement("div"); t.innerHTML = PET_ART.svg(6); const q = t.querySelector(".pr-deform path[d]"); window.__d0 = q ? q.getAttribute("d").replace(/\s+/g, " ").trim() : ""; }
+    const q = em.querySelector(".pr-deform path[d]"); o.rest = !!q && q.getAttribute("d").replace(/\s+/g, " ").trim() === window.__d0; }
   if (st === 6) { const cr = em.querySelector(".pet-critter"); o.cx = cr ? +(parseFloat((cr.style.translate || "0").split(" ")[0]) || 0).toFixed(2) : 0; }   // 角色本身的水平位移（游的時候不能前後抖）
   if (st === 6 && box.__chain) {   // 2026-10-06 第四輪：尾巴的鏈（身體座標）——每節長度、每個關節多彎了多少、尾尖、根部附近
     const T = PetWalk._tail(), P = box.__chain, R = T.rest, a = (u, v) => Math.atan2(v[1] - u[1], v[0] - u[0]), w = x => Math.atan2(Math.sin(x), Math.cos(x));
@@ -201,6 +204,7 @@ function judge(st, tag, R) {
       ok(hand.length >= 3 && hand.every(v => v <= .4), `${tag}: the tail brings each berry right to the mouth before it opens (distance / berry size ${JSON.stringify(hand)} ≤0.4; touching the top of the berry is ~0.18)`); }   // 2026-10-07 使用者回報：遞到嘴邊沒對準
     { let rev = 0, at = -1; const X = F.map(f => (f.cx != null ? f.cx : 0)); for (let i = 2; i < n; i++) { const a = X[i - 1] - X[i - 2], b = X[i] - X[i - 1]; if (/walking/.test(F[i].bcl) && Math.abs(a) > .05 && Math.abs(b) > .05 && Math.sign(a) !== Math.sign(b) && Math.abs(b) > rev) { rev = Math.abs(b); at = i; } }
       ok(rev <= .3, `${tag}: swimming left/right has no little jerk forward or back (biggest reversal ${rev.toFixed(2)}px @${at})`); }   // 2026-10-07 使用者：吃完左右游往前抖一下、往後抖一下
+    { const fl = F.map((f, i) => (f.rest ? i : -1)).filter(i => i > 5); ok(fl.length === 0, `${tag}: the body never snaps back to its unwaved shape for a frame (flicker frames ${JSON.stringify(fl.slice(0, 6))})`); }
     const TF = F.map(f => f.tail);   // 尾巴的鏈（只有托果實那幾段有）
     const lenE = Math.max(0, ...TF.filter(Boolean).map(t => Math.abs(t.len - 1))), bendE = Math.max(0, ...TF.filter(Boolean).map(t => t.ex));
     const lens = TF.map(t => t ? t.len : null), dl = Math.max(0, ...lens.map((v, i) => (v != null && lens[i - 1] != null ? Math.abs(v - lens[i - 1]) : 0)));   // 2026-10-07：象鼻會伸長（最多 1.3 倍），但要慢慢伸

@@ -285,11 +285,11 @@ window.PetWalk = (function () {
     let tl = performance.now();
     const put = hk => { TS = sx; const P = trunk(c, hk); box.__trunk = { c: c.slice(), hook: hk, sx }; applyChain(box, P); if (onFrame) onFrame(); };
     const grow = (T, f) => { TS = sx; const P = trunk(c, box.__trunk ? box.__trunk.hook : h0), tip = P[P.length - 1], r = Math.hypot(tip[0] - T[0], tip[1] - T[1]);   // 送到嘴前：還差一點就伸長一點；其他時候慢慢縮回原長
-      if (toMouth && r > .8) sx = Math.min(1.3, sx + .006 * f); else if (!toMouth) sx += (1 - sx) * Math.min(1, .08 * f); };
+      if (toMouth && r > .8) sx = Math.min(1.3, sx + .006 * Math.min(f, 1.5));   /* 畫面卡頓時也不一次伸太多 */ else if (!toMouth) sx += (1 - sx) * Math.min(1, .08 * f); };
     if (!tgt) {   // 放回原形：參數直接緩緩歸零（尾尖的勾先鬆、整條再放下）
       await tween(ms, (e, k) => { const u = ssT(k / .8), w = ssT((k - .15) / .85); for (let i = 0; i < 3; i++) c[i] = T0.c[i] * (1 - w); sx = sx0 + (1 - sx0) * w; put(h0 * (1 - u)); });
       TS = 1;
-      box.__trunk = null; resetField(box); box.__chain = null; return;
+      box.__trunk = null; box.__chain = null; ropeRender(box, performance.now()); return;   // 同一格直接畫回繩波（以前先 resetField 回原始形狀，有一格閃一下）
     }
     await tween(ms, (e, k) => {
       const g = goal(), cc = toMouth ? [(st[0] + g[0]) / 2, Math.max(st[1], g[1]) + 26] : [(st[0] + g[0]) / 2, Math.min(st[1], g[1]) - 16];
@@ -534,7 +534,7 @@ window.PetWalk = (function () {
       };
       raf = requestAnimationFrame(step);
     });
-    if (g.mode === "swim") resetField(box);
+    if (g.mode === "swim") ropeRender(box, performance.now());   // 2026-10-07 使用者「左右移動閃動兩下」：以前這裡 resetField 把身體重設回原始形狀一格、下一格繩波才重畫——去一次回一次＝閃兩下
     if (g.mode === "crawl" && !opts.stayFlat) { const Du0 = g.D * (1 / pxu(box)); await tween(340, e => { box.__lvFlat = 1 - e; crawlField(box, .99999, 1, Du0, rev); flush(box); }); box.__lvFlat = null; lvReset(box); }
     else if (g.mode === "crawl") box.__lvFlat = 1;   // 要接著吃：保持趴平   // 走完再抬起前半身
     if (g.mode === "swim") { box.__trail = null; box.__hys = null; box.__cloud = x; ride(box); }
