@@ -337,7 +337,7 @@ for(const [km,st] of [[5,1],[260,6]]){const p=await mk({km});
   em.classList.add("st-lean","st-open");await new Promise(r=>setTimeout(r,600));const h2=em.querySelector(".pc-hat").getBoundingClientRect(),f2=em.querySelector(".pc-bob").getBoundingClientRect(),o=getComputedStyle(em.querySelector(".m-o")).opacity;
   em.classList.remove("st-lean","st-open");return {hatDown:+(h2.top-h.top).toFixed(1),feet:+Math.abs(f2.bottom-f.bottom).toFixed(1),open:o};});
  ok(lean.hatDown>5&&lean.feet<1&&lean.open==="1","leaning: the hat goes down with the head, feet stay, mouth opens "+JSON.stringify(lean));
- const share=await p.evaluate(()=>/\.m-o,\.m-t,\.m-p,\.pr-ext,\.pr-stand,\.pr-front,\.pr-legs,\.pc-crack2,\.pc-crack3\{display:none\}/.test(decodeURIComponent(PET_ART.dataUri(3,120))));
+ const share=await p.evaluate(()=>/\.m-o,\.m-t,\.m-p,\.pr-ext,\.pr-legs,\.pc-crack2,\.pc-crack3\{display:none\}/.test(decodeURIComponent(PET_ART.dataUri(3,120))));
  ok(share,"share cards (no stylesheet) always draw the closed mouth");
  await p.close();}
 {const p=await mk({km:40,reduce:true});
@@ -436,54 +436,18 @@ for(const [km,st] of [[5,1],[260,6]]){const p=await mk({km});
   return {changedMid:mid!==""&&mid!==before,restored:after===before&&sig()===before,alive:idle!==after,wx:box.style.getPropertyValue("--wx")};});
  ok(r.changedMid&&(st===6?r.alive:r.restored),"stage "+st+(st===6?": body ripples while moving and keeps rippling at rest (rope wave) ":": body bends while moving and is restored exactly afterwards ")+JSON.stringify(r));
  await p.close();}
+// ── 2026-10-07：狐、虎不再側身走——萬一要挪位置，臉一直朝向我們（不轉身、沒有站姿），走完回到原位 ──
 {const p=await mk({km:90});
- const r=await p.evaluate(async()=>{const box=document.querySelector(".ps-box");const p1=PetWalk.goTo(box,-50);await new Promise(r=>setTimeout(r,900));   /* 2026-10-06 第四輪：起身分段（重心往前→後腿伸直→換骨架），虎約 0.6 秒才換成側身 */const standing=box.classList.contains("standing"),vis=getComputedStyle(box.querySelector(".pr-stand")).display;
-  await p1;await PetWalk.home(box);return {standing,vis,after:box.classList.contains("standing"),sitVis:getComputedStyle(box.querySelector("#petEmoji .pc-bob")).display};});
- ok(r.standing&&r.vis!=="none"&&!r.after&&r.sitVis!=="none","tiger stands up to walk (side body shown) and sits back down at home "+JSON.stringify(r));
- await p.close();}
-
-// ── 2026-10-05 狐、虎：站起來／轉身／坐下都經過正面與四分之三面——身體不會被壓成紙片、腳底線不會跳 ──
-{const p=await mk({km:5});
- const r=await p.evaluate(async()=>{const out={};
-  for(const st of [3,4]){
-   const host=document.createElement("div");host.innerHTML=`<div class="ps-box" data-stage="${st}" style="position:fixed;left:0;top:0;width:600px;height:320px;margin:0;padding:0;z-index:99"><div class="ps-actor" style="position:absolute;left:0;right:0;bottom:24px;translate:none"><div id="petEmojiT"></div></div></div>`;document.body.appendChild(host);
-   const box=host.firstChild,em=box.querySelector("#petEmojiT");em.id="petEmoji";em.innerHTML=PET_ART.svg(st);em.querySelector(".pet-critter").style.cssText="width:200px;height:200px;max-width:none;max-height:none";
-   const vis=()=>{const st_=box.classList.contains("standing");const els=[];if(st_)els.push(em.querySelector(".pr-stand"));if(!st_||box.classList.contains("pf-x")||box.classList.contains("pf-y"))els.push(em.querySelector(".pc-bob"));
-    const rs=els.map(e=>e.getBoundingClientRect()).filter(q=>q.width);return {w:Math.max(...rs.map(q=>q.width)),bottom:Math.max(...rs.map(q=>q.bottom))};};
-   const S=[];let on=true;const tick=()=>{S.push(vis());if(on)requestAnimationFrame(tick)};
-   await PetWalk.standUp(box,1);const side=vis().w;requestAnimationFrame(tick);
-   await PetWalk.turnStand(box,-1);await PetWalk.sitDown(box);await PetWalk.standUp(box,-1);on=false;
-   let jump=0;for(let i=1;i<S.length;i++)jump=Math.max(jump,Math.abs(S[i].bottom-S[i-1].bottom));
-   out[st]={minW:+(Math.min(...S.map(v=>v.w))/side).toFixed(2),jump:+jump.toFixed(1),frames:S.length};host.remove();}
-  return out;});
- ok(r[3].minW>=.55&&r[4].minW>=.55,"fox/tiger: turning, standing up and sitting down never squash the body below 55% of its side width "+JSON.stringify(r));
- ok(r[3].jump<=2&&r[4].jump<=2,"fox/tiger: the bottom of the body does not jump between poses (max px per frame) "+JSON.stringify(r));
- await p.close();}
-
-// ── 2026-10-06 第四輪：正面站姿 ↔ 站姿骨架（q=1）同一格直接換，不靠交叉淡入——那一格兩張的輪廓要重疊 ≥85%（兩個朝向） ──
-{const p=await mk({km:5});
- const out={};
- for(const st of [3,4]) for(const fr of [0,1]){
-  await p.evaluate(([st,fr])=>{document.querySelectorAll(".__ov").forEach(e=>e.remove());const host=document.createElement("div");host.className="__ov";host.innerHTML=`<div class="ps-box walking pf-front" data-stage="${st}" style="position:fixed;left:0;top:0;width:400px;height:300px;margin:0;padding:0;z-index:99;background:none"><div class="ps-actor" style="position:absolute;left:0;right:0;bottom:24px;translate:none"><div id="petEmojiT"></div></div></div>`;document.body.appendChild(host);
-   const em=host.querySelector("#petEmojiT");em.id="petEmojiO";em.innerHTML=PET_ART.svg(st);em.querySelector(".pet-critter").style.cssText="width:200px;height:200px;max-width:none;max-height:none";em.id="petEmoji";window.__fr=fr;
-   if(!document.getElementById("__ovs")){const s=document.createElement("style");s.id="__ovs";s.textContent="html,body{background:transparent!important} body *{visibility:hidden!important} .__ov .pet-critter, .__ov .pet-critter *{visibility:visible!important} .__ov *{animation:none!important;transition:none!important}";document.head.appendChild(s);}},[st,fr]);
-  await p.waitForTimeout(80);
-  const a=(await p.screenshot({clip:{x:0,y:0,width:400,height:300},omitBackground:true})).toString("base64");
-  await p.evaluate(()=>{const box=document.querySelector(".__ov .ps-box");box.classList.add("standing");PetWalk.setQ(box,1);if(window.__fr)box.classList.add("face-r");});
-  await p.waitForTimeout(80);
-  const b=(await p.screenshot({clip:{x:0,y:0,width:400,height:300},omitBackground:true})).toString("base64");
-  out[st+(fr?"r":"l")]=await p.evaluate(async([a,b])=>{const ld=src=>new Promise(r=>{const im=new Image();im.onload=()=>r(im);im.src="data:image/png;base64,"+src;});const [A,B]=await Promise.all([ld(a),ld(b)]);
-   const al=im=>{const c=document.createElement("canvas");c.width=im.width;c.height=im.height;const x=c.getContext("2d");x.drawImage(im,0,0);return x.getImageData(0,0,c.width,c.height).data;};const da=al(A),db=al(B);let i=0,u=0;
-   for(let k=3;k<da.length;k+=4){const x=da[k]>40,y=db[k]>40;if(x&&y)i++;if(x||y)u++;}return +(i/u).toFixed(3);},[a,b]);
-  await p.evaluate(()=>{PetWalk.setQ(document.querySelector(".__ov .ps-box"),0);document.querySelectorAll(".__ov,#__ovs").forEach(e=>e.remove());});
- }
- ok(Object.values(out).every(v=>v>=.85),"fox/tiger: at the swap frame the front standing pose and the stand rig (q=1) overlap ≥85% (silhouette IoU, both facings) "+JSON.stringify(out));
+ const r=await p.evaluate(async()=>{const box=document.querySelector(".ps-box");let side=0,face=0;const on=()=>{side+=box.classList.contains("standing")||!!box.querySelector(".pr-stand")?1:0;face=Math.max(face,Math.abs(parseFloat(box.style.getPropertyValue("--face"))||0));};
+  const p1=PetWalk.goTo(box,-50);const t=setInterval(on,30);await p1;const moved=Math.abs((parseFloat(box.style.getPropertyValue("--wx"))||0)+50);await PetWalk.home(box);clearInterval(t);
+  return {side,face,moved:+moved.toFixed(1),home:+(parseFloat(box.style.getPropertyValue("--wx"))||0).toFixed(1)};});
+ ok(r.side===0&&r.face<1&&r.moved<1.5&&Math.abs(r.home)<1,"fox/tiger shuffle over facing us — never side-on, never turn — and come back home "+JSON.stringify(r));
  await p.close();}
 
 // ── 2026-10-04 腳要踩住：走路時支撐腳的著地點在畫面上不能滑（狐、虎用 IK：中位數 ≤1px；幼龍有 3D 轉身：≤3px）──
 {const p=await mk({km:5});
  const r=await p.evaluate(async()=>{const out={};
-  for(const [st,sel,cfg] of [[3,".pr-stand .pr-leg.fl .pr-shin ellipse",1],[4,".pr-stand .pr-leg.hl .pr-shin ellipse",1],[5,".pr-foot.l ellipse",0],[1,".lv-sl:nth-child(2) .lv-pro path",0]]){
+  for(const [st,sel,cfg] of [[5,".pr-foot.l ellipse",0],[1,".lv-sl:nth-child(2) .lv-pro path",0]]){
    const host=document.createElement("div");host.innerHTML=`<div class="ps-box" data-stage="${st}" style="position:fixed;left:0;top:0;width:900px;height:380px;margin:0;padding:20px 0 0;z-index:99"><div class="ps-actor" style="position:absolute;left:0;right:0;bottom:24px"><div id="petEmojiT"></div></div></div>`;document.body.appendChild(host);
    const box=host.firstChild,em=box.querySelector("#petEmojiT");em.id="petEmoji";em.innerHTML=PET_ART.svg(st);em.querySelector(".pet-critter").style.cssText="width:200px;height:200px;max-width:none;max-height:none";box.style.setProperty("--wx","-200px");
    const S=[];let on=true;const el0=[...box.querySelectorAll(sel)].find(x=>!x.closest("clipPath")&&!x.closest("defs")),pick=()=>el0;   // 先抓好（幼蟲的變形會改 cy，選擇器之後就對不到了）
@@ -492,7 +456,7 @@ for(const [km,st] of [[5,1],[260,6]]){const p=await mk({km});
    const ys=S.map(v=>v[1]).sort((a,b)=>b-a),ground=ys[Math.floor(ys.length*.3)];let runs=[],cur=[];for(const v of S){if(Math.abs(ground-v[1])<1)cur.push(v[0]);else{if(cur.length>3)runs.push(cur);cur=[];}}
    const d=runs.map(r=>Math.max(...r)-Math.min(...r)).sort((a,b)=>a-b);out[st]={runs:runs.length,med:+(d[Math.floor(d.length/2)]||99).toFixed(2)};host.remove();}
   return out;});
- ok(r[3].runs>=4&&r[3].med<=1&&r[4].runs>=4&&r[4].med<=1&&r[5].runs>=4&&r[5].med<=3&&r[1].runs>=4&&r[1].med<=1,"planted feet (and the larva's prolegs) do not slide while walking (median stance drift px) "+JSON.stringify(r));
+ ok(r[5].runs>=4&&r[5].med<=3&&r[1].runs>=4&&r[1].med<=1,"planted feet (and the larva's prolegs) do not slide while walking (median stance drift px) "+JSON.stringify(r));
  await p.close();}
 
 console.log("ERRS",JSON.stringify(errs));console.log("FAILS",fails);await b.close();srv.kill();})();

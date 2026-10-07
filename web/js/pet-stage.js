@@ -387,7 +387,6 @@ window.PetStage = (function () {
         if (fly) cls(true, "st-legs");   // 蝶：快到的時候腳先伸出來
         if (W && !egg && !onCloud && !front) { await PetWalk.goEat(box, b, x); box.style.setProperty("--ex", "0"); box.style.setProperty("--ey", "1"); }   // 走過去：停在嘴剛好在果實上方
         // 低頭要低多少：量嘴到果實的高度差（換成 SVG 單位），夠不到的最後一點由果實「跳」進嘴裡
-        let bowTo = null;
         if (front) {   // 狐、虎趴著：頭轉向這一顆、低頭，最後一段才張嘴，一碰到就咬 → 咬住後果實跟著嘴抬起來 → 抬頭嚼、吞
           const h = PetWalk.frontHeadSolve(box, b, BITE_Y), D = stg === 4 ? 640 : 520;
           cls(true, "st-lean"); const down = PetWalk.frontHead(box, h, D);
@@ -402,11 +401,7 @@ window.PetStage = (function () {
           if (typeof ttBuzz === "function") ttBuzz(8);
           b.remove(); continue;
         }
-        if (box.classList.contains("standing")) {   // 站著（狐、虎）：找「肩膀沉多少、脖子往下多少」嘴才碰到果實
-          // 站位已經在 goEat 一次算好、走過去了（只走一次）；這裡只重算低頭的角度（走過去時前後深度變了一點），不再挪腳
-          const sol = PetWalk.solveBow(box, b, stg, BITE_Y);
-          bowTo = [sol.pt, sol.nk];
-        } else if (!egg && !fly && stg !== 5 && !onCloud) await reach(b, stg);
+        if (!egg && !fly && stg !== 5 && !onCloud) await reach(b, stg);
         if (egg) await absorb(b, x >= 0 ? "r" : "l");   // 蛋：不走路，原地把果實化成光吸進裂縫
         else if (onCloud) {   // 神龍：尾尖托住果實 → 沿身體下方送到下巴前的交接點 → 停一下、頭往前、張嘴 → 果實改歸嘴、尾巴鬆開退回 → 咬、嚼
           // 2026-10-06 第四輪：每一段的時間照尾尖要走的路長（PetWalk.tailMs）：去托 0.7～1 秒 → 托住停 0.2 → 送 0.9～1.2 → 等嘴 0.2 → 鬆開收回 0.9～1.3
@@ -493,23 +488,14 @@ window.PetStage = (function () {
             if (typeof ttBuzz === "function") ttBuzz(8);
             b.remove(); box.style.removeProperty("--ld"); box.style.removeProperty("--lx"); continue;
           }
-          if (bowTo) {   // 狐、虎（2026-10-06 第四輪）：低頭的最後一段才張嘴（以前低到底、停一下、才在果實上張嘴），一碰到就咬；
-            // 咬住之後果實交給嘴、跟著頭抬起來，抬到一半才吞進去（以前咬下那一刻就在地上縮掉，頭抬起來果實還留在原地）
-            const D = stg === 4 ? 620 : 480;
-            cls(true, "st-lean"); const down = PetWalk.bow(box, bowTo[0], bowTo[1], D);
-            await sleep(D * .68); cls(true, "st-open"); await down;
-            cls(false, "st-open"); await flash("pb-snap", 200);   // 咬！（咬的那一下頭會頓一下，果實先留在原地）
-            b.classList.add("held"); follow(b, "mouth", { ay: .3, ms: 120 });   // 抬頭時果實交給嘴（從現在的位置接過去）
-            cls(false, "st-lean"); const up = PetWalk.bow(box, 0, 0, stg === 4 ? 820 : 720);   // 抬頭慢一點：果實在嘴裡跟著走
-            await sleep(stg === 4 ? 340 : 280); toMouth(b, false); b.classList.add("eaten"); await up;
-          } else {
+          {
             cls(true, "st-lean"); await sleep(360);   // 俯身，碰到後停一下
             cls(true, "st-open"); await sleep(170);   // 張嘴
             toMouth(b, false); b.classList.add("eaten");               // 果實被咬進嘴裡
             cls(false, "st-open"); await flash("pb-snap", 240);   // 咬！
             cls(false, "st-lean"); await sleep(later ? 200 : 280);   // 抬頭
           }
-          { const two = later || !!bowTo; cls(two, "chew2"); await flash("pb-chew", (stg === 1 ? 900 : stg === 4 ? 1050 : 900) * (two ? .67 : 1)); cls(false, "chew2"); }   // 嚼三下（後兩顆、以及狐虎每一顆都兩下：整段控制在 16 秒內）   // 嚼三下（後兩顆兩下；幼蟲快快啃、虎慢慢嚼）
+          { const two = later; cls(two, "chew2"); await flash("pb-chew", (stg === 1 ? 900 : stg === 4 ? 1050 : 900) * (two ? .67 : 1)); cls(false, "chew2"); }   // 嚼三下（後兩顆、以及狐虎每一顆都兩下：整段控制在 16 秒內）   // 嚼三下（後兩顆兩下；幼蟲快快啃、虎慢慢嚼）
           await flash("pb-gulp", 340);                               // 吞（要等動畫播完：0.28 秒就拿掉會切掉最後一段，頭跳回去）
         }
         if (bal && isFinite(left)) { left = Math.max(0, left - 1); bal.textContent = left; bal.classList.remove("tick"); void bal.offsetWidth; bal.classList.add("tick"); }
@@ -569,7 +555,6 @@ window.PetStage = (function () {
         const P = sel => (typeof PetWalk !== "undefined" ? PetWalk.part(bx, sel) : em.querySelector(sel));
         const m = P(".pr-mouth"); if (m) { const r = m.getBoundingClientRect(); h += dot(r.left + r.width / 2, r.top + r.height / 2, "#f33", 4); }
         em.querySelectorAll(".cp").forEach(c => { const q = c.getBoundingClientRect(); if (q.width || q.height || c.getScreenCTM) { const M = c.getScreenCTM && c.getScreenCTM(); if (M) { const pt = new DOMPoint(+c.getAttribute("cx"), +c.getAttribute("cy")).matrixTransform(M); h += dot(pt.x, pt.y, "#ff0", 3); } } });
-        if (bx.classList.contains("standing")) em.querySelectorAll(".pr-stand .pr-shin").forEach(sh => { const e = [...sh.querySelectorAll("ellipse")].find(x => !x.closest("clipPath") && !x.closest("defs")); if (!e) return; const pt = new DOMPoint(+e.getAttribute("cx"), +e.getAttribute("cy") + +e.getAttribute("ry")).matrixTransform(e.getScreenCTM()); h += dot(pt.x, pt.y, "#39f", 3); });
       }
       document.querySelectorAll(".ps-berry").forEach(b => { const r = b.getBoundingClientRect(); h += dot(r.left + r.width / 2, r.top + r.height / 2, "#3f6", 3); });
       lay.innerHTML = h; dbgRaf = requestAnimationFrame(tick);

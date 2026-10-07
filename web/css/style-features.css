@@ -2296,26 +2296,6 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 /* 被抓著的果實：跟著爪子平滑移動（--tx／--ty 由 pet-stage.js 量） */
 .ps-berry.held { animation: none; transform: translate(var(--tx, 0px), var(--ty, 0px)); transition: transform .3s cubic-bezier(.3,.7,.4,1); }
 .ps-berry.held.eaten { transform: translate(var(--tx, 0px), var(--ty, 0px)) scale(.12); opacity: 0; transition: transform .3s ease-in, opacity .2s ease-in .12s; }
-/* 狐、虎走路時換成側身站姿（pet-art.js 的 .pr-stand）：面朝左，往右走時鏡像；每個關節的角度由 pet-walk.js 給 */
-.ps-box.standing #petEmoji .pc-bob { display: none; }
-.ps-box.standing #petEmoji .pr-stand { display: inline; }
-/* 支點放在後腳掌（低頭時整個身體以後腳為支點往前趴）；往右走的鏡像要繞 x=100，所以先平移 −96 再翻 */
-.ps-box.standing .pr-stand { transform-box: view-box; transform-origin: 148px 196px; transform: var(--flip, translate(0, 0)) rotate(var(--pitch, 0deg)); }   /* 不要 transition：鏡像翻面會被內插成「寬度 0 的紙片」（傾斜、低頭都由 pet-walk.js 每格寫） */
-.ps-box.standing.face-r { --flip: translateX(-96px) scale(-1, 1); }
-/* 站姿低頭：全部由 pet-walk.js 的 bow() 逐格寫（2026-10-05 第二輪拿掉 CSS 的 .st-lean 備用姿勢——加上 st-lean 那一格、JS 還沒寫之前會先閃一下 -15° 的姿勢） */
-.ps-box .pr-leg.fl { transform: rotate(var(--aFL, 0deg)); } .ps-box .pr-leg.fl .pr-shin { transform: rotate(var(--bFL, 0deg)); }
-.ps-box .pr-leg.fr { transform: rotate(var(--aFR, 0deg)); } .ps-box .pr-leg.fr .pr-shin { transform: rotate(var(--bFR, 0deg)); }
-.ps-box .pr-leg.hl { transform: rotate(var(--aHL, 0deg)); } .ps-box .pr-leg.hl .pr-shin { transform: rotate(var(--bHL, 0deg)); }
-.ps-box .pr-leg.hr { transform: rotate(var(--aHR, 0deg)); } .ps-box .pr-leg.hr .pr-shin { transform: rotate(var(--bHR, 0deg)); }
-.ps-box.standing .pr-stand { translate: 0 var(--gby, 0px); }   /* 整個站姿身體一起下沉（腿的膝蓋由 IK 彎曲把腳留在地面） */
-.ps-box .pr-stand .pr-neck { transform: rotate(var(--nk, 0deg)); }   /* 不要 transition：脖子由 pet-walk.js 逐格寫（以前量低頭時擺上去再清掉，脖子會從量的角度彈回來） */
-.ps-box .pr-stand > .pc-tail { animation: none; transform: rotate(var(--gtr, 0deg)); }
-.ps-box .pr-stand .pr-head2 .pr-head { transition: none; }
-/* 站著低頭吃：脖子往下轉、頭反過來轉回去（臉朝著食物，不會整顆頭歪掉） */
-.ps-box.standing .pr-stand .pr-head2 .pr-head { transform: rotate(calc(var(--nk, 0deg) * -.8)); }
-/* 坐下（從站姿換回坐姿）：壓一下再彈回 */
-.ps-box .pb-sit .pc-bob { animation: pbSitDown .42s cubic-bezier(.3,.7,.4,1); }
-@keyframes pbSitDown { 0% { transform: scale(1.06, .82); } 60% { transform: scale(.98, 1.04); } 100% { transform: none; } }
 .ps-box #petEmoji .pet-critter { overflow: visible; }   /* 趴下吃、走到邊邊時頭會超出 200×200 的畫框，不要切掉 */
 /* 2026-10-06 主角的畫布四周留白 140（viewBox 480×480，pet-art.js svg(..., 140)）：畫面上一樣大、一樣的位置——
    iOS 的 WebKit 會把有 3D 轉動的 SVG 照畫布裁切（不管 overflow:visible），老虎趴下時頭被一條看不見的線切掉。
@@ -2328,35 +2308,6 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .ps-box[data-stage="1"] .pb-stretch .pet-critter.pc-pad { transform-origin: 33.3% 68.8%; }
 /* 後兩顆只嚼兩下 */
 .ps-box .chew2.pb-chew .m-o, .ps-box .chew2.pb-chew .m-c, .ps-box .chew2.pb-chew .m-p, .ps-box .chew2.pb-chew .pr-hfx, .ps-box .chew2.pb-chew .pr-jaw { animation-iteration-count: 2; }
-/* ── 2026-10-05 正面站姿（狐、虎）：坐著 → 站起來（正面）→ 四分之三面 → 側身；轉身也經過正面（不再壓扁成紙片）── */
-/* 坐 ↔ 正面站：坐著的臀部淡出、站著的背和後腿淡入（頭、前腿、胸前的毛不變，眼睛一直看得到同一個角色） */
-.ps-box[data-stage="3"] #petEmoji .pr-front, .ps-box[data-stage="4"] #petEmoji .pr-front { display: inline; opacity: 0; transition: opacity .22s ease-out; }
-.ps-box.pf-front #petEmoji .pr-front { opacity: 1; }
-/* 坐著的臀部不淡出（兩張都半透明會透出背景）：站起來時先被蓋住、0.22 秒後才藏；坐下時立刻出現在底下，正面站姿在上面淡出 */
-.ps-box.pf-front #petEmoji .pc-sb, .ps-box.pf-front #petEmoji .pc-bob > .pc-tail, .ps-box.pf-front #petEmoji .pc-bob > .pr-foot { opacity: 0; transition: opacity 0s linear .22s; }
-/* 站起來：頭微微抬高、變小一點點（離鏡頭遠了一點；接著轉成四分之三面時頭的大小剛好接得上側身的頭） */
-.ps-box[data-stage="3"] #petEmoji .pc-bob > .pr-head, .ps-box[data-stage="4"] #petEmoji .pc-bob > .pr-head { transition: translate .26s cubic-bezier(.3,.7,.4,1), scale .26s cubic-bezier(.3,.7,.4,1); }
-.ps-box.pf-front #petEmoji .pc-bob > .pr-head { translate: 0 -2px; scale: .86; }
-/* 正面 ↔ 四分之三面：同一格直接換（2026-10-06 第四輪拿掉 0.13 秒交叉淡入；兩張輪廓重疊 ≥85%，見 pet-walk.js swapTo） */
-/* 側臉 ↔ 正臉（2026-10-06）：側身（--q 0）看側臉；轉成四分之三面（--q 1）時正臉淡入、接上坐姿那顆頭。側臉在底下、到一半才開始淡出（兩張都半透明會透出背景） */
-/* 2026-10-06 第四輪：頭（臉）有自己的 --qh，比身體晚轉（起身時身體先轉成側面、頭和肩最後才轉過去）；沒給就跟身體一樣 */
-/* 換臉只在轉到一半的一小段（qh .42～.55）：以前整段都在交叉淡入，兩張臉疊著（看得到四隻眼睛）好幾格；四分之三的頭跟正臉已經很接近，短短換過去就好 */
-.ps-box .pr-stand .pr-face-f { opacity: clamp(0, calc((var(--qh, var(--q, 0)) - .42) * 8), 1); }
-.ps-box .pr-stand .pr-face-s { opacity: clamp(0, calc((.6 - var(--qh, var(--q, 0))) * 20), 1); }
-/* 四分之三面（--q：0＝側身、1＝四分之三）：身體往鏡頭方向縮短（前端不動、後端往前收），腿不變粗細、只是位置收攏，
-   遠側的腿往後上方錯開一點（有深度）；頭（pet-walk.js 直接寫）往中間移、變大一點、轉向鏡頭 */
-.ps-box .pr-stand .pr-torso { --ox: 70px; --oy: 140px; scale: calc(1 - .42 * var(--q, 0)) 1; }
-.ps-box[data-stage="3"] .pr-stand .pr-torso { --ox: 84px; scale: calc(1 - .55 * var(--q, 0)) 1; }   /* 狐的正面身體比較窄（2026-10-06 第四輪：q=1 輪廓要對上正面站姿） */
-.ps-box[data-stage="3"] .pr-stand { --nq: .6; }
-.ps-box .pr-stand .pr-leg.fl { translate: calc(var(--q, 0) * -4.2px) 0; }
-.ps-box .pr-stand .pr-leg.fr { translate: calc(var(--q, 0) * -5px) calc(var(--q, 0) * -3px); }
-.ps-box .pr-stand .pr-leg.hl { translate: calc(var(--q, 0) * -29.4px) 0; }
-.ps-box .pr-stand .pr-leg.hr { translate: calc(var(--q, 0) * -28px) calc(var(--q, 0) * -3px); }
-/* 尾巴（2026-10-06 第四輪）：q=1 時直直豎在身體後面（大半被頭擋住）、跟正面站姿的尾巴同一個位置（pet-art.js FTQ/TTQ），身體轉成側面時才甩出去 */
-.ps-box[data-stage="3"] .pr-stand > .pc-tail { translate: calc(var(--q, 0) * -56px) calc(var(--q, 0) * -6px); rotate: calc(var(--q, 0) * -38deg); }
-.ps-box[data-stage="4"] .pr-stand > .pc-tail { translate: calc(var(--q, 0) * -60px) calc(var(--q, 0) * -6px); rotate: calc(var(--q, 0) * -33deg); }
-/* 脖子和胸前那撮白毛：q=1 時往中間收窄（正面站姿的胸口沒有往左伸出去的脖子），輪廓才對得上 */
-.ps-box .pr-stand .pr-nkb, .ps-box .pr-stand .pr-bib { transform-box: view-box; transform-origin: 100px 140px; scale: calc(1 - var(--nq, .45) * var(--q, 0)) 1; }
 /* 幼蟲往左爬：整隻鏡像（頭在前）；掉頭由 pet-walk.js larvaTurn() 演出 */
 .ps-box.lv-l #petEmoji .pet-critter { scale: -1 1; }
 /* 一口一個缺口（幼蟲啃三口、幼龍咬兩口）：缺口在嘴靠過來的那一側（--nx），用遮罩挖掉圓形 */

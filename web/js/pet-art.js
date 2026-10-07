@@ -233,61 +233,6 @@ window.PET_ART = (function () {
       ${eyeOf("almond", 81, 95, 9.2, 10.4, -1, "#b8702a", { pupil: "round", pr: .6, tilt: .18 })}${eyeOf("almond", 119, 95, 9.2, 10.4, 1, "#b8702a", { pupil: "round", pr: .6, tilt: .18 })}
 `;   // 坐著和站著兩份身體共用同一顆頭（每次呼叫都有自己的 id）
 
-  // ── 四分之三的頭（2026-10-06 第四輪，取代側臉）：側身站著、走路、低頭吃的時候用——朝左、臉轉向鏡頭約三分之一：
-  // 看得到兩隻眼睛（遠的那隻窄、躲在鼻樑後面一點）、兩隻耳朵（遠的暗）；嘴的支點在吻部最前端（咬的接觸點，跟以前同一點）。
-  // 狐：額頭到鼻尖是一道緩坡、吻部長、嘴線跟下顎線分開（白色的下巴在嘴線下面），正面那片白頰一路接到後面的頰毛。
-  // 虎：頰寬（後面翻出頰毛）、吻部是厚厚一塊白、圓耳、下顎重，條紋順著頭的弧度彎
-  const foxSide = () => `
-      <g class="pc-ear r">${P(Pa("M84 70 L78 28 L108 58Z"), sh(FX, .18), { dx: 2, dy: 2 })}${P(Pa("M78 28 L80.4 44 Q86 44 91 39Z"), FXK, { sw: 0, dx: 1, dy: 1 })}</g>
-      <g class="pc-ear l">${P(Pa("M108 66 L118 22 L148 60Z"), FX, { dx: 3, dy: 3 })}${P(Pa("M118 22 L116.4 40 Q124 41 131 36Z"), FXK, { sw: 0, dx: 1, dy: 1 })}${P(Pa("M114 62 L119 38 L138 58Z"), "#efdac6", { sw: 0, dx: 2, dy: 2 })}<path class="pc-d" d="M120 58 l-1 -9 M126 58 l1 -7" stroke="#fffaf0" stroke-width="2" stroke-linecap="round"/></g>
-      ${P(Pa("M44 101 Q62 84 84 68 Q104 54 128 58 Q152 66 154 94 Q156 106 150 114 Q128 128 104 130 Q80 130 64 124 Q50 118 43 111 Q40 106 44 101Z"), "#e2783a", { hl: [116, 68, 15, 6], dx: 6, dy: 6 })}
-      ${P(Pa("M50 102 Q66 86 86 74 L92 80 Q72 92 56 108Z"), "#e98a48", { sw: 0, dx: 2, dy: 2, sk: .12 })}
-      ${P(Pa("M43 111 Q60 117 80 118 Q100 118 118 110 Q134 103 152 106 L164 104 L154 112 L162 118 L148 120 Q130 136 104 138 Q78 138 62 130 Q48 123 43 111Z"), FXC, { sw: 2.2, dx: 3, dy: 3 })}
-      <g class="pc-d">${tp(152, 106, 166, 103, 4, FXC, 2)}${tp(150, 112, 162, 118, 3.4, FXC, -2)}</g>
-      ${tp(88, 99, 66, 110, 2.6, "#9a4518", 1.5)}${tp(64, 94, 55, 104, 2, "#9a4518", 1)}
-      ${mouth(50, 116, `<path d="M45 112 Q52 117 62 118 Q70 119 78 117" stroke="#2a1810" stroke-width="2" fill="none" stroke-linecap="round"/>`,
-        `<path d="M45 112 Q62 117 82 117 Q72 132 54 128 Q46 123 45 112Z" fill="${MOUTH_IN}" stroke="#2a1810" stroke-width="1.6" stroke-linejoin="round"/><path d="M54 123 Q64 122 74 123 Q66 129 57 127Z" fill="${TONGUE}"/><path d="M51 113.6 l1.4 3.6 l1.8 -3.2Z" fill="#fff"/>`,
-        `<path d="M47 116 q-6 3 -7 8 q2 3 6 0 q2 -4 4 -6Z" fill="${TONGUE}" stroke="#9a3a30" stroke-width="1"/>`,
-        `<ellipse cx="96" cy="124" rx="8" ry="5" fill="${FXC}"/>`)}
-      <g class="pr-nose" style="--ox:42px;--oy:105px">${P(Pa("M36 103 Q40 98 47 100 Q50 105 46 109 Q40 111 37 108 Q35 106 36 103Z"), "#2a1810", { sw: 0, dx: 1, dy: 1 })}<ellipse cx="40.4" cy="102.4" rx="1.8" ry="1.1" fill="#fff" opacity=".6"/></g>
-      <g class="pc-d">${[[56, 113], [60, 116], [54, 117]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.1" fill="#9a7a5a"/>`).join("")}</g>
-      ${brow(80, 82, 98, 80, "#8a3f16")}${tp(57, 82, 67, 79, 3.6, "#8a3f16", -1)}
-      ${eyeOf("almond", 63, 90, 4.8, 8, -1, "#b8702a", { pupil: "round", pr: .6, tilt: .1 })}
-      ${eyeOf("almond", 90, 93, 8.6, 8.8, -1, "#b8702a", { pupil: "round", pr: .6, tilt: .18 })}
-`;
-  const tigerSide = () => `
-      <g class="pc-ear r">${P(C(90, 58, 11.5), sh(TG, .18), { sw: 2.4, dx: 2, dy: 2 })}<path d="M80 62 A10 10 0 0 1 94 47.5" stroke="${TGK}" stroke-width="4" fill="none" stroke-linecap="round"/></g>
-      <g class="pc-ear l">${P(C(126, 54, 14), TG, { sw: 2.6, dx: 2, dy: 2 })}<path d="M138 58 A12 12 0 0 0 120 42.5" stroke="${TGK}" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="135" cy="47" r="2.4" fill="${TGC}"/>${P(E(124, 58, 6.4, 6.8), "#f6e3cd", { sw: 0, dx: 1, dy: 1 })}</g>
-      ${P(Pa("M42 96 Q52 72 84 62 Q118 52 142 66 Q160 80 158 102 L170 108 L158 114 L164 122 L148 122 Q134 140 104 143 Q74 143 56 133 Q40 122 40 106 Q40 100 42 96Z"), TG, { hl: [108, 68, 15, 6], dx: 6, dy: 7 })}
-      ${P(Pa("M50 126 Q72 134 98 132 Q120 130 136 120 L150 122 Q136 142 102 144 Q74 144 56 133Z"), TGC, { sw: 2.2, dx: 3, dy: 3 })}
-      ${P(Pa("M36 100 Q40 88 56 88 Q72 90 78 104 Q82 118 72 126 Q58 132 46 126 Q34 116 36 100Z"), TGC, { sw: 2.2, dx: 2, dy: 2 })}
-      ${P(Pa("M146 102 L158 106 L150 110 L156 116 L144 116Z"), TGC, { sw: 0, dx: 1, dy: 1 })}
-      ${tp(84, 84, 90, 62, 3.2, TGC, 1)}${tp(62, 84, 70, 66, 2.4, TGC, 1)}
-      ${stripe(96, 58, 100, 76, 5, -2)}${stripe(110, 56, 112, 76, 4.6, -2)}${stripe(124, 62, 120, 80, 4.2, -1)}${stripe(80, 64, 84, 74, 3.4, -1)}
-      ${stripe(134, 92, 154, 90, 4.6, -2)}${stripe(130, 104, 152, 106, 4.4, -1)}${stripe(130, 116, 146, 120, 3.8, 0)}
-      <g class="pc-d2">${stripe(140, 76, 150, 84, 3.2, 1)}${stripe(56, 94, 64, 98, 2.6, 0)}</g>
-      ${P(E(88, 78, 7.4, 3.4), TGC, { sw: 0, dx: 1, dy: 1 })}${P(E(64, 78, 4.4, 2.8), TGC, { sw: 0, dx: 1, dy: 1 })}
-      <g class="pc-d">${[[50, 110], [55, 114], [48, 115], [60, 111]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.2" fill="#8a6a4a"/>`).join("")}</g>
-      ${mouth(46, 112, `<path d="M41 101 v5 Q44 112 52 115 Q62 118 76 116" stroke="#2a1810" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M50 115 l1.4 4.2 l2 -3.8Z" fill="#fff" stroke="#3a2014" stroke-width="1" stroke-linejoin="round"/>`,
-        `<path d="M42 108 Q62 114 84 116 Q74 134 54 130 Q42 124 42 108Z" fill="${MOUTH_IN}" stroke="#2a1810" stroke-width="1.8" stroke-linejoin="round"/><path d="M53 122 Q64 122 76 124 Q68 130 57 128Z" fill="${TONGUE}"/><path d="M50 111 l1.6 4.2 l2 -3.8Z M56 126 l1.2 -3.4 l1.6 3.2Z" fill="#fff"/>`,
-        `<path d="M46 116 q-6 3 -7 8 q2 3 6 0 q2 -4 4 -6Z" fill="${TONGUE}" stroke="#9a3a30" stroke-width="1"/>`,
-        `<ellipse cx="96" cy="124" rx="8" ry="5.6" fill="${TGC}"/>`)}
-      <g class="pr-nose" style="--ox:40px;--oy:96px">${P(Pa("M33 92 Q41 87 49 92 Q47 100 41 101 Q34 98 33 92Z"), "#3a2014", { sw: 0, dx: 1, dy: 1 })}<ellipse cx="38" cy="92.4" rx="2" ry="1.1" fill="#fff" opacity=".5"/></g>
-      ${tp(76, 79, 98, 82, 4.6, TGK, -1.5)}${tp(58, 79, 68, 79, 3.4, TGK, -1)}
-      ${eyeOf("round", 64, 87, 4.6, 7.6, -1, "#c98a2a", { pupil: "round", pr: .56, cut: TG, co: 1.05, ci: .78 })}
-      ${eyeOf("round", 90, 89, 7.8, 8.2, -1, "#c98a2a", { pupil: "round", pr: .56, cut: TG, co: 1.05, ci: .78 })}
-`;
-  // 正面站姿（2026-10-05）：坐著 ↔ 側身走路之間的橋——同一顆頭、同兩隻前腿，換掉坐著的臀部：
-  // 後面露出往遠處延伸的背（暗一點）、兩條後腿在前腿外側（比較遠，腳底高一點、顏色暗）、尾巴從身後翹到一側
-  const foxStail = () => `${P(Pa("M152 126 C172 118 194 104 190 78 C202 98 198 126 172 140 C164 144 156 142 152 136Z"), FX, { hl: [182, 104, 4, 10] })}${P(Pa("M190 78 C202 92 200 112 192 122 C190 108 186 96 182 90 C186 86 188 82 190 78Z"), FXC, { sw: 2.2, dx: 2, dy: 2 })}`;
-  const FTQ = [-56, -6, -38], TTQ = [-60, -6, -33];   // 站姿尾巴在 q=1 時的位移與轉角（CSS 的 .pr-stand > .pc-tail 用同一組數字）
-  // 2026-10-06 第四輪：正面站姿的尾巴＝站姿骨架在 q=1 時的尾巴（直直豎在身體後面、大半被頭擋住），換成站姿那一格輪廓才對得上（不靠交叉淡入）
-  const FOX_FRONT = `<g class="pr-front">
-      <g transform="translate(${FTQ[0]} ${FTQ[1]}) rotate(${FTQ[2]} 156 132)">${foxStail()}</g>
-      ${[[84, -1], [116, 1]].map(([x, k]) => P(Pa(`M${x - 6} 164 L${x - 6} 186 Q${x} 191 ${x + 6} 186 L${x + 6} 164Z`), sh(FX, .2), { dx: 1, dy: 1, sw: 1.8 }) + P(Pa(`M${x - 6} 176 L${x - 6} 186 Q${x} 191 ${x + 6} 186 L${x + 6} 176 Q${x} 173 ${x - 6} 176Z`), sh(FXK, .1), { sw: 1.6 })).join("")}
-      ${P(E(100, 160, 30, 15), sh(FX, .12), { dx: 2, dy: 2 })}
-      ${P(Pa("M70 160 Q66 130 100 120 Q134 130 130 160 Q122 170 100 170 Q78 170 70 160Z"), FX, { hl: [80, 136, 4, 9], dx: 3, dy: 3 })}
-      ${P(Pa("M78 152 Q76 130 100 128 Q124 130 122 152 Q120 166 100 168 Q80 166 78 152Z"), FX, { hl: [86, 140, 4, 8] })}</g>`;   // 中間那層＝站起來的肩膀（比坐著的胸口寬）
   const FOX = `
     <g class="pc-bob">
       <g class="pc-tail">${P(Pa("M126 177 C158 183 182 165 184 135 C186 111 172 93 154 91 C168 109 166 133 152 151 C142 161 132 165 122 165Z"), FX, { hl: [172, 123, 4, 12] })}
@@ -297,7 +242,6 @@ window.PET_ART = (function () {
       <g class="pc-sb">${P(Pa("M72 193 C64 165 74 135 100 129 C126 125 140 147 140 169 C140 185 134 193 122 195Z"), FX, { hl: [82, 145, 6, 12] })}
       <path class="pc-d" d="M124 157 Q138 165 134 187" stroke="${sh(FX, .3)}" stroke-width="2" fill="none" stroke-linecap="round"/></g>
       <g class="pr-loaf" opacity="0">${P(E(134, 180, 20, 13), FX, { dx: 2, dy: 2 })}${P(E(100, 184, 44, 13), FX, { hl: [84, 178, 12, 3], dx: 3, dy: 3 })}${P(E(100, 186, 22, 8), FXC, { sw: 0, dx: 1, dy: 1 })}${P(Pa("M70 182 Q66 150 100 144 Q134 150 130 182Z"), FX, { hl: [84, 156, 5, 8], dx: 3, dy: 3 })}${P(Pa("M86 182 Q84 158 100 154 Q116 158 114 182Z"), FXC, { sw: 0, dx: 1, dy: 1 })}</g>
-      ${FOX_FRONT}
       ${rig("pr-paw l", 90, 157, P(Pa("M84 157 L83 191 Q90 196 97 191 L97 157Z"), FX, { dx: 2, dy: 2 }) + P(Pa("M83 175 L83 191 Q90 196 97 191 L97 175Q90 172 83 175Z"), FXK, { sw: 2, dx: 2, dy: 2 }))}
       ${rig("pr-paw r", 110, 157, P(Pa("M103 157 L103 191 Q110 196 117 191 L116 157Z"), FX, { dx: 2, dy: 2 }) + P(Pa("M103 175 L103 191 Q110 196 117 191 L116 175Q110 172 103 175Z"), FXK, { sw: 2, dx: 2, dy: 2 }))}
       <path class="pc-d" d="M88 191 v-4 M92 191 v-4 M108 191 v-4 M112 191 v-4" stroke="#6a4a38" stroke-width="1.4" stroke-linecap="round"/>
@@ -336,14 +280,6 @@ ${foxHead()}
       ${eyeOf("round", 80, 92, 7.8, 8.4, -1, "#c98a2a", { pupil: "round", pr: .56, cut: TG, co: 1.05, ci: .78 })}${eyeOf("round", 120, 92, 7.8, 8.4, 1, "#c98a2a", { pupil: "round", pr: .56, cut: TG, co: 1.05, ci: .78 })}
 `;   // 坐著和站著兩份身體共用
   // 正面站姿（橋）：深胸、肩膀寬，後腿在前腿外側；條紋跟坐姿、側身同一組位置（肩上兩條、後腿各兩條、尾巴環）
-  const tigerStail = () => `${P(Pa(tube([[[158, 132], [184, 128], [196, 108], [188, 86]]], [[0, 12], [1, 8]])), TG, { dx: 2, dy: 2 })}${P(E(188, 84, 5.4, 7), TGK, { sw: 1.6, dx: 1, dy: 1 })}
-        <path d="M176 128 l4 -8 M188 118 l6 -4 M192 102 l6 0" stroke="${TGK}" stroke-width="3.6" stroke-linecap="round"/>`;
-  const TIGER_FRONT = `<g class="pr-front">
-      <g transform="translate(${TTQ[0]} ${TTQ[1]}) rotate(${TTQ[2]} 160 132)">${tigerStail()}</g>
-      ${[[73, 1], [127, -1]].map(([x, k]) => P(Pa(`M${x - 8} 160 Q${x - 9} 176 ${x - 8} 186 Q${x} 192 ${x + 8} 186 L${x + 8} 160Z`), sh(TG, .2), { dx: 1, dy: 1, sw: 1.8 }) + stripe(x - 7, 168, x + 3 * k, 170, 3.4, 0) + stripe(x - 7, 177, x + 2 * k, 178, 3, 0) + P(E(x, 188, 10, 4.4), sh(TG, .2), { sw: 1.8 })).join("")}
-      ${P(E(100, 156, 36, 17), sh(TG, .12), { dx: 2, dy: 2 })}${stripe(84, 144, 88, 156, 4, 0)}${stripe(116, 144, 112, 156, 4, 0)}
-      ${P(Pa("M70 152 Q68 126 100 120 Q132 126 130 152 Q126 170 100 172 Q74 170 70 152Z"), TG, { hl: [80, 138, 5, 9] })}
-      ${P(Pa("M100 126 Q116 132 117 154 Q112 168 100 170 Q88 168 83 154 Q84 132 100 126Z"), TGC, { sw: 2.2, dx: 2, dy: 2 })}${stripe(70, 140, 80, 144, 4, 1)}${stripe(130, 140, 120, 144, 4, -1)}</g>`;
   const TIGER = `
     <g class="pc-bob pc-heavy">
       <g class="pc-tail">${P(Pa(tube(TSP, TSW, 0, 12)), TG, { dx: 3, dy: 3 })}<path d="${tgRings}" stroke="${TGK}" stroke-width="4.4" stroke-linecap="round"/>
@@ -352,7 +288,6 @@ ${foxHead()}
       ${P(Pa("M100 128 Q120 136 121 162 Q116 182 100 188 Q84 182 79 162 Q80 136 100 128Z"), TGC, { sw: 2.4, dx: 3, dy: 3 })}
       ${stripe(60, 150, 74, 156, 4.6, 2)}${stripe(58, 166, 72, 170, 4.4, 1)}${stripe(62, 182, 74, 182, 4, 0)}${stripe(140, 150, 126, 156, 4.6, -2)}${stripe(142, 166, 128, 170, 4.4, -1)}${stripe(138, 182, 126, 182, 4, 0)}</g>
       <g class="pr-loaf" opacity="0">${P(E(138, 179, 22, 14), TG, { dx: 2, dy: 2 })}${stripe(132, 170, 140, 184, 4, 1)}${stripe(146, 170, 150, 182, 3.6, 1)}${P(E(100, 184, 48, 14), TG, { hl: [82, 178, 13, 3], dx: 3, dy: 3 })}${P(E(100, 186, 24, 8), TGC, { sw: 0, dx: 1, dy: 1 })}${stripe(60, 178, 70, 190, 4, 1)}${P(Pa("M64 184 Q60 146 100 138 Q140 146 136 184Z"), TG, { hl: [80, 152, 5, 9], dx: 3, dy: 3 })}${P(Pa("M84 184 Q82 154 100 150 Q118 154 116 184Z"), TGC, { sw: 0, dx: 1, dy: 1 })}${stripe(68, 158, 78, 162, 4, 1)}${stripe(132, 158, 122, 162, 4, -1)}</g>
-      ${TIGER_FRONT}
       ${rig("pr-paw l", 83, 150, P(Pa("M74 148 Q68 170 69 190 Q82 194 94 190 Q93 168 92 150 Q84 144 74 148Z"), TG, { dx: 3, dy: 2 }) + stripe(71, 166, 81, 168, 3.4, 0) + stripe(71, 176, 80, 177, 3, 0) + P(E(82, 192, 14, 5.4), TG, { sw: 2.4, dx: 1, dy: 2 }) + `<path d="M76 195 v-4 M82 196 v-5 M88 195 v-4" stroke="${sh(TG, .5)}" stroke-width="1.8" stroke-linecap="round"/>`)}
       ${rig("pr-paw r", 117, 150, P(Pa("M126 148 Q132 170 131 190 Q118 194 106 190 Q107 168 108 150 Q116 144 126 148Z"), TG, { dx: 3, dy: 2 }) + stripe(129, 166, 119, 168, 3.4, 0) + stripe(129, 176, 120, 177, 3, 0) + P(E(118, 192, 14, 5.4), TG, { sw: 2.4, dx: 1, dy: 2 }) + `<path d="M112 195 v-4 M118 196 v-5 M124 195 v-4" stroke="${sh(TG, .5)}" stroke-width="1.8" stroke-linecap="round"/>`)}
       <g class="pr-head" style="--ox:100px;--oy:134px">
@@ -471,44 +406,6 @@ ${tigerHead()}
       <!--H--></g>
     </g>`;
 
-  // ── 站姿（2026-10-04 走過去吃）：狐、虎坐著是正面，嘴碰不到地上；走路時換成側身站姿（面朝左，往右走時鏡像）──
-  // 每條腿＝大腿（支點：肩／髖）＋小腿與腳掌（支點：膝），pet-walk.js 每一格給角度；遠側的腿畫在身體後面、顏色暗一點。
-  // 脖子（pr-neck，支點在肩上）帶著跟坐姿同一顆頭（縮小），低頭吃東西時脖子往下轉。平常藏著（.pr-stand），分享圖卡也不畫。
-  // 腳掌底一律落在地面線（近側 196.5、遠側 194.5＝比較遠）：跟坐姿、正面站姿同一條線，換姿勢時腳底不會跳
-  function jleg(cls, hx, hy, L1, L2, w1, w2, col, sock, paw, far) {
-    const c = far ? sh(col, .2) : col, k = hy + L1, f = k + L2;
-    const thigh = P(Pa(tube([[[hx, hy], [hx - 1, hy + L1 * .35], [hx + 1, hy + L1 * .7], [hx, k]]], [[0, w1], [1, w2]])), c, { dx: 2, dy: 2, sw: 2.2 });
-    const shin = P(Pa(tube([[[hx, k], [hx, k + L2 * .35], [hx, k + L2 * .7], [hx, f]]], [[0, w2], [1, w2 * .82]])), sock ? (far ? sh(sock, .15) : sock) : c, { dx: 1.5, dy: 1.5, sw: 2 });
-    const pw = P(E(hx - 3, rd((far ? 194.5 : 196.5) - paw * .5), paw, paw * .5), sock ? (far ? sh(sock, .15) : sock) : sh(c, .1), { sw: 2, dx: 1, dy: 1 });
-    const cap = far ? "" : `<ellipse cx="${hx}" cy="${hy + 2}" rx="${rd(w1 * .62)}" ry="${rd(w1 * .55)}" fill="${c}"/>`;   // 近側的腿：頂端蓋一塊身體色，看不到大腿跟身體的接縫
-    return `<g class="pr-leg ${cls}" style="--ox:${hx}px;--oy:${hy}px">${thigh}${cap}<g class="pr-shin" style="--ox:${hx}px;--oy:${k}px">${shin}${pw}</g></g>`;
-  }
-  const FOX_STAND = `
-    <g class="pr-stand" data-legs="${[[94, 140], [80, 142], [148, 138], [140, 140]].map(q => q.join(",")).join(" ")}">
-      ${jleg("fr far", 94, 140, 26, 28, 12, 8, FX, FXK, 7, true)}${jleg("hr far", 148, 138, 26, 30, 15, 8, FX, FXK, 7, true)}
-      <g class="pc-tail" style="--ox:156px;--oy:132px">${foxStail()}</g>
-      <g class="pr-torso">${P(Pa("M64 140 Q66 116 100 114 Q140 112 158 126 Q168 142 156 156 Q130 166 100 163 Q72 161 64 140Z"), FX, { hl: [96, 122, 18, 5], dx: 3, dy: 4 })}
-        ${P(Pa("M76 152 Q108 166 150 154 Q132 166 104 166 Q84 164 76 152Z"), FXC, { sw: 1.8, dx: 1, dy: 1 })}
-        ${P(E(144, 140, 17, 15), FX, { hl: [138, 132, 6, 3], dx: 2, dy: 3 })}</g>
-      ${jleg("fl near", 80, 142, 26, 28, 13, 8.5, FX, FXK, 7.5)}${jleg("hl near", 140, 140, 27, 29, 16, 8.5, FX, FXK, 7.5)}
-      <g class="pr-bib">${P(Pa("M62 130 Q58 146 70 158 L74 150 L78 160 L82 148 Q82 136 74 126Z"), FXC, { sw: 2, dx: 2, dy: 2 })}</g>
-      <g class="pr-neck" style="--ox:84px;--oy:128px"><g class="pr-nkb">${P(Pa("M56 142 Q50 122 60 104 Q74 92 90 100 Q100 116 108 136 Q86 152 56 142Z"), FX, { dx: 2, dy: 2, sw: 0 })}${P(Pa("M58 140 Q52 124 60 108 Q66 124 74 140 Q66 144 58 140Z"), FXC, { sw: 0, dx: 1, dy: 1 })}</g>
-        <g class="pr-head2" transform="translate(62 80) scale(.78) translate(-100 -100)"><g class="pr-head" style="--ox:100px;--oy:132px"><g class="pr-face-s">${foxSide()}<!--H3--></g><g class="pr-face-f">${foxHead()}<!--H2--></g></g></g></g>
-    </g>`;
-  const TIGER_STAND = `
-    <g class="pr-stand">
-      ${jleg("fr far", 96, 140, 25, 26, 15, 11, TG, "", 9.5, true)}${jleg("hr far", 150, 136, 26, 28, 18, 11, TG, "", 9.5, true)}
-      <g class="pc-tail" style="--ox:160px;--oy:132px">${tigerStail()}</g>
-      <g class="pr-torso">${P(Pa("M62 140 Q64 112 102 110 Q146 108 164 124 Q174 142 160 158 Q132 170 100 167 Q70 165 62 140Z"), TG, { hl: [98, 118, 20, 5], dx: 3, dy: 4 })}
-        ${P(Pa("M74 154 Q110 170 154 156 Q134 170 104 170 Q82 168 74 154Z"), TGC, { sw: 1.8, dx: 1, dy: 1 })}
-        ${[[96, 112, 92, 134], [112, 110, 110, 136], [128, 111, 128, 138], [144, 114, 146, 136], [80, 116, 78, 132]].map(([a, b, c, d]) => stripe(a, b, c, d, 5, 2)).join("")}
-        ${P(E(148, 138, 19, 17), TG, { hl: [142, 130, 6, 3], dx: 2, dy: 3 })}${stripe(150, 126, 156, 146, 4.4, 2)}${stripe(140, 128, 144, 148, 4, 2)}
-        <g class="pr-scap">${P(Pa("M84 122 Q88 108 102 107 Q116 107 120 120 Q104 126 84 122Z"), TG, { hl: [100, 111, 7, 2], dx: 2, dy: 2 })}${stripe(98, 108, 96, 120, 4, 1)}</g></g>
-      ${jleg("fl near", 80, 142, 25, 26, 16, 11.5, TG, "", 10)}${jleg("hl near", 144, 138, 27, 28, 19, 11.5, TG, "", 10)}
-      <g class="pr-bib">${P(Pa("M60 128 Q54 146 68 160 L72 152 L76 162 L80 150 Q80 136 72 124Z"), TGC, { sw: 2, dx: 2, dy: 2 })}</g>
-      <g class="pr-neck" style="--ox:84px;--oy:126px"><g class="pr-nkb">${P(Pa("M54 142 Q46 120 58 100 Q74 88 92 96 Q104 114 110 136 Q86 152 54 142Z"), TG, { dx: 2, dy: 2, sw: 0 })}${P(Pa("M56 140 Q48 122 58 106 Q64 124 74 140 Q64 144 56 140Z"), TGC, { sw: 0, dx: 1, dy: 1 })}${stripe(76, 100, 90, 106, 4, 1)}${stripe(84, 114, 98, 120, 4, 1)}${stripe(92, 126, 104, 132, 3.6, 1)}</g>
-        <g class="pr-head2" transform="translate(60 78) scale(.78) translate(-100 -100)"><g class="pr-head" style="--ox:100px;--oy:134px"><g class="pr-face-s">${tigerSide()}<!--H3--></g><g class="pr-face-f">${tigerHead()}<!--H2--></g></g></g></g>
-    </g>`;
   // 頭裡面再包一層 .pr-hfx（2026-10-05 第二輪「控制權分層」）：外層 .pr-head 給姿勢（低頭、走路、看手指——JS 或狀態 class），
   // 內層給咬、嚼、吞、摸頭這些 CSS 小動作。以前兩種都寫在同一個元素的 transform 上，誰後寫誰贏：嚼的動畫一播，低頭的位移就被蓋掉（頭彈起來離開身體）
   function wrapHeads(src) {
@@ -523,7 +420,7 @@ ${tigerHead()}
     }
     return out + src.slice(i);
   }
-  const A = [EGG, LARVA, BUTTERFLY, FOX + FOX_STAND, TIGER + TIGER_STAND, HATCHDRAGON, DRAGON].map(wrapHeads);
+  const A = [EGG, LARVA, BUTTERFLY, FOX, TIGER, HATCHDRAGON, DRAGON].map(wrapHeads);
   // 腳下的靜止道具（只在夥伴卡用，畫在角色後面的另一層）：角色跳、伸懶腰時它不動
   const LEAF = `${P(Pa("M10 192 Q56 172 116 178 Q162 182 192 196 Q140 200 80 199 Q32 198 10 192Z"), "#5f9a48", { sw: 2.4, dx: 3, dy: 3 })}<path d="M18 192 Q90 184 186 195" stroke="#4a7d38" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M56 188 l-8 7 M88 186 l-6 9 M120 188 l-4 9 M72 187 l6 -6 M104 187 l6 -6 M140 190 l6 -5" stroke="#4a7d38" stroke-width="1.6" stroke-linecap="round"/>`;
   const PROP = ["", LEAF, "", "", "", HATCH_CLOUD, DRAGON_CLOUD];
@@ -611,7 +508,7 @@ ${tigerHead()}
   function dataUri(i, size, hatId) {
     const s = size || 120;
     // 圖片裡吃不到 style.css：開心瞇眼要自己藏起來（以前分享圖卡會同時畫出睜眼和 ^^ 眼）；質感細節 .pc-d2 照畫（圖卡夠大）
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="${vb(i)}"><style>.pc-eh,.m-o,.m-t,.m-p,.pr-ext,.pr-stand,.pr-front,.pr-legs,.pc-crack2,.pc-crack3{display:none}</style>${body(i, hatId)}</svg>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="${vb(i)}"><style>.pc-eh,.m-o,.m-t,.m-p,.pr-ext,.pr-legs,.pc-crack2,.pc-crack3{display:none}</style>${body(i, hatId)}</svg>`;
     return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
   }
   function habitatUri(i, w, h) {
