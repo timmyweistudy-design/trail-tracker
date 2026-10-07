@@ -114,13 +114,23 @@ window.PetStage = (function () {
     el.addEventListener("pointerleave", onLeave);
     el.addEventListener("pointerup", onLeave);
     window.addEventListener("deviceorientation", onOrient);
-    if ("IntersectionObserver" in window) { io = new IntersectionObserver(es => { visible = es.some(x => x.isIntersecting); if (!visible) base = null; }); io.observe(el); }
+    if ("IntersectionObserver" in window) { io = new IntersectionObserver(es => { visible = es.some(x => x.isIntersecting); if (!visible) base = null; live(); }); io.observe(el); }
     else visible = true;
+    document.addEventListener("visibilitychange", live);
     schedule(mood);
-    if (+el.dataset.stage === 6 && typeof PetWalk !== "undefined" && PetWalk.rope) PetWalk.rope(el, true);   // 神龍：身體一直有繩波流過
-    if (+el.dataset.stage === 2 && typeof PetWalk !== "undefined" && PetWalk.wings) PetWalk.wings(el, true);   // 蝶：翅膀由同一個控制器每格寫（2026-10-06 第四輪）
+    live();
+  }
+  // 看得到才跑（2026-10-07 優化輪）：夥伴卡捲出畫面、切到別的分頁／App 到背景時，神龍繩波、蝶翅膀這兩個常駐迴圈停下，舞台上的 CSS 動畫也暫停。
+  // 量過（CPU 降速 4 倍）：以前神龍捲出畫面每秒還花 99ms 跑腳本、每隻角色的舞台每秒 30～50ms 重算樣式。回來時從當下時間接著跑（相位用時間算，不跳）
+  function live() {
+    if (!box) return; const on = visible && !document.hidden, st = +box.dataset.stage;
+    box.classList.toggle("ps-off", !on);
+    if (typeof PetWalk === "undefined") return;
+    if (st === 6 && PetWalk.rope) PetWalk.rope(box, on);    // 神龍：身體一直有繩波流過
+    if (st === 2 && PetWalk.wings) PetWalk.wings(box, on);  // 蝶：翅膀由同一個控制器每格寫
   }
   function unbind() {
+    document.removeEventListener("visibilitychange", live);
     if (box && typeof PetWalk !== "undefined" && PetWalk.rope) PetWalk.rope(box, false);
     if (box && typeof PetWalk !== "undefined" && PetWalk.wings) PetWalk.wings(box, false);
     if (box) { box.removeEventListener("pointermove", onMove); box.removeEventListener("pointerleave", onLeave); box.removeEventListener("pointerup", onLeave); }

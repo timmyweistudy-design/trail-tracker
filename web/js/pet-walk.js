@@ -30,7 +30,13 @@ window.PetWalk = (function () {
     const items = [];
     g.querySelectorAll("path,ellipse,circle,g[transform]").forEach(el => {
       const rg = el.closest(".pr-rigid"); if (rg && rg !== el) return;   // 剛體群組（神龍的後腳，2026-10-06 第五輪）：裡面的東西不各自變形，整組跟著群組的錨點平移
-      if (el.tagName === "path") { const d = el.getAttribute("d"); if (d) items.push({ el, d, toks: d.match(TOK) }); }
+      if (el.tagName === "path") {   // 2026-10-07 優化輪：第一次就把路徑切好、轉成數字（以前每一格都重新切字串、轉數字、再查一次在不在平移群組裡）
+        const d = el.getAttribute("d"); if (!d) return;
+        const segs = []; let cur = null;
+        for (const t of d.match(TOK)) { if (/[A-Za-z]/.test(t)) { cur = { c: t, n: [], pair: "MLTQSC".includes(t) }; segs.push(cur); } else if (cur) cur.n.push(+t); }
+        const tg = el.closest("g[transform]");
+        items.push({ el, d, segs, skip: !!tg && tg !== g });   // 在平移群組裡的（爪子）跟著群組走
+      }
       else if (el.tagName === "g") { const m = /^translate\(([-\d.]+)[ ,]+([-\d.]+)\)(.*)$/.exec(el.getAttribute("transform")); if (m) items.push({ el, gx: +m[1], gy: +m[2], rest: m[3] }); }
       else if (!el.closest("g[transform]") || el.closest("g[transform]") === g) items.push({ el, cx: +el.getAttribute("cx"), cy: +el.getAttribute("cy") });
     });
@@ -40,19 +46,21 @@ window.PetWalk = (function () {
     const items = snapshot(box); if (!items) return;
     const r = v => Math.round(v * 10) / 10;
     for (const it of items) {
-      if (it.toks) {
-        if (it.el.closest("g[transform]") && it.el.closest("g[transform]") !== box.querySelector("#petEmoji .pr-deform")) continue;   // 在平移群組裡的（爪子）跟著群組走
-        let out = "", cmd = "", buf = [];
-        const flush = () => { if (!buf.length) return; if ("MLTQSC".includes(cmd)) for (let i = 0; i + 1 < buf.length; i += 2) { const [x, y] = F(buf[i], buf[i + 1]); out += r(x) + " " + r(y) + " "; } else out += buf.join(" ") + " "; buf = []; };
-        for (const t of it.toks) { if (/[A-Za-z]/.test(t)) { flush(); cmd = t; out += t; } else buf.push(+t); }
-        flush(); it.el.setAttribute("d", out.trim());
-      } else if (it.gx != null) { const [x, y] = F(it.gx, it.gy); it.el.setAttribute("transform", `translate(${r(x)} ${r(y)})${it.rest}`); }
+      if (it.segs) {
+        if (it.skip) continue;
+        let out = "";
+        for (const sg of it.segs) {
+          out += sg.c; const n = sg.n;
+          if (sg.pair) for (let i = 0; i + 1 < n.length; i += 2) { const q = F(n[i], n[i + 1]); out += r(q[0]) + " " + r(q[1]) + " "; }
+          else if (n.length) out += n.join(" ") + " ";
+        }
+        it.el.setAttribute("d", out);      } else if (it.gx != null) { const [x, y] = F(it.gx, it.gy); it.el.setAttribute("transform", `translate(${r(x)} ${r(y)})${it.rest}`); }
       else { const [x, y] = F(it.cx, it.cy); it.el.setAttribute("cx", r(x)); it.el.setAttribute("cy", r(y)); }
     }
   }
   function resetField(box) {
     const g = box.querySelector("#petEmoji .pr-deform"); const items = g && ORIG.get(g); if (!items) return;
-    for (const it of items) { if (it.toks) it.el.setAttribute("d", it.d); else if (it.gx != null) it.el.setAttribute("transform", `translate(${it.gx} ${it.gy})${it.rest}`); else { it.el.setAttribute("cx", it.cx); it.el.setAttribute("cy", it.cy); } }
+    for (const it of items) { if (it.segs) it.el.setAttribute("d", it.d); else if (it.gx != null) it.el.setAttribute("transform", `translate(${it.gx} ${it.gy})${it.rest}`); else { it.el.setAttribute("cx", it.cx); it.el.setAttribute("cy", it.cy); } }
   }
   // ── 幼蟲一節一節（2026-10-06）：每一節（.lv-seg）的中心 (u, v)；F(u, v) 回傳新的中心 [x, y]，這一節整個平移過去（腳跟著那一節）──
   const LVSEG = new WeakMap();
@@ -141,7 +149,10 @@ window.PetWalk = (function () {
   let ropeRaf = 0;
   function rope(box, on) {
     cancelAnimationFrame(ropeRaf); ropeRaf = 0; if (!box || !on || reduce()) return;
-    const tick = () => { if (!box.isConnected || stage(box) !== 6) { ropeRaf = 0; return; } ropeRender(box, performance.now()); ropeRaf = requestAnimationFrame(tick); };
+    let odd = false;
+    const tick = () => { if (!box.isConnected || stage(box) !== 6) { ropeRaf = 0; return; }
+      odd = !odd; if (odd || box.classList.contains("walking") || box.__chain || box.__ropeTail < .99) ropeRender(box, performance.now());   // 待機時繩波很慢：每秒畫 30 次就夠（游、用尾巴送果實時每格畫）
+      ropeRaf = requestAnimationFrame(tick); };
     ropeRaf = requestAnimationFrame(tick);
   }
   // ── 蝶的翅膀（2026-10-06 第四輪）：單一個 JS 控制器每格寫前翅、後翅的 scaleX（1＝全開）。
@@ -323,7 +334,14 @@ window.PetWalk = (function () {
   };
   // 角色的版面寬度（px）：用 clientWidth，不能用 getBoundingClientRect——轉身（rotateY）時畫面上的寬度會變窄，步幅就會算錯
   // 1 個 SVG 單位＝幾 px（主角的畫布四周有留白，viewBox 不一定是 200 寬）；svgY：圖上的 y → 畫面 y
-  const pxu = box => { const c = box.querySelector("#petEmoji .pet-critter"); if (!c) return .84; const w = (c.viewBox && c.viewBox.baseVal && c.viewBox.baseVal.width) || 200; return (c.clientWidth || c.getBoundingClientRect().width || 168) / w; };
+  // 2026-10-07 優化輪：快取（讀 clientWidth 會逼瀏覽器在這一格中間重新排版——神龍的繩波每格都讀，profiler 上是最大的一項）；尺寸真的變了 ResizeObserver 才清掉
+  const PXU = new WeakMap(), PXRO = typeof ResizeObserver === "function" ? new ResizeObserver(es => es.forEach(e => PXU.delete(e.target))) : null;
+  const pxu = box => {
+    const c = box.querySelector("#petEmoji .pet-critter"); if (!c) return .84;
+    let v = PXU.get(c); if (v) return v;
+    const w = (c.viewBox && c.viewBox.baseVal && c.viewBox.baseVal.width) || 200, cw = c.clientWidth || c.getBoundingClientRect().width;
+    v = (cw || 168) / w; if (cw && PXRO) { PXU.set(c, v); PXRO.observe(c); } return v;
+  };
   const svgY = (c, r, y) => { const vb = c.viewBox && c.viewBox.baseVal; return vb && vb.height ? r.top + (y - vb.y) / vb.height * r.height : r.top + r.height * y / 200; };
   const critterPx = box => { const c = box.querySelector("#petEmoji .pet-critter"); return c ? (c.clientWidth || c.getBoundingClientRect().width || 168) : 168; };
   // 每條腿的長度（髖→膝、膝→腳掌著地點），從骨架讀一次記起來

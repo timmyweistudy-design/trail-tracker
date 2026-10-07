@@ -2316,3 +2316,6 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .ps-berry.bit1 { animation: psNibble .22s ease-out; } .ps-berry.bit2 { animation: psNibble2 .22s ease-out; }
 @keyframes psNibble { 40% { transform: translateX(calc((50% - var(--nx, 8%)) * .06)) scale(.94, 1.04); } }
 @keyframes psNibble2 { 40% { transform: translateX(calc((50% - var(--nx, 8%)) * .06)) scale(.94, 1.04); } }
+
+/* 看不到的舞台（pet-stage.js live()：捲出畫面、分頁在背景）：所有 CSS 動畫暫停，不再每格重算樣式（2026-10-07 優化輪） */
+.ps-box.ps-off, .ps-box.ps-off * { animation-play-state: paused !important; }
