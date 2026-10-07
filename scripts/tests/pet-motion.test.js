@@ -79,7 +79,7 @@ async function run(b, st, spots, tag) {
       if (m.size > 1 && window.__wc.length < 40) window.__wc.push(fr + ":" + [...m].join("+"));
       d.set.call(this, v); } });
   });
-  if (process.env.PM_MOOD) await p.addInitScript(m => { const d = new Date(Date.now() - ({ happy: 0, content: 3, longing: 7 }[m] || 0) * 864e5).toISOString(); localStorage.setItem("tt_records", JSON.stringify([{ id: "pm1", date: d, trailName: "x", distanceKm: 3, elapsedMs: 3.6e6 }])); }, process.env.PM_MOOD);   // 2026-10-07：心情跟最近一次健行有關（沒有紀錄＝睏）；PM_MOOD=happy|content|longing 換心情跑
+  if (process.env.PM_MOOD) await p.addInitScript(m => { const d = new Date(Date.now() - ({ happy: 0, content: 3, longing: 7 }[m] || 0) * 864e5).toISOString(); localStorage.setItem("tt_records", JSON.stringify([{ id: "pm1", date: d, trailName: "x", distanceKm: .1, elapsedMs: 6e5 }]));   /* 距離要很小：不然里程超過門檻、階段就變了 */ }, process.env.PM_MOOD);   // 2026-10-07：心情跟最近一次健行有關（沒有紀錄＝睏）；PM_MOOD=happy|content|longing 換心情跑
   await p.addInitScript(() => addEventListener("unhandledrejection", e => setTimeout(() => { throw e.reason; })));   // 2026-10-06：async 裡丟出的錯（例如呼叫已刪掉的函式）以前是安靜的——果實消失、角色卡住，測試只看到逾時
   await p.addInitScript(MOCK); await p.goto(`http://localhost:${PORT}/`); await p.waitForTimeout(2500);
   await p.evaluate(() => document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e => e.remove())); await p.click('.tab[data-view="pet"]'); await p.waitForTimeout(1500);
@@ -87,6 +87,8 @@ async function run(b, st, spots, tag) {
   await p.waitForTimeout(600);
   const bal0 = await p.evaluate(() => berriesBalance());
   const cdp = await ctx.newCDPSession(p); await cdp.send("Emulation.setVirtualTimePolicy", { policy: "pause" });
+  const I = [];   // 2026-10-07 優化輪 #18：按餵食之前先錄 1.5 秒待機（待機也不能跳格）
+  for (let f = 0; f < 45; f++) { await cdp.send("Emulation.setVirtualTimePolicy", { policy: "advance", budget: 33 }); await new Promise(r => cdp.once("Emulation.virtualTimeBudgetExpired", r)); await cdp.send("Page.captureScreenshot", { format: "jpeg", quality: 10, clip: { x: 0, y: 0, width: 1, height: 1, scale: 1 } }); I.push(await p.evaluate(probe)); }
   await p.evaluate(() => document.querySelector("#petFeed").click());
   const F = []; let idle = 0;
   for (let f = 0; f < 1100; f++) {
@@ -100,7 +102,7 @@ async function run(b, st, spots, tag) {
   const writers = await p.evaluate(() => window.__wc || []);
   const end = await p.evaluate(() => ({ writers: window.__wc || [], bal: berriesBalance(), wx: parseFloat(document.querySelector(".ps-box").style.getPropertyValue("--wx")) || 0 }));
   await ctx.close();
-  return { F, bal0, end };
+  return { F, I, bal0, end };
 }
 
 const D = (a, b) => (a && b ? Math.hypot(a[0] - b[0], a[1] - b[1]) : 0);
@@ -227,6 +229,8 @@ function judge(st, tag, R) {
   const last = F[n - 1];
   { const w = (R.end.writers || []).map(x => x.replace(/^\d+:/, "")), uniq = [...new Set(w)];
     ok(uniq.length === 0, `${tag}: each element's transform has one writer per frame (conflicts: ${JSON.stringify(uniq.slice(0, 6))})`); }
+  { const I = R.I || [], di = I.map((f, i) => (i ? D(f.mouth, I[i - 1].mouth) : 0)); let wj = 0; for (let i = 2; i < I.length - 1; i++) wj = Math.max(wj, di[i] - Math.max(di[i - 1], di[i + 1]) > 3 ? di[i] : 0, di[i] > 8 ? di[i] : 0);
+    ok(I.length >= 40 && wj === 0, `${tag}: idle before feeding is smooth too (mouth never pops; worst ${wj.toFixed(1)}px)`); }
   if (process.env.PM_NEED) console.log("NEED", tag, Math.max(...F.map(f => f.need || 0)).toFixed(1));
   ok(!last.berries.length && !last.cls && Math.abs(R.end.wx) < 1 && R.end.bal === R.bal0 - 3, `${tag}: ends clean — no berries, no leftover pose, back in the middle, exactly 3 berries spent ${JSON.stringify({ cls: last.cls, wx: R.end.wx, spent: R.bal0 - R.end.bal })}`);
 }

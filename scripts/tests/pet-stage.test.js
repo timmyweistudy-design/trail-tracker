@@ -64,6 +64,9 @@ if(sh()){const p=await mk({km:150,reduce:true});
  ok(await p.evaluate(()=>[...document.querySelectorAll(".ps-p")].every(e=>getComputedStyle(e).display==="none")),"reduced motion: no particles");
  const r=await p.evaluate(()=>{const b=document.querySelector(".ps-box").getBoundingClientRect();return {x:b.left+b.width*.9,y:b.top+20}});await p.mouse.move(r.x,r.y);await p.waitForTimeout(500);
  ok(await p.evaluate(()=>(getComputedStyle(document.querySelector(".ps-box")).getPropertyValue("--px").trim()||"0")==="0"),"reduced motion: no parallax");
+ { const fr=await p.evaluate(async()=>{localStorage.removeItem("tt_pet_fed_t");renderPet();await new Promise(r=>setTimeout(r,200));let berries=0,walk=0;const t=setInterval(()=>{berries=Math.max(berries,document.querySelectorAll(".ps-berry").length);walk+=document.querySelector(".ps-box").classList.contains("walking")?1:0;},40);
+   document.querySelector("#petFeed").click();await new Promise(r=>setTimeout(r,1500));clearInterval(t);return {berries,walk};});   /* 2026-10-07 優化輪 #13 */
+   ok(fr.berries===0&&fr.walk===0,"reduced motion: feeding settles at once — no berries flying, no walking "+JSON.stringify(fr)); }
  await p.close();}
 
 // ── 第 2 階段：行為、互動分區、抱抱、眼睛、餵食動作、進化儀式 ──
