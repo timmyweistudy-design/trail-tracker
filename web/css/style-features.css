@@ -1099,6 +1099,9 @@ html[data-theme="dark"] body::after { opacity: .05; }
   display: grid; place-items: center; padding: calc(var(--safe-t) + 12px) 24px calc(var(--safe-b) + 12px); animation: tt-fade var(--dur-m) var(--ease-out); }
 .ttdlg { width: 100%; max-width: 340px; background: var(--surface); color: var(--ink);
   border-radius: var(--r-md, 14px); padding: 20px 18px 14px; box-shadow: 0 18px 50px rgba(0,0,0,.3); }
+/* 2026-10-08 修正案 原33：大字級／小螢幕時對話框比螢幕高 → 下半截被切掉、關閉鈕跑到畫面外。限制高度、裡面捲動，按鈕列黏在底部永遠看得到 */
+.ttdlg { max-height: calc(100vh - var(--safe-t) - var(--safe-b) - 24px - var(--kb, 0px)); max-height: calc(100dvh - var(--safe-t) - var(--safe-b) - 24px - var(--kb, 0px)); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+.ttdlg-btns { position: sticky; bottom: -14px; background: var(--surface); padding-bottom: 14px; margin-bottom: -14px; }
 .ttdlg-msg { font-size: calc(14.5px * var(--fs, 1)); line-height: 1.65; white-space: pre-wrap; }
 .ttdlg-input { width: 100%; margin-top: 12px; border: 1px solid var(--line); border-radius: var(--r-sm);
   background: var(--surface-2); color: var(--ink); padding: 10px; font-size: calc(14px * var(--fs, 1)); font-family: inherit; resize: vertical; }

@@ -164,7 +164,7 @@ window.PetWalk = (function () {
     cancelAnimationFrame(ropeRaf); ropeRaf = 0; if (!box || !on || reduce()) return;
     let odd = false;
     const tick = () => { if (!box.isConnected || stage(box) !== 6) { ropeRaf = 0; return; }
-      odd = !odd; if (odd || box.classList.contains("walking") || box.__chain || box.__ropeTail < .99) ropeRender(box, performance.now());   // 待機時繩波很慢：每秒畫 30 次就夠（游、用尾巴送果實時每格畫）
+      odd = !odd; if (!box.__tailTw && (odd || box.classList.contains("walking") || box.__chain || box.__ropeTail < .99)) ropeRender(box, performance.now());   // __tailTw：尾巴補間正在跑，它每格自己畫（applyChain）——這裡再畫一次＝同一格畫兩遍（2026-10-08 R2 量到：送果實時繩波每格算兩次）   // 待機時繩波很慢：每秒畫 30 次就夠（游、用尾巴送果實時每格畫）
       ropeRaf = requestAnimationFrame(tick); };
     ropeRaf = requestAnimationFrame(tick);
   }
@@ -305,10 +305,12 @@ window.PetWalk = (function () {
     let tl = performance.now();
     const put = hk => { const P = trunk(c, hk); box.__trunk = { c: c.slice(), hook: hk }; applyChain(box, P); if (onFrame) onFrame(); };
     if (!tgt) {   // 放回原形：參數直接緩緩歸零（尾尖的勾先鬆、整條再放下）
-      await tween(ms, (e, k) => { const u = ssT(k / .8), w = ssT((k - .15) / .85); for (let i = 0; i < NP; i++) c[i] = T0.c[i] * (1 - w); put(h0 * (1 - u)); });
+      box.__tailTw = (box.__tailTw || 0) + 1;
+      try { await tween(ms, (e, k) => { const u = ssT(k / .8), w = ssT((k - .15) / .85); for (let i = 0; i < NP; i++) c[i] = T0.c[i] * (1 - w); put(h0 * (1 - u)); }); } finally { box.__tailTw--; }
       box.__trunk = null; box.__chain = null; ropeRender(box, performance.now()); tailLayer(box, false); return;   // 同一格直接畫回繩波（以前先 resetField 回原始形狀，有一格閃一下）
     }
-    await tween(ms, (e, k) => {
+    box.__tailTw = (box.__tailTw || 0) + 1;
+    try { await tween(ms, (e, k) => {
       const g = goal(), cc = toMouth ? [(st[0] + g[0]) / 2, Math.max(st[1], g[1]) + 26] : [(st[0] + g[0]) / 2, Math.min(st[1], g[1]) - 16];
       const u = 1 - e, T = [u * u * st[0] + 2 * u * e * cc[0] + e * e * g[0], u * u * st[1] + 2 * u * e * cc[1] + e * e * g[1]];
       const hk = h0 + (h1 - h0) * ssT((k - .55) / .45);   // 快到的時候尾尖才捲起來
@@ -321,6 +323,7 @@ window.PetWalk = (function () {
       const prev = c.slice(); trunkSolve(c, h1, g, 6); limitTip(prev, c, h1, 3.2);
       put(h1); await new Promise(r => requestAnimationFrame(r));
     }
+    } finally { box.__tailTw--; }
   }
   // 走路的變數寫在角色自己的容器（#petEmoji）上：寫在 .ps-box 會讓整個舞台（風景、粒子）每一格都重算樣式——
   // 實測 4 倍降速時狐狸掉到 27fps。位置（--wx）、轉身（--face）影子和道具也要用，留在 .ps-box

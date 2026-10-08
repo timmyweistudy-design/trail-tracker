@@ -190,6 +190,12 @@ function judge(st, tag, R) {
   // 3) 果實不亂跳：地上的不動；拿著／托著的每格最多 10px
   let bj = 0, bjAt = ""; for (let i = 45; i < n; i++) { if (F[i].berries.length !== F[i - 1].berries.length) continue; F[i].berries.forEach((x, k) => { if (/eaten|sipped|melt/.test(x.cls)) return; const d = D(x.c, F[i - 1].berries[k].c), held = /held|carried/.test(x.cls), ex = held ? d - 10 : d - 1; if (ex > bj) { bj = ex; bjAt = `@${i} ${x.cls} ${F[i].cls}`; } }); }
   ok(bj <= 0, `${tag}: berries never jump (ground berries still, held ones ≤10px/frame; worst excess ${bj.toFixed(1)}px ${bjAt})`, todoOf("berry", st));
+  // 3b) 交接那一格不跳（2026-10-08 修正案 A3）：果實從地上／雲上變成被咬住、被尾巴帶起（class 換了）的那一格，位移不能比前後兩格多 1.5px 以上
+  let hj = 0, hjAt = "", hn = 0; const st3 = (f, k) => f && f.berries[k] ? f.berries[k] : null, mode = x => /carried/.test(x.cls) ? "tail" : /held/.test(x.cls) ? "held" : "rest";   /* 尾巴拿著→嘴咬著也是一次交接 */
+  for (let i = 46; i < n - 1; i++) { if (F[i].berries.length !== F[i - 1].berries.length || F[i + 1].berries.length !== F[i].berries.length) continue;
+    F[i].berries.forEach((x, k) => { const a = st3(F[i - 1], k), c = st3(F[i + 1], k), z = st3(F[i - 2], k); if (!a || !c || !z || /eaten|sipped|melt/.test(x.cls + a.cls) || mode(x) === mode(a)) return;
+      hn++; const d = D(x.c, a.c), nb = Math.max(D(a.c, z.c), D(c.c, x.c)), ex = d - nb - 1.5; if (ex > hj) { hj = ex; hjAt = `@${i} ${a.cls}→${x.cls}`; } }); }
+  ok(hj <= 0, `${tag}: no jump at the moment a berry is picked up / handed over (${hn} handoffs, worst excess ${hj.toFixed(1)}px ${hjAt})`, todoOf("handoff", st));
   if (st === 1) {   // 2026-10-06 第五輪：尺蠖式——走路的每一格至少一端抓地不動（不滑），而且中段真的拱起來
     let slip = 0, slipAt = -1, arch = 0;
     for (let i = 1; i < n; i++) { if (!/walking/.test(F[i].bcl) || !/walking/.test(F[i - 1].bcl) || /lv-l/.test(F[i].bcl) !== /lv-l/.test(F[i - 1].bcl) || !F[i].lvR || F[i].turn || F[i - 1].turn) continue;

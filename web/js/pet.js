@@ -293,6 +293,13 @@ function openHatPicker() {
 }
 // 夥伴的音效與震動（2026-10-07 寵物新一輪 #23）：音效預設關（吃東西、抱抱、進化、收到禮物各一種輕柔的合成音，不用音檔）；震動預設開，可以在「？」裡關掉
 const petHapticOn = () => localStorage.getItem("tt_pet_haptic") !== "0", petSoundOn = () => localStorage.getItem("tt_pet_sound") === "1";
+// 裝置做得到才顯示開關（2026-10-08 修正案 A6）：以前 iPhone 網頁版有「夥伴震動」開關但 Safari 根本沒有震動；
+// 搖手機在 iPhone 要先請「動作與方向」權限，以前從沒請過＝這個功能在 iPhone 上一直是死的
+const petCan = {
+  sound: () => !!(window.AudioContext || window.webkitAudioContext),
+  haptic: () => { const C = window.Capacitor; return !!(C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins.Haptics) || typeof navigator.vibrate === "function"; },
+  motionAsk: () => typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function",   // 只有 iPhone 需要（Android 不用問就有）
+};
 function petBuzz(p) { if (petHapticOn() && typeof ttBuzz === "function") ttBuzz(p); }
 let _petAc = null;
 function petSound(k) {
@@ -559,7 +566,7 @@ function renderPet() {
   }
   box.dataset.sig = sig;
   const actorHtml = `
-      <div class="pet-bubble">${ttT(mood.t)}</div>
+      <div class="pet-bubble">${ttT(mood.t)}</div><div class="sr-only" id="petLive" role="status" aria-live="polite"></div>
       <div id="petEmoji" class="pet-m-${mood.k || "content"}" role="button" tabindex="0" aria-label="${ttT("摸摸")} ${escHtml(nm || ttT(st.n))}">${typeof PET_ART !== "undefined" && PET_ART.prop ? PET_ART.prop(i) : ""}${art}${petMoodFx(mood.k)}</div>
       <div class="pet-shadow"></div>`;
   const stageHtml = (typeof PetStage !== "undefined")
@@ -658,19 +665,23 @@ function renderPet() {
       const so = document.getElementById("petSoundSw"), hp = document.getElementById("petHapticSw");
       if (so) so.addEventListener("change", () => { localStorage.setItem("tt_pet_sound", so.checked ? "1" : "0"); if (so.checked) petSound("hug"); });
       if (hp) hp.addEventListener("change", () => { localStorage.setItem("tt_pet_haptic", hp.checked ? "1" : "0"); if (hp.checked) petBuzz(20); });
+      const mo = document.getElementById("petMotionSw");   // iPhone：要使用者按下去那一刻才能請「動作與方向」權限
+      if (mo) mo.addEventListener("change", () => { if (!mo.checked) { localStorage.setItem("tt_pet_motion", "0"); return; }
+        DeviceMotionEvent.requestPermission().then(r => { const g = r === "granted"; mo.checked = g; localStorage.setItem("tt_pet_motion", g ? "1" : "0"); if (!g) toast(ttT("需允許「動作與方向」權限")); }).catch(() => { mo.checked = false; toast(ttT("需允許「動作與方向」權限")); }); });
     }, 0);
     const rows = petAffRows().map(([a, b, c]) => `<tr><td>${escHtml(ttT(a))}</td><td class="ah-v">${b}</td><td class="ah-t">${escHtml(c)}</td></tr>`).join("");
     if (typeof ttChoice === "function") ttChoice({ html: `<div class="aff-help"><p>${escHtml(ttT("活力：出門走路就會補滿，太久沒出門會慢慢掉。"))}</p><p><b>${escHtml(ttT("親密怎麼增加"))}</b></p><table>${rows}</table>
       <p>${escHtml(ttT("親密滿 5 顆心：餵食給的成長更多，牠也會自己出門帶小東西回來。"))}</p><p class="ah-n">${escHtml(ttT("兩個都不會讓夥伴退化，放心。"))}</p>
-      <label class="ah-sw"><span>${escHtml(ttT("夥伴音效（吃東西、抱抱、進化）"))}</span><input type="checkbox" class="tt-switch" id="petSoundSw"${petSoundOn() ? " checked" : ""}></label>
-      <label class="ah-sw"><span>${escHtml(ttT("夥伴震動"))}</span><input type="checkbox" class="tt-switch" id="petHapticSw"${petHapticOn() ? " checked" : ""}></label></div>` }, [{ label: ttT("知道了"), value: true, cls: "primary" }]);
+      ${petCan.sound() ? `<label class="ah-sw"><span>${escHtml(ttT("夥伴音效（吃東西、抱抱、進化）"))}</span><input type="checkbox" class="tt-switch" id="petSoundSw"${petSoundOn() ? " checked" : ""}></label>` : ""}
+      ${petCan.haptic() ? `<label class="ah-sw"><span>${escHtml(ttT("夥伴震動"))}</span><input type="checkbox" class="tt-switch" id="petHapticSw"${petHapticOn() ? " checked" : ""}></label>` : ""}
+      ${petCan.motionAsk() ? `<label class="ah-sw"><span>${escHtml(ttT("搖一搖手機，牠會頭暈"))}</span><input type="checkbox" class="tt-switch" id="petMotionSw"${localStorage.getItem("tt_pet_motion") === "1" ? " checked" : ""}></label>` : ""}</div>` }, [{ label: ttT("知道了"), value: true, cls: "primary" }]);
   });
   { const dr = $("#petDress"); if (dr) dr.addEventListener("click", openHatPicker); }
   { const ph = $("#petPhoto"); if (ph) ph.addEventListener("click", openPetPhoto); }
   { const pl = $("#petPlay"); if (pl) pl.addEventListener("click", () => {   // 丟松果（#12）：每隻用自己的方式玩；吃東西、正在玩的時候不能再丟
       if (typeof PetStage === "undefined" || !PetStage.play) return;
       if (PetStage.isFeeding() || PetStage.isPlaying()) { petSay(ttT("正在忙，等我一下～"), 1600); return; }
-      if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) { petSay(ttT("好好玩！")); petBurst("❤️", 1); return; }
+      if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) { petSay(ttT("好好玩！")); petBurst("❤️", 1); if (petPatAff()) renderPet(); return; }   /* 減少動態效果：沒有動畫，但親密照樣算（修正案共用原則 6，2026-10-08） */
       petBuzz(12); PetStage.play(`<svg viewBox="0 0 24 24">${PET_GIFTS.pine[1]}</svg>`).then(ok => { if (ok) { petSay(ttT(["好好玩！", "再丟一次嘛", "我抓到了！"][Math.floor(Math.random() * 3)])); if (petPatAff()) petFloat(`${ttT("親密")} +1`, ".pet-card .pet-meter:nth-child(2) .mtrack", null, PET_HEART_SVG); } });
     }); }
   const ren = $("#petRename");   // Premium：為夥伴命名
@@ -701,6 +712,9 @@ let _sayT = 0;
 function petSay(text, ms) {
   const b = document.querySelector(".pet-card .pet-bubble"); if (!b) return;
   clearTimeout(_sayT); b.classList.add("say"); petSwapText(b, escHtml(text));
+  // 讀屏（2026-10-08 修正案 原31）：只播「操作的結果」（petSay＝餵、抱、摸、禮物、好友果實、被擋下來的原因），不播待機動作和心情句子；
+  // 先清空再寫，同一句話連說兩次也會再播
+  const live = document.getElementById("petLive"); if (live) { live.textContent = ""; setTimeout(() => { live.textContent = String(text); }, 60); }
   _sayT = setTimeout(() => { b.classList.remove("say"); const w = window.__petLine; petSwapText(b, w && w.until > Date.now() ? escHtml(w.t) : ttT(petMood().t)); }, ms || 2600);   // 說完回到剛剛那句（健行感想／不在時做了什麼）
 }
 // 從角色飛到某個條（成長進度條、親密條）：帶果實／愛心的膠囊走一道弧線，飛到條「現在的末端」；

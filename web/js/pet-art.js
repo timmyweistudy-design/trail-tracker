@@ -136,6 +136,8 @@ window.PET_ART = (function () {
     <g class="pc-tw" style="animation-delay:1.1s"><path d="M44 96 l2 6 l6 2 l-6 2 l-2 6 l-2-6 l-6-2 l6-2Z" fill="#ffe6a0"/></g>`;
 
   // 1 草叢幼蟲：鳳蝶終齡幼蟲——翠綠、一節一節、胸部假眼紋（大圖）、小黑珠眼；臭角在頭後面（<!--O-->，戴帽子時拿掉，帽子戴在頭上）
+  // 腳（2026-10-08 修正案 R2）：照真的鳳蝶幼蟲——胸部 3 節是尖的胸足（畫在 k7、k8）、腹部 4 對肉足（k3～k6）＋尾足（k1）；以前只有尾端兩節有肉足。
+  //   動作維持使用者 10/06 要的拱身走：拱起來的那幾節腳跟著離地、貼地的那幾節腳踩在地上
   const LV = "#86c95a", LVS = [[[44, 166], [72, 180], [110, 176], [134, 146]]], LVW = [[0, 24], [.55, 32], [1, 36]];
   // 2026-10-06 改成一節一節畫（9 節，尾→頭）：每一節是自己的橢圓（明暗、描邊、氣門），有腹足的節底下有腳——
   // 動作時每一節各自移動（pet-walk.js 排位置），掉頭時依遠近重新排序，近的那節蓋在遠的上面（以前整條是一條 path，U 型迴轉時兩段的描邊會交叉成一團）
@@ -148,7 +150,7 @@ window.PET_ART = (function () {
       const w = wAt(LVW, q.f) / 2 + 1, rx = 11.5, ry = k === 0 ? 11.5 : w, ryb = ry * .8, x = rd(q.x), y = rd(q.y), a = rd(q.a);
       const shape = `M${rd(x - rx)} ${y} A${rx} ${rd(ry)} 0 0 1 ${rd(x + rx)} ${y} A${rx} ${rd(ryb)} 0 0 1 ${rd(x - rx)} ${y}Z`;   // 上面是弧、肚子比較平
       const yb = rd(y + ryb), st = `data-u="${x}" data-v="${y}" data-b="${yb}" style="--ox:${x}px;--oy:${y}px"`;   // data-b：肚子底部（趴平時用）
-      const legs = k >= 1 && k <= 2 ? `<g class="lv-pro"><path d="M${rd(x - 4.4)} ${rd(yb - 3)} L${rd(x + 4.4)} ${rd(yb - 3)} L${rd(x + 3.2)} ${rd(yb + 5)} L${rd(x - 3.2)} ${rd(yb + 5)}Z" fill="#6aa646" stroke="${sh(LV, .5)}" stroke-width="1.8" stroke-linejoin="round"/><path d="M${rd(x - 3.4)} ${rd(yb + 5.6)} h6.8" stroke="#2f4a1c" stroke-width="1.8" stroke-linecap="round"/></g>`   // 肉足：短胖、底下一排小鉤
+      const legs = [1, 3, 4, 5, 6].includes(k) ? `<g class="lv-pro"><path d="M${rd(x - 4.4)} ${rd(yb - 3)} L${rd(x + 4.4)} ${rd(yb - 3)} L${rd(x + 3.2)} ${rd(yb + 5)} L${rd(x - 3.2)} ${rd(yb + 5)}Z" fill="#6aa646" stroke="${sh(LV, .5)}" stroke-width="1.8" stroke-linejoin="round"/><path d="M${rd(x - 3.4)} ${rd(yb + 5.6)} h6.8" stroke="#2f4a1c" stroke-width="1.8" stroke-linecap="round"/></g>`   // 肉足：短胖、底下一排小鉤
         : k >= 7 ? `<path d="M${rd(x - 2)} ${rd(yb - 2)} l2.4 6.6 l1.8 -1" stroke="#33461c" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>` : "";   // 胸足（尖的）
       ln.push(`<g class="lv-sl" ${st}>${legs}<path transform="rotate(${a} ${x} ${y})" d="${shape}" fill="${sh(LV, .48)}" stroke="${sh(LV, .48)}" stroke-width="4.4" stroke-linejoin="round"/></g>`);
       const fold = k > 0 ? `<path class="pc-d" d="M${rd(x - rx * .62)} ${rd(y - ry * .8)} Q${rd(x - rx * .9)} ${rd(y + ryb * .1)} ${rd(x - rx * .62)} ${rd(y + ryb * .8)}" stroke="${sh(LV, .22)}" stroke-width="1.4" fill="none" stroke-linecap="round" opacity=".5"/>` : "";   // 摺線（在這一片的後緣、前一片的上面）

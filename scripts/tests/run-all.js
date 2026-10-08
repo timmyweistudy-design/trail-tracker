@@ -29,9 +29,10 @@ const jobs = [];
 if (!sqlOnly) {
   jobs.push({ name: "check", file: "scripts/check.js", kind: "check" });
   if (!quick) for (const f of ["e2e", "qa-crawl", "audit-ui", "audit-center", "social-e2e", "record-e2e"]) jobs.push({ name: f, file: `scripts/${f}.js`, kind: "suite" });
+  const SOLO = new Set(["pet-perf-budget"]);   // 量效能的：並行時大家搶 CPU，fps 會掉（2026-10-08 實測 60→41），最後單獨跑（借用資料庫測試「最後依序跑」那一段）
   const SHARD = { "pet-stage": 3 };   // 單跑很久的測試拆成幾組平行跑（測試檔讀 PS_SHARD；2026-10-07：pet-stage 單跑 8～10 分鐘）
   for (const f of fs.readdirSync(__dirname).filter(f => f.endsWith(".test.js")).sort()) { const nm = f.replace(".test.js", ""), k = SHARD[nm] || 1;
-    for (let i = 0; i < k; i++) jobs.push({ name: k > 1 ? `${nm}#${i + 1}` : nm, file: `scripts/tests/${f}`, kind: "fn", env: k > 1 ? { PS_SHARD: `${i}/${k}` } : null }); }
+    for (let i = 0; i < k; i++) jobs.push({ name: k > 1 ? `${nm}#${i + 1}` : nm, file: `scripts/tests/${f}`, kind: "fn", env: k > 1 ? { PS_SHARD: `${i}/${k}` } : null, pg: SOLO.has(nm) }); }
 }
 let pgOk = true; try { require.resolve("embedded-postgres", { paths: [ROOT] }); require.resolve("pg", { paths: [ROOT] }); } catch (e) { pgOk = false; }
 if (pgOk) for (const f of fs.readdirSync(path.join(__dirname, "pg")).filter(f => f.endsWith(".sql.test.js")).sort()) jobs.push({ name: "sql:" + f.replace(".sql.test.js", ""), file: `scripts/tests/pg/${f}`, kind: "fn", pg: true });
@@ -39,8 +40,8 @@ else if (sqlOnly || !quick) console.log("（略過資料庫測試：沒裝 embed
 
 // ── --changed：改了哪些檔 → 跑哪些測試（對不到的 web/ 檔案就跑主要流程；check 一律跑）──
 const MAP = [
-  [/web\/js\/(pet-art|pet-stage|stage-art|art-kit|pet)\.js$/, ["pet-stage", "pet-motion", "pet", "pet-visit", "year-story", "pet-clock", "pet-handoff", "pet-settle"]],
-  [/web\/js\/pet-walk\.js$/, ["pet-stage", "pet-motion", "pet-handoff"]],
+  [/web\/js\/(pet-art|pet-stage|stage-art|art-kit|pet)\.js$/, ["pet-stage", "pet-motion", "pet", "pet-visit", "year-story", "pet-clock", "pet-handoff", "pet-settle", "pet-perf-budget", "pet-small"]],
+  [/web\/js\/pet-walk\.js$/, ["pet-stage", "pet-motion", "pet-handoff", "pet-perf-budget"]],
   [/web\/js\/(pet-journey|postcard-art)\.js$/, ["pet-stage", "pet"]],
   [/web\/js\/storage\.js$/, ["backup-merge", "pet-settle", "me", "e2e"]],
   [/web\/js\/achievements\.js$/, ["achievements", "pet"]],
@@ -52,7 +53,7 @@ const MAP = [
   [/web\/js\/(search|nl-search)[^/]*\.js$/, ["nl-search", "e2e"]],
   [/web\/js\/(app|app-boot|debug)\.js$|web\/index\.html$/, ["debug-tour", "e2e", "qa-crawl", "pet-clock"]],
   [/web\/js\/i18n/, ["wave1-display", "wave1"]],
-  [/web\/css\//, ["audit-ui", "audit-center", "motion"]],
+  [/web\/css\//, ["audit-ui", "audit-center", "motion", "pet-small"]],
   [/supabase\/.*\.sql$/, ["sql:"]],
 ];
 function pickChanged() {
@@ -100,7 +101,7 @@ const line = (j, r, tag) => console.log(`${r.ok ? "✓" : "✗"} ${j.name}${tag 
 (async () => {
   const T0 = Date.now(), results = new Map();
   const pool = list.filter(j => !j.pg).sort((a, b) => (dur[b.name] || 60) - (dur[a.name] || 60));   // 最久的先開跑
-  console.log(`▶ ${pool.length} 組並行（同時 ${JOBS} 組）${list.some(j => j.pg) ? "，資料庫測試最後依序跑" : ""}`);
+  console.log(`▶ ${pool.length} 組並行（同時 ${JOBS} 組）${list.some(j => j.pg) ? "，資料庫測試與效能預算最後依序跑" : ""}`);
   let next = 0;
   await Promise.all(Array.from({ length: Math.min(JOBS, pool.length) }, async () => {
     while (next < pool.length) { const j = pool[next++]; const r = await run(j); results.set(j.name, r); dur[j.name] = Math.round(r.s); line(j, r); }
