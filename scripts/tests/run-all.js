@@ -39,8 +39,8 @@ else if (sqlOnly || !quick) console.log("（略過資料庫測試：沒裝 embed
 
 // ── --changed：改了哪些檔 → 跑哪些測試（對不到的 web/ 檔案就跑主要流程；check 一律跑）──
 const MAP = [
-  [/web\/js\/(pet-art|pet-stage|stage-art|art-kit|pet)\.js$/, ["pet-stage", "pet-motion", "pet", "pet-visit", "year-story"]],
-  [/web\/js\/pet-walk\.js$/, ["pet-stage", "pet-motion"]],
+  [/web\/js\/(pet-art|pet-stage|stage-art|art-kit|pet)\.js$/, ["pet-stage", "pet-motion", "pet", "pet-visit", "year-story", "pet-clock", "pet-handoff"]],
+  [/web\/js\/pet-walk\.js$/, ["pet-stage", "pet-motion", "pet-handoff"]],
   [/web\/js\/(pet-journey|postcard-art)\.js$/, ["pet-stage", "pet"]],
   [/web\/js\/achievements\.js$/, ["achievements", "pet"]],
   [/web\/js\/social\//, ["social", "social-e2e", "pet-visit", "clubs", "pro-admin"]],
@@ -49,7 +49,7 @@ const MAP = [
   [/web\/js\/(splash|warmup)\.js$/, ["splash"]],
   [/web\/js\/(me|analytics|year-story)\.js$/, ["me", "year-story", "wave2"]],
   [/web\/js\/(search|nl-search)[^/]*\.js$/, ["nl-search", "e2e"]],
-  [/web\/js\/(app|app-boot|debug)\.js$|web\/index\.html$/, ["debug-tour", "e2e", "qa-crawl"]],
+  [/web\/js\/(app|app-boot|debug)\.js$|web\/index\.html$/, ["debug-tour", "e2e", "qa-crawl", "pet-clock"]],
   [/web\/js\/i18n/, ["wave1-display", "wave1"]],
   [/web\/css\//, ["audit-ui", "audit-center", "motion"]],
   [/supabase\/.*\.sql$/, ["sql:"]],

@@ -31,7 +31,7 @@ const PET_TAPS_SP = [
   ["雲是我的家，山是我的院子", "龍珠今天很亮", "要不要我幫你把雲吹開？", "千山萬水，有你同行"],
 ];
 function petTapLine(k) {
-  const h = new Date().getHours(), tm = PET_TAPS_TIME.find(([a, b]) => h >= a && h < b);
+  const h = ttClock.date().getHours(), tm = PET_TAPS_TIME.find(([a, b]) => h >= a && h < b);
   const pool = (PET_TAPS[k] || PET_TAPS.content).concat(tm ? [tm[2]] : [], PET_TAPS_SP[petStageIndex(totalKm())] || []);
   return ttT(pool[Math.floor(Math.random() * pool.length)]);
 }
@@ -79,7 +79,7 @@ function petHearts() { return Math.max(0, Math.min(5, Math.floor(affinity() / 20
 function bumpAffinity(amt) {
   const cur = affinity();
   localStorage.setItem("tt_pet_aff", String(Math.max(0, Math.min(100, cur + amt))));
-  localStorage.setItem("tt_pet_aff_t", new Date().toISOString());
+  localStorage.setItem("tt_pet_aff_t", ttClock.date().toISOString());
 }
 // ── 陪伴（2026-10-07 寵物新一輪 #5 #8 #9 #10，參考 Finch／寶可夢 GO 夥伴／Pikmin Bloom）──
 // 親密的來源一條一條寫清楚（每種各有上限，不懲罰）；摸頭也算一點點（每天最多 3 次）
@@ -109,14 +109,14 @@ const PET_AWAY = [
   ["去雲裡繞了一圈", "幫山腳下的田下了點雨", "數了一下龍珠上的光點"],
 ];
 function petAwayLine(i) {
-  const now = Date.now(); let t = 0; try { t = +localStorage.getItem("tt_pet_seen") || 0; localStorage.setItem("tt_pet_seen", String(now)); } catch (e) { /* 私密瀏覽 */ }
+  const now = ttClock.now(); let t = 0; try { t = +localStorage.getItem("tt_pet_seen") || 0; localStorage.setItem("tt_pet_seen", String(now)); } catch (e) { /* 私密瀏覽 */ }
   if (!t || now - t < 3 * 3600e3) return null; const L = PET_AWAY[i] || PET_AWAY[3]; return L[Math.floor(Math.random() * L.length)];
 }
 // 健行完的感想：最新一趟還沒「聊過」就說一句，用真實資料（爬升、距離、第一次去的縣市）
 function petRecapLine() {
   const R = realRecords().filter(r => !r.vehicle && (r.distanceKm || 0) >= .3); if (!R.length) return null;
   const r = R[0]; if (localStorage.getItem("tt_pet_recap") === r.id) return null; localStorage.setItem("tt_pet_recap", r.id);
-  if (Date.now() - new Date(r.date).getTime() > 3 * 864e5) return null;   // 太久以前的就不提了
+  if (ttClock.now() - new Date(r.date).getTime() > 3 * 864e5) return null;   // 太久以前的就不提了
   const T = typeof TRAILS !== "undefined" && r.trailId ? TRAILS.find(t => t.id === r.trailId) : null, cty = T && T.region;
   const cj = typeof ttCJK === "function" ? ttCJK() : true, sp = cj ? "" : " ", cm = cj ? "，" : ", ", ex = cj ? "！" : "! ";
   if (cty && !R.slice(1).some(x => { const u = x.trailId && TRAILS.find(t => t.id === x.trailId); return u && u.region === cty; })) return `${ttT("第一次去")}${sp}${ttT(cty)}${ex}${ttT("好多沒看過的東西")}`;
@@ -138,11 +138,11 @@ const PET_GIFTS = {
 };
 function petGiftsOwned() { try { return JSON.parse(localStorage.getItem("tt_pet_gifts") || "[]"); } catch (e) { return []; } }
 function petGiftIcon(id, cls) { const g = PET_GIFTS[id]; return g ? `<svg class="${cls || "pg-ic"}" viewBox="0 0 24 24" aria-hidden="true">${g[1]}</svg>` : ""; }
-function petGiftDue() { return petHearts() >= 5 && Date.now() - (+(localStorage.getItem("tt_pet_gift_t") || 0)) >= 2 * 864e5; }
+function petGiftDue() { return petHearts() >= 5 && ttClock.now() - (+(localStorage.getItem("tt_pet_gift_t") || 0)) >= 2 * 864e5; }
 function petGiftGive() {
   const own = petGiftsOwned(), left = Object.keys(PET_GIFTS).filter(k => !own.some(o => o.id === k)), id = left.length ? left[Math.floor(Math.random() * left.length)] : null;
-  localStorage.setItem("tt_pet_gift_t", String(Date.now()));
-  if (id) { own.push(Object.assign({ id, t: new Date().toISOString() }, petDebugOn() ? { dbg: 1 } : {})); localStorage.setItem("tt_pet_gifts", JSON.stringify(own)); petDiaryAdd("gift:" + id); }
+  localStorage.setItem("tt_pet_gift_t", String(ttClock.now()));
+  if (id) { own.push(Object.assign({ id, t: ttClock.date().toISOString() }, petDebugOn() ? { dbg: 1 } : {})); localStorage.setItem("tt_pet_gifts", JSON.stringify(own)); petDiaryAdd("gift:" + id); }
   else addBerryBonus(3);
   return id;
 }
@@ -168,12 +168,12 @@ const PET_FEST = { ny: ["2026-02-17", "2027-02-06", "2028-01-26", "2029-02-13", 
 const PET_FEST_LINE = { ny: "新年快樂！今年也一起去好多地方", db: "端午節快樂！粽子分我一口好不好", ma: "中秋節快樂！今晚的月亮好圓" };
 function petFestival(d) {
   if (window.__ps && window.__ps.fest) return window.__ps.fest;   // 測試面板強制
-  const t = (d || new Date()).getTime();
+  const t = (d || ttClock.date()).getTime();
   for (const k in PET_FEST) if (PET_FEST[k].some(x => Math.abs(new Date(x + "T12:00:00").getTime() - t) <= 1.5 * 864e5)) return k;
   return null;
 }
 function petAnniversary() {
-  const h = new Date(petHatch()), now = new Date(); if (isNaN(h)) return null;
+  const h = new Date(petHatch()), now = ttClock.date(); if (isNaN(h)) return null;
   const days = Math.floor((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - new Date(h.getFullYear(), h.getMonth(), h.getDate())) / 864e5);
   const yr = now.getMonth() === h.getMonth() && now.getDate() === h.getDate() ? now.getFullYear() - h.getFullYear() : 0;
   return yr >= 1 ? { k: "y" + yr, n: yr, y: true } : [30, 100, 365, 500].includes(days) ? { k: "d" + days, n: days } : null;
@@ -192,13 +192,13 @@ function petStickyLine(i) {
 // 每日任務/目標一律用「本地日期」：toISOString 是 UTC，台灣早上 8 點前會被算成前一天，
 // 造成任務進度看起來莫名被刷新。跨日以本地午夜為準。
 function localDayOf(d) { const t = new Date(d); if (isNaN(t)) return ""; return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`; }
-function todayStr() { return localDayOf(new Date()); }
+function todayStr() { return localDayOf(ttClock.date()); }
 function localDay(iso) { return localDayOf(iso); }
 // 本地年月／年份（分析、年度回顧、匯出用）：以前直接切 ISO 字串＝UTC，月初 8 點前那趟會算到上個月
 function localYM(iso) { return localDayOf(iso).slice(0, 7); }
 function localYear(iso) { return localDayOf(iso).slice(0, 4); }
 const FEED_COOLDOWN = 8 * 3600e3;   // 餵食冷卻 8 小時
-function feedCooldownMs() { return Math.max(0, FEED_COOLDOWN - (Date.now() - (+(localStorage.getItem("tt_pet_fed_t") || 0)))); }
+function feedCooldownMs() { return Math.min(FEED_COOLDOWN, Math.max(0, FEED_COOLDOWN - (ttClock.now() - (+(localStorage.getItem("tt_pet_fed_t") || 0))))); }   // 上限 8 小時：時間快轉後撥回來、或手機時間被調過，餵食時間會落在「未來」，不能因此等更久
 function canFeedNow() { return berriesBalance() >= 3 && feedCooldownMs() === 0; }   // 「現在能不能餵」（看 8h 冷卻，非每日）
 function feedPet() {
   if (typeof PetStage !== "undefined" && PetStage.isPlaying && PetStage.isPlaying()) { petSay(ttT("玩完再吃～")); return; }
@@ -207,7 +207,7 @@ function feedPet() {
   const heartsBefore = petHearts();
   localStorage.setItem("tt_pet_berry_spent", String((+(localStorage.getItem("tt_pet_berry_spent") || 0)) + 3));
   bumpAffinity(15);
-  localStorage.setItem("tt_pet_fed_t", String(Date.now())); petDiaryAdd("feed1");
+  localStorage.setItem("tt_pet_fed_t", String(ttClock.now())); petDiaryAdd("feed1");
   const gain = heartsBefore >= 5 ? 0.5 : 0.3;                  // 親密度滿時照顧獎勵更多
   localStorage.setItem("tt_pet_feedkm", String(+(feedBonusKm() + gain).toFixed(2)));
   petBuzz([20, 30, 20]);
@@ -247,7 +247,7 @@ const FREE_HATS = new Set(["none", "bandana", "santa", "rabbit"]);
 // 季節限定配件（2026-10-07 寵物新一輪 #17）：當季免費拿、拿了永遠擁有；不在季節內＝顯示什麼時候拿得到
 const HAT_SEASON = { santa: { hint: "12 月到 1 月初才拿得到", on: d => d.getMonth() === 11 || (d.getMonth() === 0 && d.getDate() <= 6) },
   rabbit: { hint: "中秋節前後一週才拿得到", on: d => PET_FEST.ma.some(x => Math.abs(new Date(x + "T12:00:00") - d) <= 7.5 * 864e5) } };
-function hatSeason(id) { const s = HAT_SEASON[id]; if (!s) return null; const f = !!window.__hatSeasonAll; return { on: f || s.on(new Date()), hint: s.hint }; }   // __hatSeasonAll：測試面板強制當季
+function hatSeason(id) { const s = HAT_SEASON[id]; if (!s) return null; const f = !!window.__hatSeasonAll; return { on: f || s.on(ttClock.date()), hint: s.hint }; }   // __hatSeasonAll：測試面板強制當季
 function openHatPicker() {
   if (document.querySelector('[data-ov="pethat"]')) return;
   const pro = typeof Premium !== "undefined" && Premium.isOn();
@@ -388,19 +388,19 @@ function petStats() {
   const km = totalKm(), i = petStageIndex(km), st = PET_STAGES[i];
   return { name: petName() || st.n, level: i + 1, stage: st.n, emoji: st.e, km: +km.toFixed(1) };
 }
-function petHatch() { let h = localStorage.getItem("tt_pet_hatch"); if (!h) { h = new Date().toISOString(); localStorage.setItem("tt_pet_hatch", h); } return h; }
+function petHatch() { let h = localStorage.getItem("tt_pet_hatch"); if (!h) { h = ttClock.date().toISOString(); localStorage.setItem("tt_pet_hatch", h); } return h; }
 // 「同行天數」從第一次真的出門健行算（以前從第一次打開夥伴頁算，沒出過門也在累積）
 function petDaysTogether() {
   const recs = realRecords(); if (!recs.length) return 0;
   const first = recs.reduce((m, r) => (r.date && r.date < m ? r.date : m), recs[0].date);
   return daysSince(first) + 1;
 }
-function daysSince(iso) { const t = new Date(iso).getTime(); if (!isFinite(t)) return 0; return Math.max(0, Math.floor((Date.now() - t) / 864e5)); }   // 防護：孵化日異常/舊格式 → 回 0（不再顯示 NaN）
+function daysSince(iso) { const t = new Date(iso).getTime(); if (!isFinite(t)) return 0; return Math.max(0, Math.floor((ttClock.now() - t) / 864e5)); }   // 防護：孵化日異常/舊格式 → 回 0（不再顯示 NaN）
 function weekIndex(d) { const dt = new Date(d); dt.setHours(0, 0, 0, 0); dt.setDate(dt.getDate() - ((dt.getDay() + 6) % 7)); return Math.round(dt / 6048e5); }
 function weeksStreak() {
   const recs = realRecords(); if (!recs.length) return 0;
   const weeks = new Set(recs.map(r => weekIndex(r.date)));
-  const now = weekIndex(Date.now());
+  const now = weekIndex(ttClock.now());
   let w = weeks.has(now) ? now : now - 1, s = 0;
   while (weeks.has(w)) { s++; w--; }
   return s;
@@ -447,7 +447,7 @@ function energy() {
 function daysStreak() {
   const recs = realRecords(); if (!recs.length) return 0;
   const days = new Set(recs.map(r => localDay(r.date)));
-  const d = new Date(); d.setHours(0, 0, 0, 0);
+  const d = ttClock.date(); d.setHours(0, 0, 0, 0);
   const key = () => localDayOf(d);
   if (!days.has(key())) d.setDate(d.getDate() - 1);   // 今天還沒走→從昨天起算
   let s = 0; while (days.has(key())) { s++; d.setDate(d.getDate() - 1); }
@@ -486,7 +486,7 @@ function renderQuests() {
   const p = questProgress();
   const km = p.km, asc = p.asc, trips = p.trips, streak = daysStreak();
   const lv = petStageIndex(totalKm()), gKm = QUEST_KM[lv], gAsc = QUEST_ASC[lv];
-  const doy = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 864e5);
+  const doy = Math.floor((ttClock.date() - new Date(ttClock.date().getFullYear(), 0, 0)) / 864e5);
   const rot = [
     { icon: "mountain", label: `${ttT("往上爬")} ${gAsc} m`, cur: asc, goal: gAsc, dec: 0, unit: "m" },
     { icon: "compass", label: ttT("去一條沒走過的步道"), cur: p.fresh, goal: 1, dec: 0, unit: "" },
@@ -549,11 +549,12 @@ function renderPet() {
   // 2.5D 舞台（pet-stage.js）：角色那一層包在分層場景裡；沒載到就退回舊的平面棲地
   // 2026-10-04：舞台、角色沒變（同一階、同一頂帽子、同一個名字、天氣與裝飾一樣）就只更新數字和文字——
   // 以前餵完、摸完都整張重畫：粒子位置重抽、待機動作重來、對話泡重彈，看起來像頁面刷新了一次
-  const sig = [i, petHat(), nm, (typeof Premium !== "undefined" && Premium.isOn()) ? 1 : 0, typeof PetStage !== "undefined" ? PetStage.cachedWx() : "", typeof PetJourney !== "undefined" ? PetJourney.decor().join(",") : "", document.documentElement.lang || "", JSON.stringify(window.__ps || null), petFestival() || "", petPropsOn().join(",")].join("|");   // __ps＝測試面板強制的時段／季節／天氣
+  const sig = [i, petHat(), nm, (typeof Premium !== "undefined" && Premium.isOn()) ? 1 : 0, typeof PetStage !== "undefined" ? PetStage.cachedWx() : "", typeof PetJourney !== "undefined" ? PetJourney.decor().join(",") : "", document.documentElement.lang || "", JSON.stringify(window.__ps || null), typeof PetStage !== "undefined" ? PetStage.tod() + PetStage.season() : "", petFestival() || "", petPropsOn().join(",")].join("|");   // __ps＝測試面板強制的時段／季節／天氣；時段、季節換了也要重畫（星星、螢火蟲、天空是畫出來的，2026-10-08）
   if (box.dataset.sig === sig && box.querySelector("#petEmoji")) {
     petCardUpdate(box, { km, mood, days, streak, en, h, left: next ? next.km - km : null, lovePct: Math.round(h / 5 * 100), canFeed, cd, berries, evoTop, pct: next ? Math.max(2, Math.min(100, Math.round((km - st.km) / (next.km - st.km) * 100))) : null });
     if (typeof PetJourney !== "undefined") PetJourney.render();
     petCompanion(box, i, true);
+    if (typeof PetStage !== "undefined" && PetStage.sync) PetStage.sync();   // 跨過 22:00／06:00：睡／醒不必整張重畫
     return;
   }
   box.dataset.sig = sig;
@@ -784,7 +785,7 @@ function petRecommend() {
       if (typeof tagsOf === "function") TRAILS.forEach(t => { if (walked.has(String(t.id))) tagsOf(t).forEach(g => { if (g in cnt) cnt[g]++; }); });
       const least = Math.min(...PET_THEMES.map(g => cnt[g]));
       const cands = PET_THEMES.filter(g => cnt[g] === least);
-      const d = new Date(); tag = cands[(d.getFullYear() * 400 + d.getMonth() * 31 + d.getDate()) % cands.length];
+      const d = ttClock.date(); tag = cands[(d.getFullYear() * 400 + d.getMonth() * 31 + d.getDate()) % cands.length];
     }
     filters = ["tag:" + tag]; say = `${ttT("夥伴想去走")}${ttSp()}${ttQuote(ttT(tag))}`;
   }
@@ -815,7 +816,7 @@ function petPickTrail() {
 function petDebugOn() { if (localStorage.getItem("tt_test_diary")) return false;   /* 自動測試：用測試里程切階段，但要照常寫日記 */
   return debugKm() > 0 || !!localStorage.getItem("tt_debug_mood") || !!window.__ps || !!window.__hatSeasonAll || !!window.__petDbg || !!window.__petPropsAll || (Store.getRecords ? Store.getRecords().some(r => r.dbg) : false); }
 function petDiaryAdd(k, i) {
-  try { const d = JSON.parse(localStorage.getItem("tt_pet_diary") || "[]"), dbg = petDebugOn(); if (k !== "evo" && d.some(x => x.k === k && !!x.dbg === dbg)) return; d.push(Object.assign({ t: new Date().toISOString(), k, i: i == null ? petStageIndex(totalKm()) : i }, dbg ? { dbg: 1 } : {})); localStorage.setItem("tt_pet_diary", JSON.stringify(d.slice(-60))); } catch (e) { /* 壞掉的資料就不記 */ }
+  try { const d = JSON.parse(localStorage.getItem("tt_pet_diary") || "[]"), dbg = petDebugOn(); if (k !== "evo" && d.some(x => x.k === k && !!x.dbg === dbg)) return; d.push(Object.assign({ t: ttClock.date().toISOString(), k, i: i == null ? petStageIndex(totalKm()) : i }, dbg ? { dbg: 1 } : {})); localStorage.setItem("tt_pet_diary", JSON.stringify(d.slice(-60))); } catch (e) { /* 壞掉的資料就不記 */ }
 }
 function petDiaryHtml() {
   let d = []; try { d = JSON.parse(localStorage.getItem("tt_pet_diary") || "[]"); } catch (e) { /* */ }

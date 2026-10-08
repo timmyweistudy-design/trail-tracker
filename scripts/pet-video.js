@@ -3,6 +3,9 @@
 //   node scripts/pet-video.js 影片.mp4 [--fps 30] [--crop x,y,w,h] [--from 秒] [--to 秒] [--out 資料夾]
 // 輸出：<out>/sheet.png（每 0.2 秒一格的總表，左上角是秒數）、<out>/f0001.png…（指定區段的每一格）、
 //       終端機印出「變化量」突然比前後大很多的格（＝畫面跳了一下），附秒數與格號，直接去看那幾張
+// 錄之前先在測試面板「夥伴動畫」按「🏷錄影標籤」（2026-10-08 修正案 A1／原 35）：左下角會一直印「版本 · 第幾階 · 動作階段 · 秒數」，
+//   這支印出的跳格，打開那一格就知道是哪一版、哪個階段（餵:走／餵:尾巴送／餵:吃／玩／訪客／睡／動作:hop…，名字跟 PetStage.phase() 一樣）。
+//   錄影跳格只是「提示」：iPhone 錄影本身會掉格，要對照標籤上的秒數是否連續、同一階段是否重複出現，才算程式抽動
 // ffmpeg：環境變數 FFMPEG、PATH 上的 ffmpeg、或裝了 ffmpeg-static 都可以
 const { execFileSync, spawnSync } = require("child_process"), fs = require("fs"), path = require("path");
 const args = process.argv.slice(2), opt = k => { const i = args.indexOf("--" + k); return i >= 0 ? args[i + 1] : null; };

@@ -32,11 +32,15 @@
 - `window.__hatSeasonAll`：季節配件當季；`window.__petPropsAll`：擺設全解鎖；`window.__petDbg`：之後寫的日記標 dbg
 - `localStorage.tt_test_diary = "1"`：自動測試用測試里程切階段時，日記照常寫（否則會被當 debug 藏起來）
 - `localStorage.tt_pet_woke = 現在`：測試開頭設，**不然深夜跑測試夥伴會睡著、點擊變成叫醒**
+- **`ttClock`（2026-10-08 R1）**：夥伴所有跟時間有關的判斷都讀它，**新程式不要直接用 `Date.now()`／`new Date()`**（互動計時除外）。`ttClock.set(日期)`／`shift(ms)`／`reset()`；測試面板「⏩」那一排按鈕就是在撥它
+- `PetStage.phase()`：現在在做什麼（錄影標籤、`scripts/pet-acceptance.js`、測試共用）；`PetStage.sync()`：睡／醒跟時間對一次
 
 ### 測試
 - `npm run test:all -- --jobs=3`（40 組，約 13 分；一次全開會記憶體不足）
 - 夥伴三支：`scripts/tests/pet-motion.test.js`（虛擬時間逐格；`PM_ONLY=6 PM_SEQ=1`）、`pet-stage.test.js`（`PS_SHARD=i/3` 分三組）、`pet-webkit.test.js`（Safari 引擎、畫到畫布外會紅）
 - Playwright 要帶 `LD_LIBRARY_PATH=$HOME/pwlibs/root/usr/lib/x86_64-linux-gnu PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1`
+- 交接與時間：`pet-handoff.test.js`（已知問題標 XFAIL，修好會 XPASS 轉紅）、`pet-clock.test.js`
+- 七隻驗收接觸表：`node scripts/pet-acceptance.js [階段]` → `scripts/tests/out/acc/sheet-*.png`
 - 效能：`node scripts/pet-perf.js 6`（CPU 降速 4 倍；數字會飄，新舊版本要交替跑幾次比）
 
 ### 這輪踩到的坑（別再踩）

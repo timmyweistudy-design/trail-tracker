@@ -2,16 +2,29 @@
 // 時段（晨/午/昏/夜）、季節、天氣跟真實世界同步；手指拖、陀螺儀（已授權才有）會讓各層以不同深度位移。
 // 只負責「畫面」：角色 SVG 仍由 PET_ART 提供（地圖標記、分享圖卡、動態島都讀那邊，不受影響）。
 // 系統設定「減少動態效果」時：不視差、不飄粒子、不走動（畫面照樣有層次，只是靜止）。
+// 夥伴用的時鐘（2026-10-08 修正案 A9）：作息、冷卻、禮物、節日、紀念日、日記日期都讀這裡，不直接讀 Date.now()。
+// 測試面板「時間快轉」和自動測試可以撥：差值存在 sessionStorage（關掉 App 就回到真實時間、不會進備份）；
+// 撥過時間之後寫的日記、拿到的小東西都標 dbg（清 debug 會一起刪）。互動計時（長按、連點、泡泡停留）照樣用真實時間。
+window.ttClock = window.ttClock || (() => {
+  let off = 0; try { off = +sessionStorage.getItem("tt_clock_off") || 0; } catch (e) { /* 私密瀏覽 */ }
+  if (off) window.__petDbg = true;
+  const save = () => { try { if (off) sessionStorage.setItem("tt_clock_off", String(off)); else sessionStorage.removeItem("tt_clock_off"); } catch (e) { /* 私密瀏覽 */ } if (off) window.__petDbg = true; window.__petLine = null; };
+  return {
+    now: () => Date.now() + off, date: () => new Date(Date.now() + off), offset: () => off,
+    set(t) { off = t == null ? 0 : new Date(t).getTime() - Date.now(); save(); return off; },   // 撥到某個時刻（Date、時間戳或字串）
+    shift(ms) { off += +ms || 0; save(); return off; }, reset() { off = 0; save(); },
+  };
+})();
 window.PetStage = (function () {
   const reduce = () => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } };
 
   // ── 真實世界狀態 ──
   function tod(d) {
-    const h = (d || new Date()).getHours();
+    const h = (d || ttClock.date()).getHours();
     return h >= 5 && h < 8 ? "dawn" : h >= 8 && h < 16 ? "day" : h >= 16 && h < 19 ? "dusk" : "night";
   }
   function season(d) {
-    const m = (d || new Date()).getMonth() + 1;
+    const m = (d || ttClock.date()).getMonth() + 1;
     return m >= 3 && m <= 5 ? "spring" : m >= 6 && m <= 8 ? "summer" : m >= 9 && m <= 11 ? "autumn" : "winter";
   }
   // WMO 天氣代碼 → 舞台天氣（只分三種畫得出差別的）
@@ -150,8 +163,15 @@ window.PetStage = (function () {
   }
   // 看得到才跑（2026-10-07 優化輪）：夥伴卡捲出畫面、切到別的分頁／App 到背景時，神龍繩波、蝶翅膀這兩個常駐迴圈停下，舞台上的 CSS 動畫也暫停。
   // 量過（CPU 降速 4 倍）：以前神龍捲出畫面每秒還花 99ms 跑腳本、每隻角色的舞台每秒 30～50ms 重算樣式。回來時從當下時間接著跑（相位用時間算，不跳）
+  // 睡／醒跟著時間走（2026-10-08 修正案 R1 測試時鐘抓到的）：以前只在舞台第一次畫出來時判斷一次，
+  // 夥伴頁一直開著跨過 22:00 不會睡、早上 6:00 也不會醒，要整張重畫才對。現在每一拍待機、回到前景、只更新數字時都對一次（正在做事時不動）
+  function syncSleep() {
+    if (!box || busy || feeding || playing) return;
+    const s = sleepNow(); if (s !== asleep) setAsleep(s);
+  }
   function live() {
     if (!box) return; const on = visible && !document.hidden, st = +box.dataset.stage;
+    if (on) syncSleep();
     box.classList.toggle("ps-off", !on);
     if (typeof PetWalk === "undefined") return;
     if (st === 6 && PetWalk.rope) PetWalk.rope(box, on);    // 神龍：身體一直有繩波流過
@@ -182,7 +202,7 @@ window.PetStage = (function () {
   function sleepNow() {
     const f = window.__ps && window.__ps.asleep; if (f != null) return !!f;
     let w = 0; try { w = +localStorage.getItem("tt_pet_woke") || 0; } catch (e) { /* 私密瀏覽 */ }
-    const h = new Date().getHours(); return (h >= 22 || h < 6) && Date.now() - w > 15 * 60e3;
+    const h = ttClock.date().getHours(); return (h >= 22 || h < 6) && ttClock.now() - w > 15 * 60e3;
   }
   function setAsleep(on) {
     asleep = !!on && !reduce(); const em = emEl(); if (!box || !em) return;
@@ -192,7 +212,7 @@ window.PetStage = (function () {
   }
   async function wake() {
     if (!asleep || !box) return false;
-    try { localStorage.setItem("tt_pet_woke", String(Date.now())); } catch (e) { /* 私密瀏覽 */ }
+    try { localStorage.setItem("tt_pet_woke", String(ttClock.now())); } catch (e) { /* 私密瀏覽 */ }
     if (window.__ps && window.__ps.asleep) window.__ps.asleep = false;
     setAsleep(false); busy = true;
     try { await flash("pb-wake", 1300); await flash("pb-stretch", 1400); } finally { busy = false; }
@@ -280,6 +300,7 @@ window.PetStage = (function () {
     if (box) box.style.setProperty("--bk", (3.2 + Math.random() * 3).toFixed(2) + "s");   // 眨眼間隔每輪換一次（不要像節拍器）
     beat = setTimeout(async () => {
       if (window.__psNoIdle) return;   // 已經排好的那一次也要停（以前只在排程時檢查，測試關掉後還會再跳一次）
+      syncSleep();
       if (box && box.isConnected && visible && !document.hidden && !busy && !asleep) { const k = firstAct || pick(weights(m)); firstAct = null; await act(k); }   // 睡著時不做動作（呼吸、點頭、飄 Z 是 CSS）
       if (box && box.isConnected) schedule(m);
     }, 3500 + Math.random() * 4500);
@@ -757,5 +778,15 @@ window.PetStage = (function () {
 
   // 心情變了但卡片沒重畫（pet.js 的 petCardUpdate）：待機動作的機率跟著換
   function setMood(m) { mood = m || "content"; if (box) schedule(mood); }
-  return { debug, setMood, html, photoSvgs, bind, unbind, tod, season, wxOf, weather, cachedWx, count: STAGES, zoneOf, react, feed, act, isFeeding: () => feeding, isAsleep: () => asleep, isPlaying: () => playing, play, guest, wake, sleep: () => setAsleep(true) };
+  // 現在在做什麼（2026-10-08 修正案 A1／原 35）：錄影標籤、驗收腳本、效能紀錄共用的同一套名字；只讀狀態，不改任何東西
+  function phase() {
+    if (!box) return "—";
+    const em = emEl(), pb = em && [...em.classList].find(c => c.startsWith("pb-") && c !== "pb-asleep"), walk = box.classList.contains("walking");
+    if (feeding) return walk ? (box.dataset.walk === "turn" ? "餵:掉頭" : "餵:走") : box.__chain ? "餵:尾巴送" : "餵:吃";
+    if (playing) return walk ? "玩:走" : "玩";
+    if (box.querySelector(".ps-guest")) return "訪客";
+    if (asleep) return "睡";
+    return pb ? "動作:" + pb.slice(3) : busy ? "動作" : "待機";
+  }
+  return { debug, phase, sync: syncSleep, setMood, html, photoSvgs, bind, unbind, tod, season, wxOf, weather, cachedWx, count: STAGES, zoneOf, react, feed, act, isFeeding: () => feeding, isAsleep: () => asleep, isPlaying: () => playing, play, guest, wake, sleep: () => setAsleep(true) };
 })();
