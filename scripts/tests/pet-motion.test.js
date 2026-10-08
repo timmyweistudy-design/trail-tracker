@@ -67,7 +67,8 @@ const probe = () => {
   }
   if (st === 6) {   // 2026-10-07 尾巴重新設計（使用者：尾巴要在最上層，像用手把食物拿到嘴前）：尾巴只有一份，畫在頭、龍珠、爪子後面（SVG 越後面越上層）
     const t6 = em.querySelectorAll(".pr-tail6"), k = t6.length === 1 ? [...t6[0].parentNode.children] : [], at = c => k.findIndex(e => e.matches(c));
-    o.top = t6.length === 1 && !em.querySelector(".pr-tailtop") && at(".pr-tail6") > Math.max(at(".pr-head"), at(".pr-pearl"), at(".pr-deform")) && at(".pr-head") >= 0; }
+    // 2026-10-08 R2（使用者決定「照位置分前後」）：尾巴永遠在頭、身體上面；送果實（__chain）時也在龍珠和前爪上面，放回原位後龍珠和前爪回到尾巴前面
+    o.top = t6.length === 1 && !em.querySelector(".pr-tailtop") && at(".pr-tail6") > Math.max(at(".pr-head"), at(".pr-deform")) && at(".pr-head") >= 0 && (box.__chain ? at(".pr-tail6") > at(".pr-pearl") : true); o.pearlFront = at(".pr-pearl") > at(".pr-tail6"); }
   if (st === 6) { const d = em.querySelector(".pr-deform").getBoundingClientRect(), b = box.getBoundingClientRect(); o.deform = [d.left, d.top, d.right, d.bottom]; o.boxr = [b.left, b.top, b.right, b.bottom]; }
   return o;
 };
@@ -220,7 +221,8 @@ function judge(st, tag, R) {
     { const fl = F.map((f, i) => (f.rest ? i : -1)).filter(i => i > 5); ok(fl.length === 0, `${tag}: the body never snaps back to its unwaved shape for a frame (flicker frames ${JSON.stringify(fl.slice(0, 6))})`); }
     const TF = F.map(f => f.tail);   // 尾巴的鏈（只有托果實那幾段有）
     const lenE = Math.max(0, ...TF.filter(Boolean).map(t => Math.abs(t.len - 1))), bendE = Math.max(0, ...TF.filter(Boolean).map(t => t.ex));
-    if (st === 6) ok(F.every(f => f.top), `${tag}: the tail is one single copy painted above the head, pearl and claws in every frame`);
+    if (st === 6) ok(F[F.length - 1].pearlFront && F.some(f => !f.pearlFront), `${tag}: the pearl/claws go behind the tail while carrying and come back in front at rest`);
+    if (st === 6) ok(F.every(f => f.top), `${tag}: the tail is one single copy painted above the head and body in every frame, and above the pearl/claws while carrying`);
     // 2026-10-07 尾巴重新設計：尾巴本身夠長，不再伸長（以前最多伸到 1.3 倍＝像橡皮）
     ok(TF.some(Boolean) && lenE <= .005 && bendE <= .05, `${tag}: the tail never stretches (max ${(lenE * 100).toFixed(2)}%) and no joint bends past its limit (excess ${bendE.toFixed(2)}°)`);
     const sp = TF.map((t, i) => (t && TF[i - 1] ? Math.hypot(t.tip[0] - TF[i - 1].tip[0], t.tip[1] - TF[i - 1].tip[1]) : 0)); let spk = 0, spAt = -1;

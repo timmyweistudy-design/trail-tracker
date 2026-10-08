@@ -287,8 +287,16 @@ window.PetWalk = (function () {
   }
   const box0Chain = (c, hk) => trunk(c, hk);
   // tgt：果實（尾尖過去、最後捲起來勾住）／"mouth"（勾著送到下巴前）／null（鬆開、放回原形）。hook：這一段結束時尾尖勾多少
+  // 神龍尾巴的前後（2026-10-08 修正案 R2，使用者決定「照位置分前後」）：送果實、玩松果時尾巴在最上層（10/07 使用者：像用手把食物拿到嘴前）；
+  // 尾巴放回原位後，前爪和龍珠回到尾巴前面（以前整條尾巴一直蓋在前爪上，看起來像貼上去的）。
+  // 只在尾巴停在原位時換層：那時尾巴和龍珠幾乎不重疊，換了看不出來
+  function tailLayer(box, front) {
+    const em = els(box).em, t = em && em.querySelector(".pr-tail6"), pl = em && em.querySelector(".pr-pearl"), hd = em && em.querySelector(".pc-hover > .pr-head"); if (!t || !pl || !hd) return;
+    if (front) { if (pl.nextElementSibling !== hd) hd.before(pl); } else if (t.nextElementSibling !== pl) t.after(pl);
+  }
   async function tailTo(box, tgt, ms, onFrame, hook) {
     if (!sp6()) return;
+    if (tgt) tailLayer(box, true);
     if (ms == null) ms = tailMs(box, tgt);
     const T0 = box.__trunk || { c: [0, 0, 0, 0], hook: 0 }, c = T0.c.slice(), h0 = T0.hook, h1 = hook == null ? (tgt ? h0 : 0) : hook;
     const st = (box.__chain || rest())[rest().length - 1].slice();
@@ -298,7 +306,7 @@ window.PetWalk = (function () {
     const put = hk => { const P = trunk(c, hk); box.__trunk = { c: c.slice(), hook: hk }; applyChain(box, P); if (onFrame) onFrame(); };
     if (!tgt) {   // 放回原形：參數直接緩緩歸零（尾尖的勾先鬆、整條再放下）
       await tween(ms, (e, k) => { const u = ssT(k / .8), w = ssT((k - .15) / .85); for (let i = 0; i < NP; i++) c[i] = T0.c[i] * (1 - w); put(h0 * (1 - u)); });
-      box.__trunk = null; box.__chain = null; ropeRender(box, performance.now()); return;   // 同一格直接畫回繩波（以前先 resetField 回原始形狀，有一格閃一下）
+      box.__trunk = null; box.__chain = null; ropeRender(box, performance.now()); tailLayer(box, false); return;   // 同一格直接畫回繩波（以前先 resetField 回原始形狀，有一格閃一下）
     }
     await tween(ms, (e, k) => {
       const g = goal(), cc = toMouth ? [(st[0] + g[0]) / 2, Math.max(st[1], g[1]) + 26] : [(st[0] + g[0]) / 2, Math.min(st[1], g[1]) - 16];
@@ -592,6 +600,9 @@ window.PetWalk = (function () {
     const eL = sstep(e / .6), eB = sstep((e - .2) / .7), eH = sstep((e - .35) / .65);
     if (E.body) { E.body.style.animation = e ? "none" : ""; E.body.style.transform = e ? `translate(0px, ${(9 * eB).toFixed(2)}px)` : ""; }
     if (sb) { sb.style.transformBox = "view-box"; sb.style.transformOrigin = "100px 196px"; sb.style.transform = e ? `scale(${(1 + .1 * eH).toFixed(3)}, ${(1 - .5 * eH).toFixed(3)})` : ""; }
+    // 趴著的前掌（2026-10-08 R2）：腿壓扁到一半時換成另外畫的「前臂＋圓腳掌」（.pr-lpaws），交叉淡入淡出，看不出換
+    const eP = sstep((e - .25) / .4), lp = em.querySelector(".pc-bob > .pr-lpaws"); if (lp) lp.style.opacity = e ? eP.toFixed(3) : "0";
+    [E.pawL, E.pawR].forEach(pw => { if (pw) pw.style.opacity = e && lp ? (1 - eP).toFixed(3) : ""; });
     [E.pawL, E.pawR].forEach((pw, i) => { if (!pw) return; pw.style.transition = e ? "none" : ""; pw.style.transform = e ? `translate(${((i ? 1 : -1) * 3 * eL).toFixed(2)}px, ${(12 * eL).toFixed(2)}px) scale(${(1 + .14 * eL).toFixed(3)}, ${(1 - .5 * eL).toFixed(3)})` : ""; });   // 前腿往鏡頭伸：變短（透視）、腳掌往前落、略變大
     if (ft) ft.style.transform = e ? `translate(${(4 * eH).toFixed(2)}px, ${(2 * eH).toFixed(2)}px)` : "";
     const lf = em.querySelector(".pc-bob > .pr-loaf"); if (lf) lf.style.opacity = Math.max(0, Math.min(1, (eB - .2) / .6)).toFixed(3);   // 趴著的身體（同色，淡入看不出重影）

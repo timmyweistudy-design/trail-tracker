@@ -200,16 +200,59 @@ const Store = (() => {
     "tt_presets", "tt_default_vis", "tt_wakelock",
     "tt_peaks", "tt_mch", "tt_mch_done",   // 登頂收集冊、每月挑戰
   ];
+  // ── 夥伴與成就資料的合併規則（2026-10-08 修正案 A5）──
+  // 以前「合併」只有紀錄是合併的，夥伴這一包是整份覆蓋：拿舊備份合併會讓日記少掉、果實變多（花掉的數字變小）、階段倒退。
+  // 現在每一種鍵照自己的性質合併；換新手機（本機沒資料）或選「完全取代」才整份覆蓋。PET_V：這一包的格式版本（以後改格式要在 petUpgrade 轉）
+  const PET_V = 1;
+  const MERGE = {
+    max: ["tt_pet_berry_spent", "tt_pet_berry_bonus", "tt_pet_berry_picked", "tt_pet_feedkm", "tt_pet_stage", "tt_ach_maxkm", "tt_ach_maxasc", "tt_quest_hi", "tt_ach_island"],   // 只會變大的計數：取大的
+    newer: ["tt_pet_fed_t", "tt_pet_gift_t", "tt_quest_claim", "tt_ach_island_scan"],   // 時間（毫秒或日期字串）：取新的（冷卻、禮物不會因為還原重來一次）
+    union: ["tt_pet_diary", "tt_pet_gifts", "tt_pet_hats_owned", "tt_badges_got", "tt_badges_seen", "tt_pj_seen", "tt_pj_snap", "tt_mch_done"],   // 清單：聯集
+    obj: ["tt_peaks", "tt_mch", "tt_badges_date", "tt_life"],   // 物件：逐鍵合併，同一鍵本機優先（終身統計之後還會 _lifeReconcile 取大的）
+    // 成組的：夥伴身分（孵化日、起點里程、名字）跟著「比較早孵化的那隻」——新手機一打開就會孵一顆新蛋，不能讓它蓋掉備份裡養了很久的那隻
+    pair: [["tt_pet_aff", "tt_pet_aff_t"]],   // 親密度跟著比較新的親密時間走（親密會隨時間掉，單取大的不對）
+  };
+  const T = v => { const n = +v; return isFinite(n) && String(v).trim() !== "" ? n : Date.parse(v) || 0; };
+  const keyOf = x => x && typeof x === "object" ? (x.id != null ? "id:" + x.id : x.k != null ? "k:" + x.k + "@" + (x.t || "") : JSON.stringify(x)) : "v:" + JSON.stringify(x);
+  function mergeOne(k, mine, theirs) {   // 兩邊的字串 → 合併後的字串（丟出錯誤＝這一項略過）
+    if (mine == null) return theirs; if (theirs == null) return mine;
+    if (MERGE.max.includes(k)) return String(Math.max(+mine || 0, +theirs || 0));
+    if (MERGE.newer.includes(k)) return T(theirs) > T(mine) ? theirs : mine;
+    if (MERGE.union.includes(k)) {
+      const a = JSON.parse(mine), b = JSON.parse(theirs); if (!Array.isArray(a) || !Array.isArray(b)) throw new Error("not a list");
+      const seen = new Set(a.map(keyOf)), out = a.concat(b.filter(x => !seen.has(keyOf(x))));
+      if (k === "tt_pet_diary") out.sort((x, y) => String(x.t).localeCompare(String(y.t)));   // 日記照時間排，留最後 60 筆（跟 petDiaryAdd 一樣）
+      return JSON.stringify(k === "tt_pet_diary" ? out.slice(-60) : out);
+    }
+    if (MERGE.obj.includes(k)) { const a = JSON.parse(mine), b = JSON.parse(theirs); if (!a || !b || typeof a !== "object" || typeof b !== "object") throw new Error("not an object"); return JSON.stringify(Object.assign({}, b, a)); }
+    return mine;   // 其他（帽子、外觀、篩選預設、擺設…偏好）：本機有就留本機
+  }
+  function petUpgrade(data) { return data && data.pet ? data.pet : {}; }   // v1 跟舊格式（沒有 petV）內容一樣；以後改格式在這裡轉
+  // 回傳 { applied, skipped, errors }：applied＝寫進去的鍵數、skipped＝本機比較好所以沒動、errors＝壞掉略過的鍵
+  function importPet(pet, replace) {
+    const r = { applied: 0, skipped: 0, errors: [] }, get = k => localStorage.getItem(k), put = (k, v) => { if (v == null || v === get(k)) { r.skipped++; return; } localStorage.setItem(k, v); r.applied++; };
+    if (replace) { for (const k in pet) try { put(k, String(pet[k])); } catch (e) { r.errors.push(k); } return r; }
+    const done = new Set();
+    // 夥伴身分：比較早孵化的那隻贏（整組一起）
+    const ID = ["tt_pet_hatch", "tt_pet_base", "tt_pet_name"], mh = Date.parse(get("tt_pet_hatch")), th = Date.parse(pet.tt_pet_hatch);
+    if (isFinite(th) && (!isFinite(mh) || th < mh)) ID.forEach(k => { if (pet[k] != null) put(k, String(pet[k])); else r.skipped++; });
+    ID.forEach(k => done.add(k));
+    for (const [v, t] of MERGE.pair) { if (pet[t] != null && (get(t) == null || T(pet[t]) > T(get(t)))) { put(v, pet[v] == null ? null : String(pet[v])); put(t, String(pet[t])); } done.add(v); done.add(t); }
+    for (const k in pet) { if (done.has(k)) continue; try { put(k, mergeOne(k, get(k), String(pet[k]))); } catch (e) { r.errors.push(k); } }
+    return r;
+  }
   function exportAll() {
     const pet = {};
     for (const k of BACKUP_KEYS) { const v = localStorage.getItem(k); if (v != null) pet[k] = v; }
-    return { v: 2, exportedAt: new Date().toISOString(),
+    return { v: 2, petV: PET_V, exportedAt: new Date().toISOString(),
       profile: getProfile(), records: getRecords(), favs: getFavs(), log: getLog(), pet };
   }
   function importAll(data, mode) {
     if (!data || typeof data !== "object") throw new Error("格式錯誤");
     if (data.profile) saveProfile(data.profile);
-    if (data.pet) for (const k in data.pet) try { localStorage.setItem(k, data.pet[k]); } catch { /* */ }
+    // 夥伴：「完全取代」或本機根本沒有夥伴（新手機）才整份蓋；其他照 MERGE 規則合併（2026-10-08 A5）
+    const res = importPet(petUpgrade(data), mode !== "merge" || localStorage.getItem("tt_pet_hatch") == null);
+    if (res.errors.length) console.warn("[importAll] skipped broken keys", res.errors);
     if (mode === "merge") {
       const ids = new Set(getRecords().map(r => r.id));
       const merged = getRecords().concat((data.records || []).filter(r => !ids.has(r.id)))
@@ -224,6 +267,7 @@ const Store = (() => {
     }
     for (const r of (data.records || [])) if (r && r.id && r.track) Archive.put(r);   // 匯入的完整紀錄也進封存
     _lifeReconcile();   // 終身統計取較大值，還原絕不倒退
+    return res;
   }
   // 只安全聯集「紀錄／收藏／步道完成」與終身統計（取較大者），不碰寵物與個人檔——
   // 給「本機已有資料」的自動雲端同步用：跨裝置紀錄會匯流，但絕不倒退寵物進度或蓋掉本機個資。

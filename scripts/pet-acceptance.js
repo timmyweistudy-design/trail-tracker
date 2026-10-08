@@ -9,7 +9,7 @@ const ROOT = path.resolve(__dirname, ".."); const { chromium } = require(ROOT + 
 const MOCK = fs.readFileSync(ROOT + "/scripts/tests/soc-mock.js", "utf8");
 const PORT = +process.env.TT_PORT || 8942, KM = [0, 5, 20, 40, 90, 150, 260];
 const NAME = ["蛋", "幼蟲", "蝴蝶", "狐", "虎", "幼龍", "神龍"];
-const SPOT = { 6: [82, 108, 136] }, DEF = [-62, 8, 66];   // 跟 pet-motion 的第一組一樣；神龍是雲上的 x
+const SPOT = { 3: null, 4: null, 6: [82, 108, 136] }, DEF = [-62, 8, 66];   // 跟 pet-motion 的第一組一樣；神龍是雲上的 x；狐、虎用真實落點（前掌前方 ±24，null＝不指定）
 const ONLY = (process.argv[2] || "0,1,2,3,4,5,6").split(",").map(Number);
 const OUT = path.join(ROOT, "scripts/tests/out/acc") + "/"; fs.mkdirSync(OUT, { recursive: true });
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -32,7 +32,7 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;",
     t0 = Date.now(); await shot("待機");
     await p.evaluate(() => { localStorage.setItem("tt_pet_hat", "straw"); renderPet(); }); await p.waitForTimeout(500); await shot("戴帽子");
     await p.evaluate(() => { localStorage.removeItem("tt_pet_hat"); renderPet(); }); await p.waitForTimeout(500);
-    await p.evaluate(xs => { window.__psSpots = xs; PetStage.feed(BERRY_SVG); }, SPOT[st] || DEF); await p.waitForTimeout(100);
+    await p.evaluate(xs => { window.__psSpots = xs; PetStage.feed(BERRY_SVG); }, st in SPOT ? SPOT[st] : DEF); await p.waitForTimeout(100);
     await film("餵食", () => !document.querySelector(".ps-box").classList.contains("feeding"), 120); await shot("餵食完");
     await p.evaluate(() => { PetStage.play(BERRY_SVG); });   // 大括號：不要把 Promise 回傳給 evaluate（不然會等到動作播完才往下拍） await p.waitForTimeout(100);
     await film("玩松果", () => !document.querySelector(".ps-box").classList.contains("playing"), 60);

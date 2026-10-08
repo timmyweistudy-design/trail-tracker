@@ -188,7 +188,7 @@ window.PetStage = (function () {
     window.removeEventListener("devicemotion", onMotion);
     if (io) { io.disconnect(); io = null; }
     if (raf) cancelAnimationFrame(raf);
-    clearTimeout(beat); beat = 0; busy = false; asleep = false;
+    clearTimeout(beat); beat = 0; busy = false; owner = 0; ownerKind = ""; asleep = false; if (guesting) guesting.bye();
     raf = 0; box = null; visible = false;
   }
 
@@ -214,8 +214,8 @@ window.PetStage = (function () {
     if (!asleep || !box) return false;
     try { localStorage.setItem("tt_pet_woke", String(ttClock.now())); } catch (e) { /* 私密瀏覽 */ }
     if (window.__ps && window.__ps.asleep) window.__ps.asleep = false;
-    setAsleep(false); busy = true;
-    try { await flash("pb-wake", 1300); await flash("pb-stretch", 1400); } finally { busy = false; }
+    setAsleep(false); stopIdle(); const tk = claimStage("wake");
+    try { await flash("pb-wake", 1300); await flash("pb-stretch", 1400); } finally { freeStage(tk); }
     return true;
   }
   const TOD_W = { dawn: { add: { stretch: 3, yawn: 2 } }, day: { mul: { hop: 1.6, special: 1.5 } }, dusk: { add: { idle: 2, look: 1 } }, night: { add: { idle: 3, yawn: 1 } } };
@@ -235,6 +235,23 @@ window.PetStage = (function () {
     longing: { look: 3, sigh: 2, blink2: 1, idle: 2, special: 1 },
   };
   let beat = 0, busy = false;
+  // ── 動作仲裁（2026-10-08 修正案 A2）：誰拿到舞台、誰才能放開 ──
+  // 以前大家共用一個 busy：待機動作播完的 finally 會把「正在吃」的 busy 也放掉 → 吃到一半插一個跳（F1）。
+  // 現在每個動作開始時拿一張號碼牌（claimStage），結束時只有號碼牌還是自己的才放開（freeStage）。
+  // 優先：使用者操作（餵、玩）＞ 叫醒 ＞ 朋友來訪 ＞ 待機。使用者操作開始時，正在播的待機動作立刻停（stopIdle，F1b）、
+  // 正在來訪的朋友提早告別（dismissGuest，F2a／F2c），等牠走了才開始
+  let owner = 0, ownerKind = "", tkSeq = 0, guesting = null;
+  const idleAnims = new Set(), IDLE_CLS = ["pb-hop", "pb-stretch", "pb-yawn", "pb-sigh", "pb-blink2", "pb-shake", "pb-shiver", "pb-bask", "chew2", "st-glow"];
+  function claimStage(kind) { owner = ++tkSeq; ownerKind = kind; busy = true; return owner; }
+  function freeStage(tk) { if (owner !== tk) return false; owner = 0; ownerKind = ""; busy = false; return true; }
+  function stopIdle() {   // 待機動作讓位：拿掉它的 class、停掉它開的 Web 動畫、頭轉回正面
+    if (ownerKind !== "idle") return;
+    owner = 0; ownerKind = ""; busy = false;
+    idleAnims.forEach(a => { try { a.cancel(); } catch (e) { /* 已經結束 */ } }); idleAnims.clear();
+    const em = emEl(); if (em) em.classList.remove(...IDLE_CLS);
+    if (box) { box.style.setProperty("--ex", "0"); if (+box.dataset.stage === 2 && typeof PetWalk !== "undefined" && PetWalk.wingMode) PetWalk.wingMode(box, "idle", 200); }
+  }
+  async function dismissGuest() { if (!guesting) return; guesting.bye(); await guesting.done; }   // 請朋友先走，等牠走出舞台
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   function pick(w) {
     let r = Math.random() * Object.values(w).reduce((a, b) => a + b, 0);
@@ -249,23 +266,24 @@ window.PetStage = (function () {
     return sleep(ms).then(() => em.classList.remove(cls));
   }
   // 每隻專屬的待機小動作（2026-10-07 收尾輪：讓牠平常也有事做）——只動不會被繩波、步態每格寫的元素（單一擁有者）
-  async function special() {
+  async function special(on) {   // on()：這個待機動作還擁有舞台嗎（被餵食／玩／訪客接手後，後面的步驟一律不做）
+    on = on || (() => true); const fl = (c, ms) => on() ? flash(c, ms) : sleep(0);
     const em = emEl(); if (!em || typeof PetWalk === "undefined") return sleep(400);
-    const st = +box.dataset.stage, A = (el, kf, o) => el && el.animate ? el.animate(kf, o).finished.catch(() => {}) : sleep(o.duration || 400);
+    const st = +box.dataset.stage, A = (el, kf, o) => { if (!on() || !el || !el.animate) return sleep(on() ? o.duration || 400 : 0); const an = el.animate(kf, o); idleAnims.add(an); return an.finished.catch(() => {}).then(() => idleAnims.delete(an)); };
     if (st === 0) {   // 蛋：左右晃一下、裂縫亮起來
-      const eg = em.querySelector(".pc-egg"); cls(true, "st-glow");
+      const eg = em.querySelector(".pc-egg"); on() && cls(true, "st-glow");
       await A(eg, [{ transform: "rotate(0)" }, { transform: "rotate(-6deg)" }, { transform: "rotate(5deg)" }, { transform: "rotate(-2deg)" }, { transform: "rotate(0)" }].map(k => ({ ...k, transformBox: "view-box", transformOrigin: "100px 157px" })), { duration: 900, easing: "ease-in-out" });
       cls(false, "st-glow");
     } else if (st === 1) {   // 毛毛蟲：低頭啃一口葉子
-      await PetWalk.bend(box, 8, 3, 380); cls(true, "chew2"); await flash("pb-chew", 600); cls(false, "chew2"); await PetWalk.bend(box, 0, 0, 380);
+      if (!on()) return; await PetWalk.bend(box, 8, 3, 380); on() && cls(true, "chew2"); await fl("pb-chew", 600); cls(false, "chew2"); if (on()) await PetWalk.bend(box, 0, 0, 380);
     } else if (st === 2) {   // 蝴蝶：用力拍一陣
-      PetWalk.wingMode(box, "flap", 180); await sleep(1300); PetWalk.wingMode(box, "idle", 300); await sleep(300);
+      if (!on()) return; PetWalk.wingMode(box, "flap", 180); await sleep(1300); if (on()) PetWalk.wingMode(box, "idle", 300); await sleep(300);
     } else if (st === 3) {   // 狐：回頭看尾巴、尾巴甩兩下
-      box.style.setProperty("--ex", "1"); await sleep(300); PetWalk.tailFlick(box); await sleep(520); PetWalk.tailFlick(box); await sleep(600); box.style.setProperty("--ex", "0"); await sleep(300);
+      if (!on()) return; box.style.setProperty("--ex", "1"); await sleep(300); if (on()) PetWalk.tailFlick(box); await sleep(520); if (on()) PetWalk.tailFlick(box); await sleep(600); if (on()) box.style.setProperty("--ex", "0"); await sleep(300);
     } else if (st === 4) {   // 虎：前爪交替踩踏（貓的踏踏）
       const L = em.querySelector(".pc-bob > .pr-paw.l"), R = em.querySelector(".pc-bob > .pr-paw.r"), kf = d => [{ translate: "0 0" }, { translate: "0 -3px", offset: .3 }, { translate: "0 0", offset: .6 }, { translate: "0 0" }];
-      for (let k = 0; k < 3; k++) { A(L, kf(), { duration: 420 }); await sleep(210); await A(R, kf(), { duration: 420 }); }
-    } else if (st === 5) { await flash("pb-hop", 1100); await flash("pb-hop", 1100); }   // 幼龍：連跳兩下
+      for (let k = 0; k < 3 && on(); k++) { A(L, kf(), { duration: 420 }); await sleep(210); await A(R, kf(), { duration: 420 }); }
+    } else if (st === 5) { await fl("pb-hop", 1100); await fl("pb-hop", 1100); }   // 幼龍：連跳兩下
     else if (st === 6) {   // 神龍：龍珠光芒脹大、亮一下
       const tw = em.querySelector(".pr-pearl .pc-tw");
       await A(tw, [{ transform: "scale(1)", opacity: .6 }, { transform: "scale(1.9)", opacity: 1, offset: .4 }, { transform: "scale(1)", opacity: .6 }].map(k => ({ ...k, transformBox: "view-box", transformOrigin: "62px 160px" })), { duration: 1400, easing: "ease-in-out" });
@@ -277,22 +295,23 @@ window.PetStage = (function () {
     g.innerHTML = Array.from({ length: 7 }, (_, k) => `<i style="--a:${-160 + k * 23}deg;--dl:${(k % 3) * 60}ms"></i>`).join(""); em.appendChild(g); setTimeout(() => g.remove(), 1100);
   }
   async function act(kind) {
-    if (!box) return;
-    busy = true;
+    if (!box || (owner && ownerKind !== "idle")) return;   // 舞台被使用者操作／訪客占著：待機不插隊
+    const tk = claimStage("idle"), on = () => owner === tk, fl = (c, ms) => on() ? flash(c, ms) : sleep(0);
+    if (window.__psIdleLog) window.__psIdleLog.push({ kind, feeding, playing, guest: !!guesting, t: performance.now() });   // 測試用：每個待機動作開始時記一筆（pet-handoff.test.js）
     try {
       if (kind === "look") {
-        for (const d of [-1, 1, 0]) { if (!box) break; box.style.setProperty("--ex", d); await sleep(d ? 900 : 200); }
-      } else if (kind === "hop") await flash("pb-hop", 1100);
-      else if (kind === "stretch") await flash("pb-stretch", 1400);
-      else if (kind === "yawn") await flash("pb-yawn", 1400);
-      else if (kind === "sigh") await flash("pb-sigh", 1600);
-      else if (kind === "blink2") await flash("pb-blink2", 500);
-      else if (kind === "special") await special();
-      else if (kind === "shake") { drops(); await flash("pb-shake", 900); }
-      else if (kind === "shiver") await flash("pb-shiver", 1300);
-      else if (kind === "bask") await flash("pb-bask", 2200);
+        for (const d of [-1, 1, 0]) { if (!box || !on()) break; box.style.setProperty("--ex", d); await sleep(d ? 900 : 200); }
+      } else if (kind === "hop") await fl("pb-hop", 1100);
+      else if (kind === "stretch") await fl("pb-stretch", 1400);
+      else if (kind === "yawn") await fl("pb-yawn", 1400);
+      else if (kind === "sigh") await fl("pb-sigh", 1600);
+      else if (kind === "blink2") await fl("pb-blink2", 500);
+      else if (kind === "special") await special(on);
+      else if (kind === "shake") { drops(); await fl("pb-shake", 900); }
+      else if (kind === "shiver") await fl("pb-shiver", 1300);
+      else if (kind === "bask") await fl("pb-bask", 2200);
       else await sleep(400);
-    } finally { busy = false; }
+    } finally { freeStage(tk); }
   }
   function schedule(m) {
     clearTimeout(beat);
@@ -490,8 +509,9 @@ window.PetStage = (function () {
   let playing = false;
   async function play(toySvg) {
     if (!box || reduce() || !visible || feeding || playing || typeof PetWalk === "undefined") return false;
-    clearTimeout(beat); if (asleep) await wake(); if (!box) return false;
-    playing = true; busy = true; box.classList.add("playing");
+    clearTimeout(beat); playing = true;   // 先占位：等朋友走、等醒來的這段時間，再按一次不會開第二輪
+    stopIdle(); if (guesting) await dismissGuest(); if (asleep) await wake(); if (!box) { playing = false; return false; }
+    const tk = claimStage("play"); box.classList.add("playing");
     const actor = box.querySelector(".ps-actor"), stg = +box.dataset.stage, b = document.createElement("span");
     try {
       const cloud = stg === 6 ? cloudSpots(1) : null, x = cloud ? cloud[0].x : stg === 0 ? (Math.random() < .5 ? -1 : 1) * 34 : dropSpots(1, stg === 1 ? "larva" : (stg === 3 || stg === 4) ? false : false)[0];
@@ -520,38 +540,47 @@ window.PetStage = (function () {
       return true;
     } finally {
       release(b); b.remove(); if (box) { box.__riders = null; box.classList.remove("playing"); box.style.setProperty("--ex", "0"); box.style.setProperty("--ey", "0"); }
-      playing = false; busy = false; if (box) schedule(mood);
+      playing = false; freeStage(tk); if (box) schedule(mood);
     }
   }
   // ── 朋友的夥伴來串門子（2026-10-07 寵物新一輪 #19）：從舞台邊走進來站在旁邊，兩隻一起跳一下，待一會兒再走出去（自己一個元素，不碰主角的骨架） ──
   async function guest(o) {
-    if (!box || reduce() || !visible || feeding || playing || asleep || !o || !o.svg) return false;
+    if (!box || reduce() || !visible || feeding || playing || asleep || guesting || !o || !o.svg) return false;
+    if (owner && ownerKind !== "idle") return false;   // 叫醒中之類：下次再來
     const actor = box.querySelector(".ps-actor"); if (!actor || box.querySelector(".ps-guest")) return false;
+    stopIdle(); const tk = claimStage("guest"); clearTimeout(beat);
+    let bye = false, byeNow, doneR; const byeP = new Promise(r => { byeNow = r; });
+    guesting = { bye: () => { bye = true; byeNow(); }, done: new Promise(r => { doneR = r; }) };
     const side = Math.random() < .5 ? -1 : 1, g = document.createElement("div"); g.className = "ps-guest"; g.setAttribute("aria-hidden", "true"); g.innerHTML = o.svg;
-    g.style.setProperty("--gx", `${side * 33}%`); actor.appendChild(g); busy = true; clearTimeout(beat);
+    g.style.setProperty("--gx", `${side * 33}%`); actor.appendChild(g);
     const W = box.getBoundingClientRect().width, off = side * W * .7;
     const walk = (from, to, ms) => g.animate([{ translate: `${from}px 0` }, { translate: `${to}px 0` }], { duration: ms, easing: "cubic-bezier(.3,.6,.4,1)", fill: "forwards" }).finished.catch(() => {});
     try {
       g.animate([{ rotate: "-5deg" }, { rotate: "5deg" }], { duration: 260, iterations: 6, direction: "alternate" });   // 走路時左右晃
-      await walk(off, 0, 1500);
-      box.style.setProperty("--ex", String(side)); await sleep(300);
-      g.animate([{ transform: "none" }, { transform: "translateY(-14%)", offset: .4 }, { transform: "none" }], { duration: 650, easing: "ease-out" });
-      await flash("pb-hop", 1100);
-      await sleep(Math.max(0, (o.stay || 3200) - 1100));
-      box.style.setProperty("--ex", "0");
+      const inW = walk(off, 0, 1500); await Promise.race([inW, byeP]);
+      if (!bye) {
+        box.style.setProperty("--ex", String(side)); await Promise.race([sleep(300), byeP]);
+        if (!bye) { g.animate([{ transform: "none" }, { transform: "translateY(-14%)", offset: .4 }, { transform: "none" }], { duration: 650, easing: "ease-out" });
+          await flash("pb-hop", 1100); await Promise.race([sleep(Math.max(0, (o.stay || 3200) - 1100)), byeP]); }
+      }
+      if (box) box.style.setProperty("--ex", "0");
       g.animate([{ rotate: "-5deg" }, { rotate: "5deg" }], { duration: 260, iterations: 6, direction: "alternate" });
-      await walk(0, off, 1500);
+      g.getAnimations().forEach(a => { if (a.effect && a.effect.getKeyframes().some(k => k.translate)) { try { a.commitStyles(); } catch (e) { /* */ } a.cancel(); } });   // 從當下位置走出去（被請走時可能還沒走到）
+      const cur = parseFloat(getComputedStyle(g).translate) || 0;
+      await walk(cur, off, bye ? 800 : 1500);   // 被請走：走快一點，讓主人的事情早點開始
       return true;
-    } finally { g.remove(); busy = false; if (box) schedule(mood); }
+    } finally { g.remove(); guesting = null; doneR(); freeStage(tk); if (box) schedule(mood); }
   }
   const BITE_Y = .32;   // 咬的位置：果實由上往下 32%（咬住上緣、一部分留在嘴外）
   let feeding = false;
   async function feed(berrySvg) {
     if (!box || reduce() || !visible || feeding || playing) return;   // 正在吃就不再開一輪（正在玩也等玩完）（餵食鈕本來就會鎖住＋8 小時冷卻；測試面板連按才會進來）
-    clearTimeout(beat);
+    clearTimeout(beat); feeding = true;   // 先占位（等朋友走、等醒來時再按一次不會開第二輪）
+    stopIdle();                // 正在播的待機動作立刻讓位（F1b）
+    if (guesting) await dismissGuest();   // 朋友在：先跟牠說掰掰，走了才吃（F2a）；沒朋友就不要多等一拍（同一格開始，幼蟲的時序才跟以前一樣）
     if (asleep) await wake();   // 睡著時按餵食：先醒來（揉眼、伸懶腰）再吃
-    if (!box) return;
-    busy = true; feeding = true; box.classList.add("feeding");
+    if (!box) { feeding = false; return; }
+    const tk = claimStage("feed"); box.classList.add("feeding");
     const actor = box.querySelector(".ps-actor"), stg = +box.dataset.stage, egg = stg === 0, fly = stg === 2;
     const front = (stg === 3 || stg === 4) && typeof PetWalk !== "undefined" && !!PetWalk.frontLie;   // 狐、虎：正面趴著吃（不走路）
     const bal = document.querySelector("#petFeed .feed-bal");
@@ -559,7 +588,10 @@ window.PetStage = (function () {
     const berries = []; let aborted = false;
     try {
       const onCloud = stg === 6 && typeof PetWalk !== "undefined" ? cloudSpots(3) : null;   // 神龍：果實落在雲上（跟著雲走）
-      (onCloud ? onCloud.map(o => o.x) : dropSpots(3, egg || (stg === 1 && typeof PetWalk !== "undefined" ? "larva" : front ? "front" : false))).forEach((x, k) => {
+      // 狐、虎趴著吃不走路：落點限制在前掌前方 ±28 單位（修正案規則 4：搆不到就換位置，不准把頭拉出去補——以前測試面板的遠落點會讓頭離開身體）
+      const inReach = xs => { if (!front) return xs; const u = PetWalk.pxu(box), wx = parseFloat(box.style.getPropertyValue("--wx")) || 0, c = xs.map(x => wx + Math.max(-28, Math.min(28, (x - wx) / u)) * u);
+        return c.every((x, i) => c.every((y, j) => i === j || Math.abs(x - y) >= 14 * u)) ? c.map(Math.round) : xs.map((x, i) => i).sort((a, b) => xs[a] - xs[b]).reduce((o, i, r) => { o[i] = Math.round(wx + (r - 1) * 24 * u); return o; }, []); };
+      inReach(onCloud ? onCloud.map(o => o.x) : dropSpots(3, egg || (stg === 1 && typeof PetWalk !== "undefined" ? "larva" : front ? "front" : false))).forEach((x, k) => {
         const b = document.createElement("span");
         b.className = "ps-berry";
         b.innerHTML = berrySvg || "";
@@ -725,7 +757,7 @@ window.PetStage = (function () {
       await flash("pb-hop", 1300);   // 各自的慶祝（style-features.css 依階段換動作）
     } finally { if (box) box.__lean = null;
       if (front && box && (box.__lie || box.__fh)) { PetWalk.frontHead(box, null, 1); PetWalk.frontLie(box, 0, 1); }
-      berries.forEach(o => { release(o.b); o.b.remove(); }); cls(false, "st-lean", "st-open", "st-sip", "st-land", "st-legs", "pb-sip", "st-glow", "st-tilt-l", "st-tilt-r"); resetProboscis(); if (box) { box.__riders = null; if (box.__chain && typeof PetWalk !== "undefined") PetWalk.tailTo(box, null, 1); box.style.removeProperty("--ld"); box.style.removeProperty("--lx"); if (typeof PetWalk !== "undefined" && (reduce() || aborted)) { PetWalk.stop(box); box.classList.remove("standing", "face-r"); } } feeding = false; busy = false; if (box) { box.classList.remove("feeding"); schedule(mood); } }
+      berries.forEach(o => { release(o.b); o.b.remove(); }); cls(false, "st-lean", "st-open", "st-sip", "st-land", "st-legs", "pb-sip", "st-glow", "st-tilt-l", "st-tilt-r"); resetProboscis(); if (box) { box.__riders = null; if (box.__chain && typeof PetWalk !== "undefined") PetWalk.tailTo(box, null, 1); box.style.removeProperty("--ld"); box.style.removeProperty("--lx"); if (typeof PetWalk !== "undefined" && (reduce() || aborted)) { PetWalk.stop(box); box.classList.remove("standing", "face-r"); } } feeding = false; freeStage(tk); if (box) { box.classList.remove("feeding"); schedule(mood); } }
   }
 
   // ── 天氣：用使用者所在位置（探索頁拿過的）或最後一趟走的步道；拿不到就不畫天氣，絕不在這裡要定位 ──

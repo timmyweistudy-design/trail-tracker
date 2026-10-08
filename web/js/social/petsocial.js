@@ -41,10 +41,11 @@ const Pets = (() => {
     const c = Supa.client(); const uid = await me(); if (!uid) return 0;
     const { data } = await c.from("pet_gifts").select("id,berries").eq("to_user", uid).eq("claimed", false).limit(200);
     if (!data || !data.length) return 0;
-    const sum = data.reduce((s, g) => s + (g.berries || 0), 0);
     // 只標記「剛才讀到的那幾筆」：以前整批標「所有未領」，讀完到標記之間剛好送來的果實會被標成已領卻沒算到
-    const { error } = await c.from("pet_gifts").update({ claimed: true }).in("id", data.map(g => g.id)).eq("claimed", false);
+    // 2026-10-08 修正案 A4：只算「這一次真的從未領改成已領」的那幾筆（update 回傳的列）——兩台手機同時領，另一台已經標走的不會再算一次
+    const { data: got, error } = await c.from("pet_gifts").update({ claimed: true }).in("id", data.map(g => g.id)).eq("claimed", false).select("id,berries");
     if (error) return 0;
+    const sum = (Array.isArray(got) ? got : []).reduce((s, g) => s + (g.berries || 0), 0);
     if (sum > 0 && typeof addBerryBonus === "function") addBerryBonus(sum);
     return sum;
   }

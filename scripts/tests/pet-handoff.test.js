@@ -4,7 +4,7 @@
 const __path=require("path"),__fs=require("fs");
 const ROOT=__path.resolve(__dirname,"../..");const {chromium}=require(ROOT+"/node_modules/playwright");const {spawn}=require("child_process");
 const MOCK=__fs.readFileSync(__dirname+"/soc-mock.js","utf8");const errs=[];let fails=0,xf=0;
-const KNOWN=new Set(["F1","F1b","F2a","F2c"]);   // R2 修好一個就拿掉一個
+const KNOWN=new Set([]);   // R2 修好一個就拿掉一個
 const ok=(c,m,id)=>{if(id&&KNOWN.has(id)){if(c){console.log("XPASS "+id+" "+m+"（修好了：把 "+id+" 從 KNOWN 拿掉）");fails++;}else{console.log("XFAIL "+id+" "+m);xf++;}return;}console.log((c?"PASS ":"FAIL ")+(id?id+" ":"")+m);if(!c)fails++;};
 const PORT = +process.env.TT_PORT || 8914;
 (async()=>{const srv=spawn("python3",["-m","http.server",String(PORT)],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
@@ -26,17 +26,18 @@ const result=p=>p.evaluate(()=>{window.__hwStop();return window.__hw;});
 // 重現：幼龍（餵食很長）。先播「晒太陽」（2.2 秒）→ 0.1 秒後餵食 → 晒太陽結束後心情變了（setMood 會重排待機）→
 //       Math.random 固定成 0：下一拍 3.5 秒後、挑第一個動作（開心＝跳）。正確：吃東西時不准有任何待機動作。
 {const p=await mk(150);await watch(p);
- await p.evaluate(()=>{PetStage.act("bask");setTimeout(()=>PetStage.feed(BERRY_SVG),100);});
+ await p.evaluate(()=>{window.__psIdleLog=[];PetStage.act("bask");setTimeout(()=>PetStage.feed(BERRY_SVG),100);});
  await p.waitForTimeout(2700);
  const mid=await p.evaluate(()=>{const f=document.querySelector(".ps-box").classList.contains("feeding");window.__psNoIdle=false;window.__rnd=Math.random;Math.random=()=>0;PetStage.setMood("happy");return f;});
  ok(mid,"setup: still feeding when the idle act has finished");
  await p.waitForTimeout(5000);await p.evaluate(()=>{Math.random=window.__rnd;window.__psNoIdle=true;});
  await p.waitForFunction(()=>!document.querySelector(".ps-box").classList.contains("feeding"),null,{timeout:90000});
- const r=await result(p),seen=[...new Set(r.idleWhileFeeding)];
+ const r=await result(p),seen=[...new Set(r.idleWhileFeeding)].filter(k=>k!=="pb-hop"),   /* pb-hop 也是吃完的慶祝（餵食自己的），不能拿來判斷 */
+  log=await p.evaluate(()=>(window.__psIdleLog||[]).filter(x=>x.feeding).map(x=>x.kind));
  // F1b：開始吃的那一刻，正在播的晒太陽沒有停（兩個動作同時在角色身上）→ 規則 2：新動作要接手，舊的待機動作要中止
  ok(!seen.includes("pb-bask"),"the idle act that was playing stops when feeding starts ("+JSON.stringify(seen)+")","F1b");
  // F1：晒太陽結束後，下一拍待機在吃到一半插進來（跳）
- ok(seen.filter(k=>k!=="pb-bask").length===0,"no new idle action starts while eating ("+JSON.stringify(seen)+")","F1");
+ ok(log.length===0,"no new idle action starts while eating ("+JSON.stringify(log)+")","F1");
  await p.close();}
 
 // ── F2a：朋友的夥伴來串門子的時候按餵食 → 正確：等訪客走了才吃（或回一句「朋友來玩了」），不能兩件事疊在一起 ──

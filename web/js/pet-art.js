@@ -244,6 +244,7 @@ window.PET_ART = (function () {
       <g class="pr-loaf" opacity="0">${P(E(134, 180, 20, 13), FX, { dx: 2, dy: 2 })}${P(E(100, 184, 44, 13), FX, { hl: [84, 178, 12, 3], dx: 3, dy: 3 })}${P(E(100, 186, 22, 8), FXC, { sw: 0, dx: 1, dy: 1 })}${P(Pa("M70 182 Q66 150 100 144 Q134 150 130 182Z"), FX, { hl: [84, 156, 5, 8], dx: 3, dy: 3 })}${P(Pa("M86 182 Q84 158 100 154 Q116 158 114 182Z"), FXC, { sw: 0, dx: 1, dy: 1 })}</g>
       ${rig("pr-paw l", 90, 157, P(Pa("M84 157 L83 191 Q90 196 97 191 L97 157Z"), FX, { dx: 2, dy: 2 }) + P(Pa("M83 175 L83 191 Q90 196 97 191 L97 175Q90 172 83 175Z"), FXK, { sw: 2, dx: 2, dy: 2 }))}
       ${rig("pr-paw r", 110, 157, P(Pa("M103 157 L103 191 Q110 196 117 191 L116 157Z"), FX, { dx: 2, dy: 2 }) + P(Pa("M103 175 L103 191 Q110 196 117 191 L116 175Q110 172 103 175Z"), FXK, { sw: 2, dx: 2, dy: 2 }))}
+      <g class="pr-lpaws" opacity="0">${P(E(89, 176, 7, 6), FX, { dx: 1, dy: 1 })}${P(E(111, 176, 7, 6), FX, { dx: 1, dy: 1 })}${P(E(89, 182, 9.5, 5), FXK, { sw: 2, dx: 1, dy: 2 })}${P(E(111, 182, 9.5, 5), FXK, { sw: 2, dx: 1, dy: 2 })}<path d="M85 185 v-3 M89 186 v-3 M93 185 v-3 M107 185 v-3 M111 186 v-3 M115 185 v-3" stroke="#f3e6d6" stroke-opacity=".55" stroke-width="1.3" stroke-linecap="round"/></g>
       <path class="pc-d" d="M88 191 v-4 M92 191 v-4 M108 191 v-4 M112 191 v-4" stroke="#6a4a38" stroke-width="1.4" stroke-linecap="round"/>
       ${P(Pa("M80 133 Q100 125 120 133 Q122 145 114 155 L110 149 L106 161 L100 151 L94 161 L90 149 L86 155 Q78 145 80 133Z"), FXC, { sw: 2.2, dx: 3, dy: 3 })}
       <path class="pc-d2" d="M92 137 l2 6 M100 135 v7 M108 137 l-2 6" stroke="${sh(FXC, .25)}" stroke-width="1.4" stroke-linecap="round"/>
@@ -290,6 +291,7 @@ ${foxHead()}
       <g class="pr-loaf" opacity="0">${P(E(138, 179, 22, 14), TG, { dx: 2, dy: 2 })}${stripe(132, 170, 140, 184, 4, 1)}${stripe(146, 170, 150, 182, 3.6, 1)}${P(E(100, 184, 48, 14), TG, { hl: [82, 178, 13, 3], dx: 3, dy: 3 })}${P(E(100, 186, 24, 8), TGC, { sw: 0, dx: 1, dy: 1 })}${stripe(60, 178, 70, 190, 4, 1)}${P(Pa("M64 184 Q60 146 100 138 Q140 146 136 184Z"), TG, { hl: [80, 152, 5, 9], dx: 3, dy: 3 })}${P(Pa("M84 184 Q82 154 100 150 Q118 154 116 184Z"), TGC, { sw: 0, dx: 1, dy: 1 })}${stripe(68, 158, 78, 162, 4, 1)}${stripe(132, 158, 122, 162, 4, -1)}</g>
       ${rig("pr-paw l", 83, 150, P(Pa("M74 148 Q68 170 69 190 Q82 194 94 190 Q93 168 92 150 Q84 144 74 148Z"), TG, { dx: 3, dy: 2 }) + stripe(71, 166, 81, 168, 3.4, 0) + stripe(71, 176, 80, 177, 3, 0) + P(E(82, 192, 14, 5.4), TG, { sw: 2.4, dx: 1, dy: 2 }) + `<path d="M76 195 v-4 M82 196 v-5 M88 195 v-4" stroke="${sh(TG, .5)}" stroke-width="1.8" stroke-linecap="round"/>`)}
       ${rig("pr-paw r", 117, 150, P(Pa("M126 148 Q132 170 131 190 Q118 194 106 190 Q107 168 108 150 Q116 144 126 148Z"), TG, { dx: 3, dy: 2 }) + stripe(129, 166, 119, 168, 3.4, 0) + stripe(129, 176, 120, 177, 3, 0) + P(E(118, 192, 14, 5.4), TG, { sw: 2.4, dx: 1, dy: 2 }) + `<path d="M112 195 v-4 M118 196 v-5 M124 195 v-4" stroke="${sh(TG, .5)}" stroke-width="1.8" stroke-linecap="round"/>`)}
+      <g class="pr-lpaws" opacity="0">${P(E(84, 175, 9, 6), TG, { dx: 1, dy: 1 })}${P(E(116, 175, 9, 6), TG, { dx: 1, dy: 1 })}${P(E(84, 181, 13, 6), TG, { sw: 2.4, dx: 1, dy: 2 })}${P(E(116, 181, 13, 6), TG, { sw: 2.4, dx: 1, dy: 2 })}<path d="M77 185 v-3 M83 186 v-4 M89 185 v-3 M111 185 v-3 M117 186 v-4 M123 185 v-3" stroke="${sh(TG, .5)}" stroke-width="1.8" stroke-linecap="round"/></g>
       <g class="pr-head" style="--ox:100px;--oy:134px">
 ${tigerHead()}
       <!--H--></g>
@@ -405,13 +407,6 @@ ${tigerHead()}
     <g class="pc-hover pc-soar">
       <g class="pr-deform">${dragonBody}
       <g class="pr-rigid" transform="translate(154 150)"><g transform="matrix(1 0 0 1 -154 -150)">${P(Pa(tube([[[150, 146], [152, 152], [152, 158], [151, 164]]], [[0, 12], [1, 9]])), JADE, { dx: 2, dy: 2 })}${claw(151, 166, 92, 3, JADE)}</g></g></g>
-      <g class="pr-pearl">${P(Pa(tube([[[104, 134], [96, 146], [88, 152], [78, 156]]], [[0, 13], [1, 9]])), JADE, { dx: 2, dy: 2 })}
-      <g class="pc-tw"><circle cx="62" cy="160" r="19" fill="#ffd36a" opacity=".28"/></g>
-      ${P(Pa("M46 160 Q42 142 52 134 Q53 144 58 145 Q56 130 66 122 Q67 136 73 140 Q77 134 80 128 Q86 144 78 160Z"), "#ffa94a", { sw: 2, dx: 2, dy: 2, sk: .15 })}
-      <path class="pc-d" d="M54 150 Q53 142 57 138 Q60 146 64 146 Q63 136 67 131 Q70 142 74 146" fill="none" stroke="#ffe39a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-      ${P(C(62, 162, 14), "#ffdf86", { hl: [56, 155, 5, 3.5], dx: 3, dy: 3, sk: .25 })}
-      <path class="pc-d" d="M54 164 q6 6 14 -2 q2 -6 -4 -7" stroke="#e0a83a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
-      ${claw(76, 157, 160, 4, JADE)}</g>
       <g class="pr-head" style="--ox:86px;--oy:108px">
       ${[[-160, 22, 10, -6], [-136, 26, 11, -4], [-112, 22, 9, 3], [-30, 26, 11, 5], [-5, 34, 13, 7], [22, 36, 14, 8], [48, 32, 12, 7], [74, 22, 10, 5]].map(([a, L, w, b]) => { const r = a * Math.PI / 180, x0 = 66 + Math.cos(r) * 22, y0 = 78 + Math.sin(r) * 20; return tpo(rd(x0), rd(y0), rd(x0 + Math.cos(r) * L), rd(y0 + Math.sin(r) * L), w, MANE, b); }).join("")}
       <g class="pc-d">${[[-140, 18, 5, -4], [-112, 18, 5, 2], [8, 22, 5, 5], [38, 22, 5, 5]].map(([a, L, w, b]) => { const r = a * Math.PI / 180, x0 = 66 + Math.cos(r) * 26, y0 = 78 + Math.sin(r) * 24; return tp(rd(x0), rd(y0), rd(x0 + Math.cos(r) * L), rd(y0 + Math.sin(r) * L), w, tn(MANE, .45), b); }).join("")}</g>
@@ -436,6 +431,13 @@ ${tigerHead()}
       ${eyeOf("almond", 52, 79, 8.4, 7.4, -1, "#d9a032", { pupil: "slit", pw: .36, lid: .3, cut: JADE, co: .95, ci: .7 })}${eyeOf("almond", 80, 79, 8.4, 7.4, 1, "#d9a032", { pupil: "slit", pw: .36, lid: .3, cut: JADE, co: .95, ci: .7 })}
       <!--H--></g>
       ${dragonTailSvg}
+      <g class="pr-pearl"><!-- 平常前爪和龍珠在尾巴前面；尾巴送果實／玩的時候 pet-walk 的 tailLayer 把這一組搬到頭的前面（尾巴就到最上層）-->${P(Pa(tube([[[104, 134], [96, 146], [88, 152], [78, 156]]], [[0, 13], [1, 9]])), JADE, { dx: 2, dy: 2 })}
+      <g class="pc-tw"><circle cx="62" cy="160" r="19" fill="#ffd36a" opacity=".28"/></g>
+      ${P(Pa("M46 160 Q42 142 52 134 Q53 144 58 145 Q56 130 66 122 Q67 136 73 140 Q77 134 80 128 Q86 144 78 160Z"), "#ffa94a", { sw: 2, dx: 2, dy: 2, sk: .15 })}
+      <path class="pc-d" d="M54 150 Q53 142 57 138 Q60 146 64 146 Q63 136 67 131 Q70 142 74 146" fill="none" stroke="#ffe39a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      ${P(C(62, 162, 14), "#ffdf86", { hl: [56, 155, 5, 3.5], dx: 3, dy: 3, sk: .25 })}
+      <path class="pc-d" d="M54 164 q6 6 14 -2 q2 -6 -4 -7" stroke="#e0a83a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      ${claw(76, 157, 160, 4, JADE)}</g>
     </g>`;
 
   // 頭裡面再包一層 .pr-hfx（2026-10-05 第二輪「控制權分層」）：外層 .pr-head 給姿勢（低頭、走路、看手指——JS 或狀態 class），
