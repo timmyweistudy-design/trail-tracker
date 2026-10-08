@@ -2506,3 +2506,27 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .ps-guest { position: absolute; bottom: 4px; left: calc(50% + var(--gx, 30%)); width: 34%; max-width: 150px; translate: 0 0; margin-left: -17%; z-index: 1; pointer-events: none; transform-origin: 50% 100%; filter: drop-shadow(0 6px 8px rgba(0,0,0,.25)); }
 .ps-guest .pet-critter, .ps-guest svg { width: 100%; height: auto; display: block; }
 .ps-box.ps-off .ps-guest { animation-play-state: paused; }
+/* ── 2026-10-09 修正案 R5：季節／體感裝飾、夢泡泡、羽毛玩具（一層獨立裝飾，不碰角色骨架、不蓋帽子和嘴） ── */
+.ps-sdeco { position: absolute; inset: 0; pointer-events: none; z-index: 3; overflow: hidden; }
+.ps-leaf { position: absolute; top: -8%; width: 14px; height: 14px; border-radius: 0 70% 0 70%; background: #d9692f; opacity: 0; animation: psLeaf 7s linear infinite; }
+.ps-leaf.a { left: 24%; } .ps-leaf.b { left: 68%; animation-delay: 3.4s; background: #e0a03a; }
+.ps-leaf.g { top: auto; bottom: 9%; left: 30%; opacity: .9; animation: none; rotate: 30deg; background: #c9572a; }   /* 落在腳邊那片 */
+@keyframes psLeaf { 0% { opacity: 0; transform: translate(0, 0) rotate(0); } 10% { opacity: .9; } 50% { transform: translate(18px, 90px) rotate(160deg); } 90% { opacity: .9; } 100% { opacity: 0; transform: translate(-10px, 190px) rotate(320deg); } }
+.ps-breath { position: absolute; left: calc(var(--mx, 50%) + 6px); top: calc(var(--my, 55%) - 10px); width: 22px; height: 14px; border-radius: 50%; background: radial-gradient(rgba(255,255,255,.85), rgba(255,255,255,0) 70%); opacity: 0; animation: psBreath 3.2s ease-out infinite; }
+@keyframes psBreath { 0%, 55% { opacity: 0; transform: translate(0, 0) scale(.5); } 65% { opacity: .9; } 100% { opacity: 0; transform: translate(16px, -10px) scale(1.5); } }
+.ps-sbfly { position: absolute; left: calc(var(--hx, 62%) + 4px); top: calc(var(--hy, 30%) - 14px); width: 24px; height: 24px; animation: psSbfly 5s ease-in-out infinite; }
+.ps-sbfly svg { width: 100%; height: 100%; animation: psFlap .24s ease-in-out infinite alternate; transform-origin: 50% 60%; }
+@keyframes psSbfly { 0%, 100% { transform: translate(0, 0); } 30% { transform: translate(14px, -10px); } 60% { transform: translate(4px, -20px); } 80% { transform: translate(-6px, -6px); } }
+@keyframes psFlap { from { transform: scaleX(1); } to { transform: scaleX(.35); } }
+.ps-windl { position: absolute; left: -30%; height: 2px; width: 26%; border-radius: 2px; background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.75), rgba(255,255,255,0)); animation: psWind 2.6s linear infinite; }
+.ps-windl.a { top: 32%; } .ps-windl.b { top: 52%; animation-delay: .9s; width: 34%; } .ps-windl.c { top: 70%; animation-delay: 1.7s; }
+@keyframes psWind { to { left: 110%; } }
+.ps-box .pb-windy .pet-critter { animation: pbWindy 1.5s ease-in-out; transform-origin: 50% 92%; }
+@keyframes pbWindy { 0%, 100% { rotate: 0deg; } 25% { rotate: -5deg; } 45% { rotate: 2deg; } 65% { rotate: -3deg; } }
+.ps-dream { position: absolute; left: calc(var(--hx, 62%) + 2px); top: calc(var(--hy, 30%) - 54px); z-index: 4; width: 52px; height: 44px; padding: 8px; box-sizing: border-box; border-radius: 50%; background: rgba(255,255,255,.88); box-shadow: 0 2px 8px rgba(0,0,0,.15); pointer-events: none; animation: psDream 4.2s ease-in-out both; }
+.ps-dream::before, .ps-dream::after { content: ""; position: absolute; border-radius: 50%; background: rgba(255,255,255,.88); }
+.ps-dream::before { width: 10px; height: 10px; left: -4px; bottom: -6px; } .ps-dream::after { width: 6px; height: 6px; left: -10px; bottom: -14px; }
+.ps-dream svg { width: 100%; height: 100%; }
+@keyframes psDream { 0% { opacity: 0; transform: scale(.6); } 12%, 85% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: translateY(-8px); } }
+.ps-berry.toy-feather { animation: psBerryDrop 1.6s cubic-bezier(.3, .1, .5, 1) both; }
+@media (prefers-reduced-motion: reduce) { .ps-leaf, .ps-breath, .ps-sbfly, .ps-sbfly svg, .ps-windl, .ps-dream { animation: none; } .ps-breath, .ps-windl, .ps-leaf:not(.g) { display: none; } .ps-dream { opacity: 1; } }

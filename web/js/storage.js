@@ -189,7 +189,8 @@ const Store = (() => {
   // 完整鍵清單：寵物、果實、成就、每日任務、外觀主題、篩選預設全都備份（新增鍵記得加進來）
   const BACKUP_KEYS = [
     "tt_pet_diary",   // 夥伴日記（2026-10-07）
-    "tt_pet_sleep", "tt_pet_nudge",   // 夥伴睡覺時間、想你的提醒（2026-10-08 R4；偏好：合併時本機優先）
+    "tt_pet_sleep", "tt_pet_nudge", "tt_pet_acc", "tt_pet_accs_owned",   // 脖子上的配件（2026-10-09 R5）
+      // 夥伴睡覺時間、想你的提醒（2026-10-08 R4；偏好：合併時本機優先）
     "tt_pet_gifts", "tt_pet_gift_t", "tt_pet_props",   // 親密滿時牠帶回來的小東西、上次帶禮物的時間（2026-10-07 寵物新一輪 #9）
     "tt_crowd_off",   // 步道人氣：不分享出發時間（隱私偏好，換手機要跟著走）
     "tt_rules_ok",    // 已同意社群規範（換手機不用再問一次）
@@ -208,7 +209,7 @@ const Store = (() => {
   const MERGE = {
     max: ["tt_pet_berry_spent", "tt_pet_berry_bonus", "tt_pet_berry_picked", "tt_pet_feedkm", "tt_pet_stage", "tt_ach_maxkm", "tt_ach_maxasc", "tt_quest_hi", "tt_ach_island"],   // 只會變大的計數：取大的
     newer: ["tt_pet_fed_t", "tt_pet_gift_t", "tt_quest_claim", "tt_ach_island_scan"],   // 時間（毫秒或日期字串）：取新的（冷卻、禮物不會因為還原重來一次）
-    union: ["tt_pet_diary", "tt_pet_gifts", "tt_pet_hats_owned", "tt_badges_got", "tt_badges_seen", "tt_pj_seen", "tt_pj_snap", "tt_mch_done"],   // 清單：聯集
+    union: ["tt_pet_diary", "tt_pet_gifts", "tt_pet_hats_owned", "tt_pet_accs_owned", "tt_badges_got", "tt_badges_seen", "tt_pj_seen", "tt_pj_snap", "tt_mch_done"],   // 清單：聯集
     obj: ["tt_peaks", "tt_mch", "tt_badges_date", "tt_life"],   // 物件：逐鍵合併，同一鍵本機優先（終身統計之後還會 _lifeReconcile 取大的）
     // 成組的：夥伴身分（孵化日、起點里程、名字）跟著「比較早孵化的那隻」——新手機一打開就會孵一顆新蛋，不能讓它蓋掉備份裡養了很久的那隻
     pair: [["tt_pet_aff", "tt_pet_aff_t"]],   // 親密度跟著比較新的親密時間走（親密會隨時間掉，單取大的不對）

@@ -515,6 +515,20 @@ ${tigerHead()}
     [100, 56, 0.8],   // 5 幼龍：頭頂在兩支鹿角中間
     [66, 52, 0.74],   // 6 神龍：頭在左上
   ];
+  // 第二件配件（2026-10-09 修正案 R5 原20：先帽子＋一件配件，建立掛點與圖層）：戴在脖子上——掛點＝每一階頭的支點（pr-head 的 --ox/--oy，本來就是脖子），
+  // 畫成頭群組的第一個子元素＝在頭的後面、跟著頭動（幼蟲爬、神龍繩波、狐虎趴下低頭都不會跟脖子分開）。蛋沒有脖子：不戴
+  const NECK = { 1: [132, 152, 15], 2: [100, 94, 9], 3: [100, 133, 19], 4: [100, 135, 23], 5: [100, 130, 19], 6: [112, 127, 14] };   // [x, y, 半寬]；幼龍、神龍往下移（不然被下顎和龍鬚整個蓋住，2026-10-09 看截圖調）
+  const ACC_IDS = ["none", "scarf", "bell"], ACC_LABEL = { none: "不戴", scarf: "紅圍巾", bell: "小鈴鐺" };
+  function accG(id, i) {
+    const n = NECK[clamp(i)]; if (!n || !id || id === "none") return "";
+    const [x, y, w] = n, R = v => Math.round(v * 10) / 10;
+    if (id === "scarf") return `<g class="pc-acc acc-scarf"><path d="M${R(x - w)} ${R(y - 2)} Q${x} ${R(y + w * .45)} ${R(x + w)} ${R(y - 2)} L${R(x + w)} ${R(y + 4)} Q${x} ${R(y + w * .45 + 7)} ${R(x - w)} ${R(y + 4)}Z" fill="#d9483b" stroke="#8f2a22" stroke-width="1.6" stroke-linejoin="round"/>` +
+      `<path d="M${R(x + w * .45)} ${R(y + w * .3)} l${R(w * .2)} ${R(w * .75)} l${R(w * .28)} -${R(w * .1)} l-${R(w * .12)} -${R(w * .62)}Z" fill="#c43c30" stroke="#8f2a22" stroke-width="1.4" stroke-linejoin="round"/>` +
+      `<path d="M${R(x - w * .55)} ${R(y + w * .2)} Q${x} ${R(y + w * .6)} ${R(x + w * .55)} ${R(y + w * .2)}" stroke="#f2a49a" stroke-width="1.2" fill="none" opacity=".7"/></g>`;
+    if (id === "bell") { const by = R(y + Math.max(5, w * .3)), r = R(Math.max(3.4, w * .22)); return `<g class="pc-acc acc-bell"><path d="M${R(x - w * .7)} ${R(y + 1)} Q${x} ${R(y + w * .35)} ${R(x + w * .7)} ${R(y + 1)}" stroke="#c43c30" stroke-width="2.4" fill="none" stroke-linecap="round"/>` +
+      `<circle cx="${x}" cy="${by}" r="${r}" fill="#f2c64a" stroke="#a87a1e" stroke-width="1.3"/><path d="M${R(x - r * .7)} ${by} H${R(x + r * .7)}" stroke="#a87a1e" stroke-width="1"/><circle cx="${x}" cy="${R(by + r * .45)}" r="${R(r * .22)}" fill="#6a4a10"/></g>`; }
+    return "";
+  }
   function hat(id, i) {
     if (!HATS[id]) return "";
     const a = HAT_ANCHOR[clamp(i || 0)] || [100, 46, 1];
@@ -533,7 +547,7 @@ ${tigerHead()}
   }
   let U = 0;   // 每份 SVG 自己的 id 前綴（§ → p1_、p2_…），避免同頁多份角色的裁切互相串
   // 戴帽子時拿掉 <!--O-->…<!--/O-->（幼蟲的臭角）：帽子要戴在頭上，不是戴在臭角上
-  function body(i, hatId) { const pre = "p" + (++U).toString(36) + "_"; let a = A[clamp(i)]; if (HATS[hatId]) a = a.replace(/<!--O-->[\s\S]*?<!--\/O-->/, ""); return a.replace("<!--H-->", hatG(hatId, i)).replace("<!--H2-->", hatG(hatId, i)).replace("<!--H3-->", HATS[hatId] ? `<g transform="translate(14 12) rotate(8 100 46)">${hatG(hatId, i)}</g>` : "").replace(/§/g, pre); }
+  function body(i, hatId, accId) { const pre = "p" + (++U).toString(36) + "_"; let a = A[clamp(i)]; if (HATS[hatId]) a = a.replace(/<!--O-->[\s\S]*?<!--\/O-->/, ""); const ag = accG(accId, i); if (ag) a = a.replace(/(<g class="pr-head"[^>]*>)/, "$1" + ag); return a.replace("<!--H-->", hatG(hatId, i)).replace("<!--H2-->", hatG(hatId, i)).replace("<!--H3-->", HATS[hatId] ? `<g transform="translate(14 12) rotate(8 100 46)">${hatG(hatId, i)}</g>` : "").replace(/§/g, pre); }
   function prop(i) { const p = PROP[clamp(i)]; if (!p) return ""; const pre = "q" + (++U).toString(36) + "_"; return `<svg class="pet-prop" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${p.replace(/§/g, pre)}</svg>`; }
   // 幼龍（2026-10-05 拿掉腳下的雲）：腳底原本踩在雲上（y≈183），整張往下 13 讓腳底落在跟其他夥伴同一條地面線（y≈196）。
   // 用 viewBox 平移而不是包一層 transform：各部位的支點（transform-box: view-box）座標不用改
@@ -542,22 +556,22 @@ ${tigerHead()}
   // 2026-10-07 優化輪：留白每隻不同（實測餵食全程超出 200×200 多少＋15，至少 40 給帽子）——以前一律 140（畫布 2.4 倍），蛋／毛毛蟲／蝶的畫布面積剩 34%
   const PADS = [40, 40, 40, 55, 55, 140, 125];   // 神龍 100→125（2026-10-07 尾巴加長、往上捲時 WebKit 會在畫布外裁 13px）
   const padFor = i => PADS[clamp(i)];
-  function svg(i, cls, hatId, pad) {
+  function svg(i, cls, hatId, pad, accId) {
     if (pad === true) pad = padFor(i);
     const v = vb(i).split(" ").map(Number), p = pad || 0, box = p ? `${v[0] - p} ${v[1] - p} ${v[2] + 2 * p} ${v[3] + 2 * p}` : vb(i);
     const W = 200 + 2 * p, pc = u => ((p + u) / W * 100).toFixed(2) + "%";   // 圖上的座標 → 畫布的百分比（轉動支點用）
     const st = p ? ` data-pad="${p}" style="--pf:${(W / 200).toFixed(4)};--pm:${(p / 200).toFixed(4)};--o196:${pc(196)};--o194:${pc(194)};--o190:${pc(190)};--x40:${pc(40)};--x20:${pc(20)}"` : "";
-    return `<svg class="pet-critter ${cls || ""}${p ? " pc-pad" : ""}" data-s="${clamp(i)}" viewBox="${box}"${st} role="img" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${body(i, hatId)}</svg>`;
+    return `<svg class="pet-critter ${cls || ""}${p ? " pc-pad" : ""}" data-s="${clamp(i)}" viewBox="${box}"${st} role="img" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${body(i, hatId, accId)}</svg>`;
   }
   function byEmoji(e) { return EMOJI.indexOf(e); }   // 找不到回 -1
   // 給 canvas 用：帶 width/height 的獨立 SVG data URI（靜態一幀，供 new Image().src 光柵化畫進分享圖卡）
   // hatId 有給就把配件一起畫進去（合照用）
-  function dataUri(i, size, hatId, pose) {
+  function dataUri(i, size, hatId, pose, accId) {
     const s = size || 120;
     // 圖片裡吃不到 style.css：開心瞇眼要自己藏起來（以前分享圖卡會同時畫出睜眼和 ^^ 眼）；質感細節 .pc-d2 照畫（圖卡夠大）
     // pose（2026-10-08 R4 原16，拍照選姿勢）：happy 是瞇眼笑（^^ 眼）、sleep 是閉眼（眼睛壓成一條線）；其他是平常坐著
     const ps = pose === "happy" ? ".pc-eye{display:none}.pc-eh{display:inline}" : pose === "sleep" ? ".pc-eye{transform:scaleY(.14);transform-box:fill-box;transform-origin:center}" : "";
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="${vb(i)}"><style>.pc-eh,.m-o,.m-t,.m-p,.pr-ext,.pr-legs,.pc-crack2,.pc-crack3{display:none}${ps}</style>${body(i, hatId)}</svg>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="${vb(i)}"><style>.pc-eh,.m-o,.m-t,.m-p,.pr-ext,.pr-legs,.pc-crack2,.pc-crack3{display:none}${ps}</style>${body(i, hatId, accId)}</svg>`;
     return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
   }
   function habitatUri(i, w, h) {
@@ -571,5 +585,5 @@ ${tigerHead()}
   const dragonSpine = n => spine(DSP, n).map(q => ({ x: q.x, y: q.y }));
   const dragon = { I0: DI0, DB, DT0, tail: dragonTail };   // pet-walk：尾巴從第 I0 節能動、每格用 tail(中心線) 重畫
   const larvaSpine = n => spine(LVS, n).map(q => ({ x: q.x, y: q.y }));   // 幼蟲身體的中心線（pet-walk.js 的 U 型迴轉：身體每一點沿這條線的位置）   // 神龍身體的中心線（pet-walk.js 用來讓尾巴彎過去）
-  return { larvaSpine, dragonSpine, dragon, cloudTop6, svg, padFor, count: A.length, byEmoji, dataUri, habitat, habitatUri, hat, HAT_IDS, HAT_LABEL, headLine, prop };
+  return { ACC_IDS, ACC_LABEL, accOk: i => !!NECK[clamp(i)], larvaSpine, dragonSpine, dragon, cloudTop6, svg, padFor, count: A.length, byEmoji, dataUri, habitat, habitatUri, hat, HAT_IDS, HAT_LABEL, headLine, prop };
 })();

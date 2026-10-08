@@ -312,7 +312,7 @@ if(sh()){const p=await mk({km:40});
  ok(r.rows===5,"companion: the ? explains every friendship source with today's progress");
  ok(/松果|尾巴|午覺/.test(r.away)&&r.again!==r.away,"companion: after 3+ hours away the bubble says what it did (once) "+JSON.stringify([r.away,r.again]));
  ok(/12\.3 km/.test(r.recap)&&!/12\.3/.test(r.recap2),"companion: after a hike it comments with real numbers, only once "+JSON.stringify([r.recap,r.recap2]));
- ok(r.dlg&&r.owned===1&&!r.dlg2&&r.grid.filter(Boolean).length===1&&r.grid.length===8&&r.diary,"companion: at 5 hearts it brings back a gift (dialog, handbook, diary), not again right away "+JSON.stringify(r));
+ ok(r.dlg&&r.owned===1&&!r.dlg2&&r.grid.filter(Boolean).length===1&&r.grid.length===14&&r.diary,"companion: at 5 hearts it brings back a gift (dialog, handbook, diary), not again right away "+JSON.stringify(r));
  await p.close();}
 
 // ── 2026-10-07 寵物新一輪 #11 #13 #14 #21 #22：互動、進化儀式、天氣、每隻台詞、紀念日與節日 ──
@@ -376,7 +376,7 @@ for(const km of [40,260])if(sh()){const p=await mk({km});
   return {toy,busy,noFeed,done,props,pick,mid,gok,gone:!document.querySelector(".ps-guest")};});
  ok(r.toy===1&&r.busy&&r.noFeed,"play: a pinecone drops, feeding waits until playtime is over "+JSON.stringify(r));
  ok(r.done.left===0&&Math.abs(r.done.wx)<1&&r.done.ms<15000,"play: the pet plays and comes back to the middle, the pinecone goes away "+JSON.stringify(r.done));
- ok(r.props===1&&r.pick.length===12&&r.pick.filter(v=>v===2).length===1,"stage decor: only unlocked items show (maple yes, tent not yet), picker marks it "+JSON.stringify([r.props,r.pick]));
+ ok(r.props===1&&r.pick.length===18&&r.pick.filter(v=>v===2).length===1,   /* 2026-10-09 R5：小東西 8→14 種（擺設＝14＋4 個里程碑小物） */"stage decor: only unlocked items show (maple yes, tent not yet), picker marks it "+JSON.stringify([r.props,r.pick]));
  ok(r.mid&&r.gok&&r.gone,"a friend's pet walks in, stays a bit, and walks out");
  await p.close();}
 

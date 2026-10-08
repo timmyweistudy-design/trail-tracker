@@ -84,17 +84,29 @@ window.PetStage = (function () {
     return { back: wrap(`<defs><linearGradient id="sk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${a}"/><stop offset=".78" stop-color="${b}"/></linearGradient></defs><rect x="-400" y="-300" width="1200" height="900" fill="url(#sk)"/>${strip(sky(t)).replace(/class="ps-moonbite"/g, `fill="${a}"`).replace(/class="ps-star"/g, 'fill="#f3f0d8"')}${sc.far}${sc.mid}`)   /* 月亮缺角、星星的顏色原本在 CSS（圖片裡讀不到） */,
       front: wrap(sc.front) };
   }
+  // 季節與體感的裝飾（2026-10-09 R5 原10／原11）：一層獨立的裝飾，不碰角色的骨架；不蓋帽子、嘴、果實的接觸點（只在角色旁邊）。
+  //   秋：兩片落葉飄過、一片落在腳邊；冬或冷：嘴邊呼白氣（位置在 bind 時量嘴）；春：一隻小蝴蝶在頭旁邊繞（蝶自己那一階不放）；起風：幾道風線。
+  //   這些都是裝飾——舞台的天氣不是步道的即時安全資訊（真的天氣在步道頁）
+  function sdeco(i, se, feel, t) {
+    const out = [];
+    if (se === "autumn") out.push(`<i class="ps-leaf a"></i><i class="ps-leaf b"></i><i class="ps-leaf g"></i>`);
+    if ((se === "winter" || feel === "cold") && i > 0) out.push(`<i class="ps-breath"></i>`);
+    if (se === "spring" && i !== 2 && t !== "night") out.push(`<i class="ps-sbfly"><svg viewBox="0 0 24 24"><path d="M12 12C9 6 4 6 4 10s4 5 8 2c4 3 8 2 8-2s-5-4-8 2Z" fill="#f4c35a" stroke="#a87a1e" stroke-width="1"/></svg></i>`);
+    if (feel === "windy") out.push(`<i class="ps-windl a"></i><i class="ps-windl b"></i><i class="ps-windl c"></i>`);
+    return out.length ? `<div class="ps-sdeco" aria-hidden="true">${out.join("")}</div>` : "";
+  }
   // 舞台 HTML：actorHtml 是角色那一層的內容（對話泡＋角色＋影子），由 pet.js 組好傳進來
   function html(stage, actorHtml, o) {
     o = Object.assign({}, o, window.__ps || {});   // window.__ps＝測試／除錯面板強制指定時段、季節、天氣
-    const i = clamp(stage), t = o.tod || tod(), se = o.season || season(), wx = o.wx || "";
+    const i = clamp(stage), t = o.tod || tod(), se = o.season || season(), wx = o.wx || "", feel = o.feel || "";
     const sc = StageArt.scene(i, t, se, o.decor);
-    return `<div class="ps-box${o.bg ? " ps-bg" : ""}" data-stage="${i}"${o.evo ? ` data-evo="${o.evo}"` : ""}${(o.decor || []).length ? ` data-decor="${o.decor.join(" ")}"` : ""} data-tod="${t}" data-season="${se}"${wx ? ` data-wx="${wx}"` : ""}>
+    return `<div class="ps-box${o.bg ? " ps-bg" : ""}" data-stage="${i}"${o.evo ? ` data-evo="${o.evo}"` : ""}${(o.decor || []).length ? ` data-decor="${o.decor.join(" ")}"` : ""} data-tod="${t}" data-season="${se}"${wx ? ` data-wx="${wx}"` : ""}${feel ? ` data-feel="${feel}"` : ""}>
       <div class="ps-l ps-sky" style="--d:.1">${sky(t)}${wx === "cloud" || wx === "rain" ? `<svg class="ps-svg ps-drift" ${VB}>${StageArt.skyClouds(t)}</svg>` : ""}</div>
       <div class="ps-l ps-far" style="--d:.28"><svg class="ps-svg" ${VB}>${sc.far}</svg></div>
       <div class="ps-l ps-mid" style="--d:.55"><svg class="ps-svg" ${VB}>${sc.mid}</svg></div>
       <div class="ps-l ps-fx" aria-hidden="true">${particles(i, t, se, wx)}</div>
       <div class="ps-actor" style="--d:.72">${actorHtml}</div>
+      ${o.bg ? "" : sdeco(i, se, feel, t)}
       <div class="ps-l ps-front" style="--d:1.35"><svg class="ps-svg" ${VB}>${sc.front}</svg></div>
       ${o.fest && !o.bg ? lantern(o.fest) : ""}
       ${(o.props || []).length && !o.bg ? `<div class="ps-props" aria-hidden="true">${o.props.map((p, k) => `<i class="ps-pp ${k ? "r" : "l"}">${p}</i>`).join("")}</div>` : ""}
@@ -157,6 +169,7 @@ window.PetStage = (function () {
     else visible = true;
     document.addEventListener("visibilitychange", live);
     if (+el.dataset.stage === 6) warmReach6();
+    placeDeco();
     setAsleep(sleepNow()); firstAct = !asleep && (window.__ps && window.__ps.tod || tod()) === "dawn" ? "stretch" : null;   // 清晨打開：先伸個懶腰
     schedule(mood);
     live();
@@ -165,6 +178,25 @@ window.PetStage = (function () {
   // 量過（CPU 降速 4 倍）：以前神龍捲出畫面每秒還花 99ms 跑腳本、每隻角色的舞台每秒 30～50ms 重算樣式。回來時從當下時間接著跑（相位用時間算，不跳）
   // 睡／醒跟著時間走（2026-10-08 修正案 R1 測試時鐘抓到的）：以前只在舞台第一次畫出來時判斷一次，
   // 夥伴頁一直開著跨過 22:00 不會睡、早上 6:00 也不會醒，要整張重畫才對。現在每一拍待機、回到前景、只更新數字時都對一次（正在做事時不動）
+  // 裝飾的位置跟著角色：嘴邊（白氣）、頭旁邊（小蝴蝶、夢泡泡）——每一階的嘴和頭不在同一個地方
+  function placeDeco() {
+    const d = box && box.querySelector(".ps-sdeco"), em = emEl(); if (!box || !em) return;
+    const B = box.getBoundingClientRect(), m = typeof PetWalk !== "undefined" && PetWalk.cpt ? PetWalk.cpt(box, "mouth") : null, hd = em.querySelector(".pr-head") || em, H = hd.getBoundingClientRect();
+    const set = (k, v) => box.style.setProperty(k, v.toFixed(1) + "px");
+    if (m) { set("--mx", m[0] - B.left); set("--my", m[1] - B.top); }
+    set("--hx", H.right - B.left); set("--hy", H.top - B.top + H.height * .25);
+    if (d) d.dataset.ok = "1";
+  }
+  // 夢泡泡（2026-10-09 R5 原12）：睡著時偶爾冒一個，畫最近走的步道類型（瀑布、海、森林、古道、湖，其他畫山）；低頻、靜態
+  let dreamT = 0;
+  function dream() {
+    if (!box || !asleep || Date.now() - dreamT < 20000 || Math.random() > .3) return; dreamT = Date.now();
+    let tag = ""; try { const r = realRecords().find(x => x && x.trailId), t = r && TRAILS.find(x => x.id === r.trailId); tag = t && typeof tagsOf === "function" ? tagsOf(t)[0] || "" : ""; } catch (e) { /* 沒有步道資料就畫山 */ }
+    const IC = new Map([["瀑布", '<path d="M8 4v12M12 4v14M16 4v12" stroke="#5aa3d8" stroke-width="2" stroke-linecap="round"/><path d="M5 19c2 1 4 1 7 0s5-1 7 0" stroke="#5aa3d8" stroke-width="1.6" fill="none"/>'], ["海景", '<path d="M3 13c3-3 6 3 9 0s6 3 9 0M3 18c3-3 6 3 9 0s6 3 9 0" stroke="#3c8fc4" stroke-width="2" fill="none"/>'], ["湖泊", '<ellipse cx="12" cy="15" rx="9" ry="4" fill="#9fd0ec" stroke="#3c8fc4" stroke-width="1.4"/>'], ["森林", '<path d="M12 3 6 13h3l-4 6h14l-4-6h3Z" fill="#5c9a4a" stroke="#3d6e30" stroke-width="1.2"/>'], ["古道", '<path d="M6 21c2-5 4-8 6-9s4-4 5-9" stroke="#a07a4a" stroke-width="2.4" fill="none" stroke-dasharray="3 2"/>']]);   // [步道類型, 圖]
+    const svg = IC.get(tag) || '<path d="M2 19 9 8l4 6 3-4 6 9Z" fill="#8fb3a0" stroke="#4f7a62" stroke-width="1.2" stroke-linejoin="round"/>';
+    const b = document.createElement("div"); b.className = "ps-dream"; b.setAttribute("aria-hidden", "true"); b.innerHTML = `<svg viewBox="0 0 24 24">${svg}</svg>`; b.dataset.tag = tag || "山";
+    box.appendChild(b); setTimeout(() => b.remove(), 4200);
+  }
   function syncSleep() {
     if (!box || busy || feeding || playing) return;
     const s = sleepNow(); if (s !== asleep) setAsleep(s);
@@ -238,7 +270,9 @@ window.PetStage = (function () {
     for (const k in sp) if (w[k]) w[k] *= sp[k];
     // 天氣（2026-10-07 寵物新一輪 #14）：下雨會甩水、下雪會發抖、晴朗的白天會晒太陽
     const wx = box && box.dataset.wx, td = (window.__ps && window.__ps.tod) || tod();
-    if (wx === "rain") w.shake = 3; else if (wx === "snow") w.shiver = 3; else if (!wx && (td === "day" || td === "dawn")) w.bask = 2;
+    const feel = box && box.dataset.feel;
+    if (wx === "rain") w.shake = 3; else if (wx === "snow") w.shiver = 3; else if (!wx && feel !== "hot" && (td === "day" || td === "dawn")) w.bask = 2;
+    if (feel === "windy") w.windy = 3; else if (feel === "cold") w.shiver = Math.max(w.shiver || 0, 2); else if (feel === "hot") w.idle = (w.idle || 0) + 2;   // 起風：被吹一下；冷：縮著發抖；熱：懶得動
     return w;
   }
   const WEIGHTS = {
@@ -254,7 +288,7 @@ window.PetStage = (function () {
   // 優先：使用者操作（餵、玩）＞ 叫醒 ＞ 朋友來訪 ＞ 待機。使用者操作開始時，正在播的待機動作立刻停（stopIdle，F1b）、
   // 正在來訪的朋友提早告別（dismissGuest，F2a／F2c），等牠走了才開始
   let owner = 0, ownerKind = "", tkSeq = 0, guesting = null;
-  const idleAnims = new Set(), IDLE_CLS = ["pb-hop", "pb-stretch", "pb-yawn", "pb-sigh", "pb-blink2", "pb-shake", "pb-shiver", "pb-bask", "chew2", "st-glow"];
+  const idleAnims = new Set(), IDLE_CLS = ["pb-hop", "pb-stretch", "pb-yawn", "pb-sigh", "pb-blink2", "pb-shake", "pb-shiver", "pb-bask", "pb-windy", "chew2", "st-glow"];
   function claimStage(kind) { owner = ++tkSeq; ownerKind = kind; busy = true; return owner; }
   function freeStage(tk) { if (owner !== tk) return false; owner = 0; ownerKind = ""; busy = false; return true; }
   function stopIdle() {   // 待機動作讓位：拿掉它的 class、停掉它開的 Web 動畫、頭轉回正面
@@ -323,6 +357,7 @@ window.PetStage = (function () {
       else if (kind === "shake") { drops(); await fl("pb-shake", 900); }
       else if (kind === "shiver") await fl("pb-shiver", 1300);
       else if (kind === "bask") await fl("pb-bask", 2200);
+      else if (kind === "windy") await fl("pb-windy", 1500);
       else await sleep(400);
     } finally { freeStage(tk); }
   }
@@ -332,7 +367,7 @@ window.PetStage = (function () {
     if (box) box.style.setProperty("--bk", (3.2 + Math.random() * 3).toFixed(2) + "s");   // 眨眼間隔每輪換一次（不要像節拍器）
     beat = setTimeout(async () => {
       if (window.__psNoIdle) return;   // 已經排好的那一次也要停（以前只在排程時檢查，測試關掉後還會再跳一次）
-      syncSleep();
+      syncSleep(); if (asleep && visible && !document.hidden) dream();
       if (box && box.isConnected && visible && !document.hidden && !busy && !asleep) { const k = firstAct || pick(weights(m)); firstAct = null; await act(k); }   // 睡著時不做動作（呼吸、點頭、飄 Z 是 CSS）
       if (box && box.isConnected) schedule(m);
     }, 3500 + Math.random() * 4500);
@@ -520,7 +555,7 @@ window.PetStage = (function () {
   // ── 玩（2026-10-07 寵物新一輪 #12）：丟一顆松果，每隻用自己的方式去玩——走得動的走過去用鼻子頂一下（松果滾開、開心跳）、
   // 蝶飛過去在上面拍翅、神龍用尾巴勾起來甩一下再放回、蛋原地搖一搖。松果用果實同一套落下動畫；玩完走回中間、松果淡出
   let playing = false;
-  async function play(toySvg, atX) {   // atX：使用者點的地方（相對舞台中間 px）；會限制在搆得到的範圍（2026-10-08 R4 原6）
+  async function play(toySvg, atX, kind) {   // atX：使用者點的地方（相對舞台中間 px）；會限制在搆得到的範圍（2026-10-08 R4 原6）
     if (!box || reduce() || !visible || feeding || playing || typeof PetWalk === "undefined") return false;
     clearTimeout(beat); playing = true;   // 先占位：等朋友走、等醒來的這段時間，再按一次不會開第二輪
     stopIdle(); if (guesting) await dismissGuest(); if (asleep) await wake(); if (!box) { playing = false; return false; }
@@ -529,7 +564,7 @@ window.PetStage = (function () {
     try {
       const reachX = v => { const a = Math.max(-84, Math.min(84, Math.round(v))); return Math.abs(a) < 22 ? (a < 0 ? -22 : 22) : a; };   // 跟隨便丟的範圍一樣（±84、不要剛好在身體正中間）
       const cloud = stg === 6 ? cloudSpots(1) : null, x = cloud ? cloud[0].x : stg === 0 ? (Math.random() < .5 ? -1 : 1) * 34 : atX != null && isFinite(atX) ? reachX(atX) : dropSpots(1, stg === 1 ? "larva" : false)[0];   // 蛋不會動、神龍在雲上：照原本的玩法
-      b.className = "ps-berry ps-toy"; b.innerHTML = toySvg || "";
+      b.className = "ps-berry ps-toy" + (kind === "feather" ? " toy-feather" : ""); b.innerHTML = toySvg || "";   // 羽毛：飄得慢（R5 原13）
       b.style.cssText = `--bx:${x};--by:${cloud ? cloud[0].by : 8}px;--bs:28px;--br:${Math.round(Math.random() * 40 - 20)}deg;--bh:-230px;z-index:4`;
       actor.appendChild(b);
       if (cloud) { const c0 = parseFloat(box.style.getPropertyValue("--wx")) || 0; box.__cloud = c0; box.__riders = [{ el: b, bx: x, c0 }]; b.__rx = x; }
@@ -793,11 +828,13 @@ window.PetStage = (function () {
     if (!p || typeof Weather === "undefined" || !navigator.onLine) return "";
     try {
       const d = await Weather.get(p.lat, p.lon);
-      wxMemo = { at: Date.now(), wx: wxOf(d && d.current && d.current.weather_code) };
+      const cu = d && d.current || {}, ws = +cu.wind_speed_10m, tc = +cu.temperature_2m;   // 體感（2026-10-09 R5 原10）：起風 ≥25 km/h、冷 ≤10°C、熱 ≥31°C；沒有資料就不猜
+      wxMemo = { at: Date.now(), wx: wxOf(cu.weather_code), feel: isFinite(ws) && ws >= 25 ? "windy" : isFinite(tc) && tc <= 10 ? "cold" : isFinite(tc) && tc >= 31 ? "hot" : "" };
       return wxMemo.wx;
     } catch (e) { return ""; }
   }
   const cachedWx = () => (wxMemo ? wxMemo.wx : "");
+  const cachedFeel = () => (window.__ps && window.__ps.feel != null ? window.__ps.feel : wxMemo ? wxMemo.feel || "" : "");
 
   // ── 除錯標記（測試面板「餵食除錯標記」／PetStage.debug(true)）：紅＝嘴、綠＝果實中心、藍＝腳掌著地點、黃＝接觸點（.cp-*）──
   let dbgOn = false, dbgRaf = 0;
@@ -834,5 +871,5 @@ window.PetStage = (function () {
     if (asleep) return "睡";
     return pb ? "動作:" + pb.slice(3) : busy ? "動作" : "待機";
   }
-  return { debug, phase, sync: syncSleep, sleepWin, setMood, html, photoSvgs, bind, unbind, tod, season, wxOf, weather, cachedWx, count: STAGES, zoneOf, react, feed, act, isFeeding: () => feeding, isAsleep: () => asleep, isPlaying: () => playing, play, guest, wake, sleep: () => setAsleep(true) };
+  return { debug, phase, sync: syncSleep, sleepWin, dream: () => { dreamT = 0; const r = Math.random; Math.random = () => 0; try { dream(); } finally { Math.random = r; } }, setMood, html, photoSvgs, bind, unbind, tod, season, wxOf, weather, cachedWx, cachedFeel, count: STAGES, zoneOf, react, feed, act, isFeeding: () => feeding, isAsleep: () => asleep, isPlaying: () => playing, play, guest, wake, sleep: () => setAsleep(true) };
 })();

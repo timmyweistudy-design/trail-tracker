@@ -135,12 +135,22 @@ const PET_GIFTS = {
   flower: ["一朵野花", '<g fill="#f2a6c2" stroke="#c96a8e" stroke-width="1">' + [0, 72, 144, 216, 288].map(a => `<ellipse cx="12" cy="7" rx="3" ry="4.4" transform="rotate(${a} 12 11)"/>`).join("") + '</g><circle cx="12" cy="11" r="2.6" fill="#ffd36a"/><path d="M12 15v7" stroke="#4f8a4a" stroke-width="1.6"/>'],
   crystal: ["小水晶", '<path d="M12 2l5 6-2 13H9L7 8Z" fill="#bfe6f0" stroke="#5aa3b8" stroke-width="1.3" stroke-linejoin="round"/><path d="M12 2v19M7 8h10" stroke="#5aa3b8" stroke-width="1"/>'],
   shell: ["蝸牛殼", '<circle cx="12" cy="13" r="7" fill="#e8c58a" stroke="#a37a3a" stroke-width="1.3"/><path d="M12 13a2.5 2.5 0 1 1 2.5 2.5A5 5 0 1 1 9 8" fill="none" stroke="#a37a3a" stroke-width="1.3"/>'],
+  // 2026-10-09 R5 原18（先擴到 14 種，驗證取得、重複、圖鑑、備份後再加）：台灣山上常見的小東西
+  fern: ["蕨葉", '<path d="M12 22C12 14 11 8 8 2" stroke="#4f7a3a" stroke-width="1.4" fill="none"/>' + [4, 7, 10, 13, 16].map((y, k) => `<path d="M${11 - k * .3} ${y + 2}c-3-1-5 0-6 2M${11.6 - k * .3} ${y + 2}c3-2 5-1 6 1" stroke="#6aa646" stroke-width="1.6" fill="none" stroke-linecap="round"/>`).join("")],
+  bean: ["相思豆", '<ellipse cx="9" cy="13" rx="4" ry="5" fill="#d8322a" stroke="#8f1d18" stroke-width="1.2"/><path d="M6 10a2 2 0 0 1 2-2" stroke="#1e1a1a" stroke-width="2.4" stroke-linecap="round"/><ellipse cx="16" cy="12" rx="3.4" ry="4.4" fill="#d8322a" stroke="#8f1d18" stroke-width="1.2"/>'],
+  moss: ["苔蘚球", '<circle cx="12" cy="13" r="8" fill="#6f9a3e" stroke="#46692a" stroke-width="1.3"/><path d="M7 11l1 2M10 8l1 2M14 9l-1 2M16 13l-1 1M9 16l1-1M13 16l1 1" stroke="#a8cf6a" stroke-width="1.4" stroke-linecap="round"/>'],
+  gumball: ["楓香果", '<circle cx="12" cy="13" r="6.5" fill="#8a5a2c" stroke="#5a3a1a" stroke-width="1.2"/>' + [0, 45, 90, 135, 180, 225, 270, 315].map(a => `<path d="M12 6.5v-2.6" stroke="#5a3a1a" stroke-width="1.6" stroke-linecap="round" transform="rotate(${a} 12 13)"/>`).join("") + '<path d="M12 6V2" stroke="#5a3a1a" stroke-width="1.2"/>'],
+  cicada: ["蟬蛻", '<path d="M12 4c3 0 4 3 4 6l2 6-3 1-1 3h-4l-1-3-3-1 2-6c0-3 1-6 4-6Z" fill="#d6a25a" fill-opacity=".75" stroke="#9a6a2a" stroke-width="1.2" stroke-linejoin="round"/><path d="M12 7v11M9 12h6" stroke="#9a6a2a" stroke-width="1"/>'],
+  petal: ["山櫻花瓣", '<path d="M12 21c-5-3-7-8-5-13 2 1 3 3 5 3s3-2 5-3c2 5 0 10-5 13Z" fill="#f4a3bd" stroke="#c4607f" stroke-width="1.2" stroke-linejoin="round"/><path d="M12 11v8" stroke="#c4607f" stroke-width=".9"/>'],
 };
 function petGiftsOwned() { try { return JSON.parse(localStorage.getItem("tt_pet_gifts") || "[]"); } catch (e) { return []; } }
 function petGiftIcon(id, cls) { const g = PET_GIFTS[id]; return g ? `<svg class="${cls || "pg-ic"}" viewBox="0 0 24 24" aria-hidden="true">${g[1]}</svg>` : ""; }
 function petGiftDue() { return petHearts() >= 5 && ttClock.now() - (+(localStorage.getItem("tt_pet_gift_t") || 0)) >= 2 * 864e5; }
 function petGiftGive() {
-  const own = petGiftsOwned(), left = Object.keys(PET_GIFTS).filter(k => !own.some(o => o.id === k)), id = left.length ? left[Math.floor(Math.random() * left.length)] : null;
+  const own = petGiftsOwned(), left = Object.keys(PET_GIFTS).filter(k => !own.some(o => o.id === k));
+  // 當季的比較容易撿到（2026-10-09 R5 原18）：春天花瓣野花、夏天蟬蛻、秋天楓葉楓香果橡實、冬天松果苔蘚——還沒撿到的才會出現（不會重複）
+  const SEA = { spring: ["petal", "flower", "fern"], summer: ["cicada", "shell", "stone"], autumn: ["maple", "gumball", "acorn"], winter: ["pine", "moss", "bean"] }, pref = left.filter(k => (SEA[typeof PetStage !== "undefined" ? PetStage.season() : ""] || []).includes(k));
+  const pool = pref.length && Math.random() < .6 ? pref : left, id = pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
   localStorage.setItem("tt_pet_gift_t", String(ttClock.now()));
   if (id) { own.push(Object.assign({ id, t: ttClock.date().toISOString() }, petDebugOn() ? { dbg: 1 } : {})); localStorage.setItem("tt_pet_gifts", JSON.stringify(own)); petDiaryAdd("gift:" + id); }
   else addBerryBonus(3);
@@ -163,8 +173,9 @@ function petCompanion(box, i, upd) {
   if (!sl && petGiftDue() && !window.__petGiftT) { const id = petGiftGive(); window.__petGiftT = setTimeout(() => { window.__petGiftT = 0; petGiftShow(id); }, 2600); }   // 親密滿：帶禮物回來（#9）
 }
 // 紀念日與節日（2026-10-07 寵物新一輪 #22）：相遇滿 30／100 天、一年、兩年那天說一句、寫進日記；
-// 農曆新年、端午、中秋（前後一天）舞台掛一盞燈籠、泡泡說祝福。農曆日期先內建到 2030 年
-const PET_FEST = { ny: ["2026-02-17", "2027-02-06", "2028-01-26", "2029-02-13", "2030-02-03"], db: ["2026-06-19", "2027-06-09", "2028-05-28", "2029-06-16", "2030-06-05"], ma: ["2026-09-25", "2027-09-15", "2028-10-03", "2029-09-22", "2030-09-12"] };
+// 農曆新年、端午、中秋（前後一天）舞台掛一盞燈籠、泡泡說祝福。農曆日期內建到 2035 年
+// 2026-10-09 R5 原4：延到 2035（用 lunardate 換算、跟原本 2026～2030 對過一致）；不引入曆法函式庫——日期表比換算程式簡單、好查
+const PET_FEST = { ny: ["2026-02-17", "2027-02-06", "2028-01-26", "2029-02-13", "2030-02-03", "2031-01-23", "2032-02-11", "2033-01-31", "2034-02-19", "2035-02-08"], db: ["2026-06-19", "2027-06-09", "2028-05-28", "2029-06-16", "2030-06-05", "2031-06-24", "2032-06-12", "2033-06-01", "2034-06-20", "2035-06-10"], ma: ["2026-09-25", "2027-09-15", "2028-10-03", "2029-09-22", "2030-09-12", "2031-10-01", "2032-09-19", "2033-09-08", "2034-09-27", "2035-09-16"] };
 const PET_FEST_LINE = { ny: "新年快樂！今年也一起去好多地方", db: "端午節快樂！粽子分我一口好不好", ma: "中秋節快樂！今晚的月亮好圓" };
 function petFestival(d) {
   if (window.__ps && window.__ps.fest) return window.__ps.fest;   // 測試面板強制
@@ -182,10 +193,17 @@ function petSpecialDay() {
   const a = petAnniversary(); if (a) { petDiaryAdd("ann:" + a.k); return ttT(a.y ? "今天是我們相遇 {n} 週年！" : "今天是我們相遇第 {n} 天！").replace("{n}", a.n); }
   const f = petFestival(); return f ? ttT(PET_FEST_LINE[f]) : null;
 }
+// 回憶（2026-10-09 R5 原9，縮小版）：一天最多一次，偶爾提起一個月以前走過的步道——不預測、不催你出門
+function petMemoryLine() {
+  const day = todayStr(); if (localStorage.getItem("tt_pet_mem_day") === day || Math.random() > .35) return null;
+  const old = realRecords().filter(r => r && r.trailName && ttClock.now() - new Date(r.date).getTime() > 30 * 864e5); if (!old.length) return null;
+  const r = old[Math.floor(Math.random() * old.length)]; localStorage.setItem("tt_pet_mem_day", day);
+  return ttT("還記得{t}嗎？那天走了 {km} km").replace("{t}", r.trailName).replace("{km}", (+r.distanceKm || 0).toFixed(1));
+}
 // 打開夥伴頁時泡泡先說什麼：剛健行完的感想 > 你不在時牠做了什麼；說了就留 25 秒（期間天氣回來重畫也不換掉）
 function petStickyLine(i) {
   const w = window.__petLine; if (w && w.until > Date.now()) return w.t;
-  const away = petAwayLine(i), t = petSpecialDay() || petRecapLine() || (away ? ttT(away) : null);
+  const away = petAwayLine(i), t = petSpecialDay() || petRecapLine() || (away ? ttT(away) : null) || petMemoryLine();
   if (t) window.__petLine = { t, until: Date.now() + 25000 };
   return t;
 }
@@ -235,6 +253,9 @@ function hatsOwned() {
 const petEvoLv = pct => (pct == null ? 0 : pct >= 67 ? 2 : pct >= 34 ? 1 : 0);
 function petStageIndex(km) { let i = 0; for (let k = 0; k < PET_STAGES.length; k++) if (km >= PET_STAGES[k].km) i = k; return i; }
 function petName() { return localStorage.getItem("tt_pet_name") || ""; }
+// 脖子上的配件（2026-10-09 R5 原20）：跟帽子分開的第二個位置；用果實換（跟帽子同價、同樣的 PRO 規則），換過的一直是你的
+function petAcc() { const v = localStorage.getItem("tt_pet_acc") || "none"; return typeof PET_ART !== "undefined" && PET_ART.ACC_IDS && PET_ART.ACC_IDS.includes(v) ? v : "none"; }
+function accsOwned() { try { return new Set(JSON.parse(localStorage.getItem("tt_pet_accs_owned") || "[]")); } catch (e) { return new Set(); } }
 function petHat() {   // A5 配件（Premium 裝扮）
   const h = localStorage.getItem("tt_pet_hat") || "none";
   // 地區配件是 PRO 的旅行功能、不是用果實買的：沒有 PRO 就不戴（用果實換的配件到期後照樣能戴）
@@ -248,6 +269,28 @@ const FREE_HATS = new Set(["none", "bandana", "santa", "rabbit"]);
 const HAT_SEASON = { santa: { hint: "12 月到 1 月初才拿得到", on: d => d.getMonth() === 11 || (d.getMonth() === 0 && d.getDate() <= 6) },
   rabbit: { hint: "中秋節前後一週才拿得到", on: d => PET_FEST.ma.some(x => Math.abs(new Date(x + "T12:00:00") - d) <= 7.5 * 864e5) } };
 function hatSeason(id) { const s = HAT_SEASON[id]; if (!s) return null; const f = !!window.__hatSeasonAll; return { on: f || s.on(ttClock.date()), hint: s.hint }; }   // __hatSeasonAll：測試面板強制當季
+function petAccPicker(i, pro) {
+  if (!PET_ART.accOk || !PET_ART.accOk(i)) return "";   // 蛋沒有脖子
+  const own = accsOwned(), cur = petAcc();
+  return `<div class="dex-sec">${ttT("配件")}</div><div class="hat-grid acc-grid">${PET_ART.ACC_IDS.map(id => { const has = id === "none" || own.has(id), lock = !has && !pro;
+    return `<button class="hat-opt acc-opt${id === cur ? " on" : ""}${has ? "" : " locked"}" data-acc="${id}"><div class="hat-prev">${PET_ART.svg(i, "", "none", false, id)}</div><div class="hat-lbl">${ttT(PET_ART.ACC_LABEL[id])}</div>${has ? "" : lock ? `<div class="hat-cost"><span class="pro-tag">PRO</span></div>` : `<div class="hat-cost">${BERRY_SVG}${HAT_COST}</div>`}</button>`; }).join("")}</div>`;
+}
+function bindAccPicker(ov) {
+  ov.querySelectorAll(".acc-opt").forEach(btn => btn.addEventListener("click", async () => {
+    const id = btn.dataset.acc, own = accsOwned();
+    if (id !== "none" && !own.has(id)) {
+      if (!_proGate()) return;
+      if (berriesBalance() < HAT_COST) { toast(`${ttT("果實還差")} ${HAT_COST - berriesBalance()}`); return; }
+      const ok = typeof ttConfirm === "function" ? await ttConfirm(`${ttT("換上")}${ttSp()}${ttQuote(ttT(PET_ART.ACC_LABEL[id]))}${ttCJK() ? "？" : "?"}${ttParen(`${HAT_COST} ${ttT("顆果實")}`)}`, ttT("換上"), ttT("再想想")) : true;
+      if (!ok) return;
+      localStorage.setItem("tt_pet_berry_spent", String((+(localStorage.getItem("tt_pet_berry_spent") || 0)) + HAT_COST));   // 先結算（A4）
+      own.add(id); localStorage.setItem("tt_pet_accs_owned", JSON.stringify([...own]));
+      btn.classList.remove("locked"); const c = btn.querySelector(".hat-cost"); if (c) c.remove();
+      const bal = ov.querySelector(".hat-bal b"); if (bal) bal.textContent = berriesBalance();
+    }
+    localStorage.setItem("tt_pet_acc", id); ov.querySelectorAll(".acc-opt").forEach(b => b.classList.toggle("on", b === btn)); renderPet(); petBuzz(15);
+  }));
+}
 function openHatPicker() {
   if (document.querySelector('[data-ov="pethat"]')) return;
   const pro = typeof Premium !== "undefined" && Premium.isOn();
@@ -259,15 +302,15 @@ function openHatPicker() {
     return `<button class="hat-opt${id === cur ? " on" : ""}${has && !proLock ? "" : " locked"}${quest && !has ? " quest" : ""}" data-hat="${id}"><div class="hat-prev">${PET_ART.svg(i)}${PET_ART.hat(id, i)}</div><div class="hat-lbl">${ttT(PET_ART.HAT_LABEL[id])}</div>${proLock ? `<div class="hat-cost"><span class="pro-tag">PRO</span></div>` : has ? "" : reg ? `<div class="hat-cost hat-quest">${ic("map")} <span>${ttT(reg)}</span></div>` : sea ? `<div class="hat-cost hat-quest">${ic("sparkle")} <span>${ttT(sea.on ? "季節限定・免費" : "季節限定")}</span></div>` : quest ? `<div class="hat-cost hat-quest">${ic("flag")} <span>${ttT("每月挑戰")}</span></div>` : `<div class="hat-cost">${BERRY_SVG}${HAT_COST}</div>`}</button>`;
   }).join("");
   const ov = document.createElement("div"); ov.className = "pet-modal"; ov.dataset.ov = "pethat";
-  ov.innerHTML = `<div class="pet-modal-card"><button class="sheet-close" id="hatClose" aria-label="${ttT("關閉")}">${ic("x")}</button><h2>${ic("sparkle")} ${ttT("幫夥伴裝扮")}</h2><p class="dex-intro">${ttT("用果實換新配件，換過的就一直是你的。")}</p><div class="hat-bal">${ttT("你有")} ${BERRY_SVG}<b>${berriesBalance()}</b></div><div class="hat-grid">${opts}</div>${petPropsPicker()}</div>`;
+  ov.innerHTML = `<div class="pet-modal-card"><button class="sheet-close" id="hatClose" aria-label="${ttT("關閉")}">${ic("x")}</button><h2>${ic("sparkle")} ${ttT("幫夥伴裝扮")}</h2><p class="dex-intro">${ttT("用果實換新配件，換過的就一直是你的。")}</p><div class="hat-bal">${ttT("你有")} ${BERRY_SVG}<b>${berriesBalance()}</b></div><div class="hat-grid">${opts}</div>${petAccPicker(i, pro)}${petPropsPicker()}</div>`;
   document.body.appendChild(ov);
-  bindPropsPicker(ov);
+  bindPropsPicker(ov); bindAccPicker(ov);
   let _a11y = null;
   const close = () => { if (_a11y) _a11y(); ov.remove(); };
   if (typeof ttModalA11y === "function") _a11y = ttModalA11y(ov, close, { focus: "#hatClose" });
   ov.addEventListener("click", e => { if (e.target === ov) close(); });
   ov.querySelector("#hatClose").addEventListener("click", close);
-  ov.querySelectorAll(".hat-opt").forEach(btn => btn.addEventListener("click", async () => {
+  ov.querySelectorAll(".hat-opt:not(.acc-opt)").forEach(btn => btn.addEventListener("click", async () => {   // 配件那一排也用 hat-opt 的樣式：不能綁到這裡（2026-10-09 R5 抓到：買配件被扣兩次）
     const id = btn.dataset.hat, own = hatsOwned();
     const reg = typeof PetJourney !== "undefined" ? PetJourney.hatRegion(id) : "";
     if (reg && !_proGate()) return;   // 地區配件：PRO 的旅行功能
@@ -286,7 +329,7 @@ function openHatPicker() {
       const bal = ov.querySelector(".hat-bal b"); if (bal) bal.textContent = berriesBalance();
     }
     localStorage.setItem("tt_pet_hat", id);
-    ov.querySelectorAll(".hat-opt").forEach(b => b.classList.toggle("on", b === btn));
+    ov.querySelectorAll(".hat-opt:not(.acc-opt)").forEach(b => b.classList.toggle("on", b === btn));
     renderPet();
     petBuzz(15);
   }));
@@ -305,7 +348,9 @@ function petPlayAt(x) {
   if (_petPlays.length >= 3) _petPlays.length = 0;   // 休息夠了：重新算
   _petPlays.push(now); const tired = _petPlays.length >= 3;
   if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) { petSay(ttT("好好玩！")); petBurst("❤️", 1); if (petPatAff()) renderPet(); return; }   /* 減少動態效果：沒有動畫，但親密照樣算（修正案共用原則 6，2026-10-08） */
-  petBuzz(12); PetStage.play(`<svg viewBox="0 0 24 24">${PET_GIFTS.pine[1]}</svg>`, x).then(ok => { if (!ok) return;
+  // 玩具（2026-10-09 R5 原13）：松果之外，牠帶回來的橡實、羽毛也會拿來玩（同一套落下、碰、帶、回位的流程，不各寫一套）
+  const toys = ["pine"].concat(["acorn", "feather"].filter(k => petGiftsOwned().some(o => o.id === k))), toy = toys[Math.floor(Math.random() * toys.length)];
+  petBuzz(12); PetStage.play(`<svg viewBox="0 0 24 24">${PET_GIFTS[toy][1]}</svg>`, x, toy).then(ok => { if (!ok) return;
     if (tired) { petSay(ttT("玩累了，休息一下"), 2400); if (PetStage.act) setTimeout(() => PetStage.act("yawn"), 300); }   // 累了只喘口氣、打個哈欠（不加新的數值）
     else petSay(ttT(["好好玩！", "再丟一次嘛", "我抓到了！"][Math.floor(Math.random() * 3)]));
     if (petPatAff()) petFloat(`${ttT("親密")} +1`, ".pet-card .pet-meter:nth-child(2) .mtrack", null, PET_HEART_SVG); });
@@ -383,7 +428,7 @@ async function drawPetPhoto(tod, pose, trail) {
   const sv = PetStage.photoSvgs(i, tod, W, SH);
   x.drawImage(await img(svgUri(sv.back)), 0, 0, W, SH);
   const S = 600; x.save(); x.shadowColor = "rgba(0,0,0,.3)"; x.shadowBlur = 30; x.shadowOffsetY = 14;
-  x.drawImage(await img(PET_ART.dataUri(i, S, petHat(), pose)), (W - S) / 2, SH - S - 70, S, S); x.restore();
+  x.drawImage(await img(PET_ART.dataUri(i, S, petHat(), pose, petAcc())), (W - S) / 2, SH - S - 70, S, S); x.restore();
   x.drawImage(await img(svgUri(sv.front)), 0, 0, W, SH);
   if (pose === "sleep") { x.fillStyle = "rgba(255,255,255,.85)"; [[250, 40], [196, 54], [132, 70]].forEach(([dy, f], k) => { x.font = `800 ${f}px ${F}`; x.fillText(k === 2 ? "Z" : "z", W / 2 + 120 + k * 46, SH - S - 70 + dy); });   /* 從頭旁邊冒出小 z，越往上越大 */ }   // 睡覺：飄 Z
   if (trail) { x.font = `800 46px ${F}`; const t = trail.length > 16 ? trail.slice(0, 15) + "…" : trail, tw = Math.min(W - 120, x.measureText(t).width + 80);   // 步道名標題（最近走的那一條）
@@ -573,7 +618,7 @@ function renderPet() {
   const km = totalKm(), i = petStageIndex(km), st = PET_STAGES[i], next = PET_STAGES[i + 1];
   const nm = petName(), mood = petMood(), days = petDaysTogether(), streak = weeksStreak(), en = energy();
   const berries = berriesBalance(), h = petHearts(), canFeed = canFeedNow(), cd = feedCooldownMs();
-  const art = (typeof PET_ART !== "undefined") ? PET_ART.svg(i, "", petHat(), true) : `<span style="font-size:70px">${st.e}</span>`;   // 帽子畫在角色裡面，跟著同一個動畫動
+  const art = (typeof PET_ART !== "undefined") ? PET_ART.svg(i, "", petHat(), true, petAcc()) : `<span style="font-size:70px">${st.e}</span>`;   // 帽子畫在角色裡面，跟著同一個動畫動
   let evoTop, prog = "";
   if (next) {
     const pct = Math.max(2, Math.min(100, Math.round((km - st.km) / (next.km - st.km) * 100)));
@@ -589,7 +634,7 @@ function renderPet() {
   // 2.5D 舞台（pet-stage.js）：角色那一層包在分層場景裡；沒載到就退回舊的平面棲地
   // 2026-10-04：舞台、角色沒變（同一階、同一頂帽子、同一個名字、天氣與裝飾一樣）就只更新數字和文字——
   // 以前餵完、摸完都整張重畫：粒子位置重抽、待機動作重來、對話泡重彈，看起來像頁面刷新了一次
-  const sig = [i, petHat(), nm, (typeof Premium !== "undefined" && Premium.isOn()) ? 1 : 0, typeof PetStage !== "undefined" ? PetStage.cachedWx() : "", typeof PetJourney !== "undefined" ? PetJourney.decor().join(",") : "", document.documentElement.lang || "", JSON.stringify(window.__ps || null), typeof PetStage !== "undefined" ? PetStage.tod() + PetStage.season() : "", petFestival() || "", petPropsOn().join(",")].join("|");   // __ps＝測試面板強制的時段／季節／天氣；時段、季節換了也要重畫（星星、螢火蟲、天空是畫出來的，2026-10-08）
+  const sig = [i, petHat(), petAcc(), nm, (typeof Premium !== "undefined" && Premium.isOn()) ? 1 : 0, typeof PetStage !== "undefined" ? PetStage.cachedWx() + (PetStage.cachedFeel ? PetStage.cachedFeel() : "") : "", typeof PetJourney !== "undefined" ? PetJourney.decor().join(",") : "", document.documentElement.lang || "", JSON.stringify(window.__ps || null), typeof PetStage !== "undefined" ? PetStage.tod() + PetStage.season() : "", petFestival() || "", petPropsOn().join(",")].join("|");   // __ps＝測試面板強制的時段／季節／天氣；時段、季節換了也要重畫（星星、螢火蟲、天空是畫出來的，2026-10-08）
   if (box.dataset.sig === sig && box.querySelector("#petEmoji")) {
     petCardUpdate(box, { km, mood, days, streak, en, h, left: next ? next.km - km : null, lovePct: Math.round(h / 5 * 100), canFeed, cd, berries, evoTop, pct: next ? Math.max(2, Math.min(100, Math.round((km - st.km) / (next.km - st.km) * 100))) : null });
     if (typeof PetJourney !== "undefined") PetJourney.render();
@@ -603,7 +648,7 @@ function renderPet() {
       <div id="petEmoji" class="pet-m-${mood.k || "content"}" role="button" tabindex="0" aria-label="${ttT("摸摸")} ${escHtml(nm || ttT(st.n))}">${typeof PET_ART !== "undefined" && PET_ART.prop ? PET_ART.prop(i) : ""}${art}${petMoodFx(mood.k)}</div>
       <div class="pet-shadow"></div>`;
   const stageHtml = (typeof PetStage !== "undefined")
-    ? PetStage.html(i, actorHtml, { evo: next ? petEvoLv(Math.round((km - st.km) / (next.km - st.km) * 100)) : 0, wx: PetStage.cachedWx(), decor: typeof PetJourney !== "undefined" ? PetJourney.decor() : [], fest: petFestival(), props: petPropsSvgs() })
+    ? PetStage.html(i, actorHtml, { evo: next ? petEvoLv(Math.round((km - st.km) / (next.km - st.km) * 100)) : 0, wx: PetStage.cachedWx(), feel: PetStage.cachedFeel ? PetStage.cachedFeel() : "", decor: typeof PetJourney !== "undefined" ? PetJourney.decor() : [], fest: petFestival(), props: petPropsSvgs() })
     : `<div class="pet-habitat">${(typeof PET_ART !== "undefined" && PET_ART.habitat) ? PET_ART.habitat(i) : ""}</div>${actorHtml}`;
   box.innerHTML = `<div class="pet-card${i >= 6 ? " final" : ""}" style="--habitat:${PET_BG[i]}">
     ${stageHtml}
@@ -631,8 +676,8 @@ function renderPet() {
   if (typeof PetStage !== "undefined") {
     PetStage.bind(box.querySelector(".ps-box"), mood.k);
     petCompanion(box, i);
-    const had = PetStage.cachedWx();
-    PetStage.weather().then(w => { if (w !== had && document.body.dataset.view === "pet" && box.isConnected) renderPet(); if (typeof window.syncMyStatsToCloud === "function") window.syncMyStatsToCloud(); });   // 好友看到的天氣、配件跟著更新   // 天氣回來了才補畫（之後走快取，不會一直重畫）
+    const had = PetStage.cachedWx() + PetStage.cachedFeel();
+    PetStage.weather().then(w => { if (w + PetStage.cachedFeel() !== had && document.body.dataset.view === "pet" && box.isConnected) renderPet(); if (typeof window.syncMyStatsToCloud === "function") window.syncMyStatsToCloud(); });   // 好友看到的天氣、配件跟著更新   // 天氣回來了才補畫（之後走快取，不會一直重畫）
   }
   if (typeof PetJourney !== "undefined") PetJourney.render();   // 夥伴的旅行（PRO：明信片／走過的縣市／地區配件）
   { const card = box.querySelector(".pet-card"), fb0 = $("#petFeed"); if (card) card.classList.toggle("evo-near", !!next && next.km - km < 1); if (fb0) { fb0.classList.toggle("cd", cd > 0); fb0.style.setProperty("--cdp", cd > 0 ? (1 - cd / FEED_COOLDOWN).toFixed(3) : "1"); } }
