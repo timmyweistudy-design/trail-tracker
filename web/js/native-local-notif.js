@@ -62,7 +62,8 @@ const Reminders = (() => {
     try { await p.cancel({ notifications: [{ id: ID_PET }] }); } catch (e) { /* */ }
     const recs = (typeof realRecords === "function") ? realRecords() : []; if (!recs.length) return;   // 還沒出過門：不催
     const last = recs.reduce((m, r) => (r.date > m ? r.date : m), recs[0].date), idle = (Date.now() - new Date(last).getTime()) / 864e5;
-    if (idle < 2) return;   // 隔天 10 點時已經滿 3 天才提醒
+    const days = typeof petNudgeDays === "function" ? petNudgeDays() : 3; if (!days) return;   // 2026-10-08 R4 原29：可以選 3 天／7 天／不要提醒
+    if (idle < days - 1) return;   // 隔天 10 點時已經滿 N 天才提醒
     const at = new Date(); at.setDate(at.getDate() + 1); at.setHours(10, 0, 0, 0);
     const nm = (typeof petStats === "function" && petStats().name) || tt("夥伴");
     try { await p.schedule({ notifications: [{ id: ID_PET, title: tt("循徑拾光"), body: tt(PET_NUDGE[Math.floor(Math.random() * PET_NUDGE.length)]).replace("%s", nm), schedule: { at } }] }); } catch (e) { /* */ }

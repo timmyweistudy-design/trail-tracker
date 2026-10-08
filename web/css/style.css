@@ -720,6 +720,22 @@ body.rec-running #recMap .me-marker .tm-pet .pet-critter, body.rec-running #recM
 body.rec-running.rec-fast #recMap .pm-e .pet-critter, body.rec-running.rec-fast #recMap .me-marker .tm-pet .pet-critter { animation-duration: .36s; }
 body.rec-running.rec-resting #recMap .pm-e .pet-critter, body.rec-running.rec-resting #recMap .me-marker .tm-pet .pet-critter { animation: petSit 3.4s ease-in-out infinite; transform-origin: 50% 95%; }
 @keyframes petSit { 0%, 100% { transform: scale(1.06, .9); } 50% { transform: scale(1.08, .86); } }
+/* 依種類移動（2026-10-08 修正案 R4 原17）：蛋左右滾、幼蟲一伸一縮、蝶上下飄、神龍慢慢游；狐虎幼龍維持走路。休息：蛋不動、蝶慢慢飄、神龍浮著。
+   只代表遊戲角色，不代表使用者的身體狀況 */
+body.rec-running #recMap .pet-critter[data-s="0"] { animation: petRoll .9s ease-in-out infinite; transform-origin: 50% 90%; }
+body.rec-running #recMap .pet-critter[data-s="1"] { animation: petInch .8s ease-in-out infinite; transform-origin: 50% 95%; }
+body.rec-running #recMap .pet-critter[data-s="2"] { animation: petFlit .5s ease-in-out infinite; }
+body.rec-running #recMap .pet-critter[data-s="6"] { animation: petGlide 1.6s ease-in-out infinite; }
+body.rec-running.rec-fast #recMap .pet-critter[data-s="0"], body.rec-running.rec-fast #recMap .pet-critter[data-s="1"], body.rec-running.rec-fast #recMap .pet-critter[data-s="2"] { animation-duration: .5s; }
+body.rec-running.rec-fast #recMap .pet-critter[data-s="6"] { animation-duration: 1s; }
+body.rec-running.rec-resting #recMap .pet-critter[data-s="0"] { animation: none; }
+body.rec-running.rec-resting #recMap .pet-critter[data-s="2"] { animation: petFlit 2.4s ease-in-out infinite; }
+body.rec-running.rec-resting #recMap .pet-critter[data-s="6"] { animation: petGlide 3.6s ease-in-out infinite; }
+@keyframes petRoll { 0%, 100% { transform: rotate(-12deg); } 50% { transform: rotate(12deg); } }
+@keyframes petInch { 0%, 100% { transform: scale(1, 1); } 40% { transform: scale(.88, 1.1); } 70% { transform: scale(1.1, .92); } }
+@keyframes petFlit { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+@keyframes petGlide { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-4px) rotate(2deg); } }
+@media (prefers-reduced-motion: reduce) { body.rec-running #recMap .pet-critter[data-s] { animation: none; } }
 @media (prefers-reduced-motion: reduce) { body.rec-running #recMap .pet-critter, body.rec-running #recMap .pet-hat-svg { animation: none !important; } }
 .rec-spark { width: 100%; height: 56px; display: block; background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: var(--r-sm); }
 .rec-spark-cap { font-size: calc(11px * var(--fs, 1)); color: var(--ink-soft); text-align: center; margin-top: 4px; font-family: var(--num); }

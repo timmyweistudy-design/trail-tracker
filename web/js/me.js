@@ -304,12 +304,14 @@ if (_crs) _crs.addEventListener("click", async () => {
     const when = new Date(data.updated_at).toLocaleString(ttLocale());
     const mode = await askRestoreMode(`${ttT("雲端備份")}${ttColon()}${when}`);
     if (!mode) return;
-    Store.importAll(data.data, mode);
+    const res = Store.importAll(data.data, mode);
     try { localStorage.setItem("tt_data_uid", x.uid); } catch (e) { /* */ }   // 本機資料歸屬＝還原來源帳號
     ttRefreshAll();
-    toast(ttT("從雲端還原好了"));
+    toast(ttT("從雲端還原好了") + restoreNote(res));
   } catch (e) { toast(ttT("還原失敗") + ttColon() + ttT(Supa.errText(e && e.message))); }
 });
+// 還原結果（2026-10-08 修正案 A5）：備份裡有壞掉的項目只略過那幾項，要說出來（以前整份失敗或安靜地少東西）
+function restoreNote(res) { const n = res && res.errors ? res.errors.length : 0; return n ? ttColon() + ttT("{n} 項資料壞掉，已略過").replace("{n}", n) : ""; }
 // 還原方式：合併（預設）或完全取代；選完全取代要再確認一次（以前一按就整份蓋掉，也沒說兩種差在哪）
 async function askRestoreMode(title) {
   const mode = await ttChoice(`${title}\n\n${ttT("合併：保留這台手機上的紀錄，把備份裡的加進來。")}\n${ttT("完全取代：這台手機的資料整份換成備份的內容。")}`, [
@@ -352,9 +354,9 @@ if (_frs && _fri) {
         if (!data || (!data.records && !data.pet && !data.v)) { toast(ttT("這不是有效的備份檔")); _fri.value = ""; return; }
         const mode = await askRestoreMode(ttT("匯入備份檔"));
         if (!mode) { _fri.value = ""; return; }
-        Store.importAll(data, mode);
+        const res = Store.importAll(data, mode);
         ttRefreshAll();
-        toast(ttT("備份檔還原好了"));
+        toast(ttT("備份檔還原好了") + restoreNote(res));
       } catch (e) { toast(ttT("匯入失敗：檔案可能損壞")); }
       _fri.value = "";
     };

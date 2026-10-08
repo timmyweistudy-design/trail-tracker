@@ -199,10 +199,18 @@ window.PetStage = (function () {
   // 深夜 22:00～06:00 打開是睡著的（閉眼、呼吸放慢、頭一點一點、飄 Z），點牠、抱牠、餵牠會先醒來（揉眼、伸懶腰），醒了 15 分鐘內再打開不會又睡回去；
   // 清晨第一個動作是伸懶腰、白天比較愛動、黃昏比較安靜。除錯面板可以強制（window.__ps.asleep）
   let asleep = false, firstAct = null;
+  // 睡覺時間（2026-10-08 修正案 R4 原5）：設定裡可以調、可以跨午夜、可以「不睡覺」；預設 22～6。存 tt_pet_sleep＝"22-6"／"off"
+  function sleepWin() {
+    let v = "22-6"; try { v = localStorage.getItem("tt_pet_sleep") || v; } catch (e) { /* 私密瀏覽 */ }
+    if (v === "off") return null; const m = /^(\d{1,2})-(\d{1,2})$/.exec(v); if (!m) return [22, 6];
+    const a = +m[1] % 24, b = +m[2] % 24; return a === b ? null : [a, b];
+  }
   function sleepNow() {
     const f = window.__ps && window.__ps.asleep; if (f != null) return !!f;
     let w = 0; try { w = +localStorage.getItem("tt_pet_woke") || 0; } catch (e) { /* 私密瀏覽 */ }
-    const h = ttClock.date().getHours(); return (h >= 22 || h < 6) && ttClock.now() - w > 15 * 60e3;
+    const W = sleepWin(); if (!W) return false;
+    const h = ttClock.date().getHours(), inWin = W[0] > W[1] ? h >= W[0] || h < W[1] : h >= W[0] && h < W[1];
+    return inWin && ttClock.now() - w > 15 * 60e3;
   }
   function setAsleep(on) {
     asleep = !!on && !reduce(); const em = emEl(); if (!box || !em) return;
@@ -218,11 +226,16 @@ window.PetStage = (function () {
     try { await flash("pb-wake", 1300); await flash("pb-stretch", 1400); } finally { freeStage(tk); }
     return true;
   }
+  // 每隻自己的作息個性（2026-10-08 修正案 R4 原8：少量物種差異就好，不是每小時都有新行為）：只調待機動作的機率
+  //   蝶白天愛飛（專屬小動作＝用力拍翅）、狐晨昏最活躍（真的狐狸是晨昏活動）、虎白天懶洋洋晚上東張西望、幼龍白天愛跳、神龍清晨亮龍珠
+  const SP_TOD = { 2: { day: { special: 2 }, dusk: { idle: 1.6 } }, 3: { dawn: { special: 1.8, look: 1.5 }, dusk: { special: 1.8, look: 1.5 }, day: { idle: 1.4 } }, 4: { day: { idle: 1.8, yawn: 1.5 }, night: { look: 1.8 } }, 5: { day: { hop: 1.4 } }, 6: { dawn: { special: 2.2 } } };
   const TOD_W = { dawn: { add: { stretch: 3, yawn: 2 } }, day: { mul: { hop: 1.6, special: 1.5 } }, dusk: { add: { idle: 2, look: 1 } }, night: { add: { idle: 3, yawn: 1 } } };
   function weights(m) {   // 心情的機率，再照時段加減（清晨多伸懶腰、白天愛跳、黃昏多發呆）
     const w = Object.assign({}, WEIGHTS[m] || WEIGHTS.content), t = TOD_W[(window.__ps && window.__ps.tod) || tod()] || {};
     for (const k in t.add || {}) w[k] = (w[k] || 0) + t.add[k];
     for (const k in t.mul || {}) if (w[k]) w[k] *= t.mul[k];
+    const sp = box && (SP_TOD[+box.dataset.stage] || {})[(window.__ps && window.__ps.tod) || tod()] || {};   // 每隻的作息個性（2026-10-08 R4 原8）
+    for (const k in sp) if (w[k]) w[k] *= sp[k];
     // 天氣（2026-10-07 寵物新一輪 #14）：下雨會甩水、下雪會發抖、晴朗的白天會晒太陽
     const wx = box && box.dataset.wx, td = (window.__ps && window.__ps.tod) || tod();
     if (wx === "rain") w.shake = 3; else if (wx === "snow") w.shiver = 3; else if (!wx && (td === "day" || td === "dawn")) w.bask = 2;
@@ -507,14 +520,15 @@ window.PetStage = (function () {
   // ── 玩（2026-10-07 寵物新一輪 #12）：丟一顆松果，每隻用自己的方式去玩——走得動的走過去用鼻子頂一下（松果滾開、開心跳）、
   // 蝶飛過去在上面拍翅、神龍用尾巴勾起來甩一下再放回、蛋原地搖一搖。松果用果實同一套落下動畫；玩完走回中間、松果淡出
   let playing = false;
-  async function play(toySvg) {
+  async function play(toySvg, atX) {   // atX：使用者點的地方（相對舞台中間 px）；會限制在搆得到的範圍（2026-10-08 R4 原6）
     if (!box || reduce() || !visible || feeding || playing || typeof PetWalk === "undefined") return false;
     clearTimeout(beat); playing = true;   // 先占位：等朋友走、等醒來的這段時間，再按一次不會開第二輪
     stopIdle(); if (guesting) await dismissGuest(); if (asleep) await wake(); if (!box) { playing = false; return false; }
     const tk = claimStage("play"); box.classList.add("playing");
     const actor = box.querySelector(".ps-actor"), stg = +box.dataset.stage, b = document.createElement("span");
     try {
-      const cloud = stg === 6 ? cloudSpots(1) : null, x = cloud ? cloud[0].x : stg === 0 ? (Math.random() < .5 ? -1 : 1) * 34 : dropSpots(1, stg === 1 ? "larva" : (stg === 3 || stg === 4) ? false : false)[0];
+      const reachX = v => { const a = Math.max(-84, Math.min(84, Math.round(v))); return Math.abs(a) < 22 ? (a < 0 ? -22 : 22) : a; };   // 跟隨便丟的範圍一樣（±84、不要剛好在身體正中間）
+      const cloud = stg === 6 ? cloudSpots(1) : null, x = cloud ? cloud[0].x : stg === 0 ? (Math.random() < .5 ? -1 : 1) * 34 : atX != null && isFinite(atX) ? reachX(atX) : dropSpots(1, stg === 1 ? "larva" : false)[0];   // 蛋不會動、神龍在雲上：照原本的玩法
       b.className = "ps-berry ps-toy"; b.innerHTML = toySvg || "";
       b.style.cssText = `--bx:${x};--by:${cloud ? cloud[0].by : 8}px;--bs:28px;--br:${Math.round(Math.random() * 40 - 20)}deg;--bh:-230px;z-index:4`;
       actor.appendChild(b);
@@ -629,7 +643,7 @@ window.PetStage = (function () {
           await sleep(D * .68); cls(true, "st-open"); await down;
           cls(false, "st-open"); await flash("pb-snap", 200);
           b.classList.add("held"); follow(b, "mouth", { ay: .3, ms: 120 });
-          cls(false, "st-lean"); const up = PetWalk.frontHead(box, [h[0] * .25, 6, h[2] * .25], stg === 4 ? 760 : 640);   // 抬頭（留一點點低頭、轉向那邊）
+          cls(false, "st-lean"); const up = PetWalk.frontHead(box, [h[0] * .25, 6, h[2] * .25], stg === 4 ? 780 : 640);   // 抬頭（留一點點低頭、轉向那邊）；虎每一段都比狐慢 ≥20%（趴下 820/680、抬頭 780/640，修正案驗收表 2026-10-08）、頭壓得比較低（24 vs 21）＝比較重
           await sleep(stg === 4 ? 320 : 260); toMouth(b, false); b.classList.add("eaten"); await up;
           cls(true, "chew2"); await flash("pb-chew", (stg === 4 ? 1050 : 900) * .67); cls(false, "chew2");
           await flash("pb-gulp", 340);
@@ -820,5 +834,5 @@ window.PetStage = (function () {
     if (asleep) return "睡";
     return pb ? "動作:" + pb.slice(3) : busy ? "動作" : "待機";
   }
-  return { debug, phase, sync: syncSleep, setMood, html, photoSvgs, bind, unbind, tod, season, wxOf, weather, cachedWx, count: STAGES, zoneOf, react, feed, act, isFeeding: () => feeding, isAsleep: () => asleep, isPlaying: () => playing, play, guest, wake, sleep: () => setAsleep(true) };
+  return { debug, phase, sync: syncSleep, sleepWin, setMood, html, photoSvgs, bind, unbind, tod, season, wxOf, weather, cachedWx, count: STAGES, zoneOf, react, feed, act, isFeeding: () => feeding, isAsleep: () => asleep, isPlaying: () => playing, play, guest, wake, sleep: () => setAsleep(true) };
 })();

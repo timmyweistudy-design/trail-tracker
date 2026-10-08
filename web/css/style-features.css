@@ -2365,6 +2365,8 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 
 /* 夥伴日記（手冊最上面） */
 .diary-list { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 14px; }
+.diary-months { flex-wrap: wrap; justify-content: flex-start; margin: 2px 0 6px; }   /* 2026-10-08 R4：日記照月份看 */
+.diary-month-sum { font-size: calc(12.5px * var(--fs, 1)); color: var(--ink-soft); margin: 0 2px 6px; }
 .diary-row { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 12px; background: var(--card-2, rgba(0,0,0,.04)); }
 .diary-ic { width: 34px; height: 34px; flex: none; display: flex; align-items: center; justify-content: center; }
 .diary-ic .pet-critter { width: 34px; height: 34px; max-width: none; max-height: none; }
@@ -2474,6 +2476,9 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 @keyframes psGiftB { 0% { transform: translateY(0) rotate(0); opacity: 0; } 15% { opacity: 1; } 70% { transform: translateY(260%) rotate(var(--r)); } 85% { transform: translateY(240%) rotate(var(--r)); } 100% { transform: translateY(255%) rotate(var(--r)); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .ps-giftb { display: none; } }
 .ah-sw { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: .5em 0; border-top: 1px solid var(--line, rgba(0,0,0,.08)); font-size: calc(13.5px * var(--fs, 1)); }
+.ah-sw { flex-wrap: wrap; }   /* 2026-10-08 R4：多了睡覺時間、提醒頻率兩個選單；大字級時選單換到下一行 */
+.ah-sel { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.ah-select { font: inherit; font-size: calc(13px * var(--fs, 1)); padding: 4px 6px; border-radius: 8px; border: 1px solid var(--line, rgba(0,0,0,.15)); background: var(--surface); color: var(--ink); max-width: 100%; }
 
 /* 減少動態效果（2026-10-07 寵物新一輪 #24）：上面的新進化儀式寫在這個檔，會蓋過 style.css 那條「不播」——這裡再宣告一次；
    摸、抱、來回摸在減少動態時沒有動作，改成角色亮一下（不位移、不縮放） */

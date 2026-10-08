@@ -295,6 +295,29 @@ function openHatPicker() {
 const petHapticOn = () => localStorage.getItem("tt_pet_haptic") !== "0", petSoundOn = () => localStorage.getItem("tt_pet_sound") === "1";
 // 裝置做得到才顯示開關（2026-10-08 修正案 A6）：以前 iPhone 網頁版有「夥伴震動」開關但 Safari 根本沒有震動；
 // 搖手機在 iPhone 要先請「動作與方向」權限，以前從沒請過＝這個功能在 iPhone 上一直是死的
+// 玩松果（2026-10-08 R4 原6）：x＝丟到哪裡（相對舞台中間的 px；null＝隨便丟）。10 分鐘內玩到第 3 次會累：打個哈欠、休息 2 分鐘
+const _petPlays = [];
+function petPlayAt(x) {
+  if (typeof PetStage === "undefined" || !PetStage.play) return;
+  if (PetStage.isFeeding() || PetStage.isPlaying()) { petSay(ttT("正在忙，等我一下～"), 1600); return; }
+  const now = Date.now(); while (_petPlays.length && now - _petPlays[0] > 10 * 60e3) _petPlays.shift();
+  if (_petPlays.length >= 3 && now - _petPlays[_petPlays.length - 1] < 2 * 60e3) { petSay(ttT("玩累了，休息一下"), 2000); if (PetStage.act) PetStage.act("yawn"); return; }
+  if (_petPlays.length >= 3) _petPlays.length = 0;   // 休息夠了：重新算
+  _petPlays.push(now); const tired = _petPlays.length >= 3;
+  if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) { petSay(ttT("好好玩！")); petBurst("❤️", 1); if (petPatAff()) renderPet(); return; }   /* 減少動態效果：沒有動畫，但親密照樣算（修正案共用原則 6，2026-10-08） */
+  petBuzz(12); PetStage.play(`<svg viewBox="0 0 24 24">${PET_GIFTS.pine[1]}</svg>`, x).then(ok => { if (!ok) return;
+    if (tired) { petSay(ttT("玩累了，休息一下"), 2400); if (PetStage.act) setTimeout(() => PetStage.act("yawn"), 300); }   // 累了只喘口氣、打個哈欠（不加新的數值）
+    else petSay(ttT(["好好玩！", "再丟一次嘛", "我抓到了！"][Math.floor(Math.random() * 3)]));
+    if (petPatAff()) petFloat(`${ttT("親密")} +1`, ".pet-card .pet-meter:nth-child(2) .mtrack", null, PET_HEART_SVG); });
+}
+// 睡覺時間、提醒頻率的選單（2026-10-08 修正案 R4 原5／原29）
+function petSleepSel() {
+  const W = typeof PetStage !== "undefined" && PetStage.sleepWin ? PetStage.sleepWin() : [22, 6], hh = h => `${String(h).padStart(2, "0")}:00`;
+  const a = `<select id="petSleepA" class="ah-select"><option value="off"${W ? "" : " selected"}>${escHtml(ttT("不睡覺"))}</option>${[19, 20, 21, 22, 23, 0, 1].map(h => `<option value="${h}"${W && W[0] === h ? " selected" : ""}>${hh(h)}</option>`).join("")}</select>`;
+  const b = `<select id="petSleepB" class="ah-select"${W ? "" : " disabled"}>${[4, 5, 6, 7, 8, 9].map(h => `<option value="${h}"${(W ? W[1] : 6) === h ? " selected" : ""}>${hh(h)}</option>`).join("")}</select>`;
+  return `${a} ～ ${b}`;
+}
+function petNudgeDays() { const v = localStorage.getItem("tt_pet_nudge"); return v == null ? 3 : +v || 0; }
 const petCan = {
   sound: () => !!(window.AudioContext || window.webkitAudioContext),
   haptic: () => { const C = window.Capacitor; return !!(C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins.Haptics) || typeof navigator.vibrate === "function"; },
@@ -349,7 +372,9 @@ function bindPropsPicker(ov) {
 const PET_TOY_ICON = `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="13" rx="5.5" ry="7.5"/><path d="M7 10h10M6.6 13.5h10.8M7.4 17h9.2M12 5V2"/></svg>`;   // 松果（玩）
 // 拍照模式（2026-10-07 寵物新一輪 #18）：夥伴＋牠的舞台＋名字、等級、成長里程、同行天數，存成一張 4:5 的圖分享；可以換時段
 const PET_PHOTO_TOD = [["dawn", "清晨"], ["day", "白天"], ["dusk", "黃昏"], ["night", "夜晚"]];
-async function drawPetPhoto(tod) {
+const PET_PHOTO_POSE = [["sit", "坐著"], ["happy", "開心"], ["sleep", "睡覺"]];   // 2026-10-08 R4 原16
+function petLastTrail() { const r = realRecords().find(x => x && x.trailName); return r ? r.trailName : ""; }
+async function drawPetPhoto(tod, pose, trail) {
   const W = 1080, H = 1350, SH = 930, c = document.createElement("canvas"); c.width = W; c.height = H; const x = c.getContext("2d");
   const F = "'TaipeiSans', 'PingFang TC', sans-serif", km = totalKm(), i = petStageIndex(km), st = PET_STAGES[i];
   try { await document.fonts.load(`800 60px TaipeiSans`); } catch (e) { /* 字型讀不到就用系統的 */ }
@@ -358,8 +383,12 @@ async function drawPetPhoto(tod) {
   const sv = PetStage.photoSvgs(i, tod, W, SH);
   x.drawImage(await img(svgUri(sv.back)), 0, 0, W, SH);
   const S = 600; x.save(); x.shadowColor = "rgba(0,0,0,.3)"; x.shadowBlur = 30; x.shadowOffsetY = 14;
-  x.drawImage(await img(PET_ART.dataUri(i, S, petHat())), (W - S) / 2, SH - S - 70, S, S); x.restore();
+  x.drawImage(await img(PET_ART.dataUri(i, S, petHat(), pose)), (W - S) / 2, SH - S - 70, S, S); x.restore();
   x.drawImage(await img(svgUri(sv.front)), 0, 0, W, SH);
+  if (pose === "sleep") { x.fillStyle = "rgba(255,255,255,.85)"; [[250, 40], [196, 54], [132, 70]].forEach(([dy, f], k) => { x.font = `800 ${f}px ${F}`; x.fillText(k === 2 ? "Z" : "z", W / 2 + 120 + k * 46, SH - S - 70 + dy); });   /* 從頭旁邊冒出小 z，越往上越大 */ }   // 睡覺：飄 Z
+  if (trail) { x.font = `800 46px ${F}`; const t = trail.length > 16 ? trail.slice(0, 15) + "…" : trail, tw = Math.min(W - 120, x.measureText(t).width + 80);   // 步道名標題（最近走的那一條）
+    x.fillStyle = "rgba(20,40,28,.62)"; x.beginPath(); if (x.roundRect) x.roundRect((W - tw) / 2, 56, tw, 84, 42); else x.rect((W - tw) / 2, 56, tw, 84); x.fill();
+    x.fillStyle = "#fbf8ee"; x.textAlign = "center"; x.fillText(t, W / 2, 114, W - 160); }
   const g = x.createLinearGradient(0, SH - 60, 0, H); g.addColorStop(0, "rgba(22,44,31,0)"); g.addColorStop(.12, "#1d3a28"); g.addColorStop(1, "#14281c"); x.fillStyle = g; x.fillRect(0, SH - 60, W, H - SH + 60);
   x.textAlign = "center"; x.fillStyle = "#fbf8ee"; x.font = `900 76px ${F}`; x.fillText(petName() || ttT(st.n), W / 2, SH + 70, W - 120);
   x.fillStyle = "#e8c87a"; x.font = `700 40px ${F}`; x.fillText(petName() ? `Lv.${i + 1} · ${ttT(st.n)}` : `Lv.${i + 1}`, W / 2, SH + 130, W - 120);   // 沒取名字：標題已經是種類名，副標只寫等級
@@ -370,19 +399,23 @@ async function drawPetPhoto(tod) {
 }
 function openPetPhoto() {
   if (document.querySelector('[data-ov="petphoto"]') || typeof PetStage === "undefined" || !PetStage.photoSvgs) return;
-  let tod = PetStage.tod(), busy = false;
+  let tod = PetStage.tod(), busy = false, pose = "sit", withTrail = false; const lastTrail = petLastTrail();
   const ov = document.createElement("div"); ov.className = "pet-modal"; ov.dataset.ov = "petphoto";
   ov.innerHTML = `<div class="pet-modal-card pp-card"><button class="sheet-close" id="ppClose" aria-label="${ttT("關閉")}">${ic("x")}</button><h2>${ic("camera")} ${ttT("幫夥伴拍張照")}</h2>
     <div class="pp-prev"><img alt="${escHtml(ttT("夥伴照片預覽"))}"></div>
     <div class="pp-tods" role="radiogroup" aria-label="${escHtml(ttT("時段"))}">${PET_PHOTO_TOD.map(([k, l]) => `<button class="pp-tod${k === tod ? " on" : ""}" data-tod="${k}" role="radio" aria-checked="${k === tod}">${ttT(l)}</button>`).join("")}</div>
+    <div class="pp-tods pp-poses" role="radiogroup" aria-label="${escHtml(ttT("姿勢"))}">${PET_PHOTO_POSE.map(([k, l]) => `<button class="pp-tod pp-pose${k === "sit" ? " on" : ""}" data-pose="${k}" role="radio" aria-checked="${k === "sit"}">${ttT(l)}</button>`).join("")}</div>
+    ${lastTrail ? `<label class="ah-sw pp-trail"><span>${escHtml(ttT("加上最近走的步道"))}</span><input type="checkbox" class="tt-switch" id="ppTrail"></label>` : ""}
     <button class="btn primary" id="ppShare">${ic("share")} ${ttT("存成圖片分享")}</button></div>`;
   document.body.appendChild(ov);
   let _a11y = null; const close = () => { if (_a11y) _a11y(); ov.remove(); };
   if (typeof ttModalA11y === "function") _a11y = ttModalA11y(ov, close, { focus: "#ppClose" });
   ov.addEventListener("click", e => { if (e.target === ov) close(); }); ov.querySelector("#ppClose").addEventListener("click", close);
   const im = ov.querySelector(".pp-prev img");
-  const draw = async () => { try { const cv = await drawPetPhoto(tod); im.src = cv.toDataURL("image/jpeg", .85); im.__cv = cv; } catch (e) { toast(ttT("產生圖片失敗")); } };
-  ov.querySelectorAll(".pp-tod").forEach(b => b.addEventListener("click", () => { tod = b.dataset.tod; ov.querySelectorAll(".pp-tod").forEach(o => { o.classList.toggle("on", o === b); o.setAttribute("aria-checked", o === b); }); draw(); }));
+  const draw = async () => { try { const cv = await drawPetPhoto(tod, pose, withTrail ? lastTrail : ""); im.src = cv.toDataURL("image/jpeg", .85); im.__cv = cv; } catch (e) { toast(ttT("產生圖片失敗")); } };
+  ov.querySelectorAll(".pp-pose").forEach(b => b.addEventListener("click", () => { pose = b.dataset.pose; ov.querySelectorAll(".pp-pose").forEach(o => { o.classList.toggle("on", o === b); o.setAttribute("aria-checked", o === b); }); draw(); }));
+  { const tr = ov.querySelector("#ppTrail"); if (tr) tr.addEventListener("change", () => { withTrail = tr.checked; draw(); }); }
+  ov.querySelectorAll(".pp-tod:not(.pp-pose)").forEach(b => b.addEventListener("click", () => { tod = b.dataset.tod; ov.querySelectorAll(".pp-tod:not(.pp-pose)").forEach(o => { o.classList.toggle("on", o === b); o.setAttribute("aria-checked", o === b); }); draw(); }));
   ov.querySelector("#ppShare").addEventListener("click", async () => {
     if (busy || !im.__cv) return; busy = true;
     try { const blob = await new Promise(r => im.__cv.toBlob(r, "image/png")); const how = await saveBlob(blob, `${ttCJK() ? "循徑拾光-夥伴" : "gather-the-trail-buddy"}.png`, petName() || ttT(PET_STAGES[petStageIndex(totalKm())].n)); if (how === "saved") toast(ttT("已存成圖片")); }
@@ -665,6 +698,10 @@ function renderPet() {
       const so = document.getElementById("petSoundSw"), hp = document.getElementById("petHapticSw");
       if (so) so.addEventListener("change", () => { localStorage.setItem("tt_pet_sound", so.checked ? "1" : "0"); if (so.checked) petSound("hug"); });
       if (hp) hp.addEventListener("change", () => { localStorage.setItem("tt_pet_haptic", hp.checked ? "1" : "0"); if (hp.checked) petBuzz(20); });
+      const s1 = document.getElementById("petSleepA"), s2 = document.getElementById("petSleepB"), nu = document.getElementById("petNudgeSel");
+      const saveSleep = () => { localStorage.setItem("tt_pet_sleep", s1.value === "off" ? "off" : `${s1.value}-${s2.value}`); s2.disabled = s1.value === "off"; if (typeof PetStage !== "undefined" && PetStage.sync) PetStage.sync(); };
+      if (s1 && s2) { s1.addEventListener("change", saveSleep); s2.addEventListener("change", saveSleep); }
+      if (nu) nu.addEventListener("change", () => { localStorage.setItem("tt_pet_nudge", nu.value); if (typeof Reminders !== "undefined" && Reminders.refreshPet) Reminders.refreshPet(); });
       const mo = document.getElementById("petMotionSw");   // iPhone：要使用者按下去那一刻才能請「動作與方向」權限
       if (mo) mo.addEventListener("change", () => { if (!mo.checked) { localStorage.setItem("tt_pet_motion", "0"); return; }
         DeviceMotionEvent.requestPermission().then(r => { const g = r === "granted"; mo.checked = g; localStorage.setItem("tt_pet_motion", g ? "1" : "0"); if (!g) toast(ttT("需允許「動作與方向」權限")); }).catch(() => { mo.checked = false; toast(ttT("需允許「動作與方向」權限")); }); });
@@ -674,15 +711,17 @@ function renderPet() {
       <p>${escHtml(ttT("親密滿 5 顆心：餵食給的成長更多，牠也會自己出門帶小東西回來。"))}</p><p class="ah-n">${escHtml(ttT("兩個都不會讓夥伴退化，放心。"))}</p>
       ${petCan.sound() ? `<label class="ah-sw"><span>${escHtml(ttT("夥伴音效（吃東西、抱抱、進化）"))}</span><input type="checkbox" class="tt-switch" id="petSoundSw"${petSoundOn() ? " checked" : ""}></label>` : ""}
       ${petCan.haptic() ? `<label class="ah-sw"><span>${escHtml(ttT("夥伴震動"))}</span><input type="checkbox" class="tt-switch" id="petHapticSw"${petHapticOn() ? " checked" : ""}></label>` : ""}
+      <label class="ah-sw"><span>${escHtml(ttT("夥伴睡覺時間"))}</span><span class="ah-sel">${petSleepSel()}</span></label>
+      <label class="ah-sw"><span>${escHtml(ttT("夥伴想你的提醒"))}</span><select id="petNudgeSel" class="ah-select">${[["3", ttT("{n} 天沒出門").replace("{n}", 3)], ["7", ttT("{n} 天沒出門").replace("{n}", 7)], ["0", ttT("不要提醒")]].map(([v, t]) => `<option value="${v}"${petNudgeDays() === +v ? " selected" : ""}>${escHtml(t)}</option>`).join("")}</select></label>
       ${petCan.motionAsk() ? `<label class="ah-sw"><span>${escHtml(ttT("搖一搖手機，牠會頭暈"))}</span><input type="checkbox" class="tt-switch" id="petMotionSw"${localStorage.getItem("tt_pet_motion") === "1" ? " checked" : ""}></label>` : ""}</div>` }, [{ label: ttT("知道了"), value: true, cls: "primary" }]);
   });
   { const dr = $("#petDress"); if (dr) dr.addEventListener("click", openHatPicker); }
   { const ph = $("#petPhoto"); if (ph) ph.addEventListener("click", openPetPhoto); }
-  { const pl = $("#petPlay"); if (pl) pl.addEventListener("click", () => {   // 丟松果（#12）：每隻用自己的方式玩；吃東西、正在玩的時候不能再丟
-      if (typeof PetStage === "undefined" || !PetStage.play) return;
-      if (PetStage.isFeeding() || PetStage.isPlaying()) { petSay(ttT("正在忙，等我一下～"), 1600); return; }
-      if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) { petSay(ttT("好好玩！")); petBurst("❤️", 1); if (petPatAff()) renderPet(); return; }   /* 減少動態效果：沒有動畫，但親密照樣算（修正案共用原則 6，2026-10-08） */
-      petBuzz(12); PetStage.play(`<svg viewBox="0 0 24 24">${PET_GIFTS.pine[1]}</svg>`).then(ok => { if (ok) { petSay(ttT(["好好玩！", "再丟一次嘛", "我抓到了！"][Math.floor(Math.random() * 3)])); if (petPatAff()) petFloat(`${ttT("親密")} +1`, ".pet-card .pet-meter:nth-child(2) .mtrack", null, PET_HEART_SVG); } });
+  { const pl = $("#petPlay"); if (pl) pl.addEventListener("click", () => petPlayAt(null));   // 丟松果（#12）：每隻用自己的方式玩
+    // 點舞台的空地：松果丟到那裡（2026-10-08 R4 原6；點到角色、按鈕、擺設不算）
+    const stg = box.querySelector(".ps-box"); if (stg) stg.addEventListener("click", e => {
+      if (e.target.closest("#petEmoji, button, a, select, .ps-props, .ps-guest, .pet-bubble, .ps-berry")) return;
+      const r = stg.getBoundingClientRect(); petPlayAt(e.clientX - (r.left + r.width / 2));
     }); }
   const ren = $("#petRename");   // Premium：為夥伴命名
   if (ren) ren.addEventListener("click", () => {
@@ -832,16 +871,37 @@ function petDebugOn() { if (localStorage.getItem("tt_test_diary")) return false;
 function petDiaryAdd(k, i) {
   try { const d = JSON.parse(localStorage.getItem("tt_pet_diary") || "[]"), dbg = petDebugOn(); if (k !== "evo" && d.some(x => x.k === k && !!x.dbg === dbg)) return; d.push(Object.assign({ t: ttClock.date().toISOString(), k, i: i == null ? petStageIndex(totalKm()) : i }, dbg ? { dbg: 1 } : {})); localStorage.setItem("tt_pet_diary", JSON.stringify(d.slice(-60))); } catch (e) { /* 壞掉的資料就不記 */ }
 }
-function petDiaryHtml() {
+function petDiaryHtml(ym) {   // ym："2026-10"＝只看那個月（2026-10-08 R4 原22）；不帶＝全部
   let d = []; try { d = JSON.parse(localStorage.getItem("tt_pet_diary") || "[]"); } catch (e) { /* */ }
   d = d.filter(x => !x.dbg);   // 測試資料寫的不顯示
   const recs = realRecords().filter(r => !r.dbg), first = recs.length ? recs[recs.length - 1] : null;
   const all = d.slice(); all.push({ t: petHatch(), k: "meet", i: 0 }); if (first) all.push({ t: first.date, k: "hike1", i: null });
   all.sort((a, b) => String(b.t).localeCompare(String(a.t)));
+  if (ym) { const keep = all.filter(x => localYM(x.t) === ym); all.length = 0; all.push(...keep); }
   const txt = x => x.k === "meet" ? ttT("我們相遇了") : x.k === "evo" ? `${ttT("進化成")} ${ttT(PET_STAGES[x.i] ? PET_STAGES[x.i].n : "")}` : x.k === "feed1" ? ttT("第一次吃果實") : x.k === "hug1" ? ttT("第一次抱抱") : x.k === "hike1" ? ttT("第一次一起出門") : /^ann:y/.test(x.k) ? ttT("相遇 {n} 週年").replace("{n}", x.k.slice(5)) : /^ann:d/.test(x.k) ? ttT("相遇第 {n} 天").replace("{n}", x.k.slice(5)) : /^gift:/.test(x.k) && PET_GIFTS[x.k.slice(5)] ? `${ttT("帶回來一個")}${ttCJK() ? "" : " "}${ttT(PET_GIFTS[x.k.slice(5)][0])}` : "";
   const dt = t => { const z = new Date(t); return isNaN(z) ? "" : `${z.getFullYear()}/${z.getMonth() + 1}/${z.getDate()}`; };
   const rows = all.filter(x => txt(x)).map(x => `<div class="diary-row"><span class="diary-ic">${x.i != null && typeof PET_ART !== "undefined" ? PET_ART.svg(x.i) : `<span class="inline-ic">${ic("footprints")}</span>`}</span><span class="diary-t">${escHtml(txt(x))}</span><time>${dt(x.t)}</time></div>`).join("");
   return rows || `<div class="diary-empty">${ttT("還沒有紀錄")}</div>`;
+}
+// 日記照月份看（2026-10-08 R4 原22，併進手冊、不另做一套）：有紀錄的月份一顆按鈕；選了月份上面多一行「這個月」的小結
+function petDiaryMonths() {
+  let d = []; try { d = JSON.parse(localStorage.getItem("tt_pet_diary") || "[]").filter(x => !x.dbg); } catch (e) { /* */ }
+  const ms = [...new Set(d.map(x => localYM(x.t)).concat(realRecords().filter(r => !r.dbg).map(r => localYM(r.date))).filter(Boolean))].sort().reverse().slice(0, 12);
+  if (ms.length < 2) return "";   // 只有一個月：不用篩
+  const lab = m => { const [y, mo] = m.split("-"); return new Date(+y, +mo - 1, 1).toLocaleDateString(ttLocale(), { month: "short" }); };
+  return `<div class="pp-tods diary-months" role="radiogroup" aria-label="${escHtml(ttT("月份"))}"><button class="pp-tod on" data-ym="" role="radio" aria-checked="true">${ttT("全部")}</button>${ms.map(m => `<button class="pp-tod" data-ym="${m}" role="radio" aria-checked="false">${lab(m)}</button>`).join("")}</div><div class="diary-month-sum" hidden></div>`;
+}
+function petMonthSum(ym) {
+  const recs = realRecords().filter(r => !r.dbg && localYM(r.date) === ym), km = recs.reduce((s, r) => s + (r.distanceKm || 0), 0);
+  let d = []; try { d = JSON.parse(localStorage.getItem("tt_pet_diary") || "[]").filter(x => !x.dbg && localYM(x.t) === ym); } catch (e) { /* */ }
+  return ttT("這個月：一起出門 {a} 次、{b} km、日記 {c} 則").replace("{a}", recs.length).replace("{b}", km.toFixed(1)).replace("{c}", d.length);
+}
+function bindDiaryMonths(ov) {
+  const sum = ov.querySelector(".diary-month-sum"), list = ov.querySelector(".diary-list");
+  ov.querySelectorAll(".diary-months .pp-tod").forEach(b => b.addEventListener("click", () => {
+    ov.querySelectorAll(".diary-months .pp-tod").forEach(o => { o.classList.toggle("on", o === b); o.setAttribute("aria-checked", o === b); });
+    const ym = b.dataset.ym; list.innerHTML = petDiaryHtml(ym || null); if (sum) { sum.hidden = !ym; sum.textContent = ym ? petMonthSum(ym) : ""; }
+  }));
 }
 function openPetDex() {
   if (document.querySelector('[data-ov="petdex"]')) return;   // 防連點疊層
@@ -870,7 +930,7 @@ function openPetDex() {
     <div class="dex-sec">${ttT("牠帶回來的小東西")}</div>
     <div class="gift-grid">${Object.keys(PET_GIFTS).map(k => { const o = petGiftsOwned().find(g => g.id === k); return o ? `<div class="gift-it">${petGiftIcon(k)}<span>${escHtml(ttT(PET_GIFTS[k][0]))}</span></div>` : `<div class="gift-it no"><b>?</b><span>${escHtml(ttT("還沒帶回來"))}</span></div>`; }).join("")}</div>
     <div class="dex-sec">${ttT("夥伴日記")}</div>
-    <div class="diary-list">${petDiaryHtml()}</div>
+    ${petDiaryMonths()}<div class="diary-list">${petDiaryHtml()}</div>
     <div class="dex-sec">${ttT(`進化圖鑑（共 ${PET_STAGES.length} 階）`)}</div>
     <div class="dex-list">${stages}</div>
   </div>`;
@@ -878,6 +938,7 @@ function openPetDex() {
   let _a11y = null;
   const close = () => { if (_a11y) _a11y(); ov.remove(); };
   if (typeof ttModalA11y === "function") _a11y = ttModalA11y(ov, close, { focus: "#petDexClose" });
+  bindDiaryMonths(ov);
   ov.addEventListener("click", e => { if (e.target === ov) close(); });
   ov.querySelector("#petDexClose").addEventListener("click", close);
 }

@@ -547,15 +547,17 @@ ${tigerHead()}
     const v = vb(i).split(" ").map(Number), p = pad || 0, box = p ? `${v[0] - p} ${v[1] - p} ${v[2] + 2 * p} ${v[3] + 2 * p}` : vb(i);
     const W = 200 + 2 * p, pc = u => ((p + u) / W * 100).toFixed(2) + "%";   // 圖上的座標 → 畫布的百分比（轉動支點用）
     const st = p ? ` data-pad="${p}" style="--pf:${(W / 200).toFixed(4)};--pm:${(p / 200).toFixed(4)};--o196:${pc(196)};--o194:${pc(194)};--o190:${pc(190)};--x40:${pc(40)};--x20:${pc(20)}"` : "";
-    return `<svg class="pet-critter ${cls || ""}${p ? " pc-pad" : ""}" viewBox="${box}"${st} role="img" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${body(i, hatId)}</svg>`;
+    return `<svg class="pet-critter ${cls || ""}${p ? " pc-pad" : ""}" data-s="${clamp(i)}" viewBox="${box}"${st} role="img" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${body(i, hatId)}</svg>`;
   }
   function byEmoji(e) { return EMOJI.indexOf(e); }   // 找不到回 -1
   // 給 canvas 用：帶 width/height 的獨立 SVG data URI（靜態一幀，供 new Image().src 光柵化畫進分享圖卡）
   // hatId 有給就把配件一起畫進去（合照用）
-  function dataUri(i, size, hatId) {
+  function dataUri(i, size, hatId, pose) {
     const s = size || 120;
     // 圖片裡吃不到 style.css：開心瞇眼要自己藏起來（以前分享圖卡會同時畫出睜眼和 ^^ 眼）；質感細節 .pc-d2 照畫（圖卡夠大）
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="${vb(i)}"><style>.pc-eh,.m-o,.m-t,.m-p,.pr-ext,.pr-legs,.pc-crack2,.pc-crack3{display:none}</style>${body(i, hatId)}</svg>`;
+    // pose（2026-10-08 R4 原16，拍照選姿勢）：happy 是瞇眼笑（^^ 眼）、sleep 是閉眼（眼睛壓成一條線）；其他是平常坐著
+    const ps = pose === "happy" ? ".pc-eye{display:none}.pc-eh{display:inline}" : pose === "sleep" ? ".pc-eye{transform:scaleY(.14);transform-box:fill-box;transform-origin:center}" : "";
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="${vb(i)}"><style>.pc-eh,.m-o,.m-t,.m-p,.pr-ext,.pr-legs,.pc-crack2,.pc-crack3{display:none}${ps}</style>${body(i, hatId)}</svg>`;
     return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
   }
   function habitatUri(i, w, h) {
