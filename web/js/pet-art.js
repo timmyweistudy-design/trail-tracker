@@ -684,5 +684,5 @@ ${tigerHead()}
   const dragonSpine = n => spine(DSP, n).map(q => ({ x: q.x, y: q.y }));
   const dragon = { I0: DI0, DB, DT0, tail: dragonTail };   // pet-walk：尾巴從第 I0 節能動、每格用 tail(中心線) 重畫
   const larvaSpine = n => spine(LVS, n).map(q => ({ x: q.x, y: q.y }));   // 幼蟲身體的中心線（pet-walk.js 的 U 型迴轉：身體每一點沿這條線的位置）   // 神龍身體的中心線（pet-walk.js 用來讓尾巴彎過去）
-  return { hatIcon, accIcon, ACC_IDS, ACC_LABEL, accOk: (i, id) => !!NECK[clamp(i)] && (!id || id === "none" || (ACC_OK[id] || []).includes(clamp(i))), larvaSpine, dragonSpine, dragon, cloudTop6, svg, padFor, count: A.length, byEmoji, dataUri, habitat, habitatUri, hat, HAT_IDS, HAT_LABEL, headLine, prop };
+  return { kit: { P, E, C, Pa, sh, tn }, hatIcon, accIcon, ACC_IDS, ACC_LABEL, accOk: (i, id) => !!NECK[clamp(i)] && (!id || id === "none" || (ACC_OK[id] || []).includes(clamp(i))), larvaSpine, dragonSpine, dragon, cloudTop6, svg, padFor, count: A.length, byEmoji, dataUri, habitat, habitatUri, hat, HAT_IDS, HAT_LABEL, headLine, prop };
 })();

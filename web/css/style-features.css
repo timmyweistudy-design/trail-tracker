@@ -2597,3 +2597,4 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .pet-link:active { opacity: .7; }
 [data-fs-big] .pet-acts-main { grid-template-columns: repeat(3, 1fr); }
 [data-fs-big] .pet-acts-main .pet-btn.feed { grid-column: 1 / -1; }
+.gift-it .pg-ic { width: 38px; height: 38px; }   /* 小東西 v2（2026-10-09）：重畫成有外框、暗面、高光的圖，放大一點看得到細節 */

@@ -153,7 +153,7 @@ const PET_GIFTS = {
   petal: ["山櫻花瓣", '<path d="M12 21c-5-3-7-8-5-13 2 1 3 3 5 3s3-2 5-3c2 5 0 10-5 13Z" fill="#f4a3bd" stroke="#c4607f" stroke-width="1.2" stroke-linejoin="round"/><path d="M12 11v8" stroke="#c4607f" stroke-width=".9"/>'],
 };
 function petGiftsOwned() { try { return JSON.parse(localStorage.getItem("tt_pet_gifts") || "[]"); } catch (e) { return []; } }
-function petGiftIcon(id, cls) { const g = PET_GIFTS[id]; return g ? `<svg class="${cls || "pg-ic"}" viewBox="0 0 24 24" aria-hidden="true">${g[1]}</svg>` : ""; }
+function petGiftIcon(id, cls) { const g = PET_GIFTS[id]; return g ? `<svg class="${cls || "pg-ic"}" viewBox="0 0 24 24" aria-hidden="true">${giftSvg(g[1])}</svg>` : ""; }
 function petGiftDue() { return petHearts() >= 5 && ttClock.now() - (+(localStorage.getItem("tt_pet_gift_t") || 0)) >= 2 * 864e5; }
 function petGiftGive() {
   const own = petGiftsOwned(), left = Object.keys(PET_GIFTS).filter(k => !own.some(o => o.id === k));
@@ -374,7 +374,7 @@ function petPlayAt(x) {
   if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) { petSay(ttT("好好玩！")); petBurst("❤️", 1); if (petPatAff()) renderPet(); return; }   /* 減少動態效果：沒有動畫，但親密照樣算（修正案共用原則 6，2026-10-08） */
   // 玩具（2026-10-09 R5 原13）：松果之外，牠帶回來的橡實、羽毛也會拿來玩（同一套落下、碰、帶、回位的流程，不各寫一套）
   const toys = ["pine"].concat(["acorn", "feather"].filter(k => petGiftsOwned().some(o => o.id === k))), toy = toys[Math.floor(Math.random() * toys.length)];
-  petBuzz(12); PetStage.play(`<svg viewBox="0 0 24 24">${PET_GIFTS[toy][1]}</svg>`, x, toy).then(ok => { if (!ok) return;
+  petBuzz(12); PetStage.play(`<svg viewBox="0 0 24 24">${giftSvg(PET_GIFTS[toy][1])}</svg>`, x, toy).then(ok => { if (!ok) return;
     if (tired) { petSay(ttT("玩累了，休息一下"), 2400); if (PetStage.act) setTimeout(() => PetStage.act("yawn"), 300); }   // 累了只喘口氣、打個哈欠（不加新的數值）
     else petSay(ttT(["好好玩！", "再丟一次嘛", "我抓到了！"][Math.floor(Math.random() * 3)]));
     if (petPatAff()) petFloat(`${ttT("親密")} +1`, ".pet-card .pet-meter:nth-child(2) .aff-hearts", null, PET_HEART_SVG); });
@@ -424,12 +424,45 @@ const PET_PROP_EXTRA = {
   fire: ["小營火", "有一趟走到天黑才回來", '<path d="M4 21l16-4M4 17l16 4" stroke="#7a4c14" stroke-width="2.4" stroke-linecap="round"/><path d="M12 3c3 4 5 6 5 9a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-8Z" fill="#f2793a"/><path d="M12 9c1.5 2 2.5 3 2.5 4.5a2.5 2.5 0 0 1-5 0c0-1.5 1-2.5 2.5-4.5Z" fill="#ffd36a"/>', () => realRecords().some(r => { const e = new Date(new Date(r.date).getTime() + (r.elapsedMs || 0)).getHours(); return e >= 18 || e < 4; })],
   pole: ["登山杖", "成長里程滿 100 km", '<path d="M8 2l2 20M16 2l-2 20" stroke="#5d7180" stroke-width="2.2" stroke-linecap="round"/><path d="M7 5h4M13 5h4" stroke="#d6372f" stroke-width="3" stroke-linecap="round"/><circle cx="10" cy="21" r="1.6" fill="#333"/><circle cx="14" cy="21" r="1.6" fill="#333"/>', () => totalKm() >= 100],
 };
+// ── 小東西與擺設 v2（2026-10-09，使用者：「目前所有的配件和新加的都要設計精緻一點」）──
+// 以前是 24×24 的平塗小圖；改用角色同一套畫法（PET_ART.kit 的 P：有色外框、右下暗面、左上高光）＋材質細節。名字、取得條件不變。
+// 圖裡有裁切（§ 開頭的 id）：每次畫都要經過 giftSvg() 換成自己的 id（同一頁會畫很多份）
+let _gU = 0;
+const giftSvg = raw => String(raw || "").replace(/§/g, "g" + (++_gU).toString(36) + "_");
+(() => {
+  if (typeof PET_ART === "undefined" || !PET_ART.kit) return;
+  const { P, E, C, Pa } = PET_ART.kit, o = (hl, dx) => ({ hl, dx: dx || .7, dy: dx || .8, sw: 1 }), L = (d, c, w) => `<path d="${d}" stroke="${c}" stroke-width="${w || .8}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  const G = {
+    pine: L("M12 6.5V2.6", "#4f7a3a", 1.5) + P(E(12, 14, 6, 8), "#9a6a3a", o([9.8, 10.5, 1.4, 2.6])) + L("M6.8 11.2q2.6 2 5.2 0q2.6 2 5.2 0M6.4 14.6q2.8 2 5.6 0q2.8 2 5.6 0M7.4 18q2.3 1.8 4.6 0q2.3 1.8 4.6 0", "#6b4422", .85),
+    feather: P(Pa("M18.5 2.8C9.5 4.6 6 11.6 5.8 19l2.2-1C9 12 12.2 7.8 18.5 2.8Z"), "#dfe8f4", o([12, 8.5, 1, 3.2])) + L("M8.6 15.6l3.6-1.6M9.6 12.6l4.4-2M11.4 9.6l4.4-2.2M13.6 6.8l3.6-2", "#9fb3cc", .7) + L("M5.8 19L4 22", "#7d93ad", 1.4),
+    maple: P(Pa("M12 2l2 4 4-1-1 4 4 2-4 2 1 3-4-1-1 5h-2l-1-5-4 1 1-3-4-2 4-2-1-4 4 1Z"), "#e0603a", o([9.6, 8, 1.4, 1])) + L("M12 6v14M12 11l-3.6-2.4M12 11l3.6-2.4M12 14.4l-3.2 1M12 14.4l3.2 1", "#a83a1f", .7),
+    stone: P(E(12, 14, 8, 6), "#8fa3b0", o([8.6, 11.6, 2.6, 1.3], .9)) + L("M5.6 13.2c3 2.2 9.8 2.2 12.8 0", "#e8eef2", 1.3) + `<circle cx="14.6" cy="16.4" r=".7" fill="#6c8090"/><circle cx="9.4" cy="17" r=".5" fill="#6c8090"/>`,
+    acorn: L("M12 5V2.8", "#5a3a1c", 1.4) + P(Pa("M7.2 10.2c0 6 2 9.8 4.8 9.8s4.8-3.8 4.8-9.8Z"), "#c98a4a", o([10.2, 13.6, 1.2, 2.6])) + P(Pa("M5.8 10.6c0-3.2 2.8-5.4 6.2-5.4s6.2 2.2 6.2 5.4Z"), "#7a5230", o(null, .5)) + L("M8 9.6l1.6-2.6M11 9.8l1.2-3M14 9.6l1.2-2.6", "#5a3a1c", .7),
+    flower: L("M12 13v9", "#5d9a4a", 1.4) + P(Pa("M12 18q-4-1-5 1q3 2 5-1Z"), "#6aab55", o(null, .4)) + [0, 72, 144, 216, 288].map(a => P(E(12, 6.4, 2.9, 4).replace("<ellipse", `<ellipse transform="rotate(${a} 12 10.6)"`), "#f2a6c2", o(null, .4))).join("") + P(C(12, 10.6, 2.1), "#f7c04a", o([11.4, 10, .6, .5], .3)),
+    crystal: P(Pa("M12 2l5 6-2 13H9L7 8Z"), "#bfe6f0", o([10, 7, 1, 3])) + L("M12 2v19M7 8h10M9.5 21L12 8l2.5 13", "#5aa3b8", .7) + `<path d="M18.6 3.4l.5 1.2 1.2.5-1.2.5-.5 1.2-.5-1.2-1.2-.5 1.2-.5Z" fill="#fff6c8"/>`,
+    shell: P(C(12, 13, 7), "#e8c58a", o([9.4, 10.2, 1.8, 1.2])) + L("M12 13a2.4 2.4 0 1 1 2.4 2.4a4.8 4.8 0 1 1-4.8-5.6", "#a37a3a", 1) + L("M17.6 17.6q2.4 1.6 3.4 3.8", "#c9a066", 1.2),
+    fern: L("M12 22C12 14 11 8 8 2", "#4f7a3a", 1.3) + [4, 7, 10, 13, 16].map((y, k) => P(Pa(`M${(11 - k * .3).toFixed(1)} ${y + 2}q-3-2.4-6-.4q3 2 6 .4Z`), "#6aab55", o(null, .3)) + P(Pa(`M${(11.6 - k * .3).toFixed(1)} ${y + 2}q3-2.6 6-.8q-3 2-6 .8Z`), "#78b862", o(null, .3))).join(""),
+    bean: P(E(9, 13, 4, 5), "#d8322a", o([7.8, 11, 1, 1.4])) + `<path d="M6.2 10.4a2 2 0 0 1 2-2.2" stroke="#1e1a1a" stroke-width="2.2" stroke-linecap="round" fill="none"/>` + P(E(16, 12, 3.4, 4.4), "#d8322a", o([15, 10.4, .8, 1.2])),
+    moss: P(C(12, 13.4, 7.8), "#6f9a3e", o([9.4, 10.4, 2, 1.4])) + L("M7 11.4l1 2M10 8.6l1 2M14 9.4l-1 2M16.4 13l-1 1.2M9 16.4l1-1.2M13 16.4l1 1.2M12 13v1.6", "#a8cf6a", 1.1) + L("M8 20.6q4 1.6 8 0", "#46692a", 1),
+    gumball: [0, 45, 90, 135, 180, 225, 270, 315].map(a => `<path d="M12 6.8v-2.6" stroke="#5a3a1a" stroke-width="1.5" stroke-linecap="round" transform="rotate(${a} 12 13)"/>`).join("") + P(C(12, 13, 6.2), "#8a5a2c", o([10, 10.8, 1.4, 1])) + L("M12 6V2", "#5a3a1a", 1.1) + [[10, 12], [14, 12.6], [12, 15.4]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r=".8" fill="#5a3a1a"/>`).join(""),
+    cicada: P(Pa("M12 4c3 0 4 3 4 6l2 6-3 1-1 3h-4l-1-3-3-1 2-6c0-3 1-6 4-6Z"), "#d6a25a", o([10.4, 8, 1, 2])) + L("M12 7v11M9 12h6M8.6 15.4l-2 1.6M15.4 15.4l2 1.6", "#9a6a2a", .8) + `<circle cx="10.4" cy="6.4" r=".8" fill="#6a4410"/><circle cx="13.6" cy="6.4" r=".8" fill="#6a4410"/>`,
+    petal: P(Pa("M12 21c-5-3-7-8-5-13 2 1 3 3 5 3s3-2 5-3c2 5 0 10-5 13Z"), "#f4a3bd", o([9.4, 12, 1, 2.4])) + L("M12 11v8M12 14l-2 -1.6M12 14l2 -1.6", "#c4607f", .7),
+  };
+  for (const k in G) if (PET_GIFTS[k]) PET_GIFTS[k][1] = G[k];
+  const X = {
+    tent: L("M2 21.4h20", "#7a6a4a", 1.2) + P(Pa("M2.6 21L12 4.4 21.4 21Z"), "#e8a33d", o([9, 12, 1.4, 3])) + P(Pa("M12 9.6L8.8 21h6.4Z"), "#8a5a1a", o(null, .4)) + L("M12 4.4V1.8", "#7a4c14", 1) + `<path d="M12 1.8l3.4 1-3.4 1Z" fill="#d6372f"/>`,
+    sign: P(Pa("M11 3h2v19h-2Z"), "#8a5a2a", o(null, .4)) + P(Pa("M4 5h13l3 3-3 3H4Z"), "#d8b47a", o([7, 6.8, 2, .8])) + P(Pa("M20 12H8l-3 3 3 3h12Z"), "#c99a5a", o([16, 13.8, 2, .8])) + L("M6.4 8h7.6M10 15h7.6", "#8a5a2a", .8),
+    fire: P(Pa("M3.4 20.4l17-4.2 .7 2.4-17 4.2Z"), "#7a4c14", o(null, .4)) + P(Pa("M3.4 18.6l.7-2.4 17 4.2-.7 2.4Z"), "#8a5a22", o(null, .4)) + P(Pa("M12 3c3 4 5 6 5 9a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-8Z"), "#f2793a", o([10, 10, 1, 2])) + `<path d="M12 9c1.5 2 2.5 3 2.5 4.5a2.5 2.5 0 0 1-5 0c0-1.5 1-2.5 2.5-4.5Z" fill="#ffd36a"/><circle cx="17.4" cy="5" r=".7" fill="#ffb45a"/><circle cx="6.8" cy="6.4" r=".5" fill="#ffb45a"/>`,
+    pole: P(Pa("M7.2 2.2l1.6-.2 2 19.6-1.6.2Z"), "#6d8190", o(null, .4)) + P(Pa("M16.8 2.2l-1.6-.2-2 19.6 1.6.2Z"), "#6d8190", o(null, .4)) + P(Pa("M6.4 3.6h4.2l.3 3.4H6.7Z"), "#d6372f", o(null, .3)) + P(Pa("M13.4 3.6h4.2l-.3 3.4h-4.2Z"), "#d6372f", o(null, .3)) + `<ellipse cx="10" cy="20.6" rx="2.2" ry=".8" fill="none" stroke="#333" stroke-width=".9"/><ellipse cx="14" cy="20.6" rx="2.2" ry=".8" fill="none" stroke="#333" stroke-width=".9"/>`,
+  };
+  for (const k in X) if (PET_PROP_EXTRA[k]) PET_PROP_EXTRA[k][2] = X[k];
+})();
 function petPropsAll() { const own = new Set(petGiftsOwned().map(g => g.id)); return Object.keys(PET_GIFTS).map(id => ({ id, n: PET_GIFTS[id][0], svg: PET_GIFTS[id][1], ok: own.has(id), how: "親密滿了會帶回來" })).concat(Object.keys(PET_PROP_EXTRA).map(id => { const e = PET_PROP_EXTRA[id]; return { id, n: e[0], svg: e[2], ok: !!window.__petPropsAll || e[3](), how: e[1] }; })); }   // __petPropsAll：測試面板全解鎖
 function petPropsOn() { let a = []; try { a = JSON.parse(localStorage.getItem("tt_pet_props") || "[]"); } catch (e) { /* */ } const ok = new Set(petPropsAll().filter(p => p.ok).map(p => p.id)); return a.filter(id => ok.has(id)).slice(0, 2); }
-function petPropsSvgs() { const all = petPropsAll(); return petPropsOn().map(id => { const p = all.find(x => x.id === id); return p ? `<svg viewBox="0 0 24 24">${p.svg}</svg>` : ""; }); }
+function petPropsSvgs() { const all = petPropsAll(); return petPropsOn().map(id => { const p = all.find(x => x.id === id); return p ? `<svg viewBox="0 0 24 24">${giftSvg(p.svg)}</svg>` : ""; }); }
 function petPropsPicker() {
   const on = petPropsOn();
-  return `<div class="dex-sec">${ttT("舞台擺設（最多 2 個）")}</div><div class="gift-grid prop-grid">${petPropsAll().map(p => `<button class="gift-it prop-it${p.ok ? "" : " no"}${on.includes(p.id) ? " on" : ""}" data-prop="${p.id}"${p.ok ? "" : " disabled"}>${p.ok ? `<svg class="pg-ic" viewBox="0 0 24 24">${p.svg}</svg>` : "<b>?</b>"}<span>${escHtml(ttT(p.ok ? p.n : p.how))}</span></button>`).join("")}</div>`;
+  return `<div class="dex-sec">${ttT("舞台擺設（最多 2 個）")}</div><div class="gift-grid prop-grid">${petPropsAll().map(p => `<button class="gift-it prop-it${p.ok ? "" : " no"}${on.includes(p.id) ? " on" : ""}" data-prop="${p.id}"${p.ok ? "" : " disabled"}>${p.ok ? `<svg class="pg-ic" viewBox="0 0 24 24">${giftSvg(p.svg)}</svg>` : "<b>?</b>"}<span>${escHtml(ttT(p.ok ? p.n : p.how))}</span></button>`).join("")}</div>`;
 }
 function bindPropsPicker(ov) {
   ov.querySelectorAll(".prop-it:not(.no)").forEach(b => b.addEventListener("click", () => {
