@@ -642,8 +642,13 @@ ${tigerHead()}
   //   頭巾類（頭巾、浪花頭巾、花冠）往下移到額頭、縮一點、把拱度壓平貼著圓頭；髮夾、蝴蝶結往下貼著頭（不壓扁）。帽子類（草帽、派對帽…）照舊戴在頭頂
   const HAT_FIT = { 1: { band: [0, 13, .86, .62], clip: [-4, 9, .86, 1] }, 2: { band: [0, 9, .78, .6], clip: [0, 8, .8, 1] } };
   const HAT_KIND = { bandana: "band", wave: "band", crown: "band", shell: "clip", bow: "clip" };
+  // 個別帽子 × 個別角色（2026-10-09 使用者：「玉兔耳……每一個頭飾都確認，不要浮空或在觸角上」）：
+  //   玉兔耳是髮箍——小頭（幼蟲、蝶）戴到額頭、壓平；有鹿角的幼龍、神龍把兔耳收窄，落在兩支鹿角中間（不要疊在角上）
+  //   芒草穗：小頭縮小往下貼（不要跟觸角纏在一起），幼龍、神龍收窄避開鹿角。[dx, dy, 寬, 高]（寬高是乘在原本的縮放上）
+  const HAT_FIT_ONE = { rabbit: { 1: [0, 12, .8, .7], 2: [0, 9, .7, .62], 5: [0, 2, .66, .9], 6: [0, 2, .54, .88] }, silvergrass: { 1: [0, 8, .72, .78], 2: [0, 8, .62, .66], 5: [0, 2, .66, .9], 6: [0, 2, .62, .88] } };
   function hatTf(id, i) {
-    const a = HAT_ANCHOR[clamp(i)] || [100, 46, 1], f = (HAT_FIT[clamp(i)] || {})[HAT_KIND[id]] || [0, 0, 1, 1];
+    const one = (HAT_FIT_ONE[id] || {})[clamp(i)];
+    const a = HAT_ANCHOR[clamp(i)] || [100, 46, 1], f = one ? [one[0], one[1], one[2], one[3] / one[2]] : (HAT_FIT[clamp(i)] || {})[HAT_KIND[id]] || [0, 0, 1, 1];
     return `translate(${a[0] + f[0]} ${a[1] + f[1]}) scale(${(a[2] * f[2]).toFixed(3)} ${(a[2] * f[2] * f[3]).toFixed(3)}) translate(-100 -45)`;
   }
   function hatG(id, i) {
