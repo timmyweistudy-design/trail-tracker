@@ -115,7 +115,12 @@ const line = (j, r, tag) => console.log(`${r.ok ? "✓" : "✗"} ${j.name}${tag 
     if (r.ok) { flaky.push(j.name); results.set(j.name, { ...r, ok: true }); }
   }
   try { fs.mkdirSync(path.dirname(DUR), { recursive: true }); fs.writeFileSync(DUR, JSON.stringify(dur, null, 1)); } catch (e) { /* */ }
-  const bad = list.filter(j => !results.get(j.name).ok);
+  // GitHub Actions 上「量時間／逐格抖動」的測試只警告、不算失敗（2026-10-09）：共用機器沒有 GPU、CPU 時快時慢，
+  // fps 預算和 1～2px 的逐格門檻在那裡一半一半紅（R11 之前就這樣，本機都過）——它們的把關在本機 test:all（每次 push 前跑）
+  const SOFT = process.env.GITHUB_ACTIONS ? /^(pet-perf-budget|pet-motion|pet-anim-cut)(#\d+)?$/ : null;
+  const soft = SOFT ? list.filter(j => !results.get(j.name).ok && SOFT.test(j.name)) : [];
+  if (soft.length) console.log(`\n⚠ GitHub 機器上不算失敗（量時間／逐格的測試，本機 test:all 把關）：${soft.map(j => j.name).join("、")}`);
+  const bad = list.filter(j => !results.get(j.name).ok && !soft.includes(j));
   const mm = s => { s = Math.round(s); return `${Math.floor(s / 60)} 分 ${s % 60} 秒`; };
   console.log(`\n${list.length - bad.length}/${list.length} 通過（${mm((Date.now() - T0) / 1000)}）` +
     (flaky.length ? `；不穩定（第一次失敗、單獨重跑通過）：${flaky.join("、")}` : "") + (bad.length ? `；沒過：${bad.map(b => b.name).join("、")}` : ""));
