@@ -112,11 +112,11 @@
 ---
 
 ### R14 進度（2026-10-09，SW v704）
-- [x] CI「只編譯不簽章」：`.github/workflows/ios-build.yml`（改到 `ios/` 才跑）；加小工具 target 後對模擬器編譯，**確認 `TrailWidgets.appex` 真的編出來**——小工具的 Swift 這是第一次被編譯，一次就過
+- [x] CI「只編譯不簽章」：`.github/workflows/ios-build.yml`（改到 `ios/` 才跑）；加小工具 target 後對模擬器編譯，**確認 `TrailWidgets.appex` 真的編出來**，這版小工具一次就過（更正：使用者早就開了 `ENABLE_WIDGETS=1`，Codemagic 之前出的 build 已經編過小工具；第三版方案「App Group 沒開」是舊資訊）
 - [x] 小工具：戴帽子＋配件＋自己的配色；睡覺時間（跟著使用者設定）換閉眼圖＋zz；節日前後一天掛燈籠、換那一句
 - [x] 鎖定畫面／動態島：夥伴靜態圖＋走／休息／喘的小記號與文字（`ContentState.mood`，可空，舊版相容）
 - [x] 「我的」設定最下面：`版本 v7xx · iOS x.x (build)`
-- [ ] 使用者：App Group、Codemagic 出 build、iPhone 驗收（清單在 [ios-checklist.md](ios-checklist.md) 最後一節）
+- [ ] 使用者：~~App Group~~（早就設好）、Codemagic 出 build、iPhone 驗收（清單在 [ios-checklist.md](ios-checklist.md) 最後一節）
 
 ### 收尾輪（2026-10-09，SW v705～v707）
 - **SQL 確認生效**：使用者跑完 phase40／41 後用正式站的公開金鑰打 REST——`pet_acc`、`pet_look` 欄在、四支 RPC 在、匿名呼叫被擋

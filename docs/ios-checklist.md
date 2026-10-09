@@ -25,12 +25,12 @@
 
 ## 第三版收尾：出一版 iOS（2026-10-09，R14）——使用者要做的，照順序勾
 
-> 我這邊做完的：CI 加了「只編譯不簽章」的 iOS job（`.github/workflows/ios-build.yml`，改到 `ios/` 才跑；**小工具的 Swift 以前從來沒被編譯過，第一次跑如果紅了，把錯誤訊息貼給我**）；小工具戴帽子＋配件、睡覺時間換閉眼圖（跟著你在 App 裡設的睡覺時間）、節日掛燈籠；鎖定畫面／動態島的記錄卡片畫夥伴（走／休息／喘）；「我的」設定最下面顯示版本＋原生 build 號。
+> 我這邊做完的：CI 加了「只編譯不簽章」的 iOS job（`.github/workflows/ios-build.yml`，改到 `ios/` 才跑；CI 在每次改到 `ios/` 時先編譯一次（含小工具），不用等 Codemagic 才發現錯誤）；小工具戴帽子＋配件、睡覺時間換閉眼圖（跟著你在 App 裡設的睡覺時間）、節日掛燈籠；鎖定畫面／動態島的記錄卡片畫夥伴（走／休息／喘）；「我的」設定最下面顯示版本＋原生 build 號。
 
 - [x] **0. 先看 GitHub Actions 的「iOS compile check」是綠的**（10/09 綠，`TrailWidgets.appex` 有編出來）（repo → Actions；推上去後大約 10～20 分鐘）。紅的話先別出 build，把錯誤貼給我
 - [x] **1. Supabase 後台跑兩支 SQL**（**10/09 已跑、已用 REST 確認生效**）（SQL Editor 貼上→Run，可以重複跑）：`supabase/schema-phase40-pet-acc.sql`（好友看得到配件）、`supabase/schema-phase41-pet-social.sql`（送小東西、回訪、地圖上隊友的夥伴、封鎖規則）。沒跑之前 App 會自動退回舊行為，不會壞
 - [x] **2. 重新部署 `send-push` Edge Function**（**10/09 已部署 v17，JWT 驗證維持關閉、密鑰沒動、不帶密鑰的呼叫照樣回 401**）（多了「送小東西」「回訪」兩種通知的推播文字）：`npx supabase functions deploy send-push --no-verify-jwt --project-ref bkbkamvbczqdejrlpiqo`（**一定要帶 `--no-verify-jwt`**，資料庫的 webhook 呼叫時沒有使用者登入；密鑰之前設過了，**不要重設**，否則要連 webhook 的 Authorization 一起改）
-- [ ] **3. App Group 一次性設定**（照 [ios-widgets.md](ios-widgets.md)）→ Codemagic 環境變數 `ENABLE_WIDGETS=1`
+- [x] **3. App Group＋`ENABLE_WIDGETS=1`**（使用者之前就設好了：Codemagic 環境變數在 `signing` 群組，codemagic.yaml 有引用）
 - [ ] **4. Codemagic 出 build → TestFlight**（`git push` 不會更新 App；10/01 之後所有網頁改動、3 天提醒、低電量提醒、品牌啟動圖都要這一版才進得了 App）
 - [ ] **5. iPhone 上逐項看**（有問題就截圖／錄影回報「哪一項」）：
   - [ ] 「我的」→ 設定最下面那行寫 `版本 v7xx · iOS x.x (build)`（回報問題時附上這行）
