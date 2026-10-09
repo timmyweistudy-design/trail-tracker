@@ -2654,3 +2654,4 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .toast .toast-ic { display: inline-block; margin-left: 4px; vertical-align: -3px; } .toast .toast-ic svg { width: 1.15em; height: 1.15em; display: block; }   /* 吐司裡的當季果實圖示 */
 .pet-btn.feed .fb-ic > svg.berry { background: rgba(255, 250, 238, .92); border-radius: 50%; padding: 2px; box-sizing: content-box; box-shadow: 0 1px 2px rgba(120, 60, 10, .25); }   /* 當季果實（芒果、柿子、橘子）在橘色按鈕上看不見：墊一個奶油色圓底 */
 .yr-btns { flex-wrap: wrap; } .yr-btns .btn { min-width: max-content; }   /* 英文大字級「Share／Save image」放不下一排：換行（以前撐出視窗可以左右滑） */
+.dex-tone-hint .dex-tone-what { color: var(--ink-soft); margin-bottom: 3px; max-width: 30em; }   /* 配色是什麼（2026-10-09 使用者問） */

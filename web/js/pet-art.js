@@ -659,13 +659,19 @@ ${tigerHead()}
   // 戴帽子時拿掉 <!--O-->…<!--/O-->（幼蟲的臭角）：帽子要戴在頭上，不是戴在臭角上
   // 進化配色變體（2026-10-09 第三版 R10，原21 縮小版：不做分支外形）：把角色身上每一個顏色做一樣的色相／飽和／亮度偏移；
   //   帽子、配件是偏移之後才插進去的，不會被染到。TONE 由 pet.js 設（setTone），""＝原色；只在 PET_ART.own(() => …) 裡畫的才套（自己的夥伴）
-  let TONE = "", OWN = false; const TONES = { deep: [0, .12, -.07], sea: [14, -.04, .02], alpine: [-4, -.14, .07] }, TCACHE = {};
+  // 2026-10-09 使用者：「辨識度高一點」——以前只把色相轉 10 幾度，幾乎看不出來（海風還讓狐狸變黃）。
+  //   改成「同亮度的主題色」在 RGB 裡混進去（k＝混多少；轉色相會從橘繞過綠才到藍，變成螢光綠）：
+  //   深林＝森林綠、整體暗一點；海風＝海藍；高山＝降飽和、變亮、帶一點冷色，像覆了一層雪。
+  //   黑白灰（眼睛、輪廓、白毛）不染，只跟著亮度走一點——物種一眼還認得
+  let TONE = "", OWN = false; const TONES = { deep: { h: 135, s: .45, k: .5, l: -.07 }, sea: { h: 208, s: .78, k: .66, l: .02 }, alpine: { h: 212, s: .3, k: .74, l: .17 } }, TCACHE = {};
+  const hsl2rgb = (H, S, L) => { const c = (1 - Math.abs(2 * L - 1)) * S, x = c * (1 - Math.abs((H / 60) % 2 - 1)), m = L - c / 2, [R, G, B] = H < 60 ? [c, x, 0] : H < 120 ? [x, c, 0] : H < 180 ? [0, c, x] : H < 240 ? [0, x, c] : H < 300 ? [x, 0, c] : [c, 0, x]; return [R + m, G + m, B + m]; };
   function toneHex(h, t) {
     const n = parseInt(h.slice(1), 16), r = (n >> 16) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
-    let H = 0, S = 0, L = (mx + mn) / 2; if (d) { S = d / (1 - Math.abs(2 * L - 1)); H = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; H *= 60; }
-    H = (H + t[0] + 360) % 360; S = Math.max(0, Math.min(1, S + t[1])); L = Math.max(0, Math.min(1, L + t[2]));
-    const c = (1 - Math.abs(2 * L - 1)) * S, x = c * (1 - Math.abs((H / 60) % 2 - 1)), m = L - c / 2, [R, G, B] = H < 60 ? [c, x, 0] : H < 120 ? [x, c, 0] : H < 180 ? [0, c, x] : H < 240 ? [0, x, c] : H < 300 ? [x, 0, c] : [c, 0, x];
-    return "#" + [R, G, B].map(v => Math.round((v + m) * 255).toString(16).padStart(2, "0")).join("");
+    const L = (mx + mn) / 2, S = d ? d / (1 - Math.abs(2 * L - 1)) : 0, lit = L > .08 && L < .94;   // 太黑（輪廓、瞳孔）、太白（眼白、高光）不動
+    if (!lit) return h;
+    const k = S >= .12 ? t.k : 0, L2 = Math.max(0, Math.min(1, L + t.l * (S >= .12 ? 1 : .5))), tg = hsl2rgb(t.h, t.s, L2), sc = L ? L2 / L : 1;
+    const out = [r, g, b].map((v, q) => Math.max(0, Math.min(1, v * sc * (1 - k) + tg[q] * k)));
+    return "#" + out.map(v => Math.round(v * 255).toString(16).padStart(2, "0")).join("");
   }
   function toned(i) { const t = OWN && TONES[TONE]; if (!t) return A[clamp(i)]; const k = TONE + clamp(i); return TCACHE[k] || (TCACHE[k] = A[clamp(i)].replace(/#[0-9a-fA-F]{6}\b/g, h => toneHex(h, t))); }
   function body(i, hatId, accId) { const pre = "p" + (++U).toString(36) + "_"; let a = toned(i); if (HATS[hatId]) a = a.replace(/<!--O-->[\s\S]*?<!--\/O-->/, ""); const ag = accG(accId, i); if (ag && ag.front) a = a.replace(/(<g class="pr-head"[^>]*>)/, "$1" + ag.front); if (ag && ag.back) a = a.replace(/(<g class="pc-(?:bob|hover)[^"]*"[^>]*>)/, "$1" + ag.back); return a.replace("<!--H-->", hatG(hatId, i)).replace("<!--H2-->", hatG(hatId, i)).replace("<!--H3-->", HATS[hatId] ? `<g transform="translate(14 12) rotate(8 100 46)">${hatG(hatId, i)}</g>` : "").replace(/§/g, pre); }

@@ -18,7 +18,7 @@ window.ttDebug = (() => {
     setAffinity(n = 100) { ls.setItem("tt_pet_aff", String(Math.max(0, Math.min(100, +n)))); ls.setItem("tt_pet_aff_t", new Date().toISOString()); refresh(); return api.state(); },
     resetFeed() { ls.removeItem("tt_pet_fed_t"); refresh(); return "可再餵食"; },   // 冷卻 key 是 tt_pet_fed_t（原本刪錯 key 所以沒用）
     addDays(n = 10) { const h = new Date(petHatch()); h.setDate(h.getDate() - (+n)); ls.setItem("tt_pet_hatch", h.toISOString()); refresh(); return api.state(); },
-    clearDebug() { ls.removeItem("tt_debug_km"); ls.removeItem("tt_debug_mood"); window.__psSpots = null; window.__ps = null; window.__hatSeasonAll = false; window.__petPropsAll = false; window.__petDbg = false; if (typeof ttClock !== "undefined") ttClock.reset(); try { ls.setItem("tt_pet_diary", JSON.stringify(JSON.parse(ls.getItem("tt_pet_diary") || "[]").filter(x => !x.dbg))); ls.setItem("tt_pet_gifts", JSON.stringify(JSON.parse(ls.getItem("tt_pet_gifts") || "[]").filter(x => !x.dbg))); } catch (e) { /* */ } if (window.__ttSlow) api.slow(1); refresh(); return api.state(); },
+    clearDebug() { ls.removeItem("tt_debug_km"); ls.removeItem("tt_debug_mood"); window.__psSpots = null; window.__ps = null; window.__hatSeasonAll = false; window.__petPropsAll = false; window.__toneAll = false; if (typeof petApplyTone === "function") petApplyTone(); window.__petDbg = false; if (typeof ttClock !== "undefined") ttClock.reset(); try { ls.setItem("tt_pet_diary", JSON.stringify(JSON.parse(ls.getItem("tt_pet_diary") || "[]").filter(x => !x.dbg))); ls.setItem("tt_pet_gifts", JSON.stringify(JSON.parse(ls.getItem("tt_pet_gifts") || "[]").filter(x => !x.dbg))); } catch (e) { /* */ } if (window.__ttSlow) api.slow(1); refresh(); return api.state(); },
     resetPet() {
       ls.setItem("tt_pet_base", String(realTotalKm())); ls.setItem("tt_pet_hatch", new Date().toISOString());
       ls.setItem("tt_pet_stage", "0"); ls.setItem("tt_pet_berry_spent", String(berriesEarned()));
@@ -364,6 +364,12 @@ async function toggleDebugPanel() {
       ["🦊朋友來串門子", seePet(() => { if (typeof PetStage !== "undefined" && PetStage.guest) PetStage.guest({ svg: PET_ART.svg(Math.floor(Math.random() * 7), "", "crown"), stay: 3600 }).then(ok => { if (!ok) toast("牠在忙或睡著，等一下再試"); }); return ""; })],
       ["🌰玩松果", seePet(() => { const b = document.getElementById("petPlay"); if (b) b.click(); return ""; })],
       ["📷拍照", seePet(() => { if (typeof openPetPhoto === "function") openPetPhoto(); return ""; })],
+      ["🎨配色全解鎖", () => { window.__toneAll = true; petApplyTone(); renderPet(); return "配色全解鎖（只在這次開 App 有效；清除測試資料會恢復）"; }],
+      ["🎨換下一個配色", () => { const T = [["", "原色"], ["deep", "深林"], ["sea", "海風"], ["alpine", "高山"]], cur = T.findIndex(t => t[0] === (localStorage.getItem("tt_pet_tone") || "")), nx = T[(cur + 1) % T.length]; window.__toneAll = true; localStorage.setItem("tt_pet_tone", nx[0]); petApplyTone(); renderPet(); return `夥伴換成「${nx[1]}」配色（原色→深林→海風→高山）`; }],
+      ["🎨配色對照表", () => { const i = petStageIndex(totalKm()), cur = petTone(), T = [["", "原色"], ["deep", "深林"], ["sea", "海風"], ["alpine", "高山"]];
+        const cells = T.map(([k, l]) => { PET_ART.setTone(k); const u = PET_ART.own(() => PET_ART.dataUri(i, 160, petHat(), undefined, petAcc())); return `<div style="text-align:center"><img src="${u}" width="72" height="72" alt=""><div style="font-size:12px">${l}</div></div>`; }).join("");
+        petApplyTone(); PET_ART.setTone(cur);
+        ttChoice({ html: `<p><b>四種配色（目前：${(T.find(t => t[0] === cur) || T[0])[1]}）</b></p><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px">${cells}</div>` }, [{ label: "關閉", value: null }]); }],
       ["🏕擺設全解鎖", () => { localStorage.setItem("tt_pet_gifts", JSON.stringify(Object.keys(PET_GIFTS).map(id => ({ id, t: new Date().toISOString() })))); window.__petPropsAll = true; renderPet(); return Object.keys(PET_GIFTS).length + " 個小東西都有了；四個里程碑小物照真實條件（加里程／測試行程可達成）"; }],
       ["😵搖手機頭暈", seePet(() => ttDebug.react("dizzy"))], ["🤲來回摸", seePet(() => ttDebug.react("rub"))],
       ["🔄心情過場", seePet(() => { localStorage.setItem("tt_pet_mood_last", "x"); window.__petLine = null; renderPet(); return ""; })],
@@ -460,7 +466,7 @@ async function toggleDebugPanel() {
       ["夥伴：效能與錄影", /效能|錄影|除錯標記|0\.25×|0\.5×|▶1×/],
       ["夥伴：時間", /清晨|白天|黃昏|夜晚|睡著|醒著|⏩|⏹|真實時間/],
       ["夥伴：天氣、季節與節日", /新年|端午|中秋|^🌸春|^🌿夏|^🍁秋|^❄冬|下雨|陰天|下雪|^🌤晴|起風|寒流|好熱|夢泡泡|季節配件/],
-      ["夥伴：收藏", /明信片|五區|瀑布|海景|古道|森林|湖泊|縣市|全部標成新|擺設|測試步道/],
+      ["夥伴：收藏", /明信片|五區|瀑布|海景|古道|森林|湖泊|縣市|全部標成新|擺設|測試步道|配色/],
       ["夥伴：陪伴", /地圖夥伴|拍照|好友送果實|串門子|帶禮物|日記|相遇第|健行感想|不在時|音效/],
       ["夥伴：角色與心情", /^🥚蛋|毛毛蟲|^🦋|^🦊|^🐯|^🐲|^🐉神龍|睏|普通|開心|想念|心情|帽子|進化儀式/],
       ["夥伴：餵食與玩", /餵|玩松果/],

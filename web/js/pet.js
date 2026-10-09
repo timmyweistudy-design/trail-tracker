@@ -270,9 +270,14 @@ function canFeedNow() { return berriesBalance() >= 3 && feedCooldownMs() === 0; 
 // 季節果實（2026-10-09 第三版 R10，原15 縮小版）：舞台上掉下來的果實依季節換外觀（春櫻桃、夏芒果、秋柿子、冬橘子）；
 // 大小、咬的位置、吃法完全不變（只換畫，不碰餵食動畫）。介面上的「果實」貨幣圖示照舊
 // 配色變體（原21）：照健行風格解鎖——森林走滿 3 趟＝深林、海景／湖泊 3 趟＝海風、海拔 1500m 以上 3 趟＝高山；手冊裡選（tt_pet_tone，進備份）
-function petToneUnlocked() {
+// 配色解鎖進度：同一類步道走了幾趟（3 趟解鎖）；測試面板「配色全解鎖」設 window.__toneAll
+function petToneProgress() {
   const recs = realRecords(), n = f => recs.filter(f).length, tg = r => { try { const t = r.trailId && TRAILS.find(x => x.id === r.trailId); return t && typeof tagsOf === "function" ? tagsOf(t) : []; } catch (e) { return []; } };
-  return { "": true, deep: n(r => tg(r).includes("森林")) >= 3, sea: n(r => tg(r).some(x => x === "海景" || x === "湖泊")) >= 3, alpine: n(r => (r.altHigh || 0) >= 1500) >= 3 };
+  return { deep: n(r => tg(r).includes("森林")), sea: n(r => tg(r).some(x => x === "海景" || x === "湖泊")), alpine: n(r => (r.altHigh || 0) >= 1500) };
+}
+function petToneUnlocked() {
+  if (window.__toneAll) return { "": true, deep: true, sea: true, alpine: true };
+  const p = petToneProgress(); return { "": true, deep: p.deep >= 3, sea: p.sea >= 3, alpine: p.alpine >= 3 };
 }
 function petTone() { const t = localStorage.getItem("tt_pet_tone") || ""; return petToneUnlocked()[t] ? t : ""; }
 function petApplyTone() { if (typeof PET_ART !== "undefined" && PET_ART.setTone) PET_ART.setTone(petTone()); }
@@ -1120,7 +1125,7 @@ function openPetDex() {
     <div class="dex-tip"><span class="inline-ic">${ic("footprints")}</span> ${tip}</div>
     <div class="dex-sec">${ttT("牠帶回來的小東西")}</div>
     <div class="gift-grid">${Object.keys(PET_GIFTS).map(k => { const o = petGiftsOwned().find(g => g.id === k); return o ? `<div class="gift-it">${petGiftIcon(k)}<span>${escHtml(ttT(PET_GIFTS[k][0]))}</span></div>` : `<div class="gift-it no"><b>?</b><span>${escHtml(ttT("還沒帶回來"))}</span></div>`; }).join("")}</div>
-    <div class="dex-sec">${ttT("配色")}</div><div class="pp-tods dex-tones">${[["", "原色"], ["deep", "深林"], ["sea", "海風"], ["alpine", "高山"]].map(([k, l]) => { const ok = petToneUnlocked()[k]; return `<button class="pp-tod${petTone() === k ? " on" : ""}" data-tone="${k}"${ok ? "" : " disabled"} title="${ok ? "" : escHtml(ttT(k === "deep" ? "走 3 趟森林步道解鎖" : k === "sea" ? "走 3 趟海景或湖泊步道解鎖" : "走 3 趟海拔 1500 公尺以上解鎖"))}">${ok ? "" : `<svg class="ic tone-lock" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`}${ttT(l)}</button>`; }).join("")}</div>${(() => { const u = petToneUnlocked(), need = [["deep", "深林", "走 3 趟森林步道解鎖"], ["sea", "海風", "走 3 趟海景或湖泊步道解鎖"], ["alpine", "高山", "走 3 趟海拔 1500 公尺以上解鎖"]].filter(([k]) => !u[k]); return need.length ? `<div class="dex-tone-hint">${need.map(([, l, h]) => `<span><b>${escHtml(ttT(l))}</b> ${escHtml(ttT(h))}</span>`).join("")}</div>` : ""; })()}
+    <div class="dex-sec">${ttT("配色")}</div><div class="pp-tods dex-tones">${[["", "原色"], ["deep", "深林"], ["sea", "海風"], ["alpine", "高山"]].map(([k, l]) => { const ok = petToneUnlocked()[k]; return `<button class="pp-tod${petTone() === k ? " on" : ""}" data-tone="${k}"${ok ? "" : " disabled"} title="${ok ? "" : escHtml(ttT(k === "deep" ? "走 3 趟森林步道解鎖" : k === "sea" ? "走 3 趟海景或湖泊步道解鎖" : "走 3 趟海拔 1500 公尺以上解鎖"))}">${ok ? "" : `<svg class="ic tone-lock" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`}${ttT(l)}</button>`; }).join("")}</div>${(() => { const u = petToneUnlocked(), need = [["deep", "深林", "走 3 趟森林步道解鎖"], ["sea", "海風", "走 3 趟海景或湖泊步道解鎖"], ["alpine", "高山", "走 3 趟海拔 1500 公尺以上解鎖"]].filter(([k]) => !u[k]); const pr = petToneProgress(); return `<div class="dex-tone-hint"><span class="dex-tone-what">${escHtml(ttT("跟著你常走的步道換一種顏色：只換外觀，不影響成長；好友看到的還是原色"))}</span>${need.map(([k, l, h]) => `<span><b>${escHtml(ttT(l))}</b> ${escHtml(ttT(h))}（${Math.min(3, pr[k])}/3）</span>`).join("")}</div>`; })()}
     <div class="dex-sec">${ttT("夥伴日記")}</div>
     ${petDiaryMonths()}<div class="diary-list">${petDiaryHtml()}</div>
     <div class="dex-sec">${ttT(`進化圖鑑（共 ${PET_STAGES.length} 階）`)}</div>
