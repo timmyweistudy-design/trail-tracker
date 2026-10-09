@@ -33,6 +33,8 @@ const NativeLive = (() => {
       startedAt: Date.now() - (s.elapsedMs || 0),   // 扣掉暫停的計時起點：鎖定畫面的系統計時器自己走
       paused: s.state === "paused",
       elapsed: Math.round((s.elapsedMs || 0) / 1000),
+      // 夥伴的狀態（第三版 R14）：鎖定畫面／動態島畫夥伴的靜態圖＋小記號——休息（暫停或停下來）、爬坡喘、走
+      mood: s.state === "paused" || document.body.classList.contains("rec-resting") ? "rest" : document.body.classList.contains("rec-climb") ? "pant" : "walk",
     };
   }
   // 每 5 秒看一次記錄狀態；里程、爬升、暫停有變才送（最快 15 秒一次，省電）
@@ -50,12 +52,12 @@ const NativeLive = (() => {
       const st = liveState(s);
       if (!active) {
         const name = (Recorder._trailName && Recorder._trailName !== "自由路線") ? T(Recorder._trailName) : T("自由路線");
-        const labels = { km: T("公里"), up: T("爬升"), alt: T("海拔"), rec: T("記錄中"), paused: T("暫停") };
+        const labels = { km: T("公里"), up: T("爬升"), alt: T("海拔"), rec: T("記錄中"), paused: T("暫停"), walk: T("夥伴跟著走"), rest: T("夥伴在休息"), pant: T("夥伴喘口氣") };
         try { const r = await plugin().start(Object.assign({ trail: name, labels }, st)); active = !!(r && r.ok); } catch (e) { active = false; }
-        lastSent = Date.now(); lastSig = `${st.km}|${st.ascent}|${st.paused}`;
+        lastSent = Date.now(); lastSig = `${st.km}|${st.ascent}|${st.paused}|${st.mood}`;
         return;
       }
-      const sig = `${st.km}|${st.ascent}|${st.paused}`;
+      const sig = `${st.km}|${st.ascent}|${st.paused}|${st.mood}`;
       const pausedChanged = lastSig.split("|")[2] !== String(st.paused);
       if (sig !== lastSig && (pausedChanged || Date.now() - lastSent > 15000)) {
         lastSig = sig; lastSent = Date.now();
@@ -73,14 +75,27 @@ const NativeLive = (() => {
     const d = new Date(); d.setHours(0, 0, 0, 0);
     return (typeof realRecords === "function" ? realRecords() : []).some(r => new Date(r.date) >= d);
   }
-  function petPng() {
+  // 小工具的夥伴圖（第三版 R14）：戴著現在的帽子＋配件、自己的配色；睡覺時間另外一張閉眼的
+  function petPng(pose) {
     return new Promise(res => {
       if (typeof PET_ART === "undefined" || !PET_ART.dataUri || typeof petStageIndex !== "function") return res(null);
+      const hat = typeof petHat === "function" ? petHat() : undefined, acc = typeof petAcc === "function" ? petAcc() : undefined, i = petStageIndex(totalKm());
+      const uri = PET_ART.own ? PET_ART.own(() => PET_ART.dataUri(i, 240, hat, pose, acc)) : PET_ART.dataUri(i, 240, hat, pose, acc);
       const im = new Image();
       im.onload = () => { try { const c = document.createElement("canvas"); c.width = c.height = 240; c.getContext("2d").drawImage(im, 0, 0, 240, 240); res(c.toDataURL("image/png").split(",")[1]); } catch (e) { res(null); } };
       im.onerror = () => res(null);
-      im.src = PET_ART.dataUri(petStageIndex(totalKm()), 240);
+      im.src = uri;
     });
+  }
+  // 節日（R14）：未來一年的節日、前後一天都算，連同那一句一起交給小工具（App 沒開也會到那天就掛燈籠）
+  function festDays() {
+    if (typeof PET_FEST === "undefined" || typeof PET_FEST_LINE === "undefined") return [];
+    const out = [], now = Date.now(), pad = n => String(n).padStart(2, "0"), ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    for (const k in PET_FEST) for (const day of PET_FEST[k]) {
+      const c = new Date(day + "T12:00:00"); if (c.getTime() < now - 2 * 864e5 || c.getTime() > now + 366 * 864e5) continue;
+      for (const o of [-1, 0, 1]) { const d = new Date(c.getTime() + o * 864e5); out.push({ d: ymd(d), k, t: T(PET_FEST_LINE[k]) }); }
+    }
+    return out;
   }
   async function pushWidget(force) {
     const a = await check(); if (!a.widget) return false;
@@ -96,13 +111,15 @@ const NativeLive = (() => {
       // 夥伴現在在做什麼（2026-10-07 寵物新一輪 #6）：每個時段一句，小工具照當下的時間挑（App 沒開時也會跟著時間換）；今天走過了白天那句換成走完的感覺
       petStatus: { night: T("呼呼大睡中"), dawn: T("剛起床，伸個懶腰"), day: hikedToday() ? T("腳還熱熱的，好開心") : T("在等你出門"), dusk: T("看著夕陽發呆"), eve: T("在窩裡等你回家") },
       locked: !(typeof Premium !== "undefined" && Premium.isOn()),   // 主畫面小工具是 PRO 福利；鎖定畫面的記錄卡片（Live Activity）免費
+      sleep: typeof PetStage !== "undefined" && PetStage.sleepWin ? PetStage.sleepWin() : [22, 6], sleepOff: typeof PetStage !== "undefined" && PetStage.sleepWin ? !PetStage.sleepWin() : false,
+      fest: festDays(),
       labels: { streak: T("連續"), days: T("天"), week: T("本週"), challenge: T("本月挑戰"), done: T("今天走過了"), nudge: T("今天出門走走吧"), locked: T("PRO 會員專屬小工具"), unlock: T("打開 App 升級") },
     };
     const sig = JSON.stringify(data);
-    const petSig = ps ? `${ps.level}|${typeof petStageIndex === "function" ? petStageIndex(totalKm()) : 0}` : "";
+    const petSig = ps ? [ps.level, typeof petStageIndex === "function" ? petStageIndex(totalKm()) : 0, typeof petHat === "function" ? petHat() : "", typeof petAcc === "function" ? petAcc() : "", typeof petTone === "function" ? petTone() : ""].join("|") : "";   // 換帽子、配件、配色也要重畫
     if (!force && sig === lastWidgetSig && petSig === lastPetSig) return false;
     const args = { data: sig };
-    if (petSig !== lastPetSig) { const png = await petPng(); if (png) args.pet = png; }
+    if (petSig !== lastPetSig) { const [png, zz] = await Promise.all([petPng(), petPng("sleep")]); if (png) args.pet = png; if (zz) args.petSleep = zz; }
     try { await plugin().setWidget(args); lastWidgetSig = sig; lastPetSig = petSig; return true; } catch (e) { return false; }
   }
 

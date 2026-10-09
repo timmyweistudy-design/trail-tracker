@@ -49,7 +49,8 @@ public class TrailLivePlugin: CAPPlugin, CAPBridgedPlugin {
             altitude: call.getInt("altitude") ?? 0,
             startedAt: Date(timeIntervalSince1970: startedMs / 1000),
             paused: call.getBool("paused") ?? false,
-            elapsed: call.getDouble("elapsed") ?? 0
+            elapsed: call.getDouble("elapsed") ?? 0,
+            mood: call.getString("mood")
         )
     }
     #endif
@@ -125,6 +126,9 @@ public class TrailLivePlugin: CAPPlugin, CAPBridgedPlugin {
         }
         if let b64 = call.getString("pet"), let png = Data(base64Encoded: b64) {
             try? png.write(to: dir.appendingPathComponent("pet.png"), options: .atomic)
+        }
+        if let b64 = call.getString("petSleep"), let png = Data(base64Encoded: b64) {   // 睡覺時間用的閉眼圖（R14）
+            try? png.write(to: dir.appendingPathComponent("pet-sleep.png"), options: .atomic)
         }
         #if canImport(WidgetKit)
         if #available(iOS 14.0, *) { WidgetCenter.shared.reloadAllTimelines() }

@@ -1,0 +1,48 @@
+name: iOS compile check
+# 夥伴第三版 R14（2026-10-09）：「只編譯、不簽章」——在 CI 先抓到 Swift 編譯錯誤，不用等 Codemagic 出 build 才發現。
+# 小工具（HomeWidget.swift、LiveActivityWidget.swift）平常不在 Xcode 專案裡，是 build 時 scripts/ios-add-widgets.mjs 才加進去的
+# → 以前從來沒有被編譯過。這裡照 Codemagic 的步驟把它加進去，對模擬器編譯（不需要憑證、App Group）。
+# macOS 機器的分鐘數很貴：只有改到 iOS 相關檔案才跑，也可以手動觸發。
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ios/**"
+      - "scripts/ios-add-widgets.mjs"
+      - "capacitor.config.*"
+      - "package-lock.json"
+      - ".github/workflows/ios-build.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Capacitor sync iOS
+        run: npx cap sync ios
+      - name: Add widget extension (same script Codemagic uses)
+        run: node scripts/ios-add-widgets.mjs ios/App
+      - name: pod install
+        run: cd ios/App && pod install
+      - name: Build for simulator (no signing)
+        run: |
+          set -o pipefail
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App \
+            -sdk iphonesimulator -destination "generic/platform=iOS Simulator" \
+            -configuration Debug CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            build 2>&1 | tee /tmp/xcodebuild.log | grep -E "error:|warning: .*(HomeWidget|LiveActivity|TrailLive)|BUILD (SUCCEEDED|FAILED)" || true
+          grep -q "BUILD SUCCEEDED" /tmp/xcodebuild.log
+      - name: Upload build log when failing
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log
+          path: /tmp/xcodebuild.log

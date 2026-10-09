@@ -129,6 +129,13 @@ function renderOfflineSets() {
     refreshOfflineStatus(); toast(ttT("刪掉了"));
   }));
 }
+// 版本（第三版 R14，原 A1）：設定最下面一行小字——網頁版號；App 裡再加原生的版本與 build 號（回報問題時對得上是哪一版）
+(async () => {
+  const el = $("#appVerLine"); if (!el) return;
+  const w = await appVersion(); let n = "";
+  try { const C = window.Capacitor, A = C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins.App; if (A) { const i = await A.getInfo(); n = `${C.getPlatform() === "ios" ? "iOS" : "Android"} ${i.version} (${i.build})`; } } catch (e) { /* 舊版殼沒有 App 外掛 */ }
+  el.textContent = `${ttT("版本")} ${w || "?"}${n ? ` · ${n}` : ""}`;
+})();
 // 診斷／回報問題只給網頁版：App（iOS 原生殼）整段藏起來
 { const C = window.Capacitor, w = $("#diagWrap"); if (w && C && C.isNativePlatform && C.isNativePlatform()) w.hidden = true; }
 $("#btnDiag").addEventListener("click", async () => {

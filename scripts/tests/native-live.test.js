@@ -24,14 +24,23 @@ const recs=[{id:"a",date:new Date(Date.now()-864e5).toISOString(),trailName:"x",
  const d=w.length?JSON.parse(w[0][1].data):{};
  ok(d.streak>=1&&d.petName==="小苔"&&d.weekKm>0&&d.labels&&d.labels.streak==="連續"&&typeof d.goalKm==="number","widget payload: "+JSON.stringify(d).slice(0,160));
  ok(w[0][1].pet&&w[0][1].pet.length>2000&&/^iVBOR/.test(w[0][1].pet),"pet PNG base64 included");
+ // 第三版 R14：睡覺用的閉眼圖、睡覺時間、節日
+ ok(w[0][1].petSleep&&/^iVBOR/.test(w[0][1].petSleep)&&w[0][1].petSleep!==w[0][1].pet,"sleeping pet PNG included (differs from awake)");
+ ok(JSON.stringify(d.sleep)==="[22,6]"&&d.sleepOff===false,"sleep window sent "+JSON.stringify([d.sleep,d.sleepOff]));
+ ok(Array.isArray(d.fest)&&d.fest.length>=3&&d.fest.every(f=>/^\d{4}-\d\d-\d\d$/.test(f.d)&&["ny","db","ma"].includes(f.k)&&f.t),"festival days for the coming year "+JSON.stringify((d.fest||[]).slice(0,2)));
+ // 換帽子 → 小工具的夥伴圖重畫（以前只看等級，換帽子小工具不會變）
+ const n0=await p.evaluate(()=>__calls.filter(c=>c[0]==="setWidget"&&c[1].pet).length);
+ await p.evaluate(async()=>{localStorage.setItem("tt_pet_hat","straw");await NativeLive.pushWidget();});
+ ok(await p.evaluate(()=>__calls.filter(c=>c[0]==="setWidget"&&c[1].pet).length)===n0+1,"changing the hat repaints the widget pet");
  // 開始記錄 → Live Activity
  await p.click('.tab[data-view="record"]');await p.waitForTimeout(500);await p.click("#btnStart");await p.waitForTimeout(6500);
  const st=await p.evaluate(()=>__calls.find(c=>c[0]==="start"));
  ok(st&&st[1].labels&&st[1].labels.km==="公里"&&st[1].trail==="自由路線"&&typeof st[1].startedAt==="number"&&st[1].paused===false,"live activity started: "+JSON.stringify(st&&st[1]).slice(0,150));
+ ok(st&&st[1].mood==="walk"&&st[1].labels.rest==="夥伴在休息","live activity carries the pet state (walk) + labels");
  // 暫停 → 立刻更新 paused
  await p.click("#btnPause");await p.waitForTimeout(5800);
  const up=await p.evaluate(()=>__calls.filter(c=>c[0]==="update").pop());
- ok(up&&up[1].paused===true,"pause → update paused=true");
+ ok(up&&up[1].paused===true&&up[1].mood==="rest","pause → update paused=true, pet resting");
  // 沒變化不會一直送
  const n1=await p.evaluate(()=>__calls.filter(c=>c[0]==="update").length);await p.waitForTimeout(11000);const n2=await p.evaluate(()=>__calls.filter(c=>c[0]==="update").length);
  ok(n2===n1,"no redundant updates while nothing changes ("+n1+"→"+n2+")");
@@ -50,5 +59,6 @@ const recs=[{id:"a",date:new Date(Date.now()-864e5).toISOString(),trailName:"x",
 {const p=await mk({native:"none"});await p.waitForTimeout(3500);await p.click('.tab[data-view="record"]');await p.waitForTimeout(400);await p.click("#btnStart");await p.waitForTimeout(6000);
  ok(await p.evaluate(()=>__calls.length===0),"plugin missing → nothing called, no errors");await p.close();}
 // 網頁版
-{const p=await mk({});await p.waitForTimeout(1500);ok(await p.evaluate(()=>typeof NativeLive!=="undefined"),"web: module loads, inert");await p.close();}
+{const p=await mk({});await p.waitForTimeout(1500);ok(await p.evaluate(()=>typeof NativeLive!=="undefined"),"web: module loads, inert");
+ ok(/^版本 v\d+$/.test(await p.evaluate(()=>document.getElementById("appVerLine").textContent)),"web: version line under settings (no native part)");await p.close();}
 console.log("ERRS",JSON.stringify(errs));console.log("FAILS",fails);await b.close();srv.kill();})();

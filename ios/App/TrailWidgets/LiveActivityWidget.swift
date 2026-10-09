@@ -38,7 +38,7 @@ struct TrailLiveActivity: Widget {
                     .font(.caption).foregroundStyle(.secondary)
                 }
             } compactLeading: {
-                Image(systemName: ctx.state.paused ? "pause.fill" : "figure.hiking").foregroundStyle(ctx.state.paused ? Color.orange : TT.leaf)
+                PetMoodIcon(mood: ctx.state.mood, paused: ctx.state.paused).frame(width: 22, height: 22)
             } compactTrailing: {
                 Text(kmText(ctx.state.km) + " km").font(.caption.weight(.semibold)).monospacedDigit()
             } minimal: {
@@ -48,6 +48,30 @@ struct TrailLiveActivity: Widget {
             .keylineTint(TT.gold)
         }
     }
+}
+
+/// 夥伴的靜態狀態圖（R14，原28 縮小版——不做動畫）：小工具存在 App Group 的夥伴圖（戴著帽子、配件）＋右下角一個小記號
+/// 走＝腳印、休息＝zzz、喘＝風；沒有夥伴圖（舊版、沒開 App Group）就退回原本的登山圖示
+struct PetMoodIcon: View {
+    let mood: String?
+    let paused: Bool
+    private var m: String { paused ? "rest" : (mood ?? "walk") }
+    var body: some View {
+        if let img = WidgetData.petImage(m == "rest" ? "pet-sleep.png" : "pet.png") ?? WidgetData.petImage() {
+            ZStack(alignment: .bottomTrailing) {
+                Image(uiImage: img).resizable().scaledToFit()
+                Image(systemName: m == "rest" ? "zzz" : m == "pant" ? "wind" : "shoeprints.fill")
+                    .font(.system(size: 8, weight: .bold)).foregroundStyle(m == "pant" ? Color.orange : TT.leaf)
+                    .padding(2).background(Circle().fill(TT.deep.opacity(0.85)))
+            }
+        } else {
+            Image(systemName: paused ? "pause.circle.fill" : "figure.hiking").resizable().scaledToFit().foregroundStyle(paused ? Color.orange : TT.leaf)
+        }
+    }
+}
+private func moodLabel(_ a: TrailActivityAttributes, _ st: TrailActivityAttributes.ContentState) -> String? {
+    guard let m = st.mood else { return nil }
+    return a.labels[m]
 }
 
 private func kmText(_ v: Double) -> String { v >= 100 ? String(format: "%.0f", v) : String(format: "%.2f", v) }
@@ -70,10 +94,10 @@ struct LockScreenView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
-                Image(systemName: st.paused ? "pause.circle.fill" : "figure.hiking").foregroundStyle(st.paused ? Color.orange : TT.leaf)
+                PetMoodIcon(mood: st.mood, paused: st.paused).frame(width: 30, height: 30)
                 Text(attrs.trailName).font(.subheadline.weight(.semibold)).foregroundStyle(TT.gold).lineLimit(1)
                 Spacer()
-                Text(st.paused ? (attrs.labels["paused"] ?? "暫停") : (attrs.labels["rec"] ?? "記錄中")).font(.caption).foregroundStyle(TT.cream.opacity(0.7))
+                Text(st.paused ? (attrs.labels["paused"] ?? "暫停") : moodLabel(attrs, st) ?? (attrs.labels["rec"] ?? "記錄中")).font(.caption).foregroundStyle(TT.cream.opacity(0.7))
             }
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 0) {

@@ -2642,3 +2642,4 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .prop-slot .ps-ic svg { width: 100%; height: 100%; display: block; }
 .prop-it.used { opacity: .6; }
 @media (prefers-reduced-motion: reduce) { .ps-props-b { translate: none; } }
+.app-ver { text-align: center; margin: 4px 0 8px; font-size: calc(11.5px * var(--fs, 1)); color: var(--muted); font-variant-numeric: tabular-nums; }   /* 我的→設定最下面：版本＋原生 build 號（R14） */
