@@ -630,8 +630,7 @@ ${tigerHead()}
   }
   function hat(id, i) {
     if (!HATS[id]) return "";
-    const a = HAT_ANCHOR[clamp(i || 0)] || [100, 46, 1];
-    const tf = `translate(${a[0]} ${a[1]}) scale(${a[2]}) translate(-100 -45)`;
+    const tf = hatTf(id, i || 0);
     return `<svg class="pet-hat-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g transform="${tf}">${HATS[id].replace(/§/g, "h" + (++U).toString(36) + "_")}</g></svg>`;   // 帽子裡有裁切（v2）：每份自己的 id
   }
   const EMOJI = ["🥚", "🐛", "🦋", "🦊", "🐅", "🐲", "🐉"];   // 對映 PET_STAGES 的 e，供把同步來的 emoji 反查成階段
@@ -639,10 +638,17 @@ ${tigerHead()}
   // 帽子畫進「頭所在的那一組」（<!--H--> 位置），跟著角色同一個動畫一起動。
   // 以前帽子是另一張疊上去的 SVG、用自己的起伏動畫：彩蝶／神龍的漂浮週期（3.8s、10px）跟帽子（3.4s、6px）
   // 對不上，幾秒後帽子就滑到臉上。
+  // 小頭的貼合（2026-10-09 使用者：「頭比較小的毛毛蟲和蝴蝶，頭巾、髮夾、花圈要放在額頭，不然像浮空或在觸角上」）：
+  //   頭巾類（頭巾、浪花頭巾、花冠）往下移到額頭、縮一點、把拱度壓平貼著圓頭；髮夾、蝴蝶結往下貼著頭（不壓扁）。帽子類（草帽、派對帽…）照舊戴在頭頂
+  const HAT_FIT = { 1: { band: [0, 13, .86, .62], clip: [-4, 9, .86, 1] }, 2: { band: [0, 9, .78, .6], clip: [0, 8, .8, 1] } };
+  const HAT_KIND = { bandana: "band", wave: "band", crown: "band", shell: "clip", bow: "clip" };
+  function hatTf(id, i) {
+    const a = HAT_ANCHOR[clamp(i)] || [100, 46, 1], f = (HAT_FIT[clamp(i)] || {})[HAT_KIND[id]] || [0, 0, 1, 1];
+    return `translate(${a[0] + f[0]} ${a[1] + f[1]}) scale(${(a[2] * f[2]).toFixed(3)} ${(a[2] * f[2] * f[3]).toFixed(3)}) translate(-100 -45)`;
+  }
   function hatG(id, i) {
     if (!HATS[id]) return "";
-    const a = HAT_ANCHOR[clamp(i)] || [100, 46, 1];
-    return `<g class="pc-hat" transform="translate(${a[0]} ${a[1]}) scale(${a[2]}) translate(-100 -45)"><g class="pc-hat-in">${HATS[id]}</g></g>`;   // pc-hat-in：晃動動畫掛在這一層（2026-10-09：掛在 pc-hat 上時 CSS 的 transform-origin 會改到定位用的 transform 屬性，舞台上的帽子整頂偏掉——蝴蝶偏到翅膀上）
+    return `<g class="pc-hat" transform="${hatTf(id, i)}"><g class="pc-hat-in">${HATS[id]}</g></g>`;   // pc-hat-in：晃動動畫掛在這一層（2026-10-09：掛在 pc-hat 上時 CSS 的 transform-origin 會改到定位用的 transform 屬性，舞台上的帽子整頂偏掉——蝴蝶偏到翅膀上）
   }
   let U = 0;   // 每份 SVG 自己的 id 前綴（§ → p1_、p2_…），避免同頁多份角色的裁切互相串
   // 戴帽子時拿掉 <!--O-->…<!--/O-->（幼蟲的臭角）：帽子要戴在頭上，不是戴在臭角上
