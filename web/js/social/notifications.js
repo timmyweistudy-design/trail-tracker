@@ -54,7 +54,7 @@ const Notifs = (() => {
     return name;
   }
   const GUARD = new Set(["guard", "guard_ext", "overdue", "safe"]);
-  function icon(t) { if (t === "admin") return ic("sliders"); if (GUARD.has(t)) return ic(t === "safe" ? "check" : t === "overdue" ? "alert" : "shield"); return (t === "follow" || t === "follow_req" || t === "follow_ok") ? ic("plus") : t === "like" ? ic("heart") : t === "team" ? ic("users") : t === "gift" ? (typeof BERRY_SVG !== "undefined" ? BERRY_SVG : "🍓") : t === "mention" ? ic("megaphone") : ic("chat"); }
+  function icon(t) { if (t === "admin") return ic("sliders"); if (GUARD.has(t)) return ic(t === "safe" ? "check" : t === "overdue" ? "alert" : "shield"); return (t === "follow" || t === "follow_req" || t === "follow_ok") ? ic("plus") : t === "like" ? ic("heart") : t === "team" ? ic("users") : t === "gift" ? (typeof BERRY_SVG !== "undefined" ? BERRY_SVG : "🍓") : t === "pet_item" ? ic("leaf") : t === "pet_visit" ? ic("footprints") : t === "mention" ? ic("megaphone") : ic("chat"); }
 
   // 我收到、還沒處理的追蹤請求（phase18；未升級回空集合）
   async function pendingRequestIds() {

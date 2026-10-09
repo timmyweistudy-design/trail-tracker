@@ -1,6 +1,6 @@
 # 循徑拾光：目前進度與待辦
 
-最後更新：2026-10-09（**夥伴第三版 R10～R14＋收尾輪完成**，SW `trail-tracker-v705`；**phase40／41 SQL 已跑並確認**；**下一步＝使用者出 iOS build＋iPhone 驗收**（[ios-checklist.md](ios-checklist.md) 最後一節）；全站掃描 `scripts/ui-sweep.js`、整套測試約 15 分）
+最後更新：2026-10-09（**夥伴第三版 R10～R14＋收尾輪完成**，SW `trail-tracker-v707`；**phase40／41 SQL 已跑並確認**；果實圖示全部跟著季節換；**下一步＝使用者出 iOS build＋iPhone 驗收**（[ios-checklist.md](ios-checklist.md) 最後一節）；全站掃描 `scripts/ui-sweep.js`、整套測試約 15 分）
 上架細節清單見 [launch-checklist.md](launch-checklist.md)。
 
 ## 現況

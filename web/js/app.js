@@ -393,6 +393,7 @@ function fmtDur(ms) {
 }
 function toast(msg, opts) {
   const t = $("#toast"); t.textContent = msg; t.classList.toggle("top", !!(opts && opts.top)); t.classList.add("show");   // top：底部會蓋住內容時改從上方出現
+  if (opts && opts.icon) { const s = document.createElement("span"); s.className = "toast-ic"; s.innerHTML = opts.icon; t.appendChild(s); }   /* icon：程式自己給的圖（例如當季果實），不是使用者內容 */
   clearTimeout(t._tm); t._tm = setTimeout(() => t.classList.remove("show"), 2200);
 }
 // 內嵌輸入框（取代原生 prompt），回傳 Promise<string|null>
@@ -567,7 +568,7 @@ document.querySelectorAll(".tab").forEach(btn => {
     if (view === "pet") {
       renderPet(); renderQuests(); renderBadges();
       const petSocial = () => {
-        Pets.claimGifts().then(n => { if (n > 0) { if (typeof petGiftBerries === "function") petGiftBerries(n); else { toast(`收到好友送的 ${n} 🍓！`); renderPet(); } } });   // 寵物新一輪 #20：果實從舞台上方飄下來
+        Pets.claimGifts().then(n => { if (n > 0) { if (typeof petGiftBerries === "function") petGiftBerries(n); else { toast(`${ttT("收到好友送的果實")} +${n}`, { icon: BERRY_SVG }); renderPet(); } } });   // 寵物新一輪 #20：果實從舞台上方飄下來
         Pets.renderFriends();   // 好友清單＋朋友的夥伴來串門子（清單 3 分鐘快取；串門子成功才記今天來過）
         if (Pets.claimItems) Promise.all([Pets.claimItems(), Pets.claimVisits()]).then(([a, b]) => { if (a + b > 0 && document.body.dataset.view === "pet") renderPet(); });   // R12：好友送的小東西、回訪（還沒跑 phase41 時安靜略過）
       };

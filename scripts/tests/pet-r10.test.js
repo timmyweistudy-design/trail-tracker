@@ -28,6 +28,15 @@ for(const st of [0,1,2,3,4,5,6]){const ctx=await b.newContext({viewport:{width:3
  await p.addInitScript(MOCK);await p.goto(`http://localhost:${PORT}/`);await require(__dirname+"/ready")(p);await p.evaluate(()=>document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove()));await p.click('.tab[data-view="pet"]');await p.waitForTimeout(1200);
  const f=await p.evaluate(()=>{const o={};for(const se of ["spring","summer","autumn","winter"]){window.__ps={season:se};o[se]=petFruitSvg();}window.__ps=null;return new Set(Object.values(o)).size;});
  ok(f===4,"four seasons drop four different fruits ("+f+")");
+ // 2026-10-09 使用者：「果實改樣子，全部圖示都要改」——夥伴頁、裝扮價格、任務獎勵、吐司上的果實都要是當季那顆
+ const all=await p.evaluate(async()=>{const w=ms=>new Promise(r=>setTimeout(r,ms));const out={};
+  for(const se of ["spring","summer","autumn","winter"]){window.__ps={season:se};renderPet();renderQuests&&renderQuests();await w(150);
+   const tmp=document.createElement("div");tmp.innerHTML=petFruitSvg();const want=tmp.firstElementChild.outerHTML.replace(/\s+/g," ");const got=[...document.querySelectorAll('.view.active svg.berry')].map(x=>x.outerHTML.replace(/\s+/g," "));
+   document.getElementById("petDress").click();await w(300);const dress=[...document.querySelectorAll('[data-ov="pethat"] svg.berry')].map(x=>x.outerHTML.replace(/\s+/g," "));document.querySelectorAll(".pet-modal").forEach(e=>e.remove());
+   toast("x",{icon:BERRY_SVG});const ts=document.querySelector("#toast svg.berry");
+   out[se]={n:got.length+dress.length,bad:got.concat(dress).filter(h=>h!==want).length,toast:!!ts&&ts.outerHTML.replace(/\s+/g," ")===want};}
+  window.__ps=null;return out;});
+ ok(Object.values(all).every(o=>o.n>=3&&o.bad===0&&o.toast),"every fruit icon on the pet page, dress-up prices and toasts is this season's fruit "+JSON.stringify(all));
  const t=await p.evaluate(()=>{const lock=petToneUnlocked();localStorage.setItem("tt_pet_tone","sea");const before=petTone();
   // 假資料：3 趟海景步道 → 海風解鎖
   const sea=TRAILS.filter(x=>tagsOf(x).includes("海景")).slice(0,3);Store.setRecords(sea.map((x,k)=>({id:"s"+k,date:new Date(Date.now()-k*864e5).toISOString(),trailId:x.id,trailName:x.name,distanceKm:3,elapsedMs:36e5,track:[]})));

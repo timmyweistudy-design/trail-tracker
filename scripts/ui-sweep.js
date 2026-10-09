@@ -13,7 +13,10 @@ const DET = () => {
   const vis = el => { const s = getComputedStyle(el); return s.display !== "none" && s.visibility !== "hidden" && +s.opacity > 0.05 && el.getClientRects().length; };
   const W = innerWidth, out = { overflow: [], clip: [], cjk: [], hscroll: [] };
   const se = document.scrollingElement; if (se.scrollWidth > W + 1) out.hscroll.push(`page scrollWidth ${se.scrollWidth} > ${W}`);
-  document.querySelectorAll(".view.active, main, .sheet.open .sheet-body, .pet-modal-card, .ttdlg").forEach(el => { if (getComputedStyle(el).overflowX !== "hidden" && el.scrollWidth > el.clientWidth + 1) out.hscroll.push(`${el.className.split(" ")[0]} scrollWidth ${el.scrollWidth} > ${el.clientWidth}`); });
+  document.querySelectorAll(".view.active, main, .sheet.open .sheet-body, .pet-modal-card, .ttdlg").forEach(el => { if (getComputedStyle(el).overflowX !== "hidden" && el.scrollWidth > el.clientWidth + 1) {
+    const base = el.scrollWidth; let who = "";   // 找出是誰撐寬的：一個個先藏起來，藏了會變窄的最深那個
+    for (const c of el.querySelectorAll("*")) { if (c.closest("svg")) continue; const d = c.style.display; c.style.display = "none"; const w = el.scrollWidth; c.style.display = d; if (w < base) who = (typeof c.className === "string" ? c.className.split(" ").slice(0, 2).join(".") : c.tagName) + " '" + (c.innerText || "").slice(0, 24).replace(/\n/g, "/") + "'"; }
+    out.hscroll.push(`${el.className.split(" ")[0]} scrollWidth ${base} > ${el.clientWidth} ← ${who}`); } });
   const scroller = el => { for (let p = el.parentElement; p; p = p.parentElement) { const s = getComputedStyle(p); if (/(auto|scroll|hidden)/.test(s.overflowX) && p.scrollWidth > p.clientWidth + 1) return true; if (/(auto|scroll)/.test(s.overflowX)) return true; } return false; };
   const name = el => (el.id ? "#" + el.id : "") + (el.className && typeof el.className === "string" ? "." + el.className.trim().split(/\s+/).slice(0, 2).join(".") : "") || el.tagName;
   for (const el of document.querySelectorAll("body *")) {

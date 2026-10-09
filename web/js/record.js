@@ -485,7 +485,7 @@ Recorder.onUpdate(s => {
     if (picked > 0 && typeof addBerryPicked === "function") {
       addBerryPicked(picked);
       ttBuzz([90, 40, 90]);
-      toast(picked === 1 ? ttT("🍓 撿到一顆果實！") : `🍓 ${ttT("撿到果實")} +${picked}！`);   // 果實是夥伴的玩法，保留 emoji
+      toast(picked === 1 ? ttT("撿到一顆果實！") : `${ttT("撿到果實")} +${picked}！`, { icon: typeof BERRY_SVG !== "undefined" ? BERRY_SVG : "" });   // 果實圖示跟著季節（以前是 🍓 emoji）
       try { if (document.body.dataset.view === "pet") renderPet(); } catch (e) { /* */ }
     }
   }

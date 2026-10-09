@@ -179,8 +179,8 @@ function achCheckUnlocks() {
   // #19 解鎖獎勵：依階層送果實給寵物
   const reward = fresh.reduce((s, b) => s + (ACH_REWARD[b.t] || 0), 0);
   if (reward > 0 && typeof addBerryBonus === "function") addBerryBonus(reward);
-  fresh.slice(0, 3).forEach((b, i) => setTimeout(() => { try { toast(`🏆 ${ttT("解鎖成就")}${ttColon()}${ttT(b.n)} +${ACH_REWARD[b.t] || 0}🍓`); } catch (e) { /* */ } }, 700 + i * 1700));
-  if (fresh.length > 3) setTimeout(() => { try { toast(`🏆 ${ttT("又解鎖")} ${fresh.length - 3} ${ttT("項成就")}　+${reward}🍓`); } catch (e) { /* */ } }, 700 + 3 * 1700);
+  fresh.slice(0, 3).forEach((b, i) => setTimeout(() => { try { toast(`🏆 ${ttT("解鎖成就")}${ttColon()}${ttT(b.n)} +${ACH_REWARD[b.t] || 0}`, { icon: typeof BERRY_SVG !== "undefined" ? BERRY_SVG : "" }); } catch (e) { /* */ } }, 700 + i * 1700));
+  if (fresh.length > 3) setTimeout(() => { try { toast(`🏆 ${ttT("又解鎖")} ${fresh.length - 3} ${ttT("項成就")}　+${reward}`, { icon: typeof BERRY_SVG !== "undefined" ? BERRY_SVG : "" }); } catch (e) { /* */ } }, 700 + 3 * 1700);
   if (typeof refreshAchTree === "function") refreshAchTree();
 }
 // 回推解鎖日：依時間順序走過每筆紀錄，第一次滿足條件的那筆就是解鎖日（縣市、連續、步道完成這類推不出來的不寫）

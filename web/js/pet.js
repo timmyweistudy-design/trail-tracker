@@ -11,7 +11,10 @@ const PET_STAGES = [
   { km: 220, e: "🐉", n: "騰雲神龍", d: "已達最終型態！與你一同騰雲駕霧。" },
 ];
 // 果實：遊戲裡的貨幣，專屬 SVG（emoji 在不同手機長得不一樣，也常變成空框）
-const BERRY_SVG = `<svg class="berry" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5c3.6 0 6 2.2 6 5.6 0 3.8-3 6.9-6 6.9s-6-3.1-6-6.9c0-3.4 2.4-5.6 6-5.6Z" fill="#e0445c"/><path d="M9 12.5h.01M12 11.5h.01M15 12.5h.01M10.5 15.5h.01M13.5 15.5h.01M12 18h.01" stroke="#ffd9a0" stroke-width="1.6" stroke-linecap="round"/><path d="M12 8.5c-.6-2-2.2-3.2-4.2-3.3 1 1.5 2.4 2.7 4.2 3.3Zm0 0c.6-2 2.2-3.2 4.2-3.3-1 1.5-2.4 2.7-4.2 3.3Zm0 0V4.5" fill="#4f9a55" stroke="#4f9a55" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const BERRY_SVG_BASE = `<svg class="berry" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5c3.6 0 6 2.2 6 5.6 0 3.8-3 6.9-6 6.9s-6-3.1-6-6.9c0-3.4 2.4-5.6 6-5.6Z" fill="#e0445c"/><path d="M9 12.5h.01M12 11.5h.01M15 12.5h.01M10.5 15.5h.01M13.5 15.5h.01M12 18h.01" stroke="#ffd9a0" stroke-width="1.6" stroke-linecap="round"/><path d="M12 8.5c-.6-2-2.2-3.2-4.2-3.3 1 1.5 2.4 2.7 4.2 3.3Zm0 0c.6-2 2.2-3.2 4.2-3.3-1 1.5-2.4 2.7-4.2 3.3Zm0 0V4.5" fill="#4f9a55" stroke="#4f9a55" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+// 果實圖示跟著季節換（2026-10-09 使用者：「果實改樣子，全部圖示都要改」）：餵食鈕、果實數、價格、任務獎勵、送果實、掉下來的果實都讀 BERRY_SVG，
+// 所以把它變成「每次讀都回傳當季那顆」（春櫻桃、夏芒果、秋柿子、冬橘子；季節不明時用原本的莓果）
+Object.defineProperty(window, "BERRY_SVG", { get: () => petFruitSvg(), configurable: true });
 // 戳夥伴的台詞：依心情＋時段挑，不要老是那六句輪著講
 const PET_TAPS = {
   happy: ["剛剛那趟好過癮！", "腳還熱熱的，再走一段？", "今天的風景我都記住了", "你走路的樣子好帥", "我又長大一點點了"],
@@ -281,7 +284,7 @@ function petFruitSvg() {
     autumn: '<circle cx="12" cy="14" r="7" fill="#f0782a"/><path d="M5.4 12.6a7 7 0 0 0 13.2 0" fill="#d95f1e" opacity=".45"/><path d="M8 7.6c1.4.8 2.6.8 4 0 1.4.8 2.6.8 4 0-1 2-2.4 2.4-4 1.8-1.6.6-3 .2-4-1.8Z" fill="#4f7a3a"/><ellipse cx="9" cy="12" rx="1.6" ry="1" fill="#ffc28a"/>',
     winter: '<circle cx="12" cy="14" r="7" fill="#f59a1e"/><circle cx="9.4" cy="11.6" r=".6" fill="#ffd28a"/><circle cx="14" cy="12.4" r=".6" fill="#ffd28a"/><circle cx="11" cy="16.6" r=".6" fill="#ffd28a"/><path d="M12 7c.4-1.6 2-2.6 3.8-2.2-.6 1.6-2 2.4-3.8 2.2Z" fill="#4f9a3e"/><ellipse cx="9" cy="11.8" rx="1.8" ry="1.1" fill="#ffcf7a" opacity=".8"/>',
   };
-  return F[se] ? `<svg class="berry" viewBox="0 0 24 24" aria-hidden="true">${F[se]}</svg>` : BERRY_SVG;
+  return F[se] ? `<svg class="berry" viewBox="0 0 24 24" aria-hidden="true">${F[se]}</svg>` : BERRY_SVG_BASE;
 }
 function feedPet() {
   if (typeof PetStage !== "undefined" && PetStage.isPlaying && PetStage.isPlaying()) { petSay(ttT("玩完再吃～")); return; }
