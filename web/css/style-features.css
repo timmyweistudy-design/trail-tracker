@@ -2569,9 +2569,28 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .dr-bar .btn svg { width: 16px; height: 16px; vertical-align: -3px; }
 .dr-pane { min-height: 260px; }   /* 切分頁時視窗高度不要跳 */
 /* 帽子、配件跟著頭動時晚一點點晃（2026-10-09 R8-2）：跳、摸頭、甩水時帽子慢半拍、鈴鐺搖一下——不另外跑 JS，跟著動作 class 用 CSS */
-.ps-box .pc-hat, .ps-box .acc-bell { transform-box: fill-box; transform-origin: 50% 95%; }
-.ps-box .pb-hop .pc-hat, .ps-box .pb-pat .pc-hat, .ps-box .pb-shake .pc-hat { animation: hatLag .9s cubic-bezier(.3, .6, .4, 1) .08s; }
+/* 只能掛在沒有 transform 屬性的那一層（.pc-hat-in）：CSS 的 transform-origin 會套到 SVG 的 transform 屬性上（掛在 .pc-hat 時舞台上的帽子整頂偏掉） */
+.ps-box .pc-hat-in, .ps-box .acc-bell { transform-box: fill-box; transform-origin: 50% 95%; }
+.ps-box .pb-hop .pc-hat-in, .ps-box .pb-pat .pc-hat-in, .ps-box .pb-shake .pc-hat-in { animation: hatLag .9s cubic-bezier(.3, .6, .4, 1) .08s; }
 .ps-box .pb-hop .acc-bell, .ps-box .pb-shake .acc-bell, .ps-box .pb-tickle .acc-bell { transform-origin: 50% 0; animation: bellSwing .8s ease-out .05s; }
 @keyframes hatLag { 0%, 100% { rotate: 0deg; } 30% { rotate: -5deg; } 60% { rotate: 3deg; } 80% { rotate: -1deg; } }
 @keyframes bellSwing { 0%, 100% { rotate: 0deg; } 25% { rotate: 18deg; } 50% { rotate: -12deg; } 75% { rotate: 6deg; } }
-@media (prefers-reduced-motion: reduce) { .ps-box .pc-hat, .ps-box .acc-bell { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .ps-box .pc-hat-in, .ps-box .acc-bell { animation: none !important; } }
+/* ── 夥伴卡版面 v2（2026-10-09 修正案 R9，使用者：「整體全面更新，你好好設計」）──
+   三層：①舞台（名字、進化進度）②狀態（活力、親密、三個小數字壓成一行）③動作一排：餵食（主要）＋玩、拍照、裝扮；手冊、去走、改名收到下面一行小字。
+   以前「玩」在舞台下面、「餵食」在卡片最底，最常用的兩個隔最遠；三個數字格佔掉一大塊 */
+.pet-chips { gap: 6px; margin-top: 8px; }
+.pet-chip { display: flex; align-items: baseline; justify-content: center; gap: 4px; padding: 5px 6px; border-radius: 10px; }
+.pet-chip .cv { font-size: min(calc(13.5px * var(--fs, 1)), 15cqw); }
+.pet-chip .cl { margin-top: 0; font-size: calc(10px * var(--fs, 1)); }
+.pet-acts-main { display: grid; grid-template-columns: 1.75fr 1fr 1fr 1fr; gap: 7px; margin-top: 12px; }
+.pet-acts-main .pet-btn.feed { min-width: 0; }
+.pet-btn.pet-sq { flex-direction: column; gap: 2px; padding: 7px 3px; font-size: calc(11.5px * var(--fs, 1)); min-width: 0; }
+.pet-btn.pet-sq .ic, .pet-btn.pet-sq > svg { width: 19px; height: 19px; margin: 0; }
+.pet-btn.pet-sq span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.pet-more { position: relative; z-index: 2; display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 18px; margin-top: 10px; }
+.pet-link { display: inline-flex; align-items: center; gap: 5px; background: none; border: 0; color: #d7e4d3; font-size: calc(12px * var(--fs, 1)); font-weight: 700; padding: 6px 4px; min-height: 32px; cursor: pointer; }
+.pet-link .ic { width: 15px; height: 15px; margin: 0; opacity: .85; }
+.pet-link:active { opacity: .7; }
+[data-fs-big] .pet-acts-main { grid-template-columns: repeat(3, 1fr); }
+[data-fs-big] .pet-acts-main .pet-btn.feed { grid-column: 1 / -1; }

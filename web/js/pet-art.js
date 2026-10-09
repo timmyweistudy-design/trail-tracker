@@ -642,7 +642,7 @@ ${tigerHead()}
   function hatG(id, i) {
     if (!HATS[id]) return "";
     const a = HAT_ANCHOR[clamp(i)] || [100, 46, 1];
-    return `<g class="pc-hat" transform="translate(${a[0]} ${a[1]}) scale(${a[2]}) translate(-100 -45)">${HATS[id]}</g>`;
+    return `<g class="pc-hat" transform="translate(${a[0]} ${a[1]}) scale(${a[2]}) translate(-100 -45)"><g class="pc-hat-in">${HATS[id]}</g></g>`;   // pc-hat-in：晃動動畫掛在這一層（2026-10-09：掛在 pc-hat 上時 CSS 的 transform-origin 會改到定位用的 transform 屬性，舞台上的帽子整頂偏掉——蝴蝶偏到翅膀上）
   }
   let U = 0;   // 每份 SVG 自己的 id 前綴（§ → p1_、p2_…），避免同頁多份角色的裁切互相串
   // 戴帽子時拿掉 <!--O-->…<!--/O-->（幼蟲的臭角）：帽子要戴在頭上，不是戴在臭角上

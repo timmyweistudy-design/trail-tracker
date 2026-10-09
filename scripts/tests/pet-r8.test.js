@@ -59,6 +59,17 @@ const mk=async(km)=>{const ctx=await b.newContext({viewport:{width:390,height:84
   for(const i of [1,2,3,4,5,6])for(const a of PET_ART.ACC_IDS.filter(x=>x!=="none")){const c=document.createElement("div");c.style.cssText="width:78px;height:78px";c.innerHTML=PET_ART.accOk(i,a)?PET_ART.svg(i,"","straw",false,a):"";if(c.firstChild)c.firstChild.style.cssText="width:78px;height:78px";W.appendChild(c);}document.body.appendChild(W);});
  await p.locator("#sheet").screenshot({path:O+"acc-sheet.png"});await ctx.close();}
 
+// 5. 舞台上的帽子要戴在跟靜態圖一樣的位置（2026-10-09 使用者回報「舞台上每隻帽子都不準，蝴蝶差超多」：
+//    帽子晃動的 CSS transform-origin 套到了定位用的 transform 屬性上）。比「帽子中心相對角色畫布」的位置，舞台 vs 舞台外，差 ≤1.5%
+for(const st of [1,2,3,4,5,6]){const KM=[0,5,20,40,90,150,260];const {p,ctx}=await mk(KM[st]);
+ await p.evaluate(()=>{localStorage.setItem("tt_pet_hat","straw");renderPet();document.querySelector(".ps-box").scrollIntoView({block:"center"});});await p.waitForTimeout(500);
+ const r=await p.evaluate(()=>{const rel=sv=>{const a=sv.getBoundingClientRect(),h=sv.querySelector(".pc-hat").getBoundingClientRect();return [((h.left+h.right)/2-a.left)/a.width,((h.top+h.bottom)/2-a.top)/a.height];};
+  document.querySelectorAll("#petEmoji *").forEach(e=>e.getAnimations().forEach(a=>a.cancel()));   /* 呼吸起伏停掉再量（不然量到的是起伏到一半） */
+  const live=rel(document.querySelector("#petEmoji .pet-critter"));const d=document.createElement("div");d.style.cssText="position:fixed;left:0;top:0;width:300px;height:300px";d.innerHTML=document.querySelector("#petEmoji .pet-critter").outerHTML;document.body.appendChild(d);
+  const sv=d.firstChild;sv.style.cssText="width:300px;height:300px;animation:none";sv.querySelectorAll("*").forEach(e=>e.style.animation="none");const still=rel(sv);d.remove();return [live,still];});
+ const dx=Math.abs(r[0][0]-r[1][0]),dy=Math.abs(r[0][1]-r[1][1]);ok(dx<=.015&&dy<=.025,`stage ${st}: the hat on the stage sits where it does in the still picture (off by ${(dx*100).toFixed(1)}% / ${(dy*100).toFixed(1)}%)`);
+ await ctx.close();}
+
 ok(errs.length===0,"no page errors "+JSON.stringify(errs.slice(0,3)));
 console.log("ERRS",JSON.stringify(errs));console.log("FAILS",fails);
 await b.close();srv.kill();process.exit(fails?1:0);})().catch(e=>{console.error(e);process.exit(1);});
