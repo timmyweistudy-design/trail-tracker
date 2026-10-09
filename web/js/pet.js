@@ -69,13 +69,22 @@ function berryBonus() { return +(localStorage.getItem("tt_pet_berry_bonus") || 0
 function addBerryBonus(n) { localStorage.setItem("tt_pet_berry_bonus", String(berryBonus() + n)); }
 function berriesBalance() { return Math.max(0, berriesEarned() + berryBonus() - (+(localStorage.getItem("tt_pet_berry_spent") || 0))); }
 // ❤️ 親密度 0–100（久未互動緩降，永不影響等級）
+// 親密（2026-10-09 修正案 R7-2，使用者同意的節奏）：心的門檻 10／30／50／70／90 點（第一顆心只要 10 點，新手第一天摸頭＋抱抱＋餵一次就看得到）；
+// 兩天沒互動才開始掉、每天 −1，而且不會掉到這一顆心以下（不懲罰：只是不再往上）。以前是「點數 ÷ 20」才算一顆心、隔天就每天 −2——
+// 摸頭 +1、抱抱 +2 的時候數字和進度條都不動，看起來一直是 0/5
+const AFF_T = [10, 30, 50, 70, 90];
+const affFloor = a => AFF_T.filter(t => a >= t).pop() || 0;
 function affinity() {
-  const raw = +(localStorage.getItem("tt_pet_aff") || 0);
+  const raw = Math.max(0, Math.min(100, +(localStorage.getItem("tt_pet_aff") || 0)));
   const t = localStorage.getItem("tt_pet_aff_t");
-  const idle = t ? Math.max(0, daysSince(t) - 1) : 0;
-  return Math.max(0, Math.min(100, Math.round(raw - idle * 2)));
+  const idle = t ? Math.max(0, daysSince(t) - 2) : 0;
+  return Math.round(Math.max(affFloor(raw), raw - idle));
 }
-function petHearts() { return Math.max(0, Math.min(5, Math.floor(affinity() / 20))); }
+// 五顆心，每顆填多少（0～1）：第 k 顆心從上一個門檻填到這一個門檻
+function affFills(a) { return AFF_T.map((t, k) => { const lo = k ? AFF_T[k - 1] : 0; return Math.max(0, Math.min(1, (a - lo) / (t - lo))); }); }
+function affHeartsHtml(a) { return `<span class="aff-hearts" aria-hidden="true">${affFills(a).map(f => `<i style="--f:${f.toFixed(2)}"></i>`).join("")}</span>`; }
+function affNextLine(a) { const nx = AFF_T.find(t => a < t); return nx ? ttT("現在 {a} 點，再 {b} 點就有第 {c} 顆心").replace("{a}", a).replace("{b}", nx - a).replace("{c}", AFF_T.indexOf(nx) + 1) : ttT("親密滿了，牠最喜歡你"); }
+function petHearts(a) { a = a == null ? affinity() : a; return AFF_T.filter(t => a >= t).length; }
 function bumpAffinity(amt) {
   const cur = affinity();
   localStorage.setItem("tt_pet_aff", String(Math.max(0, Math.min(100, cur + amt))));
@@ -353,7 +362,7 @@ function petPlayAt(x) {
   petBuzz(12); PetStage.play(`<svg viewBox="0 0 24 24">${PET_GIFTS[toy][1]}</svg>`, x, toy).then(ok => { if (!ok) return;
     if (tired) { petSay(ttT("玩累了，休息一下"), 2400); if (PetStage.act) setTimeout(() => PetStage.act("yawn"), 300); }   // 累了只喘口氣、打個哈欠（不加新的數值）
     else petSay(ttT(["好好玩！", "再丟一次嘛", "我抓到了！"][Math.floor(Math.random() * 3)]));
-    if (petPatAff()) petFloat(`${ttT("親密")} +1`, ".pet-card .pet-meter:nth-child(2) .mtrack", null, PET_HEART_SVG); });
+    if (petPatAff()) petFloat(`${ttT("親密")} +1`, ".pet-card .pet-meter:nth-child(2) .aff-hearts", null, PET_HEART_SVG); });
 }
 // 睡覺時間、提醒頻率的選單（2026-10-08 修正案 R4 原5／原29）
 function petSleepSel() {
@@ -437,7 +446,10 @@ async function drawPetPhoto(tod, pose, trail) {
   const g = x.createLinearGradient(0, SH - 60, 0, H); g.addColorStop(0, "rgba(22,44,31,0)"); g.addColorStop(.12, "#1d3a28"); g.addColorStop(1, "#14281c"); x.fillStyle = g; x.fillRect(0, SH - 60, W, H - SH + 60);
   x.textAlign = "center"; x.fillStyle = "#fbf8ee"; x.font = `900 76px ${F}`; x.fillText(petName() || ttT(st.n), W / 2, SH + 70, W - 120);
   x.fillStyle = "#e8c87a"; x.font = `700 40px ${F}`; x.fillText(petName() ? `Lv.${i + 1} · ${ttT(st.n)}` : `Lv.${i + 1}`, W / 2, SH + 130, W - 120);   // 沒取名字：標題已經是種類名，副標只寫等級
-  const stats = [[`${km.toFixed(1)} km`, ttT("成長里程")], [`${petDaysTogether()} ${ttT("天")}`, ttT("同行")], [`${petHearts()}/5`, ttT("親密")]];
+  const stats = [[`${km.toFixed(1)} km`, ttT("成長里程")], [`${petDaysTogether()} ${ttT("天")}`, ttT("同行")], [`${affinity()}`, ttT("親密")]];
+  { const fills = affFills(affinity()), hx = W / 2 + 320, hy = SH + 318;   // 親密：數字下面五顆小心（部分填色，跟卡片一樣，R7-2）
+    const heart = (cx, cy, r) => { x.beginPath(); x.moveTo(cx, cy + r * .9); x.bezierCurveTo(cx - r * 1.6, cy - r * .2, cx - r * .7, cy - r * 1.3, cx, cy - r * .45); x.bezierCurveTo(cx + r * .7, cy - r * 1.3, cx + r * 1.6, cy - r * .2, cx, cy + r * .9); x.closePath(); };
+    fills.forEach((f, k) => { const cx = hx + (k - 2) * 34; heart(cx, hy, 13); x.fillStyle = "rgba(251,248,238,.22)"; x.fill(); if (f > 0) { x.save(); heart(cx, hy, 13); x.clip(); x.fillStyle = "#f07a95"; x.fillRect(cx - 22, hy - 22, 44 * f, 44); x.restore(); } }); }
   stats.forEach(([v, l], k) => { const cx = W / 2 + (k - 1) * 320; x.fillStyle = "#fbf8ee"; x.font = `800 54px ${F}`; x.fillText(v, cx, SH + 230, 300); x.fillStyle = "rgba(251,248,238,.65)"; x.font = `500 32px ${F}`; x.fillText(l, cx, SH + 276, 300); });
   x.fillStyle = "rgba(232,200,122,.85)"; x.font = `700 34px ${F}`; x.fillText(ttT("循徑拾光 · Gather the Trail"), W / 2, H - 50);
   return c;
@@ -627,7 +639,7 @@ function renderPet() {
     evoTop = `<span>${ttT("再走")} <b>${(next.km - km).toFixed(1)}</b> km ${ttT("就進化")}</span><span class="pet-evo-next">${nextArt}<span>${ttUnknown()}</span></span>`;
     prog = `<div class="pet-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>`;
   } else evoTop = `<span>${ic("sparkle")} ${ttT("已經是最終型態了")}</span>`;
-  const lovePct = Math.round(h / 5 * 100);
+  const aff = affinity(), lovePct = aff;   // 進度條照點數（R7-2）
   const need = Math.max(0, 3 - berries);
   const feedLbl = cd > 0 ? `${cd >= 3600e3 ? `${Math.ceil(cd / 3600e3)} ${ttT("小時後可餵")}` : `${Math.ceil(cd / 6e4)} ${ttT("分鐘後可餵")}`}`
     : need > 0 ? `${ttT("還差")} ${need} ${ttT("顆果實")}` : `${ttT("餵食")}`;
@@ -636,7 +648,7 @@ function renderPet() {
   // 以前餵完、摸完都整張重畫：粒子位置重抽、待機動作重來、對話泡重彈，看起來像頁面刷新了一次
   const sig = [i, petHat(), petAcc(), nm, (typeof Premium !== "undefined" && Premium.isOn()) ? 1 : 0, typeof PetStage !== "undefined" ? PetStage.cachedWx() + (PetStage.cachedFeel ? PetStage.cachedFeel() : "") : "", typeof PetJourney !== "undefined" ? PetJourney.decor().join(",") : "", document.documentElement.lang || "", JSON.stringify(window.__ps || null), typeof PetStage !== "undefined" ? PetStage.tod() + PetStage.season() : "", petFestival() || "", petPropsOn().join(",")].join("|");   // __ps＝測試面板強制的時段／季節／天氣；時段、季節換了也要重畫（星星、螢火蟲、天空是畫出來的，2026-10-08）
   if (box.dataset.sig === sig && box.querySelector("#petEmoji")) {
-    petCardUpdate(box, { km, mood, days, streak, en, h, left: next ? next.km - km : null, lovePct: Math.round(h / 5 * 100), canFeed, cd, berries, evoTop, pct: next ? Math.max(2, Math.min(100, Math.round((km - st.km) / (next.km - st.km) * 100))) : null });
+    petCardUpdate(box, { km, mood, days, streak, en, h, left: next ? next.km - km : null, lovePct: affinity(), aff: affinity(), canFeed, cd, berries, evoTop, pct: next ? Math.max(2, Math.min(100, Math.round((km - st.km) / (next.km - st.km) * 100))) : null });
     if (typeof PetJourney !== "undefined") PetJourney.render();
     petCompanion(box, i, true);
     if (typeof PetStage !== "undefined" && PetStage.sync) PetStage.sync();   // 跨過 22:00／06:00：睡／醒不必整張重畫
@@ -659,7 +671,7 @@ function renderPet() {
     </div>
     <div class="pet-meters">
       <div class="pet-meter${en == null ? " no-en" : ""}" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${en == null ? 0 : en}" aria-label="${ttT("活力")}"><span>${ttT("活力")} <b>${en == null ? "—" : en}</b></span><div class="mtrack"><i class="m-en" style="width:${en == null ? 0 : en}%"></i></div><em class="m-hint">${ttT("走一趟就有")}</em></div>
-      <div class="pet-meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${lovePct}" aria-label="${ttT("親密")}"><span>${ttT("親密")} <b>${h}/5</b></span><div class="mtrack"><i class="m-love" style="width:${lovePct}%"></i></div></div>
+      <div class="pet-meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${lovePct}" aria-label="${ttT("親密")}" aria-valuetext="${escHtml(affNextLine(aff))}"><span>${ttT("親密")} ${affHeartsHtml(aff)}<b>${aff}</b></span><div class="mtrack"><i class="m-love" style="width:${lovePct}%"></i></div></div>
       <button class="pet-help" id="petHelp" aria-label="${ttT("活力和親密是什麼？")}">?</button>
     </div>
     <div class="pet-chips">
@@ -700,7 +712,7 @@ function renderPet() {
     petBuzz(20);
     petBurst("❤️", 1);
     petSay(petTapLine(petMood().k));   // 現在的心情（在泡泡裡說；以前是畫面底部的提示框）
-    if (petPatAff()) petFloat(`${ttT("親密")} +1`, ".pet-card .pet-meter:nth-child(2) .mtrack", null, PET_HEART_SVG);   // 摸頭也算一點親密（每天 3 次，寵物新一輪 #8）
+    if (petPatAff()) petFloat(`${ttT("親密")} +1`, ".pet-card .pet-meter:nth-child(2) .aff-hearts", null, PET_HEART_SVG);   // 摸頭也算一點親密（每天 3 次，寵物新一輪 #8）
   };
   const hug = () => {
     if (eating() || woke()) return;
@@ -711,7 +723,7 @@ function renderPet() {
     petBurst("❤️", first ? 3 : 1);
     if (first) {
       localStorage.setItem("tt_pet_hug_day", todayStr()); bumpAffinity(2); petDiaryAdd("hug1");
-      petSay(ttT("抱抱！今天的親密增加了")); petFloat(`${ttT("親密")} +2`, ".pet-card .pet-meter:nth-child(2) .mtrack", null, PET_HEART_SVG);
+      petSay(ttT("抱抱！今天的親密增加了")); petFloat(`${ttT("親密")} +2`, ".pet-card .pet-meter:nth-child(2) .aff-hearts", null, PET_HEART_SVG);
     } else petSay(`${ttT("抱抱！")} ${ttT("今天已經抱過囉")}`);
   };
   if (em) {
@@ -726,7 +738,7 @@ function renderPet() {
       if (d && d !== rub.dir) { if (rub.dir) rub.n++; rub.dir = d; } rub.x = e.clientX;
       if (rub.n >= 3 && Date.now() - rub.t < 2000) { rub = null; hugged = true;   /* 放開時的 click 不再當成點一下 */
         if (eating() || woke()) return; if (S) PetStage.react("rub"); rmFb(); petBuzz([10, 30, 10]); petBurst("❤️", 2); petSay(ttT(["好舒服～", "再摸一下嘛", "呼嚕呼嚕…"][Math.floor(Math.random() * 3)]));
-        if (petPatAff()) petFloat(`${ttT("親密")} +1`, ".pet-card .pet-meter:nth-child(2) .mtrack", null, PET_HEART_SVG); }
+        if (petPatAff()) petFloat(`${ttT("親密")} +1`, ".pet-card .pet-meter:nth-child(2) .aff-hearts", null, PET_HEART_SVG); }
     });
     ["pointerup", "pointerleave", "pointercancel"].forEach(t => em.addEventListener(t, () => { clearTimeout(pressT); rub = null; }));
     em.closest(".ps-box") && em.closest(".ps-box").addEventListener("pet-shaken", () => petSay(ttT(["哇～頭好暈", "別搖啦～", "地震了嗎？！"][Math.floor(Math.random() * 3)])));
@@ -752,7 +764,7 @@ function renderPet() {
         DeviceMotionEvent.requestPermission().then(r => { const g = r === "granted"; mo.checked = g; localStorage.setItem("tt_pet_motion", g ? "1" : "0"); if (!g) toast(ttT("需允許「動作與方向」權限")); }).catch(() => { mo.checked = false; toast(ttT("需允許「動作與方向」權限")); }); });
     }, 0);
     const rows = petAffRows().map(([a, b, c]) => `<tr><td>${escHtml(ttT(a))}</td><td class="ah-v">${b}</td><td class="ah-t">${escHtml(c)}</td></tr>`).join("");
-    if (typeof ttChoice === "function") ttChoice({ html: `<div class="aff-help"><p>${escHtml(ttT("活力：出門走路就會補滿，太久沒出門會慢慢掉。"))}</p><p><b>${escHtml(ttT("親密怎麼增加"))}</b></p><table>${rows}</table>
+    if (typeof ttChoice === "function") ttChoice({ html: `<div class="aff-help"><p>${escHtml(ttT("活力：出門走路就會補滿，太久沒出門會慢慢掉。"))}</p><p><b>${escHtml(ttT("親密怎麼增加"))}</b></p><p class="ah-now">${affHeartsHtml(affinity())} ${escHtml(affNextLine(affinity()))}</p><table>${rows}</table>
       <p>${escHtml(ttT("親密滿 5 顆心：餵食給的成長更多，牠也會自己出門帶小東西回來。"))}</p><p class="ah-n">${escHtml(ttT("兩個都不會讓夥伴退化，放心。"))}</p>
       ${petCan.sound() ? `<label class="ah-sw"><span>${escHtml(ttT("夥伴音效（吃東西、抱抱、進化）"))}</span><input type="checkbox" class="tt-switch" id="petSoundSw"${petSoundOn() ? " checked" : ""}></label>` : ""}
       ${petCan.haptic() ? `<label class="ah-sw"><span>${escHtml(ttT("夥伴震動"))}</span><input type="checkbox" class="tt-switch" id="petHapticSw"${petHapticOn() ? " checked" : ""}></label>` : ""}
@@ -847,7 +859,7 @@ function petCardUpdate(box, v) {
   // 活力、親密
   const ms = box.querySelectorAll(".pet-meter");
   if (ms[0]) { ms[0].classList.toggle("no-en", v.en == null); ms[0].setAttribute("aria-valuenow", v.en == null ? 0 : v.en); ms[0].querySelector("b").textContent = v.en == null ? "—" : v.en; ms[0].querySelector(".m-en").style.width = (v.en == null ? 0 : v.en) + "%"; }
-  if (ms[1]) { const b = ms[1].querySelector("b"), was = b.textContent; b.textContent = `${v.h}/5`; ms[1].setAttribute("aria-valuenow", v.lovePct); ms[1].querySelector(".m-love").style.width = v.lovePct + "%"; if (was !== b.textContent) { ms[1].classList.add("bump"); setTimeout(() => ms[1].classList.remove("bump"), 700); } }
+  if (ms[1]) { const b = ms[1].querySelector("b"), was = b.textContent; b.textContent = `${v.aff}`; const hs = ms[1].querySelector(".aff-hearts"); if (hs) hs.outerHTML = affHeartsHtml(v.aff); ms[1].setAttribute("aria-valuenow", v.lovePct); ms[1].setAttribute("aria-valuetext", affNextLine(v.aff)); ms[1].querySelector(".m-love").style.width = v.lovePct + "%"; if (was !== b.textContent) { ms[1].classList.add("bump"); setTimeout(() => ms[1].classList.remove("bump"), 700); } }
   // 成長里程（往上跳）、同行天數、週週有走
   const cv = box.querySelectorAll(".pet-chip .cv");
   if (cv[0]) { const n = cv[0].firstChild; if (n && n.nodeType === 3) { const sp = document.createElement("span"); sp.textContent = n.textContent; cv[0].replaceChild(sp, n); } petCountUp(cv[0].firstChild, v.km, 1); }

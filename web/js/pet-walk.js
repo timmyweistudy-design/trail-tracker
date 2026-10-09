@@ -162,9 +162,9 @@ window.PetWalk = (function () {
   let ropeRaf = 0;
   function rope(box, on) {
     cancelAnimationFrame(ropeRaf); ropeRaf = 0; if (!box || !on || reduce()) return;
-    let odd = false;
+    let n3 = 0;
     const tick = () => { if (!box.isConnected || stage(box) !== 6) { ropeRaf = 0; return; }
-      odd = !odd; if (!box.__tailTw && (odd || box.classList.contains("walking") || box.__chain || box.__ropeTail < .99)) ropeRender(box, performance.now());   // __tailTw：尾巴補間正在跑，它每格自己畫（applyChain）——這裡再畫一次＝同一格畫兩遍（2026-10-08 R2 量到：送果實時繩波每格算兩次）   // 待機時繩波很慢：每秒畫 30 次就夠（游、用尾巴送果實時每格畫）
+      n3 = (n3 + 1) % 3; if (!box.__tailTw && (n3 === 0 || box.classList.contains("walking") || box.__chain || box.__ropeTail < .99)) ropeRender(box, performance.now());   // __tailTw：尾巴補間正在跑，它每格自己畫（applyChain）——這裡再畫一次＝同一格畫兩遍（2026-10-08 R2 量到：送果實時繩波每格算兩次）   // 待機時繩波很慢：每秒畫 20 次就夠（2026-10-09 R7-3：30→20，量過待機腳本 80→55 ms/s（4 倍降速，3 次）；游、用尾巴送果實時每格畫）
       ropeRaf = requestAnimationFrame(tick); };
     ropeRaf = requestAnimationFrame(tick);
   }
@@ -277,7 +277,8 @@ window.PetWalk = (function () {
   function tailMs(box, tgt) {   // 照路長給時間（毫秒）：去勾 0.7～1 秒、送到嘴前 0.9～1.2、收回 0.9～1.3
     const P = box.__chain || rest(), tip = P[P.length - 1], g = !tgt ? tip6() : tgt === "mouth" ? mouthLocal(box) : typeof tgt === "function" ? toLocal(box, ...tgt()) : (() => { const r = tgt.getBoundingClientRect(); return toLocal(box, r.left + r.width / 2, r.top + r.height * .62); })();
     const d = Math.hypot(g[0] - tip[0], g[1] - tip[1]), [lo, hi] = !tgt ? [900, 1300] : (tgt === "mouth" || typeof tgt === "function") ? [900, 1200] : [700, 1000];
-    return Math.round(lo + (hi - lo) * Math.min(1, d / 110));
+    // 2026-10-09 R7-1：路長的時候至少每單位 14ms——不然補間給的目標跑得比尾尖的速度上限（limitTip 每格 3.2）還快，尾尖一路頂著上限等速走、到了才突然停（神龍玩完把松果放回雲上時「頓一下」）
+    return Math.round(Math.max(lo + (hi - lo) * Math.min(1, d / 110), d * 14));   /* 14：尾巴走的是弧線，路比直線長 */
   }
   // 限速：這一格參數的變化讓「尾巴上任何一點」移動超過 vmax 單位，就按比例縮小（以前直接夾參數，c0 改一點點 21 節累加起來尾尖一格跑 20 單位）
   function limitTip(prev, c, hk, vmax) {

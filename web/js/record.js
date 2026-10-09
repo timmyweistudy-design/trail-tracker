@@ -515,6 +515,8 @@ Recorder.onUpdate(s => {
   const _rp = window.__recPet;
   document.body.classList.toggle("rec-resting", _rp ? _rp === "rest" : s.state === "paused" || (s.state === "running" && !!s.resting));
   document.body.classList.toggle("rec-fast", _rp ? _rp === "fast" : s.state === "running" && !s.resting && (s.instKmh || 0) > 6.5);
+  // 爬坡會喘（2026-10-09 修正案 R7-3 原17）：最近 5 分鐘爬升超過 60m，地圖上的夥伴邊走邊喘——只代表遊戲角色，不代表你的身體狀況
+  document.body.classList.toggle("rec-climb", _rp ? _rp === "climb" : s.state === "running" && !s.resting && recentClimb(s.track) > 60);
   // 狀態列（有變才寫）
   if (s.error && s.errCode) setRecStatus(`<span class="rs-warn">${ic("alert")} ${escHtml(ttT(GPS_ERR[s.errCode] || GPS_ERR[2]))}</span>`, true);
   else if (s.waiting) setRecStatus(`<span class="rs-wait"><span class="spin"></span>${ttT("正在等定位，第一次可能要十幾秒…")}</span>`, true);
@@ -1139,3 +1141,9 @@ restoreActiveRecording();
 setTimeout(() => { try { renderRecHead(Recorder.getState()); } catch (e) { /* */ } }, 0);
 setInterval(() => { if (document.body.dataset.view === "record") { _recHeadSig = ""; try { renderRecHead(Recorder.getState()); } catch (e) { /* */ } } }, 60000);
 document.addEventListener("click", e => { if (e.target.closest('.tab[data-view="record"]')) setTimeout(() => { try { renderRecHead(Recorder.getState()); } catch (er) { /* */ } }, 50); });
+// 最近 5 分鐘爬升了多少公尺（只算往上的；海拔有雜訊：每段 <1m 的不算）
+function recentClimb(track) {
+  if (!track || track.length < 2) return 0; const t1 = track[track.length - 1].t || 0; let up = 0;
+  for (let i = track.length - 1; i > 0 && t1 - (track[i - 1].t || 0) <= 5 * 60000; i--) { const d = (track[i].alt || 0) - (track[i - 1].alt || 0); if (d >= 1) up += d; }
+  return up;
+}

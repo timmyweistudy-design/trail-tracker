@@ -391,7 +391,7 @@ async function toggleDebugPanel() {
       ["📮＋明信片(隨機)", () => ttDebug.addRandomTrail()], ["🗾五區全走過", () => ttDebug.allRegions()],
       ["💧＋瀑布×2", () => ttDebug.addTheme("瀑布")], ["🌊＋海景×2", () => ttDebug.addTheme("海景")], ["🪨＋古道×2", () => ttDebug.addTheme("古道")], ["🌲＋森林×2", () => ttDebug.addTheme("森林")], ["🏞＋湖泊×2", () => ttDebug.addTheme("湖泊")],
       ["📮開明信片簿", closeAnd(() => PetJourney.openAlbum("cards"))], ["🗾開走過的縣市", closeAnd(() => PetJourney.openAlbum("regions"))], ["🖼開第一張明信片", closeAnd(() => { const w = PetJourney.walked(); if (!w.length) return "先按「＋明信片」"; PetJourney.openCard(w[0].t.id); })], ["🆕全部標成新的", () => ttDebug.allNew()],
-      ["🗺地圖夥伴：小跑", () => { window.__recPet = "fast"; return "記錄中地圖上的夥伴會小跑（開模擬記錄看）"; }], ["🗺地圖夥伴：坐下", () => { window.__recPet = "rest"; return "記錄中地圖上的夥伴會坐下（開模擬記錄看）"; }], ["🗺地圖夥伴：恢復", () => { window.__recPet = null; return "地圖夥伴跟真實速度／休息"; }],
+      ["🗺地圖夥伴：小跑", () => { window.__recPet = "fast"; return "記錄中地圖上的夥伴會小跑（開模擬記錄看）"; }], ["🗺地圖夥伴：坐下", () => { window.__recPet = "rest"; return "記錄中地圖上的夥伴會坐下（開模擬記錄看）"; }], ["🗺地圖夥伴：喘", () => { window.__recPet = "climb"; return "記錄中地圖上的夥伴爬坡喘氣（開模擬記錄看）"; }], ["🗺地圖夥伴：恢復", () => { window.__recPet = null; return "地圖夥伴跟真實速度／休息"; }],
       ["🧹清測試步道", () => ttDebug.clearHikes()],
     ]],
     ["行程與成就", [

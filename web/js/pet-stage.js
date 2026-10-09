@@ -306,11 +306,22 @@ window.PetStage = (function () {
     return "idle";
   }
   function emEl() { return box && box.querySelector("#petEmoji"); }
-  function flash(cls, ms) {   // 加一個動作 class，播完拿掉
+  // 加一個動作 class，播完拿掉。2026-10-09 修正案 R7-1：等「這個 class 觸發的 CSS 動畫」真的播完才拿掉——
+  // 以前等寫死的毫秒數，但每一階的動畫長度不同（神龍的跳 1.6 秒、程式只等 0.9 秒），class 一拿掉角色就瞬間彈回原位＝頓一下（6 隻的跳、神龍伸懶腰、幼龍嚼都有）。
+  // ms 現在是「找不到動畫時」的等待時間（減少動態效果、被 animation:none 蓋掉）；有動畫就等它結束（最多多等 3 秒保險）
+  function flash(cls, ms) {
     const em = emEl(); if (!em) return sleep(0);
     if (cls === "pb-snap" || cls === "pb-hug" || cls === "pb-rub") window.dispatchEvent(new CustomEvent("pet-fx", { detail: cls === "pb-snap" ? "bite" : "hug" }));   // 音效（pet.js，預設關；寵物新一輪 #23）
-    em.classList.remove(cls); void em.offsetWidth; em.classList.add(cls);
-    return sleep(ms).then(() => em.classList.remove(cls));
+    em.classList.remove(cls); void em.offsetWidth;
+    const before = new Set(em.getAnimations ? em.getAnimations({ subtree: true }) : []);
+    em.classList.add(cls);
+    const mine = em.getAnimations ? em.getAnimations({ subtree: true }).filter(a => !before.has(a) && typeof CSSAnimation !== "undefined" && a instanceof CSSAnimation && isFinite(a.effect && a.effect.getComputedTiming().endTime)) : [];
+    // 看不到時（捲出畫面、App 到背景）舞台的 CSS 動畫會暫停（live() 的 ps-off）→ 等不到結束：改回照毫秒數走（不然餵到一半滑走會卡住，pet-motion 抓到的）
+    const off = () => !visible || document.hidden || !box || box.classList.contains("ps-off");
+    const offWait = () => new Promise(res => { const t = setInterval(() => { if (off()) { clearInterval(t); res(); } }, 150); end0.then(() => clearInterval(t)); });
+    const end0 = mine.length && !off() ? Promise.race([Promise.all(mine.map(a => a.finished.catch(() => {}))), sleep(Math.max(ms || 0, ...mine.map(a => a.effect.getComputedTiming().endTime)) / Math.min(1, (window.__ttSlow && window.__ttSlow.k) || 1) + 3000)]) : sleep(ms);
+    const end = mine.length && !off() ? Promise.race([end0, offWait().then(() => sleep(Math.min(ms || 0, 400)))]) : end0;
+    return end.then(() => em.classList.remove(cls));
   }
   // 每隻專屬的待機小動作（2026-10-07 收尾輪：讓牠平常也有事做）——只動不會被繩波、步態每格寫的元素（單一擁有者）
   async function special(on) {   // on()：這個待機動作還擁有舞台嗎（被餵食／玩／訪客接手後，後面的步驟一律不做）
@@ -574,9 +585,10 @@ window.PetStage = (function () {
       else if (stg === 6) {
         const r0 = b.getBoundingClientRect(), back = [r0.left + r0.width / 2, r0.top + r0.height * .62];   // 玩完放回原地
         await PetWalk.tailTo(box, b, null, null, .34); b.classList.add("carried"); follow(b, "tail", { ay: .62, ms: 120 });
-        await PetWalk.tailTo(box, () => { const r = box.getBoundingClientRect(); return [r.left + r.width * .62, r.top + r.height * .32]; });   // 舉高甩一下
+        const sync = () => ownTick(true);   // 2026-10-09 R7-1：尾巴每畫一格、同一格對齊松果（餵食早就這樣做，玩的時候漏了 → 尾巴快的時候松果一格跳 13px、一格不動）
+        await PetWalk.tailTo(box, () => { const r = box.getBoundingClientRect(); return [r.left + r.width * .62, r.top + r.height * .32]; }, null, sync);   // 舉高甩一下
         await flash("pb-hop", 900);
-        await PetWalk.tailTo(box, () => back);
+        await PetWalk.tailTo(box, () => back, null, sync);
         release(b); await PetWalk.tailTo(box, null);
       } else {
         await PetWalk.goEat(box, b, x);
