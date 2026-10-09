@@ -65,7 +65,7 @@ const recs=[1,3,5,7].map(m=>({id:"r"+m,date:new Date(Y,m-1,9,7).toISOString(),tr
  await p.evaluate(()=>ttDebug.storyBanner());
  await p.evaluate(()=>ttDebug.notch());await p.waitForTimeout(300);ok(await p.evaluate(()=>document.documentElement.classList.contains("sim-notch")&&!!document.querySelector(".sim-island")&&getComputedStyle(document.documentElement).getPropertyValue("--safe-t").trim()==="59px"),"notch sim on");
  await p.screenshot({path:O+"notch-me.png"});
- await p.reload();await p.waitForTimeout(2500);await p.evaluate(()=>ensureScript("js/debug.js"));ok(await p.evaluate(()=>document.documentElement.classList.contains("sim-notch")&&!!document.querySelector(".sim-island")),"notch sim survives reload");
+ await p.reload();await require(__dirname+"/ready")(p);await p.evaluate(()=>ensureScript("js/debug.js"));ok(await p.evaluate(()=>document.documentElement.classList.contains("sim-notch")&&!!document.querySelector(".sim-island")),"notch sim survives reload");
  await p.evaluate(()=>ttDebug.notch());ok(await p.evaluate(()=>!document.documentElement.classList.contains("sim-notch")&&!document.querySelector(".sim-island")),"notch sim off");
  await p.evaluate(()=>ttDebug.sunset(-1));await p.evaluate(()=>{document.querySelector('.tab[data-view="record"]').click();});await p.waitForTimeout(400);
  await p.evaluate(()=>{const t=document.getElementById("simToggle");t.checked=true;t.dispatchEvent(new Event("change"));});

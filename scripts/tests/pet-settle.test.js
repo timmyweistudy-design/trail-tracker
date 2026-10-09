@@ -7,10 +7,10 @@ const PORT = +process.env.TT_PORT || 8916;
 const mk=async(km)=>{const ctx=await b.newContext({viewport:{width:390,height:844},timezoneId:"Asia/Taipei"});const p=await ctx.newPage();await require(__dirname+"/fake-weather")(p);p.on("pageerror",e=>errs.push(e.message));
  await p.addInitScript(km=>{if(sessionStorage.getItem("__i"))return;sessionStorage.setItem("__i","1");localStorage.setItem("tt_lang","zh");["tt_onboarded_v2","tt_coach_trail","tt_locperm_prompted","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_coach_team","tt_coach_pet"].forEach(k=>localStorage.setItem(k,"1"));
   localStorage.setItem("tt_pet_woke",String(Date.now()));localStorage.setItem("tt_test_diary","1");localStorage.setItem("tt_debug_km",String(km));localStorage.setItem("tt_pet_berry_bonus","30");},km);
- await p.addInitScript(MOCK);await p.goto(`http://localhost:${PORT}/`);await p.waitForTimeout(2500);
+ await p.addInitScript(MOCK);await p.goto(`http://localhost:${PORT}/`);await require(__dirname+"/ready")(p);
  await p.evaluate(()=>document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove()));await p.click('.tab[data-view="pet"]');await p.waitForTimeout(1200);
  await p.evaluate(()=>{document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove());window.__psNoIdle=true;document.querySelector(".ps-box").scrollIntoView({block:"center"});});await p.waitForTimeout(400);return p;};
-const reopen=async p=>{await p.reload();await p.waitForTimeout(2500);await p.evaluate(()=>document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove()));await p.click('.tab[data-view="pet"]');await p.waitForTimeout(1200);};
+const reopen=async p=>{await p.reload();await require(__dirname+"/ready")(p);await p.evaluate(()=>document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove()));await p.click('.tab[data-view="pet"]');await p.waitForTimeout(1200);};
 const snap=p=>p.evaluate(()=>({bal:berriesBalance(),km:+(localStorage.getItem("tt_pet_feedkm")||0),fed:localStorage.getItem("tt_pet_fed_t"),stage:localStorage.getItem("tt_pet_stage"),
   evo:JSON.parse(localStorage.getItem("tt_pet_diary")||"[]").filter(x=>x.k==="evo").length,gifts:JSON.parse(localStorage.getItem("tt_pet_gifts")||"[]").length,giftT:localStorage.getItem("tt_pet_gift_t")}));
 

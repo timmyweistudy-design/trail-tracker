@@ -12,7 +12,7 @@ const mk=async(st)=>{const ctx=await b.newContext({viewport:{width:390,height:84
   localStorage.setItem("tt_pet_woke",String(Date.now()));localStorage.setItem("tt_test_diary","1");localStorage.setItem("tt_debug_km",String(km));localStorage.setItem("tt_pet_berry_bonus","30");
   // 記下每個 requestAnimationFrame 是誰排的（A8：切到記錄頁後，夥伴的檔案不能再排任何一格）
   const raf=window.requestAnimationFrame.bind(window);window.__petRaf=0;window.requestAnimationFrame=f=>{const pet=/pet-(walk|stage)\.js/.test(new Error().stack||"");return raf(t=>{if(pet)window.__petRaf++;f(t);});};},KM[st]);
- await p.addInitScript(MOCK);await p.goto(`http://localhost:${PORT}/`);await p.waitForTimeout(2500);
+ await p.addInitScript(MOCK);await p.goto(`http://localhost:${PORT}/`);await require(__dirname+"/ready")(p);
  await p.evaluate(()=>document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove()));await p.click('.tab[data-view="pet"]');await p.waitForTimeout(1200);
  await p.evaluate(()=>{document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove());window.__psNoIdle=true;localStorage.removeItem("tt_pet_fed_t");renderPet();document.querySelector(".ps-box").scrollIntoView({block:"center"});});
  await p.waitForTimeout(800);const cdp=await ctx.newCDPSession(p);await cdp.send("Performance.enable");await cdp.send("Emulation.setCPUThrottlingRate",{rate:4});

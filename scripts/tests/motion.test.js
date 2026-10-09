@@ -13,7 +13,7 @@ const past=[1,2,3].flatMap(k=>[1,2,3,4].map(i=>({id:`p${k}${i}`,date:new Date(no
 const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:o.w||390,height:844},geolocation:{latitude:23.47,longitude:120.957},permissions:["geolocation"]});const p=await ctx.newPage();await require(__dirname+"/fake-weather")(p);p.on("pageerror",e=>errs.push(e.message));
  if(o.routeCond)await ctx.route(/workers\.dev/,r=>o.routeCond==="fail"?r.abort():r.fulfill({status:200,contentType:"application/json",body:JSON.stringify(o.routeCond)}));
  await p.addInitScript(o=>{if(sessionStorage.getItem("x"))return;sessionStorage.setItem("x","1");localStorage.setItem("tt_lang",o.lang||"zh");["tt_onboarded_v2","tt_coach_trail","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_locperm_prompted","tt_coach_team","tt_coach_soc_friends","tt_coach_soc_explore","tt_coach_soc_search","tt_coach_soc_notif","tt_coach_soc_me"].forEach(k=>localStorage.setItem(k,"1"));for(const k in (o.ls||{}))localStorage.setItem(k,o.ls[k]);},o);
- await p.addInitScript(()=>{document.addEventListener("DOMContentLoaded",()=>new MutationObserver(()=>document.querySelectorAll(".tour").forEach(e=>e.remove())).observe(document.body,{childList:true,subtree:true}));});await p.addInitScript(MOCK);await p.goto("http://localhost:"+__TTP+"/");await p.waitForTimeout(2500);
+ await p.addInitScript(()=>{document.addEventListener("DOMContentLoaded",()=>new MutationObserver(()=>document.querySelectorAll(".tour").forEach(e=>e.remove())).observe(document.body,{childList:true,subtree:true}));});await p.addInitScript(MOCK);await p.goto("http://localhost:"+__TTP+"/");await require(__dirname+"/ready")(p);
  if(o.login)await p.evaluate(m=>window.__installFakeSupa(m),o.mock||{});
  await p.evaluate(()=>document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove()));return p;};
 {const p=await mk({});
@@ -34,7 +34,7 @@ const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:o.w||390,he
  await p.close();}
 {const ctx=await b.newContext({viewport:{width:390,height:844},reducedMotion:"reduce"});const p=await ctx.newPage();p.on("pageerror",e=>errs.push(e.message));
  await p.addInitScript(()=>{localStorage.setItem("tt_lang","zh");["tt_onboarded_v2","tt_coach_trail","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_locperm_prompted","tt_coach_team"].forEach(k=>localStorage.setItem(k,"1"));});
- await p.goto("http://localhost:"+__TTP+"/");await p.waitForTimeout(2500);
+ await p.goto("http://localhost:"+__TTP+"/");await require(__dirname+"/ready")(p);
  await p.click('.tab[data-view="me"]');await p.waitForTimeout(400);await p.click("#btnPeaks");await p.waitForTimeout(500);await p.keyboard.press("Escape");
  ok(await p.evaluate(()=>document.querySelectorAll(".tt-leaving").length===0&&!document.querySelector('[data-ov="peaks"]')),"reduced motion: no ghost, closes instantly");await p.close();}
 console.log("ERRS",JSON.stringify(errs));console.log("FAILS",fails);await b.close();srv.kill();})();

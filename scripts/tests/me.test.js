@@ -11,7 +11,7 @@ const R=[{id:"a1",date:"2026-09-30T22:10:00.000Z",trailName:"南澳古道",trail
 (async()=>{const srv=spawn("python3",["-m","http.server",String(__TTP)],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
 const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:o.w||390,height:844},timezoneId:"Asia/Taipei",colorScheme:o.scheme||"light"});const p=await ctx.newPage();await require(__dirname+"/fake-weather")(p);p.on("pageerror",e=>errs.push(e.message));
  await p.addInitScript(o=>{if(sessionStorage.getItem("seeded"))return;sessionStorage.setItem("seeded","1");localStorage.setItem("tt_lang",o.lang||"zh");["tt_onboarded_v2","tt_coach_trail","tt_locperm_prompted","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_coach_team"].forEach(k=>localStorage.setItem(k,"1"));localStorage.setItem("tt_set_open","[0,1,2,3,4,5]");localStorage.setItem("tt_records",JSON.stringify(o.recs));if(o.hidesim)localStorage.setItem("tt_hist_hidesim","1");},Object.assign({recs:o.recs||R},o));
- await p.addInitScript(MOCK);await p.goto("http://localhost:"+__TTP+"/");await p.waitForTimeout(2500);
+ await p.addInitScript(MOCK);await p.goto("http://localhost:"+__TTP+"/");await require(__dirname+"/ready")(p);
  if(o.login)await p.evaluate(()=>window.__installFakeSupa({}));
  await p.evaluate(()=>document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove()));await p.click('.tab[data-view="me"]');await p.waitForTimeout(1300);return p;};
 const dlgTxt=p=>p.evaluate(()=>{const d=document.querySelector(".ttdlg");return d?d.innerText:null});

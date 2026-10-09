@@ -11,7 +11,7 @@ const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:o.w||390,he
   localStorage.setItem("tt_debug_km",String(o.km||0));if(o.hat)localStorage.setItem("tt_pet_hat",o.hat);if(o.berries)localStorage.setItem("tt_pet_berry_bonus",String(o.berries));
   if(o.records)localStorage.setItem("tt_records",JSON.stringify(o.records));},o);
  if(o.free)await p.addInitScript(()=>{window.PERSONAL_MODE=false;localStorage.removeItem("tt_premium");});
- await p.addInitScript(MOCK);await p.goto(`http://localhost:${PORT}/`);await p.waitForTimeout(2500);
+ await p.addInitScript(MOCK);await p.goto(`http://localhost:${PORT}/`);await require(__dirname+"/ready")(p);
  await p.evaluate(()=>document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove()));await p.click('.tab[data-view="pet"]');await p.waitForTimeout(1500);
  await p.evaluate(()=>document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove()));return p;};
 const KM=[0,5,20,40,90,150,260];

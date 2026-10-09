@@ -7,7 +7,7 @@ const PORT = +process.env.TT_PORT || 8915;
 (async()=>{const srv=spawn("python3",["-m","http.server",String(PORT)],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
 const ctx=await b.newContext({viewport:{width:390,height:844},timezoneId:"Asia/Taipei"});const p=await ctx.newPage();await require(__dirname+"/fake-weather")(p);p.on("pageerror",e=>errs.push(e.message));
 await p.addInitScript(()=>{if(sessionStorage.getItem("__i"))return;sessionStorage.setItem("__i","1");localStorage.setItem("tt_lang","zh");["tt_onboarded_v2","tt_coach_trail","tt_locperm_prompted","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_coach_team","tt_coach_pet"].forEach(k=>localStorage.setItem(k,"1"));});
-await p.addInitScript(MOCK);await p.goto(`http://localhost:${PORT}/`);await p.waitForTimeout(2500);
+await p.addInitScript(MOCK);await p.goto(`http://localhost:${PORT}/`);await require(__dirname+"/ready")(p);
 // 每個情況：清掉夥伴鍵 → 灌本機 → importAll(備份, mode) → 讀回來
 const run=(local,backup,mode)=>p.evaluate(([local,backup,mode])=>{const K=Object.keys(localStorage).filter(k=>/^tt_(pet|ach|badges|quest|peaks|mch|pj|life)/.test(k));K.forEach(k=>localStorage.removeItem(k));
   for(const k in local)localStorage.setItem(k,local[k]);let res=null,err=null;try{res=Store.importAll(backup,mode);}catch(e){err=e.message;}
@@ -48,7 +48,7 @@ ok(await p.evaluate(()=>Store.exportAll().petV===1),"exportAll writes petV: 1");
  ok(r.g.tt_pet_stage==="3"&&r.g.tt_pet_berry_spent==="20","replace mode overwrites with the backup (stage 3, spent 20)");}
 // 9. 合併後重開 App：果實餘額沒有變多、禮物不會又送一次、冷卻沒有重來
 {await run({tt_pet_hatch:"2026-05-01T00:00:00.000Z",tt_pet_berry_spent:"50",tt_pet_gift_t:String(Date.now()),tt_pet_fed_t:String(Date.now())},old,"merge");
- await p.reload();await p.waitForTimeout(2500);
+ await p.reload();await require(__dirname+"/ready")(p);
  const r=await p.evaluate(()=>[localStorage.getItem("tt_pet_berry_spent"),petGiftDue(),feedCooldownMs()>7*3600e3]);
  ok(r[0]==="50"&&r[1]===false&&r[2]===true,"after merging an old backup and reopening: spent stays 50, no repeat gift, cooldown kept "+JSON.stringify(r));}
 

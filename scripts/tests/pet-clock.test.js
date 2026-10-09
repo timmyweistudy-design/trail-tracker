@@ -11,7 +11,7 @@ const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:390,height:
  await p.addInitScript(o=>{if(sessionStorage.getItem("__init"))return;sessionStorage.setItem("__init","1");   // 只在第一次載入時灌資料（reload 測試要看 sessionStorage 留不留得住）
   localStorage.setItem("tt_lang","zh");["tt_onboarded_v2","tt_coach_trail","tt_locperm_prompted","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_coach_team","tt_coach_pet"].forEach(k=>localStorage.setItem(k,"1"));
   localStorage.setItem("tt_pet_woke",o.woke?String(Date.now()):"0");if(o.testDiary)localStorage.setItem("tt_test_diary","1");localStorage.setItem("tt_debug_km",String(o.km||0));if(o.hatch)localStorage.setItem("tt_pet_hatch",o.hatch);},o);
- await p.addInitScript(MOCK);await p.goto(`http://localhost:${PORT}/`);await p.waitForTimeout(2500);
+ await p.addInitScript(MOCK);await p.goto(`http://localhost:${PORT}/`);await require(__dirname+"/ready")(p);
  await p.evaluate(()=>document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove()));await p.click('.tab[data-view="pet"]');await p.waitForTimeout(1200);
  await p.evaluate(()=>{document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove());window.__psNoIdle=true;});return p;};
 const at=(p,y,mo,d,h,mi)=>p.evaluate(a=>{ttClock.set(new Date(a[0],a[1]-1,a[2],a[3],a[4]||0));renderPet();},[y,mo,d,h,mi]);
@@ -24,7 +24,7 @@ const at=(p,y,mo,d,h,mi)=>p.evaluate(a=>{ttClock.set(new Date(a[0],a[1]-1,a[2],a
  // 季節也跟著時鐘
  await at(p,2026,12,24,10);ok(await p.evaluate(()=>document.querySelector(".ps-box").dataset.season)==="winter","stage season follows clock (Dec → winter)");
  // 撥過的時間只活在這次開啟：reload 還在、不寫進 localStorage（不會進備份）
- await p.reload();await p.waitForTimeout(2500);
+ await p.reload();await require(__dirname+"/ready")(p);
  const kept=await p.evaluate(()=>[ttClock.date().getMonth()+1,ttClock.date().getDate(),Object.keys(localStorage).filter(k=>/clock/.test(k))]);
  ok(kept[0]===12&&kept[1]===24&&kept[2].length===0,"offset survives reload via sessionStorage, nothing in localStorage "+JSON.stringify(kept));
  await p.evaluate(()=>ttClock.reset());ok(await p.evaluate(()=>ttClock.offset()===0&&!sessionStorage.getItem("tt_clock_off")),"reset clears the offset");

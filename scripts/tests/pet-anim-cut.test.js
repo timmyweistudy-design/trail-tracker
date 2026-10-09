@@ -4,13 +4,14 @@ const __path=require("path"),__fs=require("fs");
 const ROOT=__path.resolve(__dirname,"../..");const {chromium}=require(ROOT+"/node_modules/playwright");const {spawn}=require("child_process");
 const MOCK=__fs.readFileSync(__dirname+"/soc-mock.js","utf8");const errs=[];let fails=0;const ok=(c,m)=>{console.log((c?"PASS ":"FAIL ")+m);if(!c)fails++;};
 const PORT = +process.env.TT_PORT || 8921, KM=[0,5,20,40,90,150,260];
-const ONLY=(process.env.AC_ONLY||"0,1,2,3,4,5,6").split(",").map(Number);
+const __SH=(process.env.PS_SHARD||"0/1").split("/").map(Number);   // run-all 拆組平行跑：第 i 組跑 階段%n==i，神龍尾巴那段放最後一組
+const ONLY=(process.env.AC_ONLY||"0,1,2,3,4,5,6").split(",").map(Number).filter(st=>st%__SH[1]===__SH[0]);
 (async()=>{const srv=spawn("python3",["-m","http.server",String(PORT)],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
 for(const st of ONLY){
  const ctx=await b.newContext({viewport:{width:390,height:844},timezoneId:"Asia/Taipei"});const p=await ctx.newPage();await require(__dirname+"/fake-weather")(p);p.on("pageerror",e=>errs.push(e.message));
  await p.addInitScript(km=>{localStorage.setItem("tt_lang","zh");["tt_onboarded_v2","tt_coach_trail","tt_locperm_prompted","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_coach_team","tt_coach_pet"].forEach(k=>localStorage.setItem(k,"1"));
   localStorage.setItem("tt_pet_woke",String(Date.now()));localStorage.setItem("tt_test_diary","1");localStorage.setItem("tt_debug_km",String(km));},KM[st]);
- await p.addInitScript(MOCK);await p.goto(`http://localhost:${PORT}/`);await p.waitForTimeout(2500);
+ await p.addInitScript(MOCK);await p.goto(`http://localhost:${PORT}/`);await require(__dirname+"/ready")(p);
  await p.evaluate(()=>document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove()));await p.click('.tab[data-view="pet"]');await p.waitForTimeout(1200);
  await p.evaluate(()=>{document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove());window.__psNoIdle=true;document.querySelector(".ps-box").scrollIntoView({block:"center"});});await p.waitForTimeout(500);
  // 每一格記角色外框；class 被拿掉時馬上量一次（同步，已套用拿掉後的樣式），跟上一格比
@@ -26,9 +27,9 @@ for(const st of ONLY){
  ok(cut.length>=12&&bad.length===0,`stage ${st}: no action snaps back when it ends (${cut.length} endings checked${bad.length?", jumps: "+JSON.stringify(bad):""})`);
  await ctx.close();}
 // 神龍玩松果：尾尖每一格的速度變化不能大於 3px（以前第 127 格一格跳 16px）
-{const ctx=await b.newContext({viewport:{width:390,height:844}});const p=await ctx.newPage();await require(__dirname+"/fake-weather")(p);p.on("pageerror",e=>errs.push(e.message));
+if(__SH[0]===__SH[1]-1){const ctx=await b.newContext({viewport:{width:390,height:844}});const p=await ctx.newPage();await require(__dirname+"/fake-weather")(p);p.on("pageerror",e=>errs.push(e.message));
  await p.addInitScript(()=>{localStorage.setItem("tt_lang","zh");["tt_onboarded_v2","tt_coach_trail","tt_locperm_prompted","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_coach_team","tt_coach_pet"].forEach(k=>localStorage.setItem(k,"1"));localStorage.setItem("tt_pet_woke",String(Date.now()));localStorage.setItem("tt_debug_km","260");});
- await p.addInitScript(MOCK);await p.goto(`http://localhost:${PORT}/`);await p.waitForTimeout(2500);await p.evaluate(()=>document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove()));await p.click('.tab[data-view="pet"]');await p.waitForTimeout(1500);
+ await p.addInitScript(MOCK);await p.goto(`http://localhost:${PORT}/`);await require(__dirname+"/ready")(p);await p.evaluate(()=>document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove()));await p.click('.tab[data-view="pet"]');await p.waitForTimeout(1500);
  await p.evaluate(()=>{document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove());window.__psNoIdle=true;document.querySelector(".ps-box").scrollIntoView({block:"center"});});await p.waitForTimeout(600);
  const cdp=await ctx.newCDPSession(p);await cdp.send("Emulation.setVirtualTimePolicy",{policy:"pause"});
  await p.evaluate(()=>{PetStage.play('<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#963"/></svg>');});

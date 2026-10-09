@@ -8,7 +8,7 @@ const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:o.w||390,he
  await p.addInitScript(o=>{localStorage.setItem("tt_lang","zh");["tt_onboarded_v2","tt_coach_trail","tt_locperm_prompted","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_coach_team","tt_coach_pet"].forEach(k=>localStorage.setItem(k,"1"));
   localStorage.setItem("tt_pet_woke",String(Date.now()));localStorage.setItem("tt_test_diary","1");localStorage.setItem("tt_debug_km","40");localStorage.setItem("tt_fontscale",o.fs||"1.2");
   if(o.diary)localStorage.setItem("tt_pet_diary",JSON.stringify(o.diary));if(o.gifts)localStorage.setItem("tt_pet_gifts",JSON.stringify(o.gifts));},o);
- await p.addInitScript(MOCK);await p.goto(`http://localhost:${PORT}/`);await p.waitForTimeout(2500);
+ await p.addInitScript(MOCK);await p.goto(`http://localhost:${PORT}/`);await require(__dirname+"/ready")(p);
  await p.evaluate(()=>document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove()));await p.click('.tab[data-view="pet"]');await p.waitForTimeout(1200);
  await p.evaluate(()=>{document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove());window.__psNoIdle=true;});return {p,ctx};};
 

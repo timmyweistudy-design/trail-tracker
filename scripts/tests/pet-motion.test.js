@@ -99,7 +99,7 @@ async function run(b, st, spots, tag) {
 
   if (process.env.PM_MOOD) await p.addInitScript(m => { const d = new Date(Date.now() - ({ happy: 0, content: 3, longing: 7 }[m] || 0) * 864e5).toISOString(); localStorage.setItem("tt_records", JSON.stringify([{ id: "pm1", date: d, trailName: "x", distanceKm: .1, elapsedMs: 6e5 }]));   /* 距離要很小：不然里程超過門檻、階段就變了 */ }, process.env.PM_MOOD);   // 2026-10-07：心情跟最近一次健行有關（沒有紀錄＝睏）；PM_MOOD=happy|content|longing 換心情跑
   await p.addInitScript(() => addEventListener("unhandledrejection", e => setTimeout(() => { throw e.reason; })));   // 2026-10-06：async 裡丟出的錯（例如呼叫已刪掉的函式）以前是安靜的——果實消失、角色卡住，測試只看到逾時
-  await p.addInitScript(MOCK); await p.goto(`http://localhost:${PORT}/`); await p.waitForTimeout(2500);
+  await p.addInitScript(MOCK); await p.goto(`http://localhost:${PORT}/`); await require(__dirname+"/ready")(p);
   await p.evaluate(() => document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e => e.remove())); await p.click('.tab[data-view="pet"]'); await p.waitForTimeout(1500);
   await p.evaluate(s => { document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e => e.remove()); window.__psNoIdle = true; window.__psSpots = s; localStorage.removeItem("tt_pet_fed_t"); renderPet(); document.querySelector(".ps-box").scrollIntoView({ block: "center" }); }, spots);
   await p.waitForTimeout(600);
@@ -279,7 +279,7 @@ function judge(st, tag, R) {
   if (!ONLY.length || ONLY.includes(3)) {
     const ctx = await b.newContext({ viewport: { width: 390, height: 844 } }); const p = await ctx.newPage(); await require(__dirname + "/fake-weather")(p);
     await p.addInitScript(() => { localStorage.setItem("tt_lang", "zh"); ["tt_onboarded_v2", "tt_coach_trail", "tt_locperm_prompted", "tt_coach_record", "tt_coach_record_tools", "tt_coach_peaks", "tt_coach_team", "tt_coach_pet"].forEach(k => localStorage.setItem(k, "1")); localStorage.setItem("tt_pet_woke", String(Date.now())); localStorage.setItem("tt_test_diary", "1"); localStorage.setItem("tt_debug_km", "40"); localStorage.setItem("tt_pet_berry_bonus", "20"); });
-    await p.addInitScript(MOCK); await p.goto(`http://localhost:${PORT}/`); await p.waitForTimeout(2500);
+    await p.addInitScript(MOCK); await p.goto(`http://localhost:${PORT}/`); await require(__dirname+"/ready")(p);
     await p.evaluate(() => document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e => e.remove())); await p.click('.tab[data-view="pet"]'); await p.waitForTimeout(1500);
     const r = await p.evaluate(async () => { window.__psNoIdle = true; document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e => e.remove()); localStorage.removeItem("tt_pet_fed_t"); renderPet(); document.querySelector(".ps-box").scrollIntoView({ block: "center" }); await new Promise(r => setTimeout(r, 500));
       const b0 = berriesBalance(); const fb = document.querySelector("#petFeed"); fb.click(); fb.click(); await new Promise(r => setTimeout(r, 2600));

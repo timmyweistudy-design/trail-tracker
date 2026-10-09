@@ -5,7 +5,7 @@
 //   3. 功能測試：scripts/tests/*.test.js（瀏覽器，用假 Supabase）
 //   4. 資料庫測試：scripts/tests/pg/*.sql.test.js（本機起一個真的 Postgres 跑 supabase/*.sql）
 // 參數：--quick 只跑 1＋3；--only=名稱 只跑檔名含這個字的；--sql 只跑 4；--changed 只跑跟改動有關的（git 還沒推上去的＋工作區）
-//       --jobs=N 同時跑幾組（預設依 CPU，最多 8）；--serial 一組一組跑（舊做法）；--no-retry 失敗不重跑
+//       --jobs=N 同時跑幾組（預設依 CPU 與記憶體，每組約 1.75GB，最多 8）；--serial 一組一組跑（舊做法）；--no-retry 失敗不重跑
 // 2026-10-04 並行化：以前一組接一組排隊跑 27 分鐘（20 核心大部分閒著）。現在：
 //   - 每組分配不重複的 port（TT_PORT，各測試讀它；單獨跑時用各自原本的 port）
 //   - 最久的先開跑（上次的耗時記在 scripts/tests/out/durations.json）
@@ -18,7 +18,7 @@ const ROOT = path.resolve(__dirname, "../..");
 const args = process.argv.slice(2);
 const quick = args.includes("--quick"), sqlOnly = args.includes("--sql"), serial = args.includes("--serial"), noRetry = args.includes("--no-retry"), changed = args.includes("--changed");
 const only = (args.find(a => a.startsWith("--only=")) || "").slice(7);
-const JOBS = serial ? 1 : Math.max(1, +((args.find(a => a.startsWith("--jobs=")) || "").slice(7)) || Math.min(8, Math.max(2, os.cpus().length - 4)));
+const JOBS = serial ? 1 : Math.max(1, +((args.find(a => a.startsWith("--jobs=")) || "").slice(7)) || Math.min(8, Math.max(2, os.cpus().length - 4), Math.max(2, Math.floor(os.totalmem() / 2 ** 30 / 1.75))));   // 2026-10-09 實測：7GB 的機器開 4 組最低還剩 1.3GB，開 8 組會被記憶體不足砍掉
 const env = { ...process.env };
 const pw = path.join(os.homedir(), "pw-libs/root/usr/lib/x86_64-linux-gnu");
 if (fs.existsSync(pw)) env.LD_LIBRARY_PATH = [pw, env.LD_LIBRARY_PATH].filter(Boolean).join(":");
@@ -30,7 +30,7 @@ if (!sqlOnly) {
   jobs.push({ name: "check", file: "scripts/check.js", kind: "check" });
   if (!quick) for (const f of ["e2e", "qa-crawl", "audit-ui", "audit-center", "social-e2e", "record-e2e"]) jobs.push({ name: f, file: `scripts/${f}.js`, kind: "suite" });
   const SOLO = new Set(["pet-perf-budget"]);   // 量效能的：並行時大家搶 CPU，fps 會掉（2026-10-08 實測 60→41），最後單獨跑（借用資料庫測試「最後依序跑」那一段）
-  const SHARD = { "pet-stage": 3 };   // 單跑很久的測試拆成幾組平行跑（測試檔讀 PS_SHARD；2026-10-07：pet-stage 單跑 8～10 分鐘）
+  const SHARD = { "pet-stage": 3, "pet-anim-cut": 2 };   // 單跑很久的測試拆成幾組平行跑（測試檔讀 PS_SHARD；2026-10-07：pet-stage 單跑 8～10 分鐘）
   for (const f of fs.readdirSync(__dirname).filter(f => f.endsWith(".test.js")).sort()) { const nm = f.replace(".test.js", ""), k = SHARD[nm] || 1;
     for (let i = 0; i < k; i++) jobs.push({ name: k > 1 ? `${nm}#${i + 1}` : nm, file: `scripts/tests/${f}`, kind: "fn", env: k > 1 ? { PS_SHARD: `${i}/${k}` } : null, pg: SOLO.has(nm) }); }
 }
