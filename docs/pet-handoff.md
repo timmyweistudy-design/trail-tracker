@@ -2,6 +2,16 @@
 
 接手的人先讀這份，再看 [roadmap.md](roadmap.md) 的「維護備忘 → 山林夥伴」。
 
+> ## 2026-10-09 晚上：第三版 R10～R13 完成（SW `v703`）
+> 進度、做法、限制都在 [pet-plan-v3.md](pet-plan-v3.md) 每一輪的「進度」小節。**只剩 R14 iOS**（照使用者決定：全部做完、要收尾時才出 build）。
+> - **社群**：`profiles.pet_acc`（phase40）、`pet_state.at`（同步時間）、`give_pet_item`／`pet_return_visit`／`team_presence.pet_look`（phase41）——**兩支 SQL 使用者還沒在 Supabase 執行**；沒跑之前前端自動退回舊行為（測試有守）。`send-push` Edge Function 也要重新部署才有兩種新通知的推播文案
+> - **讀不到≠沒有好友**：`loadFriends()` 失敗回 `null`，夥伴頁顯示「暫時讀不到」、不觸發串門子
+> - **送出去的小東西**記在 `tt_pet_gifts_gone`，備份合併時不會被舊備份帶回來
+> - **把戲**：`petTrickPat()`（在 `petPatAff()` 裡）、`PetStage.trick()`、`.pb-trick` 每階一段；**擺設**：`petPropsSlots()` 回傳 `{l,r,b}`
+> - **測試加速**：開頁等待改 `scripts/tests/ready.js`（偵測 App 好了）、`pet-anim-cut` 拆兩組、預設並行數依記憶體（7GB＝4 組）；整套 18～20 分 → 約 13 分
+> - **排版**：`scripts/align-scan.js`／`scripts/tests/align-rule.js`——新增視窗時跑一次
+> - 新測試：`pet-r11`、`pet-r12`、`pet-r13`、`align`、`sql:pet-social`、`sql:pet-interact`
+
 > ## 2026-10-09 最新交接（先讀這段）
 > 第一版 R1～R5（[pet-plan.md](pet-plan.md)）、第二版 R7～R9（[pet-plan-v2.md](pet-plan-v2.md)）都完成，SW `v698`，`test:all` 52 組全過。**下一步＝第三版 [pet-plan-v3.md](pet-plan-v3.md) 的 R10**（使用者已確認：全部做、社群用假資料、iOS 最後）。
 > **新的架構重點**（下面第 1 節是 10/07 的舊內容，以這段為準）：

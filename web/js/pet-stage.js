@@ -105,11 +105,13 @@ window.PetStage = (function () {
       <div class="ps-l ps-far" style="--d:.28"><svg class="ps-svg" ${VB}>${sc.far}</svg></div>
       <div class="ps-l ps-mid" style="--d:.55"><svg class="ps-svg" ${VB}>${sc.mid}</svg></div>
       <div class="ps-l ps-fx" aria-hidden="true">${particles(i, t, se, wx)}</div>
+      ${(o.props || []).some(p => p && p.s === "b") && !o.bg ? `<div class="ps-props ps-props-b" aria-hidden="true"><i class="ps-pp b">${o.props.find(p => p && p.s === "b").svg}</i></div>` : ""}
       <div class="ps-actor" style="--d:.72">${actorHtml}</div>
       ${o.bg ? "" : sdeco(i, se, feel, t)}
       <div class="ps-l ps-front" style="--d:1.35"><svg class="ps-svg" ${VB}>${sc.front}</svg></div>
       ${o.fest && !o.bg ? lantern(o.fest) : ""}
-      ${(o.props || []).length && !o.bg ? `<div class="ps-props" aria-hidden="true">${o.props.map((p, k) => `<i class="ps-pp ${k ? "r" : "l"}">${p}</i>`).join("")}</div>` : ""}
+      ${(() => { if (!(o.props || []).length || o.bg) return ""; const P = o.props.map((p, k) => typeof p === "string" ? { s: k ? "r" : "l", svg: p } : p), fr = P.filter(p => p.s !== "b");   /* R13：左、右在前景；後面的在角色後方 */
+        return fr.length ? `<div class="ps-props" aria-hidden="true">${fr.map(p => `<i class="ps-pp ${p.s}">${p.svg}</i>`).join("")}</div>` : ""; })()}
     </div>`;
   }
 
@@ -390,6 +392,14 @@ window.PetStage = (function () {
     const r = c.getBoundingClientRect();
     const line = typeof PET_ART !== "undefined" && PET_ART.headLine ? PET_ART.headLine(+box.dataset.stage || 0) : .5;   // 每階段的頭高度不同（幼蟲的頭在下半部）
     return clientY < (typeof PetWalk !== "undefined" ? PetWalk.svgY(c, r, line * 200) : r.top + r.height * line) ? "pat" : "tickle";
+  }
+  // 小把戲（R13）：每一階一個 CSS 動畫（.pb-trick），龍多噴一朵小雲；播完才結束（flash 會等動畫）
+  function trick() {
+    if (!box || reduce() || feeding || playing || asleep) return sleep(0);
+    const st = +box.dataset.stage;
+    if (st >= 5) { const em = emEl(), r = em && em.getBoundingClientRect(), b0 = box.getBoundingClientRect(); if (r) { const pf = document.createElement("i"); pf.className = "ps-puff"; pf.setAttribute("aria-hidden", "true"); pf.innerHTML = "<b></b><b></b><b></b>";
+      pf.style.left = (r.left - b0.left + r.width * (st === 6 ? .74 : .66)) + "px"; pf.style.top = (r.top - b0.top + r.height * (st === 6 ? .22 : .3)) + "px"; box.appendChild(pf); setTimeout(() => pf.remove(), 1700); } }
+    return flash("pb-trick", 1600);
   }
   function react(kind) {
     if (reduce()) return sleep(0);
@@ -883,5 +893,5 @@ window.PetStage = (function () {
     if (asleep) return "睡";
     return pb ? "動作:" + pb.slice(3) : busy ? "動作" : "待機";
   }
-  return { debug, phase, sync: syncSleep, sleepWin, dream: () => { dreamT = 0; const r = Math.random; Math.random = () => 0; try { dream(); } finally { Math.random = r; } }, setMood, html, photoSvgs, bind, unbind, tod, season, wxOf, weather, cachedWx, cachedFeel, count: STAGES, zoneOf, react, feed, act, isFeeding: () => feeding, isAsleep: () => asleep, isPlaying: () => playing, play, guest, wake, sleep: () => setAsleep(true) };
+  return { debug, phase, sync: syncSleep, sleepWin, dream: () => { dreamT = 0; const r = Math.random; Math.random = () => 0; try { dream(); } finally { Math.random = r; } }, setMood, html, photoSvgs, bind, unbind, tod, season, wxOf, weather, cachedWx, cachedFeel, count: STAGES, zoneOf, react, trick, feed, act, isFeeding: () => feeding, isAsleep: () => asleep, isPlaying: () => playing, play, guest, wake, sleep: () => setAsleep(true) };
 })();

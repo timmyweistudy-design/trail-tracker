@@ -2611,3 +2611,34 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .aff-help .ah-hearts { font-size: 1.45em; line-height: 1; }
 .club-intro { text-align: center; }   /* 山社：標題置中，底下的一句說明也置中 */
 .trp-for { justify-content: center; }   /* 回報路況：步道名跟著置中的標題 */
+/* 小把戲（2026-10-09 第三版 R13）：點兩下表演；每一階用自己身體做得到的動作，最後一格回到原位（class 拿掉不會頓一下） */
+.ps-box[data-stage="0"] .pb-trick .pet-critter { animation: none; }
+.ps-box[data-stage="0"] .pb-trick .pc-egg { transform-origin: 100px 135px; animation: pbtEgg 1.5s cubic-bezier(.4,.1,.3,1); }   /* 蛋：往左滾一整圈再滾回來 */
+@keyframes pbtEgg { 0% { transform: none; } 45% { transform: translateX(-16px) rotate(-200deg); } 75% { transform: translateX(6px) rotate(-345deg); } 100% { transform: rotate(-360deg); } }
+.ps-box[data-stage="1"] .pb-trick .pet-critter { transform-origin: 20% 95%; animation: pbtWave 1.6s ease-in-out; }   /* 幼蟲：抬頭左右點頭打招呼 */
+@keyframes pbtWave { 0%, 100% { transform: none; } 20% { transform: rotate(-12deg) scale(1, 1.06); } 40% { transform: rotate(-16deg) scale(1, 1.08) translateX(-3px); } 60% { transform: rotate(-10deg) scale(1, 1.06) translateX(3px); } 80% { transform: rotate(-13deg) scale(1, 1.07); } }
+.ps-box[data-stage="2"] .pb-trick .pet-critter { animation: pbtLoop 1.6s ease-in-out; }   /* 蝶：繞一個小圓圈飛 */
+@keyframes pbtLoop { 0%, 100% { transform: none; } 20% { transform: translate(14px, -10px) rotate(8deg); } 40% { transform: translate(10px, -30px) rotate(4deg); } 60% { transform: translate(-10px, -30px) rotate(-6deg); } 80% { transform: translate(-14px, -10px) rotate(-8deg); } }
+.ps-box[data-stage="3"] .pb-trick .pet-critter { animation: pbtSpin 1.3s ease-in-out; }   /* 狐：原地轉兩圈（左右翻面＋小跳） */
+@keyframes pbtSpin { 0%, 100% { transform: none; } 25% { transform: translateY(-8px) scaleX(-1); } 50% { transform: none; } 75% { transform: translateY(-8px) scaleX(-1); } }
+.ps-box[data-stage="4"] .pb-trick .pet-critter { transform-origin: 50% 100%; animation: pbtStomp 1.4s ease-in-out; }   /* 虎：踏踏踏踏 */
+@keyframes pbtStomp { 0%, 100% { transform: none; } 12%, 37%, 62%, 87% { transform: translateY(-6px) rotate(-2.5deg); } 25%, 75% { transform: scale(1.04, .95); } 50% { transform: translateY(0) rotate(2.5deg) scale(1.04, .95); } }
+.ps-box[data-stage="5"] .pb-trick .pet-critter, .ps-box[data-stage="6"] .pb-trick .pet-critter { animation: pbtPuff 1.5s ease-in-out; }   /* 龍：吸一口氣、噴一朵小雲 */
+@keyframes pbtPuff { 0%, 100% { transform: none; } 30% { transform: scale(1.04, 1.04) translateY(-4px); } 45% { transform: scale(.97, .99) translateY(1px); } }
+.ps-puff { position: absolute; width: 0; height: 0; z-index: 4; pointer-events: none; }
+.ps-puff b { position: absolute; left: 0; top: 0; width: 16px; height: 16px; margin: -8px; border-radius: 50%; background: rgba(255, 255, 255, .92); box-shadow: 0 1px 3px rgba(0, 0, 0, .15); opacity: 0; animation: pbtCloud 1.2s ease-out .45s forwards; }
+.ps-puff b:nth-child(2) { width: 22px; height: 22px; margin: -11px; animation-delay: .52s; --dx: 30px; --dy: -14px; }
+.ps-puff b:nth-child(3) { width: 13px; height: 13px; margin: -6.5px; animation-delay: .6s; --dx: 18px; --dy: 8px; }
+@keyframes pbtCloud { 0% { opacity: 0; transform: scale(.3); } 25% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx, 20px), var(--dy, -4px)) scale(1.5); } }
+.dex-trick { font-size: calc(12px * var(--fs, 1)); color: var(--brand-mid); margin-top: 2px; }
+/* 擺設的第三個位置：後面（R13）——在角色後方、比較小、跟遠景一起動得少一點 */
+.ps-props-b { z-index: 1; inset: auto 0 27% 0; translate: calc(var(--px) * -9px) 0; }
+.ps-pp.b { right: 13%; width: calc(30px * var(--fs, 1)); height: calc(30px * var(--fs, 1)); filter: drop-shadow(0 2px 3px rgba(0,0,0,.22)) saturate(.9); }
+.prop-slots { display: flex; gap: 8px; justify-content: center; margin: 2px 0 10px; }
+.prop-slot { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: var(--r-pill, 999px); border: 1.5px solid var(--line, rgba(0,0,0,.12)); background: var(--surface); color: var(--ink-soft); font: inherit; font-size: calc(13px * var(--fs, 1)); font-weight: 700; cursor: pointer; }
+.prop-slot.on { border-color: var(--brand, #2f6b47); color: var(--brand-deep); background: rgba(47,107,71,.1); }
+.prop-slot .ps-ic { width: 18px; height: 18px; display: inline-block; }
+.prop-slot .ps-ic:empty { border: 1.5px dashed var(--line, rgba(0,0,0,.2)); border-radius: 50%; width: 14px; height: 14px; }
+.prop-slot .ps-ic svg { width: 100%; height: 100%; display: block; }
+.prop-it.used { opacity: .6; }
+@media (prefers-reduced-motion: reduce) { .ps-props-b { translate: none; } }
