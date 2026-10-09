@@ -13,8 +13,9 @@ const Profiles = (() => {
     const decor = typeof PetJourney !== "undefined" && typeof Premium !== "undefined" && Premium.isOn() ? PetJourney.decor().join(",") : "";
     // 當下的狀態（phase39）：最近一次走路（好友那邊用它算現在的心情）＋這邊的天氣
     const recs = typeof realRecords === "function" ? realRecords() : [], wx = typeof PetStage !== "undefined" ? PetStage.cachedWx() || "" : "";
-    const state = { last: recs[0] ? recs[0].date : null, wx, wxAt: wx ? new Date().toISOString().slice(0, 13) : null };   // 天氣時間只到「小時」：簽名不會每分鐘都變
-    const sig = [uid, s.name, s.level, s.km, hat, acc, decor, state.last, state.wx, state.wxAt].join("|");
+    const tone = typeof petTone === "function" ? petTone() : "";   // R15：好友看到同一種近親物種
+    const state = Object.assign({ last: recs[0] ? recs[0].date : null, wx, wxAt: wx ? new Date().toISOString().slice(0, 13) : null }, tone ? { v: tone } : {});   // 天氣時間只到「小時」：簽名不會每分鐘都變
+    const sig = [uid, s.name, s.level, s.km, hat, acc, decor, state.last, state.wx, state.wxAt, tone].join("|");
     if (sig === _syncSig && Date.now() - _syncAt < 600000) return;
     _syncSig = sig; _syncAt = Date.now();
     const base = { pet_name: s.name, pet_level: s.level, total_km: s.km };

@@ -27,17 +27,17 @@ const TeamLive = (() => {
   function lookOf(v) {
     const L0 = v && typeof v === "object" ? v : null; if (!L0 || typeof PET_ART === "undefined") return null;
     const s = Math.round(+L0.s); if (!(s >= 0 && s <= 6)) return null;
-    return { s, h: PET_ART.HAT_IDS.includes(L0.h) ? L0.h : "none", a: PET_ART.ACC_IDS && PET_ART.ACC_IDS.includes(L0.a) ? L0.a : "none" };
+    return { s, h: PET_ART.HAT_IDS.includes(L0.h) ? L0.h : "none", a: PET_ART.ACC_IDS && PET_ART.ACC_IDS.includes(L0.a) ? L0.a : "none", v: ["deep", "sea", "alpine"].includes(L0.v) ? L0.v : "" };
   }
   function petHtml(meta) {
     const lk = lookOf(meta.look);
-    if (lk) return `<span class="tm-pet">${PET_ART.svg(lk.s, "", lk.h, undefined, lk.a)}</span>`;
+    if (lk) return `<span class="tm-pet">${PET_ART.as ? PET_ART.as(lk.v, () => PET_ART.svg(lk.s, "", lk.h, undefined, lk.a)) : PET_ART.svg(lk.s, "", lk.h, undefined, lk.a)}</span>`;
     const petIdx = (meta.pet && typeof PET_ART !== "undefined" && PET_ART.byEmoji) ? PET_ART.byEmoji(meta.pet) : -1;
     return meta.pet ? `<span class="tm-pet">${petIdx >= 0 ? PET_ART.svg(petIdx) : esc(meta.pet)}</span>` : "";
   }
   function myLook() {
     if (typeof petStageIndex !== "function" || typeof totalKm !== "function") return null;
-    return { s: petStageIndex(totalKm()), h: typeof petHat === "function" ? petHat() : "none", a: typeof petAcc === "function" ? petAcc() : "none" };
+    return Object.assign({ s: petStageIndex(totalKm()), h: typeof petHat === "function" ? petHat() : "none", a: typeof petAcc === "function" ? petAcc() : "none" }, typeof petTone === "function" && petTone() ? { v: petTone() } : {});
   }
   function icon(meta, opts) {
     const av = meta.avatar ? `<img src="${esc(meta.avatar)}" alt="">` : `<span class="tm-ph">${esc((meta.name || "?").slice(0, 1))}</span>`;

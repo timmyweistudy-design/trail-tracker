@@ -2,6 +2,11 @@
 
 接手的人先讀這份，再看 [roadmap.md](roadmap.md) 的「維護備忘 → 山林夥伴」。
 
+> ## 2026-10-09 R15：配色→相近物種（SW `v709`）
+> - **`pet-art.js` 的角色畫法整段在 `buildArt(V)` 裡**：改原本的角色就是改這個函式；要確認沒弄壞變體跑 `pet-r15`（骨架一致檢查會抓到少一個支點、嘴、接觸點）
+> - 加新的物種特徵：在 `VARIANTS` 加開關、在 `buildArt` 裡讀；經過 `P()` 的顏色要從 V 來（`P()` 會從底色算陰影和描邊，只換 hex 會留下舊顏色的陰影）；純填色可以用 `hex: { 階: { 舊: 新 } }`
+> - 名字在 `pet.js` 的 `PET_VARIANTS`；自己的用 `petStageInfo(i)`，好友的 `petStageInfo(i, v)`
+
 > ## 2026-10-09 深夜：收尾輪完成（SW `v705`）——下一步是使用者出 iOS build
 > - phase40／41 SQL 使用者已跑，REST 確認生效；send-push 仍要重新部署（使用者）
 > - **全站掃描**：`node scripts/ui-sweep.js [zh|en] [1.2|1.65]`——新增視窗或改文案後跑一次，報告在 `scripts/tests/out/sweep/report.json`；已知假警報見 pet-plan-v3「收尾輪」

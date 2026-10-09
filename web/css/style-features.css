@@ -2655,3 +2655,14 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .pet-btn.feed .fb-ic > svg.berry { background: rgba(255, 250, 238, .92); border-radius: 50%; padding: 2px; box-sizing: content-box; box-shadow: 0 1px 2px rgba(120, 60, 10, .25); }   /* 當季果實（芒果、柿子、橘子）在橘色按鈕上看不見：墊一個奶油色圓底 */
 .yr-btns { flex-wrap: wrap; } .yr-btns .btn { min-width: max-content; }   /* 英文大字級「Share／Save image」放不下一排：換行（以前撐出視窗可以左右滑） */
 .dex-tone-hint .dex-tone-what { color: var(--ink-soft); margin-bottom: 3px; max-width: 30em; }   /* 配色是什麼（2026-10-09 使用者問） */
+/* R15 近親物種選單：四張小卡（圖＋地區＋物種名），沒解鎖的淡一點、加鎖頭 */
+.dex-species { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 4px 0 6px; }
+.dex-sp { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 2px 7px; border-radius: 12px; border: 2px solid transparent; background: var(--card2, rgba(0,0,0,.035)); font: inherit; color: inherit; cursor: pointer; }
+.dex-sp.on { border-color: var(--brand, #2f6b47); background: rgba(47,107,71,.1); }
+.dex-sp[disabled] { cursor: default; }
+.dex-sp[disabled] .dex-sp-art { opacity: .45; filter: grayscale(.5); }
+.dex-sp-art { width: 56px; height: 56px; display: block; }
+.dex-sp-art .pet-critter { width: 100%; height: 100%; }
+.dex-sp-n { font-size: calc(12px * var(--fs, 1)); font-weight: 800; display: inline-flex; align-items: center; gap: 2px; }
+.dex-sp-n .tone-lock { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 2.2; }
+.dex-sp-s { font-size: calc(10.5px * var(--fs, 1)); color: var(--muted); text-align: center; line-height: 1.2; overflow-wrap: anywhere; }

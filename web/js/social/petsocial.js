@@ -150,7 +150,10 @@ const Pets = (() => {
   const HAT_OK = id => typeof PET_ART !== "undefined" && PET_ART.HAT_IDS.includes(id);
   const ACC_OK = id => typeof PET_ART !== "undefined" && !!PET_ART.ACC_IDS && id !== "none" && PET_ART.ACC_IDS.includes(id);
   const petHatOf = p => HAT_OK(p.pet_hat) ? p.pet_hat : undefined, petAccOf = p => ACC_OK(p.pet_acc) ? p.pet_acc : undefined;   // 舊版沒有 pet_acc：照舊只畫頭飾
-  const petSvg = (p, i) => PET_ART.svg(i, "", petHatOf(p), undefined, petAccOf(p));
+  const VOK = ["deep", "sea", "alpine"];
+  const petVarOf = p => { const v = p && p.pet_state && typeof p.pet_state === "object" ? p.pet_state.v : ""; return VOK.includes(v) ? v : ""; };   // R15：好友的近親物種（舊版沒有＝原本的）
+  const asV = (p, f) => (PET_ART.as ? PET_ART.as(petVarOf(p), f) : f());
+  const petSvg = (p, i) => asV(p, () => PET_ART.svg(i, "", petHatOf(p), undefined, petAccOf(p)));
   // 好友狀態多久以前同步（R11，原26）：pet_state.at 是對方 App 上次寫上來的時間；超過 24 小時就不假裝知道牠現在的心情
   function fresh(p) {
     const st = p && p.pet_state && typeof p.pet_state === "object" ? p.pet_state : null, at = st && st.at ? new Date(st.at) : null;
@@ -181,7 +184,7 @@ const Pets = (() => {
     const mood = stale ? null : friendMood(st), wx = stale ? "" : friendWx(st);   // 太久沒同步：心情、天氣都不畫（不假裝即時）
     const fx = mood && typeof petMoodFx === "function" ? petMoodFx(mood.k) : "";
     const bub = mood ? T(mood.t) : stale ? T("不知道牠現在在做什麼") : "";
-    const actor = `${bub ? `<div class="pet-bubble">${esc(bub)}</div>` : ""}<div class="fv-critter${mood ? ` pet-m-${mood.k}` : ""}">${PET_ART.prop ? PET_ART.prop(i) : ""}${PET_ART.svg(i, "", hat, undefined, petAccOf(p))}${fx}</div><div class="pet-shadow"></div>`;
+    const actor = `${bub ? `<div class="pet-bubble">${esc(bub)}</div>` : ""}<div class="fv-critter${mood ? ` pet-m-${mood.k}` : ""}">${PET_ART.prop ? PET_ART.prop(i) : ""}${asV(p, () => PET_ART.svg(i, "", hat, undefined, petAccOf(p)))}${fx}</div><div class="pet-shadow"></div>`;
     if (typeof PetStage === "undefined") return `${PET_ART.habitat(i)}${actor}`;
     return PetStage.html(i, actor, { decor, wx });
   }
@@ -236,7 +239,7 @@ const Pets = (() => {
     const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#132c1d"); g.addColorStop(.7, "#22452e"); g.addColorStop(1, "#1b3620");
     x.fillStyle = g; x.fillRect(0, 0, W, H);
     try { await document.fonts.ready; } catch (e) { /* */ }
-    const [hab, a, b] = await Promise.all([img(PET_ART.habitatUri(top, 1080, 520)), img(PET_ART.dataUri(mi, 500, petHat(), undefined, typeof petAcc === "function" ? petAcc() : undefined)), img(PET_ART.dataUri(fi, 500, petHatOf(p), undefined, petAccOf(p)))]);   // 好友的配件也一起入鏡
+    const [hab, a, b] = await Promise.all([img(PET_ART.habitatUri(top, 1080, 520)), img(PET_ART.dataUri(mi, 500, petHat(), undefined, typeof petAcc === "function" ? petAcc() : undefined)), img(asV(p, () => PET_ART.dataUri(fi, 500, petHatOf(p), undefined, petAccOf(p))))]);   // 好友的配件也一起入鏡
     x.drawImage(hab, 0, 360, 1080, 520);
     x.fillStyle = "#1b3620"; x.fillRect(0, 878, W, H - 878);
     x.drawImage(a, 50, 380, 500, 500); x.drawImage(b, 530, 380, 500, 500);

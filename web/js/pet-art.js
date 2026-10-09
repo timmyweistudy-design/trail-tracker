@@ -113,6 +113,10 @@ window.PET_ART = (function () {
   const mouth = (ox, oy, closed, open, tongue, puff) => `<g class="pr-mouth" style="--ox:${ox}px;--oy:${oy}px"><g class="m-c">${closed}</g><g class="m-o">${open}</g>${tongue ? `<g class="m-t">${tongue}</g>` : ""}${puff ? `<g class="m-p">${puff}</g>` : ""}</g>`;
   const MOUTH_IN = "#3a1a12", TONGUE = "#d4685a";
 
+  // R15（2026-10-09）配色→相近物種：整段角色畫法包成 buildArt(V)。V＝這個物種的調色盤（LV、BFD、FX、TG、JADE…）＋特徵開關＋行內顏色對照表 hex；
+  // 骨架、class、支點、接觸點完全一樣 → 走路、餵食、帽子、配件都照用。原本的角色＝buildArt({})
+  function buildArt(V) {
+  V = V || {};
   // ── 7 階角色（2026-10-04 重新設計；同日第二輪依使用者回饋：不能飄、道具不能跟著跳、眼睛各自設計）──
   // 物理：地上的動物腳底對齊 y≈196（夥伴卡的影子在 SVG 底下），待機只「呼吸」（.pc-bob 以腳底為原點微縮放，不往上飄）；
   // 會飛的（蝶、神龍）才用 .pc-hover。腳下的葉子、雲是另外一層靜止道具（PROP，見下方），不放在角色裡，免得跳的時候一起跳。
@@ -121,11 +125,25 @@ window.PET_ART = (function () {
   // palm-l/r＝幼龍手掌、tail＝神龍尾尖（在 .pr-deform 裡，尾巴彎它就跟著動）、crack＝蛋吸收果實的那道裂紋；嘴用 .pr-mouth 自己的支點
   const CP = (name, x, y) => `<circle class="cp cp-${name}" cx="${x}" cy="${y}" r="0"/>`;
   // 0 神秘之卵：淡淡的鯉鱗紋（預告會變成龍）、裂縫透暖光；直接坐在地上
+  // R15 蛋的花紋：苔蘚紋（深林）、貝殼紋（海風）、雪花紋（高山）；底色由 V.hex 換，這裡畫花紋本身（都在蛋殼範圍內）
+  const eggPat = k => k === "moss"
+    ? `<g class="pc-d">${[[78, 182, 15, 9], [100, 189, 20, 8], [124, 181, 13, 8], [66, 166, 7, 6], [134, 165, 6, 5]].map(([x, y, rx, ry]) => P(E(x, y, rx, ry), "#6f9a48", { sw: 1.4, dx: 1, dy: 2, sk: .25 })).join("")}` +
+      `${[[72, 176], [86, 184], [104, 182], [118, 186], [128, 176], [94, 190]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="2" fill="#a8cf6a"/>`).join("")}` +
+      `${[[118, 104], [128, 120], [70, 120]].map(([x, y]) => P(E(x, y, 6, 4), "#8bb05a", { sw: 1.2, dx: 1, dy: 1 })).join("")}</g>` +
+      `<path d="M100 76 q-3 -10 -10 -14 M100 76 q4 -9 11 -12" stroke="#5f8a3e" stroke-width="2.6" fill="none" stroke-linecap="round"/>${P(E(88, 61, 5, 3), "#7db354", { sw: 1.2, dx: 1, dy: 1 })}${P(E(113, 63, 5, 3), "#7db354", { sw: 1.2, dx: 1, dy: 1 })}`
+    : k === "shell"
+    ? `<g class="pc-d2">${[-52, -36, -20, -6, 8, 22, 38, 54].map(a => { const r = a * Math.PI / 180; return `<path d="M100 194 Q${rd(100 + Math.sin(r) * 30)} ${rd(150 - Math.abs(a) * .2)} ${rd(100 + Math.sin(r) * 50)} ${rd(194 - Math.cos(r) * 118)}" stroke="#d6b8a6" stroke-width="2.2" fill="none" stroke-linecap="round" opacity=".85"/>`; }).join("")}</g>` +
+      `<g class="pc-d">${[[100, 96, 4], [112, 112, 2.6], [86, 150, 3], [122, 158, 2.4]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" opacity=".85"/><circle cx="${x}" cy="${y}" r="${r * .45}" fill="#f2c9d6"/>`).join("")}</g>` +
+      `<path d="M74 170 q26 12 52 0" stroke="#e7a9a0" stroke-width="3" fill="none" stroke-linecap="round" opacity=".7"/>`
+    : k === "snow"
+    ? `<g class="pc-d">${[[78, 160, 8], [118, 172, 7], [112, 106, 6], [86, 128, 5], [128, 138, 5]].map(([x, y, r]) => `<g stroke="#8fb2d8" stroke-width="1.8" stroke-linecap="round">${[0, 60, 120].map(a => { const q = a * Math.PI / 180, dx = rd(Math.cos(q) * r), dy = rd(Math.sin(q) * r); return `<path d="M${rd(x - dx)} ${rd(y - dy)} L${rd(x + dx)} ${rd(y + dy)}"/>`; }).join("")}</g><circle cx="${x}" cy="${y}" r="1.6" fill="#cfe2f4"/>`).join("")}</g>` +
+      `<path d="M58 118 Q100 104 142 118" stroke="#ffffff" stroke-width="5" fill="none" stroke-linecap="round" opacity=".55"/>`
+    : "";
   const EGG = `
     <g class="pc-bob pc-egg">
-      ${P(E(100, 135, 48, 60), "#f1e4c0", { hl: [80, 105, 12, 22], dx: 8, dy: 8, sk: .18 })}
-      <path class="pc-d2" d="${[[78, 147], [92, 143], [106, 143], [120, 147], [84, 159], [98, 156], [112, 159], [70, 159], [126, 159], [90, 171], [104, 170], [78, 173], [116, 173]].map(([x, y]) => `M${x - 6} ${y}q6 6 12 0`).join("")}" stroke="#d8c89a" stroke-width="1.6" fill="none" opacity=".8"/>
-      <g class="pc-d">${[[76, 173, 4.5], [122, 179, 5], [116, 111, 3.6], [92, 186, 3.2], [132, 131, 3]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#c9ad74"/><circle cx="${x - r * .3}" cy="${y - r * .3}" r="${r * .45}" fill="#e2cc98"/>`).join("")}</g>
+      ${P(E(100, 135, 48, 60), V.EGG || "#f1e4c0", { hl: [80, 105, 12, 22], dx: 8, dy: 8, sk: .18 })}${V.egg ? eggPat(V.egg) : ""}
+      ${V.egg ? "" : `<path class="pc-d2" d="${[[78, 147], [92, 143], [106, 143], [120, 147], [84, 159], [98, 156], [112, 159], [70, 159], [126, 159], [90, 171], [104, 170], [78, 173], [116, 173]].map(([x, y]) => `M${x - 6} ${y}q6 6 12 0`).join("")}" stroke="#d8c89a" stroke-width="1.6" fill="none" opacity=".8"/>
+      <g class="pc-d">${[[76, 173, 4.5], [122, 179, 5], [116, 111, 3.6], [92, 186, 3.2], [132, 131, 3]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#c9ad74"/><circle cx="${x - r * .3}" cy="${y - r * .3}" r="${r * .45}" fill="#e2cc98"/>`).join("")}</g>`}
       <path class="pr-glow" d="M72 115 L84 125 L76 133 L90 141" stroke="#ffd98a" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/>
       ${tp(72, 115, 84, 125, 3.4, "#8a6a38")}${tp(84, 125, 76, 133, 3.4, "#8a6a38")}${tp(76, 133, 90, 141, 3.2, "#8a6a38")}
       <path class="pc-d" d="M84 125 l7 -3 M76 133 l-5 2" stroke="#8a6a38" stroke-width="1.6" stroke-linecap="round"/>${CP("crack", 82, 128)}
@@ -138,7 +156,7 @@ window.PET_ART = (function () {
   // 1 草叢幼蟲：鳳蝶終齡幼蟲——翠綠、一節一節、胸部假眼紋（大圖）、小黑珠眼；臭角在頭後面（<!--O-->，戴帽子時拿掉，帽子戴在頭上）
   // 腳（2026-10-08 修正案 R2）：照真的鳳蝶幼蟲——胸部 3 節是尖的胸足（畫在 k7、k8）、腹部 4 對肉足（k3～k6）＋尾足（k1）；以前只有尾端兩節有肉足。
   //   動作維持使用者 10/06 要的拱身走：拱起來的那幾節腳跟著離地、貼地的那幾節腳踩在地上
-  const LV = "#86c95a", LVS = [[[44, 166], [72, 180], [110, 176], [134, 146]]], LVW = [[0, 24], [.55, 32], [1, 36]];
+  const LV = V.LV || "#86c95a", LVS = [[[44, 166], [72, 180], [110, 176], [134, 146]]], LVW = [[0, 24], [.55, 32], [1, 36]];
   // 2026-10-06 改成一節一節畫（9 節，尾→頭）：每一節是自己的橢圓（明暗、描邊、氣門），有腹足的節底下有腳——
   // 動作時每一節各自移動（pet-walk.js 排位置），掉頭時依遠近重新排序，近的那節蓋在遠的上面（以前整條是一條 path，U 型迴轉時兩段的描邊會交叉成一團）
   // 2026-10-06 第四輪改「管片」：分兩層畫——下層 .lv-ln 是每一片的外框（粗描邊）＋腳，上層 .lv-seg 是每一片的填色。
@@ -154,10 +172,14 @@ window.PET_ART = (function () {
         : k >= 7 ? `<path d="M${rd(x - 2)} ${rd(yb - 2)} l2.4 6.6 l1.8 -1" stroke="#33461c" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>` : "";   // 胸足（尖的）
       ln.push(`<g class="lv-sl" ${st}>${legs}<path transform="rotate(${a} ${x} ${y})" d="${shape}" fill="${sh(LV, .48)}" stroke="${sh(LV, .48)}" stroke-width="4.4" stroke-linejoin="round"/></g>`);
       const fold = k > 0 ? `<path class="pc-d" d="M${rd(x - rx * .62)} ${rd(y - ry * .8)} Q${rd(x - rx * .9)} ${rd(y + ryb * .1)} ${rd(x - rx * .62)} ${rd(y + ryb * .8)}" stroke="${sh(LV, .22)}" stroke-width="1.4" fill="none" stroke-linecap="round" opacity=".5"/>` : "";   // 摺線（在這一片的後緣、前一片的上面）
-      const eye = k === 7 ? `<g class="pc-d2" opacity=".85"><ellipse cx="${rd(x - 1)}" cy="${rd(y - ry * .2)}" rx="5.4" ry="4.2" fill="#b89a5a"/><ellipse cx="${rd(x - .4)}" cy="${rd(y - ry * .16)}" rx="3" ry="2.4" fill="#3a2c1c"/></g>` : "";   // 假眼紋
+      // R15 幼蟲的物種特徵（畫在每一片裡，跟著這一片一起拱、一起轉）
+      const feat = V.lv === "spines" && k >= 1 ? [-4.5, 4.5].map(d => { const bx = rd(x + d), by = rd(y - ry * .82), tx = rd(x + d * 1.3), ty = rd(by - 9); return `<path d="M${bx} ${by} L${tx} ${ty} M${rd((+bx + +tx) / 2)} ${rd((+by + +ty) / 2)} l${d > 0 ? 3 : -3} -2 M${rd((+bx + +tx) / 2)} ${rd((+by + +ty) / 2)} l${d > 0 ? -2 : 2} -3" stroke="#e8743a" stroke-width="1.8" stroke-linecap="round"/>`; }).join("") + `<circle cx="${rd(x)}" cy="${rd(y + ryb * .2)}" r="1.6" fill="#d9a85a" opacity=".8"/>`
+        : V.lv === "bands" && k >= 1 ? `<path d="M${rd(x - 2.2)} ${rd(y - ry * .95)} L${rd(x + 2.2)} ${rd(y - ry * .95)} L${rd(x + 2.2)} ${rd(y + ryb * .9)} L${rd(x - 2.2)} ${rd(y + ryb * .9)}Z" fill="#f4f1e6"/><circle cx="${rd(x - 6)}" cy="${rd(y - ry * .3)}" r="2.4" fill="#f2c230"/><circle cx="${rd(x + 6)}" cy="${rd(y + ryb * .2)}" r="1.8" fill="#f2c230"/>`
+        : V.lv === "hairs" ? `<g stroke-linecap="round" fill="none">${[-9, -5, -1, 3, 7].map(d => `<path d="M${rd(x + d)} ${rd(y - ry * .7)} q${rd(d * .5)} -8 ${rd(d * 1.1)} -15" stroke="#8a8278" stroke-width="3.4"/><path d="M${rd(x + d)} ${rd(y - ry * .7)} q${rd(d * .5)} -8 ${rd(d * 1.1)} -15" stroke="#fbf9f4" stroke-width="2"/>`).join("")}</g>` : "";
+      const eye = V.lv ? "" : k === 7 ? `<g class="pc-d2" opacity=".85"><ellipse cx="${rd(x - 1)}" cy="${rd(y - ry * .2)}" rx="5.4" ry="4.2" fill="#b89a5a"/><ellipse cx="${rd(x - .4)}" cy="${rd(y - ry * .16)}" rx="3" ry="2.4" fill="#3a2c1c"/></g>` : "";   // 假眼紋
       const spot = k >= 1 && k <= 7 ? `<circle class="pc-d" cx="${rd(x + 1)}" cy="${rd(y + ryb * .3)}" r="1.4" fill="${sh(LV, .45)}"/>` : "";   // 氣門
       const band = `<path class="pc-d" d="M${rd(x - rx - 1)} ${rd(y + ryb * .55)} L${rd(x + rx + 1)} ${rd(y + ryb * .55)}" stroke="${tn(LV, .45)}" stroke-width="2.6" fill="none" opacity=".6"/>`;   // 肚子那一側的淺色帶（相鄰幾片接成一條）
-      fl.push(`<g class="lv-seg" ${st}><g transform="rotate(${a} ${x} ${y})">${P(Pa(shape), LV, { hl: [rd(x), rd(y - ry * .5), rd(rx * .85), rd(ry * .18)], dx: 2, dy: 2, sw: 0 })}${band}${fold}${spot}${eye}</g></g>`);
+      fl.push(`<g class="lv-seg" ${st}><g transform="rotate(${a} ${x} ${y})">${P(Pa(shape), LV, { hl: [rd(x), rd(y - ry * .5), rd(rx * .85), rd(ry * .18)], dx: 2, dy: 2, sw: 0 })}${band}${fold}${spot}${eye}${feat}</g></g>`);
     });
     return `<g class="lv-ln">${ln.join("")}</g>${fl.join("")}`;
   }
@@ -166,30 +188,40 @@ window.PET_ART = (function () {
       <g class="pr-deform lv-body">${lvSegs()}</g>
       <g class="pr-head" style="--ox:132px;--oy:152px">
       <!--O--><g class="pc-tail">${tp(132, 128, 120, 116, 3.6, "#f29a3a", -2)}${tp(132, 128, 126, 112, 3.6, "#f29a3a", 2)}</g><!--/O-->
-      ${P(C(148, 136, 23), "#a6d978", { hl: [138, 123, 8, 5], dx: 4, dy: 4 })}
+      ${V.lv === "bands" ? `${tp(140, 116, 128, 92, 2.6, "#1e1a18", -6)}${tp(154, 116, 164, 92, 2.6, "#1e1a18", 6)}` : ""}
+      ${P(C(148, 136, 23), V.LVH || "#a6d978", { hl: [138, 123, 8, 5], dx: 4, dy: 4 })}
+      ${V.lv === "spines" ? `${tpo(138, 117, 130, 100, 3.2, "#e8743a", -2)}${tpo(158, 117, 166, 100, 3.2, "#e8743a", 2)}` : V.lv === "hairs" ? `<g stroke="#fbf9f4" stroke-width="2.2" stroke-linecap="round" fill="none" style="paint-order:stroke" filter="drop-shadow(0 0 .6px #8a8278)">${[[132, 120, -6, -10], [140, 114, -3, -12], [148, 112, 0, -13], [156, 114, 3, -12], [164, 120, 6, -10]].map(([x, y, dx, dy]) => `<path d="M${x} ${y} q${dx * .3} ${dy * .6} ${dx} ${dy}"/>`).join("")}</g>` : ""}
       ${eyeOf("bead", 140, 135, 5, 5, -1)}${eyeOf("bead", 156, 135, 5, 5, 1)}
       ${blush(133, 144, 4.6, 2.8)}${blush(163, 144, 4.6, 2.8)}
       ${mouth(148, 145, `<path d="M144 145 q4 4 8 0" stroke="#3e5a1a" stroke-width="2.2" fill="none" stroke-linecap="round"/>`,
         `<ellipse cx="148" cy="147" rx="4.4" ry="3.6" fill="${MOUTH_IN}"/><path d="M143.6 144.4 l2 2.6 M152.4 144.4 l-2 2.6" stroke="#6a4a20" stroke-width="1.6" stroke-linecap="round"/>`,
-        "", `<circle cx="140" cy="146" r="4.2" fill="#b2df86"/><circle cx="156" cy="146" r="4.2" fill="#b2df86"/>`)}
+        "", `<circle cx="140" cy="146" r="4.2" fill="${V.LVP || "#b2df86"}"/><circle cx="156" cy="146" r="4.2" fill="${V.LVP || "#b2df86"}"/>`)}
       <!--H--></g>
     </g>`;
 
   // 2 翩翩彩蝶：台灣常見的琉璃翠鳳蝶——黑褐底、橫過前後翅的一道琉璃翠帶、後翅紅色弦月紋＋藍色眼紋、鳳蝶的尾突。
   // （寬尾鳳蝶全身褐色，跟「彩蝶」這個名字對不起來）會飛，所以用 .pc-hover；臉是暖褐色、配複眼
-  const BFD = "#2c2522", BFG = "#2fbfa8";
+  const BFD = V.BFD || "#2c2522", BFG = V.BFG || "#2fbfa8";
   function bfWings(m) {   // m＝1 右翅、-1 左翅（以 x=100 對稱）
     const X = x => 100 + m * (x - 100), fl = (d) => d.replace(/(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)/g, (_, x, y) => X(+x) + " " + y);
     // 前翅、後翅分開（2026-10-05）：拍翅時前翅帶頭、後翅晚一點跟上；後翅畫在前翅後面（真的鳳蝶前翅蓋在後翅上）
-    const fore = P(Pa(fl("M106 94 Q132 58 170 56 Q180 68 172 84 Q150 106 108 108Z")), BFD, { hl: [X(150), 66, 12, 4], dx: m * 4, dy: 4, sk: .1 }) +
-      `<path class="pc-d2" d="${fl("M108 98 L164 64 M108 101 L170 74 M108 104 L166 86 M108 106 L150 98")}" stroke="#5a4e48" stroke-width="1.2" opacity=".7"/>` +
-      `<path d="${fl("M116 98 Q134 84 156 72")}" stroke="${BFG}" stroke-width="10" fill="none" stroke-linecap="round"/>` +
-      `<path d="${fl("M118 97 Q134 85 152 75")}" stroke="#a6f0e2" stroke-width="3" fill="none" stroke-linecap="round" opacity=".8"/>` +
-      `<g class="pc-d">${[[160, 62], [168, 70], [170, 80]].map(([x, y]) => `<circle cx="${X(x)}" cy="${y}" r="1.8" fill="#cfe9df"/>`).join("")}</g>`;
-    const hind = P(Pa(fl("M108 110 Q138 108 154 124 Q158 140 142 146 L146 172 Q136 178 128 168 L124 148 Q110 140 106 118Z")), BFD, { dx: m * 3, dy: 3, sk: .1 }) +
-      P(Pa(fl("M112 116 Q130 112 142 122 Q138 134 124 134 Q114 130 112 116Z")), BFG, { sw: 0, dx: m * 2, dy: 2, sk: .15 }) +
-      `<path d="${fl("M146 128 Q150 132 149 137 M144 140 Q146 144 143 148")}" stroke="#e0503c" stroke-width="3" fill="none" stroke-linecap="round"/>` +
-      `<circle cx="${X(132)}" cy="156" r="4.4" fill="#4a7fd0"/><circle cx="${X(132)}" cy="156" r="2" fill="#1a1410"/>`;
+    // R15：V.bf＝物種（broadtail 寬尾鳳蝶／idea 大白斑蝶／birdwing 曙鳳蝶）；沒有＝琉璃翠鳳蝶
+    const bf = V.bf || "", VEIN = bf === "idea" ? "#2a2420" : "#5a4e48";
+    const HIND = bf === "broadtail" ? "M108 110 Q138 108 154 124 Q158 140 146 146 L156 176 Q140 184 128 170 L124 148 Q110 140 106 118Z"   // 尾突又寬又長
+      : bf === "idea" ? "M108 110 Q140 106 158 126 Q162 148 144 158 Q126 166 114 150 Q106 136 106 118Z"   // 大白斑蝶沒有尾突、後翅圓
+      : "M108 110 Q138 108 154 124 Q158 140 142 146 L146 172 Q136 178 128 168 L124 148 Q110 140 106 118Z";
+    const FORE = bf === "idea" ? "M106 94 Q130 52 172 50 Q184 66 176 86 Q152 108 108 108Z" : "M106 94 Q132 58 170 56 Q180 68 172 84 Q150 106 108 108Z";
+    const fore = P(Pa(fl(FORE)), BFD, { hl: [X(150), 66, 12, 4], dx: m * 4, dy: 4, sk: .1 }) +
+      `<path class="pc-d2" d="${fl("M108 98 L164 64 M108 101 L170 74 M108 104 L166 86 M108 106 L150 98")}" stroke="${VEIN}" stroke-width="${bf === "idea" ? 1.8 : 1.2}" opacity=".7"/>` +
+      (bf ? "" : `<path d="${fl("M116 98 Q134 84 156 72")}" stroke="${BFG}" stroke-width="10" fill="none" stroke-linecap="round"/>` +
+      `<path d="${fl("M118 97 Q134 85 152 75")}" stroke="#a6f0e2" stroke-width="3" fill="none" stroke-linecap="round" opacity=".8"/>`) +
+      (bf === "idea" ? `<g>${[[128, 72, 4], [146, 64, 4.4], [160, 76, 3.6], [138, 90, 3.4], [152, 92, 3], [120, 86, 2.6]].map(([x, y, r]) => `<circle cx="${X(x)}" cy="${y}" r="${r}" fill="#221c18"/>`).join("")}</g>` : "") +
+      `<g class="pc-d">${[[160, 62], [168, 70], [170, 80]].map(([x, y]) => `<circle cx="${X(x)}" cy="${y}" r="1.8" fill="${bf === "idea" ? "#221c18" : "#cfe9df"}"/>`).join("")}</g>`;
+    const hind = P(Pa(fl(HIND)), BFD, { dx: m * 3, dy: 3, sk: .1 }) +
+      (bf === "idea" ? `<path d="${fl("M110 118 L150 130 M110 124 L146 146 M112 132 L134 156")}" stroke="${VEIN}" stroke-width="1.8" opacity=".7"/>` + `<g>${[[130, 124, 3.6], [146, 138, 3.4], [128, 146, 3], [140, 152, 2.6], [118, 136, 2.4]].map(([x, y, r]) => `<circle cx="${X(x)}" cy="${y}" r="${r}" fill="#221c18"/>`).join("")}</g>`
+        : P(Pa(fl(bf === "broadtail" ? "M112 114 Q134 110 148 124 Q146 140 128 140 Q114 134 112 114Z" : "M112 116 Q130 112 142 122 Q138 134 124 134 Q114 130 112 116Z")), BFG, { sw: 0, dx: m * 2, dy: 2, sk: .15 })) +
+      (bf === "idea" ? "" : `<path d="${fl("M146 128 Q150 132 149 137 M144 140 Q146 144 143 148")}" stroke="${bf === "birdwing" ? "#ffd2d6" : "#e0503c"}" stroke-width="3" fill="none" stroke-linecap="round"/>`) +
+      (bf ? "" : `<circle cx="${X(132)}" cy="156" r="4.4" fill="#4a7fd0"/><circle cx="${X(132)}" cy="156" r="2" fill="#1a1410"/>`);
     return `<g class="pc-hw">${hind}</g><g class="pc-fw">${fore}</g>`;
   }
   // 六隻腳（停下來吃的時候才伸出來）：從胸部往外、膝蓋往上彎、腳尖都落在同一條線（y≈160）
@@ -199,14 +231,14 @@ window.PET_ART = (function () {
       <g class="pc-wing l">${bfWings(-1)}</g>
       <g class="pc-wing r">${bfWings(1)}</g>
       ${BF_LEGS}
-      ${P(E(100, 126, 6.6, 20), "#3a2c24", { hl: [98, 116, 1.6, 5], dx: 2, dy: 2 })}
+      ${P(E(100, 126, 6.6, 20), V.BFB || "#3a2c24", { hl: [98, 116, 1.6, 5], dx: 2, dy: 2 })}
       <path class="pc-d" d="M94.5 116 h11 M94 124 h12 M94.5 132 h11 M96 140 h8" stroke="#1e1612" stroke-width="1.4" opacity=".7"/>
-      ${P(E(100, 100, 9.4, 11), "#4a3a30", { dx: 2, dy: 2 })}
+      ${P(E(100, 100, 9.4, 11), V.BFT || "#4a3a30", { dx: 2, dy: 2 })}
       <path class="pc-d2" d="M92 96 l-3 -2 M92 102 l-3 1 M108 96 l3 -2 M108 102 l3 1 M96 92 l-1 -3 M104 92 l1 -3" stroke="#8a7a6a" stroke-width="1.6" stroke-linecap="round"/>
       <g class="pr-head" style="--ox:100px;--oy:93px">
       <g class="pr-ant l" style="--ox:94px;--oy:70px">${tp(94, 70, 80, 48, 2.8, "#2a201a", -5)}${P(E(79, 46, 3.4, 5), "#2a201a", { sw: 1.6, dx: 1, dy: 1 })}</g>
       <g class="pr-ant r" style="--ox:106px;--oy:70px">${tp(106, 70, 120, 48, 2.8, "#2a201a", 5)}${P(E(121, 46, 3.4, 5), "#2a201a", { sw: 1.6, dx: 1, dy: 1 })}</g>
-      ${P(C(100, 80, 15), "#a07a5a", { hl: [93, 72, 5, 3.2], dx: 3, dy: 3 })}
+      ${P(C(100, 80, 15), V.BFH || "#a07a5a", { hl: [93, 72, 5, 3.2], dx: 3, dy: 3 })}
       <g class="pr-prob" style="--ox:100px;--oy:95px"><path class="pr-curl" d="M100 95 q4 4 0 7 q-3 2 -3 -1" stroke="#2a201a" stroke-width="1.4" fill="none" stroke-linecap="round"/>
         <path class="pr-ext" d="M100 95 Q101 118 100 142 q-1 4 -3 3" stroke="#c49a66" stroke-width="2" fill="none" stroke-linecap="round"/></g>
       ${eyeOf("compound", 92, 80, 5.8, 6.8, -1)}${eyeOf("compound", 108, 80, 5.8, 6.8, 1)}
@@ -216,33 +248,49 @@ window.PET_ART = (function () {
     </g>`;
 
   // 3 靈巧山狐：倒三角臉、吻部突出、耳尖黑、黑襪細腿、直立大尾巴＋白尾尖；杏眼＋直立縫瞳（狐狸真的是縫瞳）、眼角往鼻子的淚線
-  const FX = "#d8672c", FXC = "#f8efdf", FXK = "#3b2519";
+  const FX = V.FX || "#d8672c", FXC = V.FXC || "#f8efdf", FXK = V.FXK || "#3b2519", FE = V.fox || "";   // FE：cat 石虎／round 水獺感／marten 黃喉貂
   const foxHead = () => `
+      ${FE === "cat" ? `
+      <g class="pc-ear l">${P(Pa("M66 82 Q58 56 64 44 Q74 44 96 64Z"), FXK, { dx: 3, dy: 3 })}${P(Pa("M70 74 Q65 58 68 52 Q76 52 88 64Z"), "#e9d6c2", { sw: 0, dx: 2, dy: 2 })}<circle cx="67" cy="54" r="3.2" fill="#f6efe2"/></g>
+      <g class="pc-ear r">${P(Pa("M134 82 Q142 56 136 44 Q126 44 104 64Z"), FXK, { dx: 3, dy: 3 })}${P(Pa("M130 74 Q135 58 132 52 Q124 52 112 64Z"), "#e9d6c2", { sw: 0, dx: 2, dy: 2 })}<circle cx="133" cy="54" r="3.2" fill="#f6efe2"/></g>`
+      : FE === "round" ? `
+      <g class="pc-ear l">${P(C(66, 66, 11), FX, { dx: 2, dy: 2 })}${P(C(67, 67, 6), "#c9a888", { sw: 0, dx: 1, dy: 1 })}</g>
+      <g class="pc-ear r">${P(C(134, 66, 11), FX, { dx: 2, dy: 2 })}${P(C(133, 67, 6), "#c9a888", { sw: 0, dx: 1, dy: 1 })}</g>`
+      : FE === "marten" ? `
+      <g class="pc-ear l">${P(Pa("M64 80 Q54 54 66 46 Q82 46 94 64Z"), FX, { dx: 3, dy: 3 })}${P(Pa("M68 72 Q62 56 68 52 Q78 52 88 64Z"), "#e8c88a", { sw: 0, dx: 2, dy: 2 })}</g>
+      <g class="pc-ear r">${P(Pa("M136 80 Q146 54 134 46 Q118 46 106 64Z"), FX, { dx: 3, dy: 3 })}${P(Pa("M132 72 Q138 56 132 52 Q122 52 112 64Z"), "#e8c88a", { sw: 0, dx: 2, dy: 2 })}</g>`
+      : `
       <g class="pc-ear l">${P(Pa("M64 81 L56 31 L98 63Z"), FX, { dx: 3, dy: 3 })}${P(Pa("M56 31 L59.2 51 Q66 51 73 44.2Z"), FXK, { sw: 0, dx: 1, dy: 1 })}${P(Pa("M68 73 L62 47 L88 63Z"), "#efdac6", { sw: 0, dx: 2, dy: 2 })}<path class="pc-d" d="M70 69 l-3 -8 M74 67 l-1 -7" stroke="#fffaf0" stroke-width="2" stroke-linecap="round"/></g>
-      <g class="pc-ear r">${P(Pa("M136 81 L144 31 L102 63Z"), FX, { dx: 3, dy: 3 })}${P(Pa("M144 31 L140.8 51 Q134 51 127 44.2Z"), FXK, { sw: 0, dx: 1, dy: 1 })}${P(Pa("M132 73 L138 47 L112 63Z"), "#efdac6", { sw: 0, dx: 2, dy: 2 })}<path class="pc-d" d="M130 69 l3 -8 M126 67 l1 -7" stroke="#fffaf0" stroke-width="2" stroke-linecap="round"/></g>
-      ${P(Pa("M58 77 Q66 59 100 57 Q134 59 142 77 Q146 93 158 105 Q138 109 125 121 Q112 137 100 139 Q88 137 75 121 Q62 109 42 105 Q54 93 58 77Z"), "#e2783a", { hl: [78, 71, 13, 7], dx: 6, dy: 6 })}
+      <g class="pc-ear r">${P(Pa("M136 81 L144 31 L102 63Z"), FX, { dx: 3, dy: 3 })}${P(Pa("M144 31 L140.8 51 Q134 51 127 44.2Z"), FXK, { sw: 0, dx: 1, dy: 1 })}${P(Pa("M132 73 L138 47 L112 63Z"), "#efdac6", { sw: 0, dx: 2, dy: 2 })}<path class="pc-d" d="M130 69 l3 -8 M126 67 l1 -7" stroke="#fffaf0" stroke-width="2" stroke-linecap="round"/></g>`}
+      ${P(Pa("M58 77 Q66 59 100 57 Q134 59 142 77 Q146 93 158 105 Q138 109 125 121 Q112 137 100 139 Q88 137 75 121 Q62 109 42 105 Q54 93 58 77Z"), V.FXF || "#e2783a", { hl: [78, 71, 13, 7], dx: 6, dy: 6 })}
+      ${FE === "cat" ? `${tp(93, 92, 88, 62, 3, "#f6efe2", 1)}${tp(107, 92, 112, 62, 3, "#f6efe2", -1)}${tp(100, 80, 100, 58, 2.6, FXK, 0)}${tp(86, 78, 82, 60, 2.2, FXK, 1)}${tp(114, 78, 118, 60, 2.2, FXK, -1)}<g fill="${FXK}">${[[60, 92], [66, 100], [140, 92], [134, 100], [58, 84], [142, 84]].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="2.6" ry="2"/>`).join("")}</g>` : ""}
+
       ${P(Pa("M42 105 Q64 101 80 110 Q92 115 100 115 Q108 115 120 110 Q136 101 158 105 Q138 109 125 121 Q112 137 100 139 Q88 137 75 121 Q62 109 42 105Z"), FXC, { sw: 2.2, dx: 3, dy: 3 })}
       <g class="pc-d">${tp(42, 105, 30, 103, 4, FXC, -2)}${tp(46, 109, 34, 113, 3.4, FXC, 2)}${tp(158, 105, 170, 103, 4, FXC, 2)}${tp(154, 109, 166, 113, 3.4, FXC, -2)}</g>
-      ${P(Pa("M91 95 Q100 90 109 95 L105 119 Q100 122 95 119Z"), "#e98a48", { sw: 0, dx: 2, dy: 2, sk: .12 })}
-      ${tp(89, 99, 94, 113, 2.4, "#9a4518", -1)}${tp(111, 99, 106, 113, 2.4, "#9a4518", 1)}
+      ${P(Pa("M91 95 Q100 90 109 95 L105 119 Q100 122 95 119Z"), V.FXM || "#e98a48", { sw: 0, dx: 2, dy: 2, sk: .12 })}
+      ${FE === "round" ? "" : `${tp(89, 99, 94, 113, 2.4, V.FXT || "#9a4518", -1)}${tp(111, 99, 106, 113, 2.4, V.FXT || "#9a4518", 1)}`}
+      ${FE === "round" ? `<g stroke="#f6efe2" stroke-width="1.5" stroke-linecap="round" fill="none" opacity=".95">${[[86, 126, 62, 120], [86, 129, 60, 130], [114, 126, 138, 120], [114, 129, 140, 130]].map(([a, b, c, d]) => `<path d="M${a} ${b} Q${(a + c) / 2} ${b - 3} ${c} ${d}"/>`).join("")}</g>` : ""}
       ${mouth(100, 129, `<path d="M100 127 v3 q-4 4 -8 1 M100 130 q4 4 8 1" stroke="#2a1810" stroke-width="2" fill="none" stroke-linecap="round"/>`,
         `<path d="M100 127 v2" stroke="#2a1810" stroke-width="2" stroke-linecap="round"/><path d="M91 129 Q100 126.5 109 129 Q107.5 140 100 141 Q92.5 140 91 129Z" fill="${MOUTH_IN}" stroke="#2a1810" stroke-width="1.6" stroke-linejoin="round"/><path d="M94.5 136 Q100 133.5 105.5 136 Q104 141 100 141 Q96 141 94.5 136Z" fill="${TONGUE}"/><path d="M93.6 129.6 l1.3 3.2 l1.5 -3.2Z M106.4 129.6 l-1.3 3.2 l-1.5 -3.2Z" fill="#fff"/>`,
         `<path d="M100 130 q2 6 7 6 q4 -1 3 -5 q-4 0 -10 -1Z" fill="${TONGUE}" stroke="#9a3a30" stroke-width="1"/>`,
         `<ellipse cx="86" cy="127" rx="6" ry="4.6" fill="${FXC}"/><ellipse cx="114" cy="127" rx="6" ry="4.6" fill="${FXC}"/>`)}
       <g class="pr-nose" style="--ox:100px;--oy:121px">${P(Pa("M93 120 Q100 116 107 120 Q105 126 100 127 Q95 126 93 120Z"), "#2a1810", { sw: 0, dx: 1, dy: 1 })}<ellipse cx="97.6" cy="120.6" rx="2" ry="1.2" fill="#fff" opacity=".6"/></g>
       <g class="pc-d">${[[88, 125], [85, 129], [112, 125], [115, 129]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.2" fill="#9a7a5a"/>`).join("")}</g>
-      ${brow(72, 83, 88, 85, "#8a3f16")}${brow(128, 83, 112, 85, "#8a3f16")}
-      ${eyeOf("almond", 81, 95, 9.2, 10.4, -1, "#b8702a", { pupil: "round", pr: .6, tilt: .18 })}${eyeOf("almond", 119, 95, 9.2, 10.4, 1, "#b8702a", { pupil: "round", pr: .6, tilt: .18 })}
+      ${brow(72, 83, 88, 85, V.FXT || "#8a3f16")}${brow(128, 83, 112, 85, V.FXT || "#8a3f16")}
+      ${eyeOf(FE === "round" ? "round" : "almond", 81, 95, 9.2, 10.4, -1, V.FXI || "#b8702a", { pupil: "round", pr: .6, tilt: .18 })}${eyeOf(FE === "round" ? "round" : "almond", 119, 95, 9.2, 10.4, 1, V.FXI || "#b8702a", { pupil: "round", pr: .6, tilt: .18 })}
 `;   // 坐著和站著兩份身體共用同一顆頭（每次呼叫都有自己的 id）
 
   const FOX = `
     <g class="pc-bob">
-      <g class="pc-tail">${P(Pa("M126 177 C158 183 182 165 184 135 C186 111 172 93 154 91 C168 109 166 133 152 151 C142 161 132 165 122 165Z"), FX, { hl: [172, 123, 4, 12] })}
+      <g class="pc-tail">${FE === "cat" ? P(Pa("M124 178 C150 182 168 168 170 146 C171 134 164 128 156 128 C160 142 154 156 140 164 C134 167 128 168 122 166Z"), FX, { hl: [162, 142, 3, 8] }) + `<path d="M163 134 L155 136 M168 146 L158 148 M166 158 L154 158 M158 168 L148 166" stroke="${FXK}" stroke-width="4" stroke-linecap="round"/>` + P(E(162, 130, 6, 4.4), FXK, { sw: 1.6, dx: 1, dy: 1 })
+        : FE === "round" ? P(Pa("M122 180 C150 186 176 180 186 166 C190 158 186 152 178 154 C168 162 150 166 124 166Z"), FX, { hl: [160, 172, 10, 2.4] })
+        : FE === "marten" ? P(Pa("M124 178 C156 184 184 168 188 134 C190 112 180 96 168 92 C174 110 174 134 160 152 C150 164 136 168 122 166Z"), FX, { hl: [178, 128, 3, 10] }) + `<path class="pc-d2" d="M180 128 q-4 12 -12 18" stroke="${sh(FX, .35)}" stroke-width="1.6" fill="none" stroke-linecap="round"/>`
+        : `${P(Pa("M126 177 C158 183 182 165 184 135 C186 111 172 93 154 91 C168 109 166 133 152 151 C142 161 132 165 122 165Z"), FX, { hl: [172, 123, 4, 12] })}
         ${P(Pa("M154 91 C170 91 186 107 184 129 C178 117 168 111 160 111 C163 104 161 97 154 91Z"), FXC, { sw: 2.4, dx: 2, dy: 2 })}
-        <path class="pc-d2" d="M174 137 q-6 10 -14 14 M168 127 q-4 8 -12 12 M178 151 q-8 10 -20 14" stroke="${sh(FX, .3)}" stroke-width="1.6" fill="none" stroke-linecap="round"/></g>
+        <path class="pc-d2" d="M174 137 q-6 10 -14 14 M168 127 q-4 8 -12 12 M178 151 q-8 10 -20 14" stroke="${sh(FX, .3)}" stroke-width="1.6" fill="none" stroke-linecap="round"/>`}</g>
       ${rig("pr-foot r", 132, 190, P(E(132, 193, 11, 4.6), FXK, { sw: 2, dx: 2, dy: 2 }))}
       <g class="pc-sb">${P(Pa("M72 193 C64 165 74 135 100 129 C126 125 140 147 140 169 C140 185 134 193 122 195Z"), FX, { hl: [82, 145, 6, 12] })}
-      <path class="pc-d" d="M124 157 Q138 165 134 187" stroke="${sh(FX, .3)}" stroke-width="2" fill="none" stroke-linecap="round"/></g>
+      <path class="pc-d" d="M124 157 Q138 165 134 187" stroke="${sh(FX, .3)}" stroke-width="2" fill="none" stroke-linecap="round"/>${FE === "cat" ? `<g fill="${FXK}">${[[76, 160], [82, 174], [74, 184], [128, 152], [134, 168], [126, 182], [88, 186], [114, 188]].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="3.2" ry="2.4"/>`).join("")}</g>` : ""}</g>
       <g class="pr-loaf" opacity="0">${P(E(134, 180, 20, 13), FX, { dx: 2, dy: 2 })}${P(E(100, 184, 44, 13), FX, { hl: [84, 178, 12, 3], dx: 3, dy: 3 })}${P(E(100, 186, 22, 8), FXC, { sw: 0, dx: 1, dy: 1 })}${P(Pa("M70 182 Q66 150 100 144 Q134 150 130 182Z"), FX, { hl: [84, 156, 5, 8], dx: 3, dy: 3 })}${P(Pa("M86 182 Q84 158 100 154 Q116 158 114 182Z"), FXC, { sw: 0, dx: 1, dy: 1 })}</g>
       ${rig("pr-paw l", 90, 157, P(Pa("M84 157 L83 191 Q90 196 97 191 L97 157Z"), FX, { dx: 2, dy: 2 }) + P(Pa("M83 175 L83 191 Q90 196 97 191 L97 175Q90 172 83 175Z"), FXK, { sw: 2, dx: 2, dy: 2 }))}
       ${rig("pr-paw r", 110, 157, P(Pa("M103 157 L103 191 Q110 196 117 191 L116 157Z"), FX, { dx: 2, dy: 2 }) + P(Pa("M103 175 L103 191 Q110 196 117 191 L116 175Q110 172 103 175Z"), FXK, { sw: 2, dx: 2, dy: 2 }))}
@@ -257,9 +305,18 @@ ${foxHead()}
 
   // 4 山林猛虎：瘦一圈、坐得挺——深胸、粗直的前腿、大腳掌；頭寬但不圓（頰毛往外翻），吻部突出、露兩顆小犬齒；
   // 石虎特徵（眼內側往額頭兩條白線、耳背黑底白斑）；圓瞳金眼＋上眼瞼往鼻子壓低＝專注、有威嚴
-  const TG = "#ec913a", TGC = "#fbf3e3", TGK = "#2e1d0e";
-  const stripe = (x0, y0, x1, y1, w, b) => tp(x0, y0, x1, y1, w, TGK, b);
-  const TSP = [[[132, 186], [166, 190], [186, 164], [176, 128]]], TSW = [[0, 15], [1, 10]];
+  const TG = V.TG || "#ec913a", TGC = V.TGC || "#fbf3e3", TGK = V.TGK || "#2e1d0e", TGI = V.TGI || "#c98a2a";
+  // R15：V.tiger＝cloud 雲豹（雲狀斑塊）／wave 海風虎（浪花紋）／snow 雪豹（玫瑰斑、粗尾巴）；每一條「條紋」換成那個物種的花紋，位置不變
+  const TS = V.tiger || "";
+  const stripe = (x0, y0, x1, y1, w, b) => {
+    if (!TS) return tp(x0, y0, x1, y1, w, TGK, b);
+    const mx = rd((x0 + x1) / 2), my = rd((y0 + y1) / 2), len = Math.hypot(x1 - x0, y1 - y0), ang = rd(Math.atan2(y1 - y0, x1 - x0) * 180 / Math.PI);
+    if (TS === "cloud") return `<ellipse cx="${mx}" cy="${my}" rx="${rd(len / 2 + 2.4)}" ry="${rd(w * .95 + 1.4)}" transform="rotate(${ang} ${mx} ${my})" fill="${sh(TG, .22)}" stroke="${TGK}" stroke-width="${rd(Math.max(1.6, w * .42))}"/>`;
+    if (TS === "wave") { const nx = -(y1 - y0) / (len || 1), ny = (x1 - x0) / (len || 1), q = w * .9; return `<path d="M${rd(x0)} ${rd(y0)} Q${rd(x0 + (x1 - x0) * .25 + nx * q)} ${rd(y0 + (y1 - y0) * .25 + ny * q)} ${mx} ${my} T${rd(x1)} ${rd(y1)}" stroke="${TGK}" stroke-width="${rd(w * .62)}" fill="none" stroke-linecap="round"/>`; }
+    const r = rd(Math.max(2.6, len * .28)), sw = rd(Math.max(1.4, w * .4));   // snow：玫瑰斑＝一圈斷開的小弧＋淡色中心
+    return `<circle cx="${mx}" cy="${my}" r="${r}" fill="${sh(TG, .12)}"/><circle cx="${mx}" cy="${my}" r="${r}" fill="none" stroke="${TGK}" stroke-width="${sw}" stroke-dasharray="${rd(r * 1.3)} ${rd(r * .5)}" stroke-linecap="round" transform="rotate(${ang} ${mx} ${my})"/>`;
+  };
+  const TSP = [[[132, 186], [166, 190], [186, 164], [176, 128]]], TSW = TS === "snow" ? [[0, 20], [1, 17]] : [[0, 15], [1, 10]];
   const tgRings = spine(TSP, 12).filter((q, k) => k > 1 && k % 3 === 1).map(q => { const w = wAt(TSW, q.f) / 2 + 1; return `M${rd(q.x + q.nx * w)} ${rd(q.y + q.ny * w)}L${rd(q.x - q.nx * w)} ${rd(q.y - q.ny * w)}`; }).join("");
   const tigerHead = () => `
       <g class="pc-ear l">${P(C(64, 66, 14), TG, { sw: 2.6, dx: 2, dy: 2 })}<path d="M52 70 A12 12 0 0 1 70 54.5" stroke="${TGK}" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="56" cy="59" r="2.4" fill="#fbf3e3"/>${P(E(67, 69, 6.6, 7), "#f6e3cc", { sw: 0, dx: 1, dy: 1 })}</g>
@@ -280,7 +337,7 @@ ${foxHead()}
         `<ellipse cx="83" cy="113" rx="7" ry="5.4" fill="${TGC}"/><ellipse cx="117" cy="113" rx="7" ry="5.4" fill="${TGC}"/>`)}
       <g class="pr-nose" style="--ox:100px;--oy:103px">${P(Pa("M91 101 Q100 96 109 101 Q107 109 100 110 Q93 109 91 101Z"), "#3a2014", { sw: 0, dx: 1, dy: 1 })}<ellipse cx="96.6" cy="101.6" rx="2.4" ry="1.2" fill="#fff" opacity=".5"/></g>
       ${tp(68, 80, 88, 84, 4.6, TGK, -1.5)}${tp(132, 80, 112, 84, 4.6, TGK, 1.5)}
-      ${eyeOf("round", 80, 92, 7.8, 8.4, -1, "#c98a2a", { pupil: "round", pr: .56, cut: TG, co: 1.05, ci: .78 })}${eyeOf("round", 120, 92, 7.8, 8.4, 1, "#c98a2a", { pupil: "round", pr: .56, cut: TG, co: 1.05, ci: .78 })}
+      ${eyeOf("round", 80, 92, 7.8, 8.4, -1, TGI, { pupil: "round", pr: .56, cut: TG, co: 1.05, ci: .78 })}${eyeOf("round", 120, 92, 7.8, 8.4, 1, TGI, { pupil: "round", pr: .56, cut: TG, co: 1.05, ci: .78 })}
 `;   // 坐著和站著兩份身體共用
   // 正面站姿（橋）：深胸、肩膀寬，後腿在前腿外側；條紋跟坐姿、側身同一組位置（肩上兩條、後腿各兩條、尾巴環）
   const TIGER = `
@@ -301,7 +358,9 @@ ${tigerHead()}
 
   // 5 初醒幼龍（2026-10-04 重畫）：東方小龍坐姿——拿掉蝙蝠翼（那是西方龍，跟神龍接不起來）。
   // 短圓吻部往前突、小鹿角只分一岔、牛耳、火焰鬃、兩根短捲龍鬚、節狀腹甲、尾巴上的背鰭、三爪、旁邊一顆小光珠（預告龍珠）；2026-10-05 拿掉腳下的雲（走在地上，慶祝跳時才噗出雲）
-  const JADE = "#4fae7e", JD = "#2f7c56", BELLY = "#efdca4", GOLD = "#dfbf72", MANE = "#358f82";
+  const drLeaf = (x, y, a) => `<g transform="translate(${x} ${y}) rotate(${a})">${P(E(0, -5, 3.4, 6), "#6aa646", { sw: 1.4, dx: 1, dy: 1 })}<path d="M0 0 v-9" stroke="#3f6a2a" stroke-width="1" /></g>`;
+  const DR = V.dr || "";   // R15：forest 林龍（鹿角長嫩葉）／sea 海龍（鰭狀耳、珊瑚色角）／snow 雪龍（冰柱角、白鬃）
+  const JADE = V.JADE || "#4fae7e", JD = V.JD || "#2f7c56", BELLY = V.BELLY || "#efdca4", GOLD = V.GOLD || "#dfbf72", MANE = V.MANE || "#358f82";
   const HTAIL = [[[118, 166], [146, 176], [166, 158], [158, 138]], [[158, 138], [154, 128], [146, 126], [140, 130]]];
   const hatchFins = spine(HTAIL, 8).filter((p, k) => k % 3 === 1 && p.f < .8).map(p => {
     const w = wAt([[0, 16], [1, 6]], p.f) / 2, bx = p.x + p.nx * w, by = p.y + p.ny * w, tx = Math.cos(p.a * Math.PI / 180), ty = Math.sin(p.a * Math.PI / 180);
@@ -320,18 +379,18 @@ ${tigerHead()}
       <g class="pc-tw">${P(Pa("M38 152 Q36 142 42 136 Q42 142 46 142 Q46 136 50 132 Q54 142 50 152Z"), "#ffa94a", { sw: 1.6, dx: 1, dy: 1 })}${P(C(44, 154, 8), "#ffdf86", { hl: [41, 151, 3, 2], dx: 2, dy: 2 })}</g>
       <g class="pr-head" style="--ox:100px;--oy:124px">
       ${[[-170, 16, 9, -4], [-150, 18, 10, -3], [-30, 18, 10, 3], [-10, 16, 9, 4], [160, 12, 8, 3], [20, 12, 8, -3]].map(([a, L, w, b]) => { const r = a * Math.PI / 180, x0 = 100 + Math.cos(r) * 30, y0 = 80 + Math.sin(r) * 24; return tpo(rd(x0), rd(y0), rd(x0 + Math.cos(r) * L), rd(y0 + Math.sin(r) * L), w, MANE, b); }).join("")}
-      ${tpo(88, 56, 80, 34, 7, GOLD, 3)}${tpo(84, 45, 72, 41, 4.4, GOLD, 2)}${tpo(112, 56, 120, 34, 7, GOLD, -3)}${tpo(116, 45, 128, 41, 4.4, GOLD, -2)}
-      <g class="pc-ear l">${P(Pa("M68 80 Q54 70 44 76 Q52 88 68 88Z"), JADE, { dx: 2, dy: 2 })}</g><g class="pc-ear r">${P(Pa("M132 80 Q146 70 156 76 Q148 88 132 88Z"), JADE, { dx: 2, dy: 2 })}</g>
+      ${tpo(88, 56, 80, 34, 7, GOLD, 3)}${tpo(84, 45, 72, 41, 4.4, GOLD, 2)}${tpo(112, 56, 120, 34, 7, GOLD, -3)}${tpo(116, 45, 128, 41, 4.4, GOLD, -2)}${DR === "forest" ? [[80, 34, -20], [72, 41, -60], [120, 34, 20], [128, 41, 60]].map(([x, y, a]) => drLeaf(x, y, a)).join("") : ""}
+      ${DR === "sea" ? `<g class="pc-ear l">${P(Pa("M68 80 L50 66 L54 74 L40 72 L50 80 L40 86 L68 88Z"), MANE, { dx: 2, dy: 2 })}</g><g class="pc-ear r">${P(Pa("M132 80 L150 66 L146 74 L160 72 L150 80 L160 86 L132 88Z"), MANE, { dx: 2, dy: 2 })}</g>` : `<g class="pc-ear l">${P(Pa("M68 80 Q54 70 44 76 Q52 88 68 88Z"), JADE, { dx: 2, dy: 2 })}</g><g class="pc-ear r">${P(Pa("M132 80 Q146 70 156 76 Q148 88 132 88Z"), JADE, { dx: 2, dy: 2 })}</g>`}
       <path class="pc-d" d="M66 83 Q56 78 50 78 M134 83 Q144 78 150 78" stroke="${sh(JADE, .3)}" stroke-width="2" fill="none" stroke-linecap="round"/>
       ${P(E(100, 80, 35, 29), JADE, { hl: [82, 64, 11, 6], dx: 5, dy: 6 })}
-      ${P(Pa("M78 94 Q72 112 86 121 Q100 128 114 121 Q128 112 122 94 Q100 86 78 94Z"), "#5cbb8a", { hl: [84, 100, 6, 3], dx: 4, dy: 4 })}
+      ${P(Pa("M78 94 Q72 112 86 121 Q100 128 114 121 Q128 112 122 94 Q100 86 78 94Z"), (V.JADE ? tn(JADE, .1) : "#5cbb8a"), { hl: [84, 100, 6, 3], dx: 4, dy: 4 })}
       ${P(Pa("M85 117 Q100 124 115 117 Q111 128 100 129 Q89 128 85 117Z"), BELLY, { sw: 2, dx: 2, dy: 2 })}
-      ${P(Pa("M86 108 Q86 101 93 101 Q100 103 107 101 Q114 101 114 108 Q112 113 100 113 Q88 113 86 108Z"), "#6cc596", { hl: [92, 104, 3.4, 1.8], dx: 2, dy: 2, sw: 2 })}
+      ${P(Pa("M86 108 Q86 101 93 101 Q100 103 107 101 Q114 101 114 108 Q112 113 100 113 Q88 113 86 108Z"), (V.JADE ? tn(JADE, .22) : "#6cc596"), { hl: [92, 104, 3.4, 1.8], dx: 2, dy: 2, sw: 2 })}
       <path d="M91 108 q1 -3.4 4.2 -2 q0 2.6 -3 2.9 M109 108 q-1 -3.4 -4.2 -2 q0 2.6 3 2.9" stroke="${JD}" stroke-width="2" fill="none" stroke-linecap="round"/>
       ${mouth(100, 119, `<path d="M86 117 Q100 123 114 117" stroke="${JD}" stroke-width="2.3" fill="none" stroke-linecap="round"/><path d="M106 119.5 l1.2 4 l2 -4.6Z" fill="#fff" stroke="${JD}" stroke-width="1" stroke-linejoin="round"/>`,
         `<path d="M86 117 Q100 121 114 117 Q111 129 100 130 Q89 129 86 117Z" fill="${MOUTH_IN}" stroke="${JD}" stroke-width="1.8" stroke-linejoin="round"/><path d="M92 124 Q100 121.5 108 124 Q106 130 100 130 Q94 130 92 124Z" fill="${TONGUE}"/><path d="M90 118.6 l1.2 3.6 l1.8 -3.4Z M110 118.6 l-1.2 3.6 l-1.8 -3.4Z" fill="#fff"/>`,
         `<path d="M100 120 q2 6 7 6 q4 -1 3 -5 q-4 0 -10 -1Z" fill="${TONGUE}" stroke="#9a3a30" stroke-width="1"/>`,
-        `<ellipse cx="84" cy="116" rx="6" ry="4.4" fill="#6cc596"/><ellipse cx="116" cy="116" rx="6" ry="4.4" fill="#6cc596"/>`)}
+        `<ellipse cx="84" cy="116" rx="6" ry="4.4" fill="${V.JADE ? tn(JADE, .22) : "#6cc596"}"/><ellipse cx="116" cy="116" rx="6" ry="4.4" fill="${V.JADE ? tn(JADE, .22) : "#6cc596"}"/>`)}
       <g class="pc-sway l">${P(Pa(tube([[[86, 109], [76, 106], [66, 108], [64, 116]], [[64, 116], [62, 122], [68, 124], [70, 120]]], [[0, 3.6], [1, 1.2]])), GOLD, { sw: 1.4, dx: 1, dy: 1 })}</g>
       <g class="pc-sway r">${P(Pa(tube([[[114, 109], [124, 106], [134, 108], [136, 116]], [[136, 116], [138, 122], [132, 124], [130, 120]]], [[0, 3.6], [1, 1.2]])), GOLD, { sw: 1.4, dx: 1, dy: 1 })}</g>
       ${brow(78, 72, 94, 73, JD)}${brow(122, 72, 106, 73, JD)}
@@ -414,19 +473,19 @@ ${tigerHead()}
       <g class="pc-d">${[[-140, 18, 5, -4], [-112, 18, 5, 2], [8, 22, 5, 5], [38, 22, 5, 5]].map(([a, L, w, b]) => { const r = a * Math.PI / 180, x0 = 66 + Math.cos(r) * 26, y0 = 78 + Math.sin(r) * 24; return tp(rd(x0), rd(y0), rd(x0 + Math.cos(r) * L), rd(y0 + Math.sin(r) * L), w, tn(MANE, .45), b); }).join("")}</g>
       ${tpo(52, 56, 38, 24, 8, GOLD, 5)}${tpo(45, 42, 29, 38, 5.4, GOLD, 3)}${tpo(41, 33, 45, 19, 4.4, GOLD, -2)}
       ${tpo(80, 56, 94, 24, 8, GOLD, -5)}${tpo(87, 42, 103, 38, 5.4, GOLD, -3)}${tpo(91, 33, 87, 19, 4.4, GOLD, 2)}
-      <g class="pc-d">${tp(48, 50, 41, 32, 2, tn(GOLD, .5), 3)}${tp(84, 50, 91, 32, 2, tn(GOLD, .5), -3)}</g>
-      <g class="pc-ear l">${P(Pa("M40 72 Q24 62 14 70 Q24 82 42 80Z"), JADE, { dx: 2, dy: 2 })}</g><g class="pc-ear r">${P(Pa("M92 72 Q108 62 118 70 Q108 82 90 80Z"), JADE, { dx: 2, dy: 2 })}</g>
+      <g class="pc-d">${tp(48, 50, 41, 32, 2, tn(GOLD, .5), 3)}${tp(84, 50, 91, 32, 2, tn(GOLD, .5), -3)}</g>${DR === "forest" ? [[38, 24, -30], [29, 38, -70], [45, 19, -5], [94, 24, 30], [103, 38, 70], [87, 19, 5]].map(([x, y, a]) => drLeaf(x, y, a)).join("") : ""}
+      ${DR === "sea" ? `<g class="pc-ear l">${P(Pa("M42 72 L22 56 L26 66 L10 62 L20 72 L8 78 L42 80Z"), MANE, { dx: 2, dy: 2 })}<path d="M40 74 L22 60 M40 76 L14 66 M40 78 L12 77" stroke="${tn(MANE, .5)}" stroke-width="1.2" opacity=".8"/></g><g class="pc-ear r">${P(Pa("M90 72 L110 56 L106 66 L122 62 L112 72 L124 78 L90 80Z"), MANE, { dx: 2, dy: 2 })}<path d="M92 74 L110 60 M92 76 L118 66 M92 78 L120 77" stroke="${tn(MANE, .5)}" stroke-width="1.2" opacity=".8"/></g>` : `<g class="pc-ear l">${P(Pa("M40 72 Q24 62 14 70 Q24 82 42 80Z"), JADE, { dx: 2, dy: 2 })}</g><g class="pc-ear r">${P(Pa("M92 72 Q108 62 118 70 Q108 82 90 80Z"), JADE, { dx: 2, dy: 2 })}</g>`}
       <path class="pc-d" d="M38 75 Q26 70 20 71 M94 75 Q106 70 112 71" stroke="${sh(JADE, .3)}" stroke-width="2" fill="none" stroke-linecap="round"/>
       ${P(E(66, 72, 29, 25), JADE, { hl: [52, 58, 10, 5.5], dx: 5, dy: 6 })}
-      ${P(Pa("M42 86 Q36 108 50 120 Q66 128 82 120 Q96 108 90 86 Q66 78 42 86Z"), "#5cbb8a", { hl: [50, 94, 6, 3], dx: 4, dy: 5 })}
+      ${P(Pa("M42 86 Q36 108 50 120 Q66 128 82 120 Q96 108 90 86 Q66 78 42 86Z"), (V.JADE ? tn(JADE, .1) : "#5cbb8a"), { hl: [50, 94, 6, 3], dx: 4, dy: 5 })}
       ${rig("pr-jaw", 66, 116, P(Pa("M49 116 Q66 124 83 116 Q78 130 66 132 Q54 130 49 116Z"), BELLY, { sw: 2, dx: 2, dy: 2 }) + tp(59, 130, 53, 146, 5, MANE, -3) + tp(66, 132, 66, 150, 6, MANE, 2) + tp(73, 130, 79, 146, 5, MANE, 3))}
       <path class="pc-d" d="M66 80 Q68 88 66 96" stroke="${sh(JADE, .25)}" stroke-width="2" fill="none" stroke-linecap="round"/>
-      ${P(Pa("M50 106 Q50 98 58 98 Q66 101 74 98 Q82 98 82 106 Q80 112 66 112 Q52 112 50 106Z"), "#6cc596", { hl: [57, 101, 4, 2], dx: 2, dy: 2, sw: 2.2 })}
+      ${P(Pa("M50 106 Q50 98 58 98 Q66 101 74 98 Q82 98 82 106 Q80 112 66 112 Q52 112 50 106Z"), (V.JADE ? tn(JADE, .22) : "#6cc596"), { hl: [57, 101, 4, 2], dx: 2, dy: 2, sw: 2.2 })}
       <path d="M55 106 q1 -4 5 -2.5 q0 3 -3.6 3.4 M77 106 q-1 -4 -5 -2.5 q0 3 3.6 3.4" stroke="${JD}" stroke-width="2.2" fill="none" stroke-linecap="round"/>
       ${mouth(66, 118, `<path d="M48 116 Q66 123 84 116" stroke="${JD}" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M75 119 l1.5 5 l2.5 -5.6Z" fill="#fff" stroke="${JD}" stroke-width="1.1" stroke-linejoin="round"/>`,
         `<path d="M48 116 Q66 121 84 116 Q81 131 66 133 Q51 131 48 116Z" fill="${MOUTH_IN}" stroke="${JD}" stroke-width="2" stroke-linejoin="round"/><path d="M56 126 Q66 122.5 76 126 Q74 132.5 66 133 Q58 132.5 56 126Z" fill="${TONGUE}"/><path d="M53 117.2 l1.6 5 l2.2 -4.8Z M79 117.2 l-1.6 5 l-2.2 -4.8Z M58 131 l1.4 -3.4 l1.6 3.4Z M74 131 l-1.4 -3.4 l-1.6 3.4Z" fill="#fff" stroke="${JD}" stroke-width=".8" stroke-linejoin="round"/>`,
         `<path d="M66 120 q2 7 8 7 q5 -1 3 -6 q-5 0 -11 -1Z" fill="${TONGUE}" stroke="#9a3a30" stroke-width="1"/>`,
-        `<ellipse cx="48" cy="112" rx="6" ry="4.6" fill="#5cbb8a"/><ellipse cx="84" cy="112" rx="6" ry="4.6" fill="#5cbb8a"/>`)}
+        `<ellipse cx="48" cy="112" rx="6" ry="4.6" fill="${V.JADE ? tn(JADE, .1) : "#5cbb8a"}"/><ellipse cx="84" cy="112" rx="6" ry="4.6" fill="${V.JADE ? tn(JADE, .1) : "#5cbb8a"}"/>`)}
       <g class="pc-sway l">${P(Pa(tube([[[51, 107], [34, 102], [20, 100], [12, 110]], [[12, 110], [6, 120], [12, 130], [22, 126]]], [[0, 4.6], [1, 1.2]])), GOLD, { sw: 1.6, dx: 1, dy: 1 })}</g>
       <g class="pc-sway r">${P(Pa(tube([[[81, 107], [98, 102], [114, 103], [122, 113]], [[122, 113], [128, 123], [122, 132], [114, 128]]], [[0, 4.6], [1, 1.2]])), GOLD, { sw: 1.6, dx: 1, dy: 1 })}</g>
       ${tp(40, 64, 63, 72, 6.4, sh(JADE, .55), -2)}${tp(92, 64, 69, 72, 6.4, sh(JADE, .55), 2)}
@@ -456,13 +515,27 @@ ${tigerHead()}
     }
     return out + src.slice(i);
   }
-  const A = [EGG, LARVA, BUTTERFLY, FOX, TIGER, HATCHDRAGON, DRAGON].map(wrapHeads);
+  const list = [EGG, LARVA, BUTTERFLY, FOX, TIGER, HATCHDRAGON, DRAGON].map((s, k) => V.hex && V.hex[k] ? s.replace(/#[0-9a-fA-F]{6}\b/g, h => V.hex[k][h.toLowerCase()] || h) : s).map(wrapHeads);
+  return { list, HATCH_CLOUD, DRAGON_CLOUD, DB, DI0, DSP, DT0, DPTS, dragonTail, LVS, cloudTop6 };
+  }
+  const BASE = buildArt({});
+  const { HATCH_CLOUD, DRAGON_CLOUD, DB, DI0, DSP, DT0, DPTS, dragonTail, LVS, cloudTop6 } = BASE;
+  // 帽子插入點：卵在第一組（頭）結尾；其餘在最後一組結尾
+  function finishArt(A) {
+    A[0] = A[0].replace(/<\/g>\s*<g class="pc-tw">/, "<!--H--></g>\n    <g class=\"pc-tw\">");
+    for (let k = 1; k < A.length; k++) if (!A[k].includes("<!--H-->")) A[k] = A[k].replace(/<\/g>\s*$/, "<!--H--></g>");   // 有骨架的：帽子在 pr-head 裡（跟著頭動）
+    return A;
+  }
+  const A = finishArt(BASE.list);
+  // ── R15 物種變體（深林 deep／海風 sea／高山 alpine）：調色盤＋特徵開關（buildArt 裡讀）＋行內顏色對照（hex，小寫）──
+  const VARIANTS = {
+    deep: { egg: "moss", EGG: "#dfe3c4", lv: "spines", LV: "#4a3a34", bf: "broadtail", BFD: "#2a221e", BFG: "#f3efe4", tiger: "cloud", TG: "#c9a676", dr: "forest", JADE: "#6f8f4a", JD: "#46602e", BELLY: "#e8dcb4", GOLD: "#a8865a", MANE: "#4a6a34", TGC: "#f4ead6", TGK: "#2e2418", TGI: "#b8a040", fox: "cat", FX: "#b8935e", FXF: "#c49e68", FXC: "#f6efe2", FXK: "#2e2218", FXM: "#d8bc90", FXT: "#4a3624", FXI: "#9aa848", LVH: "#8a6c56", LVP: "#9a7c64", hex: { 0: { "#8a6a38": "#5a6a3a" }, 1: { "#6aa646": "#6e5a4e", "#3e5a1a": "#2a1e18", "#2f4a1c": "#2a1e18", "#33461c": "#2a1e18" } } },
+    sea: { egg: "shell", EGG: "#f6ece6", lv: "bands", LV: "#2e2a2a", bf: "idea", BFD: "#f6f3ea", BFB: "#2a2420", BFT: "#3a3430", BFH: "#cdbba0", tiger: "wave", TG: "#7f9cb4", dr: "sea", JADE: "#3f8fb4", JD: "#24607e", BELLY: "#e6eef0", GOLD: "#f0a08e", MANE: "#2fa8b0", TGC: "#eef3f6", TGK: "#24364e", TGI: "#5aa0c8", fox: "round", FX: "#7a5a42", FXF: "#86644a", FXC: "#e8dcc6", FXK: "#3a2a1e", FXM: "#c8b296", FXI: "#3a2a1e", LVH: "#e9e2d2", LVP: "#f4ecdc", hex: { 0: { "#8a6a38": "#9a6a6a", "#ffd98a": "#ffe0d0" }, 1: { "#6aa646": "#3e3838", "#3e5a1a": "#2a2424", "#33461c": "#1e1a18", "#2f4a1c": "#1e1a18" } } },
+    alpine: { egg: "snow", EGG: "#eef4fa", lv: "hairs", LV: "#c9c2b8", bf: "birdwing", BFD: "#1e1a1c", BFG: "#d8384a", BFB: "#c8303a", BFT: "#b82a34", BFH: "#a06a5a", tiger: "snow", TG: "#d9d6cf", dr: "snow", JADE: "#a9cbe0", JD: "#5f8aa6", BELLY: "#f6f8fa", GOLD: "#d8ecf6", MANE: "#f4f7fa", TGC: "#f7f6f2", TGK: "#3a3a42", TGI: "#9fb8a6", fox: "marten", FX: "#4a3428", FXF: "#5a3e2e", FXC: "#f2c04a", FXK: "#20160f", FXM: "#6a4a36", FXT: "#20160f", FXI: "#3a2a1e", LVH: "#e6e0d6", LVP: "#f0ebe2", hex: { 0: { "#8a6a38": "#6a84a4", "#ffd98a": "#d6ecff", "#ffe6a0": "#e8f4ff" }, 1: { "#6aa646": "#d4cdc2", "#3e5a1a": "#6a6058", "#33461c": "#7a7068", "#2f4a1c": "#7a7068" } } },
+  };
   // 腳下的靜止道具（只在夥伴卡用，畫在角色後面的另一層）：角色跳、伸懶腰時它不動
   const LEAF = `${P(Pa("M10 192 Q56 172 116 178 Q162 182 192 196 Q140 200 80 199 Q32 198 10 192Z"), "#5f9a48", { sw: 2.4, dx: 3, dy: 3 })}<path d="M18 192 Q90 184 186 195" stroke="#4a7d38" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M56 188 l-8 7 M88 186 l-6 9 M120 188 l-4 9 M72 187 l6 -6 M104 187 l6 -6 M140 190 l6 -5" stroke="#4a7d38" stroke-width="1.6" stroke-linecap="round"/>`;
   const PROP = ["", LEAF, "", "", "", HATCH_CLOUD, DRAGON_CLOUD];
-  // 帽子插入點：卵在第一組（頭）結尾；其餘在最後一組結尾
-  A[0] = A[0].replace(/<\/g>\s*<g class="pc-tw">/, "<!--H--></g>\n    <g class=\"pc-tw\">");
-  for (let k = 1; k < A.length; k++) if (!A[k].includes("<!--H-->")) A[k] = A[k].replace(/<\/g>\s*$/, "<!--H--></g>");   // 有骨架的：帽子在 pr-head 裡（跟著頭動）
 
   // 棲息地剪影（各階段專屬場景，鋪在角色後方；深色低調、卡片漸層透出來）。viewBox 0 0 400 150，貼底。
   const GROUND = `<path d="M0 150 L0 122 Q200 100 400 120 L400 150Z" fill="#193a24"/>`;
@@ -659,21 +732,11 @@ ${tigerHead()}
   // 戴帽子時拿掉 <!--O-->…<!--/O-->（幼蟲的臭角）：帽子要戴在頭上，不是戴在臭角上
   // 進化配色變體（2026-10-09 第三版 R10，原21 縮小版：不做分支外形）：把角色身上每一個顏色做一樣的色相／飽和／亮度偏移；
   //   帽子、配件是偏移之後才插進去的，不會被染到。TONE 由 pet.js 設（setTone），""＝原色；只在 PET_ART.own(() => …) 裡畫的才套（自己的夥伴）
-  // 2026-10-09 使用者：「辨識度高一點」——以前只把色相轉 10 幾度，幾乎看不出來（海風還讓狐狸變黃）。
-  //   改成「同亮度的主題色」在 RGB 裡混進去（k＝混多少；轉色相會從橘繞過綠才到藍，變成螢光綠）：
-  //   深林＝森林綠、整體暗一點；海風＝海藍；高山＝降飽和、變亮、帶一點冷色，像覆了一層雪。
-  //   黑白灰（眼睛、輪廓、白毛）不染，只跟著亮度走一點——物種一眼還認得
-  let TONE = "", OWN = false; const TONES = { deep: { h: 135, s: .45, k: .5, l: -.07 }, sea: { h: 208, s: .78, k: .66, l: .02 }, alpine: { h: 212, s: .3, k: .74, l: .17 } }, TCACHE = {};
-  const hsl2rgb = (H, S, L) => { const c = (1 - Math.abs(2 * L - 1)) * S, x = c * (1 - Math.abs((H / 60) % 2 - 1)), m = L - c / 2, [R, G, B] = H < 60 ? [c, x, 0] : H < 120 ? [x, c, 0] : H < 180 ? [0, c, x] : H < 240 ? [0, x, c] : H < 300 ? [x, 0, c] : [c, 0, x]; return [R + m, G + m, B + m]; };
-  function toneHex(h, t) {
-    const n = parseInt(h.slice(1), 16), r = (n >> 16) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
-    const L = (mx + mn) / 2, S = d ? d / (1 - Math.abs(2 * L - 1)) : 0, lit = L > .08 && L < .94;   // 太黑（輪廓、瞳孔）、太白（眼白、高光）不動
-    if (!lit) return h;
-    const k = S >= .12 ? t.k : 0, L2 = Math.max(0, Math.min(1, L + t.l * (S >= .12 ? 1 : .5))), tg = hsl2rgb(t.h, t.s, L2), sc = L ? L2 / L : 1;
-    const out = [r, g, b].map((v, q) => Math.max(0, Math.min(1, v * sc * (1 - k) + tg[q] * k)));
-    return "#" + out.map(v => Math.round(v * 255).toString(16).padStart(2, "0")).join("");
-  }
-  function toned(i) { const t = OWN && TONES[TONE]; if (!t) return A[clamp(i)]; const k = TONE + clamp(i); return TCACHE[k] || (TCACHE[k] = A[clamp(i)].replace(/#[0-9a-fA-F]{6}\b/g, h => toneHex(h, t))); }
+  // R15（2026-10-09）配色→相近物種：深林／海風／高山不再只換色，而是 buildArt(VARIANTS[v]) 畫出來的近親（同骨架）；第一次用到才畫、之後快取
+  //   自己的夥伴：PET_ART.own(() => …) 用 setTone 設的那一種；別人的（好友、隊友）：PET_ART.as(v, () => …)
+  let TONE = "", OWN = false, AS = null; const VA = {};
+  const artOf = v => (v && VARIANTS[v] ? (VA[v] || (VA[v] = finishArt(buildArt(VARIANTS[v]).list))) : A);
+  function toned(i) { const v = AS != null ? AS : (OWN ? TONE : ""); return artOf(v)[clamp(i)]; }
   function body(i, hatId, accId) { const pre = "p" + (++U).toString(36) + "_"; let a = toned(i); if (HATS[hatId]) a = a.replace(/<!--O-->[\s\S]*?<!--\/O-->/, ""); const ag = accG(accId, i); if (ag && ag.front) a = a.replace(/(<g class="pr-head"[^>]*>)/, "$1" + ag.front); if (ag && ag.back) a = a.replace(/(<g class="pc-(?:bob|hover)[^"]*"[^>]*>)/, "$1" + ag.back); return a.replace("<!--H-->", hatG(hatId, i)).replace("<!--H2-->", hatG(hatId, i)).replace("<!--H3-->", HATS[hatId] ? `<g transform="translate(14 12) rotate(8 100 46)">${hatG(hatId, i)}</g>` : "").replace(/§/g, pre); }
   function prop(i) { const p = PROP[clamp(i)]; if (!p) return ""; const pre = "q" + (++U).toString(36) + "_"; return `<svg class="pet-prop" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${p.replace(/§/g, pre)}</svg>`; }
   // 幼龍（2026-10-05 拿掉腳下的雲）：腳底原本踩在雲上（y≈183），整張往下 13 讓腳底落在跟其他夥伴同一條地面線（y≈196）。
@@ -688,7 +751,8 @@ ${tigerHead()}
     const v = vb(i).split(" ").map(Number), p = pad || 0, box = p ? `${v[0] - p} ${v[1] - p} ${v[2] + 2 * p} ${v[3] + 2 * p}` : vb(i);
     const W = 200 + 2 * p, pc = u => ((p + u) / W * 100).toFixed(2) + "%";   // 圖上的座標 → 畫布的百分比（轉動支點用）
     const st = p ? ` data-pad="${p}" style="--pf:${(W / 200).toFixed(4)};--pm:${(p / 200).toFixed(4)};--o196:${pc(196)};--o194:${pc(194)};--o190:${pc(190)};--x40:${pc(40)};--x20:${pc(20)}"` : "";
-    return `<svg class="pet-critter ${cls || ""}${p ? " pc-pad" : ""}" data-s="${clamp(i)}" viewBox="${box}"${st} role="img" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${body(i, hatId, accId)}</svg>`;
+    const vv = AS != null ? AS : (OWN ? TONE : "");   // R15：畫的是哪一種近親（測試、除錯用）
+    return `<svg class="pet-critter ${cls || ""}${p ? " pc-pad" : ""}" data-s="${clamp(i)}"${vv ? ` data-v="${vv}"` : ""} viewBox="${box}"${st} role="img" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${body(i, hatId, accId)}</svg>`;
   }
   function byEmoji(e) { return EMOJI.indexOf(e); }   // 找不到回 -1
   // 給 canvas 用：帶 width/height 的獨立 SVG data URI（靜態一幀，供 new Image().src 光柵化畫進分享圖卡）
@@ -712,5 +776,5 @@ ${tigerHead()}
   const dragonSpine = n => spine(DSP, n).map(q => ({ x: q.x, y: q.y }));
   const dragon = { I0: DI0, DB, DT0, tail: dragonTail };   // pet-walk：尾巴從第 I0 節能動、每格用 tail(中心線) 重畫
   const larvaSpine = n => spine(LVS, n).map(q => ({ x: q.x, y: q.y }));   // 幼蟲身體的中心線（pet-walk.js 的 U 型迴轉：身體每一點沿這條線的位置）   // 神龍身體的中心線（pet-walk.js 用來讓尾巴彎過去）
-  return { setTone: t => { TONE = TONES[t] ? t : ""; }, own: f => { OWN = true; try { return f(); } finally { OWN = false; } },   /* 只有畫「自己的夥伴」才套配色（好友、隊友、地圖上的別人照原色） */ TONE_IDS: ["", "deep", "sea", "alpine"], kit: { P, E, C, Pa, sh, tn }, hatIcon, accIcon, ACC_IDS, ACC_LABEL, accOk: (i, id) => !!NECK[clamp(i)] && (!id || id === "none" || (ACC_OK[id] || []).includes(clamp(i))), larvaSpine, dragonSpine, dragon, cloudTop6, svg, padFor, count: A.length, byEmoji, dataUri, habitat, habitatUri, hat, HAT_IDS, HAT_LABEL, headLine, prop };
+  return { setTone: t => { TONE = VARIANTS[t] ? t : ""; }, as: (v, f) => { const o = AS; AS = VARIANTS[v] ? v : ""; try { return f(); } finally { AS = o; } }, own: f => { OWN = true; try { return f(); } finally { OWN = false; } },   /* 只有畫「自己的夥伴」才套配色（好友、隊友、地圖上的別人照原色） */ TONE_IDS: ["", "deep", "sea", "alpine"], kit: { P, E, C, Pa, sh, tn }, hatIcon, accIcon, ACC_IDS, ACC_LABEL, accOk: (i, id) => !!NECK[clamp(i)] && (!id || id === "none" || (ACC_OK[id] || []).includes(clamp(i))), larvaSpine, dragonSpine, dragon, cloudTop6, svg, padFor, count: A.length, byEmoji, dataUri, habitat, habitatUri, hat, HAT_IDS, HAT_LABEL, headLine, prop };
 })();

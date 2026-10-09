@@ -36,7 +36,7 @@ function person3dEl(avatar, pet, isMe, look) {
   d.className = "tm3d team-marker" + (isMe ? " me-marker" : "");
   const petIdx = (pet && typeof PET_ART !== "undefined" && PET_ART.byEmoji) ? PET_ART.byEmoji(pet) : -1;   // 同步來的是 emoji → 反查成 SVG 角色
   const lk = look && typeof PET_ART !== "undefined" ? look : null;   // 隊友的夥伴外觀（R12，teamlive 已檢查過值）
-  const petHtml = lk ? `<span class="tm-pet">${PET_ART.svg(lk.s, "", lk.h, undefined, lk.a)}</span>` : pet ? `<span class="tm-pet">${petIdx >= 0 ? PET_ART.svg(petIdx) : pet}</span>` : "";
+  const petHtml = lk ? `<span class="tm-pet">${PET_ART.as ? PET_ART.as(lk.v, () => PET_ART.svg(lk.s, "", lk.h, undefined, lk.a)) : PET_ART.svg(lk.s, "", lk.h, undefined, lk.a)}</span>` : pet ? `<span class="tm-pet">${petIdx >= 0 ? PET_ART.svg(petIdx) : pet}</span>` : "";
   d.innerHTML = `<div class="tm-av">${avatar ? `<img src="${avatar}" alt="">` : `<span class="tm-ph">${isMe ? (typeof ttT === "function" ? ttT("我") : "我") : "?"}</span>`}${petHtml}</div>`;
   return d;
 }

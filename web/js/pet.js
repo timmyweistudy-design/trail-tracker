@@ -279,6 +279,14 @@ function petToneUnlocked() {
   if (window.__toneAll) return { "": true, deep: true, sea: true, alpine: true };
   const p = petToneProgress(); return { "": true, deep: p.deep >= 3, sea: p.sea >= 3, alpine: p.alpine >= 3 };
 }
+// R15（2026-10-09）配色→相近物種：同一階、同樣的成長，只是長成那類步道的近親（名字、描述跟著換；PET_ART 畫對應的物種）
+const PET_VARIANTS = {
+  deep: [["苔紋之卵", "長著青苔的蛋，在森林的陰涼處慢慢醒來。"], ["枯葉蝶幼蟲", "深色絨毛配橘色棘刺，躲在落葉堆裡。"], ["寬尾鳳蝶", "台灣特有的鳳蝶，寬寬的尾突在林間滑翔。"], ["林間石虎", "耳後白斑、一身斑點，悄悄穿過樹林。"], ["霧林雲豹", "雲狀斑紋，傳說中的森林之王。"], ["林苔幼龍", "鹿角冒出嫩葉的小龍。"], ["森羅神龍", "守護整片森林的神龍。"]],
+  sea: [["貝紋之卵", "帶著貝殼紋路，聽得見海浪聲。"], ["青斑蝶幼蟲", "黑白黃三色條紋，頭上一對長觸鬚。"], ["大白斑蝶", "白底黑斑，在海邊慢慢飄。"], ["溪岸水獺", "圓耳朵、扁尾巴，最愛玩水。"], ["浪紋海虎", "身上是浪花紋的海風之虎。"], ["潮汐幼龍", "鰭狀耳朵、珊瑚色小角的海龍寶寶。"], ["滄海神龍", "在浪頭上騰雲駕霧的神龍。"]],
+  alpine: [["雪紋之卵", "覆著雪花紋的蛋，在高山上靜靜等待。"], ["燈蛾幼蟲", "一身白色長毛，不怕山上的冷風。"], ["曙鳳蝶", "台灣高山的鳳蝶，紅色身體、黑色翅膀。"], ["黃喉貂", "黃色喉嚨、長長的尾巴，敏捷的高山獵手。"], ["雪岩雪豹", "灰白毛色、玫瑰斑紋，蓬鬆的大尾巴。"], ["霜角幼龍", "冰柱般的小角，呼出來的氣是白的。"], ["雪嶺神龍", "白鬃飄飄，盤踞在雪嶺之上。"]],
+};
+// 這一階（自己的夥伴、照現在選的配色）：名字、描述換成那個物種；v 有給就用 v（好友的）
+function petStageInfo(i, v) { const t = v == null ? petTone() : v, base = PET_STAGES[i] || PET_STAGES[0], x = PET_VARIANTS[t] && PET_VARIANTS[t][i]; return x ? Object.assign({}, base, { n: x[0], d: x[1], v: t }) : base; }
 function petTone() { const t = localStorage.getItem("tt_pet_tone") || ""; return petToneUnlocked()[t] ? t : ""; }
 function petApplyTone() { if (typeof PET_ART !== "undefined" && PET_ART.setTone) PET_ART.setTone(petTone()); }
 function petFruitSvg() {
@@ -560,7 +568,7 @@ const PET_PHOTO_POSE = [["sit", "坐著"], ["happy", "開心"], ["sleep", "睡�
 function petLastTrail() { const r = realRecords().find(x => x && x.trailName); return r ? r.trailName : ""; }
 async function drawPetPhoto(tod, pose, trail) {
   const W = 1080, H = 1350, SH = 930, c = document.createElement("canvas"); c.width = W; c.height = H; const x = c.getContext("2d");
-  const F = "'TaipeiSans', 'PingFang TC', sans-serif", km = totalKm(), i = petStageIndex(km), st = PET_STAGES[i];
+  const F = "'TaipeiSans', 'PingFang TC', sans-serif", km = totalKm(), i = petStageIndex(km), st = petStageInfo(i);
   try { await document.fonts.load(`800 60px TaipeiSans`); } catch (e) { /* 字型讀不到就用系統的 */ }
   const img = src => new Promise((res, rej) => { const m = new Image(); m.onload = () => res(m); m.onerror = rej; m.src = src; });
   const svgUri = t => "data:image/svg+xml;charset=utf-8," + encodeURIComponent(t);
@@ -612,7 +620,7 @@ function openPetPhoto() {
 }
 // 供社群同步：寵物名字/等級/成長里程，讓好友看到你的進度
 function petStats() {
-  const km = totalKm(), i = petStageIndex(km), st = PET_STAGES[i];
+  const km = totalKm(), i = petStageIndex(km), st = petStageInfo(i);
   return { name: petName() || st.n, level: i + 1, stage: st.n, emoji: st.e, km: +km.toFixed(1) };
 }
 function petHatch() { let h = localStorage.getItem("tt_pet_hatch"); if (!h) { h = ttClock.date().toISOString(); localStorage.setItem("tt_pet_hatch", h); } return h; }
@@ -758,7 +766,7 @@ function renderPet() {
   const box = $("#petCard");
   if (!box) return;
   petApplyTone();
-  const km = totalKm(), i = petStageIndex(km), st = PET_STAGES[i], next = PET_STAGES[i + 1];
+  const km = totalKm(), i = petStageIndex(km), st = petStageInfo(i), next = PET_STAGES[i + 1];
   const nm = petName(), mood = petMood(), days = petDaysTogether(), streak = weeksStreak(), en = energy();
   const berries = berriesBalance(), h = petHearts(), canFeed = canFeedNow(), cd = feedCooldownMs();
   const art = (typeof PET_ART !== "undefined") ? PET_ART.own(() => PET_ART.svg(i, "", petHat(), true, petAcc())) : `<span style="font-size:70px">${st.e}</span>`;   // 帽子畫在角色裡面，跟著同一個動畫動
@@ -1073,7 +1081,7 @@ function petDiaryHtml(ym) {   // ym："2026-10"＝只看那個月（2026-10-08 R
   const all = d.slice(); all.push({ t: petHatch(), k: "meet", i: 0 }); if (first) all.push({ t: first.date, k: "hike1", i: null });
   all.sort((a, b) => String(b.t).localeCompare(String(a.t)));
   if (ym) { const keep = all.filter(x => localYM(x.t) === ym); all.length = 0; all.push(...keep); }
-  const txt = x => x.k === "meet" ? ttT("我們相遇了") : x.k === "evo" ? `${ttT("進化成")} ${ttT(PET_STAGES[x.i] ? PET_STAGES[x.i].n : "")}` : x.k === "feed1" ? ttT("第一次吃果實") : x.k === "hug1" ? ttT("第一次抱抱") : x.k === "hike1" ? ttT("第一次一起出門") : /^ann:y/.test(x.k) ? ttT("相遇 {n} 週年").replace("{n}", x.k.slice(5)) : /^ann:d/.test(x.k) ? ttT("相遇第 {n} 天").replace("{n}", x.k.slice(5)) : /^gift:/.test(x.k) && PET_GIFTS[x.k.slice(5)] ? `${ttT("帶回來一個")}${ttCJK() ? "" : " "}${ttT(PET_GIFTS[x.k.slice(5)][0])}` : /^(give|got|visit|visited):/.test(x.k) ? petDiarySocialText(x.k) : /^trick:\d$/.test(x.k) ? ttT("學會新把戲：{t}").replace("{t}", ttT(PET_TRICKS[+x.k.slice(6)] || "")) : "";
+  const txt = x => x.k === "meet" ? ttT("我們相遇了") : x.k === "evo" ? `${ttT("進化成")} ${ttT(PET_STAGES[x.i] ? petStageInfo(x.i).n : "")}` : x.k === "feed1" ? ttT("第一次吃果實") : x.k === "hug1" ? ttT("第一次抱抱") : x.k === "hike1" ? ttT("第一次一起出門") : /^ann:y/.test(x.k) ? ttT("相遇 {n} 週年").replace("{n}", x.k.slice(5)) : /^ann:d/.test(x.k) ? ttT("相遇第 {n} 天").replace("{n}", x.k.slice(5)) : /^gift:/.test(x.k) && PET_GIFTS[x.k.slice(5)] ? `${ttT("帶回來一個")}${ttCJK() ? "" : " "}${ttT(PET_GIFTS[x.k.slice(5)][0])}` : /^(give|got|visit|visited):/.test(x.k) ? petDiarySocialText(x.k) : /^trick:\d$/.test(x.k) ? ttT("學會新把戲：{t}").replace("{t}", ttT(PET_TRICKS[+x.k.slice(6)] || "")) : "";
   const dt = t => { const z = new Date(t); return isNaN(z) ? "" : `${z.getFullYear()}/${z.getMonth() + 1}/${z.getDate()}`; };
   const rows = all.filter(x => txt(x)).map(x => `<div class="diary-row"><span class="diary-ic">${x.i != null && typeof PET_ART !== "undefined" ? PET_ART.svg(x.i) : `<span class="inline-ic">${ic("footprints")}</span>`}</span><span class="diary-t">${escHtml(txt(x))}</span><time>${dt(x.t)}</time></div>`).join("");
   return rows || `<div class="diary-empty">${ttT("還沒有紀錄")}</div>`;
@@ -1102,10 +1110,10 @@ function openPetDex() {
   if (document.querySelector('[data-ov="petdex"]')) return;   // 防連點疊層
   const km = totalKm(), reached = petStageIndex(km), next = PET_STAGES[reached + 1];
   const Q = ttUnknown();
-  const stages = PET_STAGES.map((s, i) => {
-    const unlocked = i <= reached, isNow = i === reached;
+  const stages = PET_STAGES.map((s0, i) => {
+    const s = petStageInfo(i), unlocked = i <= reached, isNow = i === reached;   // R15：照現在選的配色顯示那一種物種的名字、樣子
     return `<div class="dex-row${unlocked ? "" : " locked"}${isNow ? " now" : ""}">
-      <div class="dex-e">${unlocked && typeof PET_ART !== "undefined" ? PET_ART.svg(i) : (unlocked ? s.e : `<svg class="ic dex-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`)}</div>
+      <div class="dex-e">${unlocked && typeof PET_ART !== "undefined" ? PET_ART.own(() => PET_ART.svg(i)) : (unlocked ? s.e : `<svg class="ic dex-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`)}</div>
       <div class="dex-body">
         <div class="dex-h"><b>${unlocked ? ttT(s.n) : Q}</b><span class="lv-chip lvt-${Math.min(i + 1, 7)}">Lv.${i + 1}</span>${isNow ? `<span class="dex-now">${ttT("目前")}</span>` : ""}</div>
         <div class="dex-k">${i === 0 ? ttT("起始型態") : ttT(`成長里程 ${s.km} km 解鎖`)}</div>
@@ -1125,7 +1133,7 @@ function openPetDex() {
     <div class="dex-tip"><span class="inline-ic">${ic("footprints")}</span> ${tip}</div>
     <div class="dex-sec">${ttT("牠帶回來的小東西")}</div>
     <div class="gift-grid">${Object.keys(PET_GIFTS).map(k => { const o = petGiftsOwned().find(g => g.id === k); return o ? `<div class="gift-it">${petGiftIcon(k)}<span>${escHtml(ttT(PET_GIFTS[k][0]))}</span></div>` : `<div class="gift-it no"><b>?</b><span>${escHtml(ttT("還沒帶回來"))}</span></div>`; }).join("")}</div>
-    <div class="dex-sec">${ttT("配色")}</div><div class="pp-tods dex-tones">${[["", "原色"], ["deep", "深林"], ["sea", "海風"], ["alpine", "高山"]].map(([k, l]) => { const ok = petToneUnlocked()[k]; return `<button class="pp-tod${petTone() === k ? " on" : ""}" data-tone="${k}"${ok ? "" : " disabled"} title="${ok ? "" : escHtml(ttT(k === "deep" ? "走 3 趟森林步道解鎖" : k === "sea" ? "走 3 趟海景或湖泊步道解鎖" : "走 3 趟海拔 1500 公尺以上解鎖"))}">${ok ? "" : `<svg class="ic tone-lock" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`}${ttT(l)}</button>`; }).join("")}</div>${(() => { const u = petToneUnlocked(), need = [["deep", "深林", "走 3 趟森林步道解鎖"], ["sea", "海風", "走 3 趟海景或湖泊步道解鎖"], ["alpine", "高山", "走 3 趟海拔 1500 公尺以上解鎖"]].filter(([k]) => !u[k]); const pr = petToneProgress(); return `<div class="dex-tone-hint"><span class="dex-tone-what">${escHtml(ttT("跟著你常走的步道換一種顏色：只換外觀，不影響成長；好友看到的還是原色"))}</span>${need.map(([k, l, h]) => `<span><b>${escHtml(ttT(l))}</b> ${escHtml(ttT(h))}（${Math.min(3, pr[k])}/3）</span>`).join("")}</div>`; })()}
+    <div class="dex-sec">${ttT("近親物種")}</div><div class="dex-tones dex-species">${[["", "原本"], ["deep", "深林"], ["sea", "海風"], ["alpine", "高山"]].map(([k, l]) => { const ok = petToneUnlocked()[k], nm = ttT(petStageInfo(reached, k).n); return `<button class="dex-sp${petTone() === k ? " on" : ""}" data-tone="${k}"${ok ? "" : " disabled"} aria-label="${escHtml(ttT(l) + " " + nm)}"><span class="dex-sp-art">${typeof PET_ART !== "undefined" ? PET_ART.as(k, () => PET_ART.svg(reached)) : ""}</span><span class="dex-sp-n">${ok ? "" : `<svg class="ic tone-lock" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`}${escHtml(ttT(l))}</span><span class="dex-sp-s">${escHtml(nm)}</span></button>`; }).join("")}</div>${(() => { const u = petToneUnlocked(), need = [["deep", "深林", "走 3 趟森林步道解鎖"], ["sea", "海風", "走 3 趟海景或湖泊步道解鎖"], ["alpine", "高山", "走 3 趟海拔 1500 公尺以上解鎖"]].filter(([k]) => !u[k]); const pr = petToneProgress(); return `<div class="dex-tone-hint"><span class="dex-tone-what">${escHtml(ttT("常走同一類步道，夥伴會長成那裡的近親物種：只換樣子和名字，不影響成長；好友也看得到"))}</span>${need.map(([k, l, h]) => `<span><b>${escHtml(ttT(l))}</b> ${escHtml(ttT(h))}（${Math.min(3, pr[k])}/3）</span>`).join("")}</div>`; })()}
     <div class="dex-sec">${ttT("夥伴日記")}</div>
     ${petDiaryMonths()}<div class="diary-list">${petDiaryHtml()}</div>
     <div class="dex-sec">${ttT(`進化圖鑑（共 ${PET_STAGES.length} 階）`)}</div>
@@ -1136,7 +1144,11 @@ function openPetDex() {
   const close = () => { if (_a11y) _a11y(); ov.remove(); };
   if (typeof ttModalA11y === "function") _a11y = ttModalA11y(ov, close, { focus: "#petDexClose" });
   bindDiaryMonths(ov);
-  ov.querySelectorAll(".dex-tones .pp-tod:not([disabled])").forEach(b => b.addEventListener("click", () => { localStorage.setItem("tt_pet_tone", b.dataset.tone); ov.querySelectorAll(".dex-tones .pp-tod").forEach(o => o.classList.toggle("on", o === b)); renderPet(); petBuzz(10); }));
+  ov.querySelectorAll(".dex-tones .dex-sp:not([disabled])").forEach(b => b.addEventListener("click", () => {
+    localStorage.setItem("tt_pet_tone", b.dataset.tone); petApplyTone(); renderPet(); petBuzz(10);
+    const card = ov.querySelector(".pet-modal-card"), y = card ? card.scrollTop : 0; ov.remove(); openPetDex();   // 整本重畫：進化圖鑑的名字、樣子跟著換
+    const c2 = document.querySelector('[data-ov="petdex"] .pet-modal-card'); if (c2) c2.scrollTop = y;
+  }));
   ov.addEventListener("click", e => { if (e.target === ov) close(); });
   ov.querySelector("#petDexClose").addEventListener("click", close);
 }
@@ -1176,7 +1188,7 @@ function checkPetEvolve() {
   const i = petStageIndex(totalKm());
   const prev = +(localStorage.getItem("tt_pet_stage") || 0);
   if (i !== prev) localStorage.setItem("tt_pet_stage", i);
-  if (i > prev) { setTimeout(() => celebrateEvolve(PET_STAGES[i], i + 1), 800); window.__petEvolving = true; petDiaryAdd("evo", i); try { if (typeof window !== "undefined" && window.scheduleCloudBackup) window.scheduleCloudBackup(); } catch (e) { /* */ } }   // 寵物進化也自動備份
+  if (i > prev) { setTimeout(() => celebrateEvolve(petStageInfo(i), i + 1), 800); window.__petEvolving = true; petDiaryAdd("evo", i); try { if (typeof window !== "undefined" && window.scheduleCloudBackup) window.scheduleCloudBackup(); } catch (e) { /* */ } }   // 寵物進化也自動備份
 }
 // 記錄頁待機面板（未開始記錄時顯示夥伴/上次/推薦）
 function renderRecIdle() {
