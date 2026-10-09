@@ -657,7 +657,18 @@ ${tigerHead()}
   }
   let U = 0;   // 每份 SVG 自己的 id 前綴（§ → p1_、p2_…），避免同頁多份角色的裁切互相串
   // 戴帽子時拿掉 <!--O-->…<!--/O-->（幼蟲的臭角）：帽子要戴在頭上，不是戴在臭角上
-  function body(i, hatId, accId) { const pre = "p" + (++U).toString(36) + "_"; let a = A[clamp(i)]; if (HATS[hatId]) a = a.replace(/<!--O-->[\s\S]*?<!--\/O-->/, ""); const ag = accG(accId, i); if (ag && ag.front) a = a.replace(/(<g class="pr-head"[^>]*>)/, "$1" + ag.front); if (ag && ag.back) a = a.replace(/(<g class="pc-(?:bob|hover)[^"]*"[^>]*>)/, "$1" + ag.back); return a.replace("<!--H-->", hatG(hatId, i)).replace("<!--H2-->", hatG(hatId, i)).replace("<!--H3-->", HATS[hatId] ? `<g transform="translate(14 12) rotate(8 100 46)">${hatG(hatId, i)}</g>` : "").replace(/§/g, pre); }
+  // 進化配色變體（2026-10-09 第三版 R10，原21 縮小版：不做分支外形）：把角色身上每一個顏色做一樣的色相／飽和／亮度偏移；
+  //   帽子、配件是偏移之後才插進去的，不會被染到。TONE 由 pet.js 設（setTone），""＝原色；只在 PET_ART.own(() => …) 裡畫的才套（自己的夥伴）
+  let TONE = "", OWN = false; const TONES = { deep: [0, .12, -.07], sea: [14, -.04, .02], alpine: [-4, -.14, .07] }, TCACHE = {};
+  function toneHex(h, t) {
+    const n = parseInt(h.slice(1), 16), r = (n >> 16) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+    let H = 0, S = 0, L = (mx + mn) / 2; if (d) { S = d / (1 - Math.abs(2 * L - 1)); H = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; H *= 60; }
+    H = (H + t[0] + 360) % 360; S = Math.max(0, Math.min(1, S + t[1])); L = Math.max(0, Math.min(1, L + t[2]));
+    const c = (1 - Math.abs(2 * L - 1)) * S, x = c * (1 - Math.abs((H / 60) % 2 - 1)), m = L - c / 2, [R, G, B] = H < 60 ? [c, x, 0] : H < 120 ? [x, c, 0] : H < 180 ? [0, c, x] : H < 240 ? [0, x, c] : H < 300 ? [x, 0, c] : [c, 0, x];
+    return "#" + [R, G, B].map(v => Math.round((v + m) * 255).toString(16).padStart(2, "0")).join("");
+  }
+  function toned(i) { const t = OWN && TONES[TONE]; if (!t) return A[clamp(i)]; const k = TONE + clamp(i); return TCACHE[k] || (TCACHE[k] = A[clamp(i)].replace(/#[0-9a-fA-F]{6}\b/g, h => toneHex(h, t))); }
+  function body(i, hatId, accId) { const pre = "p" + (++U).toString(36) + "_"; let a = toned(i); if (HATS[hatId]) a = a.replace(/<!--O-->[\s\S]*?<!--\/O-->/, ""); const ag = accG(accId, i); if (ag && ag.front) a = a.replace(/(<g class="pr-head"[^>]*>)/, "$1" + ag.front); if (ag && ag.back) a = a.replace(/(<g class="pc-(?:bob|hover)[^"]*"[^>]*>)/, "$1" + ag.back); return a.replace("<!--H-->", hatG(hatId, i)).replace("<!--H2-->", hatG(hatId, i)).replace("<!--H3-->", HATS[hatId] ? `<g transform="translate(14 12) rotate(8 100 46)">${hatG(hatId, i)}</g>` : "").replace(/§/g, pre); }
   function prop(i) { const p = PROP[clamp(i)]; if (!p) return ""; const pre = "q" + (++U).toString(36) + "_"; return `<svg class="pet-prop" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${p.replace(/§/g, pre)}</svg>`; }
   // 幼龍（2026-10-05 拿掉腳下的雲）：腳底原本踩在雲上（y≈183），整張往下 13 讓腳底落在跟其他夥伴同一條地面線（y≈196）。
   // 用 viewBox 平移而不是包一層 transform：各部位的支點（transform-box: view-box）座標不用改
@@ -695,5 +706,5 @@ ${tigerHead()}
   const dragonSpine = n => spine(DSP, n).map(q => ({ x: q.x, y: q.y }));
   const dragon = { I0: DI0, DB, DT0, tail: dragonTail };   // pet-walk：尾巴從第 I0 節能動、每格用 tail(中心線) 重畫
   const larvaSpine = n => spine(LVS, n).map(q => ({ x: q.x, y: q.y }));   // 幼蟲身體的中心線（pet-walk.js 的 U 型迴轉：身體每一點沿這條線的位置）   // 神龍身體的中心線（pet-walk.js 用來讓尾巴彎過去）
-  return { kit: { P, E, C, Pa, sh, tn }, hatIcon, accIcon, ACC_IDS, ACC_LABEL, accOk: (i, id) => !!NECK[clamp(i)] && (!id || id === "none" || (ACC_OK[id] || []).includes(clamp(i))), larvaSpine, dragonSpine, dragon, cloudTop6, svg, padFor, count: A.length, byEmoji, dataUri, habitat, habitatUri, hat, HAT_IDS, HAT_LABEL, headLine, prop };
+  return { setTone: t => { TONE = TONES[t] ? t : ""; }, own: f => { OWN = true; try { return f(); } finally { OWN = false; } },   /* 只有畫「自己的夥伴」才套配色（好友、隊友、地圖上的別人照原色） */ TONE_IDS: ["", "deep", "sea", "alpine"], kit: { P, E, C, Pa, sh, tn }, hatIcon, accIcon, ACC_IDS, ACC_LABEL, accOk: (i, id) => !!NECK[clamp(i)] && (!id || id === "none" || (ACC_OK[id] || []).includes(clamp(i))), larvaSpine, dragonSpine, dragon, cloudTop6, svg, padFor, count: A.length, byEmoji, dataUri, habitat, habitatUri, hat, HAT_IDS, HAT_LABEL, headLine, prop };
 })();

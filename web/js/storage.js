@@ -189,7 +189,7 @@ const Store = (() => {
   // 完整鍵清單：寵物、果實、成就、每日任務、外觀主題、篩選預設全都備份（新增鍵記得加進來）
   const BACKUP_KEYS = [
     "tt_pet_diary",   // 夥伴日記（2026-10-07）
-    "tt_pet_sleep", "tt_pet_nudge", "tt_pet_acc", "tt_pet_accs_owned",   // 脖子上的配件（2026-10-09 R5）
+    "tt_pet_sleep", "tt_pet_nudge", "tt_pet_acc", "tt_pet_accs_owned", "tt_pet_tone",   // 脖子上的配件（2026-10-09 R5）
       // 夥伴睡覺時間、想你的提醒（2026-10-08 R4；偏好：合併時本機優先）
     "tt_pet_gifts", "tt_pet_gift_t", "tt_pet_props",   // 親密滿時牠帶回來的小東西、上次帶禮物的時間（2026-10-07 寵物新一輪 #9）
     "tt_crowd_off",   // 步道人氣：不分享出發時間（隱私偏好，換手機要跟著走）

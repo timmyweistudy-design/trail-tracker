@@ -227,6 +227,25 @@ function localYear(iso) { return localDayOf(iso).slice(0, 4); }
 const FEED_COOLDOWN = 8 * 3600e3;   // 餵食冷卻 8 小時
 function feedCooldownMs() { return Math.min(FEED_COOLDOWN, Math.max(0, FEED_COOLDOWN - (ttClock.now() - (+(localStorage.getItem("tt_pet_fed_t") || 0))))); }   // 上限 8 小時：時間快轉後撥回來、或手機時間被調過，餵食時間會落在「未來」，不能因此等更久
 function canFeedNow() { return berriesBalance() >= 3 && feedCooldownMs() === 0; }   // 「現在能不能餵」（看 8h 冷卻，非每日）
+// 季節果實（2026-10-09 第三版 R10，原15 縮小版）：舞台上掉下來的果實依季節換外觀（春櫻桃、夏芒果、秋柿子、冬橘子）；
+// 大小、咬的位置、吃法完全不變（只換畫，不碰餵食動畫）。介面上的「果實」貨幣圖示照舊
+// 配色變體（原21）：照健行風格解鎖——森林走滿 3 趟＝深林、海景／湖泊 3 趟＝海風、海拔 1500m 以上 3 趟＝高山；手冊裡選（tt_pet_tone，進備份）
+function petToneUnlocked() {
+  const recs = realRecords(), n = f => recs.filter(f).length, tg = r => { try { const t = r.trailId && TRAILS.find(x => x.id === r.trailId); return t && typeof tagsOf === "function" ? tagsOf(t) : []; } catch (e) { return []; } };
+  return { "": true, deep: n(r => tg(r).includes("森林")) >= 3, sea: n(r => tg(r).some(x => x === "海景" || x === "湖泊")) >= 3, alpine: n(r => (r.altHigh || 0) >= 1500) >= 3 };
+}
+function petTone() { const t = localStorage.getItem("tt_pet_tone") || ""; return petToneUnlocked()[t] ? t : ""; }
+function petApplyTone() { if (typeof PET_ART !== "undefined" && PET_ART.setTone) PET_ART.setTone(petTone()); }
+function petFruitSvg() {
+  const se = typeof PetStage !== "undefined" ? ((window.__ps && window.__ps.season) || PetStage.season()) : "";
+  const F = {
+    spring: '<path d="M12 3c-1 3-3 5-5 7M12 3c1 3 3 4 5 6" stroke="#4f7a3a" stroke-width="1.3" fill="none" stroke-linecap="round"/><circle cx="7.4" cy="15" r="5" fill="#d8283e"/><circle cx="16.6" cy="15.6" r="5" fill="#c51f36"/><ellipse cx="6" cy="13.4" rx="1.4" ry="1" fill="#ff9aa8"/><ellipse cx="15.2" cy="14" rx="1.4" ry="1" fill="#ff9aa8"/>',
+    summer: '<path d="M12 4.4c5 0 8 4 8 8.6S16.4 21 11.4 21C6.6 21 4 17.6 4 13.4S7.2 4.4 12 4.4Z" fill="#f4a72a"/><path d="M12 4.4c5 0 8 4 8 8.6 0 3-1.6 5.6-4.4 7" fill="#e8762a" opacity=".55"/><ellipse cx="8.6" cy="9.6" rx="1.8" ry="1.2" fill="#ffe08a"/><path d="M12 4.4c0-1.4 1-2.4 2.6-2.4" stroke="#4f7a3a" stroke-width="1.3" fill="none" stroke-linecap="round"/>',
+    autumn: '<circle cx="12" cy="14" r="7" fill="#f0782a"/><path d="M5.4 12.6a7 7 0 0 0 13.2 0" fill="#d95f1e" opacity=".45"/><path d="M8 7.6c1.4.8 2.6.8 4 0 1.4.8 2.6.8 4 0-1 2-2.4 2.4-4 1.8-1.6.6-3 .2-4-1.8Z" fill="#4f7a3a"/><ellipse cx="9" cy="12" rx="1.6" ry="1" fill="#ffc28a"/>',
+    winter: '<circle cx="12" cy="14" r="7" fill="#f59a1e"/><circle cx="9.4" cy="11.6" r=".6" fill="#ffd28a"/><circle cx="14" cy="12.4" r=".6" fill="#ffd28a"/><circle cx="11" cy="16.6" r=".6" fill="#ffd28a"/><path d="M12 7c.4-1.6 2-2.6 3.8-2.2-.6 1.6-2 2.4-3.8 2.2Z" fill="#4f9a3e"/><ellipse cx="9" cy="11.8" rx="1.8" ry="1.1" fill="#ffcf7a" opacity=".8"/>',
+  };
+  return F[se] ? `<svg class="berry" viewBox="0 0 24 24" aria-hidden="true">${F[se]}</svg>` : BERRY_SVG;
+}
 function feedPet() {
   if (typeof PetStage !== "undefined" && PetStage.isPlaying && PetStage.isPlaying()) { petSay(ttT("玩完再吃～")); return; }
   if (feedCooldownMs() > 0) { petSay(`${ttT("牠還飽著，約")} ${Math.ceil(feedCooldownMs() / 3600e3)} ${ttT("小時後再餵")}`); return; }
@@ -248,7 +267,7 @@ function feedPet() {
   };
   // 果實從天上掉下來、牠走過去吃（pet-stage.js）；舞台不在畫面上或減少動態效果時直接結算
   const fb = $("#petFeed"); if (fb) fb.disabled = true;
-  if (typeof PetStage !== "undefined") PetStage.feed(BERRY_SVG).then(done, e => { done(); setTimeout(() => { throw e; }); });   // 2026-10-06：失敗照樣結算，但把錯誤丟出來（以前安靜吞掉，幼蟲掉頭壞了好幾個版本都沒人知道）
+  if (typeof PetStage !== "undefined") PetStage.feed(petFruitSvg()).then(done, e => { done(); setTimeout(() => { throw e; }); });   // 2026-10-06：失敗照樣結算，但把錯誤丟出來（以前安靜吞掉，幼蟲掉頭壞了好幾個版本都沒人知道）
   else done();
 }
 // 帽子要用果實解鎖（果實除了餵食之外多一個用途）；解過的永久擁有
@@ -322,7 +341,7 @@ function openHatPicker() {
   ov.addEventListener("click", e => { if (e.target === ov) close(); });
   ov.querySelector("#hatClose").addEventListener("click", close);
   const stageEl = ov.querySelector(".dr-stage"), tryEl = ov.querySelector(".dr-try"), msg = ov.querySelector(".dr-msg"), buy = ov.querySelector("#drBuy");
-  const drawPrev = () => { stageEl.innerHTML = PET_ART.svg(i, "", tryHat, 30, tryAcc);
+  const drawPrev = () => { stageEl.innerHTML = PET_ART.own(() => PET_ART.svg(i, "", tryHat, 30, tryAcc));
     const tryNow = (tryHat !== petHat() || tryAcc !== petAcc()); tryEl.textContent = tryNow ? `${ttT("試穿中")}${ttColon()}${[tryHat !== petHat() ? ttT(PET_ART.HAT_LABEL[tryHat]) : "", tryAcc !== petAcc() ? ttT(PET_ART.ACC_LABEL[tryAcc]) : ""].filter(Boolean).join("、")}` : ""; };
   const bar = (text, buyLabel, onBuy) => { msg.textContent = text || ""; buy.hidden = !buyLabel; if (buyLabel) { buy.innerHTML = buyLabel; buy.onclick = onBuy; } };
   const bal = () => { const b = ov.querySelector(".hat-bal b"); if (b) b.textContent = berriesBalance(); };
@@ -486,7 +505,7 @@ async function drawPetPhoto(tod, pose, trail) {
   const sv = PetStage.photoSvgs(i, tod, W, SH);
   x.drawImage(await img(svgUri(sv.back)), 0, 0, W, SH);
   const S = 600; x.save(); x.shadowColor = "rgba(0,0,0,.3)"; x.shadowBlur = 30; x.shadowOffsetY = 14;
-  x.drawImage(await img(PET_ART.dataUri(i, S, petHat(), pose, petAcc())), (W - S) / 2, SH - S - 70, S, S); x.restore();
+  x.drawImage(await img(PET_ART.own(() => PET_ART.dataUri(i, S, petHat(), pose, petAcc()))), (W - S) / 2, SH - S - 70, S, S); x.restore();
   x.drawImage(await img(svgUri(sv.front)), 0, 0, W, SH);
   if (pose === "sleep") { x.fillStyle = "rgba(255,255,255,.85)"; [[250, 40], [196, 54], [132, 70]].forEach(([dy, f], k) => { x.font = `800 ${f}px ${F}`; x.fillText(k === 2 ? "Z" : "z", W / 2 + 120 + k * 46, SH - S - 70 + dy); });   /* 從頭旁邊冒出小 z，越往上越大 */ }   // 睡覺：飄 Z
   if (trail) { x.font = `800 46px ${F}`; const t = trail.length > 16 ? trail.slice(0, 15) + "…" : trail, tw = Math.min(W - 120, x.measureText(t).width + 80);   // 步道名標題（最近走的那一條）
@@ -676,10 +695,11 @@ function questReward(streak) {
 function renderPet() {
   const box = $("#petCard");
   if (!box) return;
+  petApplyTone();
   const km = totalKm(), i = petStageIndex(km), st = PET_STAGES[i], next = PET_STAGES[i + 1];
   const nm = petName(), mood = petMood(), days = petDaysTogether(), streak = weeksStreak(), en = energy();
   const berries = berriesBalance(), h = petHearts(), canFeed = canFeedNow(), cd = feedCooldownMs();
-  const art = (typeof PET_ART !== "undefined") ? PET_ART.svg(i, "", petHat(), true, petAcc()) : `<span style="font-size:70px">${st.e}</span>`;   // 帽子畫在角色裡面，跟著同一個動畫動
+  const art = (typeof PET_ART !== "undefined") ? PET_ART.own(() => PET_ART.svg(i, "", petHat(), true, petAcc())) : `<span style="font-size:70px">${st.e}</span>`;   // 帽子畫在角色裡面，跟著同一個動畫動
   let evoTop, prog = "";
   if (next) {
     const pct = Math.max(2, Math.min(100, Math.round((km - st.km) / (next.km - st.km) * 100)));
@@ -695,7 +715,7 @@ function renderPet() {
   // 2.5D 舞台（pet-stage.js）：角色那一層包在分層場景裡；沒載到就退回舊的平面棲地
   // 2026-10-04：舞台、角色沒變（同一階、同一頂帽子、同一個名字、天氣與裝飾一樣）就只更新數字和文字——
   // 以前餵完、摸完都整張重畫：粒子位置重抽、待機動作重來、對話泡重彈，看起來像頁面刷新了一次
-  const sig = [i, petHat(), petAcc(), nm, (typeof Premium !== "undefined" && Premium.isOn()) ? 1 : 0, typeof PetStage !== "undefined" ? PetStage.cachedWx() + (PetStage.cachedFeel ? PetStage.cachedFeel() : "") : "", typeof PetJourney !== "undefined" ? PetJourney.decor().join(",") : "", document.documentElement.lang || "", JSON.stringify(window.__ps || null), typeof PetStage !== "undefined" ? PetStage.tod() + PetStage.season() : "", petFestival() || "", petPropsOn().join(",")].join("|");   // __ps＝測試面板強制的時段／季節／天氣；時段、季節換了也要重畫（星星、螢火蟲、天空是畫出來的，2026-10-08）
+  const sig = [i, petHat(), petAcc(), petTone(), nm, (typeof Premium !== "undefined" && Premium.isOn()) ? 1 : 0, typeof PetStage !== "undefined" ? PetStage.cachedWx() + (PetStage.cachedFeel ? PetStage.cachedFeel() : "") : "", typeof PetJourney !== "undefined" ? PetJourney.decor().join(",") : "", document.documentElement.lang || "", JSON.stringify(window.__ps || null), typeof PetStage !== "undefined" ? PetStage.tod() + PetStage.season() : "", petFestival() || "", petPropsOn().join(",")].join("|");   // __ps＝測試面板強制的時段／季節／天氣；時段、季節換了也要重畫（星星、螢火蟲、天空是畫出來的，2026-10-08）
   if (box.dataset.sig === sig && box.querySelector("#petEmoji")) {
     petCardUpdate(box, { km, mood, days, streak, en, h, left: next ? next.km - km : null, lovePct: affinity(), aff: affinity(), canFeed, cd, berries, evoTop, pct: next ? Math.max(2, Math.min(100, Math.round((km - st.km) / (next.km - st.km) * 100))) : null });
     if (typeof PetJourney !== "undefined") PetJourney.render();
@@ -1036,6 +1056,7 @@ function openPetDex() {
     <div class="dex-tip"><span class="inline-ic">${ic("footprints")}</span> ${tip}</div>
     <div class="dex-sec">${ttT("牠帶回來的小東西")}</div>
     <div class="gift-grid">${Object.keys(PET_GIFTS).map(k => { const o = petGiftsOwned().find(g => g.id === k); return o ? `<div class="gift-it">${petGiftIcon(k)}<span>${escHtml(ttT(PET_GIFTS[k][0]))}</span></div>` : `<div class="gift-it no"><b>?</b><span>${escHtml(ttT("還沒帶回來"))}</span></div>`; }).join("")}</div>
+    <div class="dex-sec">${ttT("配色")}</div><div class="pp-tods dex-tones">${[["", "原色"], ["deep", "深林"], ["sea", "海風"], ["alpine", "高山"]].map(([k, l]) => { const ok = petToneUnlocked()[k]; return `<button class="pp-tod${petTone() === k ? " on" : ""}" data-tone="${k}"${ok ? "" : " disabled"} title="${ok ? "" : escHtml(ttT(k === "deep" ? "走 3 趟森林步道解鎖" : k === "sea" ? "走 3 趟海景或湖泊步道解鎖" : "走 3 趟海拔 1500 公尺以上解鎖"))}">${ttT(l)}${ok ? "" : " 🔒"}</button>`; }).join("")}</div>
     <div class="dex-sec">${ttT("夥伴日記")}</div>
     ${petDiaryMonths()}<div class="diary-list">${petDiaryHtml()}</div>
     <div class="dex-sec">${ttT(`進化圖鑑（共 ${PET_STAGES.length} 階）`)}</div>
@@ -1046,6 +1067,7 @@ function openPetDex() {
   const close = () => { if (_a11y) _a11y(); ov.remove(); };
   if (typeof ttModalA11y === "function") _a11y = ttModalA11y(ov, close, { focus: "#petDexClose" });
   bindDiaryMonths(ov);
+  ov.querySelectorAll(".dex-tones .pp-tod:not([disabled])").forEach(b => b.addEventListener("click", () => { localStorage.setItem("tt_pet_tone", b.dataset.tone); ov.querySelectorAll(".dex-tones .pp-tod").forEach(o => o.classList.toggle("on", o === b)); renderPet(); petBuzz(10); }));
   ov.addEventListener("click", e => { if (e.target === ov) close(); });
   ov.querySelector("#petDexClose").addEventListener("click", close);
 }

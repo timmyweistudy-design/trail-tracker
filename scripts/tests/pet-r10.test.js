@@ -22,6 +22,21 @@ for(const st of [0,1,2,3,4,5,6]){const ctx=await b.newContext({viewport:{width:3
  ok(r.float.length===0,`stage ${st}: every hat touches the head (floating: ${JSON.stringify(r.float)})`);
  if(st===2)ok(r.ant.length===0,`stage 2: bands, clips, rabbit ears and silvergrass sit between the antennae (sticking out: ${JSON.stringify(r.ant)})`);
  await ctx.close();}
+// 季節果實＋配色變體（R10）
+{const ctx=await b.newContext({viewport:{width:390,height:844},timezoneId:"Asia/Taipei"});const p=await ctx.newPage();await require(__dirname+"/fake-weather")(p);p.on("pageerror",e=>errs.push(e.message));
+ await p.addInitScript(()=>{localStorage.setItem("tt_lang","zh");["tt_onboarded_v2","tt_coach_trail","tt_locperm_prompted","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_coach_team","tt_coach_pet"].forEach(k=>localStorage.setItem(k,"1"));localStorage.setItem("tt_pet_woke",String(Date.now()));localStorage.setItem("tt_debug_km","40");});
+ await p.addInitScript(MOCK);await p.goto(`http://localhost:${PORT}/`);await p.waitForTimeout(2500);await p.evaluate(()=>document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove()));await p.click('.tab[data-view="pet"]');await p.waitForTimeout(1200);
+ const f=await p.evaluate(()=>{const o={};for(const se of ["spring","summer","autumn","winter"]){window.__ps={season:se};o[se]=petFruitSvg();}window.__ps=null;return new Set(Object.values(o)).size;});
+ ok(f===4,"four seasons drop four different fruits ("+f+")");
+ const t=await p.evaluate(()=>{const lock=petToneUnlocked();localStorage.setItem("tt_pet_tone","sea");const before=petTone();
+  // 假資料：3 趟海景步道 → 海風解鎖
+  const sea=TRAILS.filter(x=>tagsOf(x).includes("海景")).slice(0,3);Store.setRecords(sea.map((x,k)=>({id:"s"+k,date:new Date(Date.now()-k*864e5).toISOString(),trailId:x.id,trailName:x.name,distanceKm:3,elapsedMs:36e5,track:[]})));
+  const N=x=>x.replace(/[pgih][0-9a-z]+_/g,"");   /* 每次畫的裁切 id 不同：去掉再比 */
+  const after=petTone();petApplyTone();const own=N(PET_ART.own(()=>PET_ART.svg(3))),other=N(PET_ART.svg(3));PET_ART.setTone("");const plain=N(PET_ART.svg(3));
+  return {lockedSea:!lock.sea,before,after,ownTinted:own!==plain,otherPlain:other===plain};});
+ ok(t.lockedSea&&t.before===""&&t.after==="sea","sea tone stays locked until 3 sea hikes, then can be chosen "+JSON.stringify(t));
+ ok(t.ownTinted&&t.otherPlain,"the tone only colours your own pet (friends' pets stay original) "+JSON.stringify(t));
+ await ctx.close();}
 ok(errs.length===0,"no page errors "+JSON.stringify(errs.slice(0,3)));
 console.log("ERRS",JSON.stringify(errs));console.log("FAILS",fails);
 await b.close();srv.kill();process.exit(fails?1:0);})().catch(e=>{console.error(e);process.exit(1);});
