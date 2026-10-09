@@ -191,7 +191,7 @@ const Store = (() => {
     "tt_pet_diary",   // 夥伴日記（2026-10-07）
     "tt_pet_sleep", "tt_pet_nudge", "tt_pet_acc", "tt_pet_accs_owned", "tt_pet_tone",   // 脖子上的配件（2026-10-09 R5）
       // 夥伴睡覺時間、想你的提醒（2026-10-08 R4；偏好：合併時本機優先）
-    "tt_pet_gifts", "tt_pet_gift_t", "tt_pet_props",   // 親密滿時牠帶回來的小東西、上次帶禮物的時間（2026-10-07 寵物新一輪 #9）
+    "tt_pet_gifts", "tt_pet_gift_t", "tt_pet_props", "tt_pet_gifts_gone",   // gone：送給好友的小東西（R12），合併時不讓舊備份把它帶回來   // 親密滿時牠帶回來的小東西、上次帶禮物的時間（2026-10-07 寵物新一輪 #9）
     "tt_crowd_off",   // 步道人氣：不分享出發時間（隱私偏好，換手機要跟著走）
     "tt_rules_ok",    // 已同意社群規範（換手機不用再問一次）
     "tt_pet_name", "tt_pet_hat", "tt_pet_hatch", "tt_pet_stage", "tt_pet_base",
@@ -209,7 +209,7 @@ const Store = (() => {
   const MERGE = {
     max: ["tt_pet_berry_spent", "tt_pet_berry_bonus", "tt_pet_berry_picked", "tt_pet_feedkm", "tt_pet_stage", "tt_ach_maxkm", "tt_ach_maxasc", "tt_quest_hi", "tt_ach_island"],   // 只會變大的計數：取大的
     newer: ["tt_pet_fed_t", "tt_pet_gift_t", "tt_quest_claim", "tt_ach_island_scan"],   // 時間（毫秒或日期字串）：取新的（冷卻、禮物不會因為還原重來一次）
-    union: ["tt_pet_diary", "tt_pet_gifts", "tt_pet_hats_owned", "tt_pet_accs_owned", "tt_badges_got", "tt_badges_seen", "tt_pj_seen", "tt_pj_snap", "tt_mch_done"],   // 清單：聯集
+    union: ["tt_pet_diary", "tt_pet_gifts", "tt_pet_gifts_gone", "tt_pet_hats_owned", "tt_pet_accs_owned", "tt_badges_got", "tt_badges_seen", "tt_pj_seen", "tt_pj_snap", "tt_mch_done"],   // 清單：聯集
     obj: ["tt_peaks", "tt_mch", "tt_badges_date", "tt_life"],   // 物件：逐鍵合併，同一鍵本機優先（終身統計之後還會 _lifeReconcile 取大的）
     // 成組的：夥伴身分（孵化日、起點里程、名字）跟著「比較早孵化的那隻」——新手機一打開就會孵一顆新蛋，不能讓它蓋掉備份裡養了很久的那隻
     pair: [["tt_pet_aff", "tt_pet_aff_t"]],   // 親密度跟著比較新的親密時間走（親密會隨時間掉，單取大的不對）
@@ -241,6 +241,9 @@ const Store = (() => {
     ID.forEach(k => done.add(k));
     for (const [v, t] of MERGE.pair) { if (pet[t] != null && (get(t) == null || T(pet[t]) > T(get(t)))) { put(v, pet[v] == null ? null : String(pet[v])); put(t, String(pet[t])); } done.add(v); done.add(t); }
     for (const k in pet) { if (done.has(k)) continue; try { put(k, mergeOne(k, get(k), String(pet[k]))); } catch (e) { r.errors.push(k); } }
+    // 送出去的小東西：比送出時間早拿到的那一件不算（之後又撿到的照留）
+    try { const gone = JSON.parse(get("tt_pet_gifts_gone") || "[]"), own = JSON.parse(get("tt_pet_gifts") || "[]");
+      if (gone.length && Array.isArray(own)) { const keep = own.filter(g => !gone.some(x => x.id === g.id && T(x.t) >= T(g.t))); if (keep.length !== own.length) put("tt_pet_gifts", JSON.stringify(keep)); } } catch (e) { r.errors.push("tt_pet_gifts_gone"); }
     return r;
   }
   function exportAll() {

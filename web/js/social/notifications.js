@@ -42,6 +42,8 @@ const Notifs = (() => {
     if (n.type === "comment") return name + " 在你的貼文留言";
     if (n.type === "team") return name + " 邀請你加入小隊";
     if (n.type === "gift") return name + " 送了果實給你的夥伴";
+    if (n.type === "pet_item") return name + " 送了一個小東西給你的夥伴";   // schema-phase41（R12）
+    if (n.type === "pet_visit") return name + " 的夥伴回訪了你家";
     if (n.type === "mention") return name + " 在貼文中提到你";
     // 留守人（phase31）
     if (n.type === "admin") return T("管理提醒：過去 24 小時有新的檢舉或錯誤，點這裡處理");   // schema-phase36，只有管理員會收到

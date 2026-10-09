@@ -11,6 +11,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 const LABEL: Record<string, string> = {
   follow: "開始追蹤你", like: "讚了你的貼文", comment: "在你的貼文留言",
   team: "邀請你加入小隊", gift: "送了果實給你的夥伴", mention: "在貼文中提到你",
+  pet_item: "送了一個小東西給你的夥伴", pet_visit: "的夥伴回訪了你家",   // schema-phase41（R12）
   follow_req: "請求追蹤你", follow_ok: "同意了你的追蹤請求",
   // 留守人（schema-phase31）
   guard: "出發了，請你當留守人", guard_ext: "延後了預計下山時間",

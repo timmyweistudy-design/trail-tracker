@@ -13,6 +13,7 @@ const TeamLive = (() => {
   // 一起開始：時間戳去重（同一次只觸發一次，新的一次必觸發）
   let onStartCb = null, onStopCb = null, lastHandledAt = 0, lastStopHandled = 0, joinedAt = 0, myStartAt = null, myStopAt = null, myStartSim = false;
   let onPauseCb = null, onResumeCb = null, lastPauseSyncAt = 0;   // 隊長控制暫停/繼續：全隊跟隨
+  let noLook = false, noLookCol = false;   // phase41 還沒跑：不送／不讀 pet_look（R12）
   let showAll = false;   // 記錄中「全部隊友都顯示在地圖上」
 
   const ttx = s => (typeof ttT === "function" ? ttT(s) : s);
@@ -21,10 +22,26 @@ const TeamLive = (() => {
   function isLeader() { return !!me && me === leaderId; }
   function recordingNow() { return typeof Recorder !== "undefined" && Recorder.getState && Recorder.getState() === "running"; }
 
+  // 隊友的夥伴（R12）：新版送 pet_look {s 階段, h 帽子, a 配件}，舊版只有 emoji（反查成角色、不戴東西）。
+  // 畫成帶 data-s 的 SVG：記錄地圖上自己夥伴的「依種類動」CSS（滾、爬、飛、滑翔）就會一起套到隊友身上
+  function lookOf(v) {
+    const L0 = v && typeof v === "object" ? v : null; if (!L0 || typeof PET_ART === "undefined") return null;
+    const s = Math.round(+L0.s); if (!(s >= 0 && s <= 6)) return null;
+    return { s, h: PET_ART.HAT_IDS.includes(L0.h) ? L0.h : "none", a: PET_ART.ACC_IDS && PET_ART.ACC_IDS.includes(L0.a) ? L0.a : "none" };
+  }
+  function petHtml(meta) {
+    const lk = lookOf(meta.look);
+    if (lk) return `<span class="tm-pet">${PET_ART.svg(lk.s, "", lk.h, undefined, lk.a)}</span>`;
+    const petIdx = (meta.pet && typeof PET_ART !== "undefined" && PET_ART.byEmoji) ? PET_ART.byEmoji(meta.pet) : -1;
+    return meta.pet ? `<span class="tm-pet">${petIdx >= 0 ? PET_ART.svg(petIdx) : esc(meta.pet)}</span>` : "";
+  }
+  function myLook() {
+    if (typeof petStageIndex !== "function" || typeof totalKm !== "function") return null;
+    return { s: petStageIndex(totalKm()), h: typeof petHat === "function" ? petHat() : "none", a: typeof petAcc === "function" ? petAcc() : "none" };
+  }
   function icon(meta, opts) {
     const av = meta.avatar ? `<img src="${esc(meta.avatar)}" alt="">` : `<span class="tm-ph">${esc((meta.name || "?").slice(0, 1))}</span>`;
-    const petIdx = (meta.pet && typeof PET_ART !== "undefined" && PET_ART.byEmoji) ? PET_ART.byEmoji(meta.pet) : -1;
-    const pet = meta.pet ? `<span class="tm-pet">${petIdx >= 0 ? PET_ART.svg(petIdx) : esc(meta.pet)}</span>` : "";
+    const pet = petHtml(meta);
     const dir = (meta.heading != null) ? `<div class="tm-dir" style="transform:rotate(${(+meta.heading).toFixed(0)}deg)"><span class="tm-cone"></span></div>` : "";
     const pulse = (opts && opts.pulse) ? `<span class="tm-pulse"></span>` : "";   // 點名字看定位→脈動光圈標示
     return L.divIcon({ className: "team-marker" + ((opts && opts.pulse) ? " peek" : ""), html: `<div class="tm-av">${pulse}${dir}${av}${pet}</div>`, iconSize: [32, 32], iconAnchor: [16, 16] });
@@ -39,7 +56,7 @@ const TeamLive = (() => {
   // 記錄中且有座標的隊友（供 3D 顯示 / 點名字看定位）
   function teammates() {
     return members.filter(m => !m.me && m.recording && m.lat != null)
-      .map(m => ({ id: m.id, name: m.name, lat: m.lat, lon: m.lon, avatar: m.avatar || null, pet: m.pet || null }));
+      .map(m => ({ id: m.id, name: m.name, lat: m.lat, lon: m.lon, avatar: m.avatar || null, pet: m.pet || null, look: lookOf(m.look) }));
   }
   function allReady() { const r = roster(); return r.length > 0 && r.every(m => m.ready); }
   function notReadyNames() { return roster().filter(m => !m.ready).map(m => m.name); }
@@ -111,13 +128,17 @@ const TeamLive = (() => {
     lastPushAt = Date.now();
     const rec = recordingNow();
     try {
-      const { error } = await c.rpc("upsert_team_presence", {
+      const args = {
         p_team: curTeamId, p_ready: !!myReady, p_recording: !!rec,
         p_lat: rec && lastPos ? lastPos.lat : null,
         p_lon: rec && lastPos ? lastPos.lon : null,
         p_heading: rec && lastPos && lastPos.heading != null ? lastPos.heading : null,
         p_name: myInfo.name || null, p_avatar: myInfo.avatar || null, p_pet: myInfo.pet || null,
-      });
+      };
+      const lk = noLook ? null : myLook();   // 同一次請求一起送，不多發
+      let { error } = await c.rpc("upsert_team_presence", lk ? Object.assign({ p_pet_look: lk }, args) : args);
+      // 資料庫還沒跑 phase41（沒有 p_pet_look 參數）：退回舊參數，這次開 App 不再送
+      if (error && lk && /p_pet_look|upsert_team_presence|function/i.test(error.message || "")) { noLook = true; ({ error } = await c.rpc("upsert_team_presence", args)); }
       pushOk = !error;
     } catch (e) { pushOk = false; }
   }
@@ -132,13 +153,15 @@ const TeamLive = (() => {
   async function poll() {
     const c = Supa.client(); if (!c || !curTeamId) return;
     try {
-      const { data, error } = await c.from("team_presence").select("user_id, ready, recording, lat, lon, heading, name, avatar, pet, updated_at").eq("team_id", curTeamId);
+      const COLS = "user_id, ready, recording, lat, lon, heading, name, avatar, pet, updated_at";
+      let { data, error } = await c.from("team_presence").select(noLookCol ? COLS : COLS + ", pet_look").eq("team_id", curTeamId);
+      if (error && !noLookCol && /pet_look/.test(error.message || "")) { noLookCol = true; ({ data, error } = await c.from("team_presence").select(COLS).eq("team_id", curTeamId)); }   // 還沒跑 phase41
       if (!error && data) {
         const now = Date.now();
         members = data.map(r => {
           const age = now - Date.parse(r.updated_at);
           return { id: r.user_id, name: r.name || ttx("隊友"), ready: !!r.ready, recording: !!r.recording,
-            lat: r.lat, lon: r.lon, heading: r.heading, avatar: r.avatar, pet: r.pet,
+            lat: r.lat, lon: r.lon, heading: r.heading, avatar: r.avatar, pet: r.pet, look: r.pet_look || null,
             ageMs: age, online: age < 30000, me: r.user_id === me, leader: r.user_id === leaderId };
         }).filter(m => m.online || m.me);
         // 自己一定在名單裡（我的 row 可能還沒輪詢回來）；ready 用本地為準
@@ -163,7 +186,7 @@ const TeamLive = (() => {
     const nm = (row && row.name) || (members.find(m => m.id === uid) || {}).name || ttx("隊友");
     if (!row || !row.recording || row.lat == null) { if (typeof toast === "function") toast(ttx("隊友未在記錄中，暫時看不到位置")); return; }
     if (!map || typeof L === "undefined") return;
-    pin(uid, { name: nm, lat: row.lat, lon: row.lon, heading: row.heading, avatar: row.avatar, pet: row.pet,
+    pin(uid, { name: nm, lat: row.lat, lon: row.lon, heading: row.heading, avatar: row.avatar, pet: row.pet, look: row.pet_look || null,
       ageMs: Math.max(0, Date.now() - Date.parse(row.updated_at)) });
     try { map.panTo([row.lat, row.lon]); } catch (e) { }
     renderReadyBar();
@@ -173,7 +196,7 @@ const TeamLive = (() => {
     if (!map || typeof L === "undefined") return;
     const ageS = Math.max(0, Math.round((m.ageMs || 0) / 1000));
     const tip = `${esc(m.name)}${ageS > 12 ? ` · ${ageS}s` : ""}`;
-    const ico = icon({ name: m.name, avatar: m.avatar, pet: m.pet, heading: m.heading }, { pulse: true });
+    const ico = icon({ name: m.name, avatar: m.avatar, pet: m.pet, look: m.look, heading: m.heading }, { pulse: true });
     const cur = peekMarkers[uid];
     if (cur) { try { cur.setLatLng([m.lat, m.lon]); cur.setIcon(ico); cur.setTooltipContent(tip); } catch (e) { /* */ } return; }
     peekMarkers[uid] = L.marker([m.lat, m.lon], { icon: ico, zIndexOffset: 1000 }).addTo(map)
@@ -318,5 +341,5 @@ const TeamLive = (() => {
     });
   }
 
-  return { start, stop, isOn, isLeader, setReady, allReady, roster, teammates, notReadyNames, sendStart, onStart, sendStop, onStop, sendPause, sendResume, onPause, onResume, updatePos, peek, syncFs, status };
+  return { start, stop, isOn, isLeader, setReady, allReady, roster, teammates, notReadyNames, sendStart, onStart, sendStop, onStop, sendPause, sendResume, onPause, onResume, updatePos, peek, syncFs, status, _petHtml: petHtml, _myLook: myLook };   // _開頭：測試用
 })();

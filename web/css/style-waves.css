@@ -528,6 +528,24 @@ html[data-theme="dark"] .cg-c.l4 { background: #7fcf98; border-color: #8edaa6; }
 .fv-acts .btn { flex: 1 1 28%; min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 5px; white-space: nowrap; padding-inline: 10px; }
 .fv-acts .btn .berry { width: 1.1em; height: 1.1em; }
 .fv-acts .btn .ic { width: 1.05em; height: 1.05em; }
+/* R12：送小東西（拜訪卡第二排的文字鈕）、回訪橫幅、兩隻一起玩松果 */
+.fv-item { display: flex; align-items: center; gap: 5px; margin: 12px auto 0; padding: 6px 10px; border: 0; background: none; font: inherit; font-size: calc(13.5px * var(--fs, 1)); font-weight: 600; color: var(--brand-deep); cursor: pointer; }
+.ttdlg .btn .pg-ic { width: 22px; height: 22px; flex: none; vertical-align: -6px; margin-right: 4px; }   /* 送小東西的選單：每一件的小圖 */
+.fv-item .ic { width: 1.05em; height: 1.05em; }
+.fv-item[disabled] { opacity: .55; }
+.fp-return { display: flex; align-items: center; gap: 8px; width: 100%; margin: 0 0 10px; padding: 10px 12px; border-radius: var(--r-sm, 10px); border: 1px solid var(--ok-line); background: var(--ok-bg); color: var(--ok-ink); font: inherit; font-size: calc(13.5px * var(--fs, 1)); font-weight: 600; text-align: left; cursor: pointer; }
+.fp-return .ic { flex: none; width: 18px; height: 18px; color: var(--ok-ic); }
+.fp-return span { flex: 1; min-width: 0; }
+.fp-return b { flex: none; color: var(--ok-ic); }
+.fv-together .ps-actor { margin-left: 36%; }
+.fv-together .fv-critter { width: 124px; height: 124px; }
+.fv-me { position: absolute; left: 7%; bottom: 14px; width: 112px; height: 112px; z-index: 3; animation: fvWalkIn .9s var(--ease-out, ease-out) both; }
+.fv-me .pet-critter { width: 100%; height: 100%; }
+.fv-cone { position: absolute; left: 27%; bottom: 40px; width: 26px; height: 26px; z-index: 4; opacity: 0; animation: fvCone 2.4s ease-in-out .9s both; }
+.fv-cone .pg-ic { width: 100%; height: 100%; display: block; }
+@keyframes fvWalkIn { from { transform: translateX(-140%); } to { transform: none; } }
+/* 松果拋一個來回：左邊（你的夥伴）→ 右邊（朋友）→ 回到左邊，中途是拋物線 */
+@keyframes fvCone { 0% { opacity: 0; transform: translate(0, 0); } 6% { opacity: 1; } 25% { transform: translate(min(26vw, 110px), -46px) rotate(180deg); } 50% { transform: translate(min(52vw, 220px), 0) rotate(360deg); } 75% { transform: translate(min(26vw, 110px), -46px) rotate(540deg); } 94% { opacity: 1; } 100% { opacity: 0; transform: translate(0, 0) rotate(720deg); } }
 @media (prefers-reduced-motion: reduce) { .fv-bounce, .fv-heart { animation: none; } }
 
 /* 山社（js/social/clubs.js） */

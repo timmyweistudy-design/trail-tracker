@@ -153,6 +153,24 @@ const PET_GIFTS = {
   petal: ["山櫻花瓣", '<path d="M12 21c-5-3-7-8-5-13 2 1 3 3 5 3s3-2 5-3c2 5 0 10-5 13Z" fill="#f4a3bd" stroke="#c4607f" stroke-width="1.2" stroke-linejoin="round"/><path d="M12 11v8" stroke="#c4607f" stroke-width=".9"/>'],
 };
 function petGiftsOwned() { try { return JSON.parse(localStorage.getItem("tt_pet_gifts") || "[]"); } catch (e) { return []; } }
+// 好友之間送小東西（R12，js/social/petsocial.js）：送出成功才拿掉一件；收到的記下是誰送的
+function petGiftRemove(id) {
+  const own = petGiftsOwned(), k = own.findIndex(o => o.id === id); if (k < 0) return;
+  own.splice(k, 1); localStorage.setItem("tt_pet_gifts", JSON.stringify(own));
+  let gone = []; try { gone = JSON.parse(localStorage.getItem("tt_pet_gifts_gone") || "[]"); } catch (e) { /* */ }
+  gone.push({ id, k: Date.now().toString(36), t: ttClock.date().toISOString() }); localStorage.setItem("tt_pet_gifts_gone", JSON.stringify(gone.slice(-100)));   /* 備份合併時用（storage.js importPet） */
+}
+function petGiftAdd(id, from) { const own = petGiftsOwned(); if (!PET_GIFTS[id] || own.some(o => o.id === id)) return false; own.push({ id, t: ttClock.date().toISOString(), from: String(from || "").slice(0, 40) }); localStorage.setItem("tt_pet_gifts", JSON.stringify(own)); return true; }
+// 社群日記：give 送出／got 收到／visit 去對方家玩／visited 對方回訪；key 帶時間（同一天可以有好幾筆），名字放最後（名字裡可能有冒號）
+function petDiarySocial(kind, item, who) { petDiaryAdd(`${kind}:${item || ""}:${Date.now().toString(36)}:${String(who || "").slice(0, 40)}`); }
+function petDiarySocialText(k) {
+  const m = /^(give|got|visit|visited):([a-z]*):[0-9a-z]+:(.*)$/.exec(k); if (!m) return "";
+  const item = m[2] && PET_GIFTS[m[2]] ? ttT(PET_GIFTS[m[2]][0]) : "", who = m[3];
+  if (m[1] === "give") return item ? ttT("送給 {who} 一個{item}").replace("{who}", who).replace("{item}", item) : "";
+  if (m[1] === "got") return item ? ttT("收到 {who} 送的{item}").replace("{who}", who).replace("{item}", item) : "";
+  if (m[1] === "visit") return ttT("去 {who} 家玩").replace("{who}", who);
+  return ttT("{who} 回訪了我們家").replace("{who}", who);
+}
 function petGiftIcon(id, cls) { const g = PET_GIFTS[id]; return g ? `<svg class="${cls || "pg-ic"}" viewBox="0 0 24 24" aria-hidden="true">${giftSvg(g[1])}</svg>` : ""; }
 function petGiftDue() { return petHearts() >= 5 && ttClock.now() - (+(localStorage.getItem("tt_pet_gift_t") || 0)) >= 2 * 864e5; }
 function petGiftGive() {
@@ -1005,7 +1023,7 @@ function petDiaryHtml(ym) {   // ym："2026-10"＝只看那個月（2026-10-08 R
   const all = d.slice(); all.push({ t: petHatch(), k: "meet", i: 0 }); if (first) all.push({ t: first.date, k: "hike1", i: null });
   all.sort((a, b) => String(b.t).localeCompare(String(a.t)));
   if (ym) { const keep = all.filter(x => localYM(x.t) === ym); all.length = 0; all.push(...keep); }
-  const txt = x => x.k === "meet" ? ttT("我們相遇了") : x.k === "evo" ? `${ttT("進化成")} ${ttT(PET_STAGES[x.i] ? PET_STAGES[x.i].n : "")}` : x.k === "feed1" ? ttT("第一次吃果實") : x.k === "hug1" ? ttT("第一次抱抱") : x.k === "hike1" ? ttT("第一次一起出門") : /^ann:y/.test(x.k) ? ttT("相遇 {n} 週年").replace("{n}", x.k.slice(5)) : /^ann:d/.test(x.k) ? ttT("相遇第 {n} 天").replace("{n}", x.k.slice(5)) : /^gift:/.test(x.k) && PET_GIFTS[x.k.slice(5)] ? `${ttT("帶回來一個")}${ttCJK() ? "" : " "}${ttT(PET_GIFTS[x.k.slice(5)][0])}` : "";
+  const txt = x => x.k === "meet" ? ttT("我們相遇了") : x.k === "evo" ? `${ttT("進化成")} ${ttT(PET_STAGES[x.i] ? PET_STAGES[x.i].n : "")}` : x.k === "feed1" ? ttT("第一次吃果實") : x.k === "hug1" ? ttT("第一次抱抱") : x.k === "hike1" ? ttT("第一次一起出門") : /^ann:y/.test(x.k) ? ttT("相遇 {n} 週年").replace("{n}", x.k.slice(5)) : /^ann:d/.test(x.k) ? ttT("相遇第 {n} 天").replace("{n}", x.k.slice(5)) : /^gift:/.test(x.k) && PET_GIFTS[x.k.slice(5)] ? `${ttT("帶回來一個")}${ttCJK() ? "" : " "}${ttT(PET_GIFTS[x.k.slice(5)][0])}` : /^(give|got|visit|visited):/.test(x.k) ? petDiarySocialText(x.k) : "";
   const dt = t => { const z = new Date(t); return isNaN(z) ? "" : `${z.getFullYear()}/${z.getMonth() + 1}/${z.getDate()}`; };
   const rows = all.filter(x => txt(x)).map(x => `<div class="diary-row"><span class="diary-ic">${x.i != null && typeof PET_ART !== "undefined" ? PET_ART.svg(x.i) : `<span class="inline-ic">${ic("footprints")}</span>`}</span><span class="diary-t">${escHtml(txt(x))}</span><time>${dt(x.t)}</time></div>`).join("");
   return rows || `<div class="diary-empty">${ttT("還沒有紀錄")}</div>`;

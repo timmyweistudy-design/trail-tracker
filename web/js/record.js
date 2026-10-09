@@ -537,10 +537,10 @@ Recorder.onUpdate(s => {
     if (typeof TeamLive !== "undefined" && TeamLive.isOn() && TeamLive.updatePos) TeamLive.updatePos(lastLL[0], lastLL[1], s.heading);
     const meAv = window.__meAvatar;
     // 夥伴的階段／心情／帽子：10 秒算一次就好（以前每個定位點都重算，要解析整份紀錄）
-    if (!_petSigCache || Date.now() - _petSigCache.at > 10000) _petSigCache = { at: Date.now(), stage: petStageIndex(totalKm()), mood: (typeof petMood === "function" ? petMood().k : "content"), hat: (typeof petHat === "function" ? petHat() : "none") };
-    const _pStage = _petSigCache.stage, _pMood = _petSigCache.mood, _pHat = _petSigCache.hat;
-    const _pSig = _pStage + "|" + _pMood + "|" + _pHat;
-    const _petFace = () => `<span class="pm-face pet-m-${_pMood}">${typeof PET_ART !== "undefined" ? PET_ART.svg(_pStage, "", _pHat) : petEmojiNow()}</span>`;
+    if (!_petSigCache || Date.now() - _petSigCache.at > 10000) _petSigCache = { at: Date.now(), stage: petStageIndex(totalKm()), mood: (typeof petMood === "function" ? petMood().k : "content"), hat: (typeof petHat === "function" ? petHat() : "none"), acc: (typeof petAcc === "function" ? petAcc() : "none") };
+    const _pStage = _petSigCache.stage, _pMood = _petSigCache.mood, _pHat = _petSigCache.hat, _pAcc = _petSigCache.acc;
+    const _pSig = _pStage + "|" + _pMood + "|" + _pHat + "|" + _pAcc;
+    const _petFace = () => `<span class="pm-face pet-m-${_pMood}">${typeof PET_ART !== "undefined" ? PET_ART.own(() => PET_ART.svg(_pStage, "", _pHat, undefined, _pAcc)) : petEmojiNow()}</span>`;
     if (meAv) {
       if (!recMarker || !recMarker._av || recMarker._sig !== _pSig) {
         if (recMarker) recMap.removeLayer(recMarker);

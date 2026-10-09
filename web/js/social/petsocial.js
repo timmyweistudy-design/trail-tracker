@@ -80,7 +80,9 @@ const Pets = (() => {
     if (!list.length) { box.innerHTML = `${H}<div class="social-empty" style="padding:14px">${T("在社群互相追蹤山友後，這裡會出現他們的夥伴，可以送果實打氣。")}</div>`; return; }
     const berry = typeof BERRY_SVG !== "undefined" ? BERRY_SVG : "🍓";   // 跟餵食鈕同一顆果實圖示
     const giftLbl = `${T("送出")} 3 ${berry}`;
-    box.innerHTML = `${H}<div class="friend-pets">${list.map(p => {
+    const rv = returnable(list);   // R12：今天來串門子的朋友 → 回訪
+    const rvHtml = rv ? `<button class="fp-return" id="fpReturn" data-id="${rv.id}">${ic("footprints")}<span>${esc(T("{pet} 今天來過，帶你的夥伴去回訪").replace("{pet}", friendName(rv)))}</span><b>›</b></button>` : "";
+    box.innerHTML = `${H}${rvHtml}<div class="friend-pets">${list.map(p => {
       const lvl = p.pet_level || 1, emoji = (typeof PET_STAGES !== "undefined" && PET_STAGES[lvl - 1]) ? PET_STAGES[lvl - 1].e : "🥚";
       const art = (typeof PET_ART !== "undefined") ? petSvg(p, lvl - 1) : emoji;   // 好友夥伴也用 SVG 角色，戴著對方的頭飾＋配件
       const sent = sentToday.has(p.id);
@@ -88,6 +90,7 @@ const Pets = (() => {
     }).join("")}</div>`;
     box.querySelectorAll(".fp-visit").forEach(b => b.addEventListener("click", () => { const p = list.find(x => x.id === b.dataset.id); if (p) visit(p, sentToday.has(p.id), () => renderFriends()); }));
     box.querySelectorAll(".fp-gift").forEach(b => b.addEventListener("click", () => giftClick(b, giftLbl)));
+    const rb = box.querySelector("#fpReturn"); if (rb) rb.addEventListener("click", () => returnVisit(rv, sentToday.has(rv.id), rb));
     guestVisit(list);
   }
   // 朋友的夥伴來串門子（2026-10-07 寵物新一輪 #19）：一天最多一次，打開夥伴頁幾秒後隨機一位好友的夥伴走進舞台、待一會兒再走
@@ -100,7 +103,7 @@ const Pets = (() => {
     setTimeout(async () => {
       if (document.body.dataset.view !== "pet") return;
       const ok = await PetStage.guest({ svg: petSvg(p, lvl - 1), stay: 3600 });
-      if (ok) localStorage.setItem("tt_pet_guest_day", day);
+      if (ok) { localStorage.setItem("tt_pet_guest_day", day); localStorage.setItem("tt_pet_guest_who", JSON.stringify({ id: p.id, day })); }   // 記住是誰來過（回訪用）
     }, 2500);
     setTimeout(() => { if (document.body.dataset.view === "pet" && typeof petSay === "function" && document.querySelector(".ps-guest")) petSay(T("{who} 的 {pet} 來串門子了！").replace("{who}", who).replace("{pet}", nm), 3200); }, 4300);
   }
@@ -182,7 +185,7 @@ const Pets = (() => {
     if (typeof PetStage === "undefined") return `${PET_ART.habitat(i)}${actor}`;
     return PetStage.html(i, actor, { decor, wx });
   }
-  function visit(p, sent, onChange) {
+  function visit(p, sent, onChange, together) {
     if (document.querySelector('[data-ov="petvisit"]')) return;
     const lvl = p.pet_level || 1, i = lvl - 1, berry = typeof BERRY_SVG !== "undefined" ? BERRY_SVG : "";
     const giftLbl = `${T("送出")} 3 ${berry}`;
@@ -196,7 +199,8 @@ const Pets = (() => {
         <button class="btn fv-pat" id="pvPat">${ic("heart")}${T("摸摸頭")}</button>
         <button class="btn ghost fp-gift" id="pvGift" data-id="${p.id}"${sent ? " disabled" : ""}>${sent ? T("今天已送") : giftLbl}</button>
         <button class="btn ghost fv-photo" id="pvPhoto">${ic("camera")}${T("合照")}${typeof Premium !== "undefined" && !Premium.isOn() ? ` <span class="pro-tag">PRO</span>` : ""}</button>
-      </div></div>`;
+      </div>
+      <button class="link-btn fv-item" id="pvItem"${navigator.onLine === false ? " disabled" : ""}>${ic("leaf")}${navigator.onLine === false ? T("離線時不能送小東西") : T("送一個小東西")}</button></div>`;
     document.body.appendChild(ov);
     let _a11y = null;
     const close = () => { if (_a11y) _a11y(); ov.remove(); };
@@ -218,6 +222,8 @@ const Pets = (() => {
     };
     ov.querySelector("#pvGift").onclick = async e => { if (await giftClick(e.currentTarget, giftLbl) && onChange) onChange(); };
     ov.querySelector("#pvPhoto").onclick = () => { if (!_proGate()) return; photo(p); };
+    ov.querySelector("#pvItem").onclick = e => giveItem(p, e.currentTarget);
+    if (together) playTogether(stage);
   }
 
   // 合照：自己的夥伴（戴著配件）跟好友的夥伴站在一起，存成 1080×1350 圖
@@ -258,5 +264,98 @@ const Pets = (() => {
     } catch (e) { say(T("產生圖片失敗")); }
   }
 
-  return { friendsPets, sendGift, claimGifts, renderFriends, visit, _drawPhoto: drawPhoto };
+  // ── R12：送小東西（give_pet_item）──
+  // 收藏只在手機上，伺服器擋重送、限次、封鎖；送出成功才從手冊拿掉。離線不能按（不做本機排隊，免得重送）。
+  const GIVE_MSG = { dup: "這件已經送過 %s 了", daily: "今天已經送過 %s 一件了，明天再送", blocked: "沒辦法送給 %s", not_friend: "要互相追蹤才能送", self: "不能送給自己" };
+  async function giveItem(p, btn) {
+    if (navigator.onLine === false) { say(T("離線時不能送小東西")); return false; }
+    const own = (typeof petGiftsOwned === "function" ? petGiftsOwned() : []).filter(o => typeof PET_GIFTS !== "undefined" && PET_GIFTS[o.id] && !o.dbg);
+    if (!own.length) { say(T("手冊裡還沒有小東西可以送（親密滿 5 顆心，牠會自己出門撿）")); return false; }
+    if (typeof ttChoice !== "function") return false;
+    const ids = [...new Set(own.map(o => o.id))];
+    const id = await ttChoice({ html: `<p><b>${esc(T("送一個小東西給 %s").replace("%s", friendName(p)))}</b></p><p class="ah-n">${esc(T("送出去之後，你的手冊就少這一件"))}</p>` },
+      ids.map(k => ({ label: `${petGiftIcon(k, "pg-ic")} ${esc(T(PET_GIFTS[k][0]))}`, value: k })).concat([{ label: esc(T("取消")), value: null }]));
+    if (!id) return false;
+    if (btn) btn.disabled = true;
+    let r = null;
+    try { const { data, error } = await Supa.client().rpc("give_pet_item", { p_to: p.id, p_item: id }); if (error) throw error; r = data; }
+    catch (e) { r = await itemReached(p.id, id) ? "ok" : null; }   // 送出了但回應斷掉：查一次對方是不是已經收到，免得「對方拿到了、我這邊沒扣」
+    if (btn) btn.disabled = false;
+    if (r === "ok") {
+      if (typeof petGiftRemove === "function") petGiftRemove(id);
+      if (typeof petDiarySocial === "function") petDiarySocial("give", id, friendName(p));
+      say(T("送給 %s 了").replace("%s", friendName(p))); if (typeof ttBuzz === "function") ttBuzz(20);
+      return true;
+    }
+    say(r && GIVE_MSG[r] ? T(GIVE_MSG[r]).replace("%s", friendName(p)) : T("沒送出去，等一下再試"));
+    return false;
+  }
+  async function itemReached(to, item) {
+    try { const uid = await me(); const { data } = await Supa.client().from("pet_item_gifts").select("item").eq("from_user", uid).eq("to_user", to).eq("item", item).limit(1); return !!(data && data.length); } catch (e) { return false; }
+  }
+  // 領取別人送的小東西：手冊沒有就收進去，已經有了就換成 3 顆果實；伺服器一次領完（兩台手機不會重複領）
+  async function claimItems() {
+    try {
+      const { data, error } = await Supa.client().rpc("claim_pet_items"); if (error || !data || !data.length) return 0;
+      let berries = 0;
+      for (const r of data) {
+        const who = r.from_name || T("好友");
+        const has = typeof petGiftsOwned === "function" && petGiftsOwned().some(o => o.id === r.item);
+        if (typeof PET_GIFTS === "undefined" || !PET_GIFTS[r.item] || has) { berries += 3; continue; }   // 已經有了／這版還不認得
+        if (typeof petGiftAdd === "function") petGiftAdd(r.item, who);
+        if (typeof petDiarySocial === "function") petDiarySocial("got", r.item, who);
+        say(T("%s 送你一個小東西：").replace("%s", who) + T(PET_GIFTS[r.item][0]));
+      }
+      if (berries && typeof addBerryBonus === "function") { addBerryBonus(berries); say(T("收到好友送的小東西（手冊裡已經有了，換成 {n} 顆果實）").replace("{n}", berries)); }
+      return data.length;
+    } catch (e) { return 0; }
+  }
+
+  // ── R12：回訪（pet_return_visit）──
+  // 朋友的夥伴今天來串門子過 → 夥伴頁出現「回訪」：你的夥伴走進對方的舞台，兩隻一起玩一次松果；雙方各記一筆日記。每天每位好友一次（伺服器擋）
+  const today = () => (typeof todayStr === "function" ? todayStr() : new Date().toDateString());
+  function returnable(list) {
+    let g = null; try { g = JSON.parse(localStorage.getItem("tt_pet_guest_who") || "null"); } catch (e) { /* */ }
+    if (!g || g.day !== today() || localStorage.getItem("tt_pet_rv_" + g.id) === today()) return null;
+    return list.find(p => p.id === g.id) || null;
+  }
+  async function returnVisit(p, sent, btn) {
+    if (navigator.onLine === false) { say(T("離線時不能回訪")); return; }
+    if (btn) btn.disabled = true;
+    let r = null; try { const { data, error } = await Supa.client().rpc("pet_return_visit", { p_to: p.id }); if (!error) r = data; } catch (e) { /* */ }
+    if (btn) btn.disabled = false;
+    if (r === "ok" || r === "daily") localStorage.setItem("tt_pet_rv_" + p.id, today());
+    if (r === "ok") {
+      if (typeof petDiarySocial === "function") petDiarySocial("visit", "", friendName(p));
+      visit(p, sent, () => renderFriends(), true);
+      if (btn) btn.remove();
+      return;
+    }
+    say(r === "daily" ? T("今天已經去過 %s 家了").replace("%s", friendName(p)) : r === "blocked" || r === "not_friend" ? T("沒辦法回訪 %s").replace("%s", friendName(p)) : T("回訪沒送出，等一下再試"));
+  }
+  // 兩隻一起玩一次松果：你的夥伴從左邊走進來，松果在兩隻之間拋一個來回，玩完就停（不重複播）
+  function playTogether(stage) {
+    const box = stage.querySelector(".ps-box") || stage; if (!box || typeof PET_ART === "undefined") return;
+    const i = typeof petStageIndex === "function" && typeof totalKm === "function" ? petStageIndex(totalKm()) : 3;
+    const mine = document.createElement("div"); mine.className = "fv-me"; mine.setAttribute("aria-hidden", "true");
+    mine.innerHTML = PET_ART.own(() => PET_ART.svg(i, "", typeof petHat === "function" ? petHat() : "none", undefined, typeof petAcc === "function" ? petAcc() : "none"));
+    const cone = document.createElement("i"); cone.className = "fv-cone"; cone.setAttribute("aria-hidden", "true");
+    cone.innerHTML = typeof petGiftIcon === "function" ? petGiftIcon("pine", "pg-ic") : "";
+    stage.classList.add("fv-together"); box.appendChild(mine); box.appendChild(cone);
+    clearTimeout(stage._pt); stage._pt = setTimeout(() => { cone.remove(); stage.dataset.played = "1"; }, 3600);
+  }
+
+  async function claimVisits() {
+    try {
+      const { data, error } = await Supa.client().rpc("claim_pet_visits"); if (error || !data || !data.length) return 0;
+      for (const r of data) {
+        const who = r.pet_name ? T(r.pet_name) : (r.from_name || T("好友的夥伴"));
+        if (typeof petDiarySocial === "function") petDiarySocial("visited", "", who);
+        say(T("%s 回訪了你家！").replace("%s", who));
+      }
+      return data.length;
+    } catch (e) { return 0; }
+  }
+
+  return { friendsPets, sendGift, claimGifts, claimItems, claimVisits, renderFriends, visit, giveItem, returnVisit, _drawPhoto: drawPhoto };
 })();
