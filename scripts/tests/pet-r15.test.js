@@ -18,6 +18,10 @@ const KM=[0,5,20,40,90,150,260],V=["deep","sea","alpine"];
  ok(bad.length===0,"every variant keeps the same moving parts as the original (42 combos) "+JSON.stringify(bad));
  const dif=[];for(const v of V)for(let i=0;i<7;i++){const a=PA.svg(i).replace(/p[0-9a-z]+_/g,""),b=PA.as(v,()=>PA.svg(i)).replace(/p[0-9a-z]+_/g,"").replace(/ data-v="\w+"/,"");if(a===b)dif.push(`${v}/${i}`);}
  ok(dif.length===0,"each of the 21 variants actually looks different from the original "+JSON.stringify(dif));}
+// 1b) 每一個畫夥伴的地方都要說清楚畫誰的：自己的（PET_ART.own）、別人的（PET_ART.as／asV）、或註明「原本的物種」（2026-10-10 使用者：所有出現寵物的地方都要同步新外觀）
+{const files=[];const walk=d=>{for(const n of __fs.readdirSync(d)){const p=d+"/"+n;if(__fs.statSync(p).isDirectory())walk(p);else if(n.endsWith(".js")&&n!=="pet-art.js"&&!p.includes("/i18n/")&&!p.includes("/vendor/"))files.push(p);}};walk(ROOT+"/web/js");
+ const bad=[];for(const f of files)__fs.readFileSync(f,"utf8").split("\n").forEach((l,k)=>{if(/PET_ART\.(svg|dataUri)\(/.test(l)&&!/PET_ART\.own\(|PET_ART\.as\b|asV\(|原本的物種/.test(l))bad.push(f.replace(ROOT+"/","")+":"+(k+1));});
+ ok(bad.length===0,"every place that draws the pet says whose species it is (own / as / original) "+JSON.stringify(bad));}
 (async()=>{const srv=spawn("python3",["-m","http.server",String(__TTP)],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch();
 const mk=async(km,tone)=>{const ctx=await b.newContext({viewport:{width:390,height:844},timezoneId:"Asia/Taipei"});const p=await ctx.newPage();await require(__dirname+"/fake-weather")(p);p.on("pageerror",e=>errs.push(e.message));
  await p.addInitScript(o=>{if(sessionStorage.getItem("seed"))return;sessionStorage.setItem("seed","1");localStorage.setItem("tt_lang","zh");["tt_onboarded_v2","tt_coach_trail","tt_locperm_prompted","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_coach_team","tt_coach_pet"].forEach(k=>localStorage.setItem(k,"1"));localStorage.setItem("tt_pet_woke",String(Date.now()));localStorage.setItem("tt_debug_km",String(o.km));if(o.tone)localStorage.setItem("tt_pet_tone",o.tone);},{km,tone});
@@ -57,6 +61,15 @@ for(const v of V)for(const st of [1,3,6]){const p=await mk(KM[st],v);
  ok(r.tone==="sea"&&r.card==="sea"&&r.name==="溪岸水獺","picking 海風: pet card becomes the otter "+JSON.stringify(r));
  ok(r.row==="溪岸水獺"&&r.rowV==="sea","handbook evolution chart follows the pick");
  await p.screenshot({path:`${OUT}/dex-sea.png`});
+// 4b) 其他畫面也是那一種：個人頁、年度卡、手冊的下一階、日記小圖、進化動畫、每月挑戰
+ const sv=await p.evaluate(async()=>{const out={};const vOf=sel=>[...document.querySelectorAll(sel+" .pet-critter")].map(e=>e.dataset.v||"-");
+  document.querySelector('[data-ov="petdex"]')?.remove();renderPet();await new Promise(r=>setTimeout(r,200));out.nextSil=vOf(".pet-evo-sil");
+  document.getElementById("petDex").click();await new Promise(r=>setTimeout(r,300));out.diary=vOf('[data-ov="petdex"] .diary-ic');document.querySelector('[data-ov="petdex"]').remove();
+  celebrateEvolve(petStageInfo(3),4);await new Promise(r=>setTimeout(r,300));out.evolve=vOf(".evolve-stage");document.querySelectorAll(".evolve-ov,[data-ov]").forEach(e=>e.remove());
+  if(typeof renderMeProfileCard==="function"){renderMeProfileCard();await new Promise(r=>setTimeout(r,200));out.prof=vOf(".prof-pet");}
+  return out;});
+ ok(sv.nextSil.every(v=>v==="sea")&&sv.evolve.length===2&&sv.evolve.every(v=>v==="sea")&&sv.diary.length&&sv.diary.every(v=>v==="sea"),"next-stage silhouette, diary icons and evolution animation use the chosen species "+JSON.stringify(sv));
+ ok(!sv.prof||sv.prof.every(v=>v==="sea"),"profile card pet uses the chosen species "+JSON.stringify(sv.prof));
 // 5) 好友、小隊
  const f=await p.evaluate(async()=>{window.__installFakeSupa({});window.__updates=[];localStorage.setItem("tt_pet_hat","straw");await Profiles.syncMyStats("me");const u=window.__updates.filter(x=>x.table==="profiles").pop();
   const P=id=>window.__fakeT.profiles.find(x=>x.id===id);Object.assign(P("u1"),{pet_level:4,pet_state:{last:new Date().toISOString(),v:"alpine",at:new Date().toISOString()}});Object.assign(P("u3"),{pet_level:5,pet_state:{last:new Date().toISOString(),v:"<x>"}});

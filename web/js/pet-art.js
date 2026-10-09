@@ -175,7 +175,10 @@ window.PET_ART = (function () {
       // R15 幼蟲的物種特徵（畫在每一片裡，跟著這一片一起拱、一起轉）
       const feat = V.lv === "spines" && k >= 1 ? [-4.5, 4.5].map(d => { const bx = rd(x + d), by = rd(y - ry * .82), tx = rd(x + d * 1.3), ty = rd(by - 9); return `<path d="M${bx} ${by} L${tx} ${ty} M${rd((+bx + +tx) / 2)} ${rd((+by + +ty) / 2)} l${d > 0 ? 3 : -3} -2 M${rd((+bx + +tx) / 2)} ${rd((+by + +ty) / 2)} l${d > 0 ? -2 : 2} -3" stroke="#e8743a" stroke-width="1.8" stroke-linecap="round"/>`; }).join("") + `<circle cx="${rd(x)}" cy="${rd(y + ryb * .2)}" r="1.6" fill="#d9a85a" opacity=".8"/>`
         : V.lv === "bands" && k >= 1 ? `<path d="M${rd(x - 2.2)} ${rd(y - ry * .95)} L${rd(x + 2.2)} ${rd(y - ry * .95)} L${rd(x + 2.2)} ${rd(y + ryb * .9)} L${rd(x - 2.2)} ${rd(y + ryb * .9)}Z" fill="#f4f1e6"/><circle cx="${rd(x - 6)}" cy="${rd(y - ry * .3)}" r="2.4" fill="#f2c230"/><circle cx="${rd(x + 6)}" cy="${rd(y + ryb * .2)}" r="1.8" fill="#f2c230"/>`
-        : V.lv === "hairs" ? `<g stroke-linecap="round" fill="none">${[-9, -5, -1, 3, 7].map(d => `<path d="M${rd(x + d)} ${rd(y - ry * .7)} q${rd(d * .5)} -8 ${rd(d * 1.1)} -15" stroke="#8a8278" stroke-width="3.4"/><path d="M${rd(x + d)} ${rd(y - ry * .7)} q${rd(d * .5)} -8 ${rd(d * 1.1)} -15" stroke="#fbf9f4" stroke-width="2"/>`).join("")}</g>` : "";
+        : V.lv === "hairs" ? (() => {   // 燈蛾幼蟲（10/10 改：以前像梳子）：每一片一撮蓬鬆的毛——幾根長短不一、往外散開的軟毛，底下一團淡色絨毛
+          const tuft = [[-7, -14, -3], [-3, -18, -1], [1, -17, 1], [5, -15, 2], [8, -12, 3]].map(([d, h, c]) => `<path d="M${rd(x + d * .6)} ${rd(y - ry * .6)} q${rd(c)} ${rd(h * .5)} ${rd(d * 1.4)} ${rd(h)}" stroke="#fbf8f2" stroke-width="1.6" fill="none" stroke-linecap="round"/>`).join("");
+          return `<ellipse cx="${rd(x)}" cy="${rd(y - ry * .62)}" rx="${rd(rx * .75)}" ry="3.2" fill="#f4f0e8" opacity=".9"/><g filter="drop-shadow(0 0 .5px #9a9288)">${tuft}</g>`;
+        })() : "";
       const eye = V.lv ? "" : k === 7 ? `<g class="pc-d2" opacity=".85"><ellipse cx="${rd(x - 1)}" cy="${rd(y - ry * .2)}" rx="5.4" ry="4.2" fill="#b89a5a"/><ellipse cx="${rd(x - .4)}" cy="${rd(y - ry * .16)}" rx="3" ry="2.4" fill="#3a2c1c"/></g>` : "";   // 假眼紋
       const spot = k >= 1 && k <= 7 ? `<circle class="pc-d" cx="${rd(x + 1)}" cy="${rd(y + ryb * .3)}" r="1.4" fill="${sh(LV, .45)}"/>` : "";   // 氣門
       const band = `<path class="pc-d" d="M${rd(x - rx - 1)} ${rd(y + ryb * .55)} L${rd(x + rx + 1)} ${rd(y + ryb * .55)}" stroke="${tn(LV, .45)}" stroke-width="2.6" fill="none" opacity=".6"/>`;   // 肚子那一側的淺色帶（相鄰幾片接成一條）
@@ -311,11 +314,22 @@ ${foxHead()}
   const stripe = (x0, y0, x1, y1, w, b) => {
     if (!TS) return tp(x0, y0, x1, y1, w, TGK, b);
     const mx = rd((x0 + x1) / 2), my = rd((y0 + y1) / 2), len = Math.hypot(x1 - x0, y1 - y0), ang = rd(Math.atan2(y1 - y0, x1 - x0) * 180 / Math.PI);
-    if (TS === "cloud") return `<ellipse cx="${mx}" cy="${my}" rx="${rd(len / 2 + 2.4)}" ry="${rd(w * .95 + 1.4)}" transform="rotate(${ang} ${mx} ${my})" fill="${sh(TG, .22)}" stroke="${TGK}" stroke-width="${rd(Math.max(1.6, w * .42))}"/>`;
+    // 雲豹（2026-10-10 使用者：「斑塊太大太多，看起來很噁心」→ 重畫）：真的雲豹是「中空」的雲紋——深色只在邊緣、斷成兩三段，中間比底色淡一點；
+    //   臉上（y < 125）不畫雲紋，只有成對的小黑點；身上每三條略過一條，而且縮小一半
+    if (TS === "cloud") {
+      if (my < 125) return `<circle cx="${rd(mx - 2.2)}" cy="${my}" r="${rd(Math.max(1.1, w * .26))}" fill="${TGK}"/><circle cx="${rd(mx + 2.4)}" cy="${rd(my + 1.2)}" r="${rd(Math.max(1, w * .22))}" fill="${TGK}"/>`;
+      if (w < 3.6 || (Math.round(x0 * 3 + y0) % 3) === 0) return "";   // 細的（腳上）不畫
+      const rx = rd(len * .3 + 1.6), ry = rd(w * .55 + 1.2);
+      return `<g transform="rotate(${ang} ${mx} ${my})"><ellipse cx="${mx}" cy="${my}" rx="${rx}" ry="${ry}" fill="${tn(TG, .18)}"/><ellipse cx="${mx}" cy="${my}" rx="${rx}" ry="${ry}" fill="none" stroke="${TGK}" stroke-width="${rd(Math.max(1.2, w * .3))}" stroke-dasharray="${rd(rx * 1.6)} ${rd(rx * .7)}" stroke-linecap="round" opacity=".85"/></g>`;
+    }
     if (TS === "wave") { const nx = -(y1 - y0) / (len || 1), ny = (x1 - x0) / (len || 1), q = w * .9; return `<path d="M${rd(x0)} ${rd(y0)} Q${rd(x0 + (x1 - x0) * .25 + nx * q)} ${rd(y0 + (y1 - y0) * .25 + ny * q)} ${mx} ${my} T${rd(x1)} ${rd(y1)}" stroke="${TGK}" stroke-width="${rd(w * .62)}" fill="none" stroke-linecap="round"/>`; }
+    if (my < 125) return `<circle cx="${mx}" cy="${my}" r="${rd(Math.max(1.1, w * .28))}" fill="${TGK}"/>`;   // 雪豹臉上只有小黑點（10/10：玫瑰斑太擠）
     const r = rd(Math.max(2.6, len * .28)), sw = rd(Math.max(1.4, w * .4));   // snow：玫瑰斑＝一圈斷開的小弧＋淡色中心
     return `<circle cx="${mx}" cy="${my}" r="${r}" fill="${sh(TG, .12)}"/><circle cx="${mx}" cy="${my}" r="${r}" fill="none" stroke="${TGK}" stroke-width="${sw}" stroke-dasharray="${rd(r * 1.3)} ${rd(r * .5)}" stroke-linecap="round" transform="rotate(${ang} ${mx} ${my})"/>`;
   };
+  // 雲豹身側的雲紋：不規則的中空雲朵（深色邊、斷開），左右各兩朵
+  const cloudBlob = (x, y, s, rot) => { const d = `M${x - 7 * s} ${y} q${2 * s} ${-6 * s} ${7 * s} ${-5 * s} q${6 * s} ${-2 * s} ${8 * s} ${3 * s} q${3 * s} ${5 * s} ${-2 * s} ${7 * s} q${-6 * s} ${3 * s} ${-10 * s} ${1 * s} q${-5 * s} ${-1 * s} ${-3 * s} ${-6 * s}Z`; return `<g transform="rotate(${rot} ${x} ${y})"><path d="${d}" fill="${tn(TG, .2)}"/><path d="${d}" fill="none" stroke="${TGK}" stroke-width="2" stroke-dasharray="9 4" stroke-linecap="round"/></g>`; };
+  const cloudSpots = TS === "cloud" ? cloudBlob(65, 147, .72, -20) + cloudBlob(62, 167, .62, 8) + cloudBlob(135, 147, .72, 20) + cloudBlob(138, 167, .62, -8) : "";
   const TSP = [[[132, 186], [166, 190], [186, 164], [176, 128]]], TSW = TS === "snow" ? [[0, 20], [1, 17]] : [[0, 15], [1, 10]];
   const tgRings = spine(TSP, 12).filter((q, k) => k > 1 && k % 3 === 1).map(q => { const w = wAt(TSW, q.f) / 2 + 1; return `M${rd(q.x + q.nx * w)} ${rd(q.y + q.ny * w)}L${rd(q.x - q.nx * w)} ${rd(q.y - q.ny * w)}`; }).join("");
   const tigerHead = () => `
@@ -346,7 +360,7 @@ ${foxHead()}
         ${P(E(176, 126, 6.4, 8), TGK, { sw: 2, dx: 1, dy: 1 })}</g>
       <g class="pc-sb">${P(Pa("M64 196 C56 166 66 132 100 122 C134 132 144 166 136 196Z"), TG, { hl: [78, 140, 6, 14] })}
       ${P(Pa("M100 128 Q120 136 121 162 Q116 182 100 188 Q84 182 79 162 Q80 136 100 128Z"), TGC, { sw: 2.4, dx: 3, dy: 3 })}
-      ${stripe(60, 150, 74, 156, 4.6, 2)}${stripe(58, 166, 72, 170, 4.4, 1)}${stripe(62, 182, 74, 182, 4, 0)}${stripe(140, 150, 126, 156, 4.6, -2)}${stripe(142, 166, 128, 170, 4.4, -1)}${stripe(138, 182, 126, 182, 4, 0)}</g>
+      ${stripe(60, 150, 74, 156, 4.6, 2)}${stripe(58, 166, 72, 170, 4.4, 1)}${stripe(62, 182, 74, 182, 4, 0)}${stripe(140, 150, 126, 156, 4.6, -2)}${stripe(142, 166, 128, 170, 4.4, -1)}${stripe(138, 182, 126, 182, 4, 0)}${TS === "cloud" ? cloudSpots : ""}</g>
       <g class="pr-loaf" opacity="0">${P(E(138, 179, 22, 14), TG, { dx: 2, dy: 2 })}${stripe(132, 170, 140, 184, 4, 1)}${stripe(146, 170, 150, 182, 3.6, 1)}${P(E(100, 184, 48, 14), TG, { hl: [82, 178, 13, 3], dx: 3, dy: 3 })}${P(E(100, 186, 24, 8), TGC, { sw: 0, dx: 1, dy: 1 })}${stripe(60, 178, 70, 190, 4, 1)}${P(Pa("M64 184 Q60 146 100 138 Q140 146 136 184Z"), TG, { hl: [80, 152, 5, 9], dx: 3, dy: 3 })}${P(Pa("M84 184 Q82 154 100 150 Q118 154 116 184Z"), TGC, { sw: 0, dx: 1, dy: 1 })}${stripe(68, 158, 78, 162, 4, 1)}${stripe(132, 158, 122, 162, 4, -1)}</g>
       ${rig("pr-paw l", 83, 150, P(Pa("M74 148 Q68 170 69 190 Q82 194 94 190 Q93 168 92 150 Q84 144 74 148Z"), TG, { dx: 3, dy: 2 }) + stripe(71, 166, 81, 168, 3.4, 0) + stripe(71, 176, 80, 177, 3, 0) + P(E(82, 192, 14, 5.4), TG, { sw: 2.4, dx: 1, dy: 2 }) + `<path d="M76 195 v-4 M82 196 v-5 M88 195 v-4" stroke="${sh(TG, .5)}" stroke-width="1.8" stroke-linecap="round"/>`)}
       ${rig("pr-paw r", 117, 150, P(Pa("M126 148 Q132 170 131 190 Q118 194 106 190 Q107 168 108 150 Q116 144 126 148Z"), TG, { dx: 3, dy: 2 }) + stripe(129, 166, 119, 168, 3.4, 0) + stripe(129, 176, 120, 177, 3, 0) + P(E(118, 192, 14, 5.4), TG, { sw: 2.4, dx: 1, dy: 2 }) + `<path d="M112 195 v-4 M118 196 v-5 M124 195 v-4" stroke="${sh(TG, .5)}" stroke-width="1.8" stroke-linecap="round"/>`)}

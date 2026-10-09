@@ -774,7 +774,7 @@ function renderPet() {
   if (next) {
     const pct = Math.max(2, Math.min(100, Math.round((km - st.km) / (next.km - st.km) * 100)));
     // 下一階不劇透：剪影＋「？？？」（手冊也是這樣）
-    const nextArt = (typeof PET_ART !== "undefined") ? `<span class="pet-evo-sil">${PET_ART.svg(i + 1)}</span>` : "";
+    const nextArt = (typeof PET_ART !== "undefined") ? `<span class="pet-evo-sil">${PET_ART.own(() => PET_ART.svg(i + 1))}</span>` : "";
     evoTop = `<span>${ttT("再走")} <b>${(next.km - km).toFixed(1)}</b> km ${ttT("就進化")}</span><span class="pet-evo-next">${nextArt}<span>${ttUnknown()}</span></span>`;
     prog = `<div class="pet-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>`;
   } else evoTop = `<span>${ic("sparkle")} ${ttT("已經是最終型態了")}</span>`;
@@ -1083,7 +1083,7 @@ function petDiaryHtml(ym) {   // ym："2026-10"＝只看那個月（2026-10-08 R
   if (ym) { const keep = all.filter(x => localYM(x.t) === ym); all.length = 0; all.push(...keep); }
   const txt = x => x.k === "meet" ? ttT("我們相遇了") : x.k === "evo" ? `${ttT("進化成")} ${ttT(PET_STAGES[x.i] ? petStageInfo(x.i).n : "")}` : x.k === "feed1" ? ttT("第一次吃果實") : x.k === "hug1" ? ttT("第一次抱抱") : x.k === "hike1" ? ttT("第一次一起出門") : /^ann:y/.test(x.k) ? ttT("相遇 {n} 週年").replace("{n}", x.k.slice(5)) : /^ann:d/.test(x.k) ? ttT("相遇第 {n} 天").replace("{n}", x.k.slice(5)) : /^gift:/.test(x.k) && PET_GIFTS[x.k.slice(5)] ? `${ttT("帶回來一個")}${ttCJK() ? "" : " "}${ttT(PET_GIFTS[x.k.slice(5)][0])}` : /^(give|got|visit|visited):/.test(x.k) ? petDiarySocialText(x.k) : /^trick:\d$/.test(x.k) ? ttT("學會新把戲：{t}").replace("{t}", ttT(PET_TRICKS[+x.k.slice(6)] || "")) : "";
   const dt = t => { const z = new Date(t); return isNaN(z) ? "" : `${z.getFullYear()}/${z.getMonth() + 1}/${z.getDate()}`; };
-  const rows = all.filter(x => txt(x)).map(x => `<div class="diary-row"><span class="diary-ic">${x.i != null && typeof PET_ART !== "undefined" ? PET_ART.svg(x.i) : `<span class="inline-ic">${ic("footprints")}</span>`}</span><span class="diary-t">${escHtml(txt(x))}</span><time>${dt(x.t)}</time></div>`).join("");
+  const rows = all.filter(x => txt(x)).map(x => `<div class="diary-row"><span class="diary-ic">${x.i != null && typeof PET_ART !== "undefined" ? PET_ART.own(() => PET_ART.svg(x.i)) : `<span class="inline-ic">${ic("footprints")}</span>`}</span><span class="diary-t">${escHtml(txt(x))}</span><time>${dt(x.t)}</time></div>`).join("");
   return rows || `<div class="diary-empty">${ttT("還沒有紀錄")}</div>`;
 }
 // 日記照月份看（2026-10-08 R4 原22，併進手冊、不另做一套）：有紀錄的月份一顆按鈕；選了月份上面多一行「這個月」的小結
@@ -1161,7 +1161,7 @@ function celebrateEvolve(st, lv) {
   const newIdx = lv - 1, prevIdx = Math.max(0, lv - 2);
   // 變身序列：舊角色抖動→白光爆閃→新角色現身
   const stageHtml = A
-    ? `<div class="evolve-stage"><div class="evolve-from">${PET_ART.svg(prevIdx)}</div><div class="evolve-flash"></div><div class="evolve-to">${PET_ART.svg(newIdx)}</div></div>`
+    ? `<div class="evolve-stage"><div class="evolve-from">${PET_ART.own(() => PET_ART.svg(prevIdx))}</div><div class="evolve-flash"></div><div class="evolve-to">${PET_ART.own(() => PET_ART.svg(newIdx))}</div></div>`
     : `<div class="evolve-emoji">${st.e}</div>`;
   ov.style.setProperty("--habitat", PET_BG[newIdx] || PET_BG[0]);
   ov.classList.add("evolve-lv" + lv);

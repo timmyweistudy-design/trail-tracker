@@ -135,7 +135,7 @@ window.PetJourney = (function () {
     const sn = snapOf(e), th = themeOf(e.t), id = "pjs" + (++SU), code = (TILE[e.t.region] || [])[2] || "TW";
     let holes = ""; for (let k = 0; k <= 8; k++) { const x = 3 + k * 6.75; holes += `<circle cx="${x}" cy="0" r="2.1"/><circle cx="${x}" cy="72" r="2.1"/>`; }
     for (let k = 1; k < 10; k++) { const y = k * 7.2; holes += `<circle cx="0" cy="${y}" r="2.1"/><circle cx="60" cy="${y}" r="2.1"/>`; }
-    const pet = typeof PET_ART !== "undefined" ? PET_ART.svg(sn.s, "", sn.h).replace(/^<svg class="pet-critter[^"]*"/, '<svg x="9" y="11" width="42" height="42"') : "";
+    const pet = typeof PET_ART !== "undefined" ? PET_ART.own(() => PET_ART.svg(sn.s, "", sn.h)).replace(/^<svg class="pet-critter[^"]*"/, '<svg x="9" y="11" width="42" height="42"') : "";
     const rot = (hsh(e.t.id) % 9) - 4;
     return `<span class="pj-stamp${big ? " big" : ""}" style="--r:${rot}deg"><svg viewBox="0 0 60 72" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
       <mask id="${id}"><rect width="60" height="72" fill="#fff"/><g fill="#000">${holes}</g></mask>
@@ -184,7 +184,7 @@ window.PetJourney = (function () {
     return REGIONS.map(([r, list]) => {
       const n = list.filter(c => got.has(c)).length, has = regs.has(r), id = REGION_HAT[r];
       return `<div class="pj-rrow${has ? " on" : ""}" style="--rc:${REGION_COLOR[r]}">
-        <div class="hat-prev">${typeof PET_ART !== "undefined" ? PET_ART.svg(st, "", id) : ""}</div>
+        <div class="hat-prev">${typeof PET_ART !== "undefined" ? PET_ART.own(() => PET_ART.svg(st, "", id)) : ""}</div>
         <div class="pj-rtxt"><b>${T(r)}</b><span>${T(PET_ART.HAT_LABEL[id])}${has ? "" : `・${T("走過這個地區的步道就會解鎖")}`}</span>
           <div class="pj-rbar"><i style="width:${Math.round(n / list.length * 100)}%"></i></div></div>
         <span class="pj-rn">${n}<small>/${list.length}</small></span></div>`;

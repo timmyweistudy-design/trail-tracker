@@ -101,7 +101,7 @@ function ttProfileHero(prof, opts) {
   try { if (typeof achScore === "function") { const s = achScore(); const ci = (typeof ACH_TIER_IC !== "undefined" && typeof ic === "function") ? ic(ACH_TIER_IC[s.rankIdx]) : ""; title = `<span class="prof-title rkt-${s.rankIdx}">${ci} ${ttT(s.rank)}</span>`; } } catch (e) { /* */ }
   const lvChip = lvl ? `<span class="lv-chip lvt-${Math.min(lvl, 7)}">Lv.${lvl}</span>` : "";
   // Lv 與寵物一組
-  const petHtml = ps ? `<div class="prof-pet">${lvChip}${typeof PET_ART !== "undefined" ? PET_ART.svg((ps.level || 1) - 1) : ps.emoji}<span class="prof-pet-t">${esc(petName() ? ps.name : ttT(ps.name))} · ${ttT("已走")} <b>${ps.km}</b> km</span></div>` : (lvChip ? `<div class="prof-pet">${lvChip}</div>` : "");
+  const petHtml = ps ? `<div class="prof-pet">${lvChip}${typeof PET_ART !== "undefined" ? PET_ART.own(() => PET_ART.svg((ps.level || 1) - 1)) : ps.emoji}<span class="prof-pet-t">${esc(petName() ? ps.name : ttT(ps.name))} · ${ttT("已走")} <b>${ps.km}</b> km</span></div>` : (lvChip ? `<div class="prof-pet">${lvChip}</div>` : "");
   let ach = "";
   if (opts.ach !== false) { try { if (typeof achScore === "function") { const s = achScore(); ach = `<button class="prof-ach" data-prof-ach="1" aria-label="${ttT("成就")} ${s.got}/${s.total} · ${ttT("成就分數")} ${s.score}">${ic("medal")} <b>${s.got}/${s.total}</b> · <b>${s.score}</b> ›</button>`; } } catch (e) { /* */ } }
   // 稱號與成就一組
@@ -156,7 +156,7 @@ function meYearCard(loginHint) {
   const y = new Date().getFullYear(), recs = realRecords().filter(r => new Date(r.date).getFullYear() === y);
   const km = recs.reduce((s, r) => s + (r.distanceKm || 0), 0);
   const ps = typeof petStats === "function" ? petStats() : null;
-  const art = (ps && typeof PET_ART !== "undefined") ? PET_ART.svg(ps.level - 1) : "";
+  const art = (ps && typeof PET_ART !== "undefined") ? PET_ART.own(() => PET_ART.svg(ps.level - 1)) : "";
   let rank = ""; try { const sc = achScore(); rank = `<button class="prof-ach" data-prof-ach="1">${ic(ACH_TIER_IC[sc.rankIdx])} ${ttT(sc.rank)} ›</button>`; } catch (e) { /* */ }
   return `<div class="me-card me-year">
     <div class="my-pet">${art}</div>

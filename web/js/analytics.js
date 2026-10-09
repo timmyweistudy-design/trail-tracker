@@ -148,7 +148,7 @@ function drawYearImage(d) {
       const pi = new Image();
       pi.onload = () => build(avImg, pi);
       pi.onerror = () => build(avImg, null);
-      pi.src = PET_ART.dataUri((d.pet.level || 1) - 1, 128);
+      pi.src = PET_ART.own(() => PET_ART.dataUri((d.pet.level || 1) - 1, 128));
     } else build(avImg, null);
   };
   if (d.avatar) { const img = new Image(); img.crossOrigin = "anonymous"; img.onload = () => afterAvatar(img); img.onerror = () => afterAvatar(null); img.src = d.avatar; }
@@ -367,7 +367,7 @@ async function openCompare() {
   ov.querySelector("#cmpX").addEventListener("click", () => ov.remove());
   ov.addEventListener("click", e => { if (e.target === ov) ov.remove(); });
   // 依寵物等級對應成長階段 emoji（PET_STAGES 由 pet.js 提供）
-  const petEmoji = lv => { try { const idx = Math.max((+lv || 1) - 1, 0); if (typeof PET_ART !== "undefined") return PET_ART.svg(idx); const s = (typeof PET_STAGES !== "undefined" && PET_STAGES) || []; return s.length ? s[Math.min(idx, s.length - 1)].e : "🐾"; } catch (e) { return "🐾"; } };
+  const petEmoji = lv => { try { const idx = Math.max((+lv || 1) - 1, 0); if (typeof PET_ART !== "undefined") return PET_ART.own(() => PET_ART.svg(idx)); const s = (typeof PET_STAGES !== "undefined" && PET_STAGES) || []; return s.length ? s[Math.min(idx, s.length - 1)].e : "🐾"; } catch (e) { return "🐾"; } };
   const RANK_MEDAL = ["🥇", "🥈", "🥉"];
   const refreshBtn = ov.querySelector("#cmpRefresh");
   async function loadCmp() {

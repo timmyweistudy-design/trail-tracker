@@ -33,7 +33,7 @@ const TeamLive = (() => {
     const lk = lookOf(meta.look);
     if (lk) return `<span class="tm-pet">${PET_ART.as ? PET_ART.as(lk.v, () => PET_ART.svg(lk.s, "", lk.h, undefined, lk.a)) : PET_ART.svg(lk.s, "", lk.h, undefined, lk.a)}</span>`;
     const petIdx = (meta.pet && typeof PET_ART !== "undefined" && PET_ART.byEmoji) ? PET_ART.byEmoji(meta.pet) : -1;
-    return meta.pet ? `<span class="tm-pet">${petIdx >= 0 ? PET_ART.svg(petIdx) : esc(meta.pet)}</span>` : "";
+    return meta.pet ? `<span class="tm-pet">${petIdx >= 0 ? PET_ART.svg(petIdx) /* 原本的物種：舊版 App 只送 emoji */ : esc(meta.pet)}</span>` : "";
   }
   function myLook() {
     if (typeof petStageIndex !== "function" || typeof totalKm !== "function") return null;

@@ -50,7 +50,7 @@ const Challenge = (() => {
     const p = progress(), d = new Date();
     const month = d.toLocaleDateString(ttLocale(), { month: "long" });
     const left = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate() - d.getDate();
-    const hat = (typeof PET_ART !== "undefined" && PET_ART.hat) ? `<span class="mch-hat">${PET_ART.svg(petStageIndex(totalKm()))}${PET_ART.hat(HAT, petStageIndex(totalKm()))}</span>` : "";
+    const hat = (typeof PET_ART !== "undefined" && PET_ART.hat) ? `<span class="mch-hat">${PET_ART.own(() => PET_ART.svg(petStageIndex(totalKm())))}${PET_ART.hat(HAT, petStageIndex(totalKm()))}</span>` : "";
     const btn = p.claimed ? `<button class="btn ghost" disabled>${ic("check")} ${T("這個月的挑戰完成了")}</button>`
       : p.done ? `<button class="btn primary" id="mchClaim">${T("領取")} +${REWARD} ${typeof BERRY_SVG !== "undefined" ? BERRY_SVG : ""}</button>`
         : `<div class="mch-left">${left > 0 ? `${T("這個月還剩")}${ttColon()}<b>${left}</b> ${T("天")}` : T("今天是這個月最後一天")}</div>`;

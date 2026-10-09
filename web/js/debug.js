@@ -361,7 +361,7 @@ async function toggleDebugPanel() {
       ["🎁帶禮物回來", seePet(() => { localStorage.setItem("tt_pet_aff", "100"); localStorage.setItem("tt_pet_aff_t", new Date().toISOString()); localStorage.removeItem("tt_pet_gift_t"); window.__petGiftT = 0; renderPet(); return "親密設成滿、2.6 秒後牠帶東西回來"; })],
       ["🎂相遇第100天", seePet(() => { localStorage.setItem("tt_pet_hatch", new Date(Date.now() - 100 * 864e5).toISOString()); window.__petLine = null; renderPet(); return "相遇日改成 100 天前（重置🥚會還原）"; })],
       ["🍓好友送果實", seePet(() => { if (typeof petGiftBerries === "function") { ttDebug.addBerries(4); setTimeout(() => petGiftBerries(4), 300); } return ""; })],
-      ["🦊朋友來串門子", seePet(() => { if (typeof PetStage !== "undefined" && PetStage.guest) PetStage.guest({ svg: PET_ART.svg(Math.floor(Math.random() * 7), "", "crown"), stay: 3600 }).then(ok => { if (!ok) toast("牠在忙或睡著，等一下再試"); }); return ""; })],
+      ["🦊朋友來串門子", seePet(() => { if (typeof PetStage !== "undefined" && PetStage.guest) PetStage.guest({ svg: PET_ART.svg(Math.floor(Math.random() * 7), "", "crown"), stay: 3600 }).then(ok => { if (!ok) toast("牠在忙或睡著，等一下再試"); }); return ""; })],   /* 原本的物種：測試用的訪客 */
       ["🌰玩松果", seePet(() => { const b = document.getElementById("petPlay"); if (b) b.click(); return ""; })],
       ["📷拍照", seePet(() => { if (typeof openPetPhoto === "function") openPetPhoto(); return ""; })],
       ["🎨配色全解鎖", () => { window.__toneAll = true; petApplyTone(); renderPet(); return "配色全解鎖（只在這次開 App 有效；清除測試資料會恢復）"; }],

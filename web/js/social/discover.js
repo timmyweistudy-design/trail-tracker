@@ -30,7 +30,10 @@ const Discover = (() => {
     if (!prof.pet_name && !prof.pet_level) return "";
     const lvl = prof.pet_level || 1;
     const emoji = (typeof PET_STAGES !== "undefined" && PET_STAGES[lvl - 1]) ? PET_STAGES[lvl - 1].e : "🐾";
-    const art = (typeof PET_ART !== "undefined") ? PET_ART.svg(lvl - 1) : emoji;
+    // 別人的個人頁：照對方同步的近親物種（pet_state.v）、帽子、配件畫（R15；舊版沒有就是原本的）
+    const vv = prof.pet_state && typeof prof.pet_state === "object" && ["deep", "sea", "alpine"].includes(prof.pet_state.v) ? prof.pet_state.v : "";
+    const hat = typeof PET_ART !== "undefined" && PET_ART.HAT_IDS.includes(prof.pet_hat) ? prof.pet_hat : undefined, acc = typeof PET_ART !== "undefined" && PET_ART.ACC_IDS && PET_ART.ACC_IDS.includes(prof.pet_acc) ? prof.pet_acc : undefined;
+    const art = (typeof PET_ART !== "undefined") ? (PET_ART.as ? PET_ART.as(vv, () => PET_ART.svg(lvl - 1, "", hat, undefined, acc)) : PET_ART.svg(lvl - 1)) : emoji;
     return `<div class="pf-pet">${art} ${esc(prof.pet_name || "")} <span class="lv-chip lvt-${Math.min(lvl, 7)}">Lv.${lvl}</span>${prof.total_km != null ? ` · ${T("已走")} ${Math.round(prof.total_km * 10) / 10} km` : ""}</div>`;
   }
 
