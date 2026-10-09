@@ -5,21 +5,31 @@ const Pets = (() => {
   const say = s => { if (typeof toast === "function") toast(s); };
   async function me() { const c = Supa.client(); if (!c) return null; const { data } = await Supa.meUser(); return data && data.user ? data.user.id : null; }
 
-  async function friendsPets(uid) {
+  // 3 分鐘內重開夥伴頁沿用上一次的好友清單（以前每切一次分頁就查三次）；查失敗（斷網）不快取。
+  // friendsPets 失敗回空清單；夥伴頁用 loadFriends，失敗回 null——「讀不到」跟「還沒有好友」要分開講
+  let _fpCache = null;
+  async function loadFriends(uid) {
     const c = Supa.client(); uid = uid || await me(); if (!uid) return [];
+    if (_fpCache && _fpCache.uid === uid && Date.now() - _fpCache.t < 180000) return _fpCache.list;
+    try { const list = await _friendsPets(c, uid); if (list) _fpCache = { uid, t: Date.now(), list }; return list; } catch (e) { return null; }
+  }
+  async function friendsPets(uid) { return (await loadFriends(uid)) || []; }
+  async function _friendsPets(c, uid) {
     // 兩邊的追蹤一起查（以前一個等一個）
-    const [{ data: fo }, { data: fr }] = await Promise.all([
+    const [{ data: fo, error: e1 }, { data: fr, error: e2 }] = await Promise.all([
       c.from("follows").select("following_id").eq("follower_id", uid),
       c.from("follows").select("follower_id").eq("following_id", uid),
     ]);
+    if (e1 || e2) return null;
     const following = new Set((fo || []).map(r => r.following_id));
     const mutual = (fr || []).map(r => r.follower_id).filter(id => following.has(id));
     if (!mutual.length) return [];
     const cols = "id,handle,display_name,avatar_url,pet_name,pet_level,total_km";
-    let { data, error } = await c.from("profiles").select(cols + ",pet_hat,pet_decor,pet_state").in("id", mutual).limit(100);
+    let { data, error } = await c.from("profiles").select(cols + ",pet_hat,pet_decor,pet_state,pet_acc").in("id", mutual).limit(100);
+    if (error) ({ data, error } = await c.from("profiles").select(cols + ",pet_hat,pet_decor,pet_state").in("id", mutual).limit(100));   // 還沒跑 phase40
     if (error) ({ data, error } = await c.from("profiles").select(cols + ",pet_hat,pet_decor").in("id", mutual).limit(100));   // 還沒跑 phase39
-    if (error) ({ data } = await c.from("profiles").select(cols).in("id", mutual).limit(100));   // 還沒跑 phase38
-    return data || [];
+    if (error) ({ data, error } = await c.from("profiles").select(cols).in("id", mutual).limit(100));   // 還沒跑 phase38
+    return error ? null : data || [];
   }
 
   // RPC 回 false＝今天已送過（或送給自己）；有 error 才是真的失敗（斷網、資料庫錯）——兩種要分開講
@@ -65,15 +75,16 @@ const Pets = (() => {
     const H = `<div class="section-title"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 5.2A3 3 0 0 1 16 11M21 20a6 6 0 0 0-4-5.7"/></svg>${T("好友的夥伴")}</div>`;
     if (!sess) { box.innerHTML = `<button class="fp-login" id="fpLogin">${T("登入社群，就能看到好友的夥伴、互送果實 ›")}</button>`; const b = document.getElementById("fpLogin"); if (b) b.addEventListener("click", () => { const t = document.querySelector('.tab[data-view="social"]'); if (t) t.click(); }); return; }
     const uid = await me(); if (!uid) { box.innerHTML = ""; return; }   // 查一次就好，下面兩個查詢共用
-    const [list, sentToday] = await Promise.all([friendsPets(uid), giftedTodayIds(uid)]);
+    const [list, sentToday] = await Promise.all([loadFriends(uid), giftedTodayIds(uid).catch(() => new Set())]);
+    if (!list) { box.innerHTML = `${H}<div class="social-empty" style="padding:14px">${T("暫時讀不到好友的夥伴，等一下再試")}</div>`; return; }   /* 斷網：不畫成「還沒有好友」，也不觸發串門子 */
     if (!list.length) { box.innerHTML = `${H}<div class="social-empty" style="padding:14px">${T("在社群互相追蹤山友後，這裡會出現他們的夥伴，可以送果實打氣。")}</div>`; return; }
     const berry = typeof BERRY_SVG !== "undefined" ? BERRY_SVG : "🍓";   // 跟餵食鈕同一顆果實圖示
     const giftLbl = `${T("送出")} 3 ${berry}`;
     box.innerHTML = `${H}<div class="friend-pets">${list.map(p => {
       const lvl = p.pet_level || 1, emoji = (typeof PET_STAGES !== "undefined" && PET_STAGES[lvl - 1]) ? PET_STAGES[lvl - 1].e : "🥚";
-      const art = (typeof PET_ART !== "undefined") ? PET_ART.svg(lvl - 1, "", HAT_OK(p.pet_hat) ? p.pet_hat : undefined) : emoji;   // 好友夥伴也用 SVG 角色，戴著對方的配件
+      const art = (typeof PET_ART !== "undefined") ? petSvg(p, lvl - 1) : emoji;   // 好友夥伴也用 SVG 角色，戴著對方的頭飾＋配件
       const sent = sentToday.has(p.id);
-      return `<div class="fp"><button class="fp-visit" data-id="${p.id}" aria-label="${esc(T("去拜訪"))}"><span class="fp-pet">${art}</span><span class="fp-info"><b>${esc(p.pet_name ? T(p.pet_name) : (p.display_name || p.handle))}</b> <span class="lv-chip lvt-${Math.min(lvl, 7)}">Lv.${lvl}</span><span class="fp-by">@${esc(p.handle)}</span></span></button><button class="btn ghost fp-gift" data-id="${p.id}" data-name="${esc(p.display_name || p.handle)}"${sent ? " disabled" : ""}>${sent ? T("今天已送") : giftLbl}</button></div>`;
+      return `<div class="fp"><button class="fp-visit" data-id="${p.id}" aria-label="${esc(T("去拜訪"))}"><span class="fp-pet">${art}</span><span class="fp-info"><b>${esc(p.pet_name ? T(p.pet_name) : (p.display_name || p.handle))}</b> <span class="lv-chip lvt-${Math.min(lvl, 7)}">Lv.${lvl}</span><span class="fp-by">@${esc(p.handle)}</span>${fresh(p) ? `<span class="fp-fresh${fresh(p).stale ? " stale" : ""}">${esc(fresh(p).t)}</span>` : ""}</span></button><button class="btn ghost fp-gift" data-id="${p.id}" data-name="${esc(p.display_name || p.handle)}"${sent ? " disabled" : ""}>${sent ? T("今天已送") : giftLbl}</button></div>`;
     }).join("")}</div>`;
     box.querySelectorAll(".fp-visit").forEach(b => b.addEventListener("click", () => { const p = list.find(x => x.id === b.dataset.id); if (p) visit(p, sentToday.has(p.id), () => renderFriends()); }));
     box.querySelectorAll(".fp-gift").forEach(b => b.addEventListener("click", () => giftClick(b, giftLbl)));
@@ -88,7 +99,7 @@ const Pets = (() => {
     const nm = p.pet_name ? T(p.pet_name) : (p.display_name || p.handle || T("好友的夥伴")), who = p.display_name || p.handle || "";
     setTimeout(async () => {
       if (document.body.dataset.view !== "pet") return;
-      const ok = await PetStage.guest({ svg: PET_ART.svg(lvl - 1, "", HAT_OK(p.pet_hat) ? p.pet_hat : undefined), stay: 3600 });
+      const ok = await PetStage.guest({ svg: petSvg(p, lvl - 1), stay: 3600 });
       if (ok) localStorage.setItem("tt_pet_guest_day", day);
     }, 2500);
     setTimeout(() => { if (document.body.dataset.view === "pet" && typeof petSay === "function" && document.querySelector(".ps-guest")) petSay(T("{who} 的 {pet} 來串門子了！").replace("{who}", who).replace("{pet}", nm), 3200); }, 4300);
@@ -134,6 +145,17 @@ const Pets = (() => {
   // 好友的夥伴舞台：跟對方自己的夥伴卡同一套（pet-stage.js 的 2.5D 場景＋腳下的葉子／雲＋影子），
   // 配件、走過的風景照對方同步上來的（phase38）；時段、季節跟著現在（你們在同一個台灣）
   const HAT_OK = id => typeof PET_ART !== "undefined" && PET_ART.HAT_IDS.includes(id);
+  const ACC_OK = id => typeof PET_ART !== "undefined" && !!PET_ART.ACC_IDS && id !== "none" && PET_ART.ACC_IDS.includes(id);
+  const petHatOf = p => HAT_OK(p.pet_hat) ? p.pet_hat : undefined, petAccOf = p => ACC_OK(p.pet_acc) ? p.pet_acc : undefined;   // 舊版沒有 pet_acc：照舊只畫頭飾
+  const petSvg = (p, i) => PET_ART.svg(i, "", petHatOf(p), undefined, petAccOf(p));
+  // 好友狀態多久以前同步（R11，原26）：pet_state.at 是對方 App 上次寫上來的時間；超過 24 小時就不假裝知道牠現在的心情
+  function fresh(p) {
+    const st = p && p.pet_state && typeof p.pet_state === "object" ? p.pet_state : null, at = st && st.at ? new Date(st.at) : null;
+    if (!at || isNaN(at)) return null;   // 舊版 App 沒寫同步時間：不顯示
+    const h = Math.max(0, Math.floor((Date.now() - at.getTime()) / 3600e3));
+    if (h >= 24) return { stale: true, t: T("超過一天沒同步") };
+    return { stale: false, t: h < 1 ? T("剛剛同步") : T("{n} 小時前同步").replace("{n}", h) };
+  }
   const DECOR_OK = ["fall", "sea", "old", "forest", "lake"];
   // 好友夥伴「當下」的心情：用對方最近一次走路的時間、跟自己夥伴卡同一套規則（pet.js 的 petMood）現在算，
   // 不存心情本身（存了會過時）；天氣是對方那邊的，超過 3 小時就不用（避免一直顯示早上的雨）
@@ -150,11 +172,13 @@ const Pets = (() => {
     return Date.now() - at.getTime() < 3 * 3600e3 ? st.wx : "";
   }
   function scene(p, i) {
-    const hat = HAT_OK(p.pet_hat) ? p.pet_hat : "none";
+    const hat = petHatOf(p) || "none";
     const decor = String(p.pet_decor || "").split(",").filter(d => DECOR_OK.includes(d)).slice(0, 2);
-    const st = p.pet_state && typeof p.pet_state === "object" ? p.pet_state : null, mood = friendMood(st), wx = friendWx(st);
+    const st = p.pet_state && typeof p.pet_state === "object" ? p.pet_state : null, f = fresh(p), stale = !!(f && f.stale);
+    const mood = stale ? null : friendMood(st), wx = stale ? "" : friendWx(st);   // 太久沒同步：心情、天氣都不畫（不假裝即時）
     const fx = mood && typeof petMoodFx === "function" ? petMoodFx(mood.k) : "";
-    const actor = `${mood ? `<div class="pet-bubble">${esc(T(mood.t))}</div>` : ""}<div class="fv-critter${mood ? ` pet-m-${mood.k}` : ""}">${PET_ART.prop ? PET_ART.prop(i) : ""}${PET_ART.svg(i, "", hat)}${fx}</div><div class="pet-shadow"></div>`;
+    const bub = mood ? T(mood.t) : stale ? T("不知道牠現在在做什麼") : "";
+    const actor = `${bub ? `<div class="pet-bubble">${esc(bub)}</div>` : ""}<div class="fv-critter${mood ? ` pet-m-${mood.k}` : ""}">${PET_ART.prop ? PET_ART.prop(i) : ""}${PET_ART.svg(i, "", hat, undefined, petAccOf(p))}${fx}</div><div class="pet-shadow"></div>`;
     if (typeof PetStage === "undefined") return `${PET_ART.habitat(i)}${actor}`;
     return PetStage.html(i, actor, { decor, wx });
   }
@@ -167,7 +191,7 @@ const Pets = (() => {
       <button class="sheet-close" id="pvX" aria-label="${esc(T("關閉"))}">${ic("x")}</button>
       <div class="fv-stage">${scene(p, i)}</div>
       <h2 class="fv-name">${esc(friendName(p))} <span class="lv-chip lvt-${Math.min(lvl, 7)}">Lv.${lvl}</span></h2>
-      <div class="fv-by">${esc(T("%s 的夥伴").replace("%s", "@" + (p.handle || "")))}${p.total_km != null ? ` · ${T("已走")} ${Math.round(p.total_km * 10) / 10} km` : ""}</div>
+      <div class="fv-by">${esc(T("%s 的夥伴").replace("%s", "@" + (p.handle || "")))}${p.total_km != null ? ` · ${T("已走")} ${Math.round(p.total_km * 10) / 10} km` : ""}</div>${fresh(p) ? `<div class="fv-fresh${fresh(p).stale ? " stale" : ""}">${esc(fresh(p).t)}</div>` : ""}
       <div class="fv-acts">
         <button class="btn fv-pat" id="pvPat">${ic("heart")}${T("摸摸頭")}</button>
         <button class="btn ghost fp-gift" id="pvGift" data-id="${p.id}"${sent ? " disabled" : ""}>${sent ? T("今天已送") : giftLbl}</button>
@@ -206,7 +230,7 @@ const Pets = (() => {
     const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#132c1d"); g.addColorStop(.7, "#22452e"); g.addColorStop(1, "#1b3620");
     x.fillStyle = g; x.fillRect(0, 0, W, H);
     try { await document.fonts.ready; } catch (e) { /* */ }
-    const [hab, a, b] = await Promise.all([img(PET_ART.habitatUri(top, 1080, 520)), img(PET_ART.dataUri(mi, 500, petHat())), img(PET_ART.dataUri(fi, 500, HAT_OK(p.pet_hat) ? p.pet_hat : undefined))]);   // 好友的配件也一起入鏡
+    const [hab, a, b] = await Promise.all([img(PET_ART.habitatUri(top, 1080, 520)), img(PET_ART.dataUri(mi, 500, petHat(), undefined, typeof petAcc === "function" ? petAcc() : undefined)), img(PET_ART.dataUri(fi, 500, petHatOf(p), undefined, petAccOf(p)))]);   // 好友的配件也一起入鏡
     x.drawImage(hab, 0, 360, 1080, 520);
     x.fillStyle = "#1b3620"; x.fillRect(0, 878, W, H - 878);
     x.drawImage(a, 50, 380, 500, 500); x.drawImage(b, 530, 380, 500, 500);

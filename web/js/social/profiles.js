@@ -4,24 +4,28 @@ const Profiles = (() => {
 
   // 把本機寵物名字/等級/里程同步到雲端 profile，讓好友看得到進度
   // 有變才寫；沒變的話 10 分鐘最多一次（以前每進一次社群寫兩次）
-  let _syncSig = "", _syncAt = 0;
+  let _syncSig = "", _syncAt = 0, _noAcc = false;
   async function syncMyStats(uid) {
     if (typeof petStats !== "function") return;
     const s = petStats(); const c = Supa.client(); if (!c) return;
     // 好友拜訪頁要照搬我的夥伴舞台：配件＋舞台上走過的風景（phase38 的兩個欄位）
-    const hat = typeof petHat === "function" ? petHat() : "none";
+    const hat = typeof petHat === "function" ? petHat() : "none", acc = typeof petAcc === "function" ? petAcc() : "none";   // 配件（phase40）
     const decor = typeof PetJourney !== "undefined" && typeof Premium !== "undefined" && Premium.isOn() ? PetJourney.decor().join(",") : "";
     // 當下的狀態（phase39）：最近一次走路（好友那邊用它算現在的心情）＋這邊的天氣
     const recs = typeof realRecords === "function" ? realRecords() : [], wx = typeof PetStage !== "undefined" ? PetStage.cachedWx() || "" : "";
     const state = { last: recs[0] ? recs[0].date : null, wx, wxAt: wx ? new Date().toISOString().slice(0, 13) : null };   // 天氣時間只到「小時」：簽名不會每分鐘都變
-    const sig = [uid, s.name, s.level, s.km, hat, decor, state.last, state.wx, state.wxAt].join("|");
+    const sig = [uid, s.name, s.level, s.km, hat, acc, decor, state.last, state.wx, state.wxAt].join("|");
     if (sig === _syncSig && Date.now() - _syncAt < 600000) return;
     _syncSig = sig; _syncAt = Date.now();
     const base = { pet_name: s.name, pet_level: s.level, total_km: s.km };
     try {
       const scene = { pet_hat: hat === "none" ? null : hat, pet_decor: decor || null };
-      // 資料庫還沒跑 phase39／38（少欄位）：一層層退回，不要讓整筆同步失敗
-      let { error } = await c.from("profiles").update(Object.assign({ pet_state: state }, scene, base)).eq("id", uid);
+      // 同步時間（at）不放進簽名：沒變的話 10 分鐘才補寫一次，好友那邊用它顯示「N 小時前同步」（R11）
+      const st = Object.assign({}, state, { at: new Date().toISOString() });
+      // 資料庫還沒跑 phase40／39／38（少欄位）：一層層退回，不要讓整筆同步失敗；少 pet_acc 記住，之後不再先試
+      let error = null;
+      if (!_noAcc) { ({ error } = await c.from("profiles").update(Object.assign({ pet_state: st, pet_acc: acc === "none" ? null : acc }, scene, base)).eq("id", uid)); if (error && /pet_acc/.test(error.message || "")) _noAcc = true; }   /* 只有「沒有這欄」才記住；斷網之類照常走下面的退回 */
+      if (error || _noAcc) ({ error } = await c.from("profiles").update(Object.assign({ pet_state: st }, scene, base)).eq("id", uid));
       if (error) ({ error } = await c.from("profiles").update(Object.assign({}, scene, base)).eq("id", uid));
       if (error) { const r = await c.from("profiles").update(base).eq("id", uid); if (r.error) _syncSig = ""; }
     } catch (e) { _syncSig = ""; }

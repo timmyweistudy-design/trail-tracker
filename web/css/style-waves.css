@@ -498,6 +498,8 @@ html[data-theme="dark"] .cg-c.l4 { background: #7fcf98; border-color: #8edaa6; }
 .fp-visit { display: flex; align-items: center; gap: 11px; flex: 1 1 auto; min-width: 0; background: none; border: 0; padding: 0; text-align: left; color: inherit; font: inherit; cursor: pointer; }
 .fp-visit .fp-info { min-width: 0; }
 .fp-visit .fp-by { display: block; }
+.fp-visit .fp-fresh { display: block; font-size: calc(11px * var(--fs, 1)); color: var(--ink-faint); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* R11：好友狀態多久以前同步 */
+.fp-visit .fp-fresh.stale { color: var(--muted); }
 .fp-visit:active .fp-pet { transform: scale(.92); }
 .fv-card { text-align: center; }
 .fv-stage { position: relative; height: 170px; margin: 4px -4px 10px; border-radius: var(--r-md, 14px); overflow: hidden; background: linear-gradient(#173523, #24492f); }
@@ -520,6 +522,8 @@ html[data-theme="dark"] .cg-c.l4 { background: #7fcf98; border-color: #8edaa6; }
 @keyframes fv-heart { 0% { opacity: 0; transform: translateY(0) scale(.6); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-90px) scale(1.15); } }
 .fv-name { margin: 2px 0 2px; }
 .fv-by { color: var(--muted); font-size: calc(13px * var(--fs, 1)); margin-bottom: 14px; }
+.fv-fresh { color: var(--ink-faint); font-size: calc(12px * var(--fs, 1)); margin: -11px 0 14px; }   /* R11：好友狀態多久以前同步（接在 .fv-by 下面，吃掉它的下邊距） */
+.fv-fresh.stale { color: var(--muted); }
 .fv-acts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .fv-acts .btn { flex: 1 1 28%; min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 5px; white-space: nowrap; padding-inline: 10px; }
 .fv-acts .btn .berry { width: 1.1em; height: 1.1em; }
