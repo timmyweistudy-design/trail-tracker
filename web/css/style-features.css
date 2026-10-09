@@ -2598,3 +2598,16 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 [data-fs-big] .pet-acts-main { grid-template-columns: repeat(3, 1fr); }
 [data-fs-big] .pet-acts-main .pet-btn.feed { grid-column: 1 / -1; }
 .gift-it .pg-ic { width: 38px; height: 38px; }   /* 小東西 v2（2026-10-09）：重畫成有外框、暗面、高光的圖，放大一點看得到細節 */
+/* 排版：置中的標題底下，短的說明也置中（2026-10-09 使用者規則：次要文字靠左的話，最左邊不能比標題更往左；scripts/align-scan.js 掃） */
+.dex-intro, .dex-tip { text-align: center; }
+.dex-tones { justify-content: center; }
+.pp-tod .tone-lock { width: 12px; height: 12px; margin: 0 3px 0 0; vertical-align: -1px; fill: none; stroke: currentColor; stroke-width: 2.2; opacity: .75; }
+.dex-tone-hint { display: flex; flex-direction: column; align-items: center; gap: 2px; margin: 6px 0 2px; font-size: calc(12px * var(--fs, 1)); color: var(--muted); text-align: center; }
+.dex-tone-hint b { color: var(--ink-soft); font-weight: 700; }
+.aff-help .ah-title { margin: 0 0 6px; font-size: calc(16.5px * var(--fs, 1)); font-weight: 800; text-align: center; }
+.aff-help .ah-c, .aff-help .ah-h { text-align: center; }
+.aff-help .ah-h { margin-top: .7em; }
+.aff-help .ah-now { flex-direction: column; justify-content: center; gap: 2px; text-align: center; margin: .2em 0 .5em; }
+.aff-help .ah-hearts { font-size: 1.45em; line-height: 1; }
+.club-intro { text-align: center; }   /* 山社：標題置中，底下的一句說明也置中 */
+.trp-for { justify-content: center; }   /* 回報路況：步道名跟著置中的標題 */

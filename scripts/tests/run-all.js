@@ -54,7 +54,7 @@ const MAP = [
   [/web\/js\/(search|nl-search)[^/]*\.js$/, ["nl-search", "e2e"]],
   [/web\/js\/(app|app-boot|debug)\.js$|web\/index\.html$/, ["debug-tour", "e2e", "qa-crawl", "pet-clock", "pet-r11"]],
   [/web\/js\/i18n/, ["wave1-display", "wave1"]],
-  [/web\/css\//, ["audit-ui", "audit-center", "motion", "pet-small"]],
+  [/web\/css\//, ["audit-ui", "audit-center", "motion", "pet-small", "align"]],
   [/supabase\/.*\.sql$/, ["sql:"]],
 ];
 function pickChanged() {
