@@ -70,6 +70,23 @@ for(const st of [1,2,3,4,5,6]){const KM=[0,5,20,40,90,150,260];const {p,ctx}=awa
  const dx=Math.abs(r[0][0]-r[1][0]),dy=Math.abs(r[0][1]-r[1][1]);ok(dx<=.015&&dy<=.025,`stage ${st}: the hat on the stage sits where it does in the still picture (off by ${(dx*100).toFixed(1)}% / ${(dy*100).toFixed(1)}%)`);
  await ctx.close();}
 
+// 6. 戴在脖子上的配件在舞台上要看得到（2026-10-09：幼蟲的鈴鐺、領結整個被頭蓋住，只有截圖才發現）：
+//    配件主體（鈴身、領結的布、圍巾本體）那一塊，戴與不戴各截一張，不一樣的像素要 ≥25%（被頭蓋住的話兩張幾乎一樣）。
+//    （elementFromPoint 不能用：頭的部件不接手指，點會穿過頭打到後面的配件）
+const sharp=require(ROOT+"/node_modules/sharp");
+const diff=async(a,b)=>{const A=await sharp(a).raw().toBuffer({resolveWithObject:true}),B=await sharp(b).raw().toBuffer();let n=0,t=0;const ch=A.info.channels;for(let k=0;k<A.data.length;k+=ch){t++;if(Math.abs(A.data[k]-B[k])+Math.abs(A.data[k+1]-B[k+1])+Math.abs(A.data[k+2]-B[k+2])>60)n++;}return n/t;};
+for(const st of [1,2,3,4,5,6]){const KM=[0,5,20,40,90,150,260];const {p,ctx}=await mk(KM[st]);
+ await p.evaluate(()=>document.querySelector(".ps-box").scrollIntoView({block:"center"}));const out={};
+ const MAIN={scarf:'[fill="#d9483b"]',bell:'[fill="#f2c64a"]',bowtie:'[fill="#2f5d9a"]'};
+ for(const id of ["scarf","bell","bowtie"]){
+  const set=async a=>{await p.evaluate(a=>{localStorage.setItem("tt_pet_acc",a);renderPet();document.querySelectorAll("#petEmoji *").forEach(e=>e.getAnimations().forEach(x=>x.finish?x.cancel():0));},a);await p.waitForTimeout(150);await p.evaluate(()=>document.querySelectorAll("#petEmoji *").forEach(e=>e.getAnimations().forEach(x=>x.cancel())));};
+  await set(id);
+  const q=await p.evaluate(sel=>{const R=[...document.querySelectorAll("#petEmoji .pc-acc "+sel)].map(e=>e.getBoundingClientRect());if(!R.length)return null;const l=Math.min(...R.map(r=>r.left)),t=Math.min(...R.map(r=>r.top));return {x:l,y:t,width:Math.max(2,Math.max(...R.map(r=>r.right))-l),height:Math.max(2,Math.max(...R.map(r=>r.bottom))-t)};},MAIN[id]);
+  if(!q){out[id]=0;continue;}
+  const a=await p.screenshot({clip:q});await set("none");const b=await p.screenshot({clip:q});out[id]=+(await diff(a,b)).toFixed(2);}
+ ok(Object.values(out).every(v=>v>=.25),`stage ${st}: scarf / bell / bow tie actually show on the stage (changed pixels ${JSON.stringify(out)})`);
+ await ctx.close();}
+
 ok(errs.length===0,"no page errors "+JSON.stringify(errs.slice(0,3)));
 console.log("ERRS",JSON.stringify(errs));console.log("FAILS",fails);
 await b.close();srv.kill();process.exit(fails?1:0);})().catch(e=>{console.error(e);process.exit(1);});
