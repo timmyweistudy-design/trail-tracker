@@ -40,6 +40,13 @@ jobs:
             -configuration Debug CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
             build 2>&1 | tee /tmp/xcodebuild.log | grep -E "error:|warning: .*(HomeWidget|LiveActivity|TrailLive)|BUILD (SUCCEEDED|FAILED)" || true
           grep -q "BUILD SUCCEEDED" /tmp/xcodebuild.log
+      - name: Widget extension really built
+        # 只看 BUILD SUCCEEDED 不夠：小工具 target 沒加進去也會成功。確認擴充真的編出來、Swift 檔真的編過
+        run: |
+          APPEX=$(find ~/Library/Developer/Xcode/DerivedData -name "TrailWidgets.appex" -type d | head -1)
+          echo "appex: $APPEX"; test -n "$APPEX"
+          grep -E "SwiftCompile .*(HomeWidget|LiveActivityWidget|TrailLivePlugin)\.swift" /tmp/xcodebuild.log | sed -E 's/.* ([^ ]+\.swift).*/\1/' | sort -u
+          test "$(grep -cE "SwiftCompile .*(HomeWidget|LiveActivityWidget)\.swift" /tmp/xcodebuild.log)" -ge 2
       - name: Upload build log when failing
         if: failure()
         uses: actions/upload-artifact@v4
