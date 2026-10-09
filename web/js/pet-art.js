@@ -482,26 +482,80 @@ ${tigerHead()}
   function habitat(i) { return `<svg class="pet-hab" viewBox="0 0 400 150" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${HAB[clamp(i)]}</svg>`; }
 
   // 配件（Premium 裝扮）：疊在角色頭頂（同 200x200 座標，畫在頭部上方 y15~60）。none=不戴。
+  // ── 帽子 v2（2026-10-09 修正案 R8-2，使用者：「裝扮太粗糙，所有配件都要設計精緻一點」）──
+  // 每一頂都用角色同一套 P()（有色外框、右下暗面、左上高光），再加材質細節；座標以 (100,45) 為帽子中心、帽緣在 y≈55（跟舊版相同，掛點表不用全改）
   const HATS = {
-    straw: `<ellipse cx="100" cy="55" rx="49" ry="13" fill="#dcb877"/><path d="M73 55 q5-33 27-33 q22 0 27 33Z" fill="#eccf94"/><path d="M73 51 q27 11 54 0" stroke="#c39a55" stroke-width="5" fill="none"/>`,
-    party: `<path d="M100 5 l-20 47 q20 9 40 0Z" fill="#e2657f"/><path d="M96 22 l8 0 M88 38 l9 0 M82 50 l7 0" stroke="#fbe6a0" stroke-width="3.5" stroke-linecap="round"/><circle cx="100" cy="6" r="7" fill="#f2c94c"/>`,
-    crown: `<path d="M60 52 q40-18 80 0" stroke="#5da24e" stroke-width="6" fill="none" stroke-linecap="round"/><circle cx="68" cy="47" r="7.5" fill="#e78aa8"/><circle cx="68" cy="47" r="2.6" fill="#fbe6a0"/><circle cx="100" cy="37" r="9" fill="#f2c94c"/><circle cx="100" cy="37" r="3.2" fill="#e78aa8"/><circle cx="132" cy="47" r="7.5" fill="#e78aa8"/><circle cx="132" cy="47" r="2.6" fill="#fbe6a0"/>`,
-    bow: `<path d="M100 42 l-24 -13 q-7 13 0 26Z" fill="#d95a7a"/><path d="M100 42 l24 -13 q7 13 0 26Z" fill="#d95a7a"/><path d="M78 32 q10 8 0 18 M122 32 q-10 8 0 18" stroke="#b8446020" stroke-width="0" fill="none"/><circle cx="100" cy="42" r="7.5" fill="#c04968"/>`,
-    // 登山頭巾：每月挑戰第一次完成才解鎖（不能用果實買）
-    bandana: `<path d="M62 50 q38-26 76 0 l-3 9 q-35-16 -70 0Z" fill="#d9573f"/><path d="M66 48 q34-20 68 0" stroke="#f3c7a8" stroke-width="2.4" stroke-dasharray="3 5" fill="none" stroke-linecap="round"/><path d="M134 53 l17 -3 l-6 11 l11 6 l-18 2Z" fill="#c4452f"/><circle cx="100" cy="38" r="3" fill="#fff3d6"/><circle cx="84" cy="43" r="2.2" fill="#fff3d6"/><circle cx="116" cy="43" r="2.2" fill="#fff3d6"/>`,
+    // 草帽：帽頂＋寬帽緣、編織紋（交錯短線）、紅色帽帶＋小蝴蝶結
+    straw: P(E(100, 56, 50, 12.5), "#dcb06a", { hl: [80, 52, 16, 3], dx: 2, dy: 3, sw: 2.2 }) +
+      `<path d="M58 55 q42 9 84 0 M64 60 q36 7 72 0" stroke="#b98a45" stroke-width="1.2" fill="none" opacity=".6"/>` +
+      P(Pa("M72 56 Q74 22 100 21 Q126 22 128 56Z"), "#ecc882", { hl: [88, 32, 7, 10], dx: 3, dy: 3, sw: 2.2 }) +
+      `<path d="M78 36 h44 M76 44 h48 M81 28 h38" stroke="#c99a52" stroke-width="1.1" stroke-dasharray="3 2.4" opacity=".75"/>` +
+      P(Pa("M72.5 49 Q100 56 127.5 49 L127.8 55 Q100 62 72.2 55Z"), "#c8443a", { dx: 1, dy: 1.5, sw: 1.6 }) +
+      P(Pa("M118 52 l9 -5 l1 9Z M118 52 l9 5 l-6 5Z"), "#d65446", { dx: .8, dy: .8, sw: 1.2 }),
+    // 派對帽：圓錐＋斜條紋（裁在帽身裡）、點點、毛球
+    party: `<clipPath id="§phc"><path d="M100 6 L79 53 Q100 61 121 53Z"/></clipPath>` + P(Pa("M100 6 L79 53 Q100 61 121 53Z"), "#e2657f", { hl: [93, 30, 3, 12], dx: 3, dy: 2, sw: 2.2 }) +
+      `<g clip-path="url(#§phc)" opacity=".9"><path d="M70 44 L130 22 M70 58 L130 36 M70 30 L130 8" stroke="#fbe6a0" stroke-width="5"/></g>` +
+      `<circle cx="96" cy="47" r="1.8" fill="#7ac0d8"/><circle cx="107" cy="38" r="1.6" fill="#7ac0d8"/>` +
+      P(C(100, 7, 7.5), "#f2c94c", { hl: [97, 4, 2.5, 1.8], dx: 1.5, dy: 1.5, sw: 1.8 }) + `<path d="M96 4 l-2 -3 M104 4 l2 -3 M100 1 v-2.4" stroke="#e0a82a" stroke-width="1.4" stroke-linecap="round"/>`,
+    // 花冠：藤蔓＋葉子＋五朵不同的花（有花心、花瓣暗面）
+    crown: `<path d="M58 53 Q100 33 142 53" stroke="#4e8f3f" stroke-width="5.5" fill="none" stroke-linecap="round"/><path d="M58 53 Q100 33 142 53" stroke="#7ab963" stroke-width="2" fill="none" stroke-linecap="round" opacity=".7"/>` +
+      [[72, 45, -30], [128, 45, 30], [86, 39, -60], [114, 39, 60]].map(([x, y, a]) => P(Pa(`M${x} ${y} q6 -9 13 -6 q-4 9 -13 6Z`), "#6aab55", { dx: .8, dy: .8, sw: 1.2 })).join("") +
+      [[64, 50, 7, "#e78aa8"], [82, 41, 7.5, "#f6f0f4"], [100, 36, 9, "#f2c94c"], [118, 41, 7.5, "#a8c8ef"], [136, 50, 7, "#e78aa8"]].map(([x, y, r, c]) =>
+        [0, 72, 144, 216, 288].map(a => P(E(x, y - r * .55, r * .42, r * .58).replace("<ellipse", `<ellipse transform="rotate(${a} ${x} ${y})"`), c, { dx: .6, dy: .8, sw: 1 })).join("") + `<circle cx="${x}" cy="${y}" r="${(r * .32).toFixed(1)}" fill="#f7c04a" stroke="#c8902a" stroke-width=".8"/>`).join(""),
+    // 蝴蝶結：兩片有摺痕的布＋中間的結＋兩條垂下的緞帶
+    bow: P(Pa("M100 42 C88 28 72 26 74 42 C72 56 88 56 100 42Z"), "#d95a7a", { hl: [81, 36, 4, 2.6], dx: 2, dy: 2, sw: 2 }) +
+      P(Pa("M100 42 C112 28 128 26 126 42 C128 56 112 56 100 42Z"), "#d95a7a", { hl: [115, 36, 4, 2.6], dx: 2, dy: 2, sw: 2 }) +
+      `<path d="M78 36 q8 4 14 5 M78 48 q8 -4 14 -4 M122 36 q-8 4 -14 5 M122 48 q-8 -4 -14 -4" stroke="#a83d5a" stroke-width="1.3" fill="none" opacity=".6"/>` +
+      P(Pa("M96 46 l-6 14 l5 -2 l2 5 l4 -16Z M104 46 l6 14 l-5 -2 l-2 5 l-4 -16Z"), "#c94a6c", { dx: .8, dy: 1, sw: 1.3 }) +
+      P(E(100, 42, 6.5, 7.5), "#b8405f", { hl: [98, 39, 2, 1.6], dx: 1, dy: 1, sw: 1.6 }),
+    // 登山頭巾：每月挑戰第一次完成才解鎖（不能用果實買）——布紋＋白色變形蟲花紋＋側邊打結的兩條布尾
+    bandana: P(Pa("M61 51 Q100 22 139 51 L136 60 Q100 42 64 60Z"), "#d9573f", { hl: [86, 38, 9, 2.5], dx: 2, dy: 3, sw: 2 }) +
+      `<path d="M70 50 q30 -19 60 0" stroke="#f3c7a8" stroke-width="1.6" stroke-dasharray="2.4 3.6" fill="none" stroke-linecap="round"/>` +
+      [[86, 41], [100, 36], [114, 41]].map(([x, y]) => `<path d="M${x} ${y} q3 -4 5 0 q-1 3 -5 0Z M${x + 2.5} ${y + 4} a1.2 1.2 0 1 0 .1 0" fill="#fff3d6" opacity=".9"/>`).join("") +
+      P(Pa("M136 54 q9 -6 15 -4 q-2 6 -9 8Z"), "#c4452f", { dx: 1, dy: 1, sw: 1.4 }) + P(Pa("M137 57 q8 3 12 10 q-6 1 -12 -4Z"), "#b83e2a", { dx: 1, dy: 1, sw: 1.4 }) +
+      P(C(136, 56, 3.4), "#a83826", { dx: .6, dy: .6, sw: 1.2 }),
   };
   // 地區配件（pet-journey.js）：走過那個地區的步道就解鎖，不用果實
   Object.assign(HATS, {
-    silvergrass: `<path d="M84 52 q-6-20 -16-32 M100 50 q0-22 3-38 M116 52 q8-18 18-28" stroke="#b9a874" stroke-width="3" fill="none" stroke-linecap="round"/><ellipse cx="66" cy="20" rx="5.5" ry="12" transform="rotate(-36 66 20)" fill="#f1e7c9"/><ellipse cx="103" cy="12" rx="5.5" ry="12.5" fill="#f6eed6"/><ellipse cx="136" cy="22" rx="5.5" ry="12" transform="rotate(40 136 22)" fill="#f1e7c9"/><path d="M76 55 q24-9 48 0" stroke="#6f9446" stroke-width="5.5" fill="none" stroke-linecap="round"/>`,
-    maple: `<g transform="translate(110 36) rotate(-14) scale(1.25)"><path d="M0 -20 l5 9 l8 -3 l-2 9 l9 2 l-8 6 l3 7 l-9 -2 l-1 9 l-5 -6 l-5 6 l-1 -9 l-9 2 l3 -7 l-8 -6 l9 -2 l-2 -9 l8 3Z" fill="#d9532f"/><path d="M0 -14 v26" stroke="#a83a1f" stroke-width="1.6"/></g><path d="M78 56 q22-8 44 0" stroke="#8a5a32" stroke-width="4" fill="none" stroke-linecap="round"/>`,
-    pineapple: `<path d="M100 34 l-14 -22 l11 8 l3 -18 l4 17 l11 -9 l-9 22Z" fill="#4f9a3e"/><ellipse cx="100" cy="47" rx="27" ry="15" fill="#f2b632"/><path d="M80 40 l20 18 M90 34 l26 22 M104 33 l16 14 M120 40 l-20 18 M110 34 l-26 22 M96 33 l-16 14" stroke="#cf861a" stroke-width="2" stroke-linecap="round"/>`,
-    wave: `<path d="M62 54 q38-24 76 0 l-2 8 q-36-14 -72 0Z" fill="#3a86c8"/><path d="M70 50 q8-12 18-4 q6-10 16-2 q8-10 18 0 q6-6 12 2" stroke="#eaf6ff" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M122 46 q8-18 26-12 q-12 4 -11 14 q-7-6 -15-2Z" fill="#7cc0ea"/>`,
-    shell: `<g transform="translate(112 40)"><path d="M-19 9 q0-27 19-27 q19 0 19 27 q-19 6 -38 0Z" fill="#f4c7b0"/><path d="M0 -16 v22 M-9 -12 l4 19 M9 -12 l-4 19 M-15 -2 l9 9 M15 -2 l-9 9" stroke="#d99a80" stroke-width="1.8" stroke-linecap="round"/><rect x="-8" y="7" width="16" height="6" rx="3" fill="#e2a68c"/></g>`,
+    // 芒草穗（北部）：三支彎彎的穗，穗是一叢毛茸茸的小穗（不是三根棍子）＋綁住的草莖
+    silvergrass: [[84, 54, 70, 20, -1], [100, 52, 102, 10, 1], [116, 54, 132, 20, 1]].map(([x0, y0, x1, y1, d]) =>   // 一支穗＝莖＋從頂端往一側散開、垂下來的細絲（芒花），不是箭羽
+      `<path d="M${x0} ${y0} Q${(x0 + x1) / 2 - d * 4} ${(y0 + y1) / 2} ${x1} ${y1}" stroke="#a89a62" stroke-width="2.2" fill="none" stroke-linecap="round"/>` +
+      [0, 1, 2, 3, 4, 5, 6, 7, 8].map(k => { const a = (-78 + k * 13) * d, r = 19 + (k % 3) * 4, ex = x1 + Math.sin(a * Math.PI / 180) * r, ey = y1 - Math.cos(a * Math.PI / 180) * r * .7 + k * 1.2;
+        return `<path d="M${x1} ${y1} Q${((x1 + ex) / 2 + d * 3).toFixed(1)} ${((y1 + ey) / 2 - 4).toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}" stroke="${k % 2 ? "#f3e9cf" : "#e3d5ad"}" stroke-width="${k % 2 ? 2.4 : 1.8}" fill="none" stroke-linecap="round"/>`; }).join("") +
+      `<circle cx="${x1}" cy="${y1}" r="2.2" fill="#d8c896"/>`).join("") +
+      P(Pa("M88 52 q12 6 24 0 l-1 5 q-11 5 -22 0Z"), "#7f9a4e", { dx: .8, dy: .8, sw: 1.4 }),
+    // 楓葉（中部）：一片有葉脈、兩色漸層的楓葉＋小枝別在頭上
+    maple: `<g transform="translate(108 34) rotate(-14) scale(1.3)">` + P(Pa("M0 -20 l5 9 l8 -3 l-2 9 l9 2 l-8 6 l3 7 l-9 -2 l-1 9 l-5 -6 l-5 6 l-1 -9 l-9 2 l3 -7 l-8 -6 l9 -2 l-2 -9 l8 3Z"), "#d9532f", { hl: [-4, -6, 4, 2.4], dx: 1.2, dy: 1.4, sw: 1.3 }) +
+      `<path d="M0 -14 v24 M0 -2 l-9 -6 M0 -2 l9 -6 M0 4 l-8 3 M0 4 l8 3" stroke="#a83a1f" stroke-width="1" fill="none" stroke-linecap="round"/><path d="M0 10 q2 6 -2 11" stroke="#8a5a32" stroke-width="1.8" fill="none" stroke-linecap="round"/></g>` +
+      P(Pa("M80 56 q20 -8 40 0 l-1 4 q-19 -7 -38 0Z"), "#8a5a32", { dx: .8, dy: .8, sw: 1.2 }),
+    // 鳳梨帽（南部）：一格一格的鳳梨皮（菱格＋每格中心一點）＋三層葉冠
+    pineapple: P(Pa("M100 34 l-15 -20 l12 7 l3 -19 l4 18 l12 -9 l-10 22Z"), "#4f9a3e", { hl: [97, 14, 2, 5], dx: 1.2, dy: 1.2, sw: 1.6 }) +
+      `<clipPath id="§pac"><ellipse cx="100" cy="47" rx="27" ry="15"/></clipPath>` + P(E(100, 47, 27, 15), "#f2b632", { hl: [88, 40, 8, 3.4], dx: 2.4, dy: 2.4, sw: 2 }) +
+      `<g clip-path="url(#§pac)"><path d="M70 36 l34 30 M80 32 l36 32 M92 30 l34 30 M64 46 l24 22 M130 36 l-34 30 M120 32 l-36 32 M108 30 l-34 30 M136 46 l-24 22" stroke="#cf861a" stroke-width="1.6"/>` +
+      [[86, 42], [100, 40], [114, 42], [93, 50], [107, 50], [100, 57], [80, 51], [120, 51]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.3" fill="#9a5a10"/>`).join("") + `</g>`,
+    // 浪花頭巾（東部）：藍色頭巾＋白色浪花紋＋側邊捲起的一朵浪
+    wave: P(Pa("M61 52 Q100 26 139 52 L137 61 Q100 46 63 61Z"), "#3a86c8", { hl: [86, 40, 9, 2.4], dx: 2, dy: 3, sw: 2 }) +
+      `<path d="M68 51 q7 -10 15 -4 q6 -9 15 -2 q8 -9 16 0 q6 -6 12 2" stroke="#eaf6ff" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M72 56 q28 -10 56 0" stroke="#bfe0f6" stroke-width="1.2" fill="none" opacity=".7"/>` +
+      P(Pa("M122 47 q7 -20 28 -13 q-13 4 -11 15 q-4 -6 -10 -4 q-4 1 -7 2Z"), "#7cc0ea", { hl: [138, 38, 4, 2], dx: 1.2, dy: 1.2, sw: 1.6 }) +
+      `<path d="M138 41 q4 -3 8 -2" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round"/>`,
+    // 貝殼髮夾（離島）：扇貝（放射肋＋暗面）＋珍珠＋金色髮夾
+    shell: `<g transform="translate(112 40)">` + P(Pa("M-19 9 Q-20 -18 0 -19 Q20 -18 19 9 Q0 15 -19 9Z"), "#f4c7b0", { hl: [-7, -9, 4, 3], dx: 1.6, dy: 1.6, sw: 1.8 }) +
+      `<path d="M0 -16 v22 M-8 -13 l3 19 M8 -13 l-3 19 M-14 -5 l7 12 M14 -5 l-7 12" stroke="#d99a80" stroke-width="1.5" stroke-linecap="round"/>` +
+      P(Pa("M-9 7 q9 5 18 0 l0 5 q-9 4 -18 0Z"), "#e2a68c", { dx: .6, dy: .6, sw: 1.2 }) + P(C(0, 13, 3), "#fbf6ef", { hl: [-1, 12, 1, .8], dx: .5, dy: .5, sw: 1 }) +
+      `<path d="M-24 15 h18" stroke="#d8b24a" stroke-width="2.4" stroke-linecap="round"/></g>`,
   });
   // 季節限定（2026-10-07 寵物新一輪 #17）：聖誕帽（12/1～1/6）、玉兔耳（中秋前後一週）——當季才拿得到，拿了就永遠擁有（pet.js 的 hatSeason）
   Object.assign(HATS, {
-    santa: `<path d="M64 53 q20-38 52-34 q22 4 26 20 l-6 4 q-6-12 -22-14 q-20 0 -28 24Z" fill="#d6372f"/><path d="M64 53 q26-30 52-26 q14 2 20 12" stroke="#a8241e" stroke-width="2" fill="none" opacity=".5"/><path d="M58 54 q42-14 84 0 l-1 10 q-41-13 -82 0Z" fill="#fbf7ee" stroke="#d9cfc0" stroke-width="1.6"/><circle cx="141" cy="43" r="8" fill="#fbf7ee" stroke="#d9cfc0" stroke-width="1.6"/>`,
-    rabbit: `<path d="M84 50 q-16-36 -6-46 q14 2 14 46Z" fill="#fbf7ee" stroke="#d2c6b5" stroke-width="2"/><path d="M85 44 q-9-26 -4-34 q7 2 7 34Z" fill="#f2b8c6"/><path d="M116 50 q16-36 6-46 q-14 2 -14 46Z" fill="#fbf7ee" stroke="#d2c6b5" stroke-width="2"/><path d="M115 44 q9-26 4-34 q-7 2 -7 34Z" fill="#f2b8c6"/><path d="M80 52 q20-8 40 0" stroke="#e8c45a" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="100" cy="49" r="4" fill="#f39a3d"/>`,
+    // 聖誕帽：絨布帽身（暗面＋垂下來的帽尖）＋毛絨白邊（一團一團）＋毛球
+    santa: P(Pa("M62 54 C62 31 80 15 104 15 C125 15 139 24 143 39 C135 33 127 31 121 32 C127 39 133 47 138 54Z"), "#d6372f", { hl: [86, 28, 9, 4], dx: 2.6, dy: 2.6, sw: 2 }) +
+      `<path d="M74 44 q10 -20 32 -22 M118 34 q8 4 12 12" stroke="#f06a5e" stroke-width="2" fill="none" opacity=".5" stroke-linecap="round"/>` +
+      [62, 72, 82, 92, 102, 112, 122, 132, 139].map((x, k) => P(C(x, 56 - Math.sin(k / 8 * Math.PI) * 3, 6.2), "#fbf7ee", { dx: .8, dy: 1, sw: 1.2 })).join("") +
+      P(C(144, 41, 7), "#fbf7ee", { hl: [142, 38, 2.4, 1.8], dx: 1, dy: 1, sw: 1.4 }),
+    // 玉兔耳：耳朵有毛邊（細線）、內耳粉色漸層、頭帶
+    rabbit: P(Pa("M84 50 Q66 14 78 4 Q94 6 92 50Z"), "#fbf7ee", { hl: [80, 18, 3, 8], dx: 1.6, dy: 1.6, sw: 1.8 }) + P(Pa("M85 44 Q74 20 80 11 Q88 13 88 44Z"), "#f2b8c6", { dx: 1, dy: 1, sw: 0 }) +
+      P(Pa("M116 50 Q134 14 122 4 Q106 6 108 50Z"), "#fbf7ee", { hl: [120, 18, 3, 8], dx: 1.6, dy: 1.6, sw: 1.8 }) + P(Pa("M115 44 Q126 20 120 11 Q112 13 112 44Z"), "#f2b8c6", { dx: 1, dy: 1, sw: 0 }) +
+      `<path d="M78 10 l-2 -2 M80 8 l0 -3 M120 8 l0 -3 M122 10 l2 -2" stroke="#d8ccbb" stroke-width="1" stroke-linecap="round"/>` +
+      P(Pa("M74 54 Q100 42 126 54 L125 59 Q100 48 75 59Z"), "#e7c37a", { dx: .8, dy: .8, sw: 1.4 }),
   });
   const HAT_LABEL = { none: "不戴", santa: "聖誕帽", rabbit: "玉兔耳", straw: "草帽", party: "派對帽", crown: "花冠", bow: "蝴蝶結", bandana: "登山頭巾", silvergrass: "芒草穗", maple: "楓葉", pineapple: "鳳梨帽", wave: "浪花頭巾", shell: "貝殼髮夾" };
   const HAT_IDS = ["none", "straw", "party", "crown", "bow", "bandana", "silvergrass", "maple", "pineapple", "wave", "shell", "santa", "rabbit"];
@@ -513,27 +567,72 @@ ${tigerHead()}
     [100, 55, 1.0],   // 3 狐（參考）
     [100, 54, 0.98],  // 4 虎
     [100, 56, 0.8],   // 5 幼龍：頭頂在兩支鹿角中間
-    [66, 52, 0.74],   // 6 神龍：頭在左上
+    [66, 49, 0.9],    // 6 神龍：頭在左上（2026-10-09 R8：0.74→0.9，以前帽子比別隻小一號）
   ];
   // 第二件配件（2026-10-09 修正案 R5 原20：先帽子＋一件配件，建立掛點與圖層）：戴在脖子上——掛點＝每一階頭的支點（pr-head 的 --ox/--oy，本來就是脖子），
   // 畫成頭群組的第一個子元素＝在頭的後面、跟著頭動（幼蟲爬、神龍繩波、狐虎趴下低頭都不會跟脖子分開）。蛋沒有脖子：不戴
-  const NECK = { 1: [132, 152, 15], 2: [100, 94, 9], 3: [100, 133, 19], 4: [100, 135, 23], 5: [100, 130, 19], 6: [112, 127, 14] };   // [x, y, 半寬]；幼龍、神龍往下移（不然被下顎和龍鬚整個蓋住，2026-10-09 看截圖調）
-  const ACC_IDS = ["none", "scarf", "bell"], ACC_LABEL = { none: "不戴", scarf: "紅圍巾", bell: "小鈴鐺" };
+  const NECK = { 1: [132, 152, 15], 2: [100, 94, 9], 3: [100, 146, 19], 4: [100, 135, 23], 5: [100, 130, 19], 6: [112, 127, 14] };   // [x, y, 半寬]；幼龍、神龍往下移（不然被下顎和龍鬚整個蓋住，2026-10-09 看截圖調）
+  // 2026-10-09 R8-2（使用者：所有配件都要更精緻）：5 件，每件都用 P() 的畫法＋材質；分前後兩層——
+  //   front＝頭群組的第一個子元素（脖子前面：圍巾、鈴鐺、領結、背包的背帶、披風的葉扣）；back＝整隻角色最底下（背包本體、披風，從身體兩側和肩膀上露出來）
+  //   背包、披風只給直立的狐、虎、幼龍（幼蟲是橫的、蝶有翅膀、神龍是長條身體：放不上去，裝扮視窗會說明）
+  const ACC_IDS = ["none", "scarf", "bell", "bowtie", "backpack", "cape"], ACC_LABEL = { none: "不戴", scarf: "紅圍巾", bell: "小鈴鐺", bowtie: "領結", backpack: "登山小背包", cape: "樹葉披風" };
+  const ACC_OK = { scarf: [1, 2, 3, 4, 5, 6], bell: [1, 2, 3, 4, 5, 6], bowtie: [1, 2, 3, 4, 5, 6], backpack: [3, 4, 5], cape: [3, 4, 5] };
   function accG(id, i) {
-    const n = NECK[clamp(i)]; if (!n || !id || id === "none") return "";
-    const [x, y, w] = n, R = v => Math.round(v * 10) / 10;
-    if (id === "scarf") return `<g class="pc-acc acc-scarf"><path d="M${R(x - w)} ${R(y - 2)} Q${x} ${R(y + w * .45)} ${R(x + w)} ${R(y - 2)} L${R(x + w)} ${R(y + 4)} Q${x} ${R(y + w * .45 + 7)} ${R(x - w)} ${R(y + 4)}Z" fill="#d9483b" stroke="#8f2a22" stroke-width="1.6" stroke-linejoin="round"/>` +
-      `<path d="M${R(x + w * .45)} ${R(y + w * .3)} l${R(w * .2)} ${R(w * .75)} l${R(w * .28)} -${R(w * .1)} l-${R(w * .12)} -${R(w * .62)}Z" fill="#c43c30" stroke="#8f2a22" stroke-width="1.4" stroke-linejoin="round"/>` +
-      `<path d="M${R(x - w * .55)} ${R(y + w * .2)} Q${x} ${R(y + w * .6)} ${R(x + w * .55)} ${R(y + w * .2)}" stroke="#f2a49a" stroke-width="1.2" fill="none" opacity=".7"/></g>`;
-    if (id === "bell") { const by = R(y + Math.max(5, w * .3)), r = R(Math.max(3.4, w * .22)); return `<g class="pc-acc acc-bell"><path d="M${R(x - w * .7)} ${R(y + 1)} Q${x} ${R(y + w * .35)} ${R(x + w * .7)} ${R(y + 1)}" stroke="#c43c30" stroke-width="2.4" fill="none" stroke-linecap="round"/>` +
-      `<circle cx="${x}" cy="${by}" r="${r}" fill="#f2c64a" stroke="#a87a1e" stroke-width="1.3"/><path d="M${R(x - r * .7)} ${by} H${R(x + r * .7)}" stroke="#a87a1e" stroke-width="1"/><circle cx="${x}" cy="${R(by + r * .45)}" r="${R(r * .22)}" fill="#6a4a10"/></g>`; }
-    return "";
+    const n = NECK[clamp(i)]; if (!n || !id || id === "none" || !(ACC_OK[id] || []).includes(clamp(i))) return null;
+    const [x, y, w] = n, R = v => Math.round(v * 10) / 10, g = (cls, inner) => `<g class="pc-acc acc-${cls}">${inner}</g>`;
+    if (id === "scarf") {   // 針織圍巾：一圈＋垂下來的一條（有流蘇），直條針織紋
+      const ring = `M${R(x - w)} ${R(y - 2)} Q${x} ${R(y + w * .45)} ${R(x + w)} ${R(y - 2)} L${R(x + w + 1)} ${R(y + 5)} Q${x} ${R(y + w * .45 + 8)} ${R(x - w - 1)} ${R(y + 5)}Z`;
+      const tail = `M${R(x + w * .35)} ${R(y + w * .3)} l${R(w * .12)} ${R(w * .9)} l${R(w * .34)} -${R(w * .06)} l-${R(w * .02)} -${R(w * .86)}Z`;
+      const ribs = Array.from({ length: 9 }, (_, k) => { const t = -1 + k / 4, px = x + t * w * .92, py = y + 1.5 + (1 - t * t) * w * .45; return `M${R(px)} ${R(py - 2.6)} v5`; }).join(" ");
+      const fr = [0, 1, 2, 3].map(k => `M${R(x + w * .48 + k * w * .09)} ${R(y + w * 1.18)} v${R(Math.max(2.4, w * .14))}`).join(" ");
+      return { front: g("scarf", P(Pa(ring), "#d9483b", { hl: [R(x - w * .45), R(y + w * .15), R(w * .3), 1.4], dx: 1, dy: 1.6, sw: 1.6 }) + `<path d="${ribs}" stroke="#a8322a" stroke-width="1" opacity=".55"/>` +
+        P(Pa(tail), "#c43c30", { dx: .8, dy: 1, sw: 1.4 }) + `<path d="${fr}" stroke="#f0c9a8" stroke-width="1.3" stroke-linecap="round"/>`) };
+    }
+    if (id === "bell") {   // 小鈴鐺：紅色皮項圈（有縫線）＋金色鈴（亮面、中間一圈、開口）
+      const by = R(y + Math.max(5, w * .3)), r = R(Math.max(3.6, w * .24));
+      return { front: g("bell", P(Pa(`M${R(x - w * .75)} ${R(y - 1)} Q${x} ${R(y + w * .35)} ${R(x + w * .75)} ${R(y - 1)} L${R(x + w * .75)} ${R(y + 2.4)} Q${x} ${R(y + w * .35 + 3.4)} ${R(x - w * .75)} ${R(y + 2.4)}Z`), "#c43c30", { dx: .6, dy: .8, sw: 1.2 }) +
+        `<path d="M${R(x - w * .6)} ${R(y + .8)} Q${x} ${R(y + w * .33 + 1)} ${R(x + w * .6)} ${R(y + .8)}" stroke="#f2b3a6" stroke-width=".8" stroke-dasharray="1.6 1.4" fill="none"/>` +
+        P(C(x, by, r), "#f2c64a", { hl: [R(x - r * .35), R(by - r * .35), R(r * .3), R(r * .22)], dx: R(r * .25), dy: R(r * .25), sw: 1.2 }) +
+        `<path d="M${R(x - r * .85)} ${R(by - r * .1)} H${R(x + r * .85)}" stroke="#a87a1e" stroke-width="1"/><path d="M${x} ${R(by + r * .25)} v${R(r * .6)}" stroke="#6a4a10" stroke-width="1.3" stroke-linecap="round"/><circle cx="${x}" cy="${R(by + r * .3)}" r="${R(r * .2)}" fill="#6a4a10"/>`) };
+    }
+    if (id === "bowtie") {   // 領結：兩片有摺痕的布（深藍底白點）＋中間的結
+      const s2 = Math.max(5, w * .42), bx = x, byy = R(y + 2);
+      return { front: g("bowtie", P(Pa(`M${bx} ${byy} L${R(bx - s2 * 1.5)} ${R(byy - s2 * .8)} Q${R(bx - s2 * 1.75)} ${byy} ${R(bx - s2 * 1.5)} ${R(byy + s2 * .8)}Z`), "#2f5d9a", { dx: .8, dy: .8, sw: 1.3 }) +
+        P(Pa(`M${bx} ${byy} L${R(bx + s2 * 1.5)} ${R(byy - s2 * .8)} Q${R(bx + s2 * 1.75)} ${byy} ${R(bx + s2 * 1.5)} ${R(byy + s2 * .8)}Z`), "#2f5d9a", { dx: .8, dy: .8, sw: 1.3 }) +
+        [-1.05, -.6, .6, 1.05].map(t => `<circle cx="${R(bx + t * s2)}" cy="${R(byy + (Math.abs(t) > .8 ? -.25 : .25) * s2)}" r="${R(s2 * .1)}" fill="#e8f0fb"/>`).join("") +
+        `<path d="M${R(bx - s2 * .9)} ${R(byy - s2 * .3)} l${R(s2 * .5)} ${R(s2 * .25)} M${R(bx + s2 * .9)} ${R(byy - s2 * .3)} l-${R(s2 * .5)} ${R(s2 * .25)}" stroke="#1f3f6a" stroke-width=".9" opacity=".6"/>` +
+        P(E(bx, byy, R(s2 * .32), R(s2 * .42)), "#244a7e", { dx: .4, dy: .4, sw: 1.1 })) };
+    }
+    if (id === "backpack") {   // 登山小背包：背後的背包（翻蓋、口袋、繩子，從肩膀上和身體兩側露出來）＋胸前兩條背帶和胸扣
+      const top = R(y - w * .15), bw = w * 1.8, bh = w * 1.9;   // 比身體寬：從兩側露出來（身體會擋住中間）
+      const back = g("backpack-b", P(Pa(`M${R(x - bw)} ${R(top + 6)} Q${R(x - bw)} ${top} ${R(x - bw + 6)} ${top} H${R(x + bw - 6)} Q${R(x + bw)} ${top} ${R(x + bw)} ${R(top + 6)} V${R(top + bh)} H${R(x - bw)}Z`), "#5f8a4a", { hl: [R(x - bw * .5), R(top + 5), R(bw * .3), 2], dx: 1.6, dy: 2, sw: 1.8 }) +
+        P(Pa(`M${R(x - bw + 1)} ${R(top + 1)} H${R(x + bw - 1)} V${R(top + bh * .28)} Q${x} ${R(top + bh * .36)} ${R(x - bw + 1)} ${R(top + bh * .28)}Z`), "#4a7238", { dx: .8, dy: 1, sw: 1.4 }) +
+        `<path d="M${R(x - bw - 2)} ${R(top + bh * .55)} q-3 ${R(bh * .12)} 0 ${R(bh * .24)} M${R(x + bw + 2)} ${R(top + bh * .55)} q3 ${R(bh * .12)} 0 ${R(bh * .24)}" stroke="#c8913a" stroke-width="2" fill="none" stroke-linecap="round"/>`);
+      const sx = w * .58, front = g("backpack-f", [-1, 1].map(d => P(Pa(`M${R(x + d * sx - 2.4)} ${R(y - 1)} L${R(x + d * sx * .8 - 2.4)} ${R(y + w * 1.25)} H${R(x + d * sx * .8 + 2.4)} L${R(x + d * sx + 2.4)} ${R(y - 1)}Z`), "#7a5a36", { dx: .5, dy: .6, sw: 1 })).join("") +
+        P(Pa(`M${R(x - sx * .8)} ${R(y + w * .62)} H${R(x + sx * .8)} V${R(y + w * .62 + 3)} H${R(x - sx * .8)}Z`), "#7a5a36", { dx: .4, dy: .4, sw: .9 }) + P(Pa(`M${R(x - 3)} ${R(y + w * .62 - 1.4)} h6 v5.8 h-6Z`), "#e0b44a", { dx: .4, dy: .4, sw: .9 }));
+      return { back, front };
+    }
+    if (id === "cape") {   // 樹葉披風：一片大葉子形狀的披風（葉脈、邊緣有鋸齒），從身體兩側露出來；脖子前面一顆葉子扣
+      const cw = w * 2.35, ch = w * 2.75, edge = Array.from({ length: 9 }, (_, k) => { const t = k / 8, px = x - cw + 2 * cw * t, py = y + ch - Math.sin(t * Math.PI) * w * .25 + (k % 2 ? 3 : 0); return `${R(px)} ${R(py)}`; }).join(" L");
+      const back = g("cape-b", P(Pa(`M${R(x - w * .7)} ${R(y - 2)} Q${R(x - cw * 1.08)} ${R(y + ch * .45)} ${R(x - cw)} ${R(y + ch)} L${edge} Q${R(x + cw * 1.08)} ${R(y + ch * .45)} ${R(x + w * .7)} ${R(y - 2)}Z`), "#5aa047", { hl: [R(x - cw * .6), R(y + ch * .35), 3, R(ch * .25)], dx: 2, dy: 2.4, sw: 1.8 }) +
+        `<path d="M${x} ${R(y + 2)} V${R(y + ch - 2)} ${[-1, 1].map(d => [.3, .55, .8].map(t => `M${x} ${R(y + ch * t)} l${R(d * cw * .55)} ${R(ch * .1)}`).join(" ")).join(" ")}" stroke="#3e7a32" stroke-width="1.2" fill="none" opacity=".7"/>`);
+      const front = g("cape-f", P(Pa(`M${R(x - 1)} ${R(y + 1)} q-${R(w * .45)} -${R(w * .05)} -${R(w * .55)} ${R(w * .3)} q${R(w * .4)} ${R(w * .15)} ${R(w * .55)} -${R(w * .3)}Z M${R(x + 1)} ${R(y + 1)} q${R(w * .45)} -${R(w * .05)} ${R(w * .55)} ${R(w * .3)} q-${R(w * .4)} ${R(w * .15)} -${R(w * .55)} -${R(w * .3)}Z`), "#4f9440", { dx: .5, dy: .5, sw: 1.1 }) +
+        P(C(x, R(y + 1.4), R(Math.max(2.2, w * .14))), "#c8913a", { dx: .4, dy: .4, sw: 1 }));
+      return { back, front };
+    }
+    return null;
+  }
+  // 裝扮視窗的格子（2026-10-09 R8-1）：只畫配件本身、放大（以前格子放整隻動物，帽子只佔一成，分不出是哪一頂）
+  function hatIcon(id) { if (!HATS[id]) return ""; return `<svg class="dr-ic-svg" viewBox="44 -4 112 72" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${HATS[id].replace(/§/g, "i" + (++U).toString(36) + "_")}</svg>`; }
+  function accIcon(i, id) {   // 配件：畫在這一階身上、只取脖子附近（背包、披風取大一點，看得到背後那層）
+    const n = NECK[clamp(i)]; if (!n) return ""; const big = id === "backpack" || id === "cape", [x, y, w] = n, hw = big ? w * 2.9 : w * 2.1;
+    return svg(i, "dr-ic-svg", "none", false, id).replace(/viewBox="[^"]*"/, `viewBox="${(x - hw).toFixed(1)} ${(y - hw * .55).toFixed(1)} ${(hw * 2).toFixed(1)} ${(hw * 1.5).toFixed(1)}"`);
   }
   function hat(id, i) {
     if (!HATS[id]) return "";
     const a = HAT_ANCHOR[clamp(i || 0)] || [100, 46, 1];
     const tf = `translate(${a[0]} ${a[1]}) scale(${a[2]}) translate(-100 -45)`;
-    return `<svg class="pet-hat-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g transform="${tf}">${HATS[id]}</g></svg>`;
+    return `<svg class="pet-hat-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g transform="${tf}">${HATS[id].replace(/§/g, "h" + (++U).toString(36) + "_")}</g></svg>`;   // 帽子裡有裁切（v2）：每份自己的 id
   }
   const EMOJI = ["🥚", "🐛", "🦋", "🦊", "🐅", "🐲", "🐉"];   // 對映 PET_STAGES 的 e，供把同步來的 emoji 反查成階段
   const clamp = i => Math.max(0, Math.min(A.length - 1, (i | 0)));
@@ -547,7 +646,7 @@ ${tigerHead()}
   }
   let U = 0;   // 每份 SVG 自己的 id 前綴（§ → p1_、p2_…），避免同頁多份角色的裁切互相串
   // 戴帽子時拿掉 <!--O-->…<!--/O-->（幼蟲的臭角）：帽子要戴在頭上，不是戴在臭角上
-  function body(i, hatId, accId) { const pre = "p" + (++U).toString(36) + "_"; let a = A[clamp(i)]; if (HATS[hatId]) a = a.replace(/<!--O-->[\s\S]*?<!--\/O-->/, ""); const ag = accG(accId, i); if (ag) a = a.replace(/(<g class="pr-head"[^>]*>)/, "$1" + ag); return a.replace("<!--H-->", hatG(hatId, i)).replace("<!--H2-->", hatG(hatId, i)).replace("<!--H3-->", HATS[hatId] ? `<g transform="translate(14 12) rotate(8 100 46)">${hatG(hatId, i)}</g>` : "").replace(/§/g, pre); }
+  function body(i, hatId, accId) { const pre = "p" + (++U).toString(36) + "_"; let a = A[clamp(i)]; if (HATS[hatId]) a = a.replace(/<!--O-->[\s\S]*?<!--\/O-->/, ""); const ag = accG(accId, i); if (ag && ag.front) a = a.replace(/(<g class="pr-head"[^>]*>)/, "$1" + ag.front); if (ag && ag.back) a = a.replace(/(<g class="pc-(?:bob|hover)[^"]*"[^>]*>)/, "$1" + ag.back); return a.replace("<!--H-->", hatG(hatId, i)).replace("<!--H2-->", hatG(hatId, i)).replace("<!--H3-->", HATS[hatId] ? `<g transform="translate(14 12) rotate(8 100 46)">${hatG(hatId, i)}</g>` : "").replace(/§/g, pre); }
   function prop(i) { const p = PROP[clamp(i)]; if (!p) return ""; const pre = "q" + (++U).toString(36) + "_"; return `<svg class="pet-prop" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${p.replace(/§/g, pre)}</svg>`; }
   // 幼龍（2026-10-05 拿掉腳下的雲）：腳底原本踩在雲上（y≈183），整張往下 13 讓腳底落在跟其他夥伴同一條地面線（y≈196）。
   // 用 viewBox 平移而不是包一層 transform：各部位的支點（transform-box: view-box）座標不用改
@@ -585,5 +684,5 @@ ${tigerHead()}
   const dragonSpine = n => spine(DSP, n).map(q => ({ x: q.x, y: q.y }));
   const dragon = { I0: DI0, DB, DT0, tail: dragonTail };   // pet-walk：尾巴從第 I0 節能動、每格用 tail(中心線) 重畫
   const larvaSpine = n => spine(LVS, n).map(q => ({ x: q.x, y: q.y }));   // 幼蟲身體的中心線（pet-walk.js 的 U 型迴轉：身體每一點沿這條線的位置）   // 神龍身體的中心線（pet-walk.js 用來讓尾巴彎過去）
-  return { ACC_IDS, ACC_LABEL, accOk: i => !!NECK[clamp(i)], larvaSpine, dragonSpine, dragon, cloudTop6, svg, padFor, count: A.length, byEmoji, dataUri, habitat, habitatUri, hat, HAT_IDS, HAT_LABEL, headLine, prop };
+  return { hatIcon, accIcon, ACC_IDS, ACC_LABEL, accOk: (i, id) => !!NECK[clamp(i)] && (!id || id === "none" || (ACC_OK[id] || []).includes(clamp(i))), larvaSpine, dragonSpine, dragon, cloudTop6, svg, padFor, count: A.length, byEmoji, dataUri, habitat, habitatUri, hat, HAT_IDS, HAT_LABEL, headLine, prop };
 })();

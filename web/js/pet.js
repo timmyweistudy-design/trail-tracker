@@ -278,70 +278,85 @@ const FREE_HATS = new Set(["none", "bandana", "santa", "rabbit"]);
 const HAT_SEASON = { santa: { hint: "12 月到 1 月初才拿得到", on: d => d.getMonth() === 11 || (d.getMonth() === 0 && d.getDate() <= 6) },
   rabbit: { hint: "中秋節前後一週才拿得到", on: d => PET_FEST.ma.some(x => Math.abs(new Date(x + "T12:00:00") - d) <= 7.5 * 864e5) } };
 function hatSeason(id) { const s = HAT_SEASON[id]; if (!s) return null; const f = !!window.__hatSeasonAll; return { on: f || s.on(ttClock.date()), hint: s.hint }; }   // __hatSeasonAll：測試面板強制當季
-function petAccPicker(i, pro) {
-  if (!PET_ART.accOk || !PET_ART.accOk(i)) return "";   // 蛋沒有脖子
-  const own = accsOwned(), cur = petAcc();
-  return `<div class="dex-sec">${ttT("配件")}</div><div class="hat-grid acc-grid">${PET_ART.ACC_IDS.map(id => { const has = id === "none" || own.has(id), lock = !has && !pro;
-    return `<button class="hat-opt acc-opt${id === cur ? " on" : ""}${has ? "" : " locked"}" data-acc="${id}"><div class="hat-prev">${PET_ART.svg(i, "", "none", false, id)}</div><div class="hat-lbl">${ttT(PET_ART.ACC_LABEL[id])}</div>${has ? "" : lock ? `<div class="hat-cost"><span class="pro-tag">PRO</span></div>` : `<div class="hat-cost">${BERRY_SVG}${HAT_COST}</div>`}</button>`; }).join("")}</div>`;
+// ── 裝扮視窗（2026-10-09 修正案 R8-1，使用者：「裝扮設計得太粗糙」）──
+// 上面是大預覽（先試穿）；帽子／配件／擺設三頁；每組標「已收集 n/m」；格子只畫配件本身（沒拿到的照樣是彩色＋小鎖＋怎麼拿）。
+// 點格子：已經有的、免費可拿的＝直接戴；要用果實換的＝先試穿，下面的按鈕「用 10 顆果實換上」按了才扣（使用者決定 2）；
+// 免費版點 PRO 的＝開升級面板；每月挑戰、季節沒到、地區沒走過＝試穿看樣子＋說怎麼拿
+const HAT_GROUPS = [["用果實換", ["none", "straw", "party", "crown", "bow"]], ["每月挑戰", ["bandana"]], ["走過那個地區", ["silvergrass", "maple", "pineapple", "wave", "shell"]], ["季節限定", ["santa", "rabbit"]]];
+function hatState(id, pro, own) {
+  const reg = typeof PetJourney !== "undefined" ? PetJourney.hatRegion(id) : "", sea = hatSeason(id), has = own.has(id);
+  if (id === "none" || has) return { k: "own" };
+  if (reg) return pro ? { k: "lock", msg: `${ttT(reg)}・${ttT("走過那裡的步道就會解鎖")}` } : { k: "pro" };
+  if (id === "bandana") return { k: "lock", msg: ttT("完成一次每月挑戰就會解鎖，在夥伴頁看進度") };
+  if (sea) return sea.on ? { k: "free" } : { k: "lock", msg: `${ttT("季節限定")}・${ttT(sea.hint)}` };
+  return !pro && !FREE_HATS.has(id) ? { k: "pro" } : { k: "buy" };
 }
-function bindAccPicker(ov) {
-  ov.querySelectorAll(".acc-opt").forEach(btn => btn.addEventListener("click", async () => {
-    const id = btn.dataset.acc, own = accsOwned();
-    if (id !== "none" && !own.has(id)) {
-      if (!_proGate()) return;
-      if (berriesBalance() < HAT_COST) { toast(`${ttT("果實還差")} ${HAT_COST - berriesBalance()}`); return; }
-      const ok = typeof ttConfirm === "function" ? await ttConfirm(`${ttT("換上")}${ttSp()}${ttQuote(ttT(PET_ART.ACC_LABEL[id]))}${ttCJK() ? "？" : "?"}${ttParen(`${HAT_COST} ${ttT("顆果實")}`)}`, ttT("換上"), ttT("再想想")) : true;
-      if (!ok) return;
-      localStorage.setItem("tt_pet_berry_spent", String((+(localStorage.getItem("tt_pet_berry_spent") || 0)) + HAT_COST));   // 先結算（A4）
-      own.add(id); localStorage.setItem("tt_pet_accs_owned", JSON.stringify([...own]));
-      btn.classList.remove("locked"); const c = btn.querySelector(".hat-cost"); if (c) c.remove();
-      const bal = ov.querySelector(".hat-bal b"); if (bal) bal.textContent = berriesBalance();
-    }
-    localStorage.setItem("tt_pet_acc", id); ov.querySelectorAll(".acc-opt").forEach(b => b.classList.toggle("on", b === btn)); renderPet(); petBuzz(15);
-  }));
+function accState(id, i, pro, own) {
+  if (id === "none" || own.has(id)) return PET_ART.accOk(i, id) ? { k: "own" } : { k: "na" };
+  if (!PET_ART.accOk(i, id)) return { k: "na" };
+  return pro ? { k: "buy" } : { k: "pro" };
 }
 function openHatPicker() {
   if (document.querySelector('[data-ov="pethat"]')) return;
-  const pro = typeof Premium !== "undefined" && Premium.isOn();
-  const i = petStageIndex(totalKm()), cur = petHat(), owned = hatsOwned();
-  const opts = PET_ART.HAT_IDS.map(id => {
-    const reg = typeof PetJourney !== "undefined" ? PetJourney.hatRegion(id) : "";   // 地區配件：走過才有，不能買
-    const has = owned.has(id), sea = hatSeason(id), quest = id === "bandana" || !!reg || (!!sea && !sea.on);   // 登山頭巾：完成每月挑戰才拿得到，不能買；季節限定不在季節內
-    const proLock = !pro && !FREE_HATS.has(id) && !has;   // 以前當會員時換到的照樣能戴；新換的、地區配件要 PRO
-    return `<button class="hat-opt${id === cur ? " on" : ""}${has && !proLock ? "" : " locked"}${quest && !has ? " quest" : ""}" data-hat="${id}"><div class="hat-prev">${PET_ART.svg(i)}${PET_ART.hat(id, i)}</div><div class="hat-lbl">${ttT(PET_ART.HAT_LABEL[id])}</div>${proLock ? `<div class="hat-cost"><span class="pro-tag">PRO</span></div>` : has ? "" : reg ? `<div class="hat-cost hat-quest">${ic("map")} <span>${ttT(reg)}</span></div>` : sea ? `<div class="hat-cost hat-quest">${ic("sparkle")} <span>${ttT(sea.on ? "季節限定・免費" : "季節限定")}</span></div>` : quest ? `<div class="hat-cost hat-quest">${ic("flag")} <span>${ttT("每月挑戰")}</span></div>` : `<div class="hat-cost">${BERRY_SVG}${HAT_COST}</div>`}</button>`;
-  }).join("");
+  const pro = typeof Premium !== "undefined" && Premium.isOn(), i = petStageIndex(totalKm());
+  let tryHat = petHat(), tryAcc = petAcc(), pane = "hat";
+  const badge = st => st.k === "buy" ? `<div class="hat-cost">${BERRY_SVG}${HAT_COST}</div>` : st.k === "pro" ? `<div class="hat-cost"><span class="pro-tag">PRO</span></div>` : st.k === "lock" ? `<div class="hat-cost dr-lock">${ic("lock")}</div>` : "";
+  const tile = (kind, id, st, on) => `<button class="hat-opt ${kind === "acc" ? "acc-opt" : ""}${on ? " on" : ""}${st.k === "own" || st.k === "free" ? "" : " locked"}${st.k === "lock" ? " quest" : ""}${st.k === "na" ? " na" : ""}" data-${kind}="${id}"${st.k === "na" ? ' aria-disabled="true"' : ""}>` +
+    `<div class="hat-prev dr-ic">${id === "none" ? `<span class="dr-none">${ic("x")}</span>` : kind === "acc" ? PET_ART.accIcon(i, id) : PET_ART.hatIcon(id)}</div><div class="hat-lbl">${ttT(kind === "acc" ? PET_ART.ACC_LABEL[id] : PET_ART.HAT_LABEL[id])}</div>${badge(st)}</button>`;
+  const hatPane = () => { const own = hatsOwned(), cur = petHat(); return HAT_GROUPS.map(([t, ids]) => { const got = ids.filter(id => id !== "none" && own.has(id)).length, all = ids.filter(id => id !== "none").length;
+    return `<div class="dr-grp"><div class="dr-gh">${ttT(t)}<small>${ttT("已收集 {n}/{m}").replace("{n}", got).replace("{m}", all)}</small></div><div class="hat-grid">${ids.map(id => tile("hat", id, hatState(id, pro, own), id === cur)).join("")}</div></div>`; }).join(""); };
+  const accPane = () => { const own = accsOwned(), cur = petAcc(), ids = PET_ART.ACC_IDS, got = ids.filter(id => id !== "none" && own.has(id)).length;
+    return `<div class="dr-grp"><div class="dr-gh">${ttT("配件")}<small>${ttT("已收集 {n}/{m}").replace("{n}", got).replace("{m}", ids.length - 1)}</small></div><div class="hat-grid acc-grid">${ids.map(id => tile("acc", id, accState(id, i, pro, own), id === cur)).join("")}</div>${i === 0 ? `<p class="dr-note">${ttT("蛋還沒有脖子，孵出來就能戴")}</p>` : ""}</div>`; };
   const ov = document.createElement("div"); ov.className = "pet-modal"; ov.dataset.ov = "pethat";
-  ov.innerHTML = `<div class="pet-modal-card"><button class="sheet-close" id="hatClose" aria-label="${ttT("關閉")}">${ic("x")}</button><h2>${ic("sparkle")} ${ttT("幫夥伴裝扮")}</h2><p class="dex-intro">${ttT("用果實換新配件，換過的就一直是你的。")}</p><div class="hat-bal">${ttT("你有")} ${BERRY_SVG}<b>${berriesBalance()}</b></div><div class="hat-grid">${opts}</div>${petAccPicker(i, pro)}${petPropsPicker()}</div>`;
+  ov.innerHTML = `<div class="pet-modal-card dr-card"><button class="sheet-close" id="hatClose" aria-label="${ttT("關閉")}">${ic("x")}</button><h2>${ic("sparkle")} ${ttT("幫夥伴裝扮")}</h2>
+    <div class="dr-prev" aria-live="polite"><div class="dr-stage"></div><div class="dr-try"></div></div>
+    <div class="hat-bal">${ttT("你有")} ${BERRY_SVG}<b>${berriesBalance()}</b></div>
+    <div class="dr-tabs pp-tods" role="tablist">${[["hat", "帽子"], ["acc", "配件"], ["prop", "擺設"]].map(([k, l]) => `<button class="pp-tod${k === pane ? " on" : ""}" role="tab" aria-selected="${k === pane}" data-pane="${k}">${ttT(l)}</button>`).join("")}</div>
+    <div class="dr-pane" data-pane="hat">${hatPane()}</div><div class="dr-pane" data-pane="acc" hidden>${accPane()}</div><div class="dr-pane" data-pane="prop" hidden>${petPropsPicker()}</div>
+    <div class="dr-bar"><span class="dr-msg"></span><button class="btn primary" id="drBuy" hidden></button></div></div>`;
   document.body.appendChild(ov);
-  bindPropsPicker(ov); bindAccPicker(ov);
+  bindPropsPicker(ov);
   let _a11y = null;
   const close = () => { if (_a11y) _a11y(); ov.remove(); };
   if (typeof ttModalA11y === "function") _a11y = ttModalA11y(ov, close, { focus: "#hatClose" });
   ov.addEventListener("click", e => { if (e.target === ov) close(); });
   ov.querySelector("#hatClose").addEventListener("click", close);
-  ov.querySelectorAll(".hat-opt:not(.acc-opt)").forEach(btn => btn.addEventListener("click", async () => {   // 配件那一排也用 hat-opt 的樣式：不能綁到這裡（2026-10-09 R5 抓到：買配件被扣兩次）
-    const id = btn.dataset.hat, own = hatsOwned();
-    const reg = typeof PetJourney !== "undefined" ? PetJourney.hatRegion(id) : "";
-    if (reg && !_proGate()) return;   // 地區配件：PRO 的旅行功能
-    if (reg && !own.has(id)) { toast(`${ttT(reg)}・${ttT("走過這個地區的步道就會解鎖")}`); return; }
-    if (!FREE_HATS.has(id) && !own.has(id) && !_proGate()) return;   // 用果實換新配件：PRO（已擁有的照樣能戴）
-    if (!own.has(id) && id === "bandana") { toast(ttT("完成一次每月挑戰就會解鎖，在夥伴頁看進度")); return; }
-    { const sea = hatSeason(id); if (sea && !own.has(id)) { if (!sea.on) { toast(`${ttT("季節限定")}・${ttT(sea.hint)}`); return; }
-      own.add(id); localStorage.setItem("tt_pet_hats_owned", JSON.stringify([...own].filter(h => !(typeof PetJourney !== "undefined" && PetJourney.hatRegion(h))))); btn.classList.remove("locked"); const c = btn.querySelector(".hat-cost"); if (c) c.remove(); toast(ttT("季節限定配件收進來了，之後隨時都能戴")); } }
-    if (!own.has(id)) {
-      if (berriesBalance() < HAT_COST) { toast(`${ttT("果實還差")} ${HAT_COST - berriesBalance()}`); return; }
-      const ok = typeof ttConfirm === "function" ? await ttConfirm(`${ttT("換上")}${ttSp()}${ttQuote(ttT(PET_ART.HAT_LABEL[id]))}${ttCJK() ? "？" : "?"}${ttParen(`${HAT_COST} ${ttT("顆果實")}`)}`, ttT("換上"), ttT("再想想")) : true;
-      if (!ok) return;
-      localStorage.setItem("tt_pet_berry_spent", String((+(localStorage.getItem("tt_pet_berry_spent") || 0)) + HAT_COST));
-      own.add(id); localStorage.setItem("tt_pet_hats_owned", JSON.stringify([...own].filter(h => !(typeof PetJourney !== "undefined" && PetJourney.hatRegion(h)))));   // 地區配件是推出來的，不寫進存檔
-      btn.classList.remove("locked"); const c = btn.querySelector(".hat-cost"); if (c) c.remove();
-      const bal = ov.querySelector(".hat-bal b"); if (bal) bal.textContent = berriesBalance();
-    }
-    localStorage.setItem("tt_pet_hat", id);
-    ov.querySelectorAll(".hat-opt:not(.acc-opt)").forEach(b => b.classList.toggle("on", b === btn));
-    renderPet();
-    petBuzz(15);
-  }));
+  const stageEl = ov.querySelector(".dr-stage"), tryEl = ov.querySelector(".dr-try"), msg = ov.querySelector(".dr-msg"), buy = ov.querySelector("#drBuy");
+  const drawPrev = () => { stageEl.innerHTML = PET_ART.svg(i, "", tryHat, 30, tryAcc);
+    const tryNow = (tryHat !== petHat() || tryAcc !== petAcc()); tryEl.textContent = tryNow ? `${ttT("試穿中")}${ttColon()}${[tryHat !== petHat() ? ttT(PET_ART.HAT_LABEL[tryHat]) : "", tryAcc !== petAcc() ? ttT(PET_ART.ACC_LABEL[tryAcc]) : ""].filter(Boolean).join("、")}` : ""; };
+  const bar = (text, buyLabel, onBuy) => { msg.textContent = text || ""; buy.hidden = !buyLabel; if (buyLabel) { buy.innerHTML = buyLabel; buy.onclick = onBuy; } };
+  const bal = () => { const b = ov.querySelector(".hat-bal b"); if (b) b.textContent = berriesBalance(); };
+  const refresh = () => { ov.querySelector('[data-pane="hat"].dr-pane').innerHTML = hatPane(); ov.querySelector('[data-pane="acc"].dr-pane').innerHTML = accPane(); bindTiles(); };
+  const wearHat = id => { localStorage.setItem("tt_pet_hat", id); tryHat = id; renderPet(); petBuzz(15); refresh(); drawPrev(); bar(""); };
+  const wearAcc = id => { localStorage.setItem("tt_pet_acc", id); tryAcc = id; renderPet(); petBuzz(15); refresh(); drawPrev(); bar(""); };
+  const pay = () => { if (berriesBalance() < HAT_COST) { toast(`${ttT("果實還差")} ${HAT_COST - berriesBalance()}`); return false; }
+    localStorage.setItem("tt_pet_berry_spent", String((+(localStorage.getItem("tt_pet_berry_spent") || 0)) + HAT_COST)); bal(); return true; };   // 先結算（A4）
+  const buyLabel = () => `${BERRY_SVG} ${ttT("用 {n} 顆果實換上").replace("{n}", HAT_COST)}`;
+  function bindTiles() {
+    ov.querySelectorAll(".hat-opt[data-hat]").forEach(btn => btn.addEventListener("click", () => {
+      const id = btn.dataset.hat, own = hatsOwned(), st = hatState(id, pro, own);
+      ov.querySelectorAll(".hat-opt[data-hat]").forEach(b => b.classList.toggle("sel", b === btn));
+      if (st.k === "pro") { _proGate(); return; }
+      tryHat = id; drawPrev();
+      if (st.k === "own") return wearHat(id);
+      if (st.k === "free") { own.add(id); localStorage.setItem("tt_pet_hats_owned", JSON.stringify([...own].filter(h => !(typeof PetJourney !== "undefined" && PetJourney.hatRegion(h))))); toast(`${ttT("拿到了")}${ttColon()}${ttT(PET_ART.HAT_LABEL[id])}`); return wearHat(id); }
+      if (st.k === "lock") { toast(st.msg); return bar(st.msg); }
+      bar(ttT(PET_ART.HAT_LABEL[id]), buyLabel(), () => { if (!pay()) return; const o = hatsOwned(); o.add(id); localStorage.setItem("tt_pet_hats_owned", JSON.stringify([...o].filter(h => !(typeof PetJourney !== "undefined" && PetJourney.hatRegion(h))))); wearHat(id); });
+    }));
+    ov.querySelectorAll(".hat-opt[data-acc]").forEach(btn => btn.addEventListener("click", () => {
+      const id = btn.dataset.acc, own = accsOwned(), st = accState(id, i, pro, own);
+      ov.querySelectorAll(".hat-opt[data-acc]").forEach(b => b.classList.toggle("sel", b === btn));
+      if (st.k === "na") return bar(i === 0 ? ttT("蛋還沒有脖子，孵出來就能戴") : ttT("這一階戴不了（身體的樣子放不上去）"));
+      if (st.k === "pro") { _proGate(); return; }
+      tryAcc = id; drawPrev();
+      if (st.k === "own") return wearAcc(id);
+      bar(ttT(PET_ART.ACC_LABEL[id]), buyLabel(), () => { if (!pay()) return; const o = accsOwned(); o.add(id); localStorage.setItem("tt_pet_accs_owned", JSON.stringify([...o])); wearAcc(id); });
+    }));
+  }
+  bindTiles(); drawPrev();
+  ov.querySelectorAll(".dr-tabs .pp-tod").forEach(b => b.addEventListener("click", () => { pane = b.dataset.pane;
+    ov.querySelectorAll(".dr-tabs .pp-tod").forEach(o => { o.classList.toggle("on", o === b); o.setAttribute("aria-selected", o === b); });
+    ov.querySelectorAll(".dr-pane").forEach(p => { p.hidden = p.dataset.pane !== pane; }); bar(""); }));
 }
 // 夥伴的音效與震動（2026-10-07 寵物新一輪 #23）：音效預設關（吃東西、抱抱、進化、收到禮物各一種輕柔的合成音，不用音檔）；震動預設開，可以在「？」裡關掉
 const petHapticOn = () => localStorage.getItem("tt_pet_haptic") !== "0", petSoundOn = () => localStorage.getItem("tt_pet_sound") === "1";
@@ -389,6 +404,7 @@ function petSound(k) {
     else if (k === "hug") [523, 659, 784].forEach((f, i) => tone(f, i * .09, .35, "triangle", .07));
     else if (k === "evolve") [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, i * .12, .5, "triangle", .08));
     else if (k === "gift") { tone(880, 0, .25, "sine", .08); tone(1175, .12, .35, "sine", .07); }
+    else if (k === "hop") { if (petAcc() === "bell") { tone(1568, 0, .18, "sine", .05); tone(2093, .05, .22, "sine", .035); } }   // 戴著小鈴鐺跳：叮（2026-10-09 R8；音效預設關）
   } catch (e) { /* 沒有音訊就安靜 */ }
 }
 window.addEventListener("pet-fx", e => petSound(e.detail));

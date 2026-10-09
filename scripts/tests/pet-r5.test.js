@@ -79,9 +79,11 @@ const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:390,height:
  await p.locator("#accSheet").screenshot({path:O+"acc-sheet.png"});await p.evaluate(()=>document.getElementById("accSheet").remove());
  // 裝扮視窗買一件、戴上、夥伴卡畫出來、備份帶著
  await p.evaluate(()=>openHatPicker());await p.waitForTimeout(500);
- const n=await p.evaluate(()=>document.querySelectorAll(".acc-opt").length);ok(n===3,"dress-up dialog has an accessory row (none / scarf / bell): "+n);
+ const n=await p.evaluate(()=>document.querySelectorAll(".acc-opt").length);ok(n===6,"dress-up dialog has an accessory tab (none + 5): "+n);
  const bal0=await p.evaluate(()=>berriesBalance());
- await p.evaluate(()=>{window.ttConfirm=async()=>true;document.querySelector('.acc-opt[data-acc="scarf"]').click();});await p.waitForTimeout(600);
+ await p.evaluate(()=>{document.querySelector('.acc-opt[data-acc="scarf"]').click();});await p.waitForTimeout(300);
+ ok(await p.evaluate(b=>berriesBalance()===b&&!document.getElementById("drBuy").hidden,bal0),"tapping an accessory only tries it on (no charge yet), the buy button appears");   /* 2026-10-09 R8：先試穿 */
+ await p.evaluate(()=>document.getElementById("drBuy").click());await p.waitForTimeout(600);
  const r2=await p.evaluate(()=>({acc:localStorage.getItem("tt_pet_acc"),own:localStorage.getItem("tt_pet_accs_owned"),card:!!document.querySelector("#petEmoji .pc-acc.acc-scarf"),bal:berriesBalance(),bk:Store.exportAll().pet.tt_pet_acc}));
  ok(r2.acc==="scarf"&&/scarf/.test(r2.own)&&r2.card&&bal0-r2.bal===10&&r2.bk==="scarf","buying the scarf: charged once (−"+(bal0-r2.bal)+"), worn on the card, in the backup "+JSON.stringify(r2));
  const ph=await p.evaluate(async()=>{const c=await drawPetPhoto("day","sit","");return c.width;});ok(ph===1080,"photo still draws with an accessory");

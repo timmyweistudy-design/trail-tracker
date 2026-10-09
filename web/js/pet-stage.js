@@ -311,7 +311,7 @@ window.PetStage = (function () {
   // ms 現在是「找不到動畫時」的等待時間（減少動態效果、被 animation:none 蓋掉）；有動畫就等它結束（最多多等 3 秒保險）
   function flash(cls, ms) {
     const em = emEl(); if (!em) return sleep(0);
-    if (cls === "pb-snap" || cls === "pb-hug" || cls === "pb-rub") window.dispatchEvent(new CustomEvent("pet-fx", { detail: cls === "pb-snap" ? "bite" : "hug" }));   // 音效（pet.js，預設關；寵物新一輪 #23）
+    if (cls === "pb-snap" || cls === "pb-hug" || cls === "pb-rub" || cls === "pb-hop") window.dispatchEvent(new CustomEvent("pet-fx", { detail: cls === "pb-snap" ? "bite" : cls === "pb-hop" ? "hop" : "hug" }));   // 音效（pet.js，預設關；寵物新一輪 #23）
     em.classList.remove(cls); void em.offsetWidth;
     const before = new Set(em.getAnimations ? em.getAnimations({ subtree: true }) : []);
     em.classList.add(cls);
