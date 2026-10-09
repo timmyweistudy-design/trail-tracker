@@ -1,6 +1,23 @@
 # 山林夥伴：交接文件（2026-10-07）
 
 接手的人先讀這份，再看 [roadmap.md](roadmap.md) 的「維護備忘 → 山林夥伴」。
+
+> ## 2026-10-09 最新交接（先讀這段）
+> 第一版 R1～R5（[pet-plan.md](pet-plan.md)）、第二版 R7～R9（[pet-plan-v2.md](pet-plan-v2.md)）都完成，SW `v698`，`test:all` 52 組全過。**下一步＝第三版 [pet-plan-v3.md](pet-plan-v3.md) 的 R10**（使用者已確認：全部做、社群用假資料、iOS 最後）。
+> **新的架構重點**（下面第 1 節是 10/07 的舊內容，以這段為準）：
+> - **動作仲裁**（`pet-stage.js`）：`claimStage(kind)`／`freeStage(tk)` 號碼牌、`stopIdle()`、`dismissGuest()`；餵、玩開始時先停待機、請訪客走
+> - **`flash(cls, ms)` 等 CSS 動畫真的播完**（`getAnimations` 前後比對；看不到舞台時改照毫秒走）——新動作不用再對時間
+> - **時間一律用 `ttClock`**（`pet-stage.js` 開頭）；`PetStage.phase()` 是錄影標籤／驗收／測試共用的動作名
+> - **親密**：`AFF_T=[10,30,50,70,90]`、`affinity()` 2 天後才掉、每天 −1、不跨心；`affHeartsHtml()` 部分填色的心
+> - **帽子**（`pet-art.js`）：`HAT_ANCHOR`（每階）→ `HAT_FIT`（小頭的頭巾類／髮夾類）→ `HAT_FIT_ONE`（個別帽子×個別角色，玉兔耳、芒草穗）；`hatTf()` 算 transform；**晃動動畫只能掛在 `.pc-hat-in`**（掛在 `.pc-hat` 會讓 CSS transform-origin 改到定位用的 transform，帽子整頂偏掉）
+> - **配件**：`NECK`（每階掛點）、`ACC_OK`（背包、披風只給 3、4、5 階）、`accG()` 回傳 `{front, back}`（front 在頭群組第一個、back 在整隻最底下）；`petAcc()`、`accsOwned()`、備份鍵 `tt_pet_acc`／`tt_pet_accs_owned`
+> - **小東西／擺設圖**：用 `PET_ART.kit`（P、E、C、Pa）畫；有裁切 id，**每次畫都要經過 `giftSvg()`**
+> - **裝扮視窗**（`openHatPicker`）：`hatState()`／`accState()` 決定 own／free／buy／lock／pro／na；買的要按 `#drBuy` 才扣
+> - **備份合併**（`storage.js`）：`MERGE` 規則表＋`petV:1`；`importAll` 回傳 `{applied, skipped, errors}`
+> - **測試面板**：夥伴按鈕照名稱自動分 9 組（`debug.js` 的 `RULES`），每組 ≤16 顆
+> - **新測試**：`pet-clock`、`pet-handoff`、`pet-settle`、`backup-merge`、`pet-perf-budget`（最後單獨跑）、`pet-small`、`pet-anim-cut`、`pet-r4`、`pet-r5`、`pet-r7`、`pet-r8`（含舞台上帽子位置、配件像素比對）、`pet-r9`
+> - **驗收工具**：`node scripts/pet-acceptance.js [階段]`（接觸表）；改舞台 CSS 一定要**在舞台上截圖**（靜態圖會漏）
+
 上一輪（寵物新一輪 26 項＋神龍尾巴重新設計）已全部推上 main（最後 `4e6f71a`，SW `trail-tracker-v663`），`npm run test:all` 40/40 通過。
 
 ---
