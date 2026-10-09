@@ -1,6 +1,6 @@
 # 循徑拾光：目前進度與待辦
 
-最後更新：2026-10-09（**夥伴第三版 R10～R14＋收尾輪完成**，SW `trail-tracker-v707`；**phase40／41 SQL 已跑並確認**；果實圖示全部跟著季節換；**iOS build 排隊中（Codemagic 免費機器排不到）**；**R15 配色→相近物種完成（21 隻，見 pet-plan-v3）**（[ios-checklist.md](ios-checklist.md) 最後一節）；全站掃描 `scripts/ui-sweep.js`、整套測試約 15 分）
+最後更新：2026-10-09（**夥伴第三版 R10～R14＋收尾輪完成**，SW `trail-tracker-v707`；**phase40／41 SQL 已跑並確認**；果實圖示全部跟著季節換；**iOS build 排隊中（Codemagic 免費機器排不到）**；**R15 近親物種＋R16（雲豹重畫、全畫面同步、震動減量、真實錄音音效、iOS 最低 15.0）完成，SW v711；build 只在使用者說了才出**（[ios-checklist.md](ios-checklist.md) 最後一節）；全站掃描 `scripts/ui-sweep.js`、整套測試約 15 分）
 上架細節清單見 [launch-checklist.md](launch-checklist.md)。
 
 ## 現況

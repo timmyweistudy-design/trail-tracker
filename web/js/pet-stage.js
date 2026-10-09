@@ -250,6 +250,7 @@ window.PetStage = (function () {
     asleep = !!on && !reduce(); const em = emEl(); if (!box || !em) return;
     em.classList.toggle("pb-asleep", asleep); box.classList.toggle("ps-asleep", asleep);
     const old = box.querySelector(".ps-zz"); if (old) old.remove();
+    if (asleep) fx("sleep");
     if (asleep) { const z = document.createElement("div"); z.className = "ps-zz"; z.setAttribute("aria-hidden", "true"); z.innerHTML = "<i>z</i><i>z</i><i>Z</i>"; em.appendChild(z); }
   }
   async function wake() {
@@ -308,12 +309,14 @@ window.PetStage = (function () {
     return "idle";
   }
   function emEl() { return box && box.querySelector("#petEmoji"); }
+  const FXK = { "pb-snap": "bite", "pb-hug": "hug", "pb-rub": "rub", "pb-hop": "hop", "pb-pat": "pat", "pb-tickle": "tickle", "pb-trick": "trick", "pb-yawn": "yawn", "pb-stretch": "stretch", "pb-shake": "shake", "pb-dizzy": "dizzy", "pb-wake": "wake" };
+  const fx = k => window.dispatchEvent(new CustomEvent("pet-fx", { detail: k }));
   // 加一個動作 class，播完拿掉。2026-10-09 修正案 R7-1：等「這個 class 觸發的 CSS 動畫」真的播完才拿掉——
   // 以前等寫死的毫秒數，但每一階的動畫長度不同（神龍的跳 1.6 秒、程式只等 0.9 秒），class 一拿掉角色就瞬間彈回原位＝頓一下（6 隻的跳、神龍伸懶腰、幼龍嚼都有）。
   // ms 現在是「找不到動畫時」的等待時間（減少動態效果、被 animation:none 蓋掉）；有動畫就等它結束（最多多等 3 秒保險）
   function flash(cls, ms) {
     const em = emEl(); if (!em) return sleep(0);
-    if (cls === "pb-snap" || cls === "pb-hug" || cls === "pb-rub" || cls === "pb-hop") window.dispatchEvent(new CustomEvent("pet-fx", { detail: cls === "pb-snap" ? "bite" : cls === "pb-hop" ? "hop" : "hug" }));   // 音效（pet.js，預設關；寵物新一輪 #23）
+    if (FXK[cls]) fx(FXK[cls]);   // 音效（pet-sound.js）：每個動作送一個事件，聲音由那邊照物種挑（2026-10-10 全面加入音效）
     em.classList.remove(cls); void em.offsetWidth;
     const before = new Set(em.getAnimations ? em.getAnimations({ subtree: true }) : []);
     em.classList.add(cls);
@@ -590,7 +593,7 @@ window.PetStage = (function () {
       actor.appendChild(b);
       if (cloud) { const c0 = parseFloat(box.style.getPropertyValue("--wx")) || 0; box.__cloud = c0; box.__riders = [{ el: b, bx: x, c0 }]; b.__rx = x; }
       box.style.setProperty("--ex", String(Math.sign(x) * Math.min(1, Math.abs(x) / 60))); box.style.setProperty("--ey", "1");
-      await sleep(1000);
+      await sleep(700); fx("drop"); await sleep(300);   // 玩具落地那一下（音效）
       if (stg === 0) { await special(); }
       else if (stg === 6) {
         const r0 = b.getBoundingClientRect(), back = [r0.left + r0.width / 2, r0.top + r0.height * .62];   // 玩完放回原地
@@ -604,7 +607,7 @@ window.PetStage = (function () {
         await PetWalk.goEat(box, b, x);
         box.style.setProperty("--ex", "0"); box.style.setProperty("--ey", "1");
         if (stg === 2) { PetWalk.wingMode(box, "flap", 160); await sleep(1100); PetWalk.wingMode(box, "idle", 300); }
-        else { await sleep(250); b.classList.add("toy-roll"); b.style.setProperty("--rx", (Math.sign(x || 1) * 34) + "px"); await flash("pb-hop", 1100); }
+        else { await sleep(250); fx("roll"); b.classList.add("toy-roll"); b.style.setProperty("--rx", (Math.sign(x || 1) * 34) + "px"); await flash("pb-hop", 1100); }
         await PetWalk.home(box);
       }
       b.classList.add("toy-gone"); await sleep(450);
@@ -705,7 +708,6 @@ window.PetStage = (function () {
           cls(true, "chew2"); await flash("pb-chew", (stg === 4 ? 1050 : 900) * .67); cls(false, "chew2");
           await flash("pb-gulp", 340);
           if (bal && isFinite(left)) { left = Math.max(0, left - 1); bal.textContent = left; bal.classList.remove("tick"); void bal.offsetWidth; bal.classList.add("tick"); }
-          if (typeof ttBuzz === "function") ttBuzz(8);
           if (todo.length && PetWalk.tailFlick) PetWalk.tailFlick(box);   // 下一顆之前尾巴輕甩一下
           b.remove(); continue;
         }
@@ -777,7 +779,6 @@ window.PetStage = (function () {
             pl.style.transform = pr.style.transform = ""; pl.style.transition = pr.style.transition = "";
             if (!todo.length) await flash("pb-belly", 640);                      // 最後一顆吞下去才拍拍肚子
             if (bal && isFinite(left)) { left = Math.max(0, left - 1); bal.textContent = left; bal.classList.remove("tick"); void bal.offsetWidth; bal.classList.add("tick"); }
-            if (typeof ttBuzz === "function") ttBuzz(8);
             b.remove(); box.style.removeProperty("--ld"); box.style.removeProperty("--lx"); continue;
           }
           if (stg === 1) {   // 幼蟲：一小口一小口啃——每一口果實多一個缺口（缺口在嘴靠過來的那一側），第三口整顆吞下
@@ -801,7 +802,6 @@ window.PetStage = (function () {
             toMouth(b, false); b.classList.add("eaten");
             cls(true, "chew2"); await flash("pb-chew", 400); cls(false, "chew2"); await flash("pb-gulp", 340);
             if (bal && isFinite(left)) { left = Math.max(0, left - 1); bal.textContent = left; bal.classList.remove("tick"); void bal.offsetWidth; bal.classList.add("tick"); }
-            if (typeof ttBuzz === "function") ttBuzz(8);
             b.remove(); box.style.removeProperty("--ld"); box.style.removeProperty("--lx"); continue;
           }
           {
@@ -815,7 +815,6 @@ window.PetStage = (function () {
           await flash("pb-gulp", 340);                               // 吞（要等動畫播完：0.28 秒就拿掉會切掉最後一段，頭跳回去）
         }
         if (bal && isFinite(left)) { left = Math.max(0, left - 1); bal.textContent = left; bal.classList.remove("tick"); void bal.offsetWidth; bal.classList.add("tick"); }
-        if (typeof ttBuzz === "function") ttBuzz(8);
         b.remove();
         box.style.removeProperty("--ld"); box.style.removeProperty("--lx");
       }

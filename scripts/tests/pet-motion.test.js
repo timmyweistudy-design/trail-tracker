@@ -3,6 +3,7 @@
 // 七隻 × 兩組指定落點（左右兩邊、兩種朝向都走到）＋中途滑走＋連按兩下。
 // 還沒修好的項目標 todo（印出 TODO、不算失敗）；修好那一階段就把 todo 拿掉，之後壞掉就會紅。
 // 環境變數 PM_ONLY=3,4 只跑某幾階；PM_DUMP=1 每格截圖到 scripts/tests/out/pm/
+// 2026-10-10：音效預設開了，這支用「虛擬時間」逐格錄影——載入／解碼音效檔可能卡住虛擬時間，而且這裡量的是動作不是聲音 → 關掉音效（音效另外由 pet-sound 測）
 const path = require("path"), fs = require("fs");
 const ROOT = path.resolve(__dirname, "../.."); const { chromium } = require(ROOT + "/node_modules/playwright"); const { spawn } = require("child_process");
 const MOCK = fs.readFileSync(__dirname + "/soc-mock.js", "utf8");
@@ -75,7 +76,7 @@ const probe = () => {
 
 async function run(b, st, spots, tag) {
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 } }); const p = await ctx.newPage(); await require(__dirname + "/fake-weather")(p); p.on("pageerror", e => errs.push(tag + ": " + e.message));
-  await p.addInitScript(o => { localStorage.setItem("tt_lang", "zh"); ["tt_onboarded_v2", "tt_coach_trail", "tt_locperm_prompted", "tt_coach_record", "tt_coach_record_tools", "tt_coach_peaks", "tt_coach_team", "tt_coach_pet"].forEach(k => localStorage.setItem(k, "1")); localStorage.setItem("tt_pet_woke", String(Date.now())); localStorage.setItem("tt_test_diary", "1"); localStorage.setItem("tt_debug_km", String(o.km)); localStorage.setItem("tt_pet_berry_bonus", "20"); }, { km: KM[st] });
+  await p.addInitScript(o => { localStorage.setItem("tt_lang", "zh"); localStorage.setItem("tt_pet_sound", "0"); ["tt_onboarded_v2", "tt_coach_trail", "tt_locperm_prompted", "tt_coach_record", "tt_coach_record_tools", "tt_coach_peaks", "tt_coach_team", "tt_coach_pet"].forEach(k => localStorage.setItem(k, "1")); localStorage.setItem("tt_pet_woke", String(Date.now())); localStorage.setItem("tt_test_diary", "1"); localStorage.setItem("tt_debug_km", String(o.km)); localStorage.setItem("tt_pet_berry_bonus", "20"); }, { km: KM[st] });
   // 單一擁有者（2026-10-07 優化輪 #16）：攔截每一次寫 style.transform，記下是哪個函式寫的；同一格同一個元素被兩個不同函式寫＝衝突
   // （這幾輪的 bug 多半是兩個地方搶同一個 transform：一個寫完另一個蓋掉，畫面就跳）
   await p.addInitScript(() => {
@@ -278,7 +279,7 @@ function judge(st, tag, R) {
   // 中途滑走：直接結算，果實、姿勢都收乾淨，只扣一次；連按兩下：只開一輪
   if (!ONLY.length || ONLY.includes(3)) {
     const ctx = await b.newContext({ viewport: { width: 390, height: 844 } }); const p = await ctx.newPage(); await require(__dirname + "/fake-weather")(p);
-    await p.addInitScript(() => { localStorage.setItem("tt_lang", "zh"); ["tt_onboarded_v2", "tt_coach_trail", "tt_locperm_prompted", "tt_coach_record", "tt_coach_record_tools", "tt_coach_peaks", "tt_coach_team", "tt_coach_pet"].forEach(k => localStorage.setItem(k, "1")); localStorage.setItem("tt_pet_woke", String(Date.now())); localStorage.setItem("tt_test_diary", "1"); localStorage.setItem("tt_debug_km", "40"); localStorage.setItem("tt_pet_berry_bonus", "20"); });
+    await p.addInitScript(() => { localStorage.setItem("tt_lang", "zh"); localStorage.setItem("tt_pet_sound", "0"); ["tt_onboarded_v2", "tt_coach_trail", "tt_locperm_prompted", "tt_coach_record", "tt_coach_record_tools", "tt_coach_peaks", "tt_coach_team", "tt_coach_pet"].forEach(k => localStorage.setItem(k, "1")); localStorage.setItem("tt_pet_woke", String(Date.now())); localStorage.setItem("tt_test_diary", "1"); localStorage.setItem("tt_debug_km", "40"); localStorage.setItem("tt_pet_berry_bonus", "20"); });
     await p.addInitScript(MOCK); await p.goto(`http://localhost:${PORT}/`); await require(__dirname+"/ready")(p);
     await p.evaluate(() => document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e => e.remove())); await p.click('.tab[data-view="pet"]'); await p.waitForTimeout(1500);
     const r = await p.evaluate(async () => { window.__psNoIdle = true; document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e => e.remove()); localStorage.removeItem("tt_pet_fed_t"); renderPet(); document.querySelector(".ps-box").scrollIntoView({ block: "center" }); await new Promise(r => setTimeout(r, 500));

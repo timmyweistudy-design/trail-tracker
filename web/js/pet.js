@@ -431,7 +431,7 @@ function openHatPicker() {
     ov.querySelectorAll(".dr-pane").forEach(p => { p.hidden = p.dataset.pane !== pane; }); bar(""); }));
 }
 // 夥伴的音效與震動（2026-10-07 寵物新一輪 #23）：音效預設關（吃東西、抱抱、進化、收到禮物各一種輕柔的合成音，不用音檔）；震動預設開，可以在「？」裡關掉
-const petHapticOn = () => localStorage.getItem("tt_pet_haptic") !== "0", petSoundOn = () => localStorage.getItem("tt_pet_sound") === "1";
+const petHapticOn = () => localStorage.getItem("tt_pet_haptic") !== "0", petSoundOn = () => localStorage.getItem("tt_pet_sound") !== "0";   // 2026-10-10 全面加入音效：預設開（以前預設關）
 // 裝置做得到才顯示開關（2026-10-08 修正案 A6）：以前 iPhone 網頁版有「夥伴震動」開關但 Safari 根本沒有震動；
 // 搖手機在 iPhone 要先請「動作與方向」權限，以前從沒請過＝這個功能在 iPhone 上一直是死的
 // 玩松果（2026-10-08 R4 原6）：x＝丟到哪裡（相對舞台中間的 px；null＝隨便丟）。10 分鐘內玩到第 3 次會累：打個哈欠、休息 2 分鐘
@@ -464,12 +464,30 @@ const petCan = {
   haptic: () => { const C = window.Capacitor; return !!(C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins.Haptics) || typeof navigator.vibrate === "function"; },
   motionAsk: () => typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function",   // 只有 iPhone 需要（Android 不用問就有）
 };
-function petBuzz(p) { if (petHapticOn() && typeof ttBuzz === "function") ttBuzz(p); }
+// 夥伴的觸覺回饋（2026-10-10 使用者：「寵物讓手機震動太多」）：以前每一下摸、點、吞一顆果實都是一次完整的馬達震動（原生最少 60ms）。
+// 現在分三級：tap＝很輕的「嗒」（iOS impact light）、soft＝中等（小獎勵）、big＝成功節奏（進化、里程碑）；tap／soft 0.8 秒內最多一次；網頁版只有很短的 vibrate
+let _petHapT = 0;
+function petHaptic(kind) {
+  if (!petHapticOn()) return;
+  const now = Date.now(); if (kind !== "big" && now - _petHapT < 800) return; _petHapT = now;
+  const C = window.Capacitor, H = C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins.Haptics;
+  try {
+    if (H) { if (kind === "big") H.notification({ type: "SUCCESS" }); else H.impact({ style: kind === "soft" ? "MEDIUM" : "LIGHT" }); return; }
+    if (navigator.vibrate) navigator.vibrate(kind === "big" ? [16, 70, 16] : kind === "soft" ? 12 : 6);
+  } catch (e) { /* 沒有觸覺就安靜 */ }
+}
+function petBuzz(p) { const t = (Array.isArray(p) ? p : [p]).reduce((a, b) => a + (+b || 0), 0); petHaptic(t >= 120 ? "big" : t >= 50 ? "soft" : "tap"); }   // 舊的毫秒寫法照收：換算成三級
 let _petAc = null;
 function petSound(k) {
   if (!petSoundOn()) return;
+  // 真實錄音（pet-sound.js）：照現在這一階、選的近親物種挑；還沒載好（第一次）就退回下面的合成音
+  if (typeof PetAudio !== "undefined") {
+    const i = petStageIndex(totalKm()), v = petTone();
+    if (PetAudio.cue(k, i, v) > 0) { if (k === "hop" && petAcc() === "bell") PetAudio.cue("bell", i, v); return; }
+    PetAudio.preload();
+  }
   try {
-    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; _petAc = _petAc || new AC(); const c = _petAc; if (c.state === "suspended") c.resume();
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; _petAc = _petAc || new AC(); const c = _petAc; if (c.state === "suspended") c.resume().catch(() => { /* 沒有音訊裝置／系統不讓開：安靜 */ });
     const tone = (f, t, d, type, v, f2) => { const o = c.createOscillator(), g = c.createGain(), t0 = c.currentTime + t; o.type = type || "sine"; o.frequency.setValueAtTime(f, t0); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t0 + d);
       g.gain.setValueAtTime(.0001, t0); g.gain.exponentialRampToValueAtTime(v || .12, t0 + .015); g.gain.exponentialRampToValueAtTime(.0001, t0 + d); o.connect(g); g.connect(c.destination); o.start(t0); o.stop(t0 + d + .02); };
     if (k === "bite") { tone(620, 0, .09, "sine", .1, 380); tone(480, .07, .08, "sine", .07, 300); }
@@ -480,6 +498,8 @@ function petSound(k) {
   } catch (e) { /* 沒有音訊就安靜 */ }
 }
 window.addEventListener("pet-fx", e => petSound(e.detail));
+// 音效檔：音效開著時，第一次碰螢幕就開始載（iPhone 要在使用者手勢裡才能啟動音訊）
+document.addEventListener("pointerdown", function _petAudioWarm() { if (petSoundOn() && typeof PetAudio !== "undefined") { PetAudio.preload(); document.removeEventListener("pointerdown", _petAudioWarm, true); } }, true);
 // 好友送的果實（2026-10-07 寵物新一輪 #20）：從舞台上方一顆一顆飄下來，再化成「+N」飛進餵食鈕；不在夥伴頁就照舊跳提示
 function petGiftBerries(n) {
   const ps = document.querySelector(".pet-card .ps-box");

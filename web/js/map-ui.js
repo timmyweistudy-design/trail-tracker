@@ -226,7 +226,7 @@ function addNavToggle(map) {
 // → 原生 App 用 Capacitor Haptics；網頁用 navigator.vibrate；重要提醒（loud）另外響提示音。
 let _audioCtx = null;
 function ttAudioUnlock() {   // iOS 要在使用者手勢裡先啟動音訊，之後才能自己響（在「開始」按鈕呼叫）
-  try { if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (_audioCtx.state === "suspended") _audioCtx.resume(); } catch (e) { /* */ }
+  try { if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (_audioCtx.state === "suspended") _audioCtx.resume().catch(() => { /* 沒有音訊裝置／系統不讓開：安靜 */ }); } catch (e) { /* */ }
 }
 function ttBeep(times) {
   try {

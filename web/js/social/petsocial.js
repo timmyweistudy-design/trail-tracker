@@ -216,7 +216,7 @@ const Pets = (() => {
       // 以前用 fv-bounce，關鍵影格裡還留著舊排版的 translateX(-50%)，角色會先往左滑半個身體再回來
       clearTimeout(actor._t); actor.classList.remove("pb-pat"); void actor.offsetWidth; actor.classList.add("pb-pat");
       actor._t = setTimeout(() => actor.classList.remove("pb-pat"), 850);
-      hearts(stage); if (typeof ttBuzz === "function") ttBuzz(20);
+      hearts(stage); if (typeof petBuzz === "function") petBuzz(20);
       if (patsToday().has(p.id)) { say(T("%s 蹭了蹭你的手").replace("%s", friendName(p))); return; }
       markPat(p.id);
       if (typeof bumpAffinity === "function") bumpAffinity(2);
@@ -287,7 +287,7 @@ const Pets = (() => {
     if (r === "ok") {
       if (typeof petGiftRemove === "function") petGiftRemove(id);
       if (typeof petDiarySocial === "function") petDiarySocial("give", id, friendName(p));
-      say(T("送給 %s 了").replace("%s", friendName(p))); if (typeof ttBuzz === "function") ttBuzz(20);
+      say(T("送給 %s 了").replace("%s", friendName(p))); if (typeof petBuzz === "function") petBuzz(20);
       return true;
     }
     say(r && GIVE_MSG[r] ? T(GIVE_MSG[r]).replace("%s", friendName(p)) : T("沒送出去，等一下再試"));

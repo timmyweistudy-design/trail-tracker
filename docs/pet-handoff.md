@@ -2,6 +2,13 @@
 
 接手的人先讀這份，再看 [roadmap.md](roadmap.md) 的「維護備忘 → 山林夥伴」。
 
+> ## 2026-10-10 R16：物種修整＋全畫面同步＋震動＋音效（SW `v711`）
+> - **畫夥伴一定要說畫誰的**：自己的 `PET_ART.own(() => …)`、別人的 `PET_ART.as(v, () => …)`，舊版資料才用原本的並註明「原本的物種」——`pet-r15` 會掃全部 js
+> - **震動**：只用 `petBuzz`／`petHaptic`（三級＋節流）；不要在夥伴的地方直接呼叫 `ttBuzz`（那是記錄頁的提醒用，會是完整馬達震動）
+> - **音效**：動作在 `pet-stage.js` 的 `FXK` 對照送 `pet-fx` 事件 → `pet.js` 的 `petSound` → `pet-sound.js` 的 `cues(事件, 階段, 近親)`；新動作要在 `cues` 補聲音，`pet-sound` 測試會檢查每階×每種×每動作都有
+> - **換音效檔**：Freesound 搜尋頁可以直接篩 CC0（`f=license:"Creative Commons 0"`），結果頁的 `data-mp3` 是預覽檔（`-lq` 改 `-hq` 是 128 kbps）；ffmpeg 靜態版在 johnvansickle.com；處理參數：去開頭靜音、截短、峰值 −6～−14 dB、淡出、單聲道 22 kHz、48 kbps；更新 `CREDITS.md`
+> - **出 build 一定要等使用者說**（10/10 使用者規則）
+
 > ## 2026-10-09 R15：配色→相近物種（SW `v709`）
 > - **`pet-art.js` 的角色畫法整段在 `buildArt(V)` 裡**：改原本的角色就是改這個函式；要確認沒弄壞變體跑 `pet-r15`（骨架一致檢查會抓到少一個支點、嘴、接觸點）
 > - 加新的物種特徵：在 `VARIANTS` 加開關、在 `buildArt` 裡讀；經過 `P()` 的顏色要從 V 來（`P()` 會從底色算陰影和描邊，只換 hex 會留下舊顏色的陰影）；純填色可以用 `hex: { 階: { 舊: 新 } }`
