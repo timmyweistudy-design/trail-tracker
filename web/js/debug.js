@@ -453,6 +453,24 @@ async function toggleDebugPanel() {
       ["🧭重設情境導覽", closeAnd(() => { ["tt_coach_trail", "tt_coach_team", "tt_coach_record", "tt_coach_record_tools", "tt_coach_peaks", "tt_coach_soc_friends", "tt_coach_soc_explore", "tt_coach_soc_search", "tt_coach_soc_notif", "tt_coach_soc_me"].forEach(k => localStorage.removeItem(k)); toast("情境導覽已重設：重新打開步道／小隊／記錄／收集冊／社群各頁就會再出現"); })],
     ]],
   ];
+  // 夥伴的按鈕依用途重新分組（2026-10-09 修正案 R9）：以前四組、超過 100 顆，調動畫時找不到；照按鈕名稱自動分，之後加新按鈕也會落到對的組
+  { const isPet = t => /^夥伴/.test(t), seen = new Set(), all = [];
+    SECTIONS.filter(([t]) => isPet(t)).forEach(([, bs]) => bs.forEach(b => { if (!seen.has(b[0])) { seen.add(b[0]); all.push(b); } }));
+    const RULES = [
+      ["夥伴：效能與錄影", /效能|錄影|除錯標記|0\.25×|0\.5×|▶1×/],
+      ["夥伴：時間", /清晨|白天|黃昏|夜晚|睡著|醒著|⏩|⏹|真實時間/],
+      ["夥伴：天氣、季節與節日", /新年|端午|中秋|^🌸春|^🌿夏|^🍁秋|^❄冬|下雨|陰天|下雪|^🌤晴|起風|寒流|好熱|夢泡泡|季節配件/],
+      ["夥伴：收藏", /明信片|五區|瀑布|海景|古道|森林|湖泊|縣市|全部標成新|擺設|測試步道/],
+      ["夥伴：陪伴", /地圖夥伴|拍照|好友送果實|串門子|帶禮物|日記|相遇第|健行感想|不在時|音效/],
+      ["夥伴：角色與心情", /^🥚蛋|毛毛蟲|^🦋|^🦊|^🐯|^🐲|^🐉神龍|睏|普通|開心|想念|心情|帽子|進化儀式/],
+      ["夥伴：餵食與玩", /餵|玩松果/],
+      ["夥伴：小動作", /抱抱|摸頭|搔癢|跳|伸懶腰|嘆氣|東張西望|專屬|甩水|發抖|晒太陽|頭暈|來回摸/],
+    ];
+    const groups = RULES.map(([t]) => [t, []]), data = ["夥伴：資料", []];
+    all.forEach(b => { const k = RULES.findIndex(([, re]) => re.test(b[0])); (k >= 0 ? groups[k][1] : data[1]).push(b); });
+    const rest = SECTIONS.filter(([t]) => !isPet(t));
+    SECTIONS.splice(0, SECTIONS.length, ...[data, ...groups].filter(g => g[1].length), ...rest);
+  }
   const stateTxt = () => { const st = ttDebug.state(); return `Lv${st.等級}·${st.成長km}km·🍓${st.果實}` + (typeof ttClock !== "undefined" && ttClock.offset() ? " · ⏩" + ttDebug.clockTxt().slice(3) : "") + (ttDebug._ver ? " · " + ttDebug._ver : ""); };
   p.innerHTML = `<div class="dbg-h">🛠 測試面板 <span id="dbgState"></span><button id="dbgClose" aria-label="關閉">✕</button></div><div class="dbg-body"></div>`;
   const body = p.querySelector(".dbg-body");

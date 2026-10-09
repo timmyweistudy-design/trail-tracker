@@ -625,7 +625,7 @@ function renderQuests() {
   const cb = $("#qClaim");
   if (cb && allDone && !claimed) cb.addEventListener("click", () => {
     const r = questReward(daysStreak());
-    addBerryBonus(r.total); localStorage.setItem("tt_quest_claim", todayStr()); bumpAffinity(5);
+    addBerryBonus(r.total); localStorage.setItem("tt_quest_claim", todayStr()); if (document.getElementById("petFeed")) petFloat(`+${r.total}`, "#petFeed", null, BERRY_SVG);   /* 數值回饋統一：果實也飛進餵食鈕（R9） */ bumpAffinity(5);
     toast(`${ttT(r.mile ? "連續達成獎勵！" : "今天的任務都完成了")} +${r.total} ${ttT("顆果實")}`);
     petBuzz(r.mile ? [120, 60, 120] : 40);
     confetti && confetti(); renderQuests(); renderPet();
@@ -682,7 +682,6 @@ function renderPet() {
     ${stageHtml}
     <div class="pet-stage">
       <div class="pet-idline"><span class="pet-name">${escHtml(nm || ttT(st.n))}</span><span class="lv-chip lvt-${Math.min(i + 1, 7)} pet-lv-chip">Lv.${i + 1}</span></div>
-      <div class="pet-tools"><button class="pet-tool" id="petDress">${ic("sparkle")}${ttT("裝扮")}</button><button class="pet-tool" id="petPlay">${PET_TOY_ICON}${ttT("玩")}</button><button class="pet-tool" id="petPhoto">${ic("camera")}${ttT("拍照")}</button>${(typeof Premium !== "undefined" && Premium.isOn()) ? `<button class="pet-tool" id="petRename">${ic("pencil")}${ttT("改名")}</button>` : ""}</div>
       <div class="pet-evo"><div class="pet-evo-top">${evoTop}</div>${prog}</div>
     </div>
     <div class="pet-meters">
@@ -695,11 +694,13 @@ function renderPet() {
       <div class="pet-chip${days ? "" : " zero"}"><div class="cv">${days}<small> ${ttT("天")}</small></div><div class="cl">${ttT("同行")}</div></div>
       <div class="pet-chip${streak ? "" : " zero"}"><div class="cv">${streak}<small> ${ttT("週")}</small></div><div class="cl">${ttT("週週有走")}</div></div>
     </div>
-    <div class="pet-acts">
+    <div class="pet-acts pet-acts-main">
       <button class="pet-btn feed" id="petFeed"${canFeed ? "" : " disabled"}><b class="fb-ic">${BERRY_SVG}<i class="fb-ring"></i></b><span>${feedLbl}</span>${need > 0 || cd > 0 ? "" : `<b class="feed-bal">${berries}</b>`}</button>
-      <button class="pet-btn" id="petDex">${ic("book")} ${ttT("手冊")}</button>
-      <button class="pet-btn" id="petRec">${ic("compass")} ${ttT("去走")}</button>
+      <button class="pet-btn pet-sq" id="petPlay">${PET_TOY_ICON}<span>${ttT("玩")}</span></button>
+      <button class="pet-btn pet-sq" id="petPhoto">${ic("camera")}<span>${ttT("拍照")}</span></button>
+      <button class="pet-btn pet-sq" id="petDress">${ic("sparkle")}<span>${ttT("裝扮")}</span></button>
     </div>
+    <div class="pet-more"><button class="pet-link" id="petDex">${ic("book")}${ttT("手冊")}</button><button class="pet-link" id="petRec">${ic("compass")}${ttT("去走")}</button>${(typeof Premium !== "undefined" && Premium.isOn()) ? `<button class="pet-link" id="petRename">${ic("pencil")}${ttT("改名")}</button>` : ""}</div>
   </div>`;
   if (typeof PetStage !== "undefined") {
     PetStage.bind(box.querySelector(".ps-box"), mood.k);

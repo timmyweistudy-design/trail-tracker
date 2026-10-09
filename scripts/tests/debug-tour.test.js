@@ -18,7 +18,8 @@ const recs=[1,3,5,7].map(m=>({id:"r"+m,date:new Date(Y,m-1,9,7).toISOString(),tr
  // 面板
  await p.evaluate(()=>toggleDebugPanel());await p.waitForTimeout(800);
  const secs=await p.evaluate(()=>[...document.querySelectorAll("#debugPanel .dbg-sec summary")].map(s=>s.textContent));
- ok(secs.length===12&&/夥伴新功能/.test(secs.join())&&/夥伴動畫/.test(secs.join())&&/夥伴舞台與旅行/.test(secs.join())&&/第三波/.test(secs.join())&&/第四波/.test(secs.join()),"panel has 12 sections (2026-10-07 +夥伴新功能 +夥伴動畫): "+secs.join(" / "));
+ const petSecs=secs.filter(t=>/^夥伴：/.test(t));   // 2026-10-09 R9：夥伴的按鈕依用途分成 9 組（資料、效能與錄影、時間、天氣與季節、收藏、陪伴、角色與心情、餵食與玩、小動作），每組最多 16 顆
+ ok(secs.length===17&&petSecs.length===9&&petSecs.every(t=>+(t.match(/(\d+)$/)||[0,99])[1]<=16)&&/第三波/.test(secs.join())&&/第四波/.test(secs.join()),"panel has 17 sections (pet buttons regrouped into 9 by purpose, each ≤16): "+secs.join(" / "));
  await p.screenshot({path:O+"panel.png"});
  const SKIP=/看餵食動畫|看進化動畫|開明信片簿|開發現的生物|拜訪夥伴範例|🏔山社|結算頁範例|檢舉處理|錯誤紀錄|清所有行程|重置🥚|重看語言|導覽\(|開成就頁|求救卡|開收集冊|山頂天氣|回報路況|留守人看到的|人氣範例|今年故事|去年故事/;
  const toasts=[];await p.exposeFunction("__t",t=>toasts.push(t));await p.evaluate(()=>{const o=window.toast;window.toast=(m,...a)=>{window.__t(String(m));return o(m,...a);};});

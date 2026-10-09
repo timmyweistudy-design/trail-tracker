@@ -2580,9 +2580,12 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
    三層：①舞台（名字、進化進度）②狀態（活力、親密、三個小數字壓成一行）③動作一排：餵食（主要）＋玩、拍照、裝扮；手冊、去走、改名收到下面一行小字。
    以前「玩」在舞台下面、「餵食」在卡片最底，最常用的兩個隔最遠；三個數字格佔掉一大塊 */
 .pet-chips { gap: 6px; margin-top: 8px; }
-.pet-chip { display: flex; align-items: baseline; justify-content: center; gap: 4px; padding: 5px 6px; border-radius: 10px; }
+.pet-chip { padding: 5px 4px 4px; border-radius: 10px; }   /* 兩行（值／名稱）但比以前矮：一行時「成長里程」會被截成「成長…」 */
 .pet-chip .cv { font-size: min(calc(13.5px * var(--fs, 1)), 15cqw); }
-.pet-chip .cl { margin-top: 0; font-size: calc(10px * var(--fs, 1)); }
+.pet-chip .cl { margin-top: 1px; font-size: calc(9.5px * var(--fs, 1)); }
+[data-fs-big] .pet-meters { grid-template-columns: 1fr auto; row-gap: 6px; }   /* 大字級：活力、親密各一行（不然「親密」斷行、數字掉到第二行） */
+[data-fs-big] .pet-meters .pet-meter:nth-child(2) { grid-column: 1; grid-row: 2; }
+[data-fs-big] .pet-meters .pet-help { grid-column: 2; grid-row: 1 / span 2; }
 .pet-acts-main { display: grid; grid-template-columns: 1.75fr 1fr 1fr 1fr; gap: 7px; margin-top: 12px; }
 .pet-acts-main .pet-btn.feed { min-width: 0; }
 .pet-btn.pet-sq { flex-direction: column; gap: 2px; padding: 7px 3px; font-size: calc(11.5px * var(--fs, 1)); min-width: 0; }

@@ -40,7 +40,7 @@ else if (sqlOnly || !quick) console.log("（略過資料庫測試：沒裝 embed
 
 // ── --changed：改了哪些檔 → 跑哪些測試（對不到的 web/ 檔案就跑主要流程；check 一律跑）──
 const MAP = [
-  [/web\/js\/(pet-art|pet-stage|stage-art|art-kit|pet)\.js$/, ["pet-stage", "pet-motion", "pet", "pet-visit", "year-story", "pet-clock", "pet-handoff", "pet-settle", "pet-perf-budget", "pet-small", "pet-r4", "pet-r5", "pet-r7", "pet-anim-cut", "pet-r8"]],
+  [/web\/js\/(pet-art|pet-stage|stage-art|art-kit|pet)\.js$/, ["pet-stage", "pet-motion", "pet", "pet-visit", "year-story", "pet-clock", "pet-handoff", "pet-settle", "pet-perf-budget", "pet-small", "pet-r4", "pet-r5", "pet-r7", "pet-anim-cut", "pet-r8", "pet-r9"]],
   [/web\/js\/pet-walk\.js$/, ["pet-stage", "pet-motion", "pet-handoff", "pet-perf-budget", "pet-anim-cut"]],
   [/web\/js\/(pet-journey|postcard-art)\.js$/, ["pet-stage", "pet"]],
   [/web\/js\/storage\.js$/, ["backup-merge", "pet-settle", "me", "e2e"]],
@@ -49,7 +49,7 @@ const MAP = [
   [/web\/js\/(record|recorder|record-v2|native-live|review)[^/]*\.js$/, ["record-v2", "record-e2e", "native-live", "e2e", "pet-r7"]],
   [/web\/js\/(detail|ecology|trail)[^/]*\.js$/, ["detail-v2", "guardian-crowd", "e2e"]],
   [/web\/js\/(splash|warmup)\.js$/, ["splash"]],
-  [/web\/js\/(me|analytics|year-story)\.js$/, ["me", "year-story", "wave2", "pet-r4"]],
+  [/web\/js\/(me|analytics|year-story)\.js$/, ["me", "year-story", "wave2", "pet-r4", "pet-r9"]],
   [/web\/js\/(search|nl-search)[^/]*\.js$/, ["nl-search", "e2e"]],
   [/web\/js\/(app|app-boot|debug)\.js$|web\/index\.html$/, ["debug-tour", "e2e", "qa-crawl", "pet-clock"]],
   [/web\/js\/i18n/, ["wave1-display", "wave1"]],

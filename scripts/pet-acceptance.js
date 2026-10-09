@@ -1,5 +1,5 @@
 // 七隻視覺驗收（2026-10-08 修正案 A7）：每隻跑同一套固定序列，拍成一張「接觸表」給人看——
-//   待機 → 戴帽子 → 餵 3 顆（固定落點）→ 玩松果 → 抱抱 → 睡著 → 叫醒
+//   待機 → 戴帽子 → 帽子＋配件 → 餵 3 顆（固定落點）→ 玩松果 → 抱抱 → 睡著＋夢泡泡 → 叫醒
 // 每一格下面印「序列 · 秒數 · PetStage.phase()」（跟錄影標籤同一套名字），逐格數字檢查在 pet-motion.test.js。
 // 用法：node scripts/pet-acceptance.js [階段,...]   （要帶 LD_LIBRARY_PATH，見 docs/pet-handoff.md）
 // 輸出：scripts/tests/out/acc/sheet-<階段>.png（一隻一張）＋ index.html（全部）＋ acc.json（每格的時間與階段）
@@ -31,13 +31,14 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;",
     const film = async (seq, until, max = 40) => { t0 = Date.now(); for (let k = 0; k < max; k++) { await shot(seq); if (await p.evaluate(until)) break; await p.waitForTimeout(200); } };
     t0 = Date.now(); await shot("待機");
     await p.evaluate(() => { localStorage.setItem("tt_pet_hat", "straw"); renderPet(); }); await p.waitForTimeout(500); await shot("戴帽子");
-    await p.evaluate(() => { localStorage.removeItem("tt_pet_hat"); renderPet(); }); await p.waitForTimeout(500);
+    await p.evaluate(st => { localStorage.setItem("tt_pet_acc", PET_ART.accOk(st, "cape") ? "cape" : "scarf"); renderPet(); }, st); await p.waitForTimeout(500); await shot("帽子＋配件");   // 2026-10-09 R9：戴帽子＋配件
+    await p.evaluate(() => { localStorage.removeItem("tt_pet_hat"); localStorage.removeItem("tt_pet_acc"); renderPet(); }); await p.waitForTimeout(500);
     await p.evaluate(xs => { window.__psSpots = xs; PetStage.feed(BERRY_SVG); }, st in SPOT ? SPOT[st] : DEF); await p.waitForTimeout(100);
     await film("餵食", () => !document.querySelector(".ps-box").classList.contains("feeding"), 120); await shot("餵食完");
     await p.evaluate(() => { PetStage.play(BERRY_SVG); });   // 大括號：不要把 Promise 回傳給 evaluate（不然會等到動作播完才往下拍） await p.waitForTimeout(100);
     await film("玩松果", () => !document.querySelector(".ps-box").classList.contains("playing"), 60);
     await p.evaluate(() => { PetStage.react("hug"); }); await film("抱抱", () => !document.querySelector("#petEmoji").classList.contains("pb-hug"), 8);
-    await p.evaluate(() => PetStage.sleep()); await p.waitForTimeout(800); t0 = Date.now(); await shot("睡著");
+    await p.evaluate(() => { PetStage.sleep(); PetStage.dream(); }); await p.waitForTimeout(800); t0 = Date.now(); await shot("睡著＋夢泡泡");
     await p.evaluate(() => { PetStage.wake(); }); await p.waitForTimeout(80); await film("叫醒", () => PetStage.phase() === "待機", 14);
     all[st] = { frames, errs };
     // 接觸表：一頁 HTML → 拍成一張 PNG

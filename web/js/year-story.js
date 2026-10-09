@@ -36,6 +36,11 @@ const YearStory = (() => {
       }).filter(Boolean).sort((a, b) => b.ele - a.ele);
     } catch (e) { stamps = []; }
     const pet = typeof petStats === "function" ? petStats() : null;
+    // 和夥伴的一年（2026-10-09 修正案 R9，原16 併進年度回顧）：這一年牠進化了幾次、帶回來幾個小東西（日記與禮物紀錄裡、測試資料不算）
+    let petEvo = 0, petGifts = 0;
+    try { petEvo = JSON.parse(localStorage.getItem("tt_pet_diary") || "[]").filter(x => !x.dbg && x.k === "evo" && +localYear(x.t) === year).length;
+      petGifts = JSON.parse(localStorage.getItem("tt_pet_gifts") || "[]").filter(x => !x.dbg && +localYear(x.t) === year).length; } catch (e) { /* 壞掉的資料就不算 */ }
+    if (pet) Object.assign(pet, { evo: petEvo, gifts: petGifts });
     return { year, recs, n: recs.length, km, asc, hrs, steps, mk, mn, busiest, longest, maxAlt, top, topN: top ? tc[top] : 0, distinct, midH, weekend, stamps, pet };
   }
   function persona(d) {
@@ -77,7 +82,8 @@ const YearStory = (() => {
         d.stamps.length > 6 ? T("還有 %d 座").replace("%d", d.stamps.length - 6) : "",   // 前 6 座畫成章，名字不用再寫一次
       ].filter(Boolean), art: "stamps" });
     }
-    if (P) out.push({ key: "pet", theme: "forest", kicker: T("陪你走的夥伴"), big: P.name, lines: [`Lv.${P.level}・${T(P.stage)}`, T("今年一起走了 %s 公里").replace("%s", fmt(d.km, d.km < 10 ? 1 : 0))], art: "pet" });
+    if (P) out.push({ key: "pet", theme: "forest", kicker: T("陪你走的夥伴"), big: P.name, lines: [`Lv.${P.level}・${T(P.stage)}`, T("今年一起走了 %s 公里").replace("%s", fmt(d.km, d.km < 10 ? 1 : 0)),
+      P.evo ? T("今年進化了 %d 次").replace("%d", P.evo) : P.gifts ? T("牠今年帶回來 %d 個小東西").replace("%d", P.gifts) : ""].filter(Boolean), art: "pet" });
     out.push({ key: "sum", theme: "forest", kicker: T("我的山行回顧"), big: String(d.year), lines: [], art: "sum", stats: [
       [fmt(d.n), T("趟旅程")], [fmt(d.km, d.km < 10 ? 1 : 0), T("公里")], [fmt(d.asc), T("公尺爬升")], [fmt(d.hrs, 0), T("小時")],
     ], extra: [d.top ? `${T("最愛步道")}${ttColon()}${T(d.top)}` : "", d.stamps.length ? T("蓋到 %d 座山的章").replace("%d", d.stamps.length) : ""].filter(Boolean) });
@@ -94,7 +100,7 @@ const YearStory = (() => {
     return `<div class="ys-months">${d.mk.map((v, i) => `<div class="ys-mo${i + 1 === hi ? " hi" : ""}"><i style="height:${Math.round(v / mx * 100)}%;animation-delay:${(i * 0.05).toFixed(2)}s"></i><span>${i + 1}</span></div>`).join("")}</div>`;
   }
   function artHtml(p, d) {
-    if (p.art === "pet" && typeof PET_ART !== "undefined") return `<div class="ys-pet">${PET_ART.svg(petStageIndex(totalKm()), "", typeof petHat === "function" ? petHat() : "")}</div>`;
+    if (p.art === "pet" && typeof PET_ART !== "undefined") return `<div class="ys-pet">${PET_ART.svg(petStageIndex(totalKm()), "", typeof petHat === "function" ? petHat() : "", false, typeof petAcc === "function" ? petAcc() : "none")}</div>`;   // 戴著現在的帽子和配件
     if (p.art === "months") return monthsSvg(d, d.busiest);
     if (p.art === "route" && typeof routeMini === "function") return `<div class="ys-route">${routeMini(d.longest.track, "ys-route-svg", true)}</div>`;
     if (p.art === "stamps") return `<div class="ys-stamps">${d.stamps.slice(0, 6).map(s => `<span class="ys-stamp ${s.list}">${ic("mountain")}<b>${escHtml(T(s.name))}</b><small>${fmt(s.ele)} m</small></span>`).join("")}</div>`;
@@ -123,7 +129,7 @@ const YearStory = (() => {
     return new Promise(res => {
       if (typeof PET_ART === "undefined" || !PET_ART.dataUri) return res(null);
       const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null);
-      im.src = PET_ART.dataUri(petStageIndex(totalKm()), 360);
+      im.src = PET_ART.dataUri(petStageIndex(totalKm()), 360, typeof petHat === "function" ? petHat() : "", null, typeof petAcc === "function" ? petAcc() : "none");   // 分享圖也戴著帽子和配件（R9）
     });
   }
   async function drawPage(p, d) {
