@@ -16,8 +16,9 @@ for(const st of ONLY){
  await p.evaluate(()=>{document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove());window.__psNoIdle=true;document.querySelector(".ps-box").scrollIntoView({block:"center"});});await p.waitForTimeout(500);
  // 每一格記角色外框；class 被拿掉時馬上量一次（同步，已套用拿掉後的樣式），跟上一格比
  await p.evaluate(()=>{const em=document.querySelector("#petEmoji"),R=()=>{const c=em.querySelector(".pet-critter").getBoundingClientRect();return [c.left,c.top,c.width,c.height];};
-  window.__cut=[];let last=R();const tick=()=>{last=R();requestAnimationFrame(tick);};requestAnimationFrame(tick);
-  let prev=new Set(em.classList);new MutationObserver(()=>{const now=new Set(em.classList);for(const c of prev)if(/^pb-/.test(c)&&!now.has(c)){const a=R(),d=Math.max(...a.map((v,k)=>Math.abs(v-last[k])));window.__cut.push([c,+d.toFixed(2)]);}prev=now;}).observe(em,{attributes:true,attributeFilter:["class"]});});
+  // 2026-10-09 收尾：電腦忙時會掉幀，「上一格」可能是好幾格前——扣掉上一格本來就在動的量（v），只算多出來的跳動（彈回）
+  window.__cut=[];let last=R(),v=0;const tick=()=>{const a=R();v=Math.max(...a.map((x,k)=>Math.abs(x-last[k])));last=a;requestAnimationFrame(tick);};requestAnimationFrame(tick);
+  let prev=new Set(em.classList);new MutationObserver(()=>{const now=new Set(em.classList);for(const c of prev)if(/^pb-/.test(c)&&!now.has(c)){const a=R(),d=Math.max(...a.map((x,k)=>Math.abs(x-last[k])));window.__cut.push([c,+Math.max(0,d-v).toFixed(2),+d.toFixed(2)]);}prev=now;}).observe(em,{attributes:true,attributeFilter:["class"]});});
  const ACTS=["hop","stretch","yawn","sigh","blink2","shake","shiver","bask","windy","special"],REACT=["hug","pat","tickle","rub","dizzy"];
  for(const a of ACTS)await p.evaluate(a=>PetStage.act(a),a);
  for(const r of REACT)await p.evaluate(r=>PetStage.react(r),r);

@@ -165,9 +165,9 @@ window.PetJourney = (function () {
   const marks = (e, n) => e.dates.slice(0, n).map((d, k) => postmark(e, d, k)).join("");
   function card(e, isNew) {
     const th = themeOf(e.t);
-    return `<button class="pj-card" data-theme="${th}" data-id="${esc(e.t.id)}" aria-label="${esc(e.t.name)}">${cardArt(th, e.first, e.t.id)}
+    return `<button class="pj-card" data-theme="${th}" data-id="${esc(e.t.id)}" aria-label="${esc(T(e.t.name))}">${cardArt(th, e.first, e.t.id)}
       ${stamp(e)}${isNew ? `<span class="pj-new">${T("新")}</span>` : ""}
-      <span class="pj-cap"><b class="pj-name">${esc(e.t.name)}</b><span class="pj-meta">${esc(e.t.region || "")}・${fmt(e.first)}${e.n > 1 ? `・×${e.n}` : ""}</span></span></button>`;
+      <span class="pj-cap"><b class="pj-name">${esc(T(e.t.name))}</b><span class="pj-meta">${esc(T(e.t.region || ""))}・${fmt(e.first)}${e.n > 1 ? `・×${e.n}` : ""}</span></span></button>`;
   }
 
   // ── 縣市方格地圖 ──
@@ -259,8 +259,8 @@ window.PetJourney = (function () {
     markSeen([e.t.id]);
     const th = themeOf(e.t), sn = snapOf(e), stN = T(PET_STAGES[sn.s].n), nm = sn.n || stN;
     const ov = document.createElement("div"); ov.className = "pet-modal pj-card-ov"; ov.dataset.ov = "pjcard";
-    ov.innerHTML = `<div class="pj-flip" role="button" tabindex="0" aria-label="${esc(e.t.name)}">
-      <div class="pj-face pj-front">${cardArt(th, e.first, e.t.id)}${stamp(e, true)}<span class="pj-marks front">${marks(e, 1)}</span><span class="pj-front-n">${esc(e.t.name)}</span></div>
+    ov.innerHTML = `<div class="pj-flip" role="button" tabindex="0" aria-label="${esc(T(e.t.name))}">
+      <div class="pj-face pj-front">${cardArt(th, e.first, e.t.id)}${stamp(e, true)}<span class="pj-marks front">${marks(e, 1)}</span><span class="pj-front-n">${esc(T(e.t.name))}</span></div>
       <div class="pj-face pj-back">
         <div class="pj-post"><span class="pj-marks">${marks(e, 3)}</span>${stamp(e)}</div>
         <p class="pj-note">${T(NOTE[th] || NOTE.hill)}</p>

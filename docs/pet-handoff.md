@@ -2,6 +2,12 @@
 
 接手的人先讀這份，再看 [roadmap.md](roadmap.md) 的「維護備忘 → 山林夥伴」。
 
+> ## 2026-10-09 深夜：收尾輪完成（SW `v705`）——下一步是使用者出 iOS build
+> - phase40／41 SQL 使用者已跑，REST 確認生效；send-push 仍要重新部署（使用者）
+> - **全站掃描**：`node scripts/ui-sweep.js [zh|en] [1.2|1.65]`——新增視窗或改文案後跑一次，報告在 `scripts/tests/out/sweep/report.json`；已知假警報見 pet-plan-v3「收尾輪」
+> - 新測試 `ui-fit`（英文大字級視窗不能左右滑、明信片縣市要翻譯）
+> - 領取 RPC 有節流（`claimRpc`，60 秒；測試用 `Pets._claimReset()`）
+
 > ## 2026-10-09 晚上：第三版 R10～R13 完成（SW `v703`）
 > 進度、做法、限制都在 [pet-plan-v3.md](pet-plan-v3.md) 每一輪的「進度」小節。**只剩 R14 iOS**（照使用者決定：全部做完、要收尾時才出 build）。
 > - **社群**：`profiles.pet_acc`（phase40）、`pet_state.at`（同步時間）、`give_pet_item`／`pet_return_visit`／`team_presence.pet_look`（phase41）——**兩支 SQL 使用者還沒在 Supabase 執行**；沒跑之前前端自動退回舊行為（測試有守）。`send-push` Edge Function 也要重新部署才有兩種新通知的推播文案

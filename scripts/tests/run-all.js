@@ -42,7 +42,7 @@ else if (sqlOnly || !quick) console.log("（略過資料庫測試：沒裝 embed
 const MAP = [
   [/web\/js\/(pet-art|pet-stage|stage-art|art-kit|pet)\.js$/, ["pet-stage", "pet-motion", "pet", "pet-visit", "year-story", "pet-clock", "pet-handoff", "pet-settle", "pet-perf-budget", "pet-small", "pet-r4", "pet-r5", "pet-r7", "pet-anim-cut", "pet-r8", "pet-r9", "pet-r10", "pet-r12", "pet-r13"]],
   [/web\/js\/pet-walk\.js$/, ["pet-stage", "pet-motion", "pet-handoff", "pet-perf-budget", "pet-anim-cut"]],
-  [/web\/js\/(pet-journey|postcard-art)\.js$/, ["pet-stage", "pet"]],
+  [/web\/js\/(pet-journey|postcard-art)\.js$/, ["pet-stage", "pet", "ui-fit"]],
   [/web\/js\/storage\.js$/, ["backup-merge", "pet-settle", "me", "e2e", "pet-r12", "pet-r13"]],
   [/web\/js\/achievements\.js$/, ["achievements", "pet"]],
   [/web\/js\/social\//, ["social", "social-e2e", "pet-visit", "clubs", "pro-admin", "pet-settle", "pet-r11", "pet-r12"]],
@@ -54,7 +54,7 @@ const MAP = [
   [/web\/js\/(search|nl-search)[^/]*\.js$/, ["nl-search", "e2e"]],
   [/web\/js\/(app|app-boot|debug)\.js$|web\/index\.html$/, ["debug-tour", "e2e", "qa-crawl", "pet-clock", "pet-r11"]],
   [/web\/js\/i18n/, ["wave1-display", "wave1"]],
-  [/web\/css\//, ["audit-ui", "audit-center", "motion", "pet-small", "align"]],
+  [/web\/css\//, ["audit-ui", "audit-center", "motion", "pet-small", "align", "ui-fit"]],
   [/supabase\/.*\.sql$/, ["sql:"]],
 ];
 function pickChanged() {

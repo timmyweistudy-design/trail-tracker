@@ -2643,3 +2643,11 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .prop-it.used { opacity: .6; }
 @media (prefers-reduced-motion: reduce) { .ps-props-b { translate: none; } }
 .app-ver { text-align: center; margin: 4px 0 8px; font-size: calc(11.5px * var(--fs, 1)); color: var(--muted); font-variant-numeric: tabular-nums; }   /* 我的→設定最下面：版本＋原生 build 號（R14） */
+.evolve-ov { clip-path: inset(0); }   /* 進化光芒 160vmax：裁在螢幕內，iOS 不會被撐出橫向晃動（2026-10-09 掃描） */
+/* 2026-10-09 掃描：英文／大字級時視窗裡可以左右滑——按鈕放不下一排就換行（不要擠出卡片）、格子裡的長字可以斷 */
+.fv-card .fv-acts .btn { flex: 1 1 auto; width: auto; min-width: max-content; }
+.gift-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.gift-it span { overflow-wrap: anywhere; hyphens: auto; }
+.prop-slots { flex-wrap: wrap; }
+.pj-seg .seg-btn { min-width: 0; white-space: normal; line-height: 1.2; text-align: center; justify-content: center; }   /* 英文大字級「Counties walked 0/22」放不下：換行，不要撐出視窗 */
+.pj-seg { border-radius: 18px; }

@@ -294,9 +294,19 @@ const Pets = (() => {
     try { const uid = await me(); const { data } = await Supa.client().from("pet_item_gifts").select("item").eq("from_user", uid).eq("to_user", to).eq("item", item).limit(1); return !!(data && data.length); } catch (e) { return false; }
   }
   // 領取別人送的小東西：手冊沒有就收進去，已經有了就換成 3 顆果實；伺服器一次領完（兩台手機不會重複領）
+  // 領取（小東西、回訪）共用的保護：要登入、同時只領一次、60 秒內不重打；資料庫沒有這支函式（還沒跑 phase41）就這次開 App 不再試
+  const _claimAt = {}, _claimOff = {};
+  async function claimRpc(fn) {
+    if (_claimOff[fn] || Date.now() - (_claimAt[fn] || 0) < 60000) return null;
+    _claimAt[fn] = Date.now();
+    const uid = await me(); if (!uid) { _claimAt[fn] = 0; return null; }
+    const { data, error } = await Supa.client().rpc(fn);
+    if (error) { if (/PGRST202|does not exist|Could not find/.test((error.code || "") + " " + (error.message || ""))) _claimOff[fn] = true; else _claimAt[fn] = 0; return null; }
+    return data;
+  }
   async function claimItems() {
     try {
-      const { data, error } = await Supa.client().rpc("claim_pet_items"); if (error || !data || !data.length) return 0;
+      const data = await claimRpc("claim_pet_items"); if (!data || !data.length) return 0;
       let berries = 0;
       for (const r of data) {
         const who = r.from_name || T("好友");
@@ -347,7 +357,7 @@ const Pets = (() => {
 
   async function claimVisits() {
     try {
-      const { data, error } = await Supa.client().rpc("claim_pet_visits"); if (error || !data || !data.length) return 0;
+      const data = await claimRpc("claim_pet_visits"); if (!data || !data.length) return 0;
       for (const r of data) {
         const who = r.pet_name ? T(r.pet_name) : (r.from_name || T("好友的夥伴"));
         if (typeof petDiarySocial === "function") petDiarySocial("visited", "", who);
@@ -357,5 +367,5 @@ const Pets = (() => {
     } catch (e) { return 0; }
   }
 
-  return { friendsPets, sendGift, claimGifts, claimItems, claimVisits, renderFriends, visit, giveItem, returnVisit, _drawPhoto: drawPhoto };
+  return { friendsPets, sendGift, claimGifts, claimItems, claimVisits, renderFriends, visit, giveItem, returnVisit, _drawPhoto: drawPhoto, _claimReset: () => { for (const k in _claimAt) delete _claimAt[k]; for (const k in _claimOff) delete _claimOff[k]; } };
 })();

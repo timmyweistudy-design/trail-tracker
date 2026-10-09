@@ -60,10 +60,13 @@ const openVisit=async(p,id="u1")=>{await p.evaluate(()=>{const x=document.queryS
  ok(m[1]==="acorn,fern,pine","an item found again after giving it away is kept ("+m[1]+")");
 // 2) 領取
  const c=await p.evaluate(async()=>{window.__rpcPlan.claim_pet_items=[{item:"crystal",from_user:"u1",from_name:"阿梅"},{item:"fern",from_user:"u3",from_name:"許"},{item:"zzz",from_user:"u3",from_name:"許"}];
-  const b0=berriesBalance();const n=await Pets.claimItems();return {n,got:petGiftsOwned().find(o=>o.id==="crystal"),db:berriesBalance()-b0};});
+  Pets._claimReset();const b0=berriesBalance();const n=await Pets.claimItems();return {n,got:petGiftsOwned().find(o=>o.id==="crystal"),db:berriesBalance()-b0};});
  ok(c.n===3&&c.got&&c.got.from==="阿梅","new item goes into the collection with who sent it "+JSON.stringify(c.got));
  ok(c.db===6,"already-owned + unknown item → 3 berries each (+"+c.db+")");
  ok(/收到 阿梅 送的小水晶/.test(await diary(p)),"diary: got a crystal from 阿梅");
+ const th=await p.evaluate(async()=>{const n=()=>window.__rpcLog.filter(x=>x[0]==="claim_pet_items").length,n0=n();await Pets.claimItems();await Pets.claimItems();const again=n()-n0;
+  return {again};});
+ ok(th.again===0,"claiming again within 60 s doesn't hit the server "+JSON.stringify(th));
  await p.context().close();}
 
 // 3) 回訪
@@ -85,7 +88,7 @@ const openVisit=async(p,id="u1")=>{await p.evaluate(()=>{const x=document.queryS
  ok(await p.evaluate(()=>!document.querySelector("#fpReturn")),"banner gone after visiting today");
  const r2=await p.evaluate(async()=>{window.__rpcPlan.pet_return_visit="daily";window.__rpcLog=[];await Pets.returnVisit(window.__fakeT.profiles.find(x=>x.id==="u1"),false,null);return {open:!!document.querySelector('[data-ov="petvisit"]'),t:document.getElementById("toast").textContent};});
  ok(!r2.open&&/今天已經去過 毛毛 家了/.test(r2.t),"second visit same day: refused "+JSON.stringify(r2));
- const v=await p.evaluate(async()=>{window.__rpcPlan.claim_pet_visits=[{from_user:"u3",from_name:"許",pet_name:"雲豹"}];return Pets.claimVisits();});
+ const v=await p.evaluate(async()=>{window.__rpcPlan.claim_pet_visits=[{from_user:"u3",from_name:"許",pet_name:"雲豹"}];Pets._claimReset();return Pets.claimVisits();});
  ok(v===1&&/雲豹 回訪了我們家/.test(await diary(p)),"host side: diary records the return visit");
 // 5) 小隊地圖
  const t=await p.evaluate(()=>{const h=m=>{const d=document.createElement("div");d.innerHTML=TeamLive._petHtml(m);return d;};
