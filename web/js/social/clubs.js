@@ -71,12 +71,12 @@ const Clubs = (() => {
       <hr class="tm-hr">
       <div class="ob-l">${T("用加入碼加入")}</div>
       <div class="tm-create"><input id="clCode" class="auth-input" placeholder="${esc(T("6 碼"))}" autocapitalize="characters" maxlength="8" autocomplete="off"><button class="btn ghost" id="clJoinCode">${T("加入")}</button></div>
-      <button class="btn primary club-new" id="clNew">${ic("plus")}${T("建立山社")}${typeof Premium !== "undefined" && !Premium.isOn() ? ` <span class="pro-tag">PRO</span>` : ""}</button>
+      <button class="btn primary club-new" id="clNew">${ic("plus")}${T("建立山社")}${!isPro() ? ` <span class="pro-tag">PRO</span>` : ""}</button>
       <div class="auth-msg" id="clMsg"></div>`;
     const q = el.querySelector("#clQ"); let t = null;
     q.addEventListener("input", () => { clearTimeout(t); t = setTimeout(() => { _q = q.value.trim(); loadList(); }, 300); });
     el.querySelector("#clJoinCode").addEventListener("click", joinByCode);
-    el.querySelector("#clNew").addEventListener("click", () => { if (!_proGate()) return; showCreate(); });
+    el.querySelector("#clNew").addEventListener("click", () => { if (!_proGate("club")) return; showCreate(); });
     loadList();
   }
   let _lseq = 0;

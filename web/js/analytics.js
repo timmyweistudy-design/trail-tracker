@@ -203,7 +203,7 @@ function exportCanvas(c, d, avImg) {
 function openAnalytics() {
   if (document.querySelector('[data-ov="analytics"]')) return;   // 防連點疊層
   const recs = realRecords();
-  const pro = (typeof Premium !== "undefined") && Premium.isOn();
+  const pro = isPro();
   const n = recs.length;
   const T0 = ttTotals();   // 上面的總數跟「我的」同一套（含終身統計）；下面的圖表只能用現存紀錄
   const totKm = T0.km, totAsc = T0.asc, totHrs = T0.ms / 3.6e6;
@@ -334,7 +334,7 @@ function openAnalytics() {
   if (typeof ttModalA11y === "function") _a11y = ttModalA11y(ov, close, { focus: "#anaX" });
   ov.querySelector("#anaX").addEventListener("click", close);
   ov.addEventListener("click", e => { if (e.target === ov) close(); });
-  const up = ov.querySelector("#anaUp"); if (up) up.addEventListener("click", () => { close(); if (typeof Premium !== "undefined") Premium.openUpgrade(); });
+  const up = ov.querySelector("#anaUp"); if (up) up.addEventListener("click", () => { close(); if (typeof Premium !== "undefined") Premium.openUpgrade("analytics"); });
   const csv = ov.querySelector("#anaCsv"); if (csv) csv.addEventListener("click", () => exportRecordsCsv(recs));
   const gpx = ov.querySelector("#anaGpx"); if (gpx) gpx.addEventListener("click", async () => { if (typeof GPX !== "undefined" && GPX.exportAll) { const r = await GPX.exportAll(await Store.allFull()); if (!r) toast(ttT("無可匯出的軌跡")); else if (r === "saved") toast(ttT("已下載全部 GPX")); } });
   const kml = ov.querySelector("#anaKml"); if (kml) kml.addEventListener("click", async () => exportRecordsKml((await Store.allFull()).filter(isFootRec)));

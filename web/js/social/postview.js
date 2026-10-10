@@ -225,7 +225,7 @@ const PostView = (() => {
     const myId = wrap.dataset.me;
     const counts = {}; let mine = null;
     for (const r of rows) { counts[r.emoji] = (counts[r.emoji] || 0) + 1; if (r.user_id === myId) mine = r.emoji; }
-    const pro = (typeof Premium !== "undefined") && Premium.isOn();
+    const pro = isPro();
     // 平常只放：有人用過的表情（依人數排）＋基本 6 個裡還沒用的；PRO 的 24 個收進「＋」展開（以前一次攤開 30 顆、佔四排）
     const used = Object.keys(counts).sort((x, y) => counts[y] - counts[x]);
     const all = [...new Set([...REACT_EMOJI, ...(pro ? REACT_PRO : [])])];

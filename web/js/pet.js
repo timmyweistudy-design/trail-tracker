@@ -327,7 +327,7 @@ function feedPet() {
 const HAT_COST = 10;
 function hatsOwned() {
   let s; try { s = new Set(JSON.parse(localStorage.getItem("tt_pet_hats_owned")) || ["none"]); } catch { s = new Set(["none"]); }
-  if (typeof PetJourney !== "undefined" && typeof Premium !== "undefined" && Premium.isOn()) PetJourney.regionHats().forEach(h => s.add(h));   // 地區配件（PRO）：走過那個地區就有（從紀錄推，不存）
+  if (typeof PetJourney !== "undefined" && isPro()) PetJourney.regionHats().forEach(h => s.add(h));   // 地區配件（PRO）：走過那個地區就有（從紀錄推，不存）
   return s;
 }
 // 蛋上的裂縫數（進化進度 1/3、2/3 各多一道；pet-art.js 的 .pc-crack2/3、CSS 讀 .ps-box[data-evo]）
@@ -340,7 +340,7 @@ function accsOwned() { try { return new Set(JSON.parse(localStorage.getItem("tt_
 function petHat() {   // A5 配件（Premium 裝扮）
   const h = localStorage.getItem("tt_pet_hat") || "none";
   // 地區配件是 PRO 的旅行功能、不是用果實買的：沒有 PRO 就不戴（用果實換的配件到期後照樣能戴）
-  if (typeof PetJourney !== "undefined" && PetJourney.hatRegion(h) && !(typeof Premium !== "undefined" && Premium.isOn())) return "none";
+  if (typeof PetJourney !== "undefined" && PetJourney.hatRegion(h) && !(isPro())) return "none";
   return h;
 }
 // 裝扮選擇器：戴帽子在夥伴頭上。
@@ -370,7 +370,7 @@ function accState(id, i, pro, own) {
 }
 function openHatPicker() {
   if (document.querySelector('[data-ov="pethat"]')) return;
-  const pro = typeof Premium !== "undefined" && Premium.isOn(), i = petStageIndex(totalKm());
+  const pro = isPro(), i = petStageIndex(totalKm());
   let tryHat = petHat(), tryAcc = petAcc(), pane = "hat";
   const badge = st => st.k === "buy" ? `<div class="hat-cost">${BERRY_SVG}${HAT_COST}</div>` : st.k === "pro" ? `<div class="hat-cost"><span class="pro-tag">PRO</span></div>` : st.k === "lock" ? `<div class="hat-cost dr-lock">${ic("lock")}</div>` : "";
   const tile = (kind, id, st, on) => `<button class="hat-opt ${kind === "acc" ? "acc-opt" : ""}${on ? " on" : ""}${st.k === "own" || st.k === "free" ? "" : " locked"}${st.k === "lock" ? " quest" : ""}${st.k === "na" ? " na" : ""}" data-${kind}="${id}"${st.k === "na" ? ' aria-disabled="true"' : ""}>` +
@@ -408,7 +408,7 @@ function openHatPicker() {
     ov.querySelectorAll(".hat-opt[data-hat]").forEach(btn => btn.addEventListener("click", () => {
       const id = btn.dataset.hat, own = hatsOwned(), st = hatState(id, pro, own);
       ov.querySelectorAll(".hat-opt[data-hat]").forEach(b => b.classList.toggle("sel", b === btn));
-      if (st.k === "pro") { _proGate(); return; }
+      if (st.k === "pro") { _proGate("petdress"); return; }
       tryHat = id; drawPrev();
       if (st.k === "own") return wearHat(id);
       if (st.k === "free") { own.add(id); localStorage.setItem("tt_pet_hats_owned", JSON.stringify([...own].filter(h => !(typeof PetJourney !== "undefined" && PetJourney.hatRegion(h))))); toast(`${ttT("拿到了")}${ttColon()}${ttT(PET_ART.HAT_LABEL[id])}`); return wearHat(id); }
@@ -419,7 +419,7 @@ function openHatPicker() {
       const id = btn.dataset.acc, own = accsOwned(), st = accState(id, i, pro, own);
       ov.querySelectorAll(".hat-opt[data-acc]").forEach(b => b.classList.toggle("sel", b === btn));
       if (st.k === "na") return bar(i === 0 ? ttT("蛋還沒有脖子，孵出來就能戴") : ttT("這一階戴不了（身體的樣子放不上去）"));
-      if (st.k === "pro") { _proGate(); return; }
+      if (st.k === "pro") { _proGate("petdress"); return; }
       tryAcc = id; drawPrev();
       if (st.k === "own") return wearAcc(id);
       bar(ttT(PET_ART.ACC_LABEL[id]), buyLabel(), () => { if (!pay()) return; const o = accsOwned(); o.add(id); localStorage.setItem("tt_pet_accs_owned", JSON.stringify([...o])); wearAcc(id); });
@@ -805,7 +805,7 @@ function renderPet() {
   // 2.5D 舞台（pet-stage.js）：角色那一層包在分層場景裡；沒載到就退回舊的平面棲地
   // 2026-10-04：舞台、角色沒變（同一階、同一頂帽子、同一個名字、天氣與裝飾一樣）就只更新數字和文字——
   // 以前餵完、摸完都整張重畫：粒子位置重抽、待機動作重來、對話泡重彈，看起來像頁面刷新了一次
-  const sig = [i, petHat(), petAcc(), petTone(), nm, (typeof Premium !== "undefined" && Premium.isOn()) ? 1 : 0, typeof PetStage !== "undefined" ? PetStage.cachedWx() + (PetStage.cachedFeel ? PetStage.cachedFeel() : "") : "", typeof PetJourney !== "undefined" ? PetJourney.decor().join(",") : "", document.documentElement.lang || "", JSON.stringify(window.__ps || null), typeof PetStage !== "undefined" ? PetStage.tod() + PetStage.season() : "", petFestival() || "", petPropsOn().join(",")].join("|");   // __ps＝測試面板強制的時段／季節／天氣；時段、季節換了也要重畫（星星、螢火蟲、天空是畫出來的，2026-10-08）
+  const sig = [i, petHat(), petAcc(), petTone(), nm, (isPro()) ? 1 : 0, typeof PetStage !== "undefined" ? PetStage.cachedWx() + (PetStage.cachedFeel ? PetStage.cachedFeel() : "") : "", typeof PetJourney !== "undefined" ? PetJourney.decor().join(",") : "", document.documentElement.lang || "", JSON.stringify(window.__ps || null), typeof PetStage !== "undefined" ? PetStage.tod() + PetStage.season() : "", petFestival() || "", petPropsOn().join(",")].join("|");   // __ps＝測試面板強制的時段／季節／天氣；時段、季節換了也要重畫（星星、螢火蟲、天空是畫出來的，2026-10-08）
   if (box.dataset.sig === sig && box.querySelector("#petEmoji")) {
     petCardUpdate(box, { km, mood, days, streak, en, h, left: next ? next.km - km : null, lovePct: affinity(), aff: affinity(), canFeed, cd, berries, evoTop, pct: next ? Math.max(2, Math.min(100, Math.round((km - st.km) / (next.km - st.km) * 100))) : null });
     if (typeof PetJourney !== "undefined") PetJourney.render();
@@ -843,7 +843,7 @@ function renderPet() {
       <button class="pet-btn pet-sq" id="petPhoto">${ic("camera")}<span>${ttT("拍照")}</span></button>
       <button class="pet-btn pet-sq" id="petDress">${ic("sparkle")}<span>${ttT("裝扮")}</span></button>
     </div>
-    <div class="pet-more"><button class="pet-link" id="petDex">${ic("book")}${ttT("手冊")}</button><button class="pet-link" id="petRec">${ic("compass")}${ttT("去走")}</button>${(typeof Premium !== "undefined" && Premium.isOn()) ? `<button class="pet-link" id="petRename">${ic("pencil")}${ttT("改名")}</button>` : ""}</div>
+    <div class="pet-more"><button class="pet-link" id="petDex">${ic("book")}${ttT("手冊")}</button><button class="pet-link" id="petRec">${ic("compass")}${ttT("去走")}</button>${(isPro()) ? `<button class="pet-link" id="petRename">${ic("pencil")}${ttT("改名")}</button>` : ""}</div>
   </div>`;
   if (typeof PetStage !== "undefined") {
     PetStage.bind(box.querySelector(".ps-box"), mood.k);

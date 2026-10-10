@@ -40,7 +40,7 @@ window.PetJourney = (function () {
   const T = s => (typeof ttT === "function" ? ttT(s) : s);
   const icon = n => (typeof ic === "function" ? ic(n) : "");
   const esc = s => (typeof escHtml === "function" ? escHtml(s) : String(s));
-  const pro = () => typeof Premium !== "undefined" && Premium.isOn();
+  const pro = () => isPro();
   const cjk = () => (typeof ttCJK === "function" ? ttCJK() : true);
   const fmt = iso => { try { return new Date(iso).toLocaleDateString(typeof ttLocale === "function" ? ttLocale() : "zh-TW", { year: "numeric", month: "numeric", day: "numeric" }); } catch (e) { return ""; } };
 
@@ -197,7 +197,7 @@ window.PetJourney = (function () {
     if (!pro()) {   // PRO 功能：免費版只放一張說明卡，點了開升級面板
       box.innerHTML = `<div class="section-title pj-title">${icon("map")} ${T("夥伴的旅行")} <span class="pro-tag">PRO</span></div>
         <button class="pj-wrap pj-locked" id="pjPro"><span class="pj-lock-art">${cardArt("peak", "2026-01-10T06:30:00", "demo-a")}${cardArt("sea", "2026-07-10T10:00:00", "demo-b")}</span><span class="pj-lock-t">${T("走過的步道變成明信片，走遍各地區解鎖當地配件")}</span></button>`;
-      box.querySelector("#pjPro").addEventListener("click", () => { if (typeof _proGate === "function") _proGate(); });
+      box.querySelector("#pjPro").addEventListener("click", () => { if (typeof _proGate === "function") _proGate("journey"); });
       return;
     }
     const w = walked(), got = counties(), sn = seen();
@@ -223,7 +223,7 @@ window.PetJourney = (function () {
 
   // ── 相簿：明信片（依地區分組）／走過的地區（方格地圖＋五區進度＋配件） ──
   function openAlbum(tab) {
-    if (!pro()) { if (typeof _proGate === "function") _proGate(); return; }
+    if (!pro()) { if (typeof _proGate === "function") _proGate("journey"); return; }
     if (document.querySelector('[data-ov="pjalbum"]')) return;
     const w = walked(), got = counties(), sn = seen();
     const groups = REGIONS.map(([r]) => [r, w.filter(e => regionOf(e.t) === r)]).filter(([, l]) => l.length);
@@ -253,7 +253,7 @@ window.PetJourney = (function () {
 
   // ── 單張明信片：點一下翻面（正面插畫／背面夥伴寫的話＋郵戳＋走了幾次） ──
   function openCard(id) {
-    if (!pro()) { if (typeof _proGate === "function") _proGate(); return; }
+    if (!pro()) { if (typeof _proGate === "function") _proGate("journey"); return; }
     const e = walked().find(x => String(x.t.id) === String(id)); if (!e) return;
     if (document.querySelector('[data-ov="pjcard"]')) return;
     markSeen([e.t.id]);

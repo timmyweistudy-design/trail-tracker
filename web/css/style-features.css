@@ -859,15 +859,8 @@ html[data-theme="dark"] body::after { opacity: .05; }
 .pm-crown .ic { width: 34px; height: 34px; }
 .premium-card h2 { font-family: var(--serif); font-size: calc(21px * var(--fs, 1)); margin: 0; }
 .pm-sub { color: var(--ink-soft); font-size: calc(13px * var(--fs, 1)); margin: 4px 0 16px; }
-.pm-free { display: flex; gap: 10px; align-items: flex-start; text-align: left; margin: 0 0 16px; padding: 12px; border-radius: var(--r-sm); background: var(--ok-bg); border: 1px solid var(--ok-line); color: var(--ok-ink); }
-.pm-free > .ic { flex: none; width: 22px; height: 22px; color: var(--ok-ic); margin-top: 1px; }
-.pm-free-list { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
-.pm-free-list span { padding: 2px 8px; border-radius: var(--r-pill); background: var(--surface); border: 1px solid var(--ok-line); font-size: calc(12px * var(--fs, 1)); font-weight: 600; }
-.pm-benefits { text-align: left; display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; }
-.pm-b { display: flex; gap: 11px; align-items: flex-start; }
 .pm-b-ic { flex: 0 0 auto; color: var(--brand-mid); }
 .pm-b-ic .ic { width: 20px; height: 20px; }
-.pm-b b { font-size: calc(14.5px * var(--fs, 1)); }
 .pm-b-d { font-size: calc(12px * var(--fs, 1)); color: var(--ink-soft); line-height: 1.5; margin-top: 1px; }
 .pm-price { margin-bottom: 14px; }
 .pm-amt { font-family: var(--num); font-size: calc(32px * var(--fs, 1)); font-weight: 700; color: var(--brand-deep); }
@@ -2670,3 +2663,44 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .app-legal .info-link { font-size: inherit; padding: 4px 2px; }
 /* 測試面板「模擬免費用戶」開著時，畫面右上角一直提醒（避免忘了關，以為功能壞了） */
 .dbg-free-tag { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 4px); right: 6px; z-index: 99999; pointer-events: none; padding: 2px 8px; border-radius: 10px; background: rgba(194, 104, 61, .92); color: #fff; font-size: 11px; font-weight: 600; }
+
+/* PRO 彈窗（2026-10-10 優化輪 A2）：方案和按鈕放上面不用捲；安全功能分三組兩欄；功能只講一次（一張表） */
+.pm-feat { display: flex; gap: 11px; align-items: flex-start; text-align: left; margin: 0 0 14px; padding: 12px 14px; border-radius: var(--r-sm); background: var(--accent-soft); border: 1px solid var(--line-soft); }
+.pm-feat .pm-b-ic .ic { width: 22px; height: 22px; color: var(--accent); }
+.pm-feat b { font-size: calc(15px * var(--fs, 1)); }
+.pm-feat .pro-tag { margin-left: 6px; vertical-align: 2px; }
+.pm-note { margin-top: 6px; font-size: calc(12.5px * var(--fs, 1)); font-weight: 700; color: var(--brand-deep); }
+.pm-free { text-align: left; margin: 16px 0 14px; padding: 12px 14px; border-radius: var(--r-sm); background: var(--ok-bg); border: 1px solid var(--ok-line); color: var(--ok-ink); }
+.pm-free-h { display: flex; align-items: center; gap: 7px; font-size: calc(14.5px * var(--fs, 1)); }
+.pm-free-h .ic { width: 20px; height: 20px; color: var(--ok-ic); flex: none; }
+.pm-free-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; margin-top: 8px; }
+.pm-fg-h { display: flex; align-items: center; gap: 5px; font-size: calc(12px * var(--fs, 1)); font-weight: 700; color: var(--ok-ic); margin-bottom: 2px; }
+.pm-fg-h .ic { width: 14px; height: 14px; flex: none; }
+.pm-fg ul { list-style: none; margin: 0; padding: 0; font-size: calc(12.5px * var(--fs, 1)); line-height: 1.6; }
+.pm-fg:nth-child(2) { grid-row: span 2; }
+.pm-also { margin-top: 8px; padding-top: 7px; border-top: 1px dashed var(--ok-line); font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-soft); }
+.pm-compare .pm-g th { text-align: left; padding: 12px 8px 4px; font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-faint); font-weight: 700; letter-spacing: .04em; border-bottom: none; }
+.pm-compare td { vertical-align: middle; white-space: nowrap; }
+.pm-compare td:first-child { white-space: normal; }
+.pm-compare tr.on td { background: var(--accent-soft); }
+.pm-t { display: flex; gap: 8px; align-items: flex-start; }
+.pm-t > .ic { width: 16px; height: 16px; flex: none; color: var(--brand-mid); margin-top: 2px; }
+.pm-t b { display: block; font-weight: 600; color: var(--ink); }
+.pm-t small { display: block; font-size: calc(11px * var(--fs, 1)); color: var(--ink-faint); line-height: 1.4; margin-top: 1px; }
+.pm-inc { text-align: left; margin: 0 0 10px; }
+.pm-inc-h { font-size: calc(13px * var(--fs, 1)); font-weight: 700; color: var(--ink-soft); margin: 0 0 6px; }
+.pm-inc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
+.pm-i { display: flex; gap: 6px; align-items: flex-start; font-size: calc(12.5px * var(--fs, 1)); line-height: 1.35; color: var(--ink); }
+.pm-i > .ic { width: 15px; height: 15px; flex: none; color: var(--brand-mid); margin-top: 1px; }
+.pm-i small { margin-left: 4px; font-size: calc(11px * var(--fs, 1)); font-weight: 700; color: var(--accent); white-space: nowrap; }
+.pm-i.on { font-weight: 700; color: var(--accent); }
+.pm-more { text-align: left; margin: 4px 0 12px; }
+.pm-more > summary { cursor: pointer; font-size: calc(12.5px * var(--fs, 1)); color: var(--brand-mid); font-weight: 600; padding: 6px 0; list-style: none; text-align: center; }
+.pm-more > summary::-webkit-details-marker { display: none; }
+.pm-more > summary::after { content: " ▾"; }
+.pm-more[open] > summary::after { content: " ▴"; }
+.pm-compare td:not(:first-child), .pm-compare thead th:not(:first-child) { width: 64px; padding-left: 4px; padding-right: 4px; }
+.pm-also { display: flex; flex-wrap: wrap; gap: 2px 10px; align-items: baseline; }
+.pm-also b { color: var(--ok-ic); }
+.pm-i > span { min-width: 0; }
+.pm-i small { display: inline-block; }

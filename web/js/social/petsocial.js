@@ -201,7 +201,7 @@ const Pets = (() => {
       <div class="fv-acts">
         <button class="btn fv-pat" id="pvPat">${ic("heart")}${T("摸摸頭")}</button>
         <button class="btn ghost fp-gift" id="pvGift" data-id="${p.id}"${sent ? " disabled" : ""}>${sent ? T("今天已送") : giftLbl}</button>
-        <button class="btn ghost fv-photo" id="pvPhoto">${ic("camera")}${T("合照")}${typeof Premium !== "undefined" && !Premium.isOn() ? ` <span class="pro-tag">PRO</span>` : ""}</button>
+        <button class="btn ghost fv-photo" id="pvPhoto">${ic("camera")}${T("合照")}${!isPro() ? ` <span class="pro-tag">PRO</span>` : ""}</button>
       </div>
       <button class="link-btn fv-item" id="pvItem"${navigator.onLine === false ? " disabled" : ""}>${ic("leaf")}${navigator.onLine === false ? T("離線時不能送小東西") : T("送一個小東西")}</button></div>`;
     document.body.appendChild(ov);
@@ -224,7 +224,7 @@ const Pets = (() => {
       if (typeof renderPet === "function") renderPet();
     };
     ov.querySelector("#pvGift").onclick = async e => { if (await giftClick(e.currentTarget, giftLbl) && onChange) onChange(); };
-    ov.querySelector("#pvPhoto").onclick = () => { if (!_proGate()) return; photo(p); };
+    ov.querySelector("#pvPhoto").onclick = () => { if (!_proGate("petphoto")) return; photo(p); };
     ov.querySelector("#pvItem").onclick = e => giveItem(p, e.currentTarget);
     if (together) playTogether(stage);
   }

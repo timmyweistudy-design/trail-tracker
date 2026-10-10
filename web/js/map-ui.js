@@ -99,7 +99,7 @@ function flyAlong() {
 }
 async function _open3D(name, geom, opts) {
   opts = opts || {};
-  if (!_proGate()) return;   // 3D 為 PRO 功能，非會員→開升級面板
+  if (!_proGate("3d")) return;   // 3D 為 PRO 功能，非會員→開升級面板
   if (!geom || !geom.length) { toast(ttT("此步道沒有路線資料，無法 3D 顯示")); return; }
   const ov = $("#map3d"); if (!ov) return;
   if (!navigator.onLine) { toast(ttT("3D 地形需要網路")); return; }

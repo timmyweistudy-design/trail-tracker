@@ -43,5 +43,7 @@ window.REVENUECAT_ANDROID_KEY = "";
 // 測試面板「模擬免費用戶」（tt_debug_free=1）：關掉自用模式、而且 Premium.isOn() 一律回 false，看到的就是一般免費使用者的畫面
 try { if (localStorage.getItem("tt_debug_free") === "1") { window.PERSONAL_MODE = false; window.TT_DEBUG_FREE = true; document.documentElement.classList.add("dbg-free"); document.addEventListener("DOMContentLoaded", () => { const t = document.createElement("div"); t.className = "dbg-free-tag"; t.textContent = "模擬免費用戶"; t.setAttribute("translate", "no"); document.body.appendChild(t); }); } } catch (e) { /* */ }
 if (window.PERSONAL_MODE === undefined) window.PERSONAL_MODE = true;
+// 是不是會員：全站共用（優化輪 E3，取代散落的 typeof Premium… && Premium.isOn()）。Premium 模組沒載入時當非會員（fail-closed）
+window.isPro = () => typeof Premium !== "undefined" && Premium.isOn();
 document.documentElement.classList.toggle("personal", !!window.PERSONAL_MODE);
 if (window.PERSONAL_MODE) document.documentElement.classList.add("is-pro");   // 會員就不顯示「PRO 功能」提示標籤

@@ -110,7 +110,7 @@ const NativeLive = (() => {
       hikedToday: hikedToday(),
       // 夥伴現在在做什麼（2026-10-07 寵物新一輪 #6）：每個時段一句，小工具照當下的時間挑（App 沒開時也會跟著時間換）；今天走過了白天那句換成走完的感覺
       petStatus: { night: T("呼呼大睡中"), dawn: T("剛起床，伸個懶腰"), day: hikedToday() ? T("腳還熱熱的，好開心") : T("在等你出門"), dusk: T("看著夕陽發呆"), eve: T("在窩裡等你回家") },
-      locked: !(typeof Premium !== "undefined" && Premium.isOn()),   // 主畫面小工具是 PRO 福利；鎖定畫面的記錄卡片（Live Activity）免費
+      locked: !(isPro()),   // 主畫面小工具是 PRO 福利；鎖定畫面的記錄卡片（Live Activity）免費
       sleep: typeof PetStage !== "undefined" && PetStage.sleepWin ? PetStage.sleepWin() : [22, 6], sleepOff: typeof PetStage !== "undefined" && PetStage.sleepWin ? !PetStage.sleepWin() : false,
       fest: festDays(),
       labels: { streak: T("連續"), days: T("天"), week: T("本週"), challenge: T("本月挑戰"), done: T("今天走過了"), nudge: T("今天出門走走吧"), locked: T("PRO 會員專屬小工具"), unlock: T("打開 App 升級") },

@@ -53,7 +53,7 @@ const PALETTES = [   // 加上「森綠」預設共 9 個 → 設定頁排成整
 function applyPalette() {
   const root = document.documentElement;
   const key = localStorage.getItem("tt_palette");
-  const pro = typeof Premium !== "undefined" && Premium.isOn();
+  const pro = isPro();
   const valid = pro && key && PALETTES.some(p => p[0] === key);
   if (valid) { root.dataset.palette = key; root.style.removeProperty("--accent"); }   // 交給 CSS 整組換色；清掉季節 inline accent 才不會蓋過 palette
   else { delete root.dataset.palette; applySeason(); }
@@ -71,7 +71,7 @@ function applyProColor() {
 }
 function renderProColor() {
   const el = $("#proColorWrap"); if (!el) return;
-  if (!(typeof Premium !== "undefined" && Premium.isOn())) { el.innerHTML = ""; return; }
+  if (!(isPro())) { el.innerHTML = ""; return; }
   const cb = +(localStorage.getItem("tt_pro_color") || 0), cf = +(localStorage.getItem("tt_pro_frame") || 0);
   // 選中：兩排都用同一種外圈＋勾勾圖示（以前一個是細框、一個是文字「✓」）
   el.innerHTML = `<div class="accent-head">${ttT("PRO 徽章配色")}</div>
@@ -91,7 +91,7 @@ function renderProColor() {
 function ttProfileHero(prof, opts) {
   opts = opts || {};
   const esc = s => (s || "").replace(/[<>&"]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c]));
-  const pro = typeof Premium !== "undefined" && Premium.isOn();
+  const pro = isPro();
   const ps = (typeof petStats === "function") ? petStats() : null;
   const lvl = ps ? ps.level : 0;
   const av = prof.avatar_url
@@ -215,7 +215,7 @@ function renderReminderToggle() {
 if (typeof window !== "undefined") window.renderReminderToggle = renderReminderToggle;
 function renderPalette() {
   const row = $("#accentRow"); if (!row) return;
-  const pro = typeof Premium !== "undefined" && Premium.isOn();
+  const pro = isPro();
   const cur = localStorage.getItem("tt_palette") || "";
   // 每個色票用「品牌色→點綴色」漸層預覽，暗示選了會整組換色（不是只有一個小圓點）
   const sw = (k, n, b, a) => `<button class="pal-sw${cur === k ? " on" : ""}" data-pal="${k}" title="${n}" style="background:linear-gradient(135deg,${b} 56%,${a})"><span class="pal-nm">${n}</span></button>`;
@@ -223,7 +223,7 @@ function renderPalette() {
     + PALETTES.map(p => sw(p[0], ttT(p[1]), p[2], p[3])).join("")
     + (pro ? "" : `<div class="acc-lock">${ttT("升級 Premium 解鎖")}</div>`);
   row.querySelectorAll(".pal-sw").forEach(b => b.addEventListener("click", () => {
-    if (!pro) { if (typeof Premium !== "undefined") Premium.openUpgrade(); return; }
+    if (!pro) { if (typeof Premium !== "undefined") Premium.openUpgrade("look"); return; }
     const k = b.dataset.pal;
     if (k) localStorage.setItem("tt_palette", k); else localStorage.removeItem("tt_palette");
     applyPalette(); renderPalette();

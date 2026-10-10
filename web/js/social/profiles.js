@@ -10,7 +10,7 @@ const Profiles = (() => {
     const s = petStats(); const c = Supa.client(); if (!c) return;
     // 好友拜訪頁要照搬我的夥伴舞台：配件＋舞台上走過的風景（phase38 的兩個欄位）
     const hat = typeof petHat === "function" ? petHat() : "none", acc = typeof petAcc === "function" ? petAcc() : "none";   // 配件（phase40）
-    const decor = typeof PetJourney !== "undefined" && typeof Premium !== "undefined" && Premium.isOn() ? PetJourney.decor().join(",") : "";
+    const decor = typeof PetJourney !== "undefined" && isPro() ? PetJourney.decor().join(",") : "";
     // 當下的狀態（phase39）：最近一次走路（好友那邊用它算現在的心情）＋這邊的天氣
     const recs = typeof realRecords === "function" ? realRecords() : [], wx = typeof PetStage !== "undefined" ? PetStage.cachedWx() || "" : "";
     const tone = typeof petTone === "function" ? petTone() : "";   // R15：好友看到同一種近親物種

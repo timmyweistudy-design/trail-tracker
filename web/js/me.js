@@ -30,7 +30,7 @@ $("#btnSaveProfile").addEventListener("click", () => {
 });
 ["#pfWeight", "#pfHeight", "#pfPack"].forEach(s => { const i = $(s); if (i) i.addEventListener("input", () => { const f = i.closest(".field"); if (f) f.classList.remove("bad"); }); });
 $("#btnExportGpxAll").addEventListener("click", async () => {   // 全部行程的路線檔
-  if (!_proGate()) return;   // PRO：批次匯出全部路線檔
+  if (!_proGate("gpx")) return;   // PRO：批次匯出全部路線檔
   const r = await GPX.exportAll(await Store.allFull());
   if (!r) toast(ttT("尚無行程可下載")); else if (r === "saved") toast(ttT("已下載全部行程路線檔"));   // 叫出分享單就不再多講「已下載」（按取消也會講）
 });
@@ -66,8 +66,8 @@ async function refreshOfflineStatus() {
   const q = $("#offlineQuota");
   renderOfflineSets();
   if (q) {
-    if (typeof Premium !== "undefined" && Premium.isOn()) q.innerHTML = mb != null ? `${ttT("這個 App 在手機上佔用")} ${mb.toFixed(0)} MB` : "";
-    else { const left = Math.max(0, OFFLINE_FREE_MB - offlineMbUsed()); q.innerHTML = `<span>${ttT("免費額度")}</span>${ttColon()}<span>${ttT("剩")}</span> <b>${left.toFixed(1)}</b> / ${OFFLINE_FREE_MB} MB <span>${ttT("（含記錄時預載）")}</span><div class="oq-up-line"><a class="oq-up" id="oqUp">${ttT("升級 Premium 無限下載")}</a></div>`; const up = $("#oqUp"); if (up) up.addEventListener("click", () => { if (typeof Premium !== "undefined") Premium.openUpgrade(); }); }
+    if (isPro()) q.innerHTML = mb != null ? `${ttT("這個 App 在手機上佔用")} ${mb.toFixed(0)} MB` : "";
+    else { const left = Math.max(0, OFFLINE_FREE_MB - offlineMbUsed()); q.innerHTML = `<span>${ttT("免費額度")}</span>${ttColon()}<span>${ttT("剩")}</span> <b>${left.toFixed(1)}</b> / ${OFFLINE_FREE_MB} MB <span>${ttT("（含記錄時預載）")}</span><div class="oq-up-line"><a class="oq-up" id="oqUp">${ttT("升級 Premium 無限下載")}</a></div>`; const up = $("#oqUp"); if (up) up.addEventListener("click", () => { if (typeof Premium !== "undefined") Premium.openUpgrade("offline"); }); }
   }
   // #9 收藏一鍵預載：按鈕即時顯示可下載的收藏數（（N）為語言中性），沒有收藏就淡化提示
   const fb = $("#btnFavOffline");
@@ -144,7 +144,7 @@ $("#btnDiag").addEventListener("click", async () => {
   const ver = await appVersion(), sw = ver ? "trail-tracker-" + ver : "?";
   let tiles = "?"; try { if (typeof Offline !== "undefined" && Offline.cachedCount) tiles = await Offline.cachedCount(); } catch (e) { /* */ }
   let login = "未登入"; try { if (typeof Supa !== "undefined" && Supa.ready && Supa.ready()) { const { data } = await _meUser(); if (data && data.user) login = "已登入"; } } catch (e) { /* */ }
-  const pro = g(() => (typeof Premium !== "undefined" && Premium.isOn()) ? "PRO" : "免費");
+  const pro = g(() => (isPro()) ? "PRO" : "免費");
   const recN = g(() => Store.getRecords().length);
   const doneN = g(() => (Store.doneCount ? Store.doneCount() : "?"));
   const favN = g(() => TRAILS.filter(t => Store.isFav(t.id)).length);
@@ -173,8 +173,15 @@ $("#btnDiag").addEventListener("click", async () => {
   if (act === "copy" && navigator.clipboard) navigator.clipboard.writeText(info).then(() => toast(ttT("複製好了"))).catch(() => {});
   if (act === "file") saveBlob(new Blob([info], { type: "text/plain" }), `trail-tracker-diag-${new Date().toLocaleDateString("sv-SE")}.txt`, "Diagnostics");
 });
-$("#btnFootMap").addEventListener("click", () => { if (!_proGate()) return; openFootprintMap(); });
-$("#btnPeaks").addEventListener("click", () => { if (typeof Peaks !== "undefined") Peaks.open(); });
+$("#btnFootMap").addEventListener("click", () => { if (!_proGate("footmap")) return; openFootprintMap(); });
+// 登頂收集冊是 PRO（優化輪 A1）：免費用戶走到山頂照樣自動蓋章（資料不丟），點開時先補掃以前的紀錄，在升級彈窗告訴他已經蓋了幾章
+$("#btnPeaks").addEventListener("click", async () => {
+  if (typeof Peaks === "undefined") return;
+  if (isPro()) { Peaks.open(); return; }
+  try { await Peaks.backfill(); } catch (e) { /* */ }
+  const b = Peaks.count("b"), x = Peaks.count("x");
+  _proGate("peaks", b + x ? ttT("你已經蓋了 {n} 章（百岳 {b}、小百岳 {x}），升級就能看完整收集冊").replace("{n}", b + x).replace("{b}", b).replace("{x}", x) : ttT("走到百岳、小百岳山頂會自動蓋章，升級就能隨時翻看"));
+});
 $("#btnAllOffline").addEventListener("click", downloadAllTaiwan);
 $("#btnFavOffline").addEventListener("click", downloadFavOffline);
 
@@ -396,17 +403,17 @@ setTimeout(() => { try { if (typeof Offline !== "undefined" && Offline.migrate) 
 
 // 進階分析：整頁 PRO（與年度回顧一致）
 const _aBtn = $("#btnAnalytics");
-if (_aBtn) _aBtn.addEventListener("click", () => { if (!_proGate()) return; ensureScript("js/analytics.js").then(() => { if (typeof openAnalytics === "function") openAnalytics(); }); });
+if (_aBtn) _aBtn.addEventListener("click", () => { if (!_proGate("analytics")) return; ensureScript("js/analytics.js").then(() => { if (typeof openAnalytics === "function") openAnalytics(); }); });
 // 年度回顧（PRO）
 // openYearReview 住在延遲載入的 js/analytics.js：沒先 ensureScript 就直接呼叫，使用者若沒開過
 // 「進階分析」，這顆按鈕會 ReferenceError 然後完全沒反應（不會有任何錯誤畫面）。
 const _yBtn = $("#btnYearReview");
-if (_yBtn) _yBtn.addEventListener("click", () => { if (!_proGate()) return; ensureScript("js/analytics.js").then(() => { if (typeof openYearReview === "function") openYearReview(); }); });
+if (_yBtn) _yBtn.addEventListener("click", () => { if (!_proGate("year")) return; ensureScript("js/analytics.js").then(() => { if (typeof openYearReview === "function") openYearReview(); }); });
 // 離線地圖包：把快取圖磚打包成單一檔案（備份/給另一台裝置匯入，不必重新下載，也不占下載額度）
 const _pkBox = $("#packBox");
 function _pkMsg(html) { if (_pkBox) { _pkBox.hidden = false; _pkBox.innerHTML = html; } }
 $("#btnPackExport").addEventListener("click", async () => {
-  if (!_proGate()) return;   // PRO 限定
+  if (!_proGate("offline")) return;   // PRO 限定
   if (typeof ttBusy === "function" && ttBusy("packexp", 4000)) return;
   const n = await Offline.cachedCount();
   if (!n) { toast(ttT("尚未下載任何離線地圖")); return; }
@@ -420,7 +427,7 @@ $("#btnPackExport").addEventListener("click", async () => {
     _pkMsg(`${ic("check")} <span>${ttT(how === "saved" ? "地圖包存好了" : "地圖包做好了")}</span>${ttColon()}${info}`);
   } catch (e) { _pkMsg(ttT("匯出失敗，再試一次")); }
 });
-$("#btnPackImport").addEventListener("click", () => { if (!_proGate()) return; $("#packFile").click(); });
+$("#btnPackImport").addEventListener("click", () => { if (!_proGate("offline")) return; $("#packFile").click(); });
 $("#packFile").addEventListener("change", async e => {
   const f = e.target.files[0]; e.target.value = "";
   if (!f) return;
@@ -509,7 +516,7 @@ function storyYear() {
   return m === 11 ? d.getFullYear() : m === 0 ? d.getFullYear() - 1 : null;
 }
 function openStory(year) {
-  if (!_proGate()) return;
+  if (!_proGate("year")) return;
   ensureScript("js/analytics.js").then(() => ensureScript("js/year-story.js")).then(() => { if (typeof YearStory !== "undefined") YearStory.open(year); });
 }
 function renderStoryBanner() {

@@ -769,13 +769,13 @@ const TILE_EST_MB = 0.02;   // 估每張圖磚約 20 KB（顯示用；實際扣�
 function offlineMbUsed() { return +(localStorage.getItem("tt_offline_mb") || 0); }
 function addOfflineMb(mb) { if (mb > 0) localStorage.setItem("tt_offline_mb", String(+(offlineMbUsed() + mb).toFixed(2))); }
 function offlineAllow(tiles, silent) {
-  if (typeof Premium !== "undefined" && Premium.isOn()) return true;   // 會員無限
+  if (isPro()) return true;   // 會員無限
   const need = (tiles ? tiles.length : 0) * TILE_EST_MB;
   const left = OFFLINE_FREE_MB - offlineMbUsed();
   if (need > left) {
     if (!silent) {
       toast(`免費離線地圖額度不足（剩 ${Math.max(0, left).toFixed(1)} MB，這次約需 ${need.toFixed(1)} MB），升級 Premium 無限下載`);
-      if (typeof Premium !== "undefined") Premium.openUpgrade();
+      if (typeof Premium !== "undefined") Premium.openUpgrade("offline");
     }
     return false;
   }
@@ -785,10 +785,10 @@ function offlineAllow(tiles, silent) {
 // Premium：免費收藏上限 20，會員無限。回傳是否可再加收藏。
 const FAV_FREE = 20;
 function favAddAllowed() {
-  if (typeof Premium !== "undefined" && Premium.isOn()) return true;
+  if (isPro()) return true;
   if (Store.getFavs().length >= FAV_FREE) {
     toast(`免費收藏上限 ${FAV_FREE} 條，升級 Premium 無限收藏`);
-    if (typeof Premium !== "undefined") Premium.openUpgrade();
+    if (typeof Premium !== "undefined") Premium.openUpgrade("favs");
     return false;
   }
   return true;

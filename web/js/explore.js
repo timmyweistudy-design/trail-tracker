@@ -227,9 +227,9 @@ function buildPresets() {
 const PRESET_FREE = 3;
 $("#fsSavePreset").addEventListener("click", () => {
   if (!activeFilters.size && !activeRegions.size && curSort === "default" && !filterOpen && !filterGeo && !maxLen && !maxAsc) { toast("先設定一些篩選再儲存"); return; }
-  if (!(typeof Premium !== "undefined" && Premium.isOn()) && getPresets().length >= PRESET_FREE) {
+  if (!(isPro()) && getPresets().length >= PRESET_FREE) {
     toast(`免費口袋路線上限 ${PRESET_FREE} 組，升級 Premium 無限`);
-    if (typeof Premium !== "undefined") Premium.openUpgrade();
+    if (typeof Premium !== "undefined") Premium.openUpgrade("presets");
     return;
   }
   askInput({ title: "為這組篩選命名", value: "常用篩選", max: 10 }).then(name => {

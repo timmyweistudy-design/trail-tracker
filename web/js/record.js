@@ -338,7 +338,7 @@ function addFsHud(map) {
 }
 // 匯入 GPX 路線當參考線
 $("#btnImportGpx").addEventListener("click", () => {
-  if (!_proGate()) return;   // PRO：跟著路線走（匯入 GPX）
+  if (!_proGate("gpx")) return;   // PRO：跟著路線走（匯入 GPX）
   $("#gpxFile").click();
 });
 $("#gpxFile").addEventListener("change", e => {
@@ -544,7 +544,7 @@ Recorder.onUpdate(s => {
     if (meAv) {
       if (!recMarker || !recMarker._av || recMarker._sig !== _pSig) {
         if (recMarker) recMap.removeLayer(recMarker);
-        const mePro = (typeof Premium !== "undefined" && Premium.isOn()) ? " pro" : "";
+        const mePro = (isPro()) ? " pro" : "";
         recMarker = L.marker(lastLL, { icon: L.divIcon({ className: "team-marker me-marker" + mePro, html: `<div class="tm-av"><div class="tm-dir"><span class="tm-cone"></span></div><img src="${escHtml(meAv)}" alt=""><span class="tm-pet">${_petFace()}</span></div>`, iconSize: [32, 32], iconAnchor: [16, 16] }), zIndexOffset: 1100 }).addTo(recMap);
         recMarker._av = true; recMarker._sig = _pSig;
       }
@@ -665,7 +665,7 @@ $("#lowPowerToggle").addEventListener("change", e => {
   });
 })();
 $("#simToggle").addEventListener("change", e => {
-  if (e.target.checked && !_proGate()) {   // PRO 限定 → 開升級面板並復原
+  if (e.target.checked && !_proGate("sim")) {   // PRO 限定 → 開升級面板並復原
     e.target.checked = false;
     return;
   }
@@ -751,7 +751,7 @@ const _SAT_URL = (z, x, y) => `${ESRI}/World_Imagery/MapServer/tile/${z}/${y}/${
 const _TERR_URL = (z, x, y) => `https://elevation-tiles-prod.s3.amazonaws.com/terrarium/${z}/${x}/${y}.png`;
 let _pre3dAt = 0;
 function preload3D(lat, lon) {
-  if (!(typeof Premium !== "undefined" && Premium.isOn())) return;   // 3D 是 PRO 功能
+  if (!(isPro())) return;   // 3D 是 PRO 功能
   if (typeof Offline === "undefined" || !navigator.onLine) return;
   const now = Date.now(); if (now - _pre3dAt < 60000) return; _pre3dAt = now;   // 每分鐘最多一次
   const m = 0.02, bbox = { n: lat + m, s: lat - m, e: lon + m, w: lon - m };
@@ -773,7 +773,7 @@ function preload3DFull(bbox, onProgress) {
   return Offline.download(tiles, (done, total) => { if (onProgress) onProgress(Math.round(done / total * 100)); }, { temp: true }).catch(() => {});
 }
 async function preloadAround(lat, lon) {
-  const pro = typeof Premium !== "undefined" && Premium.isOn();
+  const pro = isPro();
   const m = pro ? 0.018 : 0.009;
   const bbox = { n: lat + m, s: lat - m, e: lon + m, w: lon - m };
   const tiles = Offline.tileList(bbox, 14, 15);   // 只存開放版到 z15（授權）；PRO 的好處是範圍大一倍、不扣額度

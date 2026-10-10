@@ -196,12 +196,13 @@ function personalBestBreaks(rec) {
 }
 // #2 速度：直觀呈現「這次 vs 你平常」，一句話講清楚快多少慢多少
 // PRO 判定（多處共用）：未載入 Premium 模組時當作非會員，避免免費版意外看到 PRO 內容
-function _pro() { return typeof Premium !== "undefined" && Premium.isOn(); }
+function _pro() { return isPro(); }
 // PRO 閘門：非會員→開升級面板並回 false。Premium 模組沒載入時同樣擋住（fail-closed），
 // 不可以寫成 `typeof Premium !== "undefined" && !Premium.gate()`——那在模組載入失敗時會短路成放行。
-function _proGate() {
+// feat：哪個 PRO 功能（premium.js FEATURES 的 id）→ 升級彈窗最上面先講那個功能
+function _proGate(feat, note) {
   if (typeof Premium === "undefined") return false;
-  return Premium.gate();
+  return Premium.gate(feat, note);
 }
 function speedHtml(rec) {
   if (rec.sim) return "";   // 模擬時間是壓縮的，速度無意義 → 不顯示
@@ -431,7 +432,7 @@ function openTrackReview(rec, isNew) {
   $("#track3d").addEventListener("click", () => { if (trackSegsLL && trackSegsLL.length) open3DTrack(rec.trailName || ttT("自由路線"), trackSegsLL); else toast(ttT("此步道沒有路線資料，無法 3D 顯示")); });
   $("#trackCard").addEventListener("click", () => shareHikeCard(rec));
   $("#trackGpx").addEventListener("click", () => {
-    if (!_proGate()) return;   // PRO：匯出路線檔
+    if (!_proGate("gpx")) return;   // PRO：匯出路線檔
     GPX.exportRecord(rec); toast(ttT("路線檔存好了"));
   });
   { const rp = $("#trackReport"); if (rp) rp.addEventListener("click", () => { const t = TRAILS.find(x => String(x.id) === String(rec.trailId)); if (t) TrailReports.openForm(t); }); }

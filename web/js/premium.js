@@ -60,51 +60,56 @@ const Premium = (() => {
     markPro();
   }
   function isOn() { if (window.TT_DEBUG_FREE) return false; if (personal()) return true; return _loaded ? _on : (localStorage.getItem("tt_premium") === "1"); }
-  function gate() { if (isOn()) return true; openUpgrade(); return false; }
+  function gate(feat, note) { if (isOn()) return true; openUpgrade(feat, note); return false; }
 
-  const BENEFITS = [
-    ["map", "無限離線地圖", "免費共 10 MB；會員不限量，還能匯出/匯入地圖包跨裝置共用"],
-    ["target", "進階分析＋年度回顧", "個人紀錄、時速趨勢、難度雷達、每月卡路里、年度回顧與山行故事（每頁存成限動圖）、匯出 GPX/CSV/KML"],
-    ["mountain", "3D 地形地圖", "衛星影像貼在真實地形上、可旋轉傾斜；步道詳情與行程回放都能看"],
-    ["bookmark", "無限收藏", "免費上限 20 條；會員不限"],
-    ["users", "足跡熱力圖＋好友比較", "所有軌跡疊成一張地圖、好友里程排行"],
-    ["route", "軌跡坡度著色＋公里樁", "行程回顧地圖依坡度上色（緩坡綠→陡坡紅），每公里一個標記樁"],
-    ["target", "進階數據", "結算頁比較這次和平常的移動速度、時速趨勢"],
-    ["download", "路線檔匯入匯出", "跟著別人的 GPX 路線走、把自己的軌跡匯出成 GPX"],
-    ["play", "模擬模式", "沒有 GPS 也能沿真實步道路線預覽整條路線"],
-    ["sparkle", "專屬外觀與身分", "PRO 徽章、頭像框、名字跟色、專屬主題、夥伴命名與裝扮、PRO 表情貼"],
-    ["calendar", "主畫面小工具", "iPhone 主畫面／鎖定畫面看夥伴、連續天數、本週里程"],
-    ["map", "夥伴的旅行", "走過的步道變成明信片、22 縣市地圖亮起來、走遍各地區解鎖當地配件、夥伴舞台出現走過的風景"],
+  // PRO 功能清單（唯一來源，2026-10-10 優化輪 A4）：升級彈窗的比較表、從某個功能點進來時的說明卡都從這裡畫。
+  // 程式裡每個 _proGate(功能 id) 的 id 都必須在這裡（scripts/tests/pro-registry.test.js 會檢查），新增 PRO 功能才不會漏列。
+  // [id, 圖示, 名稱, 說明, 免費, PRO]；分組只影響比較表的小標題
+  const FEATURES = [
+    ["地圖", [
+      ["offline", "map", "離線地圖", "會員還能匯出／匯入地圖包，換手機不必重下", "10 MB", "不限量"],
+      ["3d", "mountain", "3D 地形地圖", "衛星影像貼在真實地形上，可旋轉傾斜", "—", "✓"],
+      ["gpx", "route", "跟著路線走（GPX）", "匯入別人的路線跟著走，也能把軌跡匯出", "—", "✓"],
+      ["sim", "play", "模擬模式", "沒有 GPS 也能沿真實路線預覽整條步道", "—", "✓"],
+    ]],
+    ["紀錄與分析", [
+      ["analytics", "target", "進階分析", "個人紀錄、時速趨勢、難度雷達、每月卡路里", "—", "✓"],
+      ["year", "trophy", "年度回顧＋山行故事", "每頁都能存成限動圖", "—", "✓"],
+      ["peaks", "flag", "登頂收集冊", "百岳、小百岳登頂自動蓋章，記下日期", "只蓋章", "✓"],
+      ["footmap", "footprints", "足跡熱力圖", "所有軌跡疊成一張地圖", "—", "✓"],
+      ["slope", "ruler", "坡度著色＋公里樁", "回顧地圖依坡度上色，每公里一個標記", "—", "✓"],
+      ["speed", "clock", "這次和平常比", "結算頁比較這次和平常的移動速度", "—", "✓"],
+      ["favs", "star", "收藏步道", "", "20 條", "不限量"],
+      ["presets", "bookmark", "口袋路線", "把常用的篩選條件存起來", "3 組", "不限量"],
+    ]],
+    ["夥伴與外觀", [
+      ["journey", "compass", "夥伴的旅行", "明信片、22 縣市地圖、各地區配件", "—", "✓"],
+      ["petdress", "sparkle", "夥伴命名與裝扮", "", "挑戰獎勵", "全部"],
+      ["petphoto", "camera", "好友夥伴合照", "", "—", "✓"],
+      ["look", "crown", "PRO 徽章與主題配色", "頭像框、名字跟色、專屬主題", "—", "✓"],
+      ["emoji", "chat", "表情貼", "", "6 個", "30 個"],
+      ["widget", "calendar", "主畫面小工具", "主畫面看夥伴、連續天數、本週里程", "—", "✓"],
+    ]],
+    ["社群", [
+      ["club", "users", "建立山社", "", "—", "✓"],
+    ]],
   ];
-  // 永遠免費（安全相關一律不收費）：在升級面板最上面講清楚
-  const ALWAYS_FREE = ["留守人", "登山計畫書", "求救卡", "原路返回", "天黑倒數", "林業署路況", "山友路況回報", "山頂天氣", "偏離路線提醒", "高山提醒", "低電量提醒", "附近步道", "離線地圖 10 MB", "記錄中鎖定畫面卡片"];
-  // 免費 vs Premium 比較
-  const COMPARE = [
-    ["離線地圖", "10 MB", "無限"],
-    ["記錄時預載周邊地圖", "縮小範圍", "完整"],
-    ["地圖包匯出 / 匯入", "—", "✓"],
-    ["進階分析", "—", "完整"],
-    ["年度回顧＋山行故事", "—", "✓"],
-    ["3D 地形地圖", "—", "✓"],
-    ["收藏步道", "20 條", "無限"],
-    ["足跡熱力圖", "—", "✓"],
-    ["軌跡坡度著色 / 公里樁", "—", "✓"],
-    ["這次 vs 平常速度", "—", "✓"],
-    ["GPX 匯入 / 匯出", "—", "✓"],
-    ["模擬模式", "—", "✓"],
-    ["PRO 徽章 / 主題 / 表情貼", "—", "✓"],
-    ["夥伴命名·裝扮 / 頭像框", "挑戰獎勵", "✓"],
-    ["好友夥伴合照", "—", "✓"],
-    ["夥伴的旅行（明信片／縣市地圖／地區配件）", "—", "✓"],
-    ["建立山社", "—", "✓"],
-    ["主畫面小工具", "—", "✓"],
+  const FEAT = {}; FEATURES.forEach(([, rows]) => rows.forEach(r => { FEAT[r[0]] = r; }));
+  // 永遠免費：安全功能分三組（出發前／山上／互助）；不是安全功能但也免費的另外一行，不混在一起
+  const ALWAYS_FREE = [
+    ["backpack", "出發前", ["登山計畫書", "留守人", "山頂天氣", "林業署路況"]],
+    ["mountain", "在山上", ["偏離路線提醒", "天黑倒數", "原路返回", "高山提醒", "低電量提醒", "求救卡"]],
+    ["users", "互助", ["山友路況回報"]],
   ];
+  const ALSO_FREE = ["附近步道", "記錄中鎖定畫面卡片", "夥伴養成", "離線地圖 10 MB"];
   const icc = n => (typeof ic === "function" ? ic(n) : "");
 
-  function openUpgrade() {
+  // feat：從哪個 PRO 功能點進來（最上面先講那個功能）；note：補一句（例如收集冊「已蓋 5 章」）
+  function openUpgrade(feat, note) {
     if (personal()) return;
     if (document.querySelector(".premium-mask")) return;   // 防連點疊層
     let plan = "month";
+    const f = typeof feat === "string" ? FEAT[feat] : null;
     const ov = document.createElement("div");
     ov.className = "pv-mask premium-mask";
     ov.innerHTML = `<div class="premium-card">
@@ -112,17 +117,23 @@ const Premium = (() => {
       <div class="pm-crown">${icc("sparkle")}</div>
       <h2>循徑拾光 Premium</h2>
       <p class="pm-sub">支持開發，解鎖全部進階功能</p>
-      <div class="pm-free">${icc("shield")}<div><b>安全功能永遠免費</b><div class="pm-free-list">${ALWAYS_FREE.map(x => `<span>${x}</span>`).join("")}</div></div></div>
-      <div class="pm-benefits">${BENEFITS.map(([i, t, d]) => `<div class="pm-b"><span class="pm-b-ic">${icc(i)}</span><div><b>${t}</b><div class="pm-b-d">${d}</div></div></div>`).join("")}</div>
-      <table class="pm-compare"><thead><tr><th></th><th>免費</th><th>Premium</th></tr></thead><tbody>
-        ${COMPARE.map(([a, b, c]) => `<tr><td>${a}</td><td>${b}</td><td class="pm-pro">${c}</td></tr>`).join("")}
-      </tbody></table>
+      ${f ? `<div class="pm-feat" data-feat="${f[0]}"><span class="pm-b-ic">${icc(f[1])}</span><div><b>${f[2]}</b><span class="pro-tag">PRO</span>${f[3] && !note ? `<div class="pm-b-d">${f[3]}</div>` : ""}${note ? `<div class="pm-note">${note}</div>` : ""}</div></div>` : ""}
       <div class="pm-plans">
         <button class="pm-plan on" data-plan="month"><b>月繳</b><span>NT$100 / 月</span></button>
         <button class="pm-plan" data-plan="year"><b>年繳</b><span>NT$1000 / 年</span><i class="pm-save">省 2 個月</i></button>
       </div>
       <button class="btn primary" id="pmGo">免費試用 7 天</button>
       <div class="pm-fine">試用期免費，之後依方案自動續訂，可隨時取消</div>
+      <div class="pm-free">
+        <div class="pm-free-h">${icc("shield")}<b>安全功能永遠免費</b></div>
+        <div class="pm-free-grid">${ALWAYS_FREE.map(([i, t, xs]) => `<div class="pm-fg"><div class="pm-fg-h">${icc(i)}${t}</div><ul>${xs.map(x => `<li>${x}</li>`).join("")}</ul></div>`).join("")}</div>
+        <div class="pm-also"><b>也免費</b>${ALSO_FREE.map(x => `<span>${x}</span>`).join("")}</div>
+      </div>
+      <div class="pm-inc"><div class="pm-inc-h">Premium 包含</div><div class="pm-inc-grid">${FEATURES.map(([, rows]) => rows.map(([id, i, t, , , c]) => `<span class="pm-i${f && f[0] === id ? " on" : ""}">${icc(i)}<span>${t}${c !== "✓" ? `<small>${c}</small>` : ""}</span></span>`).join("")).join("")}</div></div>
+      <details class="pm-more"><summary>免費和 Premium 逐項比較</summary>
+      <table class="pm-compare"><thead><tr><th></th><th>免費</th><th>Premium</th></tr></thead>
+        ${FEATURES.map(([g, rows]) => `<tbody><tr class="pm-g"><th colspan="3">${g}</th></tr>${rows.map(([id, i, t, d, a, c]) => `<tr${f && f[0] === id ? ' class="on"' : ""}><td><span class="pm-t">${icc(i)}<span><b>${t}</b>${d ? `<small>${d}</small>` : ""}</span></span></td><td>${a}</td><td class="pm-pro">${c}</td></tr>`).join("")}</tbody>`).join("")}
+      </table></details>
       <div class="pm-legal"><a href="#" data-legal="privacy">隱私權政策</a> · <a href="#" data-legal="terms">使用條款</a></div>
       <button class="link-btn pm-later" id="pmLater">以後再說</button>
     </div>`;
@@ -337,5 +348,5 @@ const Premium = (() => {
   }
 
   if (typeof document !== "undefined") setTimeout(markPro, 0);   // 開機依快取先標一次
-  return { refresh, isOn, gate, openUpgrade, openPortal, renderBox, handleReturn, clearCache };
+  return { FEATURES, FEAT, refresh, isOn, gate, openUpgrade, openPortal, renderBox, handleReturn, clearCache };
 })();
