@@ -1,6 +1,6 @@
 # 循徑拾光：目前進度與待辦
 
-最後更新：2026-10-10（**下一輪 App 優化已列出、未開工：[opt-round-next.md](opt-round-next.md)（登頂收集冊改 PRO、PRO 彈窗重排、體驗／排版／效能／程式碼共 21 項）**；**授權全面檢查完成（SW v714）：Google 美食景點不再畫在非 Google 地圖、離線地圖只存 NLSC 開放版 z15、字型補 OFL、新增第三方授權頁；Open-Meteo 商用方案仍要買**，見 [map-licensing.md](map-licensing.md)；測試面板「裝置與外觀」有「模擬免費用戶」；**夥伴第三版 R10～R14＋收尾輪完成**，SW `trail-tracker-v707`；**phase40／41 SQL 已跑並確認**；果實圖示全部跟著季節換；**iOS build 排隊中（Codemagic 免費機器排不到）**；**R15 近親物種＋R16（雲豹重畫、全畫面同步、震動減量、真實錄音音效、iOS 最低 15.0）完成，SW v711；build 只在使用者說了才出**（[ios-checklist.md](ios-checklist.md) 最後一節）；全站掃描 `scripts/ui-sweep.js`、整套測試約 15 分）
+最後更新：2026-10-10（**App 優化輪完成（SW v718）：[opt-round-next.md](opt-round-next.md)——收集冊改 PRO、PRO 彈窗重排、暫停開放排後面、新用戶引導卡、收藏／步記快取 166→5ms、Places 共用底層**；**授權全面檢查完成（SW v714）：Google 美食景點不再畫在非 Google 地圖、離線地圖只存 NLSC 開放版 z15、字型補 OFL、新增第三方授權頁；Open-Meteo 商用方案仍要買**，見 [map-licensing.md](map-licensing.md)；測試面板「裝置與外觀」有「模擬免費用戶」；**夥伴第三版 R10～R14＋收尾輪完成**，SW `trail-tracker-v707`；**phase40／41 SQL 已跑並確認**；果實圖示全部跟著季節換；**iOS build 排隊中（Codemagic 免費機器排不到）**；**R15 近親物種＋R16（雲豹重畫、全畫面同步、震動減量、真實錄音音效、iOS 最低 15.0）完成，SW v711；build 只在使用者說了才出**（[ios-checklist.md](ios-checklist.md) 最後一節）；全站掃描 `scripts/ui-sweep.js`、整套測試約 15 分）
 上架細節清單見 [launch-checklist.md](launch-checklist.md)。
 
 ## 現況
@@ -15,7 +15,7 @@
 - 結果表在 [map-licensing.md](map-licensing.md) 最上面（12 項：7 項已改、Open-Meteo 要買、MyMemory／Open Topo Data 待確認、NLSC 建議打電話問線上高縮放）。
 - 給使用者看的聲明：`web/licenses.html`（我的 → 最下面「使用條款 · 隱私權政策 · 第三方授權」）。
 - 測試面板 → 裝置與外觀 →「👤模擬免費用戶」：關掉自用模式且 `Premium.isOn()` 回 false，右上角有「模擬免費用戶」標籤；再按「💎恢復會員畫面」。
-- PRO／免費功能的權威清單是 `web/js/premium.js` 的 `BENEFITS`／`ALWAYS_FREE`／`COMPARE`（另有口袋路線 3 組、PRO 表情 24 個不在比較表裡）。
+- PRO／免費功能的唯一清單是 `web/js/premium.js` 的 `FEATURES`（每個 `_proGate("id")` 都要在裡面，pro-registry 測試擋）＋`ALWAYS_FREE`（三組）＋`ALSO_FREE`。
 
 ## 2026-10-08 完成：夥伴修正案 R1（可信基準）
 - **版本與錄影標籤**：測試面板標題、效能紀錄帶「v664 · web／iOS build」；🏷錄影標籤在左下角顯示版本、階段、動作階段、秒數
