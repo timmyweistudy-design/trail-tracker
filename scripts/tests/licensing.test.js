@@ -29,7 +29,7 @@ try { const out = execFileSync("python3", ["-c", "from fontTools.ttLib import TT
   await p.evaluate(() => { document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e => e.remove()); document.querySelector('.tab[data-view="me"]').click(); }); await p.waitForTimeout(500);
   await p.evaluate(() => document.querySelector('.app-legal [data-doc="licenses"]').click()); await p.waitForTimeout(900);
   const d = await p.evaluate(() => { const fr = document.querySelector(".doc-frame"); const h = fr && fr.contentDocument && fr.contentDocument.body.innerText; return { src: fr && fr.getAttribute("src"), osm: /ODbL/.test(h || ""), ofl: /Open Font License/.test(h || ""), cc0: /CC0/.test(h || "") }; });
-  ok(d.src === "licenses.html" && d.osm && d.ofl && d.cc0, "Me → licenses page opens in-app with ODbL / OFL / CC0 notices " + JSON.stringify(d));
+  ok(d.src === "licenses.html" && d.osm && d.ofl, "Me → licenses page opens in-app with ODbL / OFL notices " + JSON.stringify(d));
   // 底圖：z15 以下用開放版網址（和離線一致）；一般 EMAP 抓不到時 z16+ 拿 z15 放大
   const mk = z => p.evaluate(async z => { const el = document.createElement("div"); el.style.cssText = "width:256px;height:256px"; document.body.appendChild(el); const m = L.map(el, { zoomControl: false }).setView([24.15, 121.28], z); baseTopo().addTo(m); await new Promise(r => setTimeout(r, 2500)); return [...el.querySelectorAll(".leaflet-tile img")].map(i => i.src.split("/wmts/")[1].split("/")[0] + "@" + i.style.width); }, z);
   await ctx.route(/wmts\.nlsc\.gov\.tw/, rt => rt.request().url().includes("/EMAP/") ? rt.abort() : rt.fulfill({ status: 200, contentType: "image/png", body: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64") }));

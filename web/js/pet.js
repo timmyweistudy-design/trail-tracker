@@ -432,8 +432,8 @@ function openHatPicker() {
     ov.querySelectorAll(".dr-pane").forEach(p => { p.hidden = p.dataset.pane !== pane; }); bar(""); }));
 }
 // 夥伴的音效與震動（2026-10-07 寵物新一輪 #23）：音效預設關（吃東西、抱抱、進化、收到禮物各一種輕柔的合成音，不用音檔）；震動預設開，可以在「？」裡關掉
-// 夥伴音效先全面關閉（2026-10-10 使用者：「還沒有做得很好」，排進音效優化輪 docs/sound-plan.md）：設定裡的開關也藏起來。
-// 開發中要試聽：測試面板「🔊試聽音效（開發中）」設 tt_pet_sound_dev=1。做好之後把 PET_SOUND_READY 改回 true
+// 夥伴音效暫停（2026-10-10 使用者聽過精緻版：「還是差很多，先取消，列待辦」）：音檔已從 App 拿掉、設定裡的開關藏起來、測試面板的試聽也拿掉。
+// 引擎（pet-sound.js）和各動作的音效事件都留著，關著不會下載也不會出聲。要重做：見 docs/roadmap.md 待辦（git 還原音檔＋試聽板的指令在那裡）
 const PET_SOUND_READY = false;
 const petSoundDev = () => { try { return localStorage.getItem("tt_pet_sound_dev") === "1"; } catch (e) { return false; } };
 const petHapticOn = () => localStorage.getItem("tt_pet_haptic") !== "0", petSoundOn = () => (PET_SOUND_READY || petSoundDev()) && localStorage.getItem("tt_pet_sound") !== "0";

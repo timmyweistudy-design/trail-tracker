@@ -1,7 +1,13 @@
 # 循徑拾光：目前進度與待辦
 
-最後更新：2026-10-10（**音效精緻版 V1～V6 完成（SW v723）：91 類 672 段音效、15 種環境音、四時段音樂、47 串整串試聽；仍關閉（PET_SOUND_READY=false），等使用者聽完回報** [sound-plan-v2.md](sound-plan-v2.md)；**音效優化輪程式與素材完成（SW v722）：真實錄音聲音池＋環境音＋背景音樂＋試聽板；仍關閉中（PET_SOUND_READY=false），等使用者用測試面板「🎧音效試聽板」選完才打開** [sound-plan.md](sound-plan.md)；**細節對齊與置中完成（SW v719）：[opt-round-3.md](opt-round-3.md)——山社等 8 個標題列回到正中間、求救卡／成就頁／說明頁標題置中、步道卡標籤與四格資訊置中；置中偵測 `align-scan.js --rule=center`**；**App 優化輪完成（SW v718）：[opt-round-next.md](opt-round-next.md)——收集冊改 PRO、PRO 彈窗重排、暫停開放排後面、新用戶引導卡、收藏／步記快取 166→5ms、Places 共用底層**；**授權全面檢查完成（SW v714）：Google 美食景點不再畫在非 Google 地圖、離線地圖只存 NLSC 開放版 z15、字型補 OFL、新增第三方授權頁；Open-Meteo 商用方案仍要買**，見 [map-licensing.md](map-licensing.md)；測試面板「裝置與外觀」有「模擬免費用戶」；**夥伴第三版 R10～R14＋收尾輪完成**，SW `trail-tracker-v707`；**phase40／41 SQL 已跑並確認**；果實圖示全部跟著季節換；**iOS build 排隊中（Codemagic 免費機器排不到）**；**R15 近親物種＋R16（雲豹重畫、全畫面同步、震動減量、真實錄音音效、iOS 最低 15.0）完成，SW v711；build 只在使用者說了才出**（[ios-checklist.md](ios-checklist.md) 最後一節）；全站掃描 `scripts/ui-sweep.js`、整套測試約 15 分）
+最後更新：2026-10-10（**夥伴音效暫停、列待辦（SW v724）：使用者聽過精緻版覺得「還是差很多」，音檔已從 App 拿掉、試聽工具拿掉、程式保留但關閉** [sound-plan-v2.md](sound-plan-v2.md)；**音效優化輪程式與素材完成（SW v722）：真實錄音聲音池＋環境音＋背景音樂＋試聽板；仍關閉中（PET_SOUND_READY=false），等使用者用測試面板「🎧音效試聽板」選完才打開** [sound-plan.md](sound-plan.md)；**細節對齊與置中完成（SW v719）：[opt-round-3.md](opt-round-3.md)——山社等 8 個標題列回到正中間、求救卡／成就頁／說明頁標題置中、步道卡標籤與四格資訊置中；置中偵測 `align-scan.js --rule=center`**；**App 優化輪完成（SW v718）：[opt-round-next.md](opt-round-next.md)——收集冊改 PRO、PRO 彈窗重排、暫停開放排後面、新用戶引導卡、收藏／步記快取 166→5ms、Places 共用底層**；**授權全面檢查完成（SW v714）：Google 美食景點不再畫在非 Google 地圖、離線地圖只存 NLSC 開放版 z15、字型補 OFL、新增第三方授權頁；Open-Meteo 商用方案仍要買**，見 [map-licensing.md](map-licensing.md)；測試面板「裝置與外觀」有「模擬免費用戶」；**夥伴第三版 R10～R14＋收尾輪完成**，SW `trail-tracker-v707`；**phase40／41 SQL 已跑並確認**；果實圖示全部跟著季節換；**iOS build 排隊中（Codemagic 免費機器排不到）**；**R15 近親物種＋R16（雲豹重畫、全畫面同步、震動減量、真實錄音音效、iOS 最低 15.0）完成，SW v711；build 只在使用者說了才出**（[ios-checklist.md](ios-checklist.md) 最後一節）；全站掃描 `scripts/ui-sweep.js`、整套測試約 15 分）
 上架細節清單見 [launch-checklist.md](launch-checklist.md)。
+
+## 待辦：夥伴音效（暫停中，2026-10-10）
+- 使用者聽過精緻版（91 類 672 段、15 種環境音、四時段音樂）後說「還是差很多，先取消」。**先不要做，等使用者說再開。**
+- 現況：`web/js/pet.js` 的 `PET_SOUND_READY = false`；引擎 `pet-sound.js` 和各動作的音效事件都還在；音檔與試聽板已移出 App（最後完整的一版是 commit `a90b2e2`）。
+- 重做時：`git checkout a90b2e2 -- web/sounds web/js/sound-board.js scripts/tests/pet-sound.test.js`，測試面板加回「🎧音效試聽板」「🔊試聽音效（開發中）」兩顆鈕（見 `a90b2e2` 的 debug.js）。
+- 重做前要先想清楚的：素材只用 Freesound 的預覽檔（約 190 kbps）＋自動處理，聽起來不夠精緻；可能要換來源（付費音效庫、請人錄音／做聲音設計）或縮小範圍只做幾個最重要的時刻。方案紀錄：[sound-plan.md](sound-plan.md)、[sound-plan-v2.md](sound-plan-v2.md)。
 
 ## 現況
 

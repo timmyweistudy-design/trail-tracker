@@ -48,7 +48,7 @@ App 內給使用者看的版本是 `web/licenses.html`（我的 → 最下面「
 | OpenStreetMap | 步道幾何 | ODbL，商用可、需標註（已標「© OpenStreetMap」）|
 | AWS/Mapzen terrarium | 高程/3D 地形、步道累積爬升與海拔剖面（scripts/compute-gain.mjs 預先算） | 台灣一帶的來源是 SRTM、GMTED2010（USGS，公有領域）與 ETOPO1（NOAA），規定要標註：3D 地圖與步道頁頁尾都標「SRTM & GMTED2010 courtesy of the U.S. Geological Survey · ETOPO1 courtesy NOAA NCEI」（2026-10-03 補齊）|
 | Google Places | 景點/美食/停車廁所 | 只列清單、**不畫在非 Google 地圖上**（2026-10-10）；已標「Google Maps」；結果只在記憶體放 30 分鐘（條款不准長期存）。金鑰已設限（2026-10-03）：只准 Places API (New)、只准 `https://trail-tracker-0ma5.onrender.com/*` 和 `capacitor://localhost/*`、SearchNearby 用量上限、預算警示。**換網域或加 Android 版要記得把新網址加進金鑰限制** |
-| Freesound（夥伴音效、環境音、背景音樂） | 2026-10-10 換成 87 段候選（`web/sounds/` 的 pet、amb、music，來源 `web/sounds/CREDITS.md`），全部 CC0；以前是 22 段 | **CC0（公眾領域）**，2026-10-10 逐一到原始頁面確認 22/22 都是 CC0；可商用、不用標示（`CREDITS.md` 還是記了來源）。用的是預覽檔（CC0 不限制格式）；Freesound 的「網站不得商用」指的是把網站本身拿來做生意，不是 CC0 素材 |
+| Freesound（夥伴音效） | **2026-10-10 音效暫停，App 已不附任何音檔**（以前用的全是 CC0；重做時再補） |
 | Wikimedia Commons | 步道照片 | CC 授權，每張已顯示作者＋授權 |
 | iNaturalist | 生態目擊 | 只抓 CC0／CC BY／CC BY-SA 的照片（不可商用 NC、保留所有權利的不顯示），每張標拍攝者＋授權（2026-10-03 改）|
 | Open-Meteo | 天氣、海拔 | ⚠️ **免費版只限非商用**。收訂閱前要買方案（US$29/月起），金鑰填 `config.js` 的 `OPEN_METEO_KEY` 就會改走商用端點。已標「Open-Meteo」|
