@@ -31,7 +31,7 @@ const DET = () => {
     const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let n;
     while ((n = tw.nextNode())) {
       const t = n.nodeValue.trim(); if (!t || !/[一-鿿]/.test(t)) continue;
-      const el = n.parentElement; if (!el || !vis(el) || el.closest("svg,#debugPanel,.lang-list,.lang-gate-card,[data-raw],.trail-name,.tc-name,.fp-info b,.fc-nm,.pet-name,input,textarea,.leaflet-container,.brand,header h1,#toast,#ttTag,#ttFps,.fc-cap,.ht,.ev-title,.ev-note,.gp-av,.fv-name,.pk-tab,.gd-empty")) continue;
+      const el = n.parentElement; if (!el || !vis(el) || el.closest("svg,#debugPanel,.sb-card,.lang-list,.lang-gate-card,[data-raw],.trail-name,.tc-name,.fp-info b,.fc-nm,.pet-name,input,textarea,.leaflet-container,.brand,header h1,#toast,#ttTag,#ttFps,.fc-cap,.ht,.ev-title,.ev-note,.gp-av,.fv-name,.pk-tab,.gd-empty")) continue;
       const r = el.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight) continue;
       out.cjk.push(`${name(el)} "${t.slice(0, 30)}"`);
     }
