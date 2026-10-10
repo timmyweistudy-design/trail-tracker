@@ -94,7 +94,7 @@
 .notif-count .ic { width: 12px; height: 12px; }
 
 /* 發文 / 詳情 覆蓋層 */
-.composer-mask, .pv-mask { position: fixed; inset: 0; z-index: 120; background: rgba(22,30,20,.5); backdrop-filter: blur(2px); display: flex; align-items: flex-end; justify-content: center; }
+.composer-mask, .pv-mask { position: fixed; inset: 0; z-index: var(--z-sheet); background: rgba(22,30,20,.5); backdrop-filter: blur(2px); display: flex; align-items: flex-end; justify-content: center; }
 .composer, .pv { background: var(--bg); width: 100%; max-width: 540px; max-height: min(92vh, calc(100dvh - var(--safe-t) - 10px)); overflow-y: auto; border-radius: var(--r-lg) 22px 0 0; padding: 4px 16px calc(20px + var(--safe-b, 0px)); box-shadow: var(--sh-lg); }
 .composer-head, .pv-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; position: sticky; top: 0; background: var(--bg); padding: 12px 0 10px; z-index: 2; }
 .composer-head b, .pv-head b { font-family: var(--serif); font-size: calc(16px * var(--fs, 1)); }
@@ -126,7 +126,7 @@
 .pv-add .auth-input { flex: 1; }
 
 /* 照片燈箱 */
-.lightbox { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,.93); display: flex; align-items: center; justify-content: center; }
+.lightbox { position: fixed; inset: 0; z-index: var(--z-lightbox); background: rgba(0,0,0,.93); display: flex; align-items: center; justify-content: center; }
 .lightbox img { max-width: 100%; max-height: 100%; object-fit: contain; }
 .lb-x { position: fixed; top: calc(12px + var(--safe-t, 0px)); right: 16px; background: rgba(0,0,0,.5); color: #fff; border: none; width: 38px; height: 38px; border-radius: 50%; font-size: calc(18px * var(--fs, 1)); cursor: pointer; }
 
@@ -679,7 +679,7 @@ input[type="button"], input[type="submit"], input[type="checkbox"], input[type="
 .lv-chip.lvt-6::after, .lv-chip.lvt-7::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.6) 50%, transparent 65%); background-size: 220% 100%; animation: lv-shine 3.6s ease-in-out infinite; }
 
 /* 讚 / 表情 浮起動畫 */
-.tt-float { position: fixed; z-index: 300; pointer-events: none; font-size: calc(26px * var(--fs, 1)); transform: translate(-50%,-50%); animation: tt-float-up .8s ease-out forwards; }
+.tt-float { position: fixed; z-index: var(--z-float); pointer-events: none; font-size: calc(26px * var(--fs, 1)); transform: translate(-50%,-50%); animation: tt-float-up .8s ease-out forwards; }
 @keyframes tt-float-up { 0% { opacity: 1; transform: translate(-50%,-50%) scale(.6); } 100% { opacity: 0; transform: translate(-50%,-165%) scale(1.4); } }
 
 /* 子分頁：窄螢幕可橫向捲動，不擠壓文字 */
@@ -706,7 +706,7 @@ html[data-theme="dark"] .disc-sec, html[data-theme="dark"] .feed-trending-h { co
 .pf-map { width: 100%; height: 320px; border-radius: var(--r-sm); overflow: hidden; }
 
 /* @／# 自動完成下拉 */
-.ac-box { position: fixed; z-index: 120; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); box-shadow: 0 8px 26px rgba(0,0,0,.18); overflow: hidden; max-height: 220px; overflow-y: auto; }
+.ac-box { position: fixed; z-index: var(--z-sheet); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); box-shadow: 0 8px 26px rgba(0,0,0,.18); overflow: hidden; max-height: 220px; overflow-y: auto; }
 .ac-item { padding: 9px 13px; font-size: calc(14px * var(--fs, 1)); cursor: pointer; display: flex; justify-content: space-between; gap: 10px; align-items: center; }
 .ac-item:active, .ac-item:hover { background: var(--brand-soft); }
 .ac-sub { font-size: calc(12px * var(--fs, 1)); color: var(--ink-faint); }
@@ -1088,7 +1088,7 @@ html[data-theme="dark"] body::after { opacity: .05; }
 .pace-col.last .pace-v { color: var(--accent); }
 
 /* 自製對話框（取代原生 confirm/prompt/alert，可翻譯、樣式一致） */
-.ttdlg-ov { position: fixed; inset: 0; z-index: 9500; background: rgba(15,20,12,.45);
+.ttdlg-ov { position: fixed; inset: 0; z-index: var(--z-dialog); background: rgba(15,20,12,.45);
   display: grid; place-items: center; padding: calc(var(--safe-t) + 12px) 24px calc(var(--safe-b) + 12px); animation: tt-fade var(--dur-m) var(--ease-out); }
 .ttdlg { width: 100%; max-width: 340px; background: var(--surface); color: var(--ink);
   border-radius: var(--r-md, 14px); padding: 20px 18px 14px; box-shadow: 0 18px 50px rgba(0,0,0,.3); }
@@ -1730,7 +1730,7 @@ html .hero-cap .badge.ghost, html .hero-cap .badge.family, html[data-theme="dark
 .ach-fchips.more { -webkit-mask-image: linear-gradient(90deg, #000 82%, transparent); mask-image: linear-gradient(90deg, #000 82%, transparent); }
 .ach-pgnav-t { font-family: var(--num); letter-spacing: 0; color: var(--ink-soft); }
 html[data-theme="dark"] .ach-modal .sheet-close { background: rgba(255,255,255,.14); color: #fff; }
-.img-prev { position: fixed; inset: 0; z-index: 1300; background: rgba(10,14,10,.92); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: calc(56px + var(--safe-t)) 16px calc(24px + var(--safe-b)); }
+.img-prev { position: fixed; inset: 0; z-index: var(--z-preview); background: rgba(10,14,10,.92); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: calc(56px + var(--safe-t)) 16px calc(24px + var(--safe-b)); }
 .img-prev img { max-width: 100%; max-height: 74vh; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,.5); -webkit-touch-callout: default; user-select: auto; }
 .img-prev-hint { color: #eae6d8; font-size: calc(14px * var(--fs, 1)); font-weight: 600; }
 .img-prev .sheet-close { top: calc(12px + var(--safe-t)); background: rgba(255,255,255,.16); }
@@ -2662,7 +2662,7 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .app-legal { text-align: center; margin: 6px 0 0; font-size: calc(11.5px * var(--fs, 1)); color: var(--muted); }   /* 我的 → 最下面：條款／隱私／第三方授權（2026-10-10 授權檢查） */
 .app-legal .info-link { font-size: inherit; padding: 4px 2px; }
 /* 測試面板「模擬免費用戶」開著時，畫面右上角一直提醒（避免忘了關，以為功能壞了） */
-.dbg-free-tag { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 4px); right: 6px; z-index: 99999; pointer-events: none; padding: 2px 8px; border-radius: 10px; background: rgba(194, 104, 61, .92); color: #fff; font-size: 11px; font-weight: 600; }
+.dbg-free-tag { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 4px); right: 6px; z-index: var(--z-debug); pointer-events: none; padding: 2px 8px; border-radius: 10px; background: rgba(194, 104, 61, .92); color: #fff; font-size: 11px; font-weight: 600; }
 
 /* PRO 彈窗（2026-10-10 優化輪 A2）：方案和按鈕放上面不用捲；安全功能分三組兩欄；功能只講一次（一張表） */
 .pm-feat { display: flex; gap: 11px; align-items: flex-start; text-align: left; margin: 0 0 14px; padding: 12px 14px; border-radius: var(--r-sm); background: var(--accent-soft); border: 1px solid var(--line-soft); }

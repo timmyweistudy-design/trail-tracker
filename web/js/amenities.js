@@ -1,9 +1,5 @@
-// 行前資訊：用 Google Places 查登山口附近的停車場、廁所、超商。
-// 結果只在記憶體快取 30 分鐘（Google 條款不允許長期儲存）。
+// 行前資訊：用 Google Places 查登山口附近的停車場、廁所、超商（底層在 places.js）。
 const Amenities = (() => {
-  const KEY = (typeof window !== "undefined" && window.PLACES_KEY) || "";
-  const ENDPOINT = "https://places.googleapis.com/v1/places:searchNearby";
-  const TTL = 30 * 60e3;   // Google Places 條款不允許長期存店名／評分：只在記憶體裡放 30 分鐘，關掉 App 就沒了
   const CKEY = "amen_";
   const ORDER = ["停車", "廁所", "超商"];   // 圖示交給畫面用 SVG（以前 emoji 在部分裝置是方框）
   // Google 回的 primaryType 是子類型（parking_lot 等），用模糊對應分類
@@ -14,32 +10,12 @@ const Amenities = (() => {
     if (/convenience/.test(ty)) return "超商";
     return null;
   }
-
-  const PLACES_MEM = window.__ttPlacesMem || (window.__ttPlacesMem = new Map());   // 三個 Google Places 模組共用
-  function cacheGet(id) {
-    const c = PLACES_MEM.get(CKEY + id); if (c && Date.now() - c.ts < TTL) return c.items;
-    return null;
-  }
-  function cacheSet(id, items) { PLACES_MEM.set(CKEY + id, { ts: Date.now(), items }); }
-
   async function nearby(trail) {
-    if (!KEY || !trail.lat) return null;
-    const cached = cacheGet(trail.id);
+    if (!Places.key() || !trail.lat) return null;
+    const cached = Places.cacheGet(CKEY + trail.id);
     if (cached) return cached;
-    if (typeof ttPlacesAllow === "function" && !ttPlacesAllow()) return null;   // 每日用量守門：超限改用快取
-    const res = await fetch(ENDPOINT, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Goog-Api-Key": KEY,
-        "X-Goog-FieldMask": "places.displayName,places.location,places.primaryType",
-      },
-      body: JSON.stringify({
-        includedTypes: ["parking", "public_bathroom", "convenience_store"],
-        maxResultCount: 20, languageCode: "zh-TW", rankPreference: "DISTANCE",
-        locationRestriction: { circle: { center: { latitude: trail.lat, longitude: trail.lon }, radius: 3000 } },
-      }),
-    });
+    const res = await Places.search(trail, { types: ["parking", "public_bathroom", "convenience_store"], radius: 3000, fields: "places.displayName,places.location,places.primaryType" });
+    if (!res) return null;
     if (!res.ok) throw new Error("amen " + res.status);
     const places = (await res.json()).places || [];
     // 每類取最近一個（已依距離排序）
@@ -47,15 +23,11 @@ const Amenities = (() => {
     for (const p of places) {
       const cat = categoryOf(p.primaryType);
       if (!cat || best[cat] || !p.location) continue;
-      best[cat] = {
-        label: cat, name: p.displayName?.text || "",
-        dist: haversine({ lat: trail.lat, lon: trail.lon }, { lat: p.location.latitude, lon: p.location.longitude }),
-      };
+      best[cat] = { label: cat, name: p.displayName?.text || "", dist: Places.distTo(trail, p) };
     }
     const items = ORDER.filter(c => best[c]).map(c => best[c]);
-    cacheSet(trail.id, items);
+    Places.cacheSet(CKEY + trail.id, items);
     return items;
   }
-
   return { nearby };
 })();

@@ -87,7 +87,7 @@ body:has(#view-record[data-state="idle"]) .map-fs .fs-hud { display: none; }
 /* —— 深色＝夜間友善（合併原本的「夜間紅光」）：地圖壓暗反相、畫面加一層很淡的暖橘，晚上看不刺眼 —— */
 html[data-theme="dark"] .leaflet-container:not(.sat-on) .leaflet-tile-pane { filter: invert(.9) hue-rotate(180deg) brightness(.85) contrast(.92) sepia(.12); }
 html[data-theme="dark"] .leaflet-container.sat-on .leaflet-tile-pane { filter: brightness(.72) sepia(.12); }
-html[data-theme="dark"] body::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 2147483000; background: rgba(255, 150, 60, .10); mix-blend-mode: multiply; }
+html[data-theme="dark"] body::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: var(--z-screen-fx); background: rgba(255, 150, 60, .10); mix-blend-mode: multiply; }
 html[data-theme="dark"] .leaflet-bar a, html[data-theme="dark"] .leaflet-bar { background: #262b22 !important; color: #d8d2bf !important; border-color: #353c2e !important; }
 html[data-theme="dark"] .leaflet-control-scale-line { background: rgba(0,0,0,.5) !important; color: #d8d2bf !important; border-color: #8a8577 !important; }
 html[data-theme="dark"] .leaflet-control-attribution { background: rgba(0,0,0,.45) !important; color: #9a947f !important; }
@@ -416,7 +416,7 @@ html[data-theme="dark"] .cg-c.l4 { background: #7fcf98; border-color: #8edaa6; }
 .sb-play .ic { width: 16px; height: 16px; }
 .sb-x { position: absolute; top: 6px; right: 6px; width: 30px; height: 30px; display: grid; place-items: center; border: 0; background: transparent; color: rgba(255,255,255,.75); border-radius: 50%; cursor: pointer; }
 .sb-x .ic { width: 16px; height: 16px; }
-.ys { position: fixed; inset: 0; z-index: 120; background: #050806; display: grid; place-items: center; animation: tt-fade var(--dur-m, .28s) var(--ease-out, ease) both; }
+.ys { position: fixed; inset: 0; z-index: var(--z-sheet); background: #050806; display: grid; place-items: center; animation: tt-fade var(--dur-m, .28s) var(--ease-out, ease) both; }
 .ys-frame { --ys-a: #1f4730; --ys-b: #0f2418; --ys-c: #e0b15a; position: relative; width: 100vw; height: 100dvh;   /* 手機鋪滿整個螢幕（以前硬鎖 9:16，長螢幕上下各一大塊黑邊）；分享出去的圖照樣是 1080×1920 */ overflow: hidden; background: linear-gradient(165deg, var(--ys-a), var(--ys-b)); color: #fff; transition: background var(--dur-l, var(--dur-l)) var(--ease-out, var(--ease-out)); user-select: none; -webkit-user-select: none; touch-action: none; }
 @media (min-width: 560px) { .ys-frame { border-radius: 22px; height: min(92dvh, calc(100vw * 16 / 9)); width: min(100vw, calc(92dvh * 9 / 16)); } }
 .ys-frame::before { content: ""; position: absolute; inset: 0; background: repeating-radial-gradient(ellipse at 30% 110%, transparent 0 46px, rgba(255,255,255,.035) 47px 49px); pointer-events: none; }
@@ -468,7 +468,7 @@ html[data-theme="dark"] .cg-c.l4 { background: #7fcf98; border-color: #8edaa6; }
 #view-me .set-body .sim-toggle { justify-content: flex-start; white-space: normal; text-align: left; }   /* 設定區開關跟其他設定一樣靠左 */
 .yr-sub { grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); }
 /* iPhone 狀態列是白字（Info.plist：LightContent）：淺色底的全螢幕層頂端補一條深綠，時間和電量才看得到 */
-.foot-modal::before, .lang-gate::before, .ach-modal::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: var(--safe-t); background: #16301f; z-index: 2147483000; pointer-events: none; }
+.foot-modal::before, .lang-gate::before, .ach-modal::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: var(--safe-t); background: #16301f; z-index: var(--z-screen-fx); pointer-events: none; }
 /* 鍵盤跳出來時（--kb 由 js/motion.js 量）：貼底面板整個往上推、彈窗底下墊高，輸入框不會被蓋住 */
 .composer-mask, .pv-mask { padding-bottom: var(--kb, 0px); }
 .pet-modal, .input-modal, .ttdlg-ov { padding-bottom: calc(var(--safe-b) + 12px + var(--kb, 0px)); }
@@ -611,7 +611,7 @@ html[data-theme="dark"] .btn.auth-apple { background: #fff; color: #000; border-
 .rules-link { color: var(--accent); font-weight: 600; font-size: calc(13.5px * var(--fs, 1)); }
 
 /* App 內看使用條款／隱私權政策（js/moderation.js ttOpenDoc）：要疊在確認框上面 */
-.doc-ov { position: fixed; inset: 0; z-index: 9600; background: rgba(22,30,20,.55); display: flex; align-items: flex-end; justify-content: center; padding-top: calc(var(--safe-t) + 12px); }
+.doc-ov { position: fixed; inset: 0; z-index: var(--z-doc); background: rgba(22,30,20,.55); display: flex; align-items: flex-end; justify-content: center; padding-top: calc(var(--safe-t) + 12px); }
 .doc-card { background: var(--bg); width: 100%; max-width: 640px; height: 100%; border-radius: 22px 22px 0 0; display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--sh-lg); }
 .doc-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px 10px 18px; border-bottom: 1px solid var(--line-soft); }
 .doc-head b { font-size: calc(16px * var(--fs, 1)); }
