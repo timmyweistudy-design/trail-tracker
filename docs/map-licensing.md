@@ -25,11 +25,12 @@ App 收訂閱費＝商用，底圖圖磚要用「可商用授權」的來源。�
 ## 其他來源（現況／待辦）
 | 來源 | 用途 | 授權狀態 |
 |---|---|---|
-| NLSC 國土測繪中心 | 台灣電子地圖 | 政府開放資料，標註即可（已標「© 內政部國土測繪中心」）|
+| NLSC 國土測繪中心 | 台灣電子地圖 | ⚠️ **2026-10-10 查證：要再確認**。WMTS 服務裡 NLSC 把「OpenData」版分開列：`EMAP5_OPENDATA`（套疊等高線）、`EMAP6_OPENDATA`（不含等高線），標明「最大比例尺一萬八千分之一」——實測 OpenData 版**只到 zoom 15**，16 以上是放大 15 的圖。App 用的是**沒標 OpenData 的 `EMAP`、到 zoom 19**（16 以上有真的細節）＝很可能不在開放資料授權範圍內。官方條款網頁抓不到原文。做法二選一：①改用 `EMAP5_OPENDATA`（還多了等高線）、`maxNativeZoom: 15`（16 以上會糊）；②寫信問測繪中心（測繪信箱）`EMAP` 高縮放層級商用要不要申請。已標「© 內政部國土測繪中心」|
 | 林業署 | 步道資料/分級 | 政府開放資料，已標註 |
 | OpenStreetMap | 步道幾何 | ODbL，商用可、需標註（已標「© OpenStreetMap」）|
 | AWS/Mapzen terrarium | 高程/3D 地形、步道累積爬升與海拔剖面（scripts/compute-gain.mjs 預先算） | 台灣一帶的來源是 SRTM、GMTED2010（USGS，公有領域）與 ETOPO1（NOAA），規定要標註：3D 地圖與步道頁頁尾都標「SRTM & GMTED2010 courtesy of the U.S. Geological Survey · ETOPO1 courtesy NOAA NCEI」（2026-10-03 補齊）|
 | Google Places | 景點/美食/停車廁所 | 已標「Google 地圖」；結果只在記憶體放 30 分鐘（條款不准長期存）。金鑰已設限（2026-10-03）：只准 Places API (New)、只准 `https://trail-tracker-0ma5.onrender.com/*` 和 `capacitor://localhost/*`、SearchNearby 用量上限、預算警示。**換網域或加 Android 版要記得把新網址加進金鑰限制** |
+| Freesound（夥伴音效） | 22 段錄音（`web/sounds/pet/`） | **CC0（公眾領域）**，2026-10-10 逐一到原始頁面確認 22/22 都是 CC0；可商用、不用標示（`CREDITS.md` 還是記了來源）。用的是預覽檔（CC0 不限制格式）；Freesound 的「網站不得商用」指的是把網站本身拿來做生意，不是 CC0 素材 |
 | Wikimedia Commons | 步道照片 | CC 授權，每張已顯示作者＋授權 |
 | iNaturalist | 生態目擊 | 只抓 CC0／CC BY／CC BY-SA 的照片（不可商用 NC、保留所有權利的不顯示），每張標拍攝者＋授權（2026-10-03 改）|
 | Open-Meteo | 天氣、海拔 | ⚠️ **免費版只限非商用**。收訂閱前要買方案（US$29/月起），金鑰填 `config.js` 的 `OPEN_METEO_KEY` 就會改走商用端點。已標「Open-Meteo」|

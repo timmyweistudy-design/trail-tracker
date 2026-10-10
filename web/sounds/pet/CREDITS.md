@@ -5,11 +5,11 @@
 
 | 檔名 | 原始名稱 | 作者 | 網址 |
 |---|---|---|---|
-| purr.mp3 | purring cat.wav | skyn production | https://freesound.org/people/skyn production/sounds/86756/ |
+| purr.mp3 | purring cat.wav | skyn production | https://freesound.org/people/skyn%20production/sounds/86756/ |
 | crunch.mp3 | Bite (Apple) | wadaltmon | https://freesound.org/people/wadaltmon/sounds/275015/ |
 | crunch2.mp3 | Crunch | LilMati | https://freesound.org/people/LilMati/sounds/348112/ |
 | nom.mp3 | nom ! | chestnutjam | https://freesound.org/people/chestnutjam/sounds/399289/ |
-| munch.mp3 | Munching Sound | Roland Katarn | https://freesound.org/people/Roland Katarn/sounds/180158/ |
+| munch.mp3 | Munching Sound | Roland Katarn | https://freesound.org/people/Roland%20Katarn/sounds/180158/ |
 | slurp.mp3 | short_slurp.wav | Stroopwafels112 | https://freesound.org/people/Stroopwafels112/sounds/560597/ |
 | flutter.mp3 | Light Wing Flap | TurboFool | https://freesound.org/people/TurboFool/sounds/561009/ |
 | wingbeat.mp3 | wings.wav | Godowan | https://freesound.org/people/Godowan/sounds/240476/ |
