@@ -6,7 +6,7 @@
 | A1 | 兩批共刪 151 條確定沒用到的 CSS 規則（每個 class 都用 git grep 全 repo 確認、排除 `k-${kind}` 這類組字串的）；CSS 總量 496.7 → **492.1 KB**（這輪新增的版面規則也算在內） |
 | A2 | 8 個長函式全部拆完：`renderPet` 182→96 行、`onboarding` 296→125、`openTrackReview` 166→71（收穫／第幾次走／跟預估比／動作鈕／地圖／分享各自一支）、`openAnalytics` 140→63（PRO 區塊拆成 `anaProHtml`，免費用戶不再白算）、`bindDetail`／`_achInitClimb`／`toggleDebugPanel`／`drawRecLine` 都降到 120 行以下 |
 | A3 | `scripts/check.js` 加 K 檢查：兩支檔案有同名的頂層宣告就擋下來 |
-| A4 | `!important` 59 → **11**：第一批拿掉 22 個只是在打權重戰的（Leaflet 深色控制鈕、開關尺寸、地圖數量框、發文鈕、徽章底色……），改成把選擇器寫具體；每一個都在測試裡放同樣的 class 量 computed style 確認沒變。第二批：假全螢幕地圖改用 `:is(#id).map-fs` 贏權重、PRO 標籤與社群隱藏本來就贏、夥伴眼睛心情把情境寫出來、8 條「減少動態」重複規則刪掉（全域那一條就關掉全站動畫）。剩下 11 個都是非用不可的：要贏過任何東西的全域覆寫（減少動態、`[hidden]`、離場動畫、凍結整棵子樹），加上假全螢幕地圖的 position（Leaflet 把 position: relative 寫在行內，只有 !important 贏得過——拿掉過一次，wave1 測試抓到全螢幕地圖停在原位）。`check.js` 加 L 檢查：超過 11 個就擋 |
+| A4 | `!important` 59 → **11**：第一批拿掉 22 個只是在打權重戰的（Leaflet 深色控制鈕、開關尺寸、地圖數量框、發文鈕、徽章底色……），改成把選擇器寫具體；每一個都在測試裡放同樣的 class 量 computed style 確認沒變。第二批：假全螢幕地圖改用 `:is(#id).map-fs` 贏權重、PRO 標籤與社群隱藏本來就贏、夥伴眼睛心情把情境寫出來、8 條「減少動態」重複規則刪掉（全域那一條就關掉全站動畫）。剩下 11 個都是非用不可的：要贏過任何東西的全域覆寫（減少動態、`[hidden]`、離場動畫、凍結整棵子樹），加上假全螢幕地圖的 position（Leaflet 把 position: relative 寫在行內，只有 !important 贏得過——拿掉過一次，wave1 測試抓到全螢幕地圖停在原位）。10/11 逐條驗證剩下的 11 個：在真的頁面上把 `!important` 拿掉、量實際元素的 computed style——凍結子樹的 4 條（`.ps-off *`、`.no-tr *`、`.hat-prev *`、`.pj-stamp *`）和離場動畫 2 條拿掉後都會變（它們要蓋過子元素上更具體的規則，選擇器權重做不到通用）；減少動態、`[hidden]`、行內 position 本來就只能靠 !important。`check.js` 加 L 檢查：超過 11 個就擋 |
 | A5 | **1,713 篇步道介紹全部有英文**：林業署長文 161 篇人工翻譯（`data/guides_en.json`），社群步道的固定句型（「此為社群收錄」「路面以○○為主」「步道系統：地方級」）用規則換。非中文介面才載入（80 KB）、可按「顯示原文」切回；其他語言另外還能用翻譯年糕。產生器 `scripts/build-guides-en.py` |
 | A6 | 「已備份到雲端」一分鐘最多跳一次 |
 | A7 | 啟動效能預算測試（6 秒內就緒；本機約 1.3 秒） |
