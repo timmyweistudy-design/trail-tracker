@@ -312,7 +312,7 @@ const Guardian = (() => {
     const ago = p.last_at && typeof ttAgo === "function" ? ttAgo(Math.max(1, Math.round((Date.now() - new Date(p.last_at)) / 1000))) : "";
     return `<div class="gp-card st-${p.status}">
       <div class="gp-top"><span class="gp-av">${p.owner_avatar ? `<img src="${escHtml(p.owner_avatar)}" alt="">` : escHtml((p.owner_name || "?").slice(0, 1))}</span>
-        <div class="gp-who"><b>${escHtml(p.owner_name)}</b><small>${p.trail_name ? escHtml(T(p.trail_name)) : T("自由路線")}</small></div>
+        <div class="gp-who"><b data-raw>${escHtml(p.owner_name)}</b><small>${p.trail_name ? escHtml(T(p.trail_name)) : T("自由路線")}</small></div>
         <span class="gp-st">${T(STATUS[p.status] || p.status)}</span></div>
       <div class="gp-row">${ic("clock")} <span>${T("預計下山")}</span> <b>${whenText(new Date(p.expected_at).getTime())}</b></div>
       ${pos ? `<div class="gp-row">${ic("pin")} <span>${T("最後位置")}</span> <b>${pos}</b>${ago ? `<small>${ago}</small>` : ""}</div>` : `<div class="gp-row gp-none">${ic("pin")} <span>${T("還沒有位置回報")}</span></div>`}
@@ -389,7 +389,7 @@ const Guardian = (() => {
     ov.innerHTML = `<div class="pet-modal-card gd-card plan-doc"><button class="sheet-close" id="pdX" aria-label="${T("關閉")}">${ic("x")}</button>
       <h2>${ic("book")} ${T("登山計畫書")}</h2>
       <p class="gd-intro">${T("出發前傳給家人或留守人。空白的地方傳之前自己補上。")}</p>
-      <dl class="pd-rows">${rows.map(([k, v]) => `<dt>${T(k)}</dt><dd${k === "步道" ? ' translate="no"' : ""}>${escHtml(String(v))}</dd>`).join("")}</dl>
+      <dl class="pd-rows">${rows.map(([k, v]) => `<dt>${T(k)}</dt><dd${k === "步道" ? ' translate="no"' : k === "留守人" ? " data-raw" : ""}>${escHtml(String(v))}</dd>`).join("")}</dl>
       <div class="gd-h">${T("裝備")}</div>
       <div class="pd-gear">${gear.map(g => `<span>${ic("check")}${T(g)}</span>`).join("")}</div>
       <p class="pd-sos">${T("超過預計下山時間 1 小時還聯絡不上：先打給同行者，再撥 112 或 119，說出步道名稱和登山口位置。")}</p>

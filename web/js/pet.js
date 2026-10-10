@@ -805,7 +805,14 @@ function questReward(streak) {
   return { total: 5 + stBonus + mile, mile, stBonus };
 }
 // 夥伴頁的頁內跳轉：目標區塊是空的或藏起來（例如自用模式沒有好友）就不顯示那顆
-function petJumpSync() { document.querySelectorAll("#view-pet .pet-jump [data-jump]").forEach(b => { const t = document.getElementById(b.dataset.jump); b.hidden = !t || !t.innerHTML.trim() || !t.getClientRects().length || getComputedStyle(t).display === "none"; }); }
+function petJumpSync() { document.querySelectorAll("#view-pet .pet-jump [data-jump]").forEach(b => { const t = document.getElementById(b.dataset.jump); b.hidden = !t || !t.innerHTML.trim() || !t.getClientRects().length || getComputedStyle(t).display === "none"; });  petJumpFade(); }
+// 跳轉列放不下時右邊淡出（還有東西可以滑），滑到底就不淡（優化輪 4 修正：英文最後一顆被切一半看起來像壞掉）
+function petJumpFade() {
+  const nav = document.querySelector("#view-pet .pet-jump"); if (!nav) return;
+  const set = () => nav.classList.toggle("more", nav.scrollWidth - nav.clientWidth - nav.scrollLeft > 4);
+  if (!nav._fade) { nav._fade = 1; nav.addEventListener("scroll", set, { passive: true }); window.addEventListener("resize", set); }
+  set();
+}
 function openPetHelp() {
   // 2026-10-07 寵物新一輪 #8：親密的每一種來源列出來，旁邊是今天的進度（參考寶可夢 GO 夥伴：每種有上限、一看就知道還能做什麼）
   setTimeout(() => {   // 對話框開好之後才綁開關（#23）
@@ -1005,9 +1012,11 @@ function petCountUp(el, to, digits) {
 }
 // 夥伴說的話、飄起來的數字（2026-10-07：寵物頁的回饋都在卡片裡——以前用畫面底部的提示框，在 iPhone 上會偏到右下、還壓在卡片下緣）
 let _sayT = 0;
-function petSay(text, ms) {
+// raw：句子裡的使用者資料（好友名字、夥伴名字）包成 data-raw——不給 DOM 翻譯器動，英文掃描也知道那是資料不是漏翻
+function petSay(text, ms, raw) {
   const b = document.querySelector(".pet-card .pet-bubble"); if (!b) return;
-  clearTimeout(_sayT); b.classList.add("say"); petSwapText(b, escHtml(text));
+  let html = escHtml(text); (raw || []).filter(Boolean).forEach(r => { const e = escHtml(r); html = html.replace(e, `<span data-raw>${e}</span>`); });
+  clearTimeout(_sayT); b.classList.add("say"); petSwapText(b, html);
   // 讀屏（2026-10-08 修正案 原31）：只播「操作的結果」（petSay＝餵、抱、摸、禮物、好友果實、被擋下來的原因），不播待機動作和心情句子；
   // 先清空再寫，同一句話連說兩次也會再播
   const live = document.getElementById("petLive"); if (live) { live.textContent = ""; setTimeout(() => { live.textContent = String(text); }, 60); }
@@ -1187,7 +1196,7 @@ function openPetDex() {
     <div class="dex-tip"><span class="inline-ic">${ic("footprints")}</span> ${tip}</div>
     <div class="dex-sec">${ttT("牠帶回來的小東西")}</div>
     <div class="gift-grid">${Object.keys(PET_GIFTS).map(k => { const o = petGiftsOwned().find(g => g.id === k); return o ? `<div class="gift-it">${petGiftIcon(k)}<span>${escHtml(ttT(PET_GIFTS[k][0]))}</span></div>` : `<div class="gift-it no"><b>?</b><span>${escHtml(ttT("還沒帶回來"))}</span></div>`; }).join("")}</div>
-    <div class="dex-sec">${ttT("近親物種")}</div><div class="dex-tones dex-species">${[["", "原本"], ["deep", "深林"], ["sea", "海風"], ["alpine", "高山"]].map(([k, l]) => { const ok = petToneUnlocked()[k], nm = ttT(petStageInfo(reached, k).n); return `<button class="dex-sp${petTone() === k ? " on" : ""}" data-tone="${k}"${ok ? "" : " disabled"} aria-label="${escHtml(ttT(l) + " " + nm)}"><span class="dex-sp-art">${typeof PET_ART !== "undefined" ? PET_ART.as(k, () => PET_ART.svg(reached)) : ""}</span><span class="dex-sp-n">${ok ? "" : `<svg class="ic tone-lock" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`}${escHtml(ttT(l))}</span><span class="dex-sp-s">${escHtml(nm)}</span></button>`; }).join("")}</div>${(() => { const u = petToneUnlocked(), need = [["deep", "深林", "走 3 趟森林步道解鎖"], ["sea", "海風", "走 3 趟海景或湖泊步道解鎖"], ["alpine", "高山", "走 3 趟海拔 1500 公尺以上解鎖"]].filter(([k]) => !u[k]); const pr = petToneProgress(); return `<div class="dex-tone-hint"><span class="dex-tone-what">${escHtml(ttT("常走同一類步道，夥伴會長成那裡的近親物種：只換樣子和名字，不影響成長；好友也看得到"))}</span>${need.map(([k, l, h]) => `<span><b>${escHtml(ttT(l))}</b> ${escHtml(ttT(h))}（${Math.min(3, pr[k])}/3）</span>`).join("")}</div>`; })()}
+    <div class="dex-sec dex-sec-c">${ttT("近親物種")}</div><div class="dex-tones dex-species">${[["", "原本"], ["deep", "深林"], ["sea", "海風"], ["alpine", "高山"]].map(([k, l]) => { const ok = petToneUnlocked()[k], nm = ttT(petStageInfo(reached, k).n); return `<button class="dex-sp${petTone() === k ? " on" : ""}" data-tone="${k}"${ok ? "" : " disabled"} aria-label="${escHtml(ttT(l) + " " + nm)}"><span class="dex-sp-art">${typeof PET_ART !== "undefined" ? PET_ART.as(k, () => PET_ART.svg(reached)) : ""}</span><span class="dex-sp-n">${ok ? "" : `<svg class="ic tone-lock" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`}${escHtml(ttT(l))}</span><span class="dex-sp-s">${escHtml(nm)}</span></button>`; }).join("")}</div>${(() => { const u = petToneUnlocked(), need = [["deep", "深林", "走 3 趟森林步道解鎖"], ["sea", "海風", "走 3 趟海景或湖泊步道解鎖"], ["alpine", "高山", "走 3 趟海拔 1500 公尺以上解鎖"]].filter(([k]) => !u[k]); const pr = petToneProgress(); return `<div class="dex-tone-hint"><span class="dex-tone-what">${escHtml(ttT("常走同一類步道，夥伴會長成那裡的近親物種：只換樣子和名字，不影響成長；好友也看得到"))}</span>${need.map(([k, l, h]) => `<span><b>${escHtml(ttT(l))}</b> ${escHtml(ttT(h))}（${Math.min(3, pr[k])}/3）</span>`).join("")}</div>`; })()}
     <div class="dex-sec">${ttT("夥伴日記")}</div>
     ${petDiaryMonths()}<div class="diary-list">${petDiaryHtml()}</div>
     <div class="dex-sec">${ttT(`進化圖鑑（共 ${PET_STAGES.length} 階）`)}</div>

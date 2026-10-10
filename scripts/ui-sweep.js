@@ -3,6 +3,7 @@
 //   clip：按鈕／標籤文字被截掉（scrollWidth > clientWidth 且沒有省略號）
 //   cjk：英文模式畫面上還有中文（步道名、地名、人名這類資料除外）
 //   align：置中的標題底下，靠左的次要文字比標題更往左（scripts/tests/align-rule.js）
+//   brk：英文單字被切成兩行（Unlimite／d）
 //   errors：頁面 JS 錯誤
 // 另外：測試面板每一顆按鈕各按一次，收 JS 錯誤。
 // 用法：node scripts/ui-sweep.js [zh|en] [1.2|1.65]（不帶＝四種組合）；要 LD_LIBRARY_PATH；結果 scripts/tests/out/sweep/
@@ -11,7 +12,7 @@ const MOCK = fs.readFileSync(ROOT + "/scripts/tests/soc-mock.js", "utf8"); const
 const ALIGN = require("./tests/align-rule"); const PORT = +process.env.TT_PORT || 8983;
 const DET = () => {
   const vis = el => { const s = getComputedStyle(el); return s.display !== "none" && s.visibility !== "hidden" && +s.opacity > 0.05 && el.getClientRects().length; };
-  const W = innerWidth, out = { overflow: [], clip: [], cjk: [], hscroll: [] };
+  const W = innerWidth, out = { overflow: [], clip: [], cjk: [], hscroll: [], brk: [] };
   const se = document.scrollingElement; if (se.scrollWidth > W + 1) out.hscroll.push(`page scrollWidth ${se.scrollWidth} > ${W}`);
   document.querySelectorAll(".view.active, main, .sheet.open .sheet-body, .pet-modal-card, .ttdlg").forEach(el => { if (getComputedStyle(el).overflowX !== "hidden" && el.scrollWidth > el.clientWidth + 1) {
     const base = el.scrollWidth; let who = "";   // 找出是誰撐寬的：一個個先藏起來，藏了會變窄的最深那個
@@ -31,11 +32,23 @@ const DET = () => {
     const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let n;
     while ((n = tw.nextNode())) {
       const t = n.nodeValue.trim(); if (!t || !/[一-鿿]/.test(t)) continue;
-      const el = n.parentElement; if (!el || !vis(el) || el.closest("svg,#debugPanel,.sb-card,.lang-list,.lang-gate-card,[data-raw],.trail-name,.tc-name,.fp-info b,.fc-nm,.pet-name,input,textarea,.leaflet-container,.brand,header h1,#toast,#ttTag,#ttFps,.fc-cap,.ht,.ev-title,.ev-note,.gp-av,.fv-name,.pk-tab,.gd-empty")) continue;
+      const el = n.parentElement; if (!el || !vis(el) || el.closest("svg,#debugPanel,.sb-card,.lang-list,.lang-gate-card,[data-raw],.trail-name,.tc-name,.fp-info b,.fc-nm,.pet-name,input,textarea,.leaflet-container,.brand,header h1,#toast,#ttTag,#ttFps,.fc-cap,.ht,.ev-title,.ev-note,.gp-av,.fv-name,.pk-tab,.gd-empty,#petLive")) continue;   // #petLive 是對話泡的讀屏複本（純文字，名字包不了 data-raw；泡泡本身有量）
       const r = el.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight) continue;
       out.cjk.push(`${name(el)} "${t.slice(0, 30)}"`);
     }
   }
+  // brk：英文單字被硬切成兩行（Unlimite／d）——欄位太窄又開了 overflow-wrap:anywhere／word-break 時會發生，其他偵測器都抓不到
+  { const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let n; const rg = document.createRange();
+    while ((n = tw.nextNode())) {
+      const v = n.nodeValue; if (!/[A-Za-z]{4}/.test(v)) continue;
+      const el = n.parentElement; if (!el || !vis(el) || el.closest("svg,#debugPanel,input,textarea,.leaflet-container,code,pre,[data-raw]")) continue;
+      const er = el.getBoundingClientRect(); if (er.bottom < 0 || er.top > innerHeight) continue;
+      for (const m of v.matchAll(/[A-Za-z][A-Za-z'’]{3,}/g)) {
+        rg.setStart(n, m.index); rg.setEnd(n, m.index + m[0].length);
+        const tops = new Set([...rg.getClientRects()].filter(r => r.width > 0).map(r => Math.round(r.top / 4)));
+        if (tops.size > 1) { out.brk.push(`${name(el)} "${m[0]}"`); break; }
+      }
+    } }
   for (const k in out) out[k] = [...new Set(out[k])].slice(0, 12);
   return out;
 };

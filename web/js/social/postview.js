@@ -140,7 +140,8 @@ const PostView = (() => {
       <div class="fc-cap pv-cap-tr" id="pvCapTr" hidden></div>`}` : ""}
       ${media.map(m => {
         if (m.kind === "video") return `<video class="pv-img" controls playsinline preload="metadata" poster="${esc(Media.publicUrl(m.thumb_path || ""))}" src="${esc(Media.publicUrl(m.path))}"></video>`;
-        const img = `<img class="pv-img pv-photo" loading="lazy" decoding="async" src="${esc(Media.publicUrl(m.path))}" alt="">`;
+        // 先模糊後清楚（優化輪 4 G2）：動態牆用的小縮圖當底圖，原圖載好蓋上去
+        const img = `<img class="pv-img pv-photo" loading="lazy" decoding="async" src="${esc(Media.publicUrl(m.path))}" alt=""${m.thumb_path ? ` style="background:url('${esc(Media.publicUrl(m.thumb_path).replace(/['"()]/g, c => "%" + c.charCodeAt(0).toString(16).toUpperCase()))}') center/cover"` : ""}>`;
         const meta = (m.taken_at || m.km != null)
           ? `<figcaption>${m.taken_at ? new Date(m.taken_at).toLocaleTimeString(ttLocale(), { hour: "2-digit", minute: "2-digit" }) : ""}${m.km != null ? (m.taken_at ? " · " : "") + (+m.km).toFixed(1) + " km" : ""}</figcaption>` : "";
         return meta ? `<figure class="pv-shot">${img}${meta}</figure>` : img;

@@ -56,7 +56,7 @@ const Events = (() => {
       return `<div class="ev-card" data-id="${e.id}">
         <div class="ev-when">${ic("calendar")} ${fmt(e.when_at)}</div>
         <div class="ev-title">${esc(e.title)}</div>
-        <div class="ev-meta">${ic("mountain")} <span>${esc(T(e.trail_name || "自由路線"))}</span> · <span>${T("發起人")}</span> <span>${esc(cname)}</span></div>
+        <div class="ev-meta">${ic("mountain")} <span${e.trail_name && T(e.trail_name) === e.trail_name ? " data-raw" : ""}>${esc(T(e.trail_name || "自由路線"))}</span> · <span>${T("發起人")}</span> <span data-raw>${esc(cname)}</span></div>
         ${e.note ? `<div class="ev-note">${esc(e.note)}</div>` : ""}
         <div class="ev-actions">
           <button class="btn ${going ? "ghost" : "primary"} ev-go" data-id="${e.id}" data-going="${going ? 1 : 0}">${going ? `${ic("check")} ${T("已報名")}` : T("我要參加")}</button>

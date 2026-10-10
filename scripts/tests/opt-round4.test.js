@@ -57,6 +57,25 @@ ok(/__bkToastAt/.test(src("js/me.js")), "A6: cloud-backup toast is throttled");
     const rm = document.getElementById("recMap"), box = document.createElement("div"); box.innerHTML = '<div class="leaflet-bar"><a id="d1">+</a></div><div class="leaflet-control-scale-line" id="d2">1 km</div><div class="leaflet-control-attribution" id="d3">©</div>';
     rm.appendChild(box); const c = id => getComputedStyle(document.getElementById(id)).backgroundColor; const r = [c("d1"), c("d2"), c("d3")]; box.remove(); if (was) h.dataset.theme = was; else delete h.dataset.theme; return r; });
   ok(a4d[0] === "rgb(38, 43, 34)" && a4d[1] === "rgba(0, 0, 0, 0.5)" && a4d[2] === "rgba(0, 0, 0, 0.45)", "A4: dark-theme map controls stay dark, record map scale line included " + JSON.stringify(a4d));
+  // A4 第二批：假全螢幕、PRO 標籤、社群隱藏、夥伴眼睛心情、減少動態（刪掉各處重複的 !important，靠全域那一條）
+  const a4b = await p.evaluate(() => {
+    if (typeof initRecMap === "function") initRecMap();   // 先讓 Leaflet 初始化：它會在元素上寫行內 position: relative（沒初始化的話這條測不出來）
+    const m = document.getElementById("recMap"), home = m.parentNode, mark = document.createComment("x"); home.insertBefore(mark, m); document.body.appendChild(m); m.classList.add("map-fs");
+    const c = getComputedStyle(m), fs = { pos: c.position, h: Math.round(parseFloat(c.height)), r: c.borderTopLeftRadius, z: c.zIndex };
+    m.classList.remove("map-fs"); home.insertBefore(m, mark); mark.remove();
+    const host = document.createElement("div"); host.className = "ps-box"; host.innerHTML = '<div id="petEmojiX"></div><div class="fv-critter pet-m-sleepy"><span class="pb-blink2"><svg><ellipse class="pc-eye" id="eyeF"/></svg></span></div>';
+    document.body.appendChild(host); const ef = getComputedStyle(document.getElementById("eyeF")); const eye = { tf: ef.transform, an: ef.animationName }; host.remove();
+    document.body.classList.add("is-pro"); const tag = document.createElement("span"); tag.className = "pro-tag"; tag.textContent = "PRO"; document.body.appendChild(tag); const pro = getComputedStyle(tag).display; tag.remove(); document.body.classList.remove("is-pro");
+    return { fs, eye, pro, inner: innerHeight };
+  });
+  ok(a4b.fs.pos === "fixed" && a4b.fs.h === a4b.inner && a4b.fs.r === "0px" && a4b.fs.z === "95", "A4: fullscreen record map still covers the whole screen " + JSON.stringify(a4b.fs));
+  ok(/matrix\(1, 0, 0, 0\.28/.test(a4b.eye.tf) && a4b.eye.an === "none", "A4: a sleepy friend's eyes stay half-closed even during a blink behaviour " + JSON.stringify(a4b.eye));
+  ok(a4b.pro === "none", "A4: PRO tags hide for members " + a4b.pro);
+  await p.emulateMedia({ reducedMotion: "reduce" });
+  const rm = await p.evaluate(() => { const host = document.createElement("div"); host.className = "ps-box"; host.innerHTML = '<span class="pb-hop"><i class="pc-ear" id="rmE"></i></span><i class="pet-bump" id="rmB"></i><svg><ellipse class="pc-eye" id="rmY"/></svg>'; document.body.appendChild(host);
+    const r = ["rmE", "rmB", "rmY"].map(id => getComputedStyle(document.getElementById(id)).animationName); host.remove(); return r; });
+  await p.emulateMedia({ reducedMotion: "no-preference" });
+  ok(rm.every(x => x === "none"), "A4: reduced motion still stops every pet animation with the single global rule " + JSON.stringify(rm));
   // B1：地圖標記一次整批加，全部 2,9xx 個都在（以前上限 2,500）
   await p.evaluate(() => document.querySelector('.seg-btn[data-mode="map"]').click()); await p.waitForTimeout(1500);
   const b1 = await p.evaluate(() => ({ n: browseMarkers.size, all: curList.length }));
@@ -154,6 +173,43 @@ ok(/__bkToastAt/.test(src("js/me.js")), "A6: cloud-backup toast is throttled");
   ok(/Jiaming Lake/.test(a5.g) && a5.o, `A5: English UI shows the English guide with a show-original button (${a5.g.slice(0, 40)})`);
   await p.evaluate(() => document.querySelector("#guideOrig").click());
   ok(await p.evaluate(() => /嘉明湖/.test(document.querySelector("#dvGuide").textContent)), "A5: show-original switches back to Chinese");
+  // 步道系統：專有名稱翻成英文、OSM 路網代碼（lwn／rwn／nwn）不再原樣顯示
+  const sys = await p.evaluate(async () => { const row = () => [...document.querySelectorAll(".dv-info > div")].map(d => d.textContent).find(t => /Trail system/.test(t)) || "";
+    const a = row(); const o = TRAILS.find(t => t.system === "lwn"); closeDetail(); await openDetail(o.id); await new Promise(r => setTimeout(r, 1500)); return [a, row()]; });
+  ok(/Central Mountain Range Backbone/.test(sys[0]) && /Local/.test(sys[1]) && !/lwn/.test(sys[1]), "sweep fix: trail system shows in English, OSM codes become levels " + JSON.stringify(sys));
+  // 基本資料欄位（路面、季節、位置、登山口、管理單位）在英文介面一個中文都不剩
+  const fld = await p.evaluate(async () => { await ensureDetail(); await ensureScript("js/guides-en.js"); const D = window.TRAILS_DETAIL, left = new Set();
+    for (const t of TRAILS) { const d = Object.assign({}, t, D[t.id] || {}); const f = [d.pave, d.best_season, d.position, d.admin, (d.entrances || []).map(e => e.memo).filter(m => m && !/步道範圍中心/.test(m)).slice(0, 3).join("、")];
+      for (const v of f) { if (!v) continue; const tr = fieldEn(String(v)) || String(v).split("、").map(x => ttT(x.trim())).join(", "); if (/[一-鿿]/.test(tr)) left.add(String(v)); } }
+    return [...left]; });
+  ok(fld.length === 0, "sweep fix: every trail-facts field has English " + JSON.stringify(fld.slice(0, 3)));
   await p.context().close();
+  // 最大字級（1.65）英文：天氣列圖示跟文字同一行、沒有回報時放在淺底框裡
+  p = await mk({ tt_lang: "en", tt_fontscale: "1.65" });
+  await p.evaluate(() => openDetail(TRAILS.find(t => t.source === "forestry").id)); await p.waitForTimeout(2200);
+  const big = await p.evaluate(() => { const w = document.querySelector(".dv-wx-row"); if (!w) return null; const i = w.querySelector(".wx-ic").getBoundingClientRect(), t = w.querySelector("span").getBoundingClientRect(); const e = document.querySelector(".trp-empty");
+    return { iconTop: Math.round(i.top), textTop: Math.round(t.top), textBottom: Math.round(t.bottom), empty: e ? getComputedStyle(e).backgroundColor : "none" }; });
+  ok(big && big.iconTop >= big.textTop - 4 && big.iconTop <= big.textBottom, "sweep fix: weather icon stays on the same line as its text at the largest font " + JSON.stringify(big));
+  ok(big && big.empty !== "rgba(0, 0, 0, 0)" && big.empty !== "none", "sweep fix: the no-reports note sits in a tinted box " + (big && big.empty));
+  const info = await p.evaluate(() => { const rows = [...document.querySelectorAll(".dv-info > div")]; const lefts = new Set(rows.map(r => Math.round(r.querySelector("dd").getBoundingClientRect().left)));
+    const overlap = rows.filter(r => { const a = r.querySelector("dt").getBoundingClientRect(), b = r.querySelector("dd").getBoundingClientRect(); return !(a.bottom <= b.top + 1 || a.right <= b.left + 1); }).length;
+    return { lefts: lefts.size, overlap, n: rows.length }; });
+  ok(info.n > 3 && info.lefts === 1 && info.overlap === 0, "layout: trail facts values all start at the same left edge and labels never overlap them (largest English font) " + JSON.stringify(info));
+  await p.context().close();
+  // 比較表在每種語言 × 字級都不能跑版：不出卡片、不被裁、不會有「一格只剩一兩個字寬」的直排
+  for (const [lg, fz] of [["zh", "1.2"], ["zh", "1.65"], ["en", "1.2"], ["en", "1.65"]]) {
+    p = await mk({ tt_lang: lg, tt_fontscale: fz, tt_debug_free: "1" });
+    await p.evaluate(() => Premium.openUpgrade("offline")); await p.waitForTimeout(800);
+    const bt = await p.evaluate(() => { document.querySelector(".pm-more").open = true; const card = document.querySelector(".premium-card").getBoundingClientRect();
+      const cells = [...document.querySelectorAll(".pm-compare td, .pm-compare th")].filter(c => c.offsetParent && c.textContent.trim());
+      const narrow = cells.filter(c => { const t = c.textContent.trim(), f = parseFloat(getComputedStyle(c).fontSize); return (t.length >= 3 && c.getBoundingClientRect().width < f * 3) || (t.length >= 2 && c.getBoundingClientRect().width < f * 2); });
+      return { out: cells.filter(c => c.getBoundingClientRect().right > card.right + 1).map(c => c.textContent.trim()).slice(0, 3), clip: cells.filter(c => c.scrollWidth > c.clientWidth + 1).map(c => c.textContent.trim()).slice(0, 3), narrow: narrow.map(c => c.textContent.trim().slice(0, 12)).slice(0, 3) }; });
+    ok(!bt.out.length && !bt.clip.length && !bt.narrow.length, `layout: comparison table (${lg} ${fz}) stays inside the card, nothing clipped or squeezed to a column of single letters ` + JSON.stringify(bt));
+    await p.context().close();
+  }
+  // 使用者資料（名字）標成 data-raw，不給翻譯器動、英文掃描也不會當漏翻
+  ok(/<b data-raw>\$\{escHtml\(p\.owner_name\)\}/.test(src("js/guardian.js")) && /<span data-raw>\$\{esc\(cname\)\}/.test(src("js/social/events.js")) && /petSay\(text, ms, raw\)/.test(src("js/pet.js")), "sweep fix: friend and pet names are marked as data");
+  // C4／G2：先模糊後清楚（小圖當底圖）
+  ok(/\.hero-carousel img\.bu:not\(\.loaded\) \{ filter: blur/.test(fs.readFileSync(ROOT + "/web/css/style-features.css", "utf8")) && /\/60px-/.test(src("js/detail.js")) && /thumb_path \? ` style="background:url/.test(src("js/social/postview.js")), "C4/G2: big photos show a small blurred version underneath until the sharp one loads");
   console.log("ERRS", JSON.stringify(errs)); console.log("FAILS", fails + (errs.length ? 1 : 0)); await b.close(); srv.kill(); process.exit(0);
 })();

@@ -3,12 +3,14 @@
 import json,os
 os.chdir(os.path.join(os.path.dirname(os.path.abspath(__file__)),".."))
 d=json.load(open("data/guides_en.json"))
+fields=json.load(open("data/fields_en.json"))   # 基本資料欄位（路面、管理單位、登山口說明…）的英文
 body=json.dumps(d,ensure_ascii=False,indent=0,sort_keys=True)
 js='''// 步道介紹英文版（優化輪 4 A5）：非中文介面才載入。林業署長文是預先翻好的（LONG），
 // 社群（OpenStreetMap）步道的固定句型用規則換；有任何一行換不了就回 null，畫面照舊顯示中文＋翻譯鈕。
 // 改了 trails-detail.js 的 guide 要回來補（scripts/tests/guides-en.test.js 會量涵蓋率）。
 (function () {
   const LONG = %s;
+  const FIELDS = %s;
   const SURF = { "泥土": "dirt", "未鋪面": "unpaved", "石板": "stone slabs", "水泥": "concrete", "木棧道": "boardwalk", "鋪面": "paved", "碎石": "gravel", "柏油": "asphalt", "岩石": "rock", "壓實土石": "compacted earth", "草地": "grass", "鵝卵石": "cobblestone" };
   const SYS = { "地方級": "local", "區域級": "regional", "國家級": "national" };
   const ascii = s => /^[\\x20-\\x7e]*$/.test(s);
@@ -24,6 +26,8 @@ js='''// 步道介紹英文版（優化輪 4 A5）：非中文介面才載入。
     if ((m = p.match(/^步道系統：(.+)$/))) return SYS[m[1]] ? "Trail system: " + SYS[m[1]] : (ascii(m[1]) ? "Trail system: " + m[1] : null);
     return ascii(p) ? p : null;
   }
+  // 基本資料欄位：整句對照（資料裡同一句會出現在很多條步道）
+  window.fieldEn = zh => (zh && FIELDS[String(zh).trim()]) || null;
   window.guideEn = function (id, zh) {
     if (LONG[id]) return LONG[id];
     if (!zh) return null;
@@ -36,6 +40,6 @@ js='''// 步道介紹英文版（優化輪 4 A5）：非中文介面才載入。
     return out.join("\\n").trim() || null;
   };
 })();
-''' % body
+''' % (body, json.dumps(fields,ensure_ascii=False,indent=0,sort_keys=True))
 open("web/js/guides-en.js","w").write(js)
 print(len(d), len(js.encode()))

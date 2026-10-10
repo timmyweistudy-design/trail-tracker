@@ -35,7 +35,9 @@ module.exports = () => {
     if (card && !C.querySelector("input, textarea, select")) {
       const blocks = kids.filter(k => txt(k) && /block|flex|grid/.test(getComputedStyle(k).display) && !isCtl(k));
       const centered = blocks.filter(k => getComputedStyle(k).textAlign === "center" && (textBox(k) || {}).lines);
-      const leftShort = blocks.filter(k => { const tb = textBox(k); return tb && tb.lines === 1 && /start|left/.test(getComputedStyle(k).textAlign) && (tb.r - tb.l) < k.getBoundingClientRect().width * .6; });
+      // 小節標題跟著它帶領的內容對齊：下一個區塊是靠左的格子／清單（不是置中的文字），標題靠左是對的，不算混用（2026-10-11：手冊「牠帶回來的小東西」）
+      const headsLeftBlock = k => { const n = k.nextElementSibling; if (!n || !/grid|flex|block/.test(getComputedStyle(n).display)) return false; const ns = getComputedStyle(n); return n.children.length >= 1 && ns.textAlign !== "center" && !/center/.test(ns.justifyContent); };
+      const leftShort = blocks.filter(k => { const tb = textBox(k); return tb && tb.lines === 1 && /start|left/.test(getComputedStyle(k).textAlign) && (tb.r - tb.l) < k.getBoundingClientRect().width * .6 && !headsLeftBlock(k); });
       if (centered.length && leftShort.length) out.push({ k: "mixed", t: "置中：" + txt(centered[0]).slice(0, 12) + "／靠左：" + txt(leftShort[0]).slice(0, 12), where: where(C) });
     }
   }

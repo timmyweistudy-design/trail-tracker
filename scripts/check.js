@@ -272,10 +272,10 @@ try {
   }
 }
 
-// L. !important 預算（優化輪 4 A4：59 → 37）：剩下的都是刻意的——減少動態、[hidden]、PRO／社群隱藏、離場動畫、
-//    暫停動畫（只有 !important 贏得過 keyframes）、假全螢幕地圖（要贏過各地圖的 #id 規則）。新寫的要贏就把選擇器寫具體，不要加 !important
+// L. !important 預算（優化輪 4 A4：59 → 10）：剩下的都是「要贏過任何東西」的全域覆寫——減少動態（一條關全站）、[hidden]、
+//    離場動畫、凍結整棵子樹的動畫／過渡（.pj-stamp *、.hat-prev *、.ps-box.no-tr、.ps-off）、假全螢幕地圖的 position（Leaflet 寫在行內）。新寫的要贏就把選擇器寫具體，不要加 !important
 {
-  const IMP_MAX = 37;
+  const IMP_MAX = 11;
   let n = 0;
   for (const f of fs.readdirSync(path.join(ROOT, "web/css")).filter(f => f.endsWith(".css"))) n += (fs.readFileSync(path.join(ROOT, "web/css", f), "utf8").replace(/\/\*[\s\S]*?\*\//g, "").match(/!important/g) || []).length;
   if (n > IMP_MAX) err(`[CSS] !important 有 ${n} 個，超過預算 ${IMP_MAX}——把選擇器寫具體來贏，不要加 !important`);

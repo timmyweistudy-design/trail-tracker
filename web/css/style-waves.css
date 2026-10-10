@@ -176,10 +176,8 @@ html[data-theme="dark"] .leaflet-container:not(.sat-on) .leaflet-tile-pane { fil
 .pk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
 .pk-stamp { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 4px 9px; border-radius: var(--r-sm); border: 1.5px dashed var(--line); background: var(--surface-2); color: var(--ink-faint); font: inherit; cursor: pointer; min-width: 0; }
 .pk-stamp .pk-no { font-family: var(--num); font-size: calc(11px * var(--fs, 1)); font-weight: 700; opacity: .75; }
-.pk-stamp .pk-nm { font-size: calc(13px * var(--fs, 1)); font-weight: 700; max-width: 100%; line-height: 1.2; overflow: hidden; overflow-wrap: anywhere; text-align: center; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.pk-stamp .pk-nm { font-size: calc(13px * var(--fs, 1)); font-weight: 700; max-width: 100%; line-height: 1.2; overflow: hidden; overflow-wrap: normal; word-break: normal; text-align: center; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 html:not([lang^="zh"]) .pk-stamp .pk-nm { font-size: calc(11px * var(--fs, 1)); letter-spacing: -.2px; }
-html .pk-stamp .pk-nm.long { font-size: calc(9.5px * var(--fs, 1)); letter-spacing: -.3px; }
-html .pk-stamp .pk-nm.xlong { font-size: calc(8px * var(--fs, 1)); letter-spacing: -.5px; }
 .pk-stamp .pk-el { font-family: var(--num); font-size: calc(10.5px * var(--fs, 1)); }
 .pk-stamp.got { border: 1.5px solid #b7462f; background: color-mix(in srgb, #c4452f 10%, var(--surface)); color: #9b3622; transform: rotate(-2deg); }
 .pk-stamp.got:nth-child(3n) { transform: rotate(1.5deg); }
@@ -267,7 +265,7 @@ html[data-theme="dark"] .trp-sum { background: var(--warn-bg); color: var(--warn
 .trp-flag { border: none; background: none; color: var(--ink-faint); font: inherit; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 .trp-flag:disabled { text-decoration: none; cursor: default; }
 .trp-del { border: none; background: none; color: var(--danger, #b3322a); font: inherit; font-weight: 700; padding: 0; cursor: pointer; }
-.trp-empty { font-size: calc(13px * var(--fs, 1)); color: var(--ink-faint); padding: 4px 2px 8px; }
+.trp-empty { font-size: calc(13px * var(--fs, 1)); color: var(--ink-soft); padding: 10px 12px; margin-bottom: 8px; background: var(--surface-2); border-radius: var(--r-sm); line-height: 1.5; }   /* 沒有回報：放進淺底框，不再貼著左邊懸空 */
 .trp-add { margin-top: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 .trp-for { display: flex; align-items: center; gap: 6px; color: var(--ink-soft); font-weight: 700; margin-bottom: 12px; }
 .trp-for .ic { width: 16px; height: 16px; color: var(--brand-mid); margin: 0; transform: none; }
@@ -637,6 +635,8 @@ html[data-theme="dark"] .btn.auth-apple { background: #fff; color: #000; border-
 /* 頁籤列：標題離開畫面時左邊出現步道名 */
 .detail-tabs .dt-name { display: none; }
 .detail-tabs.mini .dt-name { display: block; flex: 1.6 1 0; min-width: 0; align-self: center; font-weight: 800; font-size: calc(13.5px * var(--fs, 1)); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 6px; }
+[data-fs-big] .detail-tabs.mini .dt-name { display: none; }   /* 最大字級：捲動後的小標題只剩「J…」一個字，還把「出發前」擠成兩行；名字上方大標已經有 */
+.detail-tabs button { white-space: nowrap; }
 /* 今日狀態：路況＋今天天氣＋山頂警示，同一張卡 */
 .dv-status { margin: 14px 0 12px; border: 1px solid var(--line-soft); border-radius: var(--r-sm); overflow: hidden; background: var(--surface); }
 .dv-status .cond-banner { margin: 0; border: 0; border-radius: 0; }
@@ -731,9 +731,14 @@ html[data-theme="dark"] .btn.auth-apple { background: #fff; color: #000; border-
 .dv-act span { overflow-wrap: normal; word-break: keep-all; hyphens: auto; }
 .tabpane .profile-stat { grid-template-columns: repeat(auto-fit, minmax(calc(120px * var(--fs, 1)), 1fr)); }
 .tabpane .profile-stat span { white-space: normal; display: flex; justify-content: space-between; gap: 6px; }
-.dv-info > div { grid-template-columns: fit-content(42%) 1fr; }
-.dv-info dt { min-width: 4.5em; overflow-wrap: anywhere; }
-.dv-wx-row { flex-wrap: wrap; }
+.dv-info > div { grid-template-columns: 4.6em 1fr; }   /* 每一列標籤欄同寬（以前 fit-content 讓每列不一樣寬，值的左邊參差） */
+.dv-info dt, .dv-info dd { line-height: 1.45; }   /* 行高拉開：多行的值以前擠成一團 */
+.dv-info dt { overflow-wrap: normal; }
+.dv-info dd { overflow-wrap: break-word; }
+html:not([lang^="zh"]):not([lang="cn"]) .dv-info > div { grid-template-columns: 6.6em 1fr; }   /* 英文標籤比較長（Getting there、Official page） */
+html[data-fs-big] .dv-info > div, html[data-fs-big]:not([lang^="zh"]):not([lang="cn"]) .dv-info > div { grid-template-columns: 1fr; gap: 2px; }   /* 最大字級：標籤在上、值在下，值才有整行寬 */
+.dv-wx-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; }   /* 圖示｜文字｜按鈕：以前 flex 換行，大字時圖示自己一行、文字和按鈕掉到下面 */
+[data-fs-big] .dv-wx-row .link-btn { grid-column: 2; justify-self: start; }   /* 大字放不下時按鈕換到文字下面，跟文字對齊 */
 .dv-wx-row .link-btn { background: transparent; color: var(--brand); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 3px 10px; }
 html[data-theme="dark"] .dv-wx-row .link-btn { color: var(--ok-ic); }
 .dv-terr { font-size: .9em; opacity: .8; }
@@ -803,10 +808,11 @@ html[data-theme="dark"] .trk-weight .link-btn, html[data-theme="dark"] .trk-link
 /* 夥伴大字：成就步道標題讓開右上角兩顆鈕（以前英文標題壓到清單鈕和關閉鈕）；裝扮選單「每月挑戰」只留旗子圖示（點了會跳說明） */
 .ach-modal-h { padding: 0 96px; min-width: 0; justify-content: center; text-align: center; }   /* 標題置中：左右各留 96px 給右上兩顆鈕（細節輪 A4） */
 .ach-rankrow { justify-content: center; }
-.ach-modal-h > span, .ach-modal-h { overflow-wrap: anywhere; }
+.ach-modal-h > span, .ach-modal-h { overflow-wrap: break-word; }
+html:not([lang^="zh"]):not([lang="cn"]) .ach-modal-h { font-size: calc(17px * min(var(--fs, 1), 1.12)); line-height: 1.2; }   /* 英文標題（Achievement trail）在左右各留 96px 的中間放得下，不再切成 Achieveme／nt
 [data-fs-big] .ach-modal-h { font-size: calc(19px * min(var(--fs, 1), 1.25)); line-height: 1.2; }
 
-[data-fs-big] .hat-grid .hat-lbl { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.15; font-size: calc(12px * min(var(--fs, 1), 1.3)); overflow-wrap: anywhere; }
+[data-fs-big] .hat-grid .hat-lbl { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.15; font-size: calc(11.5px * min(var(--fs, 1), 1.3)); overflow-wrap: break-word; }   /* 長字（bandana）在 71px 格子裡放得下就不切 */
 
 /* 語言選單：說明 AI 翻譯 */
 .lang-ai-note { font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-faint); line-height: 1.5; margin-top: 8px; text-align: center; }
@@ -816,6 +822,9 @@ html[data-theme="dark"] .trk-weight .link-btn, html[data-theme="dark"] .trk-link
 .plan-doc .pd-rows dt { color: var(--ink-faint); font-weight: 600; white-space: nowrap; }
 .plan-doc .pd-rows dd { margin: 0; color: var(--ink); font-weight: 600; overflow-wrap: anywhere; }
 .plan-doc .pd-gear { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px; }
+.plan-doc .gd-h { text-align: center; }   /* 標題、說明置中，「裝備」小節標題跟著置中（置中偵測 mixed） */
+.plan-doc .pd-gear { justify-content: center; }
+.plan-doc .pd-links { text-align: center; }
 .plan-doc .pd-gear span { display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 999px; background: var(--surface-2); font-size: calc(12.5px * var(--fs, 1)); color: var(--ink-soft); }
 .plan-doc .pd-gear .ic { width: 13px; height: 13px; margin: 0; color: var(--brand); }
 .plan-doc .pd-sos { font-size: calc(13px * var(--fs, 1)); line-height: 1.6; color: var(--ink-soft); background: var(--surface-2); border-radius: var(--r-sm); padding: 9px 11px; margin: 0 0 10px; }
@@ -844,6 +853,8 @@ html[data-theme="dark"] .trk-weight .link-btn, html[data-theme="dark"] .trk-link
 .dv-acts { display: flex; gap: 6px; }
 .dv-acts > .dv-act { flex: 1 1 0; min-width: 0; }
 .dv-acts > .dv-act[hidden] { display: none; }
+[data-fs-big] .dv-acts { flex-wrap: wrap; }   /* 最大字級：五顆擠一排字會疊在一起（Navigate 壓到 Share），改成三＋二兩排 */
+[data-fs-big] .dv-acts > .dv-act { flex: 1 1 30%; }
 /* 記錄大字模式（優化輪 4 D2）：只在記錄中顯示切換鈕；開了之後只留距離、時間、累積爬升 */
 .rec-bigtog { display: none; margin: 8px auto 0; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); border-radius: var(--r-pill); padding: 5px 14px; font-size: calc(12.5px * var(--fs, 1)); font-weight: 700; cursor: pointer; }
 #view-record:not([data-state="idle"]) .rec-bigtog { display: block; }

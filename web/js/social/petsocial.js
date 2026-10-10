@@ -105,7 +105,7 @@ const Pets = (() => {
       const ok = await PetStage.guest({ svg: petSvg(p, lvl - 1), stay: 3600 });
       if (ok) { localStorage.setItem("tt_pet_guest_day", day); localStorage.setItem("tt_pet_guest_who", JSON.stringify({ id: p.id, day })); }   // 記住是誰來過（回訪用）
     }, 2500);
-    setTimeout(() => { if (document.body.dataset.view === "pet" && typeof petSay === "function" && document.querySelector(".ps-guest")) petSay(T("{who} 的 {pet} 來串門子了！").replace("{who}", who).replace("{pet}", nm), 3200); }, 4300);
+    setTimeout(() => { if (document.body.dataset.view === "pet" && typeof petSay === "function" && document.querySelector(".ps-guest")) petSay(T("{who} 的 {pet} 來串門子了！").replace("{who}", who).replace("{pet}", nm), 3200, [who, nm]); }, 4300);
   }
   async function giftClick(b, giftLbl) {
     if (b._busy || b.disabled) return;   // 鎖要在第一個 await 之前上，連點不會送兩次

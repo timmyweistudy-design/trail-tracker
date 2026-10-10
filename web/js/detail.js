@@ -92,18 +92,22 @@ function detailGuideHtml(t) {
     <div class="guide dv-guide${g.length > 180 ? " clamp" : ""}" id="dvGuide"${en ? ' lang="en"' : ""}>${escHtml(g).replace(/\n/g, "<br>")}</div>
     ${g.length > 180 ? `<button class="link-btn dv-more" id="dvGuideMore">${ttT("展開全文")}</button>` : ""}${trRow}`;
 }
+// OSM 的路網代碼（lwn／rwn／nwn／lcn）以前原樣顯示成「步道系統：lwn」
+const OSM_NET = { lwn: "地方級", rwn: "區域級", nwn: "國家級", lcn: "地方自行車路網" };
 // 基本資料：一列一項（標籤｜內容），沒有的不列
 function detailInfoHtml(t) {
   const rows = [];
   const tr = t.transport || {};
-  if (t.pave) rows.push(["路面", escHtml(t.pave)]);
-  if (t.best_season) rows.push(["最佳季節", escHtml(t.best_season)]);
+  // 非中文介面：資料欄位先找預先翻好的英文（js/guides-en.js 的 fieldEn），沒有才交給逐詞翻譯
+  const fe = v => (typeof I18n !== "undefined" && !/^(zh|cn)$/.test(I18n.lang()) && typeof fieldEn === "function" && fieldEn(v)) || v;
+  if (t.pave) rows.push(["路面", escHtml(fe(t.pave))]);
+  if (t.best_season) rows.push(["最佳季節", escHtml(fe(t.best_season))]);
   if (t.source === "forestry" || tr.car || tr.m_bus || tr.l_bus) rows.push(["交通", [tr.car ? ttT("可開車") : ttT("不能開車到"), (tr.m_bus || tr.l_bus) ? ttT("有公車") : ttT("沒有公車")].join("・")]);
-  if (t.position) rows.push(["位置", escHtml(t.position)]);
+  if (t.position) rows.push(["位置", escHtml(fe(t.position))]);
   const ent = (t.entrances || []).map(e => e.memo).filter(m => m && !/步道範圍中心/.test(m));
-  if (ent.length) rows.push(["登山口", escHtml(ent.slice(0, 3).join("、"))]);
-  if (t.system) rows.push(["步道系統", escHtml(t.system)]);
-  if (t.admin) rows.push(["管理單位", escHtml(t.admin)]);
+  if (ent.length) rows.push(["登山口", escHtml(fe(ent.slice(0, 3).join("、")))]);
+  if (t.system) rows.push(["步道系統", escHtml(ttT(OSM_NET[t.system] || t.system))]);
+  if (t.admin) rows.push(["管理單位", escHtml(fe(t.admin))]);
   if (t.guide && guideIsNote(t) && !/OpenStreetMap/.test(t.guide)) rows.push(["備註", escHtml(guideEnOf(t) || String(t.guide).trim())]);   // 「此為社群（OpenStreetMap）收錄」頁尾已經寫了
   if (t.url && /^https:\/\//.test(t.url)) rows.push(["官方頁面", `<a href="${escHtml(t.url)}" target="_blank" rel="noopener">${ttT(t.source === "forestry" ? "台灣山林悠遊網" : "相關網頁")} ›</a>`]);
   if (!rows.length) return "";
@@ -506,7 +510,9 @@ async function loadPhoto(t) {
     const urls = items.map(it => it.url);
     const car = document.createElement("div");
     car.className = "hero-carousel";
-    car.innerHTML = items.map(it => `<img alt="${escHtml(t.name)}" src="${escHtml(it.url)}" loading="lazy" decoding="async">`).join("")
+    // 先模糊後清楚（優化輪 4 C4）：Wikimedia 的 60px 縮圖當底圖，拉大就是一張模糊的預覽，清楚的載好蓋上去
+    const tiny = u => /\/\d+px-/.test(u) ? u.replace(/\/\d+px-/, "/60px-").replace(/['"()]/g, c => "%" + c.charCodeAt(0).toString(16).toUpperCase()) : "";
+    car.innerHTML = items.map(it => `<img alt="${escHtml(t.name)}" src="${escHtml(it.url)}" loading="lazy" decoding="async"${tiny(it.url) ? ` class="bu" style="background:url('${escHtml(tiny(it.url))}') center/cover"` : ""}>`).join("")
       + (items.length > 1 ? `<div class="hero-dots">${items.map((_, i) => `<span class="${i ? "" : "on"}"></span>`).join("")}</div>` : "");
     hero.insertBefore(car, hero.firstChild);
     // CC 授權要求標作者＋授權：隨輪播顯示當張照片的 credit

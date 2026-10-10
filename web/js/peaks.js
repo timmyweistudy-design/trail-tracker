@@ -80,7 +80,15 @@ const Peaks = (() => {
   }
   // 外文介面的拼音山名常是一長串（Xiuguluanshan），格子放不下會從字中間斷開 → 字縮小一點
   // 名字是介面翻譯器事後換上的，所以看「現在顯示的字」來決定，字一換就重算
-  function fitNames(root) { root.querySelectorAll(".pk-nm").forEach(el => { const m = Math.max(...el.textContent.split(/\s+/).map(w => w.length)); el.classList.toggle("long", m > 11); el.classList.toggle("xlong", m > 14); }); }
+  // 名字太長就縮字（優化輪 4 修正）：以前數字母決定 long／xlong，沒算字級和格子寬，最大字級時「Xiuguluanshan」被切成 Xiuguluans／han；
+  // 現在不准拆字，實際量：最長那個字放不下就一次縮 0.5px，最小 7px
+  function fitNames(root) { root.querySelectorAll(".pk-nm").forEach(el => {
+    el.style.fontSize = ""; if (!el.clientWidth) return;
+    // 拼音山名是一整個長字（Dongxiaonanshan）：在 shan／feng 前面允許換行，先換行、真的放不下才縮字
+    if (!el.dataset.wb) { el.dataset.wb = 1; el.innerHTML = escHtml(el.textContent).replace(/([A-Za-z]{4,})(shan|feng|ling)\b/g, "$1<wbr>$2"); }
+    let fs = parseFloat(getComputedStyle(el).fontSize);
+    while (el.scrollWidth > el.clientWidth + 1 && fs > 7) { fs -= .5; el.style.fontSize = fs + "px"; }
+  }); }
   function detail(ov, pk) {
     const g = got(), st = g[cur + pk[0]], nt = nearTrails(pk);
     const box = ov.querySelector(".pk-detail");
