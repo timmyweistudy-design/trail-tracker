@@ -684,8 +684,7 @@ async function loadFood(t) {
   try {
     const items = await Food.nearby(t);
     if (_detailTrail !== t) return;                    // 已切換步道 → 舊步道的美食不可以蓋到新面板
-    _foodItems = items; _foodAll = false;
-    plotPoi(_foodItems, "#c2683d", "food");
+    _foodItems = items; _foodAll = false;   // 不標在地圖上：Google 條款規定 Places 結果只能畫在 Google 地圖上（2026-10-10 授權檢查）
     renderFood();
   } catch (err) {
     box.innerHTML = `<div class="food-empty">美食查詢失敗，請稍後再試（需網路）</div>`;
@@ -714,7 +713,7 @@ function renderFood() {
         <span class="food-dist">${(f.dist / 1000).toFixed(1)} km</span>
       </a>`).join("")}</div>
     ${all.length > items.length ? `<button class="more-btn" id="foodMore">${ttT("再看更多")}（${all.length - items.length}）</button>` : ""}
-    <div class="food-credit"><i class="lg-dot" style="background:#c2683d"></i>已標在上方地圖・星級來自 Google 地圖</div>`;
+    <div class="food-credit">${ttT("資料與星級來自 Google 地圖・點一下用 Google 地圖開啟")}<span class="g-attr" translate="no">Google Maps</span></div>`;
   box.querySelectorAll(".food-sort-btn").forEach(b =>
     b.addEventListener("click", () => { _foodSort = b.dataset.fsort; renderFood(); }));
   const fm = box.querySelector("#foodMore"); if (fm) fm.addEventListener("click", () => { _foodAll = true; renderFood(); });
@@ -729,8 +728,7 @@ async function loadAttractions(t) {
   try {
     const pois = await Attractions.nearby(t);
     if (_detailTrail !== t) return;                    // 已切換步道
-    _poiItems = pois; _poiAll = false;
-    plotPoi(_poiItems, "#3b6ea5", "poi");
+    _poiItems = pois; _poiAll = false;   // 同上，只列清單、點一下用 Google 地圖開啟
     renderAttractions();
   } catch (err) {
     box.innerHTML = `<div class="food-empty">景點查詢失敗，請稍後再試（需網路）</div>`;
@@ -758,7 +756,7 @@ function renderAttractions() {
         <div class="poi-dist">${(p.dist / 1000).toFixed(1)} km</div>
       </a>`).join("")}</div>
     ${all.length > items.length ? `<button class="more-btn" id="poiMore">${ttT("再看更多")}（${all.length - items.length}）</button>` : ""}
-    <div class="food-credit"><i class="lg-dot" style="background:#3b6ea5"></i>已標在上方地圖・資料來自 Google 地圖</div>`;
+    <div class="food-credit">${ttT("資料與星級來自 Google 地圖・點一下用 Google 地圖開啟")}<span class="g-attr" translate="no">Google Maps</span></div>`;
   box.querySelectorAll(".food-sort-btn").forEach(b =>
     b.addEventListener("click", () => { _poiSort = b.dataset.psort; renderAttractions(); }));
   const pm = box.querySelector("#poiMore"); if (pm) pm.addEventListener("click", () => { _poiAll = true; renderAttractions(); });

@@ -776,7 +776,7 @@ async function preloadAround(lat, lon) {
   const pro = typeof Premium !== "undefined" && Premium.isOn();
   const m = pro ? 0.018 : 0.009;
   const bbox = { n: lat + m, s: lat - m, e: lon + m, w: lon - m };
-  const tiles = Offline.tileList(bbox, 14, pro ? 16 : 15);
+  const tiles = Offline.tileList(bbox, 14, 15);   // 只存開放版到 z15（授權）；PRO 的好處是範圍大一倍、不扣額度
   if (!pro && !offlineAllow(tiles, true)) return;   // 額度不夠就安靜略過（記錄照常）
   try {
     const r = await Offline.download(tiles, () => {}, { temp: true });   // 存進瀏覽快取，不佔「已下載」區

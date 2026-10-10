@@ -513,23 +513,6 @@ function wpListHtml(t) {
     <div id="wpBox" class="wp-list">${legend}${rows}</div>`;
 }
 function petEmojiNow() { return PET_STAGES[petStageIndex(totalKm())].e; }
-// 把美食/景點標在詳情地圖（不改視角，可縮放查看周邊）
-// 同一批（美食／景點）重畫前先移除自己上一批的標記：
-// 快速關掉再點開同一條步道時，前一次還在飛的 Places 查詢回來會再疊一層（守衛擋不住「同一條步道」）。
-const _poiMarks = { food: [], poi: [] };
-function plotPoi(items, color, kind) {
-  if (!detailMap || !detailPoiLayer || !items) return;
-  const bucket = _poiMarks[kind] || (_poiMarks[kind] = []);
-  bucket.forEach(m => { try { detailPoiLayer.removeLayer(m); } catch (e) { /* */ } });
-  bucket.length = 0;
-  items.forEach(p => {
-    if (p.lat == null) return;
-    const m = L.circleMarker([p.lat, p.lon], { radius: 5, color: "#fff", weight: 1.5, fillColor: color, fillOpacity: .95 })
-      .addTo(detailPoiLayer)
-      .bindPopup(`<b>${escHtml(p.name)}</b><br>${escHtml(p.kind)}${p.rating ? " · ★" + p.rating.toFixed(1) : ""}`);
-    bucket.push(m);
-  });
-}
 document.querySelectorAll(".tab").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
@@ -606,7 +589,31 @@ const AGTOK = _AGKEY ? `?token=${encodeURIComponent(_AGKEY)}` : "";
 // 改用 NLSC 台灣官方電子地圖（免費政府開放資料、可商用、對台灣更詳細）；立體感靠 Esri hillshade 疊上。座標 z/y/x。
 // 地圖右下的來源只留圖資單位（拿掉「Leaflet」字樣）：小地圖空間有限，要讓「© 內政部國土測繪中心」完整顯示
 if (typeof L !== "undefined" && L.Control && L.Control.Attribution) L.Control.Attribution.prototype.options.prefix = false;
-function baseTopo() { return L.tileLayer("https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}", { attribution: "© 內政部國土測繪中心", maxZoom: 19, maxNativeZoom: 18, detectRetina: true }); }
+// NLSC 電子地圖：z15 以下用開放資料版 EMAP5_OPENDATA（和一般 EMAP 是同一張圖，網址要和離線下載一致才吃得到快取），
+// z16 以上線上看一般 EMAP（細節多）；離線抓不到 z16+ 時，改拿已存的 z15 那張放大裁切，不會整片空白。（2026-10-10 授權檢查）
+const _NlscTopo = L.TileLayer.extend({
+  getTileUrl(c) {
+    const z = this._getZoomForUrl();
+    return z <= 15 ? Offline.tileUrl(z, c.x, c.y) : `https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/${z}/${c.y}/${c.x}`;
+  },
+  createTile(c, done) {
+    const tile = document.createElement("div"), img = document.createElement("img"), z = this._getZoomForUrl();
+    tile.style.overflow = "hidden"; img.alt = ""; img.setAttribute("role", "presentation");
+    img.style.cssText = "position:absolute;left:0;top:0;width:100%;height:100%;max-width:none;";
+    let fell = false;
+    img.onload = () => done(null, tile);
+    img.onerror = e => {
+      if (fell || z <= 15) return done(e, tile);
+      fell = true; const d = z - 15, k = 2 ** d, px = c.x >> d, py = c.y >> d;
+      img.style.width = img.style.height = k * 100 + "%";
+      img.style.left = -(c.x - px * k) * 100 + "%"; img.style.top = -(c.y - py * k) * 100 + "%";
+      img.src = Offline.tileUrl(15, px, py);
+    };
+    img.src = this.getTileUrl(c); tile.appendChild(img);
+    return tile;
+  },
+});
+function baseTopo() { return new _NlscTopo("", { attribution: "© 內政部國土測繪中心", maxZoom: 19, maxNativeZoom: 18, detectRetina: true }); }
 function baseSat() { return L.tileLayer(`${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}${AGTOK}`, { attribution: "© Esri、Maxar 衛星影像", maxZoom: 19, maxNativeZoom: 18, detectRetina: true }); }
 // 2.5D 地形陰影（hillshade）：疊在底圖上、以 multiply 混色壓暗坡面陰影→山勢立體。
 // 同 Esri 來源，SW 一樣快取得到（離線可用）。專屬 pane 放在底圖之上、路線/標記之下。

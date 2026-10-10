@@ -94,7 +94,7 @@ const TT_SITE_URL = () => window.TT_SITE || "https://trail-tracker-0ma5.onrender
 function ttOpenDoc(page) {
   if (document.querySelector('[data-ov="doc"]')) return;
   const ov = document.createElement("div"); ov.className = "doc-ov"; ov.dataset.ov = "doc";
-  ov.innerHTML = `<div class="doc-card" role="dialog" aria-modal="true"><div class="doc-head"><b>${page === "terms" ? ttT("使用條款與社群規範") : ttT("隱私權政策")}</b><button class="sheet-close" id="docX" aria-label="${ttT("關閉")}">${typeof ic === "function" ? ic("x") : "✕"}</button></div><iframe class="doc-frame" src="${page}.html" title="${page}"></iframe></div>`;
+  ov.innerHTML = `<div class="doc-card" role="dialog" aria-modal="true"><div class="doc-head"><b>${ttT({ terms: "使用條款與社群規範", privacy: "隱私權政策", licenses: "第三方授權" }[page] || "隱私權政策")}</b><button class="sheet-close" id="docX" aria-label="${ttT("關閉")}">${typeof ic === "function" ? ic("x") : "✕"}</button></div><iframe class="doc-frame" src="${page}.html" title="${page}"></iframe></div>`;
   document.body.appendChild(ov);
   let _a11y = null;
   const close = () => { document.removeEventListener("keydown", onKey, true); if (_a11y) _a11y(); ov.remove(); };
@@ -107,5 +107,7 @@ function ttOpenDoc(page) {
 document.addEventListener("click", e => {
   const a = e.target.closest && e.target.closest("a.rules-link");
   if (a) { e.preventDefault(); ttOpenDoc("terms"); }
+  const d = e.target.closest && e.target.closest(".app-legal [data-doc]");   // 我的 → 最下面：條款／隱私／第三方授權
+  if (d) ttOpenDoc(d.dataset.doc);
 });
 if (typeof window !== "undefined") Object.assign(window, { TT_BAD, ttBadWord, ttCleanOk, ttRulesGate, ttRulesAgreed, ttOpenUrl, ttOpenDoc });

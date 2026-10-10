@@ -40,6 +40,8 @@ window.REVENUECAT_ANDROID_KEY = "";
 // 自用模式（2026-09-30 起不公開上架）：本機直接解鎖全部 PRO、藏起升級面板與 PRO 標籤、
 // 社群/小隊/揪團這些要跟別人互動的入口也收起來。社群模組仍在（登入才能雲端備份）。
 // 測試可在載入前先設 window.PERSONAL_MODE=false，照舊測付費牆。
+// 測試面板「模擬免費用戶」（tt_debug_free=1）：關掉自用模式、而且 Premium.isOn() 一律回 false，看到的就是一般免費使用者的畫面
+try { if (localStorage.getItem("tt_debug_free") === "1") { window.PERSONAL_MODE = false; window.TT_DEBUG_FREE = true; document.documentElement.classList.add("dbg-free"); document.addEventListener("DOMContentLoaded", () => { const t = document.createElement("div"); t.className = "dbg-free-tag"; t.textContent = "模擬免費用戶"; t.setAttribute("translate", "no"); document.body.appendChild(t); }); } } catch (e) { /* */ }
 if (window.PERSONAL_MODE === undefined) window.PERSONAL_MODE = true;
 document.documentElement.classList.toggle("personal", !!window.PERSONAL_MODE);
 if (window.PERSONAL_MODE) document.documentElement.classList.add("is-pro");   // 會員就不顯示「PRO 功能」提示標籤

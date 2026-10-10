@@ -99,7 +99,8 @@ const BACKUP_EXEMPT = new Set([
   "tt_guard", "tt_guard_done",                            // 留守人：這一趟的預計下山時間／待補送的「平安下山」（跟著這台手機的記錄走）
   "tt_peaks_scan", "tt_cond_cache", "tt_cond_seen",       // 收集冊「以前紀錄掃過了」旗標（換機要重掃）、路況快取（每台自己抓）
   "tt_vis",                                               // 戶外顯示（陽光／紅光）：看當下環境臨時切，換手機不該一開就是紅色畫面
-  "tt_offline_sets", "tt_tiles_migrated", "tt_tiles_clean1",                  // 離線地圖清單／搬家旗標：圖磚只在這台手機，跨機還原沒意義
+  "tt_offline_sets", "tt_tiles_migrated", "tt_tiles_clean1", "tt_tiles_open1",   // 離線地圖清單／搬家旗標：圖磚只在這台手機，跨機還原沒意義
+  "tt_debug_free",                                        // 測試面板「模擬免費用戶」：只在這台測試用
   "tt_push_hint_off",                                     // 社群通知頁的推播提示關掉了（裝置偏好）
   "tt_set_open", "tt_hist_hidesim",                       // 我的頁：設定展開狀態、行程列表篩選（純介面偏好）
   "tt_team", "tt_team_name", "tt_team_live",              // 目前小隊/同行開關：裝置選擇

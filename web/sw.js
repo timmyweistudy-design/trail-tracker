@@ -1,10 +1,10 @@
 // 離線快取：app shell + 地圖圖磚
-const CACHE = "trail-tracker-v713";
+const CACHE = "trail-tracker-v714";
 const TILE_CACHE = "tt-tiles";
 const SAVED_CACHE = "tt-tiles-saved";   // 使用者下載的離線地圖（不隨版本清除、不受上限）   // 地圖圖磚（不隨版本清除，保留離線地圖）
 const ASSETS = [
   "./js/splash.js", "./js/warmup.js",
-  "./", "./index.html", "./privacy.html", "./terms.html",
+  "./", "./index.html", "./privacy.html", "./terms.html", "./licenses.html",
   "./css/style.css", "./css/style-features.css", "./css/style-waves.css",
   "./vendor/fonts/taipei-sans.woff2",
   "./vendor/fonts/brand-serif.woff2",
@@ -55,7 +55,7 @@ self.addEventListener("fetch", e => {
         // 近似 LRU：命中時 2% 抽樣重新寫入（移到快取尾端），常看的圖磚不會被上限清掉
         if (hit && Math.random() < 0.02) { c.delete(e.request).then(() => c.put(e.request, hit.clone())).catch(() => {}); }
         return hit || fetch(e.request).then(res => {
-          if (res && res.status === 200) c.put(e.request, res.clone());
+          if (res && res.status === 200 && !url.includes("/wmts/EMAP/")) c.put(e.request, res.clone());   // 一般 EMAP（z16+）不存到裝置上：只有開放版可以離線保存（授權）
           return res;
         }).catch(() => hit);   // 離線且未快取 → 該圖磚留白
       })))

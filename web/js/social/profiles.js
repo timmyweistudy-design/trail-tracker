@@ -151,6 +151,7 @@ const Profiles = (() => {
         <button class="set-row set-btn" id="stSignout"><span>${ic("logout")} ${T("登出")}</span></button>
         <button class="set-row set-btn" id="stTerms"><span>${ic("book")} ${T("使用條款與社群規範")}</span></button>
         <button class="set-row set-btn" id="stPrivacy"><span>${ic("shield")} ${T("隱私權政策")}</span></button>
+        <button class="set-row set-btn" id="stLicenses"><span>${ic("book")} ${T("第三方授權")}</span></button>
       </div>
       <div class="set-group st-danger-zone">
         <button class="btn ghost st-danger" id="stDelete">${T("刪除帳號")}</button>
@@ -161,6 +162,7 @@ const Profiles = (() => {
     document.getElementById("stCrowd").addEventListener("change", e => { try { if (e.target.checked) localStorage.removeItem("tt_crowd_off"); else localStorage.setItem("tt_crowd_off", "1"); } catch (er) { /* */ } say(e.target.checked ? "會匿名分享出發時間" : "不再分享出發時間"); });
     document.getElementById("stTerms").addEventListener("click", () => ttOpenDoc("terms"));
     document.getElementById("stPrivacy").addEventListener("click", () => ttOpenDoc("privacy"));
+    document.getElementById("stLicenses").addEventListener("click", () => ttOpenDoc("licenses"));
     document.getElementById("stSignout").addEventListener("click", async () => {
       if (!(await ttConfirm(T("要登出嗎？這台手機上的行程不會刪掉。"), T("登出"), T("取消")))) return;   // 登出可以再登入，不算破壞性
       const btn = document.getElementById("stSignout"); if (btn) btn.disabled = true;

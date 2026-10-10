@@ -59,7 +59,7 @@ const Premium = (() => {
     try { localStorage.removeItem("tt_premium"); localStorage.removeItem("tt_premium_since"); } catch (e) { /* */ }
     markPro();
   }
-  function isOn() { if (personal()) return true; return _loaded ? _on : (localStorage.getItem("tt_premium") === "1"); }
+  function isOn() { if (window.TT_DEBUG_FREE) return false; if (personal()) return true; return _loaded ? _on : (localStorage.getItem("tt_premium") === "1"); }
   function gate() { if (isOn()) return true; openUpgrade(); return false; }
 
   const BENEFITS = [

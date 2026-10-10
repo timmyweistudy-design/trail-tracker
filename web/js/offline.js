@@ -7,7 +7,11 @@ const Offline = (() => {
   // 等於滑一滑地圖，山上要用的圖就被刪掉。
   // 與 app.js baseTopo 用同一組 URL（NLSC 台灣官方電子地圖；下載與顯示快取鍵必須完全一致）。
   // 免金鑰、座標 z/y/x。（Esri 授權端點無地形 raster，故底圖改 NLSC。）
-  const tileUrl = (z, x, y) => `https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/${z}/${y}/${x}`;
+  // 2026-10-10 授權檢查：離線只存 NLSC「開放資料」版 EMAP5_OPENDATA（政府資料開放授權，可商用），只到 z15。
+  //   一般 EMAP 在 z16 以上屬「國土測繪圖資服務雲」，條款不允許給付費會員專用，也不該整批存到裝置上；
+  //   z15 以下兩者是同一張圖（逐位元相同），所以畫面不變。離線時 z16 以上由 app.js 的 baseTopo 拿 z15 放大顯示。
+  const OPEN_MAX = 15;
+  const tileUrl = (z, x, y) => `https://wmts.nlsc.gov.tw/wmts/EMAP5_OPENDATA/default/GoogleMapsCompatible/${z}/${y}/${x}`;
 
   const lon2x = (lon, z) => Math.floor((lon + 180) / 360 * 2 ** z);
   const lat2y = (lat, z) => {
@@ -16,7 +20,7 @@ const Offline = (() => {
   };
 
   function tileList(bbox, zmin, zmax) {     // bbox = {n, s, e, w}
-    const tiles = [];
+    const tiles = []; zmax = Math.min(zmax, OPEN_MAX);
     for (let z = zmin; z <= zmax; z++) {
       const xs = [lon2x(bbox.w, z), lon2x(bbox.e, z)];
       const ys = [lat2y(bbox.n, z), lat2y(bbox.s, z)];
@@ -41,7 +45,7 @@ const Offline = (() => {
   }
   // 自動選擇縮放範圍，讓總圖磚數不過大
   function planZoom(bbox) {
-    let zmax = 16;
+    let zmax = OPEN_MAX;
     while (zmax > 13 && tileList(bbox, 13, zmax).length > 700) zmax--;
     return { zmin: 13, zmax };
   }
@@ -121,6 +125,21 @@ const Offline = (() => {
       localStorage.setItem("tt_tiles_migrated", "1");
     } catch { /* 下次再試 */ }
   }
+  // 一次性搬家（2026-10-10）：舊版下載的是一般 EMAP（z13–16）→ z15 以下改名成開放版網址（同一張圖），z16 以上刪掉
+  async function migrateOpenData() {
+    try {
+      if (localStorage.getItem("tt_tiles_open1") === "1") return;
+      for (const name of [SAVED_CACHE, TILE_CACHE]) {
+        const c = await caches.open(name);
+        for (const req of await c.keys()) {
+          const m = req.url.match(/\/wmts\/EMAP\/default\/GoogleMapsCompatible\/(\d+)\/(\d+)\/(\d+)/); if (!m) continue;
+          if (+m[1] <= OPEN_MAX) { const r = await c.match(req); if (r) await c.put(tileUrl(+m[1], +m[3], +m[2]), r); }
+          await c.delete(req);
+        }
+      }
+      localStorage.setItem("tt_tiles_open1", "1");
+    } catch { /* 下次再試 */ }
+  }
   // 一次性清理：之前背景預載誤存進「已下載」區的衛星圖（只有 3D 預載會抓衛星圖；使用者下載的步道地圖不含衛星）
   // → 搬回瀏覽快取並套上限
   async function cleanupPreload() {
@@ -182,5 +201,5 @@ const Offline = (() => {
     return done;
   }
 
-  return { tileList, tileListUrl, planZoom, bboxFor, download, cachedCount, savedCount, clear, removeTiles, usageMB, migrate, cleanupPreload, enforceCap, exportPack, importPack };
+  return { OPEN_MAX, tileUrl, migrateOpenData, tileList, tileListUrl, planZoom, bboxFor, download, cachedCount, savedCount, clear, removeTiles, usageMB, migrate, cleanupPreload, enforceCap, exportPack, importPack };
 })();

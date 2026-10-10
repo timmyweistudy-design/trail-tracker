@@ -2666,3 +2666,7 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .dex-sp-n { font-size: calc(12px * var(--fs, 1)); font-weight: 800; display: inline-flex; align-items: center; gap: 2px; }
 .dex-sp-n .tone-lock { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 2.2; }
 .dex-sp-s { font-size: calc(10.5px * var(--fs, 1)); color: var(--muted); text-align: center; line-height: 1.2; overflow-wrap: anywhere; }
+.app-legal { text-align: center; margin: 6px 0 0; font-size: calc(11.5px * var(--fs, 1)); color: var(--muted); }   /* 我的 → 最下面：條款／隱私／第三方授權（2026-10-10 授權檢查） */
+.app-legal .info-link { font-size: inherit; padding: 4px 2px; }
+/* 測試面板「模擬免費用戶」開著時，畫面右上角一直提醒（避免忘了關，以為功能壞了） */
+.dbg-free-tag { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 4px); right: 6px; z-index: 99999; pointer-events: none; padding: 2px 8px; border-radius: 10px; background: rgba(194, 104, 61, .92); color: #fff; font-size: 11px; font-weight: 600; }

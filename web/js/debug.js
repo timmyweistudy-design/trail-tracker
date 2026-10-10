@@ -447,6 +447,8 @@ async function toggleDebugPanel() {
     ]],
     ["裝置與外觀", [
       ["📱模擬動態島", () => ttDebug.notch()], ["🎨切外觀", () => ttDebug.theme()],
+      // 模擬免費用戶：看非會員的畫面（PRO 標籤、升級面板、額度限制、社群入口）。切換後重新載入；再按一次恢復
+      [window.TT_DEBUG_FREE ? "💎恢復會員畫面" : "👤模擬免費用戶", () => { try { if (window.TT_DEBUG_FREE) localStorage.removeItem("tt_debug_free"); else localStorage.setItem("tt_debug_free", "1"); } catch (e) { /* */ } location.reload(); }],
       ["🌐重看語言選擇", closeAnd(() => { localStorage.removeItem("tt_lang"); tourReset(); langGate(true); })],
     ]],
     ["管理", [

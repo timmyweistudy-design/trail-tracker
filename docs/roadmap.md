@@ -1,6 +1,6 @@
 # 循徑拾光：目前進度與待辦
 
-最後更新：2026-10-09（**夥伴第三版 R10～R14＋收尾輪完成**，SW `trail-tracker-v707`；**phase40／41 SQL 已跑並確認**；果實圖示全部跟著季節換；**iOS build 排隊中（Codemagic 免費機器排不到）**；**R15 近親物種＋R16（雲豹重畫、全畫面同步、震動減量、真實錄音音效、iOS 最低 15.0）完成，SW v711；build 只在使用者說了才出**（[ios-checklist.md](ios-checklist.md) 最後一節）；全站掃描 `scripts/ui-sweep.js`、整套測試約 15 分）
+最後更新：2026-10-10（**授權全面檢查完成（SW v714）：Google 美食景點不再畫在非 Google 地圖、離線地圖只存 NLSC 開放版 z15、字型補 OFL、新增第三方授權頁；Open-Meteo 商用方案仍要買**，見 [map-licensing.md](map-licensing.md)；測試面板「裝置與外觀」有「模擬免費用戶」；**夥伴第三版 R10～R14＋收尾輪完成**，SW `trail-tracker-v707`；**phase40／41 SQL 已跑並確認**；果實圖示全部跟著季節換；**iOS build 排隊中（Codemagic 免費機器排不到）**；**R15 近親物種＋R16（雲豹重畫、全畫面同步、震動減量、真實錄音音效、iOS 最低 15.0）完成，SW v711；build 只在使用者說了才出**（[ios-checklist.md](ios-checklist.md) 最後一節）；全站掃描 `scripts/ui-sweep.js`、整套測試約 15 分）
 上架細節清單見 [launch-checklist.md](launch-checklist.md)。
 
 ## 現況
@@ -10,6 +10,12 @@
 - **資料**：步道 2,939 條（林業署 118、OSM 關係 827、OSM 路徑 1,994）。林業署每月自動比對，OSM 每季自動比對，有差異會開 GitHub issue，比對一致時自動關閉。
 - **品質**：`npm run check`（語法、i18n 覆蓋、單元測試、SW 版本、不當字詞清單同步）＋ `npm run test:all` 約 62 組（並行數依記憶體自動算，7GB 機器 4 組、約 15 分）；全站 UI 掃描 `node scripts/ui-sweep.js`；CI 每次 push 跑（GitHub 機器上量時間／逐格的三組只警告）＋改到 `ios/` 時跑 iOS 只編譯檢查。
 - **健康度**（10/03～10/04 實測）：一般手機 0.55 秒出現步道清單，CPU 降速 4 倍（App 檔案在本機）0.65 秒；近 30 天使用者端錯誤 9 筆，已修 8 筆（剩 1 筆是舊版 debug）；資料庫 15 MB。
+
+## 2026-10-10 完成：授權與條款全面檢查
+- 結果表在 [map-licensing.md](map-licensing.md) 最上面（12 項：7 項已改、Open-Meteo 要買、MyMemory／Open Topo Data 待確認、NLSC 建議打電話問線上高縮放）。
+- 給使用者看的聲明：`web/licenses.html`（我的 → 最下面「使用條款 · 隱私權政策 · 第三方授權」）。
+- 測試面板 → 裝置與外觀 →「👤模擬免費用戶」：關掉自用模式且 `Premium.isOn()` 回 false，右上角有「模擬免費用戶」標籤；再按「💎恢復會員畫面」。
+- PRO／免費功能的權威清單是 `web/js/premium.js` 的 `BENEFITS`／`ALWAYS_FREE`／`COMPARE`（另有口袋路線 3 組、PRO 表情 24 個不在比較表裡）。
 
 ## 2026-10-08 完成：夥伴修正案 R1（可信基準）
 - **版本與錄影標籤**：測試面板標題、效能紀錄帶「v664 · web／iOS build」；🏷錄影標籤在左下角顯示版本、階段、動作階段、秒數

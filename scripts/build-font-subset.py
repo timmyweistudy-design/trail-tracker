@@ -90,6 +90,7 @@ def main():
     opts.layout_features = ["*"]        # 保留 OpenType features，避免排版變形
     opts.notdef_outline = True
     opts.recalc_bounds = True
+    opts.name_IDs = [0, 1, 2, 3, 4, 5, 6, 13, 14]   # 保留版權＋OFL 授權宣告（13/14）：OFL 規定散布時要附授權（2026-10-10 授權檢查）
     font = subset.load_font(str(SRC), opts)
     subsetter = subset.Subsetter(options=opts)
     subsetter.populate(text="".join(wanted))

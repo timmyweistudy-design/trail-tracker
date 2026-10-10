@@ -558,6 +558,7 @@ body.navup-on #recMap .leaflet-map-pane { transition: transform var(--dur-xs) li
 .food-sort-btn.on { background: var(--brand); color: #f4f1e8; border-color: var(--brand); }
 .food-sort-btn .ic { width: 12px; height: 12px; vertical-align: -1px; margin-right: 3px; }
 .food-credit { font-size: calc(10.5px * var(--fs, 1)); color: var(--ink-faint); text-align: right; margin-top: 6px; }
+.food-credit .g-attr { margin-left: 6px; font-family: Roboto, Arial, sans-serif; font-weight: 500; color: var(--muted); white-space: nowrap; }
 
 /* 人文景點 */
 .poi-list { display: flex; flex-direction: column; gap: 8px; }

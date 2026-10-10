@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>第三方授權 · 循徑拾光 Gather the Trail</title>
+<style>
+  :root { color-scheme: light; }
+  @font-face { font-family: "TaipeiSans"; font-style: normal; font-weight: 400 700; font-display: swap; src: url("vendor/fonts/taipei-sans.woff2") format("woff2"); }
+  body { margin: 0; background: #f4f1e8; color: #26332a; font-family: "TaipeiSans", -apple-system, "Segoe UI", system-ui, sans-serif; line-height: 1.75; }
+  main { max-width: 760px; margin: 0 auto; padding: 32px 20px 72px; }
+  h1 { font-size: 26px; color: #16301f; margin: 0 0 4px; }
+  h2 { font-size: 19px; color: #16301f; margin: 30px 0 8px; border-bottom: 1px solid #d8d2c2; padding-bottom: 6px; }
+  h3 { font-size: 15px; margin: 18px 0 4px; color: #3a5a43; }
+  .updated { color: #6b7268; font-size: 14px; margin: 0 0 8px; }
+  ul { padding-left: 20px; }
+  li { margin: 4px 0; }
+  a { color: #2f7d4f; }
+  .lang { font-size: 13px; color: #6b7268; margin-bottom: 20px; }
+  hr { border: none; border-top: 1px solid #d8d2c2; margin: 44px 0; }
+  code { background: #e9e4d6; padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; vertical-align: top; padding: 6px 8px; border-bottom: 1px solid #d8d2c2; }
+  th { color: #3a5a43; font-weight: 600; }
+  .tw { overflow-x: auto; }
+  pre { white-space: pre-wrap; background: #e9e4d6; padding: 10px 12px; border-radius: 6px; font-size: 12.5px; line-height: 1.55; }
+</style>
+</head>
+<body>
+<main>
+  <h1>第三方授權與資料來源</h1>
+  <p class="updated">循徑拾光 Gather the Trail　·　最後更新：2026-10-10</p>
+  <p class="lang"><a href="#en">English version below ↓</a></p>
+  <p>本 App 用到下列開放原始碼、字型、地圖圖資、資料與音效。感謝這些作者與機關。</p>
+
+  <h2>一、地圖與圖資</h2>
+  <div class="tw"><table>
+    <tr><th>來源</th><th>用途</th><th>授權／條件</th></tr>
+    <tr><td>內政部國土測繪中心 臺灣通用電子地圖</td><td>底圖；離線地圖只存開放資料版（EMAP5_OPENDATA，最細到縮放 15）</td><td>開放資料版依<a href="https://data.gov.tw/license" target="_blank" rel="noopener">政府資料開放授權條款第 1 版</a>；縮放 16 以上為線上瀏覽「國土測繪圖資服務雲」圖層，不存到裝置。© 內政部國土測繪中心</td></tr>
+    <tr><td>Esri World Imagery、World Hillshade</td><td>衛星影像、地形陰影</td><td>透過 ArcGIS Location Platform 授權金鑰使用。© Esri 及其資料提供者</td></tr>
+    <tr><td>AWS Terrain Tiles（Mapzen terrarium）</td><td>3D 地形高度</td><td>開放資料；來源含 SRTM、GMTED、ETOPO1 等。© Mapzen、Amazon Web Services 及各資料來源</td></tr>
+    <tr><td>OpenStreetMap</td><td>部分步道路線、沿線地標</td><td>© OpenStreetMap 貢獻者，<a href="https://opendatacommons.org/licenses/odbl/1-0/" target="_blank" rel="noopener">ODbL 1.0</a>。App 內由 OSM 衍生的步道與地標資料同樣以 ODbL 1.0 提供，如需取得請來信。</td></tr>
+  </table></div>
+
+  <h2>二、資料與服務</h2>
+  <div class="tw"><table>
+    <tr><th>來源</th><th>用途</th><th>授權／條件</th></tr>
+    <tr><td>林業及自然保育署 臺灣山林悠遊網、各縣市政府開放資料</td><td>步道名稱、介紹、路況、照片</td><td>政府資料開放授權條款第 1 版；照片依各頁標示</td></tr>
+    <tr><td>Google 地圖（Google Places）</td><td>步道周邊美食、景點、停車／廁所／超商</td><td>依 <a href="https://maps.google.com/help/terms_maps.html" target="_blank" rel="noopener">Google 地圖附加服務條款</a>與 <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google 隱私權政策</a>；只列清單、不畫在非 Google 的地圖上</td></tr>
+    <tr><td>Open-Meteo</td><td>天氣預報</td><td>天氣資料 <a href="https://open-meteo.com/" target="_blank" rel="noopener">Weather data by Open-Meteo.com</a>，<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a></td></tr>
+    <tr><td>iNaturalist</td><td>附近物種目擊與照片</td><td>每張照片依原作者選的 Creative Commons 授權，並標示作者</td></tr>
+    <tr><td>Wikimedia Commons</td><td>部分步道與物種照片</td><td>依各檔案的授權（多為 CC BY／CC BY-SA），並標示作者</td></tr>
+    <tr><td>Open Topo Data（SRTM 30m）</td><td>沒有高度的路線補算海拔</td><td>SRTM 為公有領域資料；服務由 opentopodata.org 提供</td></tr>
+    <tr><td>MyMemory（Translated）</td><td>貼文翻譯</td><td>依 MyMemory 服務條款</td></tr>
+  </table></div>
+
+  <h2>三、字型</h2>
+  <div class="tw"><table>
+    <tr><th>字型</th><th>授權</th></tr>
+    <tr><td>台北黑體 Taipei Sans TC Beta（JT Foundry 翰字鑄造，改自 Adobe 思源黑體），本 App 只附用到的字</td><td><a href="vendor/fonts/OFL.txt">SIL Open Font License 1.1</a></td></tr>
+    <tr><td>Noto Serif TC Black（Google／Adobe），本 App 只附品牌字</td><td><a href="vendor/fonts/OFL.txt">SIL Open Font License 1.1</a></td></tr>
+  </table></div>
+
+  <h2>四、音效</h2>
+  <p>夥伴的 22 段音效是 Freesound 上以 <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0</a>（公眾領域）釋出的真實錄音，經剪短與調整音量。每段的原作者與網址見 <a href="sounds/pet/CREDITS.md">音效來源清單</a>。</p>
+
+  <h2>五、開放原始碼程式庫</h2>
+  <div class="tw"><table>
+    <tr><th>程式庫</th><th>授權</th><th>著作權</th></tr>
+    <tr><td>Leaflet 1.9.4</td><td>BSD 2-Clause</td><td>© 2010–2023 Volodymyr Agafonkin、© 2010–2011 CloudMade</td></tr>
+    <tr><td>Leaflet.markercluster</td><td>MIT</td><td>© 2012 David Leaver</td></tr>
+    <tr><td>MapLibre GL JS 4.7.1</td><td>BSD 3-Clause</td><td>© MapLibre contributors、© Mapbox</td></tr>
+    <tr><td>supabase-js</td><td>MIT</td><td>© Supabase</td></tr>
+    <tr><td>Capacitor（core、app、browser、camera、haptics、local-notifications、push-notifications、splash-screen、iOS、Android）</td><td>MIT</td><td>© Ionic</td></tr>
+    <tr><td>@capacitor-community/background-geolocation、in-app-review</td><td>MIT</td><td>© 各專案貢獻者</td></tr>
+    <tr><td>RevenueCat purchases-capacitor</td><td>MIT</td><td>© RevenueCat</td></tr>
+  </table></div>
+  <h3>MIT License</h3>
+  <pre>Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</pre>
+  <h3>BSD 2-Clause / 3-Clause License</h3>
+  <pre>Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+3. (BSD 3-Clause only) Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</pre>
+
+  <hr id="en">
+
+  <h1>Third-party licenses &amp; data sources</h1>
+  <p class="updated">Gather the Trail (循徑拾光)　·　Last updated: 2026-10-10</p>
+  <p>The App uses the open-source code, fonts, map tiles, data and sounds below. Thank you to their authors and agencies. License texts are in the Chinese section above.</p>
+  <h2>Maps</h2>
+  <ul>
+    <li><strong>NLSC Taiwan e-Map</strong> (© National Land Surveying and Mapping Center) — base map. Offline maps store only the open-data layer EMAP5_OPENDATA (up to zoom 15) under the <a href="https://data.gov.tw/license" target="_blank" rel="noopener">Open Government Data License v1.0</a>; zoom 16+ is viewed online only and not stored on the device.</li>
+    <li><strong>Esri World Imagery &amp; World Hillshade</strong> — via an ArcGIS Location Platform key. © Esri and its data providers.</li>
+    <li><strong>AWS Terrain Tiles (Mapzen terrarium)</strong> — 3D terrain; sources include SRTM, GMTED and ETOPO1.</li>
+    <li><strong>OpenStreetMap</strong> — © OpenStreetMap contributors, <a href="https://opendatacommons.org/licenses/odbl/1-0/" target="_blank" rel="noopener">ODbL 1.0</a>. Trail and waypoint data derived from OSM is likewise available under ODbL 1.0 on request.</li>
+  </ul>
+  <h2>Data &amp; services</h2>
+  <ul>
+    <li><strong>Forestry and Nature Conservation Agency</strong> and county open data — trail info and photos (Open Government Data License v1.0; photos as credited).</li>
+    <li><strong>Google Maps (Google Places)</strong> — nearby food, attractions and amenities, under the <a href="https://maps.google.com/help/terms_maps.html" target="_blank" rel="noopener">Google Maps Additional Terms of Service</a> and <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Privacy Policy</a>. Shown as lists only, never on a non-Google map.</li>
+    <li><strong>Open-Meteo</strong> — <a href="https://open-meteo.com/" target="_blank" rel="noopener">Weather data by Open-Meteo.com</a>, CC BY 4.0.</li>
+    <li><strong>iNaturalist</strong> and <strong>Wikimedia Commons</strong> — photos under each author’s Creative Commons license, credited.</li>
+    <li><strong>Open Topo Data</strong> (SRTM 30m, public domain) — elevation for routes without heights.</li>
+    <li><strong>MyMemory</strong> — post translation, under its terms of service.</li>
+  </ul>
+  <h2>Fonts</h2>
+  <ul><li>Taipei Sans TC Beta (JT Foundry, from Adobe Source Han Sans) and Noto Serif TC Black — subsets, <a href="vendor/fonts/OFL.txt">SIL Open Font License 1.1</a>.</li></ul>
+  <h2>Sounds</h2>
+  <p>The 22 companion sounds are CC0 recordings from Freesound, trimmed and level-matched. Authors and links: <a href="sounds/pet/CREDITS.md">sound credits</a>.</p>
+  <h2>Open-source libraries</h2>
+  <p>Leaflet (BSD-2), Leaflet.markercluster (MIT), MapLibre GL JS (BSD-3), supabase-js (MIT), Capacitor and plugins (MIT), RevenueCat purchases-capacitor (MIT).</p>
+</main>
+</body>
+</html>
