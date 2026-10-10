@@ -431,7 +431,11 @@ function openHatPicker() {
     ov.querySelectorAll(".dr-pane").forEach(p => { p.hidden = p.dataset.pane !== pane; }); bar(""); }));
 }
 // 夥伴的音效與震動（2026-10-07 寵物新一輪 #23）：音效預設關（吃東西、抱抱、進化、收到禮物各一種輕柔的合成音，不用音檔）；震動預設開，可以在「？」裡關掉
-const petHapticOn = () => localStorage.getItem("tt_pet_haptic") !== "0", petSoundOn = () => localStorage.getItem("tt_pet_sound") !== "0";   // 2026-10-10 全面加入音效：預設開（以前預設關）
+// 夥伴音效先全面關閉（2026-10-10 使用者：「還沒有做得很好」，排進音效優化輪 docs/sound-plan.md）：設定裡的開關也藏起來。
+// 開發中要試聽：測試面板「🔊試聽音效（開發中）」設 tt_pet_sound_dev=1。做好之後把 PET_SOUND_READY 改回 true
+const PET_SOUND_READY = false;
+const petSoundDev = () => { try { return localStorage.getItem("tt_pet_sound_dev") === "1"; } catch (e) { return false; } };
+const petHapticOn = () => localStorage.getItem("tt_pet_haptic") !== "0", petSoundOn = () => (PET_SOUND_READY || petSoundDev()) && localStorage.getItem("tt_pet_sound") !== "0";
 // 裝置做得到才顯示開關（2026-10-08 修正案 A6）：以前 iPhone 網頁版有「夥伴震動」開關但 Safari 根本沒有震動；
 // 搖手機在 iPhone 要先請「動作與方向」權限，以前從沒請過＝這個功能在 iPhone 上一直是死的
 // 玩松果（2026-10-08 R4 原6）：x＝丟到哪裡（相對舞台中間的 px；null＝隨便丟）。10 分鐘內玩到第 3 次會累：打個哈欠、休息 2 分鐘
@@ -460,7 +464,7 @@ function petSleepSel() {
 }
 function petNudgeDays() { const v = localStorage.getItem("tt_pet_nudge"); return v == null ? 3 : +v || 0; }
 const petCan = {
-  sound: () => !!(window.AudioContext || window.webkitAudioContext),
+  sound: () => (PET_SOUND_READY || petSoundDev()) && !!(window.AudioContext || window.webkitAudioContext),
   haptic: () => { const C = window.Capacitor; return !!(C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins.Haptics) || typeof navigator.vibrate === "function"; },
   motionAsk: () => typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function",   // 只有 iPhone 需要（Android 不用問就有）
 };

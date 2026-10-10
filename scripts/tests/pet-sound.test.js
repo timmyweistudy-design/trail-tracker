@@ -17,7 +17,7 @@ const KM=[0,5,20,40,90,150,260];
  const kb=PA.KEYS.reduce((s,k)=>s+__fs.statSync(ROOT+"/web/sounds/pet/"+k+".mp3").size,0)/1024;ok(kb<400,`all sounds together are small (${kb.toFixed(0)} KB)`);}
 (async()=>{const srv=spawn("python3",["-m","http.server",String(__TTP)],{cwd:ROOT+"/web",stdio:"ignore"});await new Promise(r=>setTimeout(r,1200));const b=await chromium.launch({args:["--autoplay-policy=no-user-gesture-required"]});
 const mk=async(km,o={})=>{const ctx=await b.newContext({viewport:{width:390,height:844},timezoneId:"Asia/Taipei"});const p=await ctx.newPage();await require(__dirname+"/fake-weather")(p);p.on("pageerror",e=>errs.push(e.message));
- await p.addInitScript(o=>{if(sessionStorage.getItem("seed"))return;sessionStorage.setItem("seed","1");localStorage.setItem("tt_lang","zh");["tt_onboarded_v2","tt_coach_trail","tt_locperm_prompted","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_coach_team","tt_coach_pet"].forEach(k=>localStorage.setItem(k,"1"));localStorage.setItem("tt_pet_woke",String(Date.now()));localStorage.setItem("tt_debug_km",String(o.km));if(o.tone)localStorage.setItem("tt_pet_tone",o.tone);},{km,tone:o.tone});
+ await p.addInitScript(o=>{if(sessionStorage.getItem("seed"))return;sessionStorage.setItem("seed","1");localStorage.setItem("tt_lang","zh");["tt_onboarded_v2","tt_coach_trail","tt_locperm_prompted","tt_coach_record","tt_coach_record_tools","tt_coach_peaks","tt_coach_team","tt_coach_pet"].forEach(k=>localStorage.setItem(k,"1"));localStorage.setItem("tt_pet_woke",String(Date.now()));localStorage.setItem("tt_debug_km",String(o.km));if(!o.nodev)localStorage.setItem("tt_pet_sound_dev","1");if(o.tone)localStorage.setItem("tt_pet_tone",o.tone);},{km,tone:o.tone,nodev:o.nodev});
  await p.addInitScript(MOCK);await p.goto(`http://localhost:${__TTP}/`);await require(__dirname+"/ready")(p);
  await p.evaluate(()=>{window.__toneAll=true;petApplyTone();document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e=>e.remove());});await p.click('.tab[data-view="pet"]');await p.waitForTimeout(1000);
  await p.evaluate(()=>{window.__psNoIdle=true;document.querySelector(".ps-box").scrollIntoView({block:"center"});
@@ -51,5 +51,11 @@ for(const [st,tone,want] of [[1,"","nom"],[3,"sea","crunch"],[6,"","crunch"]]){c
   while(document.querySelector(".ps-box").classList.contains("feeding")&&Date.now()-t0<40000)await new Promise(r=>setTimeout(r,250));return {hap:window.__hap.slice(),snd:window.__snd.slice()};});
  ok(r.hap.length<=3&&!r.hap.some(x=>x.startsWith("vibrate")),`stage ${st}${tone?" "+tone:""}: feeding vibrates at most a few light times, no motor buzz ${JSON.stringify(r.hap)}`);
  ok(r.snd.includes(want),`stage ${st}${tone?" "+tone:""}: eating makes the ${want} sound ${JSON.stringify(r.snd.slice(0,8))}`);
+ await p.context().close();}
+// 2026-10-10 使用者要求先全面關掉音效（docs/sound-plan.md）：沒開「試聽（開發中）」的一般使用者完全不出聲，設定裡也沒有音效開關
+{const p=await mk(KM[4],{nodev:1});
+ const r=await p.evaluate(async()=>{window.__snd.length=0;petSound("gift");await PetStage.react("pat");await new Promise(r=>setTimeout(r,300));document.querySelector("#petHelp")&&document.querySelector("#petHelp").click();await new Promise(r=>setTimeout(r,500));return {snd:window.__snd.slice(),sw:!!document.getElementById("petSoundSw"),loaded:PetAudio._loaded().length};});
+ ok(r.snd.length===0&&r.loaded===0,"sound is switched off for everyone until it's ready (nothing plays, nothing downloads) "+JSON.stringify(r));
+ ok(!r.sw,"the sound switch is hidden from settings while sound is off");
  await p.context().close();}
 console.log("ERRS",JSON.stringify(errs));console.log("FAILS",fails+(errs.length?1:0));await b.close();srv.kill();process.exit(0);})();
