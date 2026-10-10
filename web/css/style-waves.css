@@ -31,7 +31,7 @@ html[data-theme="dark"] .back-hud .bh-x { background: transparent; color: #cdb9f
 .rec-safety .safe-btn.on { background: #efe7fb; border-color: #7a4fd1; color: #5b34b0; }
 /* 求救卡 */
 .sos-card { padding-top: 18px; }
-.sos-card h2 { color: var(--danger, #b3322a); display: flex; align-items: center; gap: 6px; }
+.sos-card h2 { color: var(--danger, #b3322a); display: flex; align-items: center; justify-content: center; gap: 6px; }   /* 置中，跟其他彈窗一致（細節輪 A3） */
 .sos-card h2 .ic { width: 22px; height: 22px; }
 .sos-coord { background: var(--surface-2); border-radius: var(--r-sm); padding: 12px 14px; margin: 6px 0 10px; }
 .sos-k { font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-faint); font-weight: 700; margin-top: 6px; }
@@ -613,7 +613,9 @@ html[data-theme="dark"] .btn.auth-apple { background: #fff; color: #000; border-
 /* App 內看使用條款／隱私權政策（js/moderation.js ttOpenDoc）：要疊在確認框上面 */
 .doc-ov { position: fixed; inset: 0; z-index: var(--z-doc); background: rgba(22,30,20,.55); display: flex; align-items: flex-end; justify-content: center; padding-top: calc(var(--safe-t) + 12px); }
 .doc-card { background: var(--bg); width: 100%; max-width: 640px; height: 100%; border-radius: 22px 22px 0 0; display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--sh-lg); }
-.doc-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px 10px 18px; border-bottom: 1px solid var(--line-soft); }
+.doc-head { display: grid; grid-template-columns: 38px 1fr 38px; align-items: center; gap: 8px; padding: 12px 14px 10px; border-bottom: 1px solid var(--line-soft); }   /* 標題置中（細節輪 A5）：左邊空一格跟關閉鈕等寬 */
+.doc-head b { grid-column: 2; text-align: center; }
+.doc-head .sheet-close { grid-column: 3; justify-self: end; }
 .doc-head b { font-size: calc(16px * var(--fs, 1)); }
 .doc-head .sheet-close { position: static; flex: 0 0 auto; }
 .doc-frame { flex: 1 1 auto; width: 100%; border: 0; background: #f4f1e8; padding-bottom: var(--safe-b); }
@@ -650,15 +652,15 @@ html[data-theme="dark"] .btn.auth-apple { background: #fff; color: #000; border-
 .dv-wx-warn .ic { width: 15px; height: 15px; flex: none; margin-top: 2px; color: var(--warn-ic); }
 /* 四格數字 */
 .dv-stats { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line-soft); border-radius: var(--r-sm); background: var(--surface); overflow: hidden; }
-.dv-stat { padding: 11px 13px 10px; min-width: 0; }
+.dv-stat { padding: 11px 13px 10px; min-width: 0; text-align: center; }   /* 四格資訊置中（細節輪 B2/B3：步道詳情、結算頁共用；以前內容擠在左邊、右半格空著） */
 .dv-stat:nth-child(odd) { border-right: 1px solid var(--line-soft); }
 .dv-stat:nth-child(n+3) { border-top: 1px solid var(--line-soft); }
-.dv-stat-h { display: flex; align-items: center; gap: 5px; color: var(--ink-soft); font-size: calc(12px * var(--fs, 1)); font-weight: 600; }
+.dv-stat-h { display: flex; align-items: center; justify-content: center; gap: 5px; color: var(--ink-soft); font-size: calc(12px * var(--fs, 1)); font-weight: 600; }
 .dv-stat-h .ic { width: 14px; height: 14px; flex: none; }
 .dv-stat-v { font-size: calc(21px * var(--fs, 1)); font-weight: 800; color: var(--ink); margin: 3px 0 4px; font-variant-numeric: tabular-nums; line-height: 1.15; overflow-wrap: anywhere; }
 .dv-stat-v small { font-size: .58em; font-weight: 700; color: var(--ink-soft); margin-left: 3px; }
 .dv-stat-v .approx { font-size: .7em; color: var(--ink-soft); margin-right: 2px; }
-.dv-stat-f { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+.dv-stat-f { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 6px; }
 .dv-stat-sub { font-size: calc(11px * var(--fs, 1)); color: var(--ink-soft); line-height: 1.35; }
 .dv-src { border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-soft); font: inherit; font-size: calc(10.5px * var(--fs, 1)); font-weight: 700; padding: 1px 7px; border-radius: var(--r-pill); cursor: pointer; line-height: 1.5; }
 .dv-src:active { transform: scale(.95); }
@@ -800,7 +802,8 @@ html[data-theme="dark"] .trk-weight .link-btn, html[data-theme="dark"] .trk-link
 [data-fs-big] .pf-act { font-size: calc(12px * min(var(--fs, 1), 1.2)); min-width: 0; white-space: nowrap; }
 
 /* 夥伴大字：成就步道標題讓開右上角兩顆鈕（以前英文標題壓到清單鈕和關閉鈕）；裝扮選單「每月挑戰」只留旗子圖示（點了會跳說明） */
-.ach-modal-h { padding-right: 96px; min-width: 0; }
+.ach-modal-h { padding: 0 96px; min-width: 0; justify-content: center; text-align: center; }   /* 標題置中：左右各留 96px 給右上兩顆鈕（細節輪 A4） */
+.ach-rankrow { justify-content: center; }
 .ach-modal-h > span, .ach-modal-h { overflow-wrap: anywhere; }
 [data-fs-big] .ach-modal-h { font-size: calc(19px * min(var(--fs, 1), 1.25)); line-height: 1.2; }
 [data-fs-big] .hat-cost.hat-quest span { display: none; }

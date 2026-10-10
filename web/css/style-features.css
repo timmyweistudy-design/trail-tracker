@@ -96,8 +96,11 @@
 /* 發文 / 詳情 覆蓋層 */
 .composer-mask, .pv-mask { position: fixed; inset: 0; z-index: var(--z-sheet); background: rgba(22,30,20,.5); backdrop-filter: blur(2px); display: flex; align-items: flex-end; justify-content: center; }
 .composer, .pv { background: var(--bg); width: 100%; max-width: 540px; max-height: min(92vh, calc(100dvh - var(--safe-t) - 10px)); overflow-y: auto; border-radius: var(--r-lg) 22px 0 0; padding: 4px 16px calc(20px + var(--safe-b, 0px)); box-shadow: var(--sh-lg); }
-.composer-head, .pv-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; position: sticky; top: 0; background: var(--bg); padding: 12px 0 10px; z-index: 2; }
-.composer-head b, .pv-head b { font-family: var(--serif); font-size: calc(16px * var(--fs, 1)); }
+.composer-head, .pv-head { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; position: sticky; top: 0; background: var(--bg); padding: 12px 0 10px; z-index: 2; }
+.composer-head b, .pv-head b { font-family: var(--serif); font-size: calc(16px * var(--fs, 1)); text-align: center; min-width: 0; }
+/* 標題列三欄：左右兩欄等寬，標題永遠在正中間（2026-10-10 細節輪 A1：以前 space-between＋右邊空白 0 寬，山社等 7 個面板的標題往右偏 14px） */
+.composer-head > :first-child, .pv-head > :first-child { justify-self: start; }
+.composer-head > :last-child, .pv-head > :last-child { justify-self: end; }
 .pv-head b .ic, .composer-head b .ic { width: 16px; height: 16px; vertical-align: -2px; margin-right: 5px; }
 .comp-x { background: none; border: none; font-size: calc(17px * var(--fs, 1)); cursor: pointer; color: var(--ink-soft); padding: 4px; }
 .comp-post { padding: 7px 18px !important; }
@@ -504,7 +507,8 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 .ach-pgdot.ishere { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 55%, transparent), 0 1px 3px rgba(0,0,0,.3); animation: achDotHere 1.9s ease-in-out infinite; }
 @keyframes achDotHere { 0%, 100% { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent), 0 1px 3px rgba(0,0,0,.3); } 50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 30%, transparent), 0 1px 3px rgba(0,0,0,.3); } }
 /* 頁尾導覽 */
-.ach-pgnav { position: absolute; left: 0; right: 0; bottom: 0; height: calc(58px + var(--safe-b)); padding: 0 24px var(--safe-b); z-index: 9; display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--surface); border-top: 1px solid var(--line-soft); }
+.ach-pgnav { position: absolute; left: 0; right: 0; bottom: 0; height: calc(58px + var(--safe-b)); padding: 0 24px var(--safe-b); z-index: 9; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; background: var(--surface); border-top: 1px solid var(--line-soft); }
+.ach-pgnav > :first-child { justify-self: start; } .ach-pgnav > :last-child { justify-self: end; }   /* 「1 / 6」置中（細節輪 A4：以前左小鈕右大鈕，偏 34px） */
 .ach-pgnav-t { font-family: var(--serif); font-weight: 700; font-size: calc(15px * var(--fs, 1)); color: var(--ink); letter-spacing: 2px; }
 .ach-pgbtn { display: inline-flex; align-items: center; gap: 5px; border: none; background: var(--surface-2); color: var(--ink-soft); font-family: var(--serif); font-weight: 700; font-size: calc(13px * var(--fs, 1)); padding: 9px 12px; border-radius: 999px; cursor: pointer; }
 .ach-pgbtn.up { background: var(--accent); color: #fff; }
@@ -806,7 +810,7 @@ html[data-theme="dark"] .disc-sec, html[data-theme="dark"] .feed-trending-h { co
 .jnum-sm { font-size: calc(15px * var(--fs, 1)); font-weight: 600; }
 .jlbl { font-size: calc(10px * var(--fs, 1)); color: var(--ink-faint); letter-spacing: 1px; margin-top: 4px; white-space: nowrap; }   /* 放大字級時「累積爬升 m」不斷行、單位不落單 */
 .jstats-div { width: 1px; background: var(--line-soft); margin: 2px 0; }
-.jcard .badges { margin: 11px 0 0; padding: 0 18px 15px; }
+.jcard .badges { margin: 11px 0 0; padding: 0 18px 15px; justify-content: center; }   /* 跟上面的數字列一樣置中（細節輪 B1 方案甲：標題、地點靠左，數字、標籤置中） */
 .jcard .badge.closed { display: inline-flex; align-items: center; gap: 3px; }
 .jcard .badge.closed .ic { width: 12px; height: 12px; }
 
