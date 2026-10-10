@@ -25,7 +25,12 @@ let activeRegions = new Set();   // 地區（可複選）
 let curQuery = "";
 
 // 搜尋用的字串正規化：去空白、轉小寫、「台」一律當「臺」（資料寫臺北，大家習慣打台北——以前「台中」搜不到任何一條）
-function nz(s) { return String(s == null ? "" : s).toLowerCase().replace(/\s+/g, "").replace(/台/g, "臺"); }
+// 搜尋正規化：小寫、去空白、台→臺；簡體字轉繁體（優化輪 4 B4：用簡體打「嘉明湖」「太鲁阁」「福山植物园」也找得到；只收地名、步道名常見的字）
+const S2T = "岭嶺湾灣区區县縣乡鄉镇鎮头頭门門东東兰蘭龙龍凤鳳鸟鳥树樹云雲雾霧涧澗涌湧观觀览覽园園环環线線条條桥橋车車马馬鱼魚猫貓虫蟲峡峽圆圓万萬长長宝寶华華丽麗庙廟宫宮风風阳陽阴陰乐樂农農场場坝壩滩灘岛島屿嶼关關驿驛苏蘇圣聖灵靈宁寧义義庄莊罗羅汤湯温溫亲親级級难難历歷艺藝术術馆館栈棧阶階盘盤绕繞尔爾达達叶葉枫楓樱櫻进進选選远遠边邊过過还還这這个個们們见見寻尋访訪游遊鲁魯阁閣兴興广廣丰豐纪紀碍礙济濟泽澤沟溝湿濕巅巔顶頂坛壇凉涼鹅鵝鹰鷹蓝藍绿綠红紅黄黃紫紫铁鐵铜銅银銀钟鐘国國为為来來发發会會时時对對说說经經开開问問题題点點让讓给給运運动動汉漢双雙归歸导導层層岁歲极極杨楊浅淺渔漁炉爐热熱猎獵猪豬电電画畫尽盡矿礦码碼礼禮窑窯笔筆胜勝脉脈节節芦蘆荣榮莲蓮营營虾蝦补補讲講贝貝质質赵趙轮輪连連迹跡钓釣锦錦镜鏡闸閘队隊际際陆陸隐隱须須领領飞飛鲤鯉鹤鶴齐齊龟龜亚亞仓倉仑崙伦倫众眾传傳养養军軍冻凍净淨刘劉剑劍单單卫衛厅廳厂廠压壓参參变變号號团團围圍图圖坚堅垦墾处處夹夾奋奮学學实實宾賓寿壽尘塵岗崗峦巒师師带帶库庫应應庐廬弯彎张張录錄径徑怀懷战戰扬揚护護报報挂掛摄攝无無旧舊显顯晓曉机機杂雜标標栏欄样樣梦夢检檢楼樓横橫欢歡残殘气氣汇匯没沒涛濤润潤满滿滨濱灯燈烟煙烧燒爱愛独獨狮獅现現疗療盖蓋监監离離种種积積穷窮竞競笋筍筑築纵縱练練组組细細织織终終结結络絡统統继繼续續维維网網习習职職联聯脑腦脚腳舰艦药藥莱萊萝蘿规規视視觉覺计計记記许許设設证證识識词詞诗詩话話语語读讀调調谈談财財贵貴费費资資赏賞赖賴赛賽轨軌转轉轻輕载載较較辉輝辽遼迈邁违違适適遗遺邻鄰郑鄭释釋针針钱錢铺鋪链鏈锁鎖闪閃间間阔闊陈陳险險随隨韩韓页頁项項顺順顾顧预預频頻颜顏额額飘飄饭飯饮飲驻駐验驗骑騎鲜鮮鸡雞鸣鳴鸭鴨鸿鴻麦麥齿齒";
+const _S2T = new Map(); for (let i = 0; i < S2T.length; i += 2) _S2T.set(S2T[i], S2T[i + 1]);
+function nz(s) { return String(s == null ? "" : s).toLowerCase().replace(/\s+/g, "").replace(/台/g, "臺").replace(/[\u4e00-\u9fff]/g, c => _S2T.get(c) || c); }
+// 打錯一個字也找得到（三個字以上、完全找不到的時候才用）：名字裡有一段跟查詢只差一個字
+function nearHit(name, q) { if (name.length < q.length) return false; for (let i = 0; i + q.length <= name.length; i++) { let d = 0; for (let j = 0; j < q.length && d < 2; j++) if (name[i + j] !== q[j]) d++; if (d < 2) return true; } return false; }
 // 每條步道的搜尋字串開機後只算一次（2939 條，每打一個字都重算太浪費）；英文地名字典晚載入，載到後要重算
 function hayOf(t) {
   const names = typeof window !== "undefined" && window.TT_NAMES;
@@ -144,7 +149,7 @@ function buildCollections() {
   const ft = favoriteTag();
   _collList = ft ? [{ t: "為你推薦", s: `你常走「${ft}」`, ic: "star", f: ["tag:" + ft], bg: "linear-gradient(135deg,#c79a3d,#9a6f2c)" }, ...COLLECTIONS] : COLLECTIONS.slice();
   box.innerHTML = _collList.map((c, i) =>
-    `<button class="coll-card" data-coll="${i}" style="background:${c.bg}">
+    `<button class="coll-card" data-coll="${i}" data-ic="${c.ic || ""}" style="background:${c.bg}">
        <span class="coll-art" aria-hidden="true">${ic(c.ic || "mountain")}</span>
        <span class="coll-ic" aria-hidden="true">${ic(c.ic || "mountain")}</span>
        <span class="coll-go" aria-hidden="true">${ic("chevron")}</span>
@@ -177,9 +182,15 @@ function buildFsRegion() {
   const chip = r => `<button class="chip" data-region="${escHtml(r)}" aria-pressed="false">${escHtml(r)}</button>`;
   const groups = REGION_GROUPS.map(([g, list]) => [g, list.filter(r => have.has(r))]).concat(rest.length ? [["其他", rest]] : [])
     .filter(([, list]) => list.length)
-    .map(([g, list]) => `<div class="fs-rg"><span class="fs-rg-h">${g}</span>${list.map(chip).join("")}</div>`).join("");
+    .map(([g, list]) => `<div class="fs-rg fs-fold"><button class="fs-rg-h" type="button" aria-expanded="false">${g}<small>${list.length}</small>${ic("chevron")}</button><div class="fs-rg-c">${list.map(chip).join("")}</div></div>`).join("");
   $("#fsRegion").innerHTML = `<div class="fs-rg"><button class="chip active" data-region="all" aria-pressed="true">全部</button>
     <button class="chip" id="fsNear">${ic("pin")} 我附近 10 km</button></div>` + groups;
+  // 地區分成北中南東離島五組折疊（優化輪 4 B2）：以前 22 個縣市全攤開，篩選面板一半都是地區；有選到的那組自動打開
+  $("#fsRegion").querySelectorAll(".fs-fold").forEach(g => {
+    const h = g.querySelector(".fs-rg-h"), set = open => { g.classList.toggle("open", open); h.setAttribute("aria-expanded", String(open)); };
+    set(!!g.querySelector('.chip[aria-pressed="true"]'));
+    h.addEventListener("click", () => set(!g.classList.contains("open")));
+  });
   const nb = $("#fsNear");
   if (nb) nb.addEventListener("click", () => {
     if (curSort === "distance" && nearRadius === 10) { setDistanceSort(); return; }   // 再按一次＝關閉
@@ -375,7 +386,7 @@ function refreshCardCache() {
 }
 const isFavC = id => _favSet.has(id);
 const logC = id => _logCache[id] || {};
-let _mDiffs = [], _mTags = [];
+let _mDiffs = [], _mTags = [], _fz = false;
 function matches(t) {
   // 地區（複選 OR）
   if (activeRegions.size && !activeRegions.has(t.region)) return false;
@@ -400,7 +411,7 @@ function matches(t) {
     if (_nl) {   // 一句話搜尋（js/nl-search.js）：拆成條件比對
       if (!NLSearch.match(t, _nl, estHours, slopeInfo)) return false;
       if (_nl.near && myLoc && (!t.lat || haversine(myLoc, { lat: t.lat, lon: t.lon }) > 25000)) return false;
-    } else if (!hayOf(t).includes(_q)) return false;
+    } else if (!hayOf(t).includes(_q) && !(_fz && nearHit(nz(t.name), _q))) return false;
   }
   return true;
 }
@@ -594,7 +605,11 @@ function render() {
   renderNLBar();
   // 難度／主題條件每次 render 算一次就好（優化輪 D：以前 2,939 條每條都重新展開一次 activeFilters）
   _mDiffs = [...activeFilters].filter(f => /^d\d/.test(f)); _mTags = [...activeFilters].filter(f => f.startsWith("tag:")).map(f => f.slice(4));
-  curList = TRAILS.filter(matches);
+  _fz = false; curList = TRAILS.filter(matches);
+  if (!curList.length && curQuery && _q.length >= 3) {   // 完全找不到 → 改找差一個字的（一句話搜尋也找不到時，退回單純比對名字）
+    const nl0 = _nl; _nl = null; _fz = true; curList = TRAILS.filter(matches);
+    if (curList.length) renderNLBar(); else { _nl = nl0; _fz = false; }
+  }
   if (myLoc) curList.sort((a, b) =>
     (a.lat ? haversine(myLoc, { lat: a.lat, lon: a.lon }) : 9e9) -
     (b.lat ? haversine(myLoc, { lat: b.lat, lon: b.lon }) : 9e9));
@@ -632,7 +647,7 @@ function render() {
   }
   // 預設排序／附近：暫停開放的排到後面（優化輪 B1：以前一打開前兩張都是「暫停開放」）。使用者自己選的排序（長度、難度…）照原樣
   if (curSort === "default" || curSort === "distance") { const open = [], shut = []; for (const t of curList) (isClosed(t) ? shut : open).push(t); if (shut.length && open.length) curList = open.concat(shut); }
-  $("#resultCount").textContent = `共 ${curList.length.toLocaleString("en-US")} 條步道`;
+  $("#resultCount").textContent = _fz && curList.length ? ttT("找不到「{q}」，這些名字很接近").replace("{q}", curQuery) : `共 ${curList.length.toLocaleString("en-US")} 條步道`;
   updateFilterDot();
   updateCollections();
   if (mapOn) { showBrowseMap(); return; }
@@ -784,15 +799,17 @@ function renderBrowseMarkers() {
   updateMapCount();
   if (!browseMap || !browseLayer) return;
   const b = browseMap.getBounds().pad(0.35);   // 視野外擴 35%，平移時邊緣不會空
-  const visible = new Set();
-  let n = 0;
+  const visible = new Set(), add = [], drop = [];
   for (const t of curList) {
     if (!t.lat || !b.contains([t.lat, t.lon])) continue;
     visible.add(t.id);
-    if (!browseMarkers.has(t.id)) { const mk = _browseMarker(t); browseMarkers.set(t.id, mk); browseLayer.addLayer(mk); }
-    if (++n >= 2500) break;   // 保險上限（>全部步道數，全覽時不漏；縮放進去時視野自然culling到數百）
+    if (!browseMarkers.has(t.id)) { const mk = _browseMarker(t); browseMarkers.set(t.id, mk); add.push(mk); }
   }
-  for (const [id, mk] of browseMarkers) { if (!visible.has(id)) { browseLayer.removeLayer(mk); browseMarkers.delete(id); } }
+  for (const [id, mk] of browseMarkers) { if (!visible.has(id)) { drop.push(mk); browseMarkers.delete(id); } }
+  // 一次整批加／減（優化輪 4 B1）：以前一個一個 addLayer，全台 2,939 個點每加一個叢集就重算一次，切到地圖卡 538 ms（降速 4 倍）；
+  // 整批 addLayers 叢集只算一次，chunkedLoading 再把它切成小段。以前還有 2,500 個的上限，步道變多之後全覽會漏掉四百多條
+  if (drop.length) { if (browseLayer.removeLayers) browseLayer.removeLayers(drop); else drop.forEach(mk => browseLayer.removeLayer(mk)); }
+  if (add.length) { if (browseLayer.addLayers) browseLayer.addLayers(add); else add.forEach(mk => browseLayer.addLayer(mk)); }
 }
 
 // 附近半徑篩選（依距離排序開啟後出現）

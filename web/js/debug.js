@@ -334,20 +334,9 @@ async function ttIsOwner() {
     return !!(data && data.user && (data.user.email || "").toLowerCase() === TT_OWNER_EMAIL);
   } catch (e) { return false; }
 }
-async function toggleDebugPanel() {
-  let p = document.getElementById("debugPanel");
-  if (p) { p.remove(); return; }
-  if (window.loadSocial) { try { await window.loadSocial(); } catch (e) { /* 社群模組沒載好也照樣判斷 */ } }   // 以前社群還沒載入時一律判定「不是開發者」
-  if (!(await ttIsOwner())) { if (typeof toast === "function") toast("測試面板僅限開發者使用"); return; }
-  p = document.createElement("div");
-  p.id = "debugPanel"; p.className = "debug-panel";
-  const closeAnd = fn => () => { const dp = document.getElementById("debugPanel"); if (dp) dp.remove(); return fn(); };
-  // 看得到效果的夥伴按鈕：收起面板（面板會蓋住夥伴卡）→ 切到夥伴頁 → 把舞台捲到畫面中間 → 再做（2026-10-07 使用者：新的按鈕有些沒反應＝被面板擋住）
-  const seePet = fn => closeAnd(() => { const tab = document.querySelector('.tab[data-view="pet"]'); if (tab && document.body.dataset.view !== "pet") tab.click();
-    setTimeout(() => { const b = document.querySelector(".ps-box"); if (b) b.scrollIntoView({ block: "center", behavior: "smooth" }); setTimeout(fn, 450); }, 250); });
-  const feedWith = xs => seePet(() => { ttDebug.spots(xs); ttDebug.addBerries(10); ttDebug.resetFeed(); setTimeout(() => { const f = document.getElementById("petFeed"); if (f) f.click(); }, 300); });
-  const tourReset = () => { ["tt_onboarded_v2", "tt_tour_resume"].forEach(k => localStorage.removeItem(k)); };
-  const SECTIONS = [
+// 測試面板的按鈕清單（優化輪 4 A2：從 toggleDebugPanel 拆出來，113 行的資料不要跟畫面邏輯擠在一起）
+function debugSections(seePet, closeAnd, feedWith, tourReset) {
+  return [
     ["夥伴", [
       ["+5km", () => ttDebug.addKm(5)], ["+20km", () => ttDebug.addKm(20)], ["進化➡", () => ttDebug.evolve()], ["神龍🐉", () => ttDebug.maxLevel()],
       ["+50🍓", () => ttDebug.addBerries(50)], ["❤️滿", () => ttDebug.setAffinity(100)], ["可再餵", () => ttDebug.resetFeed()], ["+30天", () => ttDebug.addDays(30)],
@@ -460,6 +449,21 @@ async function toggleDebugPanel() {
       ["🧭重設情境導覽", closeAnd(() => { ["tt_coach_trail", "tt_coach_team", "tt_coach_record", "tt_coach_record_tools", "tt_coach_peaks", "tt_coach_soc_friends", "tt_coach_soc_explore", "tt_coach_soc_search", "tt_coach_soc_notif", "tt_coach_soc_me"].forEach(k => localStorage.removeItem(k)); toast("情境導覽已重設：重新打開步道／小隊／記錄／收集冊／社群各頁就會再出現"); })],
     ]],
   ];
+}
+async function toggleDebugPanel() {
+  let p = document.getElementById("debugPanel");
+  if (p) { p.remove(); return; }
+  if (window.loadSocial) { try { await window.loadSocial(); } catch (e) { /* 社群模組沒載好也照樣判斷 */ } }   // 以前社群還沒載入時一律判定「不是開發者」
+  if (!(await ttIsOwner())) { if (typeof toast === "function") toast("測試面板僅限開發者使用"); return; }
+  p = document.createElement("div");
+  p.id = "debugPanel"; p.className = "debug-panel";
+  const closeAnd = fn => () => { const dp = document.getElementById("debugPanel"); if (dp) dp.remove(); return fn(); };
+  // 看得到效果的夥伴按鈕：收起面板（面板會蓋住夥伴卡）→ 切到夥伴頁 → 把舞台捲到畫面中間 → 再做（2026-10-07 使用者：新的按鈕有些沒反應＝被面板擋住）
+  const seePet = fn => closeAnd(() => { const tab = document.querySelector('.tab[data-view="pet"]'); if (tab && document.body.dataset.view !== "pet") tab.click();
+    setTimeout(() => { const b = document.querySelector(".ps-box"); if (b) b.scrollIntoView({ block: "center", behavior: "smooth" }); setTimeout(fn, 450); }, 250); });
+  const feedWith = xs => seePet(() => { ttDebug.spots(xs); ttDebug.addBerries(10); ttDebug.resetFeed(); setTimeout(() => { const f = document.getElementById("petFeed"); if (f) f.click(); }, 300); });
+  const tourReset = () => { ["tt_onboarded_v2", "tt_tour_resume"].forEach(k => localStorage.removeItem(k)); };
+  const SECTIONS = debugSections(seePet, closeAnd, feedWith, tourReset);
   // 夥伴的按鈕依用途重新分組（2026-10-09 修正案 R9）：以前四組、超過 100 顆，調動畫時找不到；照按鈕名稱自動分，之後加新按鈕也會落到對的組
   { const isPet = t => /^夥伴/.test(t), seen = new Set(), all = [];
     SECTIONS.filter(([t]) => isPet(t)).forEach(([, bs]) => bs.forEach(b => { if (!seen.has(b[0])) { seen.add(b[0]); all.push(b); } }));

@@ -39,10 +39,11 @@ ${trks}
   function parse(text) {
     const doc = new DOMParser().parseFromString(text, "application/xml");
     const nodes = [...doc.querySelectorAll("trkpt, rtept")];
-    return nodes.map(n => ({
+    return nodes.map(n => { const e = n.querySelector("ele"); return {
       lat: parseFloat(n.getAttribute("lat")),
       lon: parseFloat(n.getAttribute("lon")),
-    })).filter(p => !isNaN(p.lat) && !isNaN(p.lon));
+      ele: e ? parseFloat(e.textContent) : null,   // 海拔（匯入預覽顯示範圍用）
+    }; }).filter(p => !isNaN(p.lat) && !isNaN(p.lon));
   }
 
   return { exportRecord, exportAll, parse };

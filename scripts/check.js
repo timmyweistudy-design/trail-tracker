@@ -102,7 +102,7 @@ const BACKUP_EXEMPT = new Set([
   "tt_offline_sets", "tt_tiles_migrated", "tt_tiles_clean1", "tt_tiles_open1",   // 離線地圖清單／搬家旗標：圖磚只在這台手機，跨機還原沒意義
   "tt_debug_free",                                        // 測試面板「模擬免費用戶」：只在這台測試用
   "tt_pet_sound_dev",                                     // 測試面板「試聽音效（開發中）」：只在這台
-  "tt_last_loc",                                          // 記錄地圖的起始位置：只是這台手機上次定位到的地方
+  "tt_last_loc", "tt_rec_big", "tt_mrecap_x",                            // 記錄地圖起始位置；記錄大字模式（這台手機的偏好）                                          // 記錄地圖的起始位置：只是這台手機上次定位到的地方
   "tt_push_hint_off",                                     // 社群通知頁的推播提示關掉了（裝置偏好）
   "tt_set_open", "tt_hist_hidesim",                       // 我的頁：設定展開狀態、行程列表篩選（純介面偏好）
   "tt_team", "tt_team_name", "tt_team_live",              // 目前小隊/同行開關：裝置選擇
@@ -224,7 +224,7 @@ try {
   const news = new Set();
   const half = new Set();   // 半翻：tx 有回傳但英文結果仍殘留中文（如「、」切段只命中一部分）——付費牆踩過
   for (const f of files) {
-    if (f.endsWith("i18n.js") || f.endsWith("i18n-names.js") || /[\\/]i18n[\\/]/.test(f) || /geo-manifest\.js$|[\\/]geo[\\/]/.test(f) || /trails-(data|detail|geo)\.js$|peaks-data\.js$|debug\.js$|admin\.js$|sound-board\.js$/.test(f) || f.endsWith("ecology-data.js")) continue;
+    if (f.endsWith("i18n.js") || f.endsWith("i18n-names.js") || /[\\/]i18n[\\/]/.test(f) || /geo-manifest\.js$|[\\/]geo[\\/]/.test(f) || /trails-(data|detail|geo)\.js$|peaks-data\.js$|guides-en\.js$|debug\.js$|admin\.js$|sound-board\.js$/.test(f) || f.endsWith("ecology-data.js")) continue;
     const src2 = read(f).replace(/const TT_BAD = \{[\s\S]*?\n\};/, "");   // 不當字詞清單是比對用的，不是介面文字
     for (const m of src2.matchAll(/[>"`]([^<>`"$\\{}]*[\u4e00-\u9fff][^<>`"$\\{}]*)[<"`$]/g)) {
       const t = m[1].trim();
@@ -269,6 +269,20 @@ try {
     if (!new RegExp("^" + prefix + "_[A-Za-z0-9]{27}$").test(v))
       err(`[IAP] ${name} 格式不對（長度 ${v.length}，應為 ${prefix}_ 加 27 個英數共 32 字元）：「${v}」`
         + `——貼錯只會在實機回 401 Invalid API Key，畫面卻只顯示「設定中」`);
+  }
+}
+
+// K. 頂層名稱不能重複（優化輪 4 A3）：所有頁面腳本共用同一個全域，兩支檔案各寫一個同名的 function／const，
+//    後載入的會靜靜蓋掉前一個（或 const 直接讓整支檔案載不進來）。全站有 560 多個頂層名稱，靠眼睛擋不住
+{
+  const seen = new Map();
+  for (const f of fs.readdirSync(path.join(WEB, "js")).filter(x => x.endsWith(".js"))) {
+    const src = read(path.join(WEB, "js", f));
+    for (const m of src.matchAll(/^(?:async )?function (\w+)|^(?:const|let|var) (\w+)\s*=/gm)) {
+      const n = m[1] || m[2];
+      if (seen.has(n) && seen.get(n) !== f) err(`[全域] 「${n}」在 ${seen.get(n)} 和 ${f} 都有頂層宣告——後載入的會蓋掉前一個`);
+      else seen.set(n, f);
+    }
   }
 }
 

@@ -166,6 +166,7 @@
       </div>
       <div class="rec-prog" id="recProg" hidden></div>
       <div class="rec-mini"><span>≈ <b id="stSteps">0</b> 步</span><span>≈ <b id="stKcal">0</b> 大卡</span></div>
+      <button class="rec-bigtog" id="recBigTog" aria-pressed="false">大字</button>
     </div>
     <!-- 版面順序（使用者指定）：小隊(#teamReadyBar 由 teamlive 插在此前) → 已選古道 → 天氣卡 → 上次紀錄 → GPS → 地圖 → 開始鈕 → 開始文字 -->
     <div class="sel-trail" id="selTrail" hidden></div>
@@ -218,6 +219,14 @@
   <section id="view-pet" class="view">
     <div class="pet-head"><h2 class="view-title"><svg class="ic" viewBox="0 0 24 24"><circle cx="7" cy="9" r="2"/><circle cx="12" cy="6.5" r="2"/><circle cx="17" cy="9" r="2"/><path d="M12 12c-3.2 0-5.5 3-5.5 5.2 0 1.6 1.3 2.3 2.8 2.3 1.2 0 1.8-.6 2.7-.6s1.5.6 2.7.6c1.5 0 2.8-.7 2.8-2.3C17.5 15 15.2 12 12 12Z"/></svg> 山林夥伴</h2></div>
     <div id="petCard"></div>
+    <!-- 頁內跳轉（優化輪 4 E1）：夥伴頁很長，舞台下面一排直接跳到各區 -->
+    <nav class="me-jump pet-jump" aria-label="跳到">
+      <button class="me-jump-b" data-jump="petJourney">旅行</button>
+      <button class="me-jump-b" data-jump="petQuests">每日任務</button>
+      <button class="me-jump-b" data-jump="petMonth">本月挑戰</button>
+      <button class="me-jump-b" data-jump="petFriends">好友</button>
+      <button class="me-jump-b" data-jump="petBadges">成就</button>
+    </nav>
     <div id="petJourney"></div>
     <div id="petQuests"></div>
     <div id="petMonth"></div>

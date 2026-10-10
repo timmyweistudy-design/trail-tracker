@@ -67,7 +67,7 @@ const Premium = (() => {
   // [id, 圖示, 名稱, 說明, 免費, PRO]；分組只影響比較表的小標題
   const FEATURES = [
     ["地圖", [
-      ["offline", "map", "離線地圖", "會員還能匯出／匯入地圖包，換手機不必重下", "10 MB", "不限量"],
+      ["offline", "map", "全台完整離線地圖", "沒有網路也能看全台到縮放 15 級（約 1.7 GB）；還能匯出／匯入地圖包，換手機不必重下", "10 MB（約 20 條步道）", "全台完整"],
       ["3d", "mountain", "3D 地形地圖", "衛星影像貼在真實地形上，可旋轉傾斜", "—", "✓"],
       ["gpx", "route", "跟著路線走（GPX）", "匯入別人的路線跟著走，也能把軌跡匯出", "—", "✓"],
       ["sim", "play", "模擬模式", "沒有 GPS 也能沿真實路線預覽整條步道", "—", "✓"],
@@ -103,6 +103,15 @@ const Premium = (() => {
   ];
   const ALSO_FREE = ["附近步道", "記錄中鎖定畫面卡片", "夥伴養成", "離線地圖 10 MB"];
   const icc = n => (typeof ic === "function" ? ic(n) : "");
+  // 預覽圖（優化輪 4 H）：沒用過的人光看文字想像不出來，一排可以左右滑的小插圖（畫在程式裡，不用下載）
+  const PREVIEW = [
+    ["offline", "全台完整離線地圖", '<rect width="120" height="80" fill="#e9efe3"/><path d="M58 6c10 6 16 20 18 34s-4 30-12 36c-6-8-14-14-16-26S50 14 58 6Z" fill="#9cc49a" stroke="#4f7a52" stroke-width="1.2"/><g stroke="#4f7a52" stroke-opacity=".25">' + [0, 1, 2, 3, 4, 5].map(i => `<path d="M${10 + i * 20} 0v80M0 ${8 + i * 14}h120"/>`).join("") + '</g><circle cx="92" cy="58" r="13" fill="#2c5d3f"/><path d="M92 50v12m-5-4 5 5 5-5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/>'],
+    ["3d", "3D 地形地圖", '<defs><linearGradient id="pv3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b8d4e8"/><stop offset="1" stop-color="#e8f1f6"/></linearGradient></defs><rect width="120" height="80" fill="url(#pv3)"/><path d="M0 62 26 30l14 12 22-26 20 22 14-10 24 26v26H0Z" fill="#6f9a64"/><path d="M0 70 30 44l16 10 24-18 22 18 28-12v38H0Z" fill="#4f7a48"/><path d="M62 16l-6 8 6-2 6 3Z" fill="#fff"/><path d="M14 72c12-8 22-14 34-14s22-10 30-20" stroke="#e8893b" stroke-width="2.4" fill="none" stroke-dasharray="4 3"/>'],
+    ["footmap", "足跡熱力圖", '<rect width="120" height="80" fill="#eef1ea"/><path d="M0 50h120M0 22h120M40 0v80M84 0v80" stroke="#cfd8c6"/>' + [[8, 70, 40, 30, 70, 46, 110, 14], [14, 66, 44, 36, 76, 40, 104, 20], [6, 44, 36, 50, 62, 30, 112, 36], [20, 74, 50, 52, 82, 58, 116, 66]].map(q => `<path d="M${q[0]} ${q[1]}Q${q[2]} ${q[3]} ${q[4]} ${q[5]}T${q[6]} ${q[7]}" stroke="#e8590c" stroke-opacity=".45" stroke-width="4" fill="none" stroke-linecap="round"/>`).join("")],
+    ["slope", "坡度著色＋公里樁", '<rect width="120" height="80" fill="#f4f1e8"/><path d="M6 66 30 58" stroke="#4a8f55" stroke-width="4" stroke-linecap="round"/><path d="M30 58 56 40" stroke="#c39327" stroke-width="4" stroke-linecap="round"/><path d="M56 40 76 18" stroke="#c0542f" stroke-width="4" stroke-linecap="round"/><path d="M76 18 96 30 114 34" stroke="#4a8f55" stroke-width="4" stroke-linecap="round"/>' + [[30, 58, 1], [56, 40, 2], [96, 30, 3]].map(([x, y, n]) => `<circle cx="${x}" cy="${y}" r="7" fill="#fff" stroke="#2c5d3f" stroke-width="1.4"/><text x="${x}" y="${y + 3}" font-size="8" font-weight="700" text-anchor="middle" fill="#2c5d3f">${n}</text>`).join("")],
+    ["journey", "夥伴的旅行（明信片）", '<rect width="120" height="80" fill="#efe6d4"/><rect x="14" y="10" width="92" height="60" rx="4" fill="#fffaf0" stroke="#d8c9a8"/><path d="M20 58 40 34l12 12 16-20 14 16 18-10v26H20Z" fill="#8fb08a"/><circle cx="34" cy="24" r="6" fill="#f0b74a"/><rect x="84" y="15" width="16" height="19" rx="2" fill="#fff" stroke="#c2683d" stroke-dasharray="2 1.5"/><path d="M88 29l4-7 4 7Z" fill="#c2683d"/>'],
+    ["analytics", "進階分析", '<rect width="120" height="80" fill="#f4f1e8"/>' + [18, 30, 22, 44, 36, 52, 40].map((h, i) => `<rect x="${10 + i * 11}" y="${70 - h}" width="7" height="${h}" rx="2" fill="${i === 5 ? "#e8893b" : "#4a8f55"}"/>`).join("") + '<polygon points="98,16 112,26 108,44 88,44 84,26" fill="#c2683d" fill-opacity=".25" stroke="#c2683d" stroke-width="1.2"/><polygon points="98,8 118,24 112,50 84,50 78,24" fill="none" stroke="#bdb3a0"/>'],
+  ];
 
   // feat：從哪個 PRO 功能點進來（最上面先講那個功能）；note：補一句（例如收集冊「已蓋 5 章」）
   function openUpgrade(feat, note) {
@@ -124,6 +133,7 @@ const Premium = (() => {
       </div>
       <button class="btn primary" id="pmGo">免費試用 7 天</button>
       <div class="pm-fine">試用期免費，之後依方案自動續訂，可隨時取消</div>
+      <div class="pm-pv" aria-label="Premium">${PREVIEW.map(([id, t, svg]) => `<figure class="pm-pv-c${f && f[0] === id ? " on" : ""}"><svg viewBox="0 0 120 80" aria-hidden="true">${svg}</svg><figcaption>${t}</figcaption></figure>`).join("")}</div>
       <div class="pm-free">
         <div class="pm-free-h">${icc("shield")}<b>安全功能永遠免費</b></div>
         <div class="pm-free-grid">${ALWAYS_FREE.map(([i, t, xs]) => `<div class="pm-fg"><div class="pm-fg-h">${icc(i)}${t}</div><ul>${xs.map(x => `<li>${x}</li>`).join("")}</ul></div>`).join("")}</div>

@@ -74,15 +74,23 @@ function detailGradeHtml(t) {
     </div>`;
 }
 // 介紹：超過 6 行先收起來；OSM 只有一句「步道系統：地方級」的不當正文，放進基本資料
+function guideEnOf(t) {
+  const lang = typeof I18n !== "undefined" ? I18n.lang() : "zh";
+  return lang !== "zh" && lang !== "cn" && typeof guideEn === "function" ? guideEn(t.id, t.guide) : null;
+}
 function guideIsNote(t) { const g = String(t.guide || "").trim(); return g.length < 40 && !/\n/.test(g); }
 function detailGuideHtml(t) {
   if (!t.guide || guideIsNote(t)) return "";
-  const g = String(t.guide).trim();
-  const tr = (typeof I18n !== "undefined" && I18n.lang() !== "zh")
-    ? `<div class="pv-tr-row"><button class="link-btn" id="guideTranslate">${ic("translate")} ${ttT("翻譯年糕")}</button></div><div class="guide pv-cap-tr" id="guideTr" hidden></div>` : "";
+  const zh = String(t.guide).trim();
+  // 優化輪 4 A5：非中文介面先給預先翻好的英文（可切回原文）；英文模式以外的語言另外還能用翻譯年糕
+  const en = guideEnOf(t), g = en || zh, lang = typeof I18n !== "undefined" ? I18n.lang() : "zh";
+  const orig = en ? `<button class="link-btn" id="guideOrig">${ttT("顯示原文")}</button>` : "";
+  const tr = (lang !== "zh" && lang !== "cn" && !(en && lang === "en"))
+    ? `<button class="link-btn" id="guideTranslate">${ic("translate")} ${ttT("翻譯年糕")}</button>` : "";
+  const trRow = orig || tr ? `<div class="pv-tr-row">${orig}${tr}</div>${tr ? `<div class="guide pv-cap-tr" id="guideTr" hidden></div>` : ""}` : "";
   return `<div class="section-title">${ic("book")}<span>${ttT("步道介紹")}</span><small class="dv-h-src">${ttT(t.source === "forestry" ? "林業署" : "OpenStreetMap")}</small></div>
-    <div class="guide dv-guide${g.length > 180 ? " clamp" : ""}" id="dvGuide">${escHtml(g).replace(/\n/g, "<br>")}</div>
-    ${g.length > 180 ? `<button class="link-btn dv-more" id="dvGuideMore">${ttT("展開全文")}</button>` : ""}${tr}`;
+    <div class="guide dv-guide${g.length > 180 ? " clamp" : ""}" id="dvGuide"${en ? ' lang="en"' : ""}>${escHtml(g).replace(/\n/g, "<br>")}</div>
+    ${g.length > 180 ? `<button class="link-btn dv-more" id="dvGuideMore">${ttT("展開全文")}</button>` : ""}${trRow}`;
 }
 // 基本資料：一列一項（標籤｜內容），沒有的不列
 function detailInfoHtml(t) {
@@ -96,7 +104,7 @@ function detailInfoHtml(t) {
   if (ent.length) rows.push(["登山口", escHtml(ent.slice(0, 3).join("、"))]);
   if (t.system) rows.push(["步道系統", escHtml(t.system)]);
   if (t.admin) rows.push(["管理單位", escHtml(t.admin)]);
-  if (t.guide && guideIsNote(t) && !/OpenStreetMap/.test(t.guide)) rows.push(["備註", escHtml(String(t.guide).trim())]);   // 「此為社群（OpenStreetMap）收錄」頁尾已經寫了
+  if (t.guide && guideIsNote(t) && !/OpenStreetMap/.test(t.guide)) rows.push(["備註", escHtml(guideEnOf(t) || String(t.guide).trim())]);   // 「此為社群（OpenStreetMap）收錄」頁尾已經寫了
   if (t.url && /^https:\/\//.test(t.url)) rows.push(["官方頁面", `<a href="${escHtml(t.url)}" target="_blank" rel="noopener">${ttT(t.source === "forestry" ? "台灣山林悠遊網" : "相關網頁")} ›</a>`]);
   if (!rows.length) return "";
   return `<div class="section-title">${ic("info")}<span>${ttT("基本資料")}</span></div>
@@ -238,7 +246,8 @@ async function openDetail(id, opts) {
   $("#detailSheet").classList.add("show");
   $("#detailSheet").scrollTop = 0;
   $("#closeDetailBtn").focus({ preventScroll: true });
-  await Promise.all([ensureGeo(t.region), ensureDetail()]);   // 幾何只載這條步道的縣市分片
+  const needEn = typeof I18n !== "undefined" && !/^(zh|cn)$/.test(I18n.lang());   // 英文版介紹（80 KB，只有非中文介面載）
+  await Promise.all([ensureGeo(t.region), ensureDetail(), needEn ? ensureScript("js/guides-en.js") : null]);   // 幾何只載這條步道的縣市分片
   if (_detailTrail !== t) return;
   mergeDetail(t);                       // 併入 guide/entrances/交通等詳情欄位
   const credit = t.source === "forestry" ? ttT("資料來源：林業及自然保育署 開放資料") : ttT("資料來源：OpenStreetMap 貢獻者（社群步道，詳細資料有限）");
@@ -276,29 +285,36 @@ async function openDetail(id, opts) {
   if (typeof window.ttCoachTrail === "function") setTimeout(() => window.ttCoachTrail(!!geoOf(t)), 550);
 }
 
+function detailTrBtn(btnId, outId, getSrc) {
+  const btn = $(btnId); if (!btn) return;
+  btn.addEventListener("click", async () => {
+    const out = $(outId); if (!out) return;
+    if (!out.hidden) { out.hidden = true; btn.innerHTML = `${ic("translate")} ${ttT("翻譯年糕")}`; return; }
+    if (out.dataset.done) { out.hidden = false; btn.innerHTML = `${ic("translate")} ${ttT("收合翻譯")}`; return; }
+    btn.disabled = true; btn.textContent = ttT("翻譯中…");
+    const src = getSrc();
+    const tr = (typeof ttTranslate === "function" && src) ? await ttTranslate(src, ttTrTarget()) : null;
+    btn.disabled = false;
+    if (!tr) { btn.textContent = ttT("翻譯失敗，點此重試"); return; }
+    out.textContent = tr; out.dataset.done = "1"; out.hidden = false;
+    btn.innerHTML = `${ic("translate")} ${ttT("收合翻譯")}`;
+  });
+}
 function bindDetail(t) {
   const body = $("#detailBody");
   const back = $("#detBack"); if (back) back.addEventListener("click", () => openDetail(back._id || _detailBack.id));
   if (back) back._id = _detailBack.id;
   body.querySelectorAll(".sib-chip").forEach(b => b.addEventListener("click", () => openDetail(b.dataset.sib, { from: true })));
   // 翻譯年糕：路況公告、介紹文（非中文介面）
-  const trBtn = (btnId, outId, getSrc) => {
-    const btn = $(btnId); if (!btn) return;
-    btn.addEventListener("click", async () => {
-      const out = $(outId); if (!out) return;
-      if (!out.hidden) { out.hidden = true; btn.innerHTML = `${ic("translate")} ${ttT("翻譯年糕")}`; return; }
-      if (out.dataset.done) { out.hidden = false; btn.innerHTML = `${ic("translate")} ${ttT("收合翻譯")}`; return; }
-      btn.disabled = true; btn.textContent = ttT("翻譯中…");
-      const src = getSrc();
-      const tr = (typeof ttTranslate === "function" && src) ? await ttTranslate(src, ttTrTarget()) : null;
-      btn.disabled = false;
-      if (!tr) { btn.textContent = ttT("翻譯失敗，點此重試"); return; }
-      out.textContent = tr; out.dataset.done = "1"; out.hidden = false;
-      btn.innerHTML = `${ic("translate")} ${ttT("收合翻譯")}`;
-    });
-  };
+  const trBtn = detailTrBtn;   // 翻譯按鈕（優化輪 4 A2：從 bindDetail 拆出來）
   trBtn("#condTranslate", "#condTr", () => (t.condition && [t.condition.title, t.condition.content].filter(Boolean).join("\n")) || "");
   trBtn("#guideTranslate", "#guideTr", () => t.guide || "");
+  const gOrig = $("#guideOrig"), gBox = $("#dvGuide");
+  if (gOrig && gBox) gOrig.addEventListener("click", () => {
+    const toZh = gBox.lang === "en", txt = toZh ? String(t.guide).trim() : guideEnOf(t);
+    gBox.innerHTML = escHtml(txt).replace(/\n/g, "<br>"); gBox.lang = toZh ? "zh-Hant" : "en";
+    gOrig.textContent = ttT(toZh ? "顯示英文" : "顯示原文");
+  });
   // 分頁：生態／周邊第一次點到才建內容
   const navBtns = $("#detailNav").querySelectorAll("button");
   const panes = body.querySelectorAll(".tabpane");
@@ -788,6 +804,7 @@ function offlineAllow(tiles, silent) {
 const FAV_FREE = 20;
 function favAddAllowed() {
   if (isPro()) return true;
+  { const n = Store.getFavs().length; if (n >= FAV_FREE - 3 && n < FAV_FREE) setTimeout(() => toast(ttT("免費收藏還剩 {n} 個名額").replace("{n}", FAV_FREE - n - 1)), 900); }   // 快到上限前先說（優化輪 4 H），不要等按了才跳
   if (Store.getFavs().length >= FAV_FREE) {
     toast(`免費收藏上限 ${FAV_FREE} 條，升級 Premium 無限收藏`);
     if (typeof Premium !== "undefined") Premium.openUpgrade("favs");
@@ -797,27 +814,43 @@ function favAddAllowed() {
 }
 
 // 預載此步道範圍的離線地圖圖磚
-// 一鍵下載全台離線地圖（概覽，縮放 7–13；自動壓低 zmax 以控制張數）
+// 一鍵下載全台離線地圖（優化輪 4 H：PRO 主打「全台完整離線」）
+//   PRO：縮放 7～15（開放資料版最細的一級，約 8.9 萬張、1.7 GB）；免費：全台概覽（縮放 13 以內、約 6,000 張，算在 10 MB 額度裡）
+//   下載前查手機剩多少空間、請瀏覽器把資料標成「不要自動清掉」；可以暫停，已存的留著，下次從中斷的地方接著下載（已存過的圖磚會跳過）
+const TW_BBOX = { n: 25.35, s: 21.85, e: 122.05, w: 119.95 };
+function taiwanTiles(full) {
+  if (full) return Offline.tileList(TW_BBOX, 7, 15);
+  let zmax = 13; while (zmax > 9 && Offline.tileList(TW_BBOX, 7, zmax).length > 6000) zmax--;
+  return Offline.tileList(TW_BBOX, 7, zmax);
+}
+let _twStop = false;
 async function downloadAllTaiwan() {
-  const bbox = { n: 25.35, s: 21.85, e: 122.05, w: 119.95 };
-  let zmax = 13;
-  while (zmax > 9 && Offline.tileList(bbox, 7, zmax).length > 6000) zmax--;
-  const tiles = Offline.tileList(bbox, 7, zmax);
+  const full = isPro(), tiles = taiwanTiles(full);
   const btn = $("#btnAllOffline"), box = $("#allOfflineBox");
-  // 確認文字講人話（以前寫「縮放 7–13」，而且整段沒翻譯）；按鈕文字分段翻譯、圖示不再被「下載中…」吃掉
-  const mbTxt = (tiles.length * 0.02).toFixed(0);
-  if (!(await ttConfirm(`${ttT("下載全台概覽地圖？")}\n${tiles.length} ${ttT("張圖磚")} · ≈ ${mbTxt} MB\n\n${ttT("離線也能看整個台灣的大範圍地圖；步道細節請到步道頁另外按「預載離線地圖」。下載要幾分鐘，請讓 App 開著。")}`, ttT("下載"), ttT("取消")))) return;
+  const mb = tiles.length * TILE_EST_MB, sizeTxt = mb >= 1024 ? (mb / 1024).toFixed(1) + " GB" : mb.toFixed(0) + " MB";
+  let freeMb = null; try { const e = navigator.storage && navigator.storage.estimate ? await navigator.storage.estimate() : null; if (e && e.quota) freeMb = (e.quota - (e.usage || 0)) / 1048576; } catch (e) { /* */ }
+  if (freeMb != null && freeMb < mb * 1.1) { toast(ttT("手機空間不夠：需要約 {a}，剩 {b}").replace("{a}", sizeTxt).replace("{b}", freeMb >= 1024 ? (freeMb / 1024).toFixed(1) + " GB" : freeMb.toFixed(0) + " MB")); return; }
+  const msg = full
+    ? `${ttT("下載全台完整離線地圖？")}\n${tiles.length.toLocaleString()} ${ttT("張圖磚")} · ≈ ${sizeTxt}\n\n${ttT("沒有網路也能看全台到縮放 15 級的細節。建議接 Wi-Fi 和電源；可以隨時暫停，下次會從中斷的地方接著下載。")}`
+    : `${ttT("下載全台概覽地圖？")}\n${tiles.length} ${ttT("張圖磚")} · ≈ ${sizeTxt}\n\n${ttT("離線也能看整個台灣的大範圍地圖；步道細節請到步道頁另外按「預載離線地圖」。")}`;
+  if (!(await ttConfirm(msg, ttT("下載"), ttT("取消")))) return;
   if (!offlineAllow(tiles)) return;   // 非會員：MB 額度制
+  try { if (navigator.storage && navigator.storage.persist) await navigator.storage.persist(); } catch (e) { /* */ }
+  _twStop = false;
   box.hidden = false; box.style.display = "block";
   const label = btn.innerHTML;
   btn.disabled = true; btn.innerHTML = `${ic("globe")} ${ttT("下載中…")}`;
+  const t0 = Date.now();
   try {
     const r = await Offline.download(tiles, (done, total) => {
-      box.innerHTML = `${ttT("下載全台地圖中…")} ${done}/${total}<div class="offline-bar"><i style="width:${Math.round(done / total * 100)}%"></i></div>`;
-    });
-    addOfflineMb(r.mb); saveOfflineSet("taiwan", { name: "全台概覽" });
-    box.innerHTML = `${ic("check")} <span>${ttT("全台概覽地圖可以離線看了")}</span>${ttParen(`${r.ok}/${r.total} ${ttT("張圖磚")}`)}`;
-    btn.innerHTML = `${ic("check")} ${ttT("已下載全台離線地圖")}`;
+      const pct = Math.round(done / total * 100), left = done > 50 ? Math.round((Date.now() - t0) / done * (total - done) / 60000) : null;
+      box.innerHTML = `${ttT("下載全台地圖中…")} ${done.toLocaleString()}/${total.toLocaleString()}${left != null ? ` · ${ttT("約剩 {n} 分鐘").replace("{n}", Math.max(1, left))}` : ""}<div class="offline-bar"><i style="width:${pct}%"></i></div>${full ? `<button class="btn ghost op-pause" id="twPause">${ttT("暫停")}</button>` : ""}`;
+      const pb = document.getElementById("twPause"); if (pb && !pb.__b) { pb.__b = 1; pb.addEventListener("click", () => { _twStop = true; }); }
+    }, { stop: () => _twStop });
+    addOfflineMb(r.mb); saveOfflineSet(full ? "taiwan_full" : "taiwan", { name: full ? "全台完整" : "全台概覽" });
+    if (_twStop) box.innerHTML = `${ic("pause")} <span>${ttT("已暫停，下次按會從中斷的地方接著下載")}</span>`;
+    else box.innerHTML = `${ic("check")} <span>${full ? ttT("全台完整地圖可以離線看了") : ttT("全台概覽地圖可以離線看了")}</span>${ttParen(`${r.ok.toLocaleString()}/${r.total.toLocaleString()} ${ttT("張圖磚")}`)}`;
+    btn.disabled = false; btn.innerHTML = label;
     refreshOfflineStatus();
   } catch {
     box.innerHTML = ttT("下載失敗，請確認網路後再試。");

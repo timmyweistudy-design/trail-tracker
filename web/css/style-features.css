@@ -66,7 +66,7 @@
 .pf-bio { margin: 10px 0; line-height: 1.7; color: var(--ink); font-size: calc(14px * var(--fs, 1)); }
 .pf-actions { margin: 14px 0; }
 .pf-av-edit { display: flex; align-items: center; gap: 14px; margin: 8px 0; }
-.pf-safety { display: flex; gap: 16px; margin: 10px 0; }
+
 .pf-safety .link-btn { color: var(--ink-faint); font-size: calc(13px * var(--fs, 1)); }
 
 /* 搜尋 */
@@ -196,19 +196,16 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 .trb-chip.ok { background: rgba(47,125,79,.14); color: var(--brand-mid); font-weight: 700; }
 .trb-hint { font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-faint); margin-top: 7px; }
 .trb-guide { font-size: calc(11.5px * var(--fs, 1)); color: var(--brand-mid); background: rgba(47,125,79,.10); border-radius: var(--r-xs); padding: 7px 10px; margin-top: 7px; line-height: 1.45; }
-.trb-diag { margin-top: 5px; font-family: var(--num); font-size: calc(10.5px * var(--fs, 1)); color: var(--ink-faint); letter-spacing: .2px; }
+
 .trb-chip.tappable { cursor: pointer; border: 1px solid var(--brand-mid); background: var(--brand-soft); color: var(--brand); }
 .trb-chip.tappable:active { transform: scale(.96); }
-.trb-chip.pinned { background: var(--brand-mid); border-color: var(--brand-mid); color: #f6f3ea; font-weight: 700; }   /* 已定位在地圖上：再點一次收起 */
-.trb-chip.leader-off { background: var(--surface-2); color: var(--ink-soft); font-weight: 700; }
+.trb-chip.pinned { background: var(--brand-mid); border-color: var(--brand-mid); color: #f6f3ea; font-weight: 700; }  
 .trb-chip.leader-off .ic { width: 12px; height: 12px; vertical-align: -2px; }
 .team-chip.leader { background: rgba(240,169,30,.16); font-weight: 700; }
 .team-chip.leader .ic { width: 13px; height: 13px; color: #e0972a; }
 .tm-create { display: flex; gap: 8px; margin-bottom: 4px; }
 .tm-create .auth-input { flex: 1; min-width: 0; }   /* min-width:0 讓輸入框可縮，否則會把「建立／加入」鈕擠到畫面外要往右滑 */
 .tm-create .btn { flex: none; width: auto; white-space: nowrap; }   /* .btn 預設 width:100% 會佔滿整列把輸入框擠出畫面，這裡改為隨字寬 */
-/* 地圖隊友標記 */
-.team-marker .tm-dot { width: 30px; height: 30px; border-radius: 50%; background: var(--brand); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: calc(13px * var(--fs, 1)); border: 2.5px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.35); }
 .leaflet-tooltip.team-tip { background: var(--brand-deep); color: #f2efe4; border: none; border-radius: 6px; font-size: calc(11px * var(--fs, 1)); padding: 2px 7px; box-shadow: var(--sh-sm); }
 .leaflet-tooltip.team-tip::before { display: none; }
 
@@ -277,7 +274,7 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 .pet-energy { display: flex; align-items: center; gap: 8px; margin: 9px 0 2px; }
 .pe-l { font-size: calc(12px * var(--fs, 1)); color: rgba(255,255,255,.92); white-space: nowrap; font-family: var(--num); }
 .pe-bar { flex: 1; height: 7px; background: rgba(255,255,255,.28); border-radius: var(--r-pill); overflow: hidden; }
-.pe-bar i { display: block; height: 100%; background: linear-gradient(90deg, #ffd66b, #ff9f43); border-radius: var(--r-pill); transition: width var(--dur-l) var(--ease-out); }
+
 #petQuests { margin-top: 18px; }
 .streak-chip { font-size: calc(11px * var(--fs, 1)); font-weight: 700; color: #fff; background: linear-gradient(135deg, #ff8a3d, #e8632a); padding: 2px 10px; border-radius: var(--r-pill); vertical-align: middle; margin-left: 6px; }
 .quest-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
@@ -328,11 +325,11 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 .dex-body { flex: 1; min-width: 0; }
 .dex-h { display: flex; align-items: center; gap: 7px; }
 .dex-h b { font-family: var(--serif); font-size: calc(15px * var(--fs, 1)); }
-.dex-lv { font-family: var(--num); font-size: calc(11px * var(--fs, 1)); font-weight: 700; color: #fff; background: var(--brand-mid); border-radius: 5px; padding: 1px 6px; }
+
 .dex-now { font-size: calc(11px * var(--fs, 1)); font-weight: 700; color: #fff; background: var(--accent); border-radius: var(--r-pill); padding: 1px 8px; }
 .dex-k { font-family: var(--num); font-size: calc(12px * var(--fs, 1)); color: var(--ink-faint); margin: 3px 0; }
 .dex-d { font-size: calc(13px * var(--fs, 1)); color: var(--ink-soft); line-height: 1.6; }
-.dex-foot { font-size: calc(12px * var(--fs, 1)); color: var(--ink-faint); margin-top: 14px; line-height: 1.6; }
+
 
 /* 成就勳章專區（夥伴頁） */
 #petBadges { margin-top: 18px; }
@@ -362,9 +359,9 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 .ach-seg.cleared .ach-emblem { background: linear-gradient(135deg, #e6bd6a, #c08a2e); box-shadow: 0 0 0 5px var(--bg), 0 0 14px rgba(224,177,90,.6); animation: achGlow 2.6s ease-in-out infinite; }
 .ach-seg.tier-locked .ach-emblem { background: var(--ink-faint); box-shadow: 0 0 0 5px var(--bg); }
 @keyframes achGlow { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.12); } }
-.ach-seg-name { text-align: center; font-family: var(--serif); font-size: calc(14px * var(--fs, 1)); font-weight: 700; color: var(--brand-deep); letter-spacing: 1px; margin: 5px 0 4px; position: relative; z-index: 2; }
+
 .ach-seg-name span { font-family: var(--num); font-size: calc(11px * var(--fs, 1)); color: var(--ink-soft); margin-left: 7px; }
-.ach-seg.cleared .ach-seg-name span { color: #c08a2e; }
+
 
 .ach-stop { display: grid; grid-template-columns: 1fr 48px 1fr; align-items: center; column-gap: 10px; margin: 7px 0; position: relative; z-index: 2; }
 .ach-dot { grid-column: 2; width: 48px; height: 48px; border-radius: 50%; position: relative;
@@ -387,7 +384,7 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 .ach-lbl b { display: block; font-family: var(--serif); font-weight: 700; font-size: calc(13px * var(--fs, 1)); color: var(--ink); line-height: 1.2; }
 .ach-stop.locked .ach-lbl b { color: var(--ink-soft); }
 .ach-lbl-d { font-size: calc(10.5px * var(--fs, 1)); color: var(--ink-faint); font-variant-numeric: tabular-nums; }
-.ach-stop.got .ach-lbl-d { color: #c08a2e; }
+
 .ach-stop.left .ach-lbl { grid-column: 1; text-align: right; }
 .ach-stop.right .ach-lbl { grid-column: 3; text-align: left; }
 .ach-stop.here .ach-dot::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 2.5px solid var(--c); animation: achHere 1.5s ease-out infinite; }
@@ -398,7 +395,7 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 .ach-entry:active { transform: scale(.99); }
 .ach-entry-bar { height: 8px; border-radius: 999px; background: var(--line-soft); overflow: hidden; margin-bottom: 9px; }
 .ach-entry-bar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--brand-mid), #e0b15a); }
-.ach-entry-row { display: flex; align-items: center; justify-content: space-between; }
+
 .ach-entry-lbl { font-weight: 700; font-size: calc(14px * var(--fs, 1)); color: var(--brand-deep); }
 .ach-entry-go { width: 30px; height: 30px; border-radius: 50%; background: var(--brand-soft); color: var(--brand); display: grid; place-items: center; flex: none; }
 .ach-entry-go .ic { width: 17px; height: 17px; }
@@ -532,7 +529,7 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 .ach3d-mk.here .ach-dot { animation: achHerePulse 1.9s ease-in-out infinite; }
 @keyframes achHerePulse { 0%, 100% { box-shadow: 0 0 0 4px var(--surface), 0 0 0 6px var(--c), 0 0 10px var(--c); } 50% { box-shadow: 0 0 0 4px var(--surface), 0 0 0 6px var(--c), 0 0 22px var(--c); } }
 @media (prefers-reduced-motion: reduce) { .ach3d-mk.here .ach-dot, .ach-pgdot.ishere { animation: none; } }
-.ach3d-hint { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 9; display: flex; align-items: center; gap: 5px; background: rgba(20,30,20,.55); color: #fff; font-size: calc(12px * var(--fs, 1)); font-weight: 600; padding: 6px 14px; border-radius: 999px; backdrop-filter: blur(3px); pointer-events: none; animation: achHintFade 4s ease-in-out; }
+
 .ach3d-hint .ic { width: 15px; height: 15px; }
 @keyframes achHintFade { 0%, 70% { opacity: 1; } 100% { opacity: .55; } }
 /* 成就詳情彈卡 */
@@ -555,7 +552,7 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 .ach3d-d-bar i { display: block; height: 100%; border-radius: 999px; background: var(--c); }
 .ach3d-d-share { margin-top: 14px; width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: none; background: var(--surface-2); color: var(--ink); font-family: var(--serif); font-weight: 700; font-size: calc(13.5px * var(--fs, 1)); padding: 11px; border-radius: 999px; cursor: pointer; }
 .ach3d-d-share .ic { width: 16px; height: 16px; }
-@media (prefers-reduced-motion: reduce) { .ach3d-cloud, .ach3d-star, .ach-hiker, .ach3d-hint { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .ach3d-cloud, .ach3d-star, .ach-hiker { animation: none; } }
 /* 成就頁：山友稱號＋成就分數列 */
 .ach-rankrow { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
 .ach-rankchip, .ach-scorechip { display: inline-flex; align-items: center; gap: 5px; font-size: calc(12px * var(--fs, 1)); font-weight: 700; padding: 4px 11px; border-radius: 999px; }
@@ -639,9 +636,9 @@ body.map-fs-open #teamReadyBar .trb-chips { margin-top: 6px; }
 /* ===== 全域點擊回饋：消除行動裝置點擊延遲 + 統一按壓手感 ===== */
 button, a, .btn, .chip, .tab, .seg-btn, .link-btn, .icon-btn, [role="button"],
 .fc-like, .fc-comment, .sub-tab, .comp-x, .pv-react-b, .cm-like, .cm-reply, .disc-follow,
-.feed-card, .disc-row, .notif, .hist-view, .hist-gpx, .feed-refresh, .map-fs-btn,
+.feed-card, .disc-row, .notif, .feed-refresh, .map-fs-btn,
 .theme-opt, .ach, .pet-btn, .quest, .fav-star, .food-item, .poi-item,
-.coll-card, .info-link, .detail-tabs button, .cnt-link, .fc-traillink, .ht, .mention {
+.coll-card, .info-link, .detail-tabs button, .cnt-link, .fc-traillink, .ht, .mention{
   touch-action: manipulation;
 }
 /* 快速按壓動畫（個別已定義的 :active 仍會優先套用，不衝突） */
@@ -797,7 +794,7 @@ html[data-theme="dark"] .disc-sec, html[data-theme="dark"] .feed-trending-h { co
 .jcard h3 { padding: 15px 64px 0 18px; margin: 0 0 2px; font-size: calc(19px * var(--fs, 1)); letter-spacing: .5px; }
 .jloc { display: flex; align-items: center; gap: 4px; padding: 0 18px; font-size: calc(12px * var(--fs, 1)); color: var(--ink-faint); }
 .jloc .ic { width: 13px; height: 13px; opacity: .65; }
-.jloc-dot { margin: 0 3px; opacity: .5; }
+
 /* hero 數據條：襯線數字當主角，淡淡等高線紙感 */
 .jstats {
   display: flex; align-items: stretch; gap: 0; margin: 11px 14px 0; padding: 11px 4px;
@@ -867,7 +864,7 @@ html[data-theme="dark"] body::after { opacity: .05; }
 .pm-b-ic .ic { width: 20px; height: 20px; }
 .pm-b-d { font-size: calc(12px * var(--fs, 1)); color: var(--ink-soft); line-height: 1.5; margin-top: 1px; }
 .pm-price { margin-bottom: 14px; }
-.pm-amt { font-family: var(--num); font-size: calc(32px * var(--fs, 1)); font-weight: 700; color: var(--brand-deep); }
+
 .pm-per { color: var(--ink-soft); font-size: calc(14px * var(--fs, 1)); }
 .pm-later { display: block; margin: 8px auto 0; color: var(--ink-faint); }
 .pm-status { display: flex; gap: 11px; align-items: center; background: linear-gradient(135deg, var(--accent-soft), var(--surface-2)); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 14px 16px; }
@@ -889,7 +886,7 @@ html[data-theme="dark"] body::after { opacity: .05; }
 .offline-quota b { font-family: var(--num); color: var(--accent); }
 .oq-up { color: var(--accent); font-weight: 600; cursor: pointer; text-decoration: underline; }
 .oq-pro { color: var(--accent); font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
-.oq-pro .ic { width: 13px; height: 13px; }
+
 /* 進階分析（完整版） */
 .ana-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 4px; }
 .ana-card { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 12px; text-align: center; }
@@ -964,7 +961,7 @@ html[data-theme="dark"] body::after { opacity: .05; }
 .proc-sw.on { box-shadow: 0 0 0 2px var(--accent); }
 
 /* PRO 頭像框（跟隨 PRO 配色） */
-.fc-av.pro-av, .pf-av.pro-av, .me-av.pro-av, .prof-av.pro-av { box-shadow: 0 0 0 2px var(--pro-f, #f0a91e), 0 0 0 4px var(--surface); }
+.fc-av.pro-av, .pf-av.pro-av, .prof-av.pro-av{ box-shadow: 0 0 0 2px var(--pro-f, #f0a91e), 0 0 0 4px var(--surface); }
 
 /* 個人頁封面照 */
 .pf-cover { height: 120px; background-size: cover; background-position: center; border-radius: var(--r-sm); margin: 0 0 12px; box-shadow: var(--sh-sm); }
@@ -1117,7 +1114,7 @@ html[data-theme="dark"] body::after { opacity: .05; }
 /* ── 自用模式（config.js PERSONAL_MODE）：收起付費與社交入口 ── */
 /* PRO 標籤兩種：①「這是 PRO 功能」提示＝只給非會員看，會員（含自用）不必看；
    ②身分徽章 .pro-id（社群名字旁、我的個人檔案）＝個人名譽，永遠顯示 */
-.is-pro .pro-tag:not(.pro-id), .personal .hide-personal { display: none !important; }
+.is-pro .pro-tag:not(.pro-id) { display: none !important; }
 /* 社群功能開關（我的 → 外觀）關掉時才收：跟自用模式分開，自用照樣可以玩社群 */
 .hide-social .social-only, .hide-social .tab[data-view="social"], .hide-social #petFriends,
 .hide-social #trailFeedBox, .hide-social #activityBox { display: none !important; }
@@ -1134,9 +1131,9 @@ html[data-theme="dark"] body::after { opacity: .05; }
   background: transparent; color: var(--brand-deep); font-weight: 700; font-size: calc(13.5px * var(--fs, 1)); cursor: pointer; }
 .lg-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: 0; }
 /* 分級：適合／時間／裝備 各自一行，不再用「·」串成一長條亂斷 */
-.grade-meta, .grade-note-meta { display: flex; flex-direction: column; gap: 2px; }
+.grade-meta { display: flex; flex-direction: column; gap: 2px; }
 .grade-meta i, .grade-note-meta i { font-style: normal; font-weight: 700; color: var(--ink-soft); margin-right: 8px; }
-.grade-note-meta .gn-basis { margin-top: 4px; }
+
 
 /* 品牌標記：跟 App 圖示同一張圖（兩座山＋金色山徑＋月亮），不再用 ⛰ emoji——emoji 每支手機長得不一樣 */
 .tt-logo { width: 100%; height: 100%; display: block; }
@@ -1150,7 +1147,7 @@ h1, h2, h3, .social-empty, .ana-empty-note, .food-empty { text-wrap: balance; }
 .profile-stat b { font-weight: 700; }
 
 /* 深色模式：這幾處顏色寫死成淺色主題用的深灰綠，在深底上幾乎看不見 */
-html[data-theme="dark"] .grade-note-meta { color: var(--ink-soft); }
+
 html[data-theme="dark"] .grade-meta { color: var(--ink-soft); }
 html[data-theme="dark"] .cond-banner.note .cond-h { color: #b9c3cf; }
 
@@ -1203,7 +1200,7 @@ body.hdr-compact .brand-mark { width: 36px; height: 36px; }
 .toolbar .seg { order: 2; }
 .toolbar #btnFilter { order: 4; }
 .toolbar .seg-btn { padding: 8px 10px; min-height: 38px; }
-.btn-filter.btn-icon { padding: 8px 9px; }
+
 .btn-filter.btn-icon .ic { width: 18px; height: 18px; }
 [data-fs-mid] .toolbar { flex-wrap: wrap; }
 [data-fs-mid] .toolbar .count { flex-basis: 100%; }
@@ -1326,7 +1323,7 @@ html[data-theme="dark"] .rh-num { color: #d7ecd9; }
 .ridle-pick span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ridle-pick .ic { width: 14px; height: 14px; flex: none; color: var(--brand-mid); }
 /* 結算頁 */
-.ok-mark .ic { width: 13px; height: 13px; color: var(--brand-mid); vertical-align: -2px; }
+
 /* 結算頁動作鈕 6 顆（開著社群時）→ 排成 3×2，不硬擠一排 */
 .link-row.flow:has(> .link-btn:nth-child(6)) { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
@@ -1881,8 +1878,8 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .ps-box .pb-tickle .pet-critter { animation: pbWiggle .8s ease-in-out; }
 .ps-box .pb-hug .pet-critter { animation: pbHug 1s var(--ease-out, ease-out); }
 .ps-box .pb-eat .pet-critter { animation: pbChomp 1s ease-in-out; }
-.ps-box .pb-pat .pc-eye, .ps-box .pb-hug .pc-eye, .ps-box .pb-eat .pc-eye { display: none; }   /* 換成開心瞇眼 ^^（.pc-eh） */
-.ps-box .pb-pat .pc-eh, .ps-box .pb-hug .pc-eh, .ps-box .pb-eat .pc-eh { display: inline; }
+.ps-box .pb-pat .pc-eye, .ps-box .pb-hug .pc-eye { display: none; }   /* 換成開心瞇眼 ^^（.pc-eh） */
+.ps-box .pb-pat .pc-eh, .ps-box .pb-hug .pc-eh { display: inline; }
 @keyframes pbHop { 0%, 100% { transform: none; } 14% { transform: scale(1.06, .9); } 30% { transform: translateY(-26px) scale(.96, 1.06); } 46% { transform: scale(1.06, .92); } 62% { transform: translateY(-16px); } 78% { transform: scale(1.04, .95); } }
 @keyframes pbStretch { 0%, 100% { transform: none; } 40% { transform: scale(.93, 1.1); } 62% { transform: scale(.95, 1.08) rotate(-2deg); } }
 @keyframes pbSquish { 0%, 100% { transform: none; } 30% { transform: scale(1.06, .92); } 62% { transform: scale(.98, 1.03); } }
@@ -1926,9 +1923,9 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 @keyframes psBerryEat { 0% { transform: none; } 30% { transform: translate(calc(var(--tx, 0px) * .5), calc(var(--ty, 0px) * .5)) scale(1.08, .82); } 100% { transform: translate(var(--tx, 0px), var(--ty, 0px)) scale(.15); opacity: 0; } }
 .ps-box .pc-eye { animation-duration: var(--bk, 4.4s); }
 /* 咬一口：短的一下（以前三顆一起吃完才咬三下） */
-.ps-box .pb-bite .pet-critter { animation: pbBite .52s ease-in-out; }
+
 @keyframes pbBite { 0%, 100% { transform: none; } 45% { transform: translateY(4px) scale(1.05, .9); } 70% { transform: scale(.98, 1.03); } }
-.ps-box .pb-bite .pc-eye { display: none; }
+
 .ps-box .pb-bite .pc-eh { display: inline; }
 /* 餵食鈕上的果實數：每吃一顆跳一下 */
 .feed-bal.tick { animation: feedTick .38s var(--ease-out, ease-out); display: inline-block; }
@@ -2287,9 +2284,9 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .ps-box .st-crouch .pc-bob { animation: none; transform: scale(1.04, .93); transition: transform .3s ease-out; }
 .ps-box .st-crouch .pr-head { transform: translateY(4px) rotate(calc(var(--ex, 0) * 5deg)); }
 .ps-box[data-stage="5"]:not(.walking) .pr-head { transition: translate .38s cubic-bezier(.3,.7,.4,1), rotate .38s cubic-bezier(.3,.7,.4,1), transform .3s ease-out; }   /* 幼龍蹲下／站起來時頭跟著慢慢過去（幼龍的頭只有走路時才由 JS 逐格寫） */
-.ps-box .st-reach-l .pr-paw.l { transform: translate(-4px, 14px) rotate(28deg); }
+
 .ps-box .st-reach-r .pr-paw.r { transform: translate(4px, 14px) rotate(-28deg); }
-.ps-box .st-lift-l .pr-paw.l { transform: translate(2px, -22px) rotate(-60deg); transition: transform .5s ease-in-out; }
+
 .ps-box .st-lift-r .pr-paw.r { transform: translate(-2px, -22px) rotate(60deg); transition: transform .5s ease-in-out; }   /* 舉到嘴邊：慢起慢停（果實跟著手掌，太快會一格甩 15px） */
 .ps-box[data-stage="5"] .pc-tw { transition: translate .4s ease-in-out, opacity .4s; }
 .ps-box.feeding[data-stage="5"] .pc-tw { translate: -16px 4px; opacity: .45; }   /* 餵食時旁邊的光珠讓開、淡一點（不要被當成第二顆果實） */
@@ -2722,21 +2719,71 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .sb-card h2 { text-align: center; }
 .sb-card h3 { font-size: calc(14px * var(--fs, 1)); margin: 16px 0 6px; color: var(--brand-deep); }
 .sb-hint { font-size: calc(12px * var(--fs, 1)); color: var(--ink-soft); line-height: 1.6; text-align: center; }
-.sb-row { padding: 7px 0; border-top: 1px solid var(--line-soft); }
+
 .sb-l { font-size: calc(13px * var(--fs, 1)); font-weight: 600; margin-bottom: 4px; }
-.sb-c { display: flex; flex-wrap: wrap; gap: 6px 10px; }
+
 .sb-it { display: inline-flex; align-items: center; gap: 3px; }
 .sb-play { white-space: nowrap; width: auto; min-width: 0; flex: none; border: 1px solid var(--line); background: var(--surface-2); border-radius: var(--r-pill); padding: 5px 11px; font-size: calc(12.5px * var(--fs, 1)); cursor: pointer; }
 .sb-play.on { background: var(--accent-soft); border-color: var(--accent); }
-.sb-demo { display: flex; flex-wrap: wrap; gap: 6px; }
+
 .sb-demo .btn { flex: 0 0 auto; width: auto; margin: 0; padding: 7px 12px; font-size: calc(12.5px * var(--fs, 1)); }
-.sb-foot { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+
 .sb-foot .btn { flex: 1 1 30%; margin: 0; }
-.sb-out { white-space: pre-wrap; word-break: break-all; font-size: 11px; background: var(--surface-2); padding: 8px; border-radius: 6px; user-select: text; -webkit-user-select: text; }
-.sb-top { display: flex; gap: 8px; margin: 10px 0 6px; } .sb-top .btn { margin: 0; flex: 1; }
+
+.sb-top { display: flex; gap: 8px; margin: 10px 0 6px; } 
 .sb-log { height: 120px; overflow-y: auto; font-size: calc(11.5px * var(--fs, 1)); line-height: 1.5; background: var(--surface-2); border-radius: 6px; padding: 6px 8px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
-.sb-seqs { display: flex; flex-direction: column; gap: 5px; }
+
 .sb-seq { width: 100%; margin: 0; text-align: left; justify-content: flex-start; padding: 8px 10px; font-size: calc(12.5px * var(--fs, 1)); }
-.sb-seq b { display: inline-block; min-width: 2em; color: var(--brand-mid); }
+
 .sb-seq.on { border-color: var(--accent); background: var(--accent-soft); }
-.sb-more { margin-top: 14px; } .sb-more > summary { cursor: pointer; font-weight: 600; color: var(--brand-mid); padding: 6px 0; }
+ .sb-more > summary { cursor: pointer; font-weight: 600; color: var(--brand-mid); padding: 6px 0; }
+/* 夥伴頁頁內跳轉（優化輪 4 E1）：永遠一排，放不下就橫向滑（英文、窄螢幕以前會折成兩三排、最後一顆孤零零）；
+   依字數分寬度（以前五顆等寬，「每日任務」四個字貼著框），有空間時撐滿整排 */
+.pet-jump { margin: 10px 0 2px; gap: 6px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.pet-jump::-webkit-scrollbar { display: none; }
+.pet-jump .me-jump-b { flex: 1 0 auto; padding-left: 10px; padding-right: 10px; white-space: nowrap; }
+/* 地區折疊（優化輪 4 B2） */
+.fs-fold { display: block; flex: 0 0 100%; margin-bottom: 0; }   /* 地區清單是 flex 換行：每組要佔滿一整列，不然標題會擠在同一排 */
+.fs-fold > .fs-rg-h { display: flex; align-items: center; gap: 6px; width: 100%; background: none; border: 0; padding: 8px 2px; cursor: pointer; color: var(--ink-soft); font-size: calc(13px * var(--fs, 1)); letter-spacing: .04em; border-top: 1px solid var(--line-soft); }
+.fs-fold > .fs-rg-h small { font-weight: 600; color: var(--ink-faint); }
+.fs-fold > .fs-rg-h .ic { width: 14px; height: 14px; margin-left: auto; transition: transform var(--dur-s); }
+.fs-fold.open > .fs-rg-h .ic { transform: rotate(90deg); }
+.fs-fold > .fs-rg-c { display: none; flex-wrap: wrap; gap: 7px; padding: 2px 0 10px; }
+.fs-fold.open > .fs-rg-c { display: flex; }
+/* 走過的路：自由路線加「近 ○○」與路線形狀（優化輪 4 F1） */
+.hist-near { font-weight: 600; font-size: .82em; color: var(--ink-soft); }
+.hist-card { position: relative; }
+.hist-thumb { position: absolute; right: 30px; top: 12px; width: 28px; height: 28px; opacity: .85; }
+.hist-card:has(.hist-thumb) .top { padding-right: 30px; }   /* 縮圖在右上角，標題和日期讓出位置（放右下角會壓到「大卡」） */
+.hist-thumb path { fill: none; stroke: var(--brand-mid); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+/* 年度回顧每月柱狀圖（優化輪 4 F3）：沒走的月份淡淡一格＋底線，看起來不像壞掉 */
+.yr-months { border-bottom: 1px solid rgba(255, 255, 255, .22); padding-bottom: 2px; }
+.yr-mo-bar.zero { opacity: .3; }
+/* 照片載入（優化輪 4 C4／G2）：還沒載好時是一片流動的淡光（不是死灰框），載好淡入 */
+.fc-shot, .fc-vid, .eco-ob, .det-photos { background: linear-gradient(100deg, var(--surface-2) 30%, color-mix(in srgb, var(--surface-2) 70%, #fff) 50%, var(--surface-2) 70%) 0 0 / 220% 100%; animation: ttShimmer 1.4s linear infinite; }
+.fc-shot img, .fc-vid img, .eco-ob img, .det-photos img { opacity: 0; transition: opacity .35s ease-out; }
+.fc-shot img.ld, .fc-vid img.ld, .eco-ob img.ld, .det-photos img.ld { opacity: 1; }
+.fc-shot:has(img.ld), .fc-vid:has(img.ld), .eco-ob:has(img.ld), .det-photos:has(img.ld) { animation: none; background: var(--surface-2); }
+@keyframes ttShimmer { to { background-position: -220% 0; } }
+@media (prefers-reduced-motion: reduce) { .fc-shot, .fc-vid, .eco-ob, .det-photos { animation: none; } }
+/* 夥伴手冊（優化輪 4 E2）：捲到才畫（打開時只畫看得到的那幾格，96 ms 的卡頓拆掉） */
+[data-ov="petdex"] :is(.dex-row, .gift-grid, .prop-slots) { content-visibility: auto; contain-intrinsic-size: auto 80px; }
+/* 登頂收集冊免費版（優化輪 4 H） */
+.pk-lock { display: flex; align-items: center; gap: 8px; margin: 8px 0 10px; padding: 9px 12px; border-radius: var(--r-sm); background: var(--accent-soft); font-size: calc(12.5px * var(--fs, 1)); color: var(--ink-soft); }
+.pk-lock .ic { width: 16px; height: 16px; flex: none; color: var(--accent); }
+.pk-lock .btn { flex: none; width: auto; margin: 0 0 0 auto; padding: 6px 12px; font-size: calc(12.5px * var(--fs, 1)); }
+.pk-d-lock { display: inline-flex; align-items: center; gap: 3px; margin-left: 6px; font-size: .9em; color: var(--ink-faint); }
+.pk-d-lock .ic { width: 12px; height: 12px; }
+.pk-up2 { margin-top: 10px; }
+/* 升級彈窗的預覽圖（優化輪 4 H）：一排可以左右滑 */
+.pm-pv { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 14px -4px 0; padding: 2px 4px 6px; -webkit-overflow-scrolling: touch; }
+.pm-pv-c { flex: 0 0 132px; margin: 0; scroll-snap-align: start; text-align: center; }
+.pm-pv-c svg { display: block; width: 132px; height: 88px; border-radius: 10px; border: 1px solid var(--line-soft); }
+.pm-pv-c.on svg { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.pm-pv-c figcaption { font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-soft); margin-top: 4px; line-height: 1.3; }
+/* 上個月回顧小卡（優化輪 4 H） */
+.mrecap { position: relative; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 40px 12px 14px; margin: 0 0 10px; border-radius: var(--r); background: linear-gradient(135deg, var(--accent-soft), var(--surface)); border: 1px solid var(--line-soft); }
+.mrecap .mr-t { flex: 1 1 160px; display: flex; flex-direction: column; gap: 2px; }
+.mrecap .mr-t span { font-size: calc(12.5px * var(--fs, 1)); color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.mrecap .mr-go { flex: none; width: auto; margin: 0; padding: 7px 12px; font-size: calc(12.5px * var(--fs, 1)); }
+.mrecap .sb-x { position: absolute; top: 8px; right: 8px; color: var(--ink-faint); }   /* .sb-x 預設是白色（給深色年度橫幅用），淺色卡上要換深色 */

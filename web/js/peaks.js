@@ -71,10 +71,11 @@ const Peaks = (() => {
       <div class="pk-tabs" role="tablist">${["b", "x"].map(k => `<button class="pk-tab${k === cur ? " on" : ""}" data-l="${k}" role="tab" aria-selected="${k === cur}">${T(LISTS[k].name)} <span>${count(k)}/${LISTS[k].data.length}</span></button>`).join("")}</div>
       <div class="pk-prog"><div class="pk-ring" style="--p:${pct}"><b>${have}</b><small>/ ${total}</small></div>
         <div class="pk-prog-t"><b>${T(have ? "繼續收集" : "還沒蓋到章")}</b><span>${T(cur === "b" ? "臺灣 3,000 公尺以上的百座高山" : "各縣市近郊的百座代表郊山")}</span></div></div>
-      <div class="pk-hint">${ic("pin")}<span>${T("走到山頂附近，就會自動蓋章")}</span></div>
+      ${locked ? `<div class="pk-lock">${ic("lock")}<span>${T("免費版看得到蓋了哪些章；登頂日期、附近步道是 PRO")}</span><button class="btn primary pk-up" type="button">${T("升級")}</button></div>` : `<div class="pk-hint">${ic("pin")}<span>${T("走到山頂附近，就會自動蓋章")}</span></div>`}
       <div class="pk-grid">${L.data.map(p => { const st = g[cur + p[0]]; return `<button class="pk-stamp${st ? " got" : ""}" data-no="${p[0]}" aria-label="${escHtml(T(p[1]))}${st ? "・" + T("已登頂") : ""}"><span class="pk-no">${p[0]}</span><span class="pk-nm">${escHtml(T(p[1]))}</span><span class="pk-el">${p[2].toLocaleString()} m</span>${st ? `<span class="pk-ok">${ic("check")}</span>` : ""}</button>`; }).join("")}</div>`;
     fitNames(body);
     body.querySelectorAll(".pk-tab").forEach(b => b.addEventListener("click", () => { cur = b.dataset.l; ov.querySelector(".pk-detail").classList.remove("show"); render(ov); body.scrollTop = 0; }));
+    { const up = body.querySelector(".pk-up"); if (up) up.onclick = () => { closeAll(); if (typeof _proGate === "function") _proGate("peaks", upNote()); }; }
     body.querySelectorAll(".pk-stamp").forEach(b => b.addEventListener("click", () => detail(ov, L.data.find(p => p[0] === +b.dataset.no))));
   }
   // 外文介面的拼音山名常是一長串（Xiuguluanshan），格子放不下會從字中間斷開 → 字縮小一點
@@ -86,16 +87,21 @@ const Peaks = (() => {
     box.innerHTML = `<button class="pk-dx" aria-label="${T("關閉")}">${ic("x")}</button>
       <div class="pk-d-top"><span class="pk-d-badge${st ? " got" : ""}">${st ? ic("check") : `<span>${pk[0]}</span>`}</span>
         <div><div class="pk-d-name">${escHtml(T(pk[1]))}</div><div class="pk-d-sub">${T(LISTS[cur].name)} #${pk[0]} · ${pk[2].toLocaleString()} m · ${escHtml(pk[5].split("、").map(T).join("、"))}</div></div></div>
-      <div class="pk-d-state${st ? " got" : ""}">${st ? `${ic("check")} <span>${T("登頂於")}</span> <b>${fmtDate(st.at)}</b>` : T("還沒去過。記錄時走到山頂附近就會自動蓋章")}</div>
-      ${nt.length ? `<div class="pk-d-h">${T("附近的步道")}</div>${nt.map(x => `<button class="pk-trail" data-id="${x.t.id}">${ic("mountain")}<span>${escHtml(T(x.t.name))}</span><small>${(x.d / 1000).toFixed(1)} km</small></button>`).join("")}` : ""}`;
+      <div class="pk-d-state${st ? " got" : ""}">${st ? (locked ? `${ic("check")} <span>${T("已登頂")}</span> <span class="pk-d-lock">${ic("lock")}${T("日期是 PRO")}</span>` : `${ic("check")} <span>${T("登頂於")}</span> <b>${fmtDate(st.at)}</b>`) : T("還沒去過。記錄時走到山頂附近就會自動蓋章")}</div>
+      ${locked ? `<button class="btn primary pk-up2" type="button">${ic("sparkle")} ${T("升級看完整收集冊")}</button>` : nt.length ? `<div class="pk-d-h">${T("附近的步道")}</div>${nt.map(x => `<button class="pk-trail" data-id="${x.t.id}">${ic("mountain")}<span>${escHtml(T(x.t.name))}</span><small>${(x.d / 1000).toFixed(1)} km</small></button>`).join("")}` : ""}`;
     box.classList.add("show");
     box.querySelector(".pk-dx").onclick = () => box.classList.remove("show");
+    { const up = box.querySelector(".pk-up2"); if (up) up.onclick = () => { closeAll(); if (typeof _proGate === "function") _proGate("peaks", upNote()); }; }
     box.querySelectorAll(".pk-trail").forEach(b => b.onclick = () => { closeAll(); if (typeof openDetail === "function") openDetail(b.dataset.id); });
   }
   let _close = null;
   function closeAll() { if (_close) _close(); }
-  async function open() {
+  // opts.locked：免費用戶（優化輪 4 H）——看得到自己蓋了哪些章，日期和附近步道上鎖；看見自己的進度比只看到升級彈窗更想升級
+  let locked = false;
+  const upNote = () => { const b = count("b"), x = count("x"); return b + x ? T("你已經蓋了 {n} 章（百岳 {b}、小百岳 {x}），升級就能看完整收集冊").replace("{n}", b + x).replace("{b}", b).replace("{x}", x) : T("走到百岳、小百岳山頂會自動蓋章，升級就能隨時翻看"); };
+  async function open(opts) {
     if (document.querySelector('[data-ov="peaks"]')) return;
+    locked = !!(opts && opts.locked);
     const ov = document.createElement("div"); ov.className = "pet-modal pk-modal"; ov.dataset.ov = "peaks";
     ov.innerHTML = `<div class="pet-modal-card pk-card"><button class="sheet-close" id="pkClose" aria-label="${T("關閉")}">${ic("x")}</button>
       <h2>${ic("mountain")} ${T("登頂收集冊")}</h2><div class="pk-body"></div><div class="pk-detail"></div></div>`;

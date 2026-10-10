@@ -93,7 +93,7 @@ function openYearReview(year) {
       ${kcal > 0 ? `<div><b>${cuSpan(kcal, "≈", 0)}</b><span>大卡</span></div>` : ""}
       <div><b>${cuSpan(distinct, "", 0)}</b><span>條步道</span></div>
     </div>
-    <div class="yr-months">${mk.map((v, i) => `<div class="yr-mo"><div class="yr-mo-v">${v > 0 ? (v >= 10 ? Math.round(v) : v.toFixed(1)) : ""}</div><div class="yr-mo-bar" style="height:${Math.round(v / mkMax * 46) + 3}px;animation-delay:${(i * 0.04).toFixed(2)}s"></div><span>${i + 1}</span></div>`).join("")}</div>
+    <div class="yr-months">${mk.map((v, i) => `<div class="yr-mo"><div class="yr-mo-v">${v > 0 ? (v >= 10 ? Math.round(v) : v.toFixed(1)) : ""}</div><div class="yr-mo-bar${v > 0 ? "" : " zero"}" style="height:${Math.round(v / mkMax * 46) + 3}px;animation-delay:${(i * 0.04).toFixed(2)}s"></div><span>${i + 1}</span></div>`).join("")}</div>
     <div class="yr-mo-cap">每個月走了幾公里</div>
     ${longestRec && longestRec.track && longestRec.track.length > 1 ? `<div class="yr-route"><div class="yr-route-l"><span>${ttT("最遠的一條")}</span> · <span>${escHtml(ttT(longestRec.trailName || "自由路線"))}</span> <b>${longest.toFixed(1)} km</b></div>${routeMini(longestRec.track, "yr-route-svg", true)}</div>` : ""}
     <div class="yr-lines">
@@ -273,7 +273,7 @@ function openAnalytics() {
       ${favTrail ? pb("最常走", `<span translate="no">${escHtml(ttT(favTrail))}</span>${ttParen(`${tc[favTrail]} ${ttT("次")}`)}`) : ""}
     </div>
     <div class="ana-spark-cap">${ttT("時速用移動時間算，休息不算在內")}</div>
-    ${paced.length >= 2 ? `<div class="ana-sec">速度趨勢</div>${paceBars(paced)}<div class="ana-spark-cap">${ttT("每根是一趟的移動時速，最右邊是最近一趟")}</div>` : ""}
+    ${paced.length >= 5 ? `<div class="ana-sec">速度趨勢</div>${paceBars(paced)}<div class="ana-spark-cap">${ttT("每根是一趟的移動時速，最右邊是最近一趟")}</div>` : paced.length >= 1 ? `<div class="ana-sec">速度趨勢</div><div class="ana-empty-note">${ttT("再走 {n} 趟就看得出趨勢").replace("{n}", 5 - paced.length)}</div>` : ""}
     <div class="ana-sec">難度分布</div>
     ${diffN.slice(1, 6).some(c => c > 0) ? diffRadar(diffN.slice(1, 6), DLBL.slice(1)) : `<div class="ana-empty-note">還沒走過有分級的步道</div>`}
     ${diffN[6] ? `<div class="ana-spark-cap">${ic("snow")} <span>${ttT("雪季限定")}</span> <b>${diffN[6]}</b></div>` : ""}

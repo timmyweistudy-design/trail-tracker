@@ -78,7 +78,7 @@ const NLSearch = (() => {
     if (c.gentle) { const s = slope(t); if (s && s.level > 0) return false; if (!s && d != null && d >= 3) return false; }
     if (c.transit && !/公車|客運|捷運|火車|台鐵|臺鐵|接駁/.test(String(t.transport || ""))) return false;
     for (const [, nameRe] of c.sights) if (!nameRe.test(t.name || "")) return false;
-    if (c.words.length) { const hay = String(`${t.name} ${t.position || ""} ${t.region || ""} ${t.system || ""}`); if (!c.words.every(w => hay.includes(w))) return false; }
+    if (c.words.length) { const N = typeof nz === "function" ? nz : x => x, hay = N(`${t.name} ${t.position || ""} ${t.region || ""} ${t.system || ""}`); if (!c.words.every(w => hay.includes(N(w)))) return false; }   // 簡繁、台臺一起比（優化輪 4 B4）
     return true;
   }
   return { parse, match };

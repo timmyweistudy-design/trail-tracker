@@ -1,5 +1,5 @@
 // 離線快取：app shell + 地圖圖磚
-const CACHE = "trail-tracker-v724";
+const CACHE = "trail-tracker-v731";
 const TILE_CACHE = "tt-tiles";
 const SAVED_CACHE = "tt-tiles-saved";   // 使用者下載的離線地圖（不隨版本清除、不受上限）   // 地圖圖磚（不隨版本清除，保留離線地圖）
 const ASSETS = [
@@ -25,7 +25,7 @@ const ASSETS = [
 // 路線幾何分片（1.4 MB）只在開步道詳情/篩選「有路線」時載、trails-detail.js（633 KB）只在開詳情時載。
 // 放進 install 會讓首訪先扛 4.3 MB 才裝得起來；改成背景暖機：首訪只裝核心，離線能力照舊。
 const ASSETS_LAZY = [
-  "./js/trails-detail.js",
+  "./js/trails-detail.js", "./js/guides-en.js",
   ...Array.from({ length: 22 }, (_, i) => `./js/geo/geo-${i}.js`),
   // 按需載入的語言包（離線也能切語言）＋ 3D 地圖引擎（離線也能開 3D）
   ...["en", "cn", "de", "es", "fr", "hi", "id", "it", "ja", "km", "ko", "mn", "ms", "my", "ne", "nl", "pl", "pt", "ru", "th", "tl", "tr", "uk", "vi"].map(c => `./js/i18n/${c}.js`),

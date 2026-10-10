@@ -804,7 +804,96 @@ function questReward(streak) {
   const mile = m ? m.bonus : 0;
   return { total: 5 + stBonus + mile, mile, stBonus };
 }
-function renderPet() {
+// 夥伴頁的頁內跳轉：目標區塊是空的或藏起來（例如自用模式沒有好友）就不顯示那顆
+function petJumpSync() { document.querySelectorAll("#view-pet .pet-jump [data-jump]").forEach(b => { const t = document.getElementById(b.dataset.jump); b.hidden = !t || !t.innerHTML.trim() || !t.getClientRects().length || getComputedStyle(t).display === "none"; }); }
+function openPetHelp() {
+  // 2026-10-07 寵物新一輪 #8：親密的每一種來源列出來，旁邊是今天的進度（參考寶可夢 GO 夥伴：每種有上限、一看就知道還能做什麼）
+  setTimeout(() => {   // 對話框開好之後才綁開關（#23）
+    const so = document.getElementById("petSoundSw"), hp = document.getElementById("petHapticSw");
+    if (so) so.addEventListener("change", () => { localStorage.setItem("tt_pet_sound", so.checked ? "1" : "0"); if (so.checked) petSound("hug"); petSoundScene(); });
+    const am = document.getElementById("petAmbSw"), mu = document.getElementById("petMusicSw");
+    if (am) am.addEventListener("change", () => { localStorage.setItem("tt_pet_amb", am.checked ? "1" : "0"); petSoundScene(); });
+    if (mu) mu.addEventListener("change", () => { localStorage.setItem("tt_pet_music", mu.checked ? "1" : "0"); petSoundScene(); });
+    const ui = document.getElementById("petUiSw"); if (ui) ui.addEventListener("change", () => { localStorage.setItem("tt_pet_ui", ui.checked ? "1" : "0"); if (ui.checked) petSound("ui"); });
+    document.querySelectorAll(".ah-vol").forEach(r => r.addEventListener("input", () => { localStorage.setItem("tt_snd_vol_" + r.dataset.vol, String(r.value / 100)); if (typeof PetAudio !== "undefined") PetAudio.applyVol(); }));
+    if (hp) hp.addEventListener("change", () => { localStorage.setItem("tt_pet_haptic", hp.checked ? "1" : "0"); if (hp.checked) petBuzz(20); });
+    const s1 = document.getElementById("petSleepA"), s2 = document.getElementById("petSleepB"), nu = document.getElementById("petNudgeSel");
+    const saveSleep = () => { localStorage.setItem("tt_pet_sleep", s1.value === "off" ? "off" : `${s1.value}-${s2.value}`); s2.disabled = s1.value === "off"; if (typeof PetStage !== "undefined" && PetStage.sync) PetStage.sync(); };
+    if (s1 && s2) { s1.addEventListener("change", saveSleep); s2.addEventListener("change", saveSleep); }
+    if (nu) nu.addEventListener("change", () => { localStorage.setItem("tt_pet_nudge", nu.value); if (typeof Reminders !== "undefined" && Reminders.refreshPet) Reminders.refreshPet(); });
+    const mo = document.getElementById("petMotionSw");   // iPhone：要使用者按下去那一刻才能請「動作與方向」權限
+    if (mo) mo.addEventListener("change", () => { if (!mo.checked) { localStorage.setItem("tt_pet_motion", "0"); return; }
+      DeviceMotionEvent.requestPermission().then(r => { const g = r === "granted"; mo.checked = g; localStorage.setItem("tt_pet_motion", g ? "1" : "0"); if (!g) toast(ttT("需允許「動作與方向」權限")); }).catch(() => { mo.checked = false; toast(ttT("需允許「動作與方向」權限")); }); });
+  }, 0);
+  const rows = petAffRows().map(([a, b, c]) => `<tr><td>${escHtml(ttT(a))}</td><td class="ah-v">${b}</td><td class="ah-t">${escHtml(c)}</td></tr>`).join("");
+  if (typeof ttChoice === "function") ttChoice({ html: `<div class="aff-help"><h3 class="ah-title">${escHtml(ttT("活力和親密是什麼？"))}</h3><p class="ah-c">${escHtml(ttT("活力：出門走路就會補滿，太久沒出門會慢慢掉。"))}</p><p class="ah-h"><b>${escHtml(ttT("親密怎麼增加"))}</b></p><div class="ah-now"><div class="ah-hearts">${affHeartsHtml(affinity())}</div><div>${escHtml(affNextLine(affinity()))}</div></div><table>${rows}</table>
+    <p class="ah-c">${escHtml(ttT("親密滿 5 顆心：餵食給的成長更多，牠也會自己出門帶小東西回來。"))}</p><p class="ah-n ah-c">${escHtml(ttT("兩個都不會讓夥伴退化，放心。"))}</p>
+    ${petCan.sound() ? [["petSoundSw", "sfx", "夥伴音效（吃東西、抱抱、進化）", petSoundOn()], ["petAmbSw", "amb", "環境音（鳥叫、蟲鳴、風雨）", localStorage.getItem("tt_pet_amb") !== "0"], ["petMusicSw", "mus", "背景音樂", localStorage.getItem("tt_pet_music") === "1"]].map(([id, k, t, on]) => `<label class="ah-sw"><span>${escHtml(ttT(t))}</span><input type="range" class="ah-vol" min="0" max="100" step="5" data-vol="${k}" value="${Math.round((parseFloat(localStorage.getItem("tt_snd_vol_" + k)) >= 0 ? parseFloat(localStorage.getItem("tt_snd_vol_" + k)) : { sfx: 1, amb: .35, mus: .3 }[k]) * 100)}" aria-label="${escHtml(ttT("音量"))}"><input type="checkbox" class="tt-switch" id="${id}"${on ? " checked" : ""}></label>`).join("") : ""}
+    ${petCan.sound() ? `<label class="ah-sw"><span>${escHtml(ttT("按鈕的輕觸聲"))}</span><input type="checkbox" class="tt-switch" id="petUiSw"${localStorage.getItem("tt_pet_ui") === "1" ? " checked" : ""}></label>` : ""}
+    ${petCan.haptic() ? `<label class="ah-sw"><span>${escHtml(ttT("夥伴震動"))}</span><input type="checkbox" class="tt-switch" id="petHapticSw"${petHapticOn() ? " checked" : ""}></label>` : ""}
+    <label class="ah-sw"><span>${escHtml(ttT("夥伴睡覺時間"))}</span><span class="ah-sel">${petSleepSel()}</span></label>
+    <label class="ah-sw"><span>${escHtml(ttT("夥伴想你的提醒"))}</span><select id="petNudgeSel" class="ah-select">${[["3", ttT("{n} 天沒出門").replace("{n}", 3)], ["7", ttT("{n} 天沒出門").replace("{n}", 7)], ["0", ttT("不要提醒")]].map(([v, t]) => `<option value="${v}"${petNudgeDays() === +v ? " selected" : ""}>${escHtml(t)}</option>`).join("")}</select></label>
+    ${petCan.motionAsk() ? `<label class="ah-sw"><span>${escHtml(ttT("搖一搖手機，牠會頭暈"))}</span><input type="checkbox" class="tt-switch" id="petMotionSw"${localStorage.getItem("tt_pet_motion") === "1" ? " checked" : ""}></label>` : ""}</div>` }, [{ label: ttT("知道了"), value: true, cls: "primary" }]);
+}
+function bindPetTouch(em) {
+// 點頭＝摸摸頭（瞇眼）、點身體＝搔癢（扭一扭）、長按＝抱抱（壓扁回彈＋三顆心，每天第一次抱親密 +2）
+const S = typeof PetStage !== "undefined";
+// 餵食中不能摸、不能抱（2026-10-07 使用者）：點了只在泡泡說一句（最多每 3 秒一次），不打斷吃東西的動作
+let busyT = 0;
+const eating = () => { if (!(S && PetStage.isFeeding && (PetStage.isFeeding() || (PetStage.isPlaying && PetStage.isPlaying())))) return false; if (Date.now() - busyT > 3000) { busyT = Date.now(); petSay(ttT("在吃東西，等我一下～"), 1800); } return true; };
+// 睡著時（深夜，2026-10-07 寵物新一輪 #4）：點、抱都先叫醒——揉眼、伸懶腰、說一句，這一下不算摸頭
+const WAKE = ["嗯…？你回來了", "（揉眼睛）天亮了嗎？", "呼啊～被你叫醒了", "剛剛夢到在山頂看日出"];
+const rmFb = () => { if (!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) || !em) return; em.classList.add("rm-fb"); clearTimeout(em.__rmT); em.__rmT = setTimeout(() => em.classList.remove("rm-fb"), 700); };   // 減少動態：亮一下代替動作（#24）
+const woke = () => { if (!(S && PetStage.isAsleep && PetStage.isAsleep())) return false; PetStage.wake(); petBuzz(10); petSay(ttT(WAKE[Math.floor(Math.random() * WAKE.length)])); return true; };
+const poke = (zone) => {
+  if (eating() || woke()) return;
+  if (S) PetStage.react(zone); else { em.classList.remove("tap"); void em.offsetWidth; em.classList.add("tap"); }
+  rmFb();
+  petBuzz(20);
+  petBurst("❤️", 1);
+  petSay(petTapLine(petMood().k));   // 現在的心情（在泡泡裡說；以前是畫面底部的提示框）
+  if (petPatAff()) petFloat(`${ttT("親密")} +1`, ".pet-card .pet-meter:nth-child(2) .aff-hearts", null, PET_HEART_SVG);   // 摸頭也算一點親密（每天 3 次，寵物新一輪 #8）
+};
+const hug = () => {
+  if (eating() || woke()) return;
+  const first = localStorage.getItem("tt_pet_hug_day") !== todayStr();
+  if (S) PetStage.react(first ? "hug" : "pat");   // 今天已經抱過：蹭一下就好
+  rmFb();
+  petBuzz(first ? [20, 40, 20] : 20);
+  petBurst("❤️", first ? 3 : 1);
+  if (first) {
+    localStorage.setItem("tt_pet_hug_day", todayStr()); bumpAffinity(2); petDiaryAdd("hug1");
+    petSay(ttT("抱抱！今天的親密增加了")); petFloat(`${ttT("親密")} +2`, ".pet-card .pet-meter:nth-child(2) .aff-hearts", null, PET_HEART_SVG);
+  } else petSay(`${ttT("抱抱！")} ${ttT("今天已經抱過囉")}`);
+};
+if (em) {
+  let pressT = 0, hugged = false;
+  // 來回摸（2026-10-07 寵物新一輪 #11）：按著在牠身上左右來回滑 3 次＝摸摸（瞇眼扭一扭，也算一次摸頭的親密）；一動起來就不是長按抱抱
+  let rub = null;
+  em.addEventListener("pointerdown", e => { hugged = false; clearTimeout(pressT); pressT = setTimeout(() => { hugged = true; hug(); }, 550); rub = { x: e.clientX, x0: e.clientX, dir: 0, n: 0, t: Date.now() }; });
+  em.addEventListener("pointermove", e => {
+    if (!rub || !e.buttons && e.pointerType === "mouse") return;
+    if (Math.abs(e.clientX - rub.x0) > 10) clearTimeout(pressT);
+    const d = Math.sign(e.clientX - rub.x); if (Math.abs(e.clientX - rub.x) < 6) return;
+    if (d && d !== rub.dir) { if (rub.dir) rub.n++; rub.dir = d; } rub.x = e.clientX;
+    if (rub.n >= 3 && Date.now() - rub.t < 2000) { rub = null; hugged = true;   /* 放開時的 click 不再當成點一下 */
+      if (eating() || woke()) return; if (S) PetStage.react("rub"); rmFb(); petBuzz([10, 30, 10]); petBurst("❤️", 2); petSay(ttT(["好舒服～", "再摸一下嘛", "呼嚕呼嚕…"][Math.floor(Math.random() * 3)]));
+      if (petPatAff()) petFloat(`${ttT("親密")} +1`, ".pet-card .pet-meter:nth-child(2) .aff-hearts", null, PET_HEART_SVG); }
+  });
+  ["pointerup", "pointerleave", "pointercancel"].forEach(t => em.addEventListener(t, () => { clearTimeout(pressT); rub = null; }));
+  em.closest(".ps-box") && em.closest(".ps-box").addEventListener("pet-shaken", () => petSay(ttT(["哇～頭好暈", "別搖啦～", "地震了嗎？！"][Math.floor(Math.random() * 3)])));
+  em.addEventListener("contextmenu", e => e.preventDefault());   // 長按不要跳出系統選單
+  let lastTap = 0;
+  em.addEventListener("click", e => {
+    if (hugged) { hugged = false; return; }
+    const now = Date.now(), dbl = now - lastTap < 350; lastTap = dbl ? 0 : now;
+    if (dbl && S && PetStage.trick && petTrickKnown() && !eating() && !woke()) { PetStage.trick(); petSay(ttT(PET_TRICKS[petStageIndex(totalKm())])); petBuzz([10, 30, 10]); return; }   // 點兩下＝表演學會的把戲（R13）
+    poke(S ? PetStage.zoneOf(e.clientY) : "pat");
+  });
+  em.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); poke("pat"); } });
+}
+}
+function renderPet() { setTimeout(petJumpSync, 400);
   const box = $("#petCard");
   if (!box) return;
   petApplyTone();
@@ -878,94 +967,11 @@ function renderPet() {
   clearInterval(window.__petCdT); if (cd > 0) window.__petCdT = setInterval(() => { if (document.body.dataset.view === "pet" && !document.hidden) renderPet(); }, 60000);   // 冷卻倒數：每分鐘更新一次環和文字
   { const ev = box.querySelector(".pet-evo"); if (ev && next) ev.addEventListener("click", e => { if (!e.target.closest(".pet-evo-next")) return; const l = Math.max(0, PET_STAGES[petStageIndex(totalKm()) + 1] ? PET_STAGES[petStageIndex(totalKm()) + 1].km - totalKm() : 0); petSay(`${ttT("再走")} ${l.toFixed(1)} km ${ttT("就進化")}？`); }); }   // 點「？？？」：泡泡提示還差多少
   const em = $("#petEmoji");
-  // 點頭＝摸摸頭（瞇眼）、點身體＝搔癢（扭一扭）、長按＝抱抱（壓扁回彈＋三顆心，每天第一次抱親密 +2）
-  const S = typeof PetStage !== "undefined";
-  // 餵食中不能摸、不能抱（2026-10-07 使用者）：點了只在泡泡說一句（最多每 3 秒一次），不打斷吃東西的動作
-  let busyT = 0;
-  const eating = () => { if (!(S && PetStage.isFeeding && (PetStage.isFeeding() || (PetStage.isPlaying && PetStage.isPlaying())))) return false; if (Date.now() - busyT > 3000) { busyT = Date.now(); petSay(ttT("在吃東西，等我一下～"), 1800); } return true; };
-  // 睡著時（深夜，2026-10-07 寵物新一輪 #4）：點、抱都先叫醒——揉眼、伸懶腰、說一句，這一下不算摸頭
-  const WAKE = ["嗯…？你回來了", "（揉眼睛）天亮了嗎？", "呼啊～被你叫醒了", "剛剛夢到在山頂看日出"];
-  const rmFb = () => { if (!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) || !em) return; em.classList.add("rm-fb"); clearTimeout(em.__rmT); em.__rmT = setTimeout(() => em.classList.remove("rm-fb"), 700); };   // 減少動態：亮一下代替動作（#24）
-  const woke = () => { if (!(S && PetStage.isAsleep && PetStage.isAsleep())) return false; PetStage.wake(); petBuzz(10); petSay(ttT(WAKE[Math.floor(Math.random() * WAKE.length)])); return true; };
-  const poke = (zone) => {
-    if (eating() || woke()) return;
-    if (S) PetStage.react(zone); else { em.classList.remove("tap"); void em.offsetWidth; em.classList.add("tap"); }
-    rmFb();
-    petBuzz(20);
-    petBurst("❤️", 1);
-    petSay(petTapLine(petMood().k));   // 現在的心情（在泡泡裡說；以前是畫面底部的提示框）
-    if (petPatAff()) petFloat(`${ttT("親密")} +1`, ".pet-card .pet-meter:nth-child(2) .aff-hearts", null, PET_HEART_SVG);   // 摸頭也算一點親密（每天 3 次，寵物新一輪 #8）
-  };
-  const hug = () => {
-    if (eating() || woke()) return;
-    const first = localStorage.getItem("tt_pet_hug_day") !== todayStr();
-    if (S) PetStage.react(first ? "hug" : "pat");   // 今天已經抱過：蹭一下就好
-    rmFb();
-    petBuzz(first ? [20, 40, 20] : 20);
-    petBurst("❤️", first ? 3 : 1);
-    if (first) {
-      localStorage.setItem("tt_pet_hug_day", todayStr()); bumpAffinity(2); petDiaryAdd("hug1");
-      petSay(ttT("抱抱！今天的親密增加了")); petFloat(`${ttT("親密")} +2`, ".pet-card .pet-meter:nth-child(2) .aff-hearts", null, PET_HEART_SVG);
-    } else petSay(`${ttT("抱抱！")} ${ttT("今天已經抱過囉")}`);
-  };
-  if (em) {
-    let pressT = 0, hugged = false;
-    // 來回摸（2026-10-07 寵物新一輪 #11）：按著在牠身上左右來回滑 3 次＝摸摸（瞇眼扭一扭，也算一次摸頭的親密）；一動起來就不是長按抱抱
-    let rub = null;
-    em.addEventListener("pointerdown", e => { hugged = false; clearTimeout(pressT); pressT = setTimeout(() => { hugged = true; hug(); }, 550); rub = { x: e.clientX, x0: e.clientX, dir: 0, n: 0, t: Date.now() }; });
-    em.addEventListener("pointermove", e => {
-      if (!rub || !e.buttons && e.pointerType === "mouse") return;
-      if (Math.abs(e.clientX - rub.x0) > 10) clearTimeout(pressT);
-      const d = Math.sign(e.clientX - rub.x); if (Math.abs(e.clientX - rub.x) < 6) return;
-      if (d && d !== rub.dir) { if (rub.dir) rub.n++; rub.dir = d; } rub.x = e.clientX;
-      if (rub.n >= 3 && Date.now() - rub.t < 2000) { rub = null; hugged = true;   /* 放開時的 click 不再當成點一下 */
-        if (eating() || woke()) return; if (S) PetStage.react("rub"); rmFb(); petBuzz([10, 30, 10]); petBurst("❤️", 2); petSay(ttT(["好舒服～", "再摸一下嘛", "呼嚕呼嚕…"][Math.floor(Math.random() * 3)]));
-        if (petPatAff()) petFloat(`${ttT("親密")} +1`, ".pet-card .pet-meter:nth-child(2) .aff-hearts", null, PET_HEART_SVG); }
-    });
-    ["pointerup", "pointerleave", "pointercancel"].forEach(t => em.addEventListener(t, () => { clearTimeout(pressT); rub = null; }));
-    em.closest(".ps-box") && em.closest(".ps-box").addEventListener("pet-shaken", () => petSay(ttT(["哇～頭好暈", "別搖啦～", "地震了嗎？！"][Math.floor(Math.random() * 3)])));
-    em.addEventListener("contextmenu", e => e.preventDefault());   // 長按不要跳出系統選單
-    let lastTap = 0;
-    em.addEventListener("click", e => {
-      if (hugged) { hugged = false; return; }
-      const now = Date.now(), dbl = now - lastTap < 350; lastTap = dbl ? 0 : now;
-      if (dbl && S && PetStage.trick && petTrickKnown() && !eating() && !woke()) { PetStage.trick(); petSay(ttT(PET_TRICKS[petStageIndex(totalKm())])); petBuzz([10, 30, 10]); return; }   // 點兩下＝表演學會的把戲（R13）
-      poke(S ? PetStage.zoneOf(e.clientY) : "pat");
-    });
-    em.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); poke("pat"); } });
-  }
+  bindPetTouch(em);   // 摸頭、搔癢、抱抱、叫醒（優化輪 4 A2：從 renderPet 拆出來）
   $("#petDex").addEventListener("click", openPetDex);
   $("#petRec").addEventListener("click", petRecommend);
   $("#petFeed").addEventListener("click", feedPet);
-  $("#petHelp").addEventListener("click", () => {
-    // 2026-10-07 寵物新一輪 #8：親密的每一種來源列出來，旁邊是今天的進度（參考寶可夢 GO 夥伴：每種有上限、一看就知道還能做什麼）
-    setTimeout(() => {   // 對話框開好之後才綁開關（#23）
-      const so = document.getElementById("petSoundSw"), hp = document.getElementById("petHapticSw");
-      if (so) so.addEventListener("change", () => { localStorage.setItem("tt_pet_sound", so.checked ? "1" : "0"); if (so.checked) petSound("hug"); petSoundScene(); });
-      const am = document.getElementById("petAmbSw"), mu = document.getElementById("petMusicSw");
-      if (am) am.addEventListener("change", () => { localStorage.setItem("tt_pet_amb", am.checked ? "1" : "0"); petSoundScene(); });
-      if (mu) mu.addEventListener("change", () => { localStorage.setItem("tt_pet_music", mu.checked ? "1" : "0"); petSoundScene(); });
-      const ui = document.getElementById("petUiSw"); if (ui) ui.addEventListener("change", () => { localStorage.setItem("tt_pet_ui", ui.checked ? "1" : "0"); if (ui.checked) petSound("ui"); });
-      document.querySelectorAll(".ah-vol").forEach(r => r.addEventListener("input", () => { localStorage.setItem("tt_snd_vol_" + r.dataset.vol, String(r.value / 100)); if (typeof PetAudio !== "undefined") PetAudio.applyVol(); }));
-      if (hp) hp.addEventListener("change", () => { localStorage.setItem("tt_pet_haptic", hp.checked ? "1" : "0"); if (hp.checked) petBuzz(20); });
-      const s1 = document.getElementById("petSleepA"), s2 = document.getElementById("petSleepB"), nu = document.getElementById("petNudgeSel");
-      const saveSleep = () => { localStorage.setItem("tt_pet_sleep", s1.value === "off" ? "off" : `${s1.value}-${s2.value}`); s2.disabled = s1.value === "off"; if (typeof PetStage !== "undefined" && PetStage.sync) PetStage.sync(); };
-      if (s1 && s2) { s1.addEventListener("change", saveSleep); s2.addEventListener("change", saveSleep); }
-      if (nu) nu.addEventListener("change", () => { localStorage.setItem("tt_pet_nudge", nu.value); if (typeof Reminders !== "undefined" && Reminders.refreshPet) Reminders.refreshPet(); });
-      const mo = document.getElementById("petMotionSw");   // iPhone：要使用者按下去那一刻才能請「動作與方向」權限
-      if (mo) mo.addEventListener("change", () => { if (!mo.checked) { localStorage.setItem("tt_pet_motion", "0"); return; }
-        DeviceMotionEvent.requestPermission().then(r => { const g = r === "granted"; mo.checked = g; localStorage.setItem("tt_pet_motion", g ? "1" : "0"); if (!g) toast(ttT("需允許「動作與方向」權限")); }).catch(() => { mo.checked = false; toast(ttT("需允許「動作與方向」權限")); }); });
-    }, 0);
-    const rows = petAffRows().map(([a, b, c]) => `<tr><td>${escHtml(ttT(a))}</td><td class="ah-v">${b}</td><td class="ah-t">${escHtml(c)}</td></tr>`).join("");
-    if (typeof ttChoice === "function") ttChoice({ html: `<div class="aff-help"><h3 class="ah-title">${escHtml(ttT("活力和親密是什麼？"))}</h3><p class="ah-c">${escHtml(ttT("活力：出門走路就會補滿，太久沒出門會慢慢掉。"))}</p><p class="ah-h"><b>${escHtml(ttT("親密怎麼增加"))}</b></p><div class="ah-now"><div class="ah-hearts">${affHeartsHtml(affinity())}</div><div>${escHtml(affNextLine(affinity()))}</div></div><table>${rows}</table>
-      <p class="ah-c">${escHtml(ttT("親密滿 5 顆心：餵食給的成長更多，牠也會自己出門帶小東西回來。"))}</p><p class="ah-n ah-c">${escHtml(ttT("兩個都不會讓夥伴退化，放心。"))}</p>
-      ${petCan.sound() ? [["petSoundSw", "sfx", "夥伴音效（吃東西、抱抱、進化）", petSoundOn()], ["petAmbSw", "amb", "環境音（鳥叫、蟲鳴、風雨）", localStorage.getItem("tt_pet_amb") !== "0"], ["petMusicSw", "mus", "背景音樂", localStorage.getItem("tt_pet_music") === "1"]].map(([id, k, t, on]) => `<label class="ah-sw"><span>${escHtml(ttT(t))}</span><input type="range" class="ah-vol" min="0" max="100" step="5" data-vol="${k}" value="${Math.round((parseFloat(localStorage.getItem("tt_snd_vol_" + k)) >= 0 ? parseFloat(localStorage.getItem("tt_snd_vol_" + k)) : { sfx: 1, amb: .35, mus: .3 }[k]) * 100)}" aria-label="${escHtml(ttT("音量"))}"><input type="checkbox" class="tt-switch" id="${id}"${on ? " checked" : ""}></label>`).join("") : ""}
-      ${petCan.sound() ? `<label class="ah-sw"><span>${escHtml(ttT("按鈕的輕觸聲"))}</span><input type="checkbox" class="tt-switch" id="petUiSw"${localStorage.getItem("tt_pet_ui") === "1" ? " checked" : ""}></label>` : ""}
-      ${petCan.haptic() ? `<label class="ah-sw"><span>${escHtml(ttT("夥伴震動"))}</span><input type="checkbox" class="tt-switch" id="petHapticSw"${petHapticOn() ? " checked" : ""}></label>` : ""}
-      <label class="ah-sw"><span>${escHtml(ttT("夥伴睡覺時間"))}</span><span class="ah-sel">${petSleepSel()}</span></label>
-      <label class="ah-sw"><span>${escHtml(ttT("夥伴想你的提醒"))}</span><select id="petNudgeSel" class="ah-select">${[["3", ttT("{n} 天沒出門").replace("{n}", 3)], ["7", ttT("{n} 天沒出門").replace("{n}", 7)], ["0", ttT("不要提醒")]].map(([v, t]) => `<option value="${v}"${petNudgeDays() === +v ? " selected" : ""}>${escHtml(t)}</option>`).join("")}</select></label>
-      ${petCan.motionAsk() ? `<label class="ah-sw"><span>${escHtml(ttT("搖一搖手機，牠會頭暈"))}</span><input type="checkbox" class="tt-switch" id="petMotionSw"${localStorage.getItem("tt_pet_motion") === "1" ? " checked" : ""}></label>` : ""}</div>` }, [{ label: ttT("知道了"), value: true, cls: "primary" }]);
-  });
+  $("#petHelp").addEventListener("click", openPetHelp);
   { const dr = $("#petDress"); if (dr) dr.addEventListener("click", openHatPicker); }
   { const ph = $("#petPhoto"); if (ph) ph.addEventListener("click", openPetPhoto); }
   { const pl = $("#petPlay"); if (pl) pl.addEventListener("click", () => petPlayAt(null));   // 丟松果（#12）：每隻用自己的方式玩
@@ -1287,7 +1293,7 @@ async function openFootprintMap() {
   const close = () => ov.remove();
   $("#footClose").addEventListener("click", close);
   setTimeout(() => {
-    const m = L.map("footMap", { zoomControl: false });
+    const m = L.map("footMap", { zoomControl: false, preferCanvas: true });   // 軌跡畫在同一張畫布上（優化輪 4 F4）：幾十趟、上萬點也不會每條線一個 SVG 元素
     L.control.zoom({ position: "topleft", zoomInTitle: ttT("放大地圖"), zoomOutTitle: ttT("縮小地圖") }).addTo(m);   // 跟記錄地圖同一套縮放鈕
     baseTopo().addTo(m);
     const all = [];

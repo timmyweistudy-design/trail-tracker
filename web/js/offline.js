@@ -70,6 +70,7 @@ const Offline = (() => {
     let done = 0, ok = 0, bytes = 0, idx = 0;
     async function worker() {
       while (idx < tiles.length) {
+        if (opts && opts.stop && opts.stop()) return;   // 使用者按暫停（已存的留著，下次從這裡接著下載）
         const url = tiles[idx++];
         try {
           if (await cache.match(url)) { ok++; }   // 已快取過的不重複計流量

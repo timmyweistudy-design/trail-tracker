@@ -362,7 +362,15 @@ $("#gpxFile").addEventListener("change", e => {
   reader.onload = () => {
     const pts = GPX.parse(reader.result);
     if (!pts.length) { toast(ttT("這個檔案沒有可用的路徑")); return; }
-    followRoute(pts.map(p => [p.lat, p.lon]), file.name.replace(/\.gpx$/i, ""));
+    // 先預覽再套用（優化輪 4 H）：長度、點數、海拔範圍、離你多遠，確定是要的那條才畫上去
+    const name = file.name.replace(/\.gpx$/i, "");
+    let km = 0; for (let i = 1; i < pts.length; i++) km += haversine(pts[i - 1], pts[i]) / 1000;
+    const alts = pts.map(p => p.ele != null ? p.ele : p.alt).filter(v => isFinite(v));
+    const far = myLoc ? haversine(myLoc, pts[0]) / 1000 : null;
+    const lines = [`${ttT("路線長")} ${km.toFixed(1)} km · ${pts.length.toLocaleString()} ${ttT("個點")}`];
+    if (alts.length) lines.push(`${ttT("海拔")} ${Math.round(Math.min(...alts))}–${Math.round(Math.max(...alts))} m`);
+    if (far != null) lines.push(ttT("起點離你約 {n} km").replace("{n}", far < 10 ? far.toFixed(1) : Math.round(far)));
+    ttConfirm(`${ttT("跟著這條路線走？")}\n${name}\n\n${lines.join("\n")}`, ttT("跟著走"), ttT("取消")).then(ok => { if (ok) followRoute(pts.map(p => [p.lat, p.lon]), name); });
   };
   reader.readAsText(file);
   e.target.value = "";
@@ -1161,3 +1169,7 @@ function recentClimb(track) {
   for (let i = track.length - 1; i > 0 && t1 - (track[i - 1].t || 0) <= 5 * 60000; i--) { const d = (track[i].alt || 0) - (track[i - 1].alt || 0); if (d >= 1) up += d; }
   return up;
 }
+// 大字模式（優化輪 4 D2）：戴手套、大太陽下看——只留距離、時間、累積爬升三個大數字，地圖和其他小字先收起來；再按一次回來。記在這台手機
+{ const bt = document.getElementById("recBigTog"); const set = on => { document.body.classList.toggle("rec-big", on); if (bt) { bt.setAttribute("aria-pressed", String(on)); bt.textContent = on ? ttT("一般") : ttT("大字"); } if (!on && typeof recMap !== "undefined" && recMap) setTimeout(() => recMap.invalidateSize(), 60); };
+  let on0 = false; try { on0 = localStorage.getItem("tt_rec_big") === "1"; } catch (e) { /* */ } set(on0);
+  if (bt) bt.addEventListener("click", () => { const on = !document.body.classList.contains("rec-big"); try { localStorage.setItem("tt_rec_big", on ? "1" : "0"); } catch (e) { /* */ } set(on); }); }

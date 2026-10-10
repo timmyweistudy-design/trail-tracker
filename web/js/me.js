@@ -62,12 +62,13 @@ async function refreshOfflineStatus() {
   if (Offline.enforceCap && Date.now() - (refreshOfflineStatus._capAt || 0) > 300000) { refreshOfflineStatus._capAt = Date.now(); Offline.enforceCap().catch(() => { }); }
   const n = await Offline.savedCount(), mb = await Offline.usageMB();
   el.textContent = n ? `${ttT("已下載的離線地圖")}${ttColon()}${n} ${ttT("張圖磚")}` : ttT("還沒下載任何離線地圖");
-  const pe = $("#btnPackExport"); if (pe) pe.disabled = !n;   // 還沒下載任何地圖就沒東西可以打包
+  const pe = $("#btnPackExport"); if (pe) pe.disabled = !n;
+  { const ab = $("#btnAllOffline"); if (ab && !ab.disabled) { const lb = ab.querySelector(".ao-l") || (() => { const sp = document.createElement("span"); sp.className = "ao-l"; [...ab.childNodes].filter(x => x.nodeType === 3).forEach(x => x.remove()); ab.appendChild(sp); return sp; })(); lb.textContent = " " + (isPro() ? ttT("下載全台完整離線地圖（約 1.7 GB）") : ttT("一鍵下載全台離線地圖（概覽）")); } }   // PRO：全台完整（優化輪 4 H）   // 還沒下載任何地圖就沒東西可以打包
   const q = $("#offlineQuota");
   renderOfflineSets();
   if (q) {
     if (isPro()) q.innerHTML = mb != null ? `${ttT("這個 App 在手機上佔用")} ${mb.toFixed(0)} MB` : "";
-    else { const left = Math.max(0, OFFLINE_FREE_MB - offlineMbUsed()); q.innerHTML = `<span>${ttT("免費額度")}</span>${ttColon()}<span>${ttT("剩")}</span> <b>${left.toFixed(1)}</b> / ${OFFLINE_FREE_MB} MB <span>${ttT("（含記錄時預載）")}</span><div class="oq-up-line"><a class="oq-up" id="oqUp">${ttT("升級 Premium 無限下載")}</a></div>`; const up = $("#oqUp"); if (up) up.addEventListener("click", () => { if (typeof Premium !== "undefined") Premium.openUpgrade("offline"); }); }
+    else { const left = Math.max(0, OFFLINE_FREE_MB - offlineMbUsed()); q.innerHTML = `<span>${ttT("免費額度")}</span>${ttColon()}<span>${ttT("剩")}</span> <b>${left.toFixed(1)}</b> / ${OFFLINE_FREE_MB} MB <span class="oq-n">${ttT("約可再存 {n} 條步道").replace("{n}", Math.floor(left / 0.45))}</span> <span>${ttT("（含記錄時預載）")}</span><div class="oq-up-line"><a class="oq-up" id="oqUp">${ttT("升級 Premium 無限下載")}</a></div>`; const up = $("#oqUp"); if (up) up.addEventListener("click", () => { if (typeof Premium !== "undefined") Premium.openUpgrade("offline"); }); }
   }
   // #9 收藏一鍵預載：按鈕即時顯示可下載的收藏數（（N）為語言中性），沒有收藏就淡化提示
   const fb = $("#btnFavOffline");
@@ -94,7 +95,7 @@ async function refreshOfflineStatus() {
     });
   });
   // 頁內跳轉
-  document.querySelectorAll("#view-me [data-jump]").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll("#view-me [data-jump], #view-pet [data-jump]").forEach(b => b.addEventListener("click", () => {
     const t = document.getElementById(b.dataset.jump); if (t) t.scrollIntoView({ behavior: "smooth", block: "start" });
   }));
 })();
@@ -107,7 +108,7 @@ function trailTiles(t) {
   return [...Offline.tileList(bbox, zmin, zmax), ...Offline.tileListUrl(bbox, 13, 14, _TERR_URL)];
 }
 function setTiles(key) {
-  if (key === "taiwan") { const bbox = { n: 25.35, s: 21.85, e: 122.05, w: 119.95 }; let z = 13; while (z > 9 && Offline.tileList(bbox, 7, z).length > 6000) z--; return Offline.tileList(bbox, 7, z); }
+  if (key === "taiwan" || key === "taiwan_full") return taiwanTiles(key === "taiwan_full");
   const t = TRAILS.find(x => "trail:" + x.id === key); return t ? trailTiles(t) : [];
 }
 function renderOfflineSets() {
@@ -119,10 +120,10 @@ function renderOfflineSets() {
   if (box._sig === sig) return;   // 清單沒變就不重畫
   box._sig = sig;
   if (!keys.length) { box.innerHTML = ""; return; }
-  box.innerHTML = keys.map(k => `<div class="op-set"><span class="op-set-n">${escHtml(k === "taiwan" ? ttT("全台概覽") : sets[k].name || k)}</span><span class="op-set-m">${new Date(sets[k].at).toLocaleDateString(ttLocale(), { month: "numeric", day: "numeric" })}</span><button class="op-set-x" data-set="${escHtml(k)}" aria-label="${ttT("刪除")}">${ic("trash")}</button></div>`).join("");
+  box.innerHTML = keys.map(k => `<div class="op-set"><span class="op-set-n">${escHtml(k === "taiwan" ? ttT("全台概覽") : k === "taiwan_full" ? ttT("全台完整") : sets[k].name || k)}</span><span class="op-set-m">${new Date(sets[k].at).toLocaleDateString(ttLocale(), { month: "numeric", day: "numeric" })}</span><button class="op-set-x" data-set="${escHtml(k)}" aria-label="${ttT("刪除")}">${ic("trash")}</button></div>`).join("");
   box.querySelectorAll(".op-set-x").forEach(b => b.addEventListener("click", async () => {
     const k = b.dataset.set, sets = offlineSets();
-    if (!(await ttConfirm(`${ttT("刪掉這份離線地圖？")}\n${k === "taiwan" ? ttT("全台概覽") : sets[k].name}`, ttT("刪除"), ttT("取消")))) return;
+    if (!(await ttConfirm(`${ttT("刪掉這份離線地圖？")}\n${k === "taiwan" ? ttT("全台概覽") : k === "taiwan_full" ? ttT("全台完整") : sets[k].name}`, ttT("刪除"), ttT("取消")))) return;
     const keep = new Set(); Object.keys(sets).filter(x => x !== k).forEach(x => setTiles(x).forEach(u => keep.add(u)));
     await Offline.removeTiles(setTiles(k).filter(u => !keep.has(u)));
     delete sets[k]; try { localStorage.setItem("tt_offline_sets", JSON.stringify(sets)); } catch (e) { /* */ }
@@ -175,13 +176,7 @@ $("#btnDiag").addEventListener("click", async () => {
 });
 $("#btnFootMap").addEventListener("click", () => { if (!_proGate("footmap")) return; openFootprintMap(); });
 // 登頂收集冊是 PRO（優化輪 A1）：免費用戶走到山頂照樣自動蓋章（資料不丟），點開時先補掃以前的紀錄，在升級彈窗告訴他已經蓋了幾章
-$("#btnPeaks").addEventListener("click", async () => {
-  if (typeof Peaks === "undefined") return;
-  if (isPro()) { Peaks.open(); return; }
-  try { await Peaks.backfill(); } catch (e) { /* */ }
-  const b = Peaks.count("b"), x = Peaks.count("x");
-  _proGate("peaks", b + x ? ttT("你已經蓋了 {n} 章（百岳 {b}、小百岳 {x}），升級就能看完整收集冊").replace("{n}", b + x).replace("{b}", b).replace("{x}", x) : ttT("走到百岳、小百岳山頂會自動蓋章，升級就能隨時翻看"));
-});
+$("#btnPeaks").addEventListener("click", () => { if (typeof Peaks !== "undefined") Peaks.open({ locked: !isPro() }); });   // 免費：看得到章、日期上鎖（優化輪 4 H）
 $("#btnAllOffline").addEventListener("click", downloadAllTaiwan);
 $("#btnFavOffline").addEventListener("click", downloadFavOffline);
 
@@ -225,7 +220,7 @@ async function autoCloudBackup() {
     if (!u || !u.user) return;   // 沒登入就沒雲端備份（改用匯出備份檔）
     // 離線送出佇列：離線或失敗→標記待備份，回線自動補送（資料安全不因當下沒網路而漏）
     if (typeof navigator !== "undefined" && navigator.onLine === false) { try { localStorage.setItem("tt_backup_pending", "1"); } catch (e) { } return; }
-    if (await cloudBackupNow(true)) { try { localStorage.removeItem("tt_backup_pending"); } catch (e) { } toast(ttT("這趟已經備份到雲端")); }
+    if (await cloudBackupNow(true)) { try { localStorage.removeItem("tt_backup_pending"); } catch (e) { } if (Date.now() - (window.__bkToastAt || 0) > 60000) { window.__bkToastAt = Date.now(); toast(ttT("這趟已經備份到雲端")); } }   /* 一分鐘內只提示一次（優化輪 4 A6） */
     else { try { localStorage.setItem("tt_backup_pending", "1"); } catch (e) { } }
   } catch (e) { try { localStorage.setItem("tt_backup_pending", "1"); } catch (_) { } }
 }
@@ -534,10 +529,22 @@ function renderStoryBanner() {
   const y = storyYear();
   let hid = null; try { hid = localStorage.getItem("tt_story_x"); } catch (e) { /* */ }
   const n = y ? realRecords().filter(r => +localYear(r.date) === y).length : 0;
-  if (!y || n < 3 || hid === String(y)) { box.innerHTML = ""; return; }
+  if (!y || n < 3 || hid === String(y)) { box.innerHTML = ""; renderMonthRecap(box); return; }
   box.innerHTML = `<div class="story-banner"><button class="sb-open" id="sbOpen"><span class="sb-yr">${y}</span><span class="sb-t"><b>${ttT("你的 %d 山行故事出爐了").replace("%d", y)}</b><small>${ttT("一頁一頁看這一年，每頁都能存成限動圖")}</small></span><span class="sb-play">${ic("play")}</span></button><button class="sb-x" id="sbX" aria-label="${ttT("關閉")}">${ic("x")}</button></div>`;
   $("#sbOpen").addEventListener("click", () => openStory(y));
   $("#sbX").addEventListener("click", () => { try { localStorage.setItem("tt_story_x", String(y)); } catch (e) { /* */ } box.innerHTML = ""; });
+}
+// 上個月回顧（優化輪 4 H）：每月 1～7 號在「我的」放一張小卡，上個月走了幾趟、幾公里、爬多高；「看完整分析」是 PRO（免費看得到數字）
+function renderMonthRecap(box) {
+  const d = new Date(); if (d.getDate() > 7) return;
+  const pm = new Date(d.getFullYear(), d.getMonth() - 1, 1), key = pm.getFullYear() + "-" + (pm.getMonth() + 1);
+  let hid = null; try { hid = localStorage.getItem("tt_mrecap_x"); } catch (e) { /* */ } if (hid === key) return;
+  const recs = realRecords().filter(r => { const x = new Date(r.date); return x.getFullYear() === pm.getFullYear() && x.getMonth() === pm.getMonth(); }); if (!recs.length) return;
+  const km = recs.reduce((a, r) => a + (r.distanceKm || 0), 0), asc = recs.reduce((a, r) => a + (r.ascent || 0), 0);
+  const mName = pm.toLocaleDateString(ttLocale(), { month: "long" });
+  box.innerHTML = `<div class="mrecap"><div class="mr-t"><b>${ttT("{m}回顧").replace("{m}", mName)}</b><span>${ttCount(recs.length, "trip")} · ${km.toFixed(1)} km · ↑${Math.round(asc).toLocaleString()} m</span></div><button class="btn ghost mr-go" id="mrGo">${ttT("看完整分析")}${isPro() ? "" : ' <span class="pro-tag">PRO</span>'}</button><button class="sb-x" id="mrX" aria-label="${ttT("關閉")}">${ic("x")}</button></div>`;
+  $("#mrGo").addEventListener("click", () => { if (!_proGate("analytics")) return; ensureScript("js/analytics.js").then(() => { if (typeof openAnalytics === "function") openAnalytics(); }); });
+  $("#mrX").addEventListener("click", () => { try { localStorage.setItem("tt_mrecap_x", key); } catch (e) { /* */ } box.innerHTML = ""; });
 }
 function renderStats() {
   const box = $("#meStats");
@@ -583,6 +590,22 @@ const HIST_PAGE = 8;       // 一次顯示幾筆，避免行程太多把頁面�
 let histShown = HIST_PAGE, histDay = null;
 function _histDate(d) {
   return new Date(d).toLocaleString(ttLocale(), { month: "numeric", day: "numeric", weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+}
+// 「走過的路」每一張卡（優化輪 4 F1）：自由路線以前全部長一樣——起點附近有步道就寫「近 ○○」，有軌跡的加一個小小的路線形狀
+const _nearMemo = new Map();
+function _histNear(r) {
+  const p = r.track && r.track[0]; if (!p || typeof TRAILS === "undefined") return "";
+  const k = p.lat.toFixed(3) + "," + p.lon.toFixed(3);
+  if (!_nearMemo.has(k)) { let best = null, bd = 3000; for (const t of TRAILS) { if (!t.lat || Math.abs(t.lat - p.lat) > .05 || Math.abs(t.lon - p.lon) > .05) continue; const d = haversine(p, { lat: t.lat, lon: t.lon }); if (d < bd) { bd = d; best = t; } } _nearMemo.set(k, best ? best.name : ""); }
+  const n = _nearMemo.get(k); return n ? ` <span class="hist-near">${ttT("近")} ${escHtml(ttT(n))}</span>` : "";
+}
+function _histThumb(r) {
+  const tr = r.track; if (!tr || tr.length < 3) return "";
+  const step = Math.max(1, Math.floor(tr.length / 60)), pts = tr.filter((_, i) => i % step === 0);
+  let n = -90, s = 90, e = -180, w = 180; for (const q of pts) { if (q.lat > n) n = q.lat; if (q.lat < s) s = q.lat; if (q.lon > e) e = q.lon; if (q.lon < w) w = q.lon; }
+  const sx = (e - w) || 1e-9, sy = (n - s) || 1e-9, k = 26 / Math.max(sx, sy * 1.15);
+  const d = pts.map((q, i) => `${i ? "L" : "M"}${(3 + (q.lon - w) * k + (26 - sx * k) / 2).toFixed(1)},${(3 + (n - q.lat) * k * 1.15 + (26 - sy * k * 1.15) / 2).toFixed(1)}`).join("");
+  return `<svg class="hist-thumb" viewBox="0 0 32 32" aria-hidden="true"><path d="${d}"/></svg>`;
 }
 function renderHistory(keepShown) {
   renderStats();   // 夥伴卡在「夥伴」頁，這裡不再順手重畫
@@ -630,7 +653,7 @@ function renderHistory(keepShown) {
     return head + `
     <button class="hist-card${r.sim ? " is-sim" : ""}" data-id="${r.id}">
       <div class="top">
-        <b>${escHtml(r.trailName || "自由路線")}${r.sim ? ` <span class="sim-tag">${ttT("模擬")}</span>` : ""}${noKm ? ` <span class="sim-tag">${ttT("上車了・不算")}</span>` : ""}</b>
+        <b>${escHtml(r.trailName || "自由路線")}${!r.trailName ? _histNear(r) : ""}${r.sim ? ` <span class="sim-tag">${ttT("模擬")}</span>` : ""}${noKm ? ` <span class="sim-tag">${ttT("上車了・不算")}</span>` : ""}</b>
         <span class="date">${_histDate(r.date)}</span>
       </div>
       <div class="row">
@@ -639,7 +662,7 @@ function renderHistory(keepShown) {
         ${r.ascent ? `<span>${ic("mountain")}<b>↑${r.ascent}</b> m</span>` : ""}
         ${r.kcal ? `<span>${ic("fire")}<b>${Math.round(r.kcal)}</b> ${ttT("大卡")}</span>` : ""}
       </div>
-      <span class="hist-go" aria-hidden="true">${ic("chevron")}</span>
+      ${_histThumb(r)}<span class="hist-go" aria-hidden="true">${ic("chevron")}</span>
     </button>`;
   }).join("")
     + (recs.length > histShown

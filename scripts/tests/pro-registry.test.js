@@ -30,11 +30,15 @@ ok(["peaks", "presets", "emoji"].every(id => ids.has(id)), "popup lists summit l
     await p.evaluate(() => { document.querySelectorAll(".tour,.coach,.ttdlg-ov").forEach(e => e.remove()); document.querySelector('.tab[data-view="me"]').click(); }); await p.waitForTimeout(500);
     ok(await p.evaluate(() => { const t = document.querySelector("#btnPeaks .pro-tag"); return !!t && t.offsetParent !== null; }), `${lang}: summit log button shows the PRO tag for free users`);
     await p.evaluate(() => document.querySelector("#btnPeaks").click()); await p.waitForTimeout(900);
+    // 優化輪 4 H：免費用戶先看到上鎖的收集冊（看得到章、日期與附近步道上鎖），按「升級」才是彈窗
+    const lk = await p.evaluate(() => ({ book: !!document.querySelector('[data-ov="peaks"]'), lock: !!document.querySelector(".pk-lock"), pop: !!document.querySelector(".premium-card") }));
+    ok(lk.book && lk.lock && !lk.pop, `${lang}: free user sees the locked stamp book first ` + JSON.stringify(lk));
+    await p.evaluate(() => document.querySelector(".pk-up").click()); await p.waitForTimeout(900);
     const r = await p.evaluate(() => { const c = document.querySelector(".premium-card"); if (!c) return null; const go = document.querySelector("#pmGo").getBoundingClientRect(); return { book: !!document.querySelector('[data-ov="peaks"]'), feat: (document.querySelector(".pm-feat") || {}).dataset?.feat, note: (document.querySelector(".pm-note") || {}).textContent || "", goBottom: go.bottom, h: c.scrollHeight, groups: document.querySelectorAll(".pm-fg").length, alsoSafety: /附近步道|Nearby trails/.test([...document.querySelectorAll(".pm-fg li")].map(x => x.textContent).join()), rows: document.querySelectorAll(".pm-compare tbody tr:not(.pm-g)").length, cjk: lang => 0 }; });
-    ok(r && !r.book && r.feat === "peaks", `${lang}: free user tapping the summit log gets the upgrade popup about it, not the book`);
+    ok(r && !r.book && r.feat === "peaks", `${lang}: tapping upgrade in the locked book closes it and opens the popup about the summit log`);
     ok(r && /3/.test(r.note) && /2/.test(r.note), `${lang}: popup says how many stamps they already have: ${r && r.note}`);
     ok(r && r.goBottom < 844, `${lang}: trial button visible without scrolling (bottom ${r && Math.round(r.goBottom)})`);
-    ok(r && r.h < 844 * (lang === "en" ? 1.75 : 1.45), `${lang}: popup much shorter than before (${r && r.h}px; zh was 2152)`);
+    ok(r && r.h < 844 * (lang === "en" ? 1.95 : 1.65), `${lang}: popup much shorter than before even with the preview strip (${r && r.h}px; zh was 2152)`);
     ok(r && r.groups === 3 && !r.alsoSafety, `${lang}: safety features in 3 groups, non-safety items kept out of them`);
     ok(r && r.rows === ids.size, `${lang}: comparison table has every feature (${r && r.rows})`);
     if (lang === "en") { const cjk = await p.evaluate(() => [...document.querySelectorAll(".premium-card *")].filter(e => !e.children.length && /[一-鿿]/.test(e.textContent) && !/循徑拾光/.test(e.textContent)).map(e => e.textContent.trim()).slice(0, 5)); ok(cjk.length === 0, "en: popup fully translated " + JSON.stringify(cjk)); }

@@ -628,3 +628,7 @@ function hillshadeLayer(map) {
   }
   return L.tileLayer(ESRI_HILLSHADE, { pane: "hillshade", maxZoom: 18, maxNativeZoom: 16, attribution: "" });
 }
+// 照片淡入（優化輪 4 C4／G2）：載好的圖加 .ld，CSS 從流動淡光淡入；已經在快取裡的（complete）也補上
+document.addEventListener("load", e => { const t = e.target; if (t && t.tagName === "IMG" && t.closest(".fc-shot, .fc-vid, .eco-ob, .det-photos")) t.classList.add("ld"); }, true);
+document.addEventListener("error", e => { const t = e.target; if (t && t.tagName === "IMG" && t.closest(".fc-shot, .fc-vid, .eco-ob, .det-photos")) t.classList.add("ld"); }, true);
+new MutationObserver(ms => { for (const m of ms) for (const n of m.addedNodes) if (n.querySelectorAll) n.querySelectorAll(".fc-shot img, .fc-vid img, .eco-ob img, .det-photos img").forEach(i => { if (i.complete && i.naturalWidth) i.classList.add("ld"); }); }).observe(document.body, { childList: true, subtree: true });

@@ -220,7 +220,7 @@ html[data-theme="dark"] .pk-stamp.got { color: #f2a593; border-color: #d56a52; }
 .mch-left { font-size: calc(12.5px * var(--fs, 1)); color: var(--ink-soft); text-align: center; margin-top: 4px; }
 .mch-left b { font-family: var(--num); color: var(--ink); }
 .mch-note { font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-faint); text-align: center; margin-top: 8px; text-wrap: balance; }
-.hat-cost.hat-quest { color: #b4442d; font-size: calc(10.5px * var(--fs, 1)); display: inline-flex; align-items: center; gap: 2px; }
+
 .hat-cost.hat-quest .ic { width: 12px; height: 12px; margin: 0; transform: none; }
 /* 山頂天氣 */
 .smt { margin-top: 14px; border-top: 1px dashed var(--line); padding-top: 12px; }
@@ -778,8 +778,8 @@ html[data-theme="dark"] .dv-wx-row .link-btn { color: var(--ok-ic); }
 @media (max-width: 359px) { .trk-acts { grid-template-columns: 1fr; } }
 .trk-prof-src { font-size: calc(9.5px * var(--fs, 1)); color: var(--ink-soft); opacity: .75; margin-top: 3px; text-align: right; }
 /* 新版頁面裡的文字按鈕：明確給透明底＋外框（button 預設底色在深色模式會變成一塊淺灰，字看不見） */
-.trk-weight .link-btn, .trk-links .link-btn, .dv-more, .dv-wx-row .link-btn { background: transparent; border: 1px solid var(--line); border-radius: var(--r-pill); padding: 3px 10px; color: var(--brand-deep); font: inherit; font-weight: 700; cursor: pointer; }
-html[data-theme="dark"] .trk-weight .link-btn, html[data-theme="dark"] .trk-links .link-btn, html[data-theme="dark"] .dv-more, html[data-theme="dark"] .dv-wx-row .link-btn { color: var(--ok-ic); border-color: var(--line); }
+.trk-weight .link-btn, .trk-links .link-btn, .dv-more, .dv-wx-row .link-btn, .pv-tr-row .link-btn { background: transparent; border: 1px solid var(--line); border-radius: var(--r-pill); padding: 3px 10px; color: var(--brand-deep); font: inherit; font-weight: 700; cursor: pointer; }
+html[data-theme="dark"] .trk-weight .link-btn, html[data-theme="dark"] .trk-links .link-btn, html[data-theme="dark"] .dv-more, html[data-theme="dark"] .dv-wx-row .link-btn, html[data-theme="dark"] .pv-tr-row .link-btn { color: var(--ok-ic); border-color: var(--line); }
 @media (prefers-color-scheme: dark) { html:not([data-theme="light"]) .trk-weight .link-btn, html:not([data-theme="light"]) .trk-links .link-btn { color: var(--ok-ic); } }
 /* 記錄中控制列：大字小螢幕時鎖定鈕不要被擠出畫面 */
 .rec-controls .btn { min-width: 0; }
@@ -807,7 +807,7 @@ html[data-theme="dark"] .trk-weight .link-btn, html[data-theme="dark"] .trk-link
 .ach-modal-h > span, .ach-modal-h { overflow-wrap: anywhere; }
 [data-fs-big] .ach-modal-h { font-size: calc(19px * min(var(--fs, 1), 1.25)); line-height: 1.2; }
 [data-fs-big] .hat-cost.hat-quest span { display: none; }
-[data-fs-big] .hat-cost.hat-quest { padding: 3px 5px; }
+
 [data-fs-big] .hat-grid .hat-lbl { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.15; font-size: calc(12px * min(var(--fs, 1), 1.3)); overflow-wrap: anywhere; }
 
 /* 語言選單：說明 AI 翻譯 */
@@ -842,3 +842,24 @@ html[data-theme="dark"] .trk-weight .link-btn, html[data-theme="dark"] .trk-link
 /* 好友夥伴當下的心情：對話泡＋角色旁的小裝飾（跟自己的夥伴卡一樣） */
 .fv-stage .pet-bubble { margin-bottom: 2px; }
 .fv-critter .pet-fx { top: 4%; right: 6%; }
+/* 動作列一律排成一排（優化輪 4 C1）：以前用 auto-fit 格線，5 顆在 390 寬、預設字級會變 4＋1，「更多」孤零零掉到第二排 */
+.dv-acts { display: flex; gap: 6px; }
+.dv-acts > .dv-act { flex: 1 1 0; min-width: 0; }
+.dv-acts > .dv-act[hidden] { display: none; }
+/* 記錄設定改成一排三格（優化輪 4 D1）：以前三列各 60px 高，準備出發畫面要一路往下捲；大字級（data-fs-big）維持一列一列，才放得下 */
+html:not([data-fs-big]) .rec-opts.rec-opts { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0; padding: 4px 6px; }
+html:not([data-fs-big]) .ro-row { flex-direction: column; align-items: center; text-align: center; gap: 5px; padding: 10px 4px; }
+html:not([data-fs-big]) .ro-row + .ro-row { border-top: none; border-left: 1px solid var(--line-soft); }
+html:not([data-fs-big]) .ro-t { align-items: center; }
+html:not([data-fs-big]) .ro-t b { font-size: calc(13px * var(--fs, 1)); }
+html:not([data-fs-big]) .ro-t small { font-size: calc(10.5px * var(--fs, 1)); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+/* 記錄大字模式（優化輪 4 D2）：只在記錄中顯示切換鈕；開了之後只留距離、時間、累積爬升 */
+.rec-bigtog { display: none; margin: 8px auto 0; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); border-radius: var(--r-pill); padding: 5px 14px; font-size: calc(12.5px * var(--fs, 1)); font-weight: 700; cursor: pointer; }
+#view-record:not([data-state="idle"]) .rec-bigtog { display: block; }
+body.rec-big #view-record:not([data-state="idle"]) :is(.recmap-wrap, .rec-mini, #recElevSpark, .rec-row .rc:not(:first-child)) { display: none; }
+body.rec-big #view-record:not([data-state="idle"]) .rh-num { font-size: calc(84px * var(--fs, 1)); }
+body.rec-big #view-record:not([data-state="idle"]) .rh-time b { font-size: calc(44px * var(--fs, 1)); }
+body.rec-big #view-record:not([data-state="idle"]) .rec-row .rc:first-child .rc-v { font-size: calc(48px * var(--fs, 1)); }
+body.rec-big #view-record:not([data-state="idle"]) .rec-row { justify-content: center; }
+/* 介紹下方「顯示原文／翻譯年糕」跟「展開全文」同一款膠囊、排一排（優化輪 4 A5；以前是瀏覽器預設灰按鈕） */
+.pv-tr-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
