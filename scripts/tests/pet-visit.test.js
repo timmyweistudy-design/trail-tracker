@@ -47,7 +47,7 @@ const mk=async(o={})=>{const ctx=await b.newContext({viewport:{width:o.w||390,he
 {const p=await mk({free:1});
  await p.click('#petFriends .fp-visit[data-id="u3"]');await p.waitForTimeout(700);
  ok(await p.evaluate(()=>!!document.querySelector("#pvPhoto .pro-tag")),"free: photo shows PRO tag");
- await p.click("#pvPat");await p.waitForTimeout(200);ok(/雲豹 很開心/.test(await p.evaluate(()=>document.getElementById("toast").textContent)),"free: pat works");
+ await p.click("#pvPat");await p.waitForTimeout(200);ok(/森羅神龍 很開心/.test(await p.evaluate(()=>document.getElementById("toast").textContent)),"free: pat works");
  const dl=p.waitForEvent("download",{timeout:2500}).catch(()=>null);await p.click("#pvPhoto");await p.waitForTimeout(800);
  ok(!(await dl)&&await p.evaluate(()=>!!document.querySelector('.premium-mask')),"free: photo opens upgrade instead of saving");
  await p.screenshot({path:O+"free-gate.png"});await p.close();}

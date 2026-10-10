@@ -12,6 +12,8 @@ module.exports = () => {
       const A = kids[i], B = kids[i + 1], sa = getComputedStyle(A), sb = getComputedStyle(B);
       const ra = rects(A), rb = rects(B); if (!ra.length || !rb.length) continue;
       const aLines = new Set(ra.map(r => Math.round(r.top))).size; if (aLines > 2 || txt(A).length > 40) continue;   // 標題：短、最多兩行
+      // 下一塊不是「次要文字」就不算：分頁列、按鈕列、格狀統計、卡片（裡面有按鈕或好幾個方塊），或本身是粗體的小節標題（2026-10-10 優化輪 C2/C3：誤報都是這類）
+      if (B.querySelector("button, [role=tab], input, select") || [...B.children].filter(k => vis(k) && blockish(k)).length >= 2 || +sb.fontWeight >= 600) continue;
       const big = parseFloat(sa.fontSize) > parseFloat(sb.fontSize) + .5 || (+sa.fontWeight >= 600 && +sb.fontWeight < 600) || /^H[1-4]$/.test(A.tagName);
       if (!big) continue;
       const aL = Math.min(...ra.map(r => r.left)), aR = Math.max(...ra.map(r => r.right)), bL = Math.min(...rb.map(r => r.left));

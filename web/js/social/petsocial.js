@@ -81,7 +81,7 @@ const Pets = (() => {
     const berry = typeof BERRY_SVG !== "undefined" ? BERRY_SVG : "🍓";   // 跟餵食鈕同一顆果實圖示
     const giftLbl = `${T("送出")} 3 ${berry}`;
     const rv = returnable(list);   // R12：今天來串門子的朋友 → 回訪
-    const rvHtml = rv ? `<button class="fp-return" id="fpReturn" data-id="${rv.id}">${ic("footprints")}<span>${esc(T("{pet} 今天來過，帶你的夥伴去回訪").replace("{pet}", friendName(rv)))}</span><b>›</b></button>` : "";
+    const rvHtml = rv ? `<button class="fp-return" id="fpReturn" data-id="${rv.id}">${ic("footprints")}<span>${esc(T("{pet} 今天來過，帶你的夥伴去回訪")).replace("{pet}", `<span data-raw>${esc(friendName(rv))}</span>`)}</span><b>›</b></button>` : "";
     box.innerHTML = `${H}${rvHtml}<div class="friend-pets">${list.map(p => {
       const lvl = p.pet_level || 1, emoji = (typeof PET_STAGES !== "undefined" && PET_STAGES[lvl - 1]) ? PET_STAGES[lvl - 1].e : "🥚";
       const art = (typeof PET_ART !== "undefined") ? petSvg(p, lvl - 1) : emoji;   // 好友夥伴也用 SVG 角色，戴著對方的頭飾＋配件

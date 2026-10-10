@@ -18,18 +18,20 @@ const DET = () => {
     for (const c of el.querySelectorAll("*")) { if (c.closest("svg")) continue; const d = c.style.display; c.style.display = "none"; const w = el.scrollWidth; c.style.display = d; if (w < base) who = (typeof c.className === "string" ? c.className.split(" ").slice(0, 2).join(".") : c.tagName) + " '" + (c.innerText || "").slice(0, 24).replace(/\n/g, "/") + "'"; }
     out.hscroll.push(`${el.className.split(" ")[0]} scrollWidth ${base} > ${el.clientWidth} ← ${who}`); } });
   const scroller = el => { for (let p = el.parentElement; p; p = p.parentElement) { const s = getComputedStyle(p); if (/(auto|scroll|hidden)/.test(s.overflowX) && p.scrollWidth > p.clientWidth + 1) return true; if (/(auto|scroll)/.test(s.overflowX)) return true; } return false; };
+  // 真的是「文字」超出框，不是刻意超出邊框的裝飾（例如主題卡右下的淡圖示，aria-hidden）
+  const textOut = el => { const box = el.getBoundingClientRect(), tw = document.createTreeWalker(el, NodeFilter.SHOW_TEXT); let n; while ((n = tw.nextNode())) { if (!n.nodeValue.trim() || (n.parentElement && n.parentElement.closest('[aria-hidden="true"]'))) continue; const rg = document.createRange(); rg.selectNodeContents(n); for (const r of rg.getClientRects()) if (r.right > box.right + 2 || r.left < box.left - 2) return true; } return false; };
   const name = el => (el.id ? "#" + el.id : "") + (el.className && typeof el.className === "string" ? "." + el.className.trim().split(/\s+/).slice(0, 2).join(".") : "") || el.tagName;
   for (const el of document.querySelectorAll("body *")) {
     if (!vis(el) || el.closest("svg,.leaflet-container,.maplibregl-map,canvas,#debugPanel,.tour,.ps-box")) continue;
     const r = el.getBoundingClientRect(); if (r.width < 2 || r.height < 2 || r.bottom < 0 || r.top > innerHeight) continue;
     if (r.right > W + 1 && !scroller(el) && getComputedStyle(el).position !== "fixed") out.overflow.push(`${name(el)} right=${Math.round(r.right)}`);
-    if (el.matches("button, .btn, .chip, .pp-tod, .seg button, .lv-chip, label") && el.scrollWidth > el.clientWidth + 2 && getComputedStyle(el).textOverflow !== "ellipsis" && getComputedStyle(el).overflow !== "visible") out.clip.push(`${name(el)} "${(el.innerText || "").trim().slice(0, 24)}" ${el.scrollWidth}>${el.clientWidth}`);
+    if (el.matches("button, .btn, .chip, .pp-tod, .seg button, .lv-chip, label") && el.scrollWidth > el.clientWidth + 2 && getComputedStyle(el).textOverflow !== "ellipsis" && getComputedStyle(el).overflow !== "visible" && textOut(el)) out.clip.push(`${name(el)} "${(el.innerText || "").trim().slice(0, 24)}" ${el.scrollWidth}>${el.clientWidth}`);
   }
   if (document.documentElement.lang !== "zh-Hant" && (localStorage.getItem("tt_lang") || "zh") !== "zh") {
     const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let n;
     while ((n = tw.nextNode())) {
       const t = n.nodeValue.trim(); if (!t || !/[一-鿿]/.test(t)) continue;
-      const el = n.parentElement; if (!el || !vis(el) || el.closest("svg,#debugPanel,.lang-list,.lang-gate-card,[data-raw],.trail-name,.tc-name,.fp-info b,.pet-name,input,textarea,.leaflet-container,.brand,header h1,#toast,#ttTag,#ttFps,.fc-cap,.ht,.ev-title,.ev-note,.gp-av,.fv-name,.pk-tab,.gd-empty")) continue;
+      const el = n.parentElement; if (!el || !vis(el) || el.closest("svg,#debugPanel,.lang-list,.lang-gate-card,[data-raw],.trail-name,.tc-name,.fp-info b,.fc-nm,.pet-name,input,textarea,.leaflet-container,.brand,header h1,#toast,#ttTag,#ttFps,.fc-cap,.ht,.ev-title,.ev-note,.gp-av,.fv-name,.pk-tab,.gd-empty")) continue;
       const r = el.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight) continue;
       out.cjk.push(`${name(el)} "${t.slice(0, 30)}"`);
     }
@@ -70,7 +72,7 @@ const COMBOS = (() => { const L = process.argv[2] ? [process.argv[2]] : ["zh", "
     await shot("give-picker", async () => { await tab("pet")(); await p.evaluate(() => Pets.visit(window.__fakeT.profiles.find(x => x.id === "u1"), false, null)); await p.waitForTimeout(300); await p.click("#pvItem"); await p.waitForTimeout(500); });
     await shot("photo", async () => { await tab("pet")(); await p.evaluate(() => openPetPhoto()); });
     // 測試面板：每顆按鈕按一次（跳過會重整頁面、清資料、導覽的）
-    const SKIP = /重設|清|導覽|重整|登出|刪|reset|語言|重看/;
+    const SKIP = /重設|清|導覽|重整|登出|刪|reset|語言|重看|模擬免費|恢復會員/;   // 後兩個會重新載入頁面
     let labels = [];
     for (let k = 0; k < 3 && !labels.length; k++) try { labels = await p.evaluate(async () => { await ensureScript("js/debug.js"); window.ttIsOwner = async () => true; if (!document.getElementById("debugPanel")) await window.openDebugPanel(); return [...document.querySelectorAll("#debugPanel .dbg-sec button")].map(b => b.textContent); }); } catch (e) { console.log("labels retry", k, e.message.split("\n")[0]); await p.waitForTimeout(1500); }
     const dbgErr = {};

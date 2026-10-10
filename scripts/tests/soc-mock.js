@@ -7,7 +7,7 @@ window.__installFakeSupa = function (opts) {
   const people = [me,
     { id: "u1", handle: "mei_trail", display_name: "阿梅", avatar_url: ph("#e8b4a0", "#c2683d"), pet_level: 5, pet_name: "毛毛", total_km: 420, is_premium: false },
     { id: "u2", handle: "ridge_walker_long_name", display_name: "一個名字非常非常長的山友測試看會不會爆版", avatar_url: null, pet_level: 1, is_premium: true },
-    { id: "u3", handle: "hsu", display_name: "許", avatar_url: null, pet_level: 7, pet_name: "雲豹", total_km: 1200 }];
+    { id: "u3", handle: "hsu", display_name: "許", avatar_url: null, pet_level: 7, pet_name: "森羅神龍", total_km: 1200 }];
   const P = id => people.find(p => p.id === id);
   const thumb = [[121.5, 25.1], [121.51, 25.11], [121.52, 25.105], [121.53, 25.12], [121.54, 25.115]];
   const mk = (id, au, h, extra) => Object.assign({ id, author_id: au, trail_id: null, trail_name: "自由路線", distance_km: 6.42, duration_ms: 3 * 3600e3, ascent: 512, hiked_on: "2026-09-30", caption: null, visibility: "public", created_at: iso(h), track_thumb: thumb, rating: null, author: P(au), post_media: [], likes: [{ count: 0 }], comments: [{ count: 0 }], pinned: false, track: { type: "LineString", coordinates: thumb } }, extra);

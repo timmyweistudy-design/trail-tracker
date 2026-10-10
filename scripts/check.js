@@ -101,6 +101,7 @@ const BACKUP_EXEMPT = new Set([
   "tt_vis",                                               // 戶外顯示（陽光／紅光）：看當下環境臨時切，換手機不該一開就是紅色畫面
   "tt_offline_sets", "tt_tiles_migrated", "tt_tiles_clean1", "tt_tiles_open1",   // 離線地圖清單／搬家旗標：圖磚只在這台手機，跨機還原沒意義
   "tt_debug_free",                                        // 測試面板「模擬免費用戶」：只在這台測試用
+  "tt_last_loc",                                          // 記錄地圖的起始位置：只是這台手機上次定位到的地方
   "tt_push_hint_off",                                     // 社群通知頁的推播提示關掉了（裝置偏好）
   "tt_set_open", "tt_hist_hidesim",                       // 我的頁：設定展開狀態、行程列表篩選（純介面偏好）
   "tt_team", "tt_team_name", "tt_team_live",              // 目前小隊/同行開關：裝置選擇

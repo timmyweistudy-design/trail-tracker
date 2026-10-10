@@ -484,6 +484,16 @@ function hikeHeatmapHtml() {
 function renderMonthSummary() {
   const box = $("#meMonth"); if (!box) return;
   const recs = realRecords();
+  // 新用戶（一趟都還沒走）：不要滿版的 0.0，改成一張「走第一趟」引導卡（優化輪 B3）；統計格子也先收起來
+  const fresh = !recs.length && !(ttTotals().trips > 0), st = $("#meStats"); if (st) st.hidden = fresh;
+  if (fresh) {
+    const html = `<div class="me-first"><div class="me-first-ic">${ic("footprints")}</div><b>${ttT("還沒有健行紀錄")}</b><p>${ttT("走完第一趟，這裡會出現你的里程、爬升和每個月的足跡。")}</p>
+      <div class="me-first-act"><button class="btn primary" id="meFirstNear">${ic("compass")}${ttT("找附近步道")}</button><button class="btn ghost" id="meFirstRec">${ic("pin")}${ttT("開始記錄")}</button></div></div>`;
+    if (box._last === html) return; box._last = html; box.innerHTML = html;
+    $("#meFirstNear").addEventListener("click", () => { document.querySelector('.tab[data-view="explore"]').click(); if (typeof setDistanceSort === "function") setDistanceSort(); });
+    $("#meFirstRec").addEventListener("click", () => document.querySelector('.tab[data-view="record"]').click());
+    return;
+  }
   const now = new Date();
   const mo = recs.filter(r => { const d = new Date(r.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); });
   const moKm = mo.reduce((s, r) => s + (r.distanceKm || 0), 0);

@@ -262,7 +262,7 @@ async function openDetail(id, opts) {
     </div>
     <div class="detail-credit">${credit}${demTrusted(t) || t.dem_gain != null ? `<br>${ttT("地形計算：AWS Terrain Tiles（Mapzen）")}<br><span class="dv-terr" translate="no">SRTM &amp; GMTED2010 courtesy of the U.S. Geological Survey · ETOPO1 courtesy NOAA NCEI</span>` : ""}</div>
     <div class="detail-actionbar">
-      <button class="btn primary" id="btnGoRecord">${ic("pin")}${ttT("在此步道開始記錄")}</button>
+      <button class="btn primary${isClosed(t) ? " is-closed" : ""}" id="btnGoRecord">${ic(isClosed(t) ? "alert" : "pin")}${ttT("在此步道開始記錄")}</button>
     </div>`;
   bindDetail(t);
   loadPhoto(t);
@@ -366,7 +366,9 @@ function bindDetail(t) {
     if (detailMap) { detailMap.setView([la, lo], 16); const mp = $("#detailMap"); if (mp) mp.scrollIntoView({ block: "center", behavior: "smooth" }); }
     detailWpLayer && detailWpLayer.eachLayer(m => { try { const ll = m.getLatLng(); if (Math.abs(ll.lat - la) < 1e-5 && Math.abs(ll.lng - lo) < 1e-5) setTimeout(() => m.openPopup(), 350); } catch (e) { /* */ } });
   }));
-  $("#btnGoRecord").addEventListener("click", () => {
+  $("#btnGoRecord").addEventListener("click", async () => {
+    // 暫停開放的步道：先講清楚再開始（優化輪 B2）。按鈕本身也換成警示樣式（.is-closed）
+    if (isClosed(t) && !(await ttConfirm(ttT("這條步道目前「{s}」。請確認現場狀況與官方公告，還是要開始記錄嗎？").replace("{s}", ttT(t.condition.status || "暫停開放")), ttT("還是要記錄"), ttT("取消")))) return;
     closeDetail();
     document.querySelector('.tab[data-view="record"]').click();   // 會先清空 selectedTrailGeo
     selectTrailForRecord(t);                 // 路線疊圖、偏離判斷、沿線地標、行前小卡、可取消的選定列

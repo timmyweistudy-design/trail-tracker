@@ -627,6 +627,8 @@ function render() {
     }[curSort];
     if (cmp) curList.sort(cmp);
   }
+  // 預設排序／附近：暫停開放的排到後面（優化輪 B1：以前一打開前兩張都是「暫停開放」）。使用者自己選的排序（長度、難度…）照原樣
+  if (curSort === "default" || curSort === "distance") { const open = [], shut = []; for (const t of curList) (isClosed(t) ? shut : open).push(t); if (shut.length && open.length) curList = open.concat(shut); }
   $("#resultCount").textContent = `共 ${curList.length.toLocaleString("en-US")} 條步道`;
   updateFilterDot();
   updateCollections();

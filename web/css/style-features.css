@@ -2704,3 +2704,11 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .pm-also b { color: var(--ok-ic); }
 .pm-i > span { min-width: 0; }
 .pm-i small { display: inline-block; }
+/* 「我的」新用戶空狀態（優化輪 B3） */
+.me-first { text-align: center; padding: 20px 18px 18px; border-radius: var(--r); background: linear-gradient(160deg, var(--surface), var(--surface-2)); border: 1px solid var(--line-soft); }
+.me-first-ic .ic { width: 34px; height: 34px; color: var(--brand-mid); }
+.me-first b { display: block; font-size: calc(16px * var(--fs, 1)); margin-top: 6px; color: var(--ink); }
+.me-first p { margin: 6px auto 14px; max-width: 26em; font-size: calc(13px * var(--fs, 1)); color: var(--ink-soft); line-height: 1.6; }
+.me-first-act { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.me-first-act .btn { flex: 1 1 140px; max-width: 200px; margin: 0; }
+.me-first-act .ic { width: 16px; height: 16px; vertical-align: -3px; margin-right: 5px; }

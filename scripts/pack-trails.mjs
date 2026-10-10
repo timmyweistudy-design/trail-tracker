@@ -68,10 +68,13 @@ const cond = {};   // 稀疏：只有少數步道有 condition
 arr.forEach((t, i) => { if (t.condition) cond[i] = t.condition; });
 
 const payload = { n: arr.length, keys, dicts, cols, cond };
+// 用 JSON.parse('…') 包一層，不直接寫物件字面值：V8 解析大型 JSON 字串比解析同樣的 JS 物件快
+// （2026-10-10 優化輪 D2 實測，CPU 降速 4 倍：載入 60–95ms → 40–50ms）。單引號包住，只要跳脫 \ 和 '
+const sq = s => s.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 const out = `// 自動產生（scripts/pack-trails.mjs）：欄式＋字典編碼的步道資料，解碼後與原格式完全相同。
 // 資料更新流程：python3 data/build_data.py && node scripts/pack-trails.mjs
 window.TRAILS = (function () {
-  const P = ${JSON.stringify(payload)};
+  const P = JSON.parse('${sq(JSON.stringify(payload))}');
   const out = new Array(P.n);
   for (let i = 0; i < P.n; i++) {
     const o = {};

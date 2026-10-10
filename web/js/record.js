@@ -296,7 +296,9 @@ function selectTrailForRecord(t, opts) {
 
 function initRecMap() {
   if (!recMap) {
-    recMap = L.map("recMap", { zoomControl: false }).setView(myLoc ? [myLoc.lat, myLoc.lon] : [23.7, 121], myLoc ? 15 : 7);
+    // 起始視角（優化輪 B4）：現在位置 → 上次定位到的地方 → 最近一趟的終點 → 才是整個台灣（以前沒定位就是全台）
+    const start = myLoc || lastKnownLoc();
+    recMap = L.map("recMap", { zoomControl: false }).setView(start ? [start.lat, start.lon] : [23.7, 121], start ? (myLoc ? 15 : 13) : 7);
     addBaseWithToggle(recMap);   // 地形／衛星可切（以前記錄頁只有地形）
     addCompass(recMap, { nav: true }); addRecenter(recMap); addThreeD(recMap, open3DRecording); addFullscreen(recMap);   // 指北針兼導航切換：右上 5 顆 → 4 顆
     // 縮放鈕放左上、比例尺放左下：沒記錄時地圖只有 260 高，放右下會疊到右上那排的全螢幕鈕
@@ -318,11 +320,23 @@ function initRecMap() {
   }
 }
 
+// 上次知道的位置：只存在這台手機（四捨五入到約 100 公尺），沒有就用最近一趟紀錄的終點
+function saveLastLoc(l) { try { localStorage.setItem("tt_last_loc", JSON.stringify({ lat: +l.lat.toFixed(3), lon: +l.lon.toFixed(3) })); } catch (e) { /* */ } }
+function lastKnownLoc() {
+  try { const v = JSON.parse(localStorage.getItem("tt_last_loc") || "null"); if (v && isFinite(v.lat) && isFinite(v.lon)) return v; } catch (e) { /* */ }
+  try {
+    for (const r of (typeof realRecords === "function" ? realRecords() : [])) {
+      if (r.track && r.track.length) { const p = r.track[r.track.length - 1]; return { lat: p.lat, lon: p.lon }; }
+      const t = r.trailId != null && typeof TRAILS !== "undefined" ? TRAILS.find(x => String(x.id) === String(r.trailId)) : null; if (t && t.lat) return { lat: t.lat, lon: t.lon };
+    }
+  } catch (e) { /* */ }
+  return null;
+}
 // 待機時地圖移到你所在的位置（以前一律停在台北 101）。只在已經允許定位時才抓，不主動跳權限詢問
 function locateIdleMap() {
   if (!navigator.geolocation || Recorder.getState() !== "idle" || selectedTrailId) return;
   const go = () => navigator.geolocation.getCurrentPosition(p => {
-    myLoc = { lat: p.coords.latitude, lon: p.coords.longitude };
+    myLoc = { lat: p.coords.latitude, lon: p.coords.longitude }; saveLastLoc(myLoc);
     if (recMap && Recorder.getState() === "idle" && !selectedTrailId && !guideLine) recMap.setView([myLoc.lat, myLoc.lon], 15);
   }, () => { }, { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 });
   try {

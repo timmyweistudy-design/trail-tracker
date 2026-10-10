@@ -978,7 +978,7 @@ body.rec-running.rec-climb:not(.rec-resting) #recMap .pm-e, body.rec-running.rec
 .evolve-n { font-family: var(--serif); font-size: calc(18px * var(--fs, 1)); font-weight: 700; margin-top: 6px; }
 .evolve-d { font-size: calc(13px * var(--fs, 1)); opacity: .85; margin-top: 8px; max-width: 280px; margin-inline: auto; line-height: 1.6; }
 .evolve-card .btn { max-width: 220px; margin: 20px auto 0; }
-.evolve-spark { position: absolute; inset: -30px; pointer-events: none;
+.evolve-spark { position: absolute; inset: -30px 0; pointer-events: none;   /* 左右不再往外 30px：窄螢幕會超出畫面右邊（優化輪 C4） */
   background: radial-gradient(circle at 30% 30%, rgba(232,200,122,.5) 0 2px, transparent 3px),
     radial-gradient(circle at 75% 25%, rgba(255,255,255,.5) 0 2px, transparent 3px),
     radial-gradient(circle at 60% 70%, rgba(159,224,176,.5) 0 2px, transparent 3px),
@@ -1584,3 +1584,4 @@ html[data-theme="dark"] .slope-legend { background: rgba(20, 24, 15, .9); }
 /* ---------- 無障礙：鍵盤 focus ---------- */
 :focus-visible { outline: 2px solid var(--brand-mid); outline-offset: 2px; }   /* 外框跟著元素本身的圓角走；以前這裡加 border-radius:6px，會把圓形關閉鈕在聚焦時變成方的 */
 .chip:focus-visible, .seg-btn:focus-visible, .btn-filter:focus-visible { outline-offset: 3px; }
+.detail-actionbar .btn.is-closed { background: var(--surface); color: var(--danger, #b3322a); border: 1.5px solid currentColor; box-shadow: none; }   /* 暫停開放的步道：開始鈕改警示樣式（優化輪 B2） */
