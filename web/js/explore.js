@@ -375,6 +375,7 @@ function refreshCardCache() {
 }
 const isFavC = id => _favSet.has(id);
 const logC = id => _logCache[id] || {};
+let _mDiffs = [], _mTags = [];
 function matches(t) {
   // 地區（複選 OR）
   if (activeRegions.size && !activeRegions.has(t.region)) return false;
@@ -390,10 +391,10 @@ function matches(t) {
   if (nearRadius && myLoc) { if (!t.lat || haversine(myLoc, { lat: t.lat, lon: t.lon }) > nearRadius * 1000) return false; }
   if (mapScope && (!t.lat || t.lat < mapScope.s || t.lat > mapScope.n || t.lon < mapScope.w || t.lon > mapScope.e)) return false;
   // 難度（複選 OR）
-  const diffs = [...activeFilters].filter(f => /^d\d/.test(f));
+  const diffs = _mDiffs;
   if (diffs.length && !diffs.some(f => matchDiff(f, t))) return false;
   // 主題標籤（複選 OR）
-  const tags = [...activeFilters].filter(f => f.startsWith("tag:")).map(f => f.slice(4));
+  const tags = _mTags;
   if (tags.length) { const tt = tagsOf(t); if (!tags.some(g => tt.includes(g))) return false; }
   if (curQuery) {
     if (_nl) {   // 一句話搜尋（js/nl-search.js）：拆成條件比對
@@ -591,6 +592,8 @@ function render() {
   _q = nz(curQuery);
   _nl = (curQuery && typeof NLSearch !== "undefined") ? NLSearch.parse(curQuery) : null;
   renderNLBar();
+  // 難度／主題條件每次 render 算一次就好（優化輪 D：以前 2,939 條每條都重新展開一次 activeFilters）
+  _mDiffs = [...activeFilters].filter(f => /^d\d/.test(f)); _mTags = [...activeFilters].filter(f => f.startsWith("tag:")).map(f => f.slice(4));
   curList = TRAILS.filter(matches);
   if (myLoc) curList.sort((a, b) =>
     (a.lat ? haversine(myLoc, { lat: a.lat, lon: a.lon }) : 9e9) -

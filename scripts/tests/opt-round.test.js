@@ -42,6 +42,17 @@ ok(/<span data-raw>\$\{esc\(friendName\(rv\)\)\}<\/span>/.test(fs.readFileSync(R
   await p.evaluate(() => document.querySelector('.tab[data-view="record"]').click()); await p.waitForTimeout(1200);
   const c = await p.evaluate(() => { const c = recMap.getCenter(); return { lat: c.lat, lon: c.lng, z: recMap.getZoom() }; });
   ok(Math.abs(c.lat - 24.15) < .05 && Math.abs(c.lon - 121.28) < .05 && c.z >= 12, "B4: record map opens where you were last time, not all of Taiwan " + JSON.stringify(c));
+  // D：收藏／步記的解析快取——寫入後立刻看得到、拿到的是複本（改了不寫回不會汙染）、掃全部步道不再每條重新解析
+  const d = await p.evaluate(() => {
+    const id = TRAILS[5].id, before = Store.isFav(id); Store.toggleFav(id); const after = Store.isFav(id);
+    const f = Store.getFavs(); f.push("zzz"); const leak = Store.isFav("zzz");
+    Store.setTrailLog(TRAILS[6].id, { done: true }); const done = Store.trailLog(TRAILS[6].id).done; const lg = Store.trailLog(TRAILS[6].id); lg.done = false; const kept = Store.trailLog(TRAILS[6].id).done;
+    localStorage.setItem("tt_favs", JSON.stringify([TRAILS[7].id])); const ext = Store.isFav(TRAILS[7].id) && !Store.isFav(id);
+    const t0 = performance.now(); for (let k = 0; k < 20; k++) TRAILS.filter(t => Store.isFav(t.id) || Store.trailLog(t.id).done); const ms = (performance.now() - t0) / 20;
+    return { before, after, leak, done, kept, ext, ms };
+  });
+  ok(!d.before && d.after && !d.leak && d.done && d.kept && d.ext, "D: favorites / trail log cache stays correct after writes, copies and outside changes " + JSON.stringify(d));
+  ok(d.ms < 25, `D: scanning all trails for favorites + done takes ${d.ms.toFixed(1)}ms (was ~40ms unthrottled per scan)`);
   // C4：進化儀式的光點不超出螢幕
   await p.evaluate(() => { const i = Math.max(1, petStageIndex(totalKm())); celebrateEvolve(petStageInfo(i), i + 1); }); await p.waitForTimeout(900);
   const over = await p.evaluate(() => [...document.querySelectorAll(".evolve-card, .evolve-card *")].filter(e => e.getBoundingClientRect().right > innerWidth + 1 && !e.closest(".evolve-burst")).map(e => e.className).slice(0, 3));

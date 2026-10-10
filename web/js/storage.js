@@ -161,8 +161,12 @@ const Store = (() => {
 
   // 收藏
   const FK = "tt_favs";
-  function getFavs() { try { return JSON.parse(localStorage.getItem(FK)) || []; } catch { return []; } }
-  function isFav(id) { return getFavs().includes(id); }
+  // 解析結果依原始字串快取（優化輪 D）：很多地方用 TRAILS.filter(t => Store.isFav(t.id)) 掃 2,939 條，以前每條都 JSON.parse 一次。
+  // 字串一變（任何地方寫入、雲端還原）就重新解析；對外一律回複本，呼叫端改了再寫回也不會汙染快取
+  let _favRaw, _favArr = [], _favSet = new Set();
+  function favsParsed() { const raw = localStorage.getItem(FK); if (raw !== _favRaw) { _favRaw = raw; try { _favArr = JSON.parse(raw) || []; } catch { _favArr = []; } _favSet = new Set(_favArr); } }
+  function getFavs() { favsParsed(); return _favArr.slice(); }
+  function isFav(id) { favsParsed(); return _favSet.has(id); }
   function toggleFav(id) {
     const f = getFavs();
     const i = f.indexOf(id);
@@ -174,8 +178,10 @@ const Store = (() => {
 
   // 我的步記（已完成 / 評分 / 筆記）
   const LK = "tt_log";
-  function getLog() { try { return JSON.parse(localStorage.getItem(LK)) || {}; } catch { return {}; } }
-  function trailLog(id) { return getLog()[id] || {}; }
+  let _logRaw, _logObj = {};
+  function logParsed() { const raw = localStorage.getItem(LK); if (raw !== _logRaw) { _logRaw = raw; try { _logObj = JSON.parse(raw) || {}; } catch { _logObj = {}; } } return _logObj; }
+  function getLog() { return JSON.parse(JSON.stringify(logParsed())); }
+  function trailLog(id) { const v = logParsed()[id]; return v ? Object.assign({}, v) : {}; }
   function setTrailLog(id, patch) {
     const l = getLog();
     l[id] = Object.assign({}, l[id], patch);
