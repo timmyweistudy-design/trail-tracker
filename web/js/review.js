@@ -286,6 +286,124 @@ async function drawTrackProfile(rec, box) {
       ${fromDem ? `<div class="trk-prof-src" translate="no">Terrain: AWS Terrain Tiles (Mapzen) · SRTM &amp; GMTED2010 courtesy of the U.S. Geological Survey</div>` : ""}`;
   } catch (e) { box.hidden = true; if (box.previousElementSibling) box.previousElementSibling.hidden = true; }
 }
+// 這趟的收穫（剛走完才有）：破紀錄、第一次走這條、到過幾座山頂、夥伴還差多少進化
+function trackGains(rec, trail, bk) {
+  const gains = [];
+  const PB_IC = { "🌱": "sprout", "📏": "ruler", "⛰️": "mountain", "⏱️": "clock", "⚡": "flame" };   // 結算頁用圖示，不用 emoji（部分裝置是方框）
+  bk.forEach(b => gains.push(`${ic(PB_IC[b.e] || "star")} <b>${b.label === "首次健行紀錄！" ? ttT(b.label) : `${ttT("破紀錄")}·${ttT(b.label)}`}</b>`));
+  const same = trail ? Store.getRecords().filter(r => r.id !== rec.id && String(r.trailId) === String(rec.trailId) && isFootRec(r)) : [];
+  if (trail && !same.length) gains.push(`${ic("flag")} ${ttT("第一次走這條")}`);
+  const pk = typeof Peaks !== "undefined" ? Peaks.hitsOf(rec) : [];
+  if (pk.length) gains.push(`${ic("mountain")} ${ttT("到過 %d 座山頂").replace("%d", pk.length)}`);
+  if (typeof PET_STAGES !== "undefined" && typeof totalKm === "function") {
+    const nx = PET_STAGES.find(s => s.km > totalKm());
+    if (nx) gains.push(`${ic("paw")} ${ttT("夥伴再 %s km 就進化").replace("%s", (nx.km - totalKm()).toFixed(1))}`);
+  }
+  return gains;
+}
+// 舊紀錄：這是第幾次走這條、上次移動多久
+function trackHistoryLine(rec) {
+  const same = Store.getRecords().filter(r => isFootRec(r) && String(r.trailId) === String(rec.trailId)).sort((a, b) => new Date(a.date) - new Date(b.date));
+  const idx = same.findIndex(r => r.id === rec.id);
+  if (same.length > 1 && idx >= 0) {
+    const prev = same[idx - 1];
+    return `${ttT("第 %d 次走這條").replace("%d", idx + 1)}${prev && movingOf(prev) ? `${ttCJK() ? "，" : ", "}${ttT("上次移動了")} ${fmtDur(movingOf(prev))}` : ""}`;
+  }
+  return "";
+}
+// 跟預估比、跟官方長度比（走的長度跟步道差不多時才比時間）
+function trackNotes(trail, km, mv) {
+  const notes = [];
+  const L = trail.length_km, ratio = L ? km / L : 1;
+  if (L && (ratio < 0.75 || ratio > 1.3)) notes.push(ratio < 0.75 ? ttT("官方長度 %1 km，你走了 %2 km：可能只走了一段").replace("%1", fmtKm(L)).replace("%2", km.toFixed(2)) : ttT("官方長度 %1 km，你記錄 %2 km：可能多走了支線或來回").replace("%1", fmtKm(L)).replace("%2", km.toFixed(2)));
+  else if (mv && typeof estHours === "function" && estHours(trail)) {
+    const est = estHours(trail), mh = mv / 3.6e6, d = Math.round((mh - est) / est * 100);
+    notes.push(`${ttT("預估 %1，你移動了 %2").replace("%1", fmtHours(est)).replace("%2", fmtDur(mv))}${ttCJK() ? "，" : ", "}${Math.abs(d) < 10 ? ttT("跟預估差不多") : d < 0 ? ttT("比預估快 %d%").replace("%d", -d) : ttT("比預估慢 %d%，多休息也沒關係").replace("%d", d)}`);
+  }
+  return notes;
+}
+// 結算頁的「去填體重／改名／刪除／升級」（優化輪 4 A2：從 openTrackReview 拆出來）
+function bindTrackActions(rec) {
+  { const sw = $("#trkSetWeight"); if (sw) sw.addEventListener("click", () => {
+      closeTrackReview();
+      const tab = document.querySelector('.tab[data-view="me"]'); if (tab) tab.click();
+      setTimeout(() => {
+        const w = document.getElementById("pfWeight"), g = w && w.closest(".set-group");
+        if (g && !g.classList.contains("open")) g.querySelector(".set-head").click();
+        if (w) { w.scrollIntoView({ block: "center", behavior: "smooth" }); setTimeout(() => w.focus(), 400); }
+      }, 350);
+    }); }
+  // 改名：打的名字剛好是某條步道 → 順便連回那條步道（完成判定、步道頁的「走過」才對得上）
+  { const rn = $("#trackRename"); if (rn) rn.addEventListener("click", async () => {
+      const v = await askInput({ title: ttT("這一趟叫什麼？"), value: rec.trailName || "", max: 40 });
+      if (v == null || !v.trim()) return;
+      if (!ttCleanOk(v)) return;   // 行程名稱會帶進分享圖和貼文
+      const name = v.trim(), t = TRAILS.find(x => x.name === name);
+      Store.updateRecord(rec.id, { trailName: name, trailId: t ? t.id : rec.trailId });
+      rec.trailName = name; if (t) rec.trailId = t.id;
+      const h = $("#trackBody h2"); if (h) h.textContent = name;
+      renderHistory(true); toast(t ? ttT("改好了，也連到這條步道") : ttT("改好了"));
+    }); }
+  { const dl = $("#trackDelete"); if (dl) dl.addEventListener("click", async () => {
+      const ok = await ttConfirm(`${ttT("刪除這一趟？")}\n${escHtml(rec.trailName || "自由路線")}・${(rec.distanceKm || 0).toFixed(2)} km\n${ttT("刪了就找不回來，統計也會一起扣掉。")}`, ttT("刪除"), ttT("取消"));
+      if (!ok) return;
+      Store.deleteRecord(rec.id);
+      closeTrackReview();
+      renderHistory(true); toast(ttT("刪掉了"));
+      try { if (typeof scheduleCloudBackup === "function") scheduleCloudBackup(); } catch (e) { /* */ }
+    }); }
+  { const tu = $("#tuUpgrade"); if (tu) tu.addEventListener("click", () => { if (typeof Premium !== "undefined") Premium.openUpgrade(); }); const tx = $("#tuDismiss"); if (tx) tx.addEventListener("click", () => { const u = $("#trackUpsell"); if (u) u.remove(); }); }
+}
+// 結算頁地圖：畫軌跡、起點、滑行重播（面板動畫跑完才建，地圖尺寸才對）
+function drawTrackMap(rec, km) {
+  setTimeout(() => {
+    if (!trackMap) {
+      trackMap = L.map("trackMap", { zoomControl: false });
+      baseTopo().addTo(trackMap); hillshadeLayer(trackMap).addTo(trackMap);
+    }
+    if (trackLayer) trackMap.removeLayer(trackLayer);
+    trackLayer = L.layerGroup().addTo(trackMap);
+    const pts = (rec.track || []).map(p => [p.lat, p.lon]);
+    trackPts = pts;
+    trackSegsLL = trackSegments(rec.track || []).map(s => s.map(p => [p.lat, p.lon]));   // gap 分段，顯示不連跳段
+    trackStats = { km, ms: rec.elapsedMs };
+    trackMap.invalidateSize();
+    if (pts.length > 1) {
+      trackMap.fitBounds(L.polyline(pts).getBounds(), { padding: [24, 24] });
+      L.circleMarker(pts[0], { radius: 6, color: "#fff", weight: 2, fillColor: "#2f7d4f", fillOpacity: 1 }).addTo(trackLayer);   // 起點
+      playTrackReplay(pts, trackSegsLL);          // 滑行重播
+    } else if (pts.length === 1) {
+      trackMap.setView(pts[0], 15);
+      L.circleMarker(pts[0], { radius: 6, color: "#fff", weight: 2, fillColor: "#2f7d4f", fillOpacity: 1 }).addTo(trackLayer);
+    } else { trackMap.setView([23.8, 121], 7); }
+  }, 120);
+}
+// 結算頁底部：重播、3D、分享卡、GPX、回報路況、分享、發到社群、存照片
+function bindTrackShare(rec, km) {
+  $("#trackReplay").addEventListener("click", () => { if (trackPts && trackPts.length > 1) playTrackReplay(trackPts, trackSegsLL); });
+  $("#track3d").addEventListener("click", () => { if (trackSegsLL && trackSegsLL.length) open3DTrack(rec.trailName || ttT("自由路線"), trackSegsLL); else toast(ttT("此步道沒有路線資料，無法 3D 顯示")); });
+  $("#trackCard").addEventListener("click", () => shareHikeCard(rec));
+  $("#trackGpx").addEventListener("click", () => {
+    if (!_proGate("gpx")) return;   // PRO：匯出路線檔
+    GPX.exportRecord(rec); toast(ttT("路線檔存好了"));
+  });
+  { const rp = $("#trackReport"); if (rp) rp.addEventListener("click", () => { const t = TRAILS.find(x => String(x.id) === String(rec.trailId)); if (t) TrailReports.openForm(t); }); }
+  $("#trackShare").addEventListener("click", () => {
+    const text = `${ttT("我走了")} ${rec.trailName || ttT("自由路線")}：${km.toFixed(2)} km・↑${rec.ascent || 0} m${rec.kcal ? `・${Math.round(rec.kcal)} ${ttT("大卡")}` : ""}・${fmtTime(rec.elapsedMs)} — ${ttT("循徑拾光")}`;
+    if (navigator.share) navigator.share({ title: ttT("我的健行紀錄"), text }).catch(() => {});
+    else if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast(ttT("複製好了，貼給朋友吧")));
+    else toast(text);
+  });
+  const socialBtn = $("#trackSocial");
+  if (socialBtn) socialBtn.addEventListener("click", () => {
+    const preset = (rec.id === hikePhotosRecId) ? hikePhotos.slice() : [];   // 帶 {file,t,km} 供標時間/里程
+    if (typeof Composer !== "undefined") Composer.open(rec, preset);
+  });
+  // 點隨手拍照片 → 存到相簿（系統分享單的「儲存影像」）/ 下載
+  $("#trackBody").querySelectorAll(".hike-shots .shot").forEach(fig => fig.addEventListener("click", () => {
+    const p = hikePhotos[+fig.dataset.i]; if (p) saveImageFile(p.file);
+  }));
+}
 function openTrackReview(rec, isNew) {
   if (!rec) return;
   _shotUrls.forEach(u => URL.revokeObjectURL(u)); _shotUrls = [];   // 回收上一份結算的照片 URL
@@ -298,37 +416,12 @@ function openTrackReview(rec, isNew) {
   const dayTxt = end.toLocaleDateString(ttLocale(), { month: "numeric", day: "numeric", weekday: "short" });
   // 這趟的收穫（剛走完才有）／這是第幾次走（舊紀錄）
   const gains = [];
-  if (isNew && real) {
-    const PB_IC = { "🌱": "sprout", "📏": "ruler", "⛰️": "mountain", "⏱️": "clock", "⚡": "flame" };   // 結算頁用圖示，不用 emoji（部分裝置是方框）
-    bk.forEach(b => gains.push(`${ic(PB_IC[b.e] || "star")} <b>${b.label === "首次健行紀錄！" ? ttT(b.label) : `${ttT("破紀錄")}·${ttT(b.label)}`}</b>`));
-    const same = trail ? Store.getRecords().filter(r => r.id !== rec.id && String(r.trailId) === String(rec.trailId) && isFootRec(r)) : [];
-    if (trail && !same.length) gains.push(`${ic("flag")} ${ttT("第一次走這條")}`);
-    const pk = typeof Peaks !== "undefined" ? Peaks.hitsOf(rec) : [];
-    if (pk.length) gains.push(`${ic("mountain")} ${ttT("到過 %d 座山頂").replace("%d", pk.length)}`);
-    if (typeof PET_STAGES !== "undefined" && typeof totalKm === "function") {
-      const nx = PET_STAGES.find(s => s.km > totalKm());
-      if (nx) gains.push(`${ic("paw")} ${ttT("夥伴再 %s km 就進化").replace("%s", (nx.km - totalKm()).toFixed(1))}`);
-    }
-  }
-  let history = "";
-  if (!isNew && trail && real) {
-    const same = Store.getRecords().filter(r => isFootRec(r) && String(r.trailId) === String(rec.trailId)).sort((a, b) => new Date(a.date) - new Date(b.date));
-    const idx = same.findIndex(r => r.id === rec.id);
-    if (same.length > 1 && idx >= 0) {
-      const prev = same[idx - 1];
-      history = `${ttT("第 %d 次走這條").replace("%d", idx + 1)}${prev && movingOf(prev) ? `${ttCJK() ? "，" : ", "}${ttT("上次移動了")} ${fmtDur(movingOf(prev))}` : ""}`;
-    }
-  }
-  // 跟預估比、跟官方長度比（走的長度跟步道差不多時才比時間）
-  const notes = [];
-  if (trail && real && km > 0.2) {
-    const L = trail.length_km, ratio = L ? km / L : 1;
-    if (L && (ratio < 0.75 || ratio > 1.3)) notes.push(ratio < 0.75 ? ttT("官方長度 %1 km，你走了 %2 km：可能只走了一段").replace("%1", fmtKm(L)).replace("%2", km.toFixed(2)) : ttT("官方長度 %1 km，你記錄 %2 km：可能多走了支線或來回").replace("%1", fmtKm(L)).replace("%2", km.toFixed(2)));
-    else if (mv && typeof estHours === "function" && estHours(trail)) {
-      const est = estHours(trail), mh = mv / 3.6e6, d = Math.round((mh - est) / est * 100);
-      notes.push(`${ttT("預估 %1，你移動了 %2").replace("%1", fmtHours(est)).replace("%2", fmtDur(mv))}${ttCJK() ? "，" : ", "}${Math.abs(d) < 10 ? ttT("跟預估差不多") : d < 0 ? ttT("比預估快 %d%").replace("%d", -d) : ttT("比預估慢 %d%，多休息也沒關係").replace("%d", d)}`);
-    }
-  }
+  if (isNew && real) gains.push(...trackGains(rec, trail, bk));
+
+  const history = !isNew && trail && real ? trackHistoryLine(rec) : "";
+
+  const notes = trail && real && km > 0.2 ? trackNotes(trail, km, mv) : [];
+
   const prof = (typeof Store.getProfile === "function" && Store.getProfile()) || {};
   const noWeight = !(Number(prof.weight) > 0);
   const cell = (ico, label, val, src, sub) => `<div class="dv-stat"><div class="dv-stat-h">${ic(ico)}<span>${ttT(label)}</span></div><div class="dv-stat-v">${val}</div><div class="dv-stat-f">${src}${sub ? `<span class="dv-stat-sub">${sub}</span>` : ""}</div></div>`;
@@ -378,79 +471,9 @@ function openTrackReview(rec, isNew) {
   $("#trackBody").onclick = e => {   // 用 onclick 不用 addEventListener：同一個面板每次開都會重畫，才不會疊一堆監聽
     const c = e.target.closest("[data-rsrc]"); if (c && REC_SRC[c.dataset.rsrc] && typeof ttAlertBox === "function") ttAlertBox(ttT(REC_SRC[c.dataset.rsrc]));
   };
-  { const sw = $("#trkSetWeight"); if (sw) sw.addEventListener("click", () => {
-      closeTrackReview();
-      const tab = document.querySelector('.tab[data-view="me"]'); if (tab) tab.click();
-      setTimeout(() => {
-        const w = document.getElementById("pfWeight"), g = w && w.closest(".set-group");
-        if (g && !g.classList.contains("open")) g.querySelector(".set-head").click();
-        if (w) { w.scrollIntoView({ block: "center", behavior: "smooth" }); setTimeout(() => w.focus(), 400); }
-      }, 350);
-    }); }
-  // 改名：打的名字剛好是某條步道 → 順便連回那條步道（完成判定、步道頁的「走過」才對得上）
-  { const rn = $("#trackRename"); if (rn) rn.addEventListener("click", async () => {
-      const v = await askInput({ title: ttT("這一趟叫什麼？"), value: rec.trailName || "", max: 40 });
-      if (v == null || !v.trim()) return;
-      if (!ttCleanOk(v)) return;   // 行程名稱會帶進分享圖和貼文
-      const name = v.trim(), t = TRAILS.find(x => x.name === name);
-      Store.updateRecord(rec.id, { trailName: name, trailId: t ? t.id : rec.trailId });
-      rec.trailName = name; if (t) rec.trailId = t.id;
-      const h = $("#trackBody h2"); if (h) h.textContent = name;
-      renderHistory(true); toast(t ? ttT("改好了，也連到這條步道") : ttT("改好了"));
-    }); }
-  { const dl = $("#trackDelete"); if (dl) dl.addEventListener("click", async () => {
-      const ok = await ttConfirm(`${ttT("刪除這一趟？")}\n${escHtml(rec.trailName || "自由路線")}・${(rec.distanceKm || 0).toFixed(2)} km\n${ttT("刪了就找不回來，統計也會一起扣掉。")}`, ttT("刪除"), ttT("取消"));
-      if (!ok) return;
-      Store.deleteRecord(rec.id);
-      closeTrackReview();
-      renderHistory(true); toast(ttT("刪掉了"));
-      try { if (typeof scheduleCloudBackup === "function") scheduleCloudBackup(); } catch (e) { /* */ }
-    }); }
-  { const tu = $("#tuUpgrade"); if (tu) tu.addEventListener("click", () => { if (typeof Premium !== "undefined") Premium.openUpgrade(); }); const tx = $("#tuDismiss"); if (tx) tx.addEventListener("click", () => { const u = $("#trackUpsell"); if (u) u.remove(); }); }
-  setTimeout(() => {
-    if (!trackMap) {
-      trackMap = L.map("trackMap", { zoomControl: false });
-      baseTopo().addTo(trackMap); hillshadeLayer(trackMap).addTo(trackMap);
-    }
-    if (trackLayer) trackMap.removeLayer(trackLayer);
-    trackLayer = L.layerGroup().addTo(trackMap);
-    const pts = (rec.track || []).map(p => [p.lat, p.lon]);
-    trackPts = pts;
-    trackSegsLL = trackSegments(rec.track || []).map(s => s.map(p => [p.lat, p.lon]));   // gap 分段，顯示不連跳段
-    trackStats = { km, ms: rec.elapsedMs };
-    trackMap.invalidateSize();
-    if (pts.length > 1) {
-      trackMap.fitBounds(L.polyline(pts).getBounds(), { padding: [24, 24] });
-      L.circleMarker(pts[0], { radius: 6, color: "#fff", weight: 2, fillColor: "#2f7d4f", fillOpacity: 1 }).addTo(trackLayer);   // 起點
-      playTrackReplay(pts, trackSegsLL);          // 滑行重播
-    } else if (pts.length === 1) {
-      trackMap.setView(pts[0], 15);
-      L.circleMarker(pts[0], { radius: 6, color: "#fff", weight: 2, fillColor: "#2f7d4f", fillOpacity: 1 }).addTo(trackLayer);
-    } else { trackMap.setView([23.8, 121], 7); }
-  }, 120);
-  $("#trackReplay").addEventListener("click", () => { if (trackPts && trackPts.length > 1) playTrackReplay(trackPts, trackSegsLL); });
-  $("#track3d").addEventListener("click", () => { if (trackSegsLL && trackSegsLL.length) open3DTrack(rec.trailName || ttT("自由路線"), trackSegsLL); else toast(ttT("此步道沒有路線資料，無法 3D 顯示")); });
-  $("#trackCard").addEventListener("click", () => shareHikeCard(rec));
-  $("#trackGpx").addEventListener("click", () => {
-    if (!_proGate("gpx")) return;   // PRO：匯出路線檔
-    GPX.exportRecord(rec); toast(ttT("路線檔存好了"));
-  });
-  { const rp = $("#trackReport"); if (rp) rp.addEventListener("click", () => { const t = TRAILS.find(x => String(x.id) === String(rec.trailId)); if (t) TrailReports.openForm(t); }); }
-  $("#trackShare").addEventListener("click", () => {
-    const text = `${ttT("我走了")} ${rec.trailName || ttT("自由路線")}：${km.toFixed(2)} km・↑${rec.ascent || 0} m${rec.kcal ? `・${Math.round(rec.kcal)} ${ttT("大卡")}` : ""}・${fmtTime(rec.elapsedMs)} — ${ttT("循徑拾光")}`;
-    if (navigator.share) navigator.share({ title: ttT("我的健行紀錄"), text }).catch(() => {});
-    else if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast(ttT("複製好了，貼給朋友吧")));
-    else toast(text);
-  });
-  const socialBtn = $("#trackSocial");
-  if (socialBtn) socialBtn.addEventListener("click", () => {
-    const preset = (rec.id === hikePhotosRecId) ? hikePhotos.slice() : [];   // 帶 {file,t,km} 供標時間/里程
-    if (typeof Composer !== "undefined") Composer.open(rec, preset);
-  });
-  // 點隨手拍照片 → 存到相簿（系統分享單的「儲存影像」）/ 下載
-  $("#trackBody").querySelectorAll(".hike-shots .shot").forEach(fig => fig.addEventListener("click", () => {
-    const p = hikePhotos[+fig.dataset.i]; if (p) saveImageFile(p.file);
-  }));
+  bindTrackActions(rec);
+  drawTrackMap(rec, km);
+  bindTrackShare(rec, km);
 }
 function closeTrackReview() { if (trackAnim) { clearInterval(trackAnim); trackAnim = null; } const lv = document.getElementById("replayLive"); if (lv) lv.style.display = "none"; const bb = document.getElementById("replayBar"); if (bb) bb.remove(); _shotUrls.forEach(u => URL.revokeObjectURL(u)); _shotUrls = []; $("#trackMask").classList.remove("show"); $("#trackSheet").classList.remove("show"); }
 

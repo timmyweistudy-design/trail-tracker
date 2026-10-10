@@ -200,27 +200,10 @@ function exportCanvas(c, d, avImg) {
   }, "image/png");
 }
 // roundRect 已移到 app.js（常駐），此處不再定義
-function openAnalytics() {
-  if (document.querySelector('[data-ov="analytics"]')) return;   // 防連點疊層
-  const recs = realRecords();
-  const pro = isPro();
-  const n = recs.length;
-  const T0 = ttTotals();   // 上面的總數跟「我的」同一套（含終身統計）；下面的圖表只能用現存紀錄
-  const totKm = T0.km, totAsc = T0.asc, totHrs = T0.ms / 3.6e6;
-  // 每月里程
-  const by = {};
-  for (const r of recs) { const m = localYM(r.date); if (!m) continue; (by[m] = by[m] || { km: 0, asc: 0, n: 0, kcal: 0 }); by[m].km += r.distanceKm || 0; by[m].asc += r.ascent || 0; by[m].kcal += r.kcal || 0; by[m].n++; }
-  const months = Object.keys(by).sort().reverse().slice(0, 12);
-  // 月份標籤：今年的只寫「9月」、往年加年份（原本「2026 / 09」會在窄欄裡斷成兩行）
-  const thisY = new Date().getFullYear();
-  const mLabel = m => { const [y, mo] = m.split("-").map(Number); const d = new Date(y, mo - 1, 1);
-    return d.toLocaleDateString(ttLocale(), y === thisY ? { month: "short" } : { year: "2-digit", month: "short" }); };
-  const maxKm = Math.max(1, ...months.map(m => by[m].km));
+// 進階分析的 PRO 區塊（個人紀錄、速度趨勢、難度、年度、卡路里、一週節律、縣市踏遍、匯出）；優化輪 4 A2 從 openAnalytics 拆出來，免費用戶不再白算
+function anaProHtml(recs, by, months, mLabel) {
   const maxKcal = Math.max(1, ...months.map(m => by[m].kcal));
-  const card = (to, pre, dec, l) => `<div class="ana-card"><div class="ana-cv">${cuSpan(to, pre, dec)}</div><div class="ana-cl">${l}</div></div>`;
   const pb = (label, val) => `<div class="ana-pb"><span>${label}</span><b>${val}</b></div>`;
-
-  // ── 進階（PRO）數據 ──
   let longest = null, steepest = null, fastest = 0;
   for (const r of recs) {
     if (!longest || (r.distanceKm || 0) > (longest.distanceKm || 0)) longest = r;
@@ -263,7 +246,7 @@ function openAnalytics() {
        <div class="rp-list">${regionRows.slice(0, 12).map(([r, v]) => `<div class="rp-row"><span class="rp-name">${r}</span><div class="rp-bar"><i style="width:${Math.round(v.done / v.total * 100)}%"></i></div><b class="rp-num">${v.done}/${v.total}</b></div>`).join("")}</div>`
     : "";
 
-  const proInner = `
+  return `
     <div class="ana-sec">個人紀錄</div>
     <div class="ana-pbs">
       ${pb("單次最長", (longest ? longest.distanceKm || 0 : 0).toFixed(2) + " km")}
@@ -295,6 +278,25 @@ function openAnalytics() {
       <button class="btn ghost" id="anaGpx">${ic("download")} GPX</button>
       <button class="btn ghost" id="anaKml">${ic("download")} KML</button>
     </div>`;
+}
+function openAnalytics() {
+  if (document.querySelector('[data-ov="analytics"]')) return;   // 防連點疊層
+  const recs = realRecords();
+  const pro = isPro();
+  const n = recs.length;
+  const T0 = ttTotals();   // 上面的總數跟「我的」同一套（含終身統計）；下面的圖表只能用現存紀錄
+  const totKm = T0.km, totAsc = T0.asc, totHrs = T0.ms / 3.6e6;
+  // 每月里程
+  const by = {};
+  for (const r of recs) { const m = localYM(r.date); if (!m) continue; (by[m] = by[m] || { km: 0, asc: 0, n: 0, kcal: 0 }); by[m].km += r.distanceKm || 0; by[m].asc += r.ascent || 0; by[m].kcal += r.kcal || 0; by[m].n++; }
+  const months = Object.keys(by).sort().reverse().slice(0, 12);
+  // 月份標籤：今年的只寫「9月」、往年加年份（原本「2026 / 09」會在窄欄裡斷成兩行）
+  const thisY = new Date().getFullYear();
+  const mLabel = m => { const [y, mo] = m.split("-").map(Number); const d = new Date(y, mo - 1, 1);
+    return d.toLocaleDateString(ttLocale(), y === thisY ? { month: "short" } : { year: "2-digit", month: "short" }); };
+  const maxKm = Math.max(1, ...months.map(m => by[m].km));
+  const card = (to, pre, dec, l) => `<div class="ana-card"><div class="ana-cv">${cuSpan(to, pre, dec)}</div><div class="ana-cl">${l}</div></div>`;
+
 
   const proLocked = `
     <div class="ana-lock">
@@ -324,7 +326,7 @@ function openAnalytics() {
       <div class="ana-row"><div class="ana-m">${mLabel(m)}</div>
         <div class="ana-bar"><i style="width:${Math.round(by[m].km / maxKm * 100)}%"></i></div>
         <div class="ana-v"><b>${by[m].km.toFixed(1)}</b> km・↑${Math.round(by[m].asc).toLocaleString()} m・${ttCount(by[m].n, "trip")}</div></div>`).join("")}</div>
-    ${pro ? proInner : proLocked}`
+    ${pro ? anaProHtml(recs, by, months, mLabel) : proLocked}`
     : `<div class="social-empty"><span class="ee">${ic("target")}</span>還沒有行程。走完第一趟，這裡就熱鬧了。</div>`}
   </div>`;
   document.body.appendChild(ov);

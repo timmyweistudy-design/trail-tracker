@@ -30,6 +30,33 @@ ok(/__bkToastAt/.test(src("js/me.js")), "A6: cloud-backup toast is throttled");
   let p = await mk({ tt_debug_free: "1" });
   // A7：啟動效能預算（不降速；本機約 1 秒，超過 6 秒就是變慢了）
   ok(p._ready < 6000, `A7: app ready within budget (${p._ready} ms)`);
+  // A4：拿掉 22 個 !important 之後，原本靠它贏的樣式照樣贏（把同樣的 class 放進同樣的容器量 computed style）
+  const a4 = await p.evaluate(() => {
+    const host = document.createElement("div"); host.innerHTML = `
+      <div class="leaflet-container"><div class="leaflet-bottom"><div class="leaflet-control map-count" id="t1">x</div></div><a class="popup-go mp-go" id="t2">go</a></div>
+      <div class="composer-head"><button class="btn primary comp-post" id="t3">post</button></div>
+      <div class="ro-row"><input type="checkbox" class="tt-switch" id="t4"></div>
+      <div class="set-row"><input type="checkbox" class="tt-switch" id="t4b"></div>
+      <div class="input-card"><input class="auth-input bad" id="t5"></div>
+      <div class="ach3d-mk got"><span class="ach-dot ach-mdl" id="t6"></span></div><div class="ach-stop got"><span class="ach-dot ach-mdl" id="t6b"></span></div>
+      <label class="btn ghost ed-av-btn" id="t7">av</label>
+      <div class="dv-comm"><div class="activity-card crowd-card crowd-empty" id="t8">e</div></div>
+      <button class="acc-sw frame-sw on" id="t9"></button>`;
+    document.body.appendChild(host); document.getElementById("t5").focus();
+    const cs = id => getComputedStyle(document.getElementById(id));
+    const r = { mapCount: cs("t1").marginBottom, mpGo: cs("t2").color, comp: cs("t3").paddingTop, sw: cs("t4").width + "x" + cs("t4").height, sw2: cs("t4b").width, bad: cs("t5").borderTopColor,
+      medal: [cs("t6").backgroundImage, cs("t6").boxShadow, cs("t6b").boxShadow, cs("t6").borderTopLeftRadius], av: cs("t7").width, crowd: cs("t8").display, frame: cs("t9").boxShadow };
+    host.remove(); return r;
+  });
+  ok(a4.mapCount === "52px" && a4.mpGo === "rgb(255, 255, 255)" && a4.comp === "7px", "A4: map count / popup button / post button keep their spacing and color " + JSON.stringify([a4.mapCount, a4.mpGo, a4.comp]));
+  ok(a4.sw === "42px x25px".replace(" ", "") && a4.sw2 === "42px", "A4: switches stay 42×25 " + a4.sw + " " + a4.sw2);
+  ok(/179, 50, 42|b3322a/i.test(a4.bad) || /rgb\((1[5-9]\d|2\d\d), [2-7]\d, [2-7]\d\)/.test(a4.bad), "A4: an invalid input stays red even while focused " + a4.bad);
+  ok(a4.medal[0] === "none" && a4.medal[1] === "none" && a4.medal[2] === "none" && a4.medal[3] === "0px", "A4: medals drop the dot background, glow and rounding everywhere " + JSON.stringify(a4.medal));
+  ok(a4.av !== "100%" && parseFloat(a4.av) < 300 && a4.crowd === "none" && /0px 0px 0px 4px/.test(a4.frame), "A4: avatar button auto width, empty crowd card hidden, frame swatch ring " + JSON.stringify([a4.av, a4.crowd, a4.frame]));
+  const a4d = await p.evaluate(() => { const h = document.documentElement, was = h.dataset.theme; h.dataset.theme = "dark";
+    const rm = document.getElementById("recMap"), box = document.createElement("div"); box.innerHTML = '<div class="leaflet-bar"><a id="d1">+</a></div><div class="leaflet-control-scale-line" id="d2">1 km</div><div class="leaflet-control-attribution" id="d3">©</div>';
+    rm.appendChild(box); const c = id => getComputedStyle(document.getElementById(id)).backgroundColor; const r = [c("d1"), c("d2"), c("d3")]; box.remove(); if (was) h.dataset.theme = was; else delete h.dataset.theme; return r; });
+  ok(a4d[0] === "rgb(38, 43, 34)" && a4d[1] === "rgba(0, 0, 0, 0.5)" && a4d[2] === "rgba(0, 0, 0, 0.45)", "A4: dark-theme map controls stay dark, record map scale line included " + JSON.stringify(a4d));
   // B1：地圖標記一次整批加，全部 2,9xx 個都在（以前上限 2,500）
   await p.evaluate(() => document.querySelector('.seg-btn[data-mode="map"]').click()); await p.waitForTimeout(1500);
   const b1 = await p.evaluate(() => ({ n: browseMarkers.size, all: curList.length }));
@@ -55,10 +82,10 @@ ok(/__bkToastAt/.test(src("js/me.js")), "A6: cloud-backup toast is throttled");
   const c1 = await p.evaluate(() => [...document.querySelectorAll(".dv-acts > .dv-act")].filter(x => x.offsetParent).map(x => Math.round(x.getBoundingClientRect().top)));
   ok(c1.length >= 4 && new Set(c1).size === 1, "C1: detail actions stay on one row (no lone button on a second line) " + JSON.stringify(c1));
   await p.evaluate(() => closeDetail && closeDetail());
-  // D1／D2：記錄設定收成一排；大字模式
+  // D1 使用者看過要改回原本（一列一項）；D2 大字模式
   await p.evaluate(() => document.querySelector('.tab[data-view="record"]').click()); await p.waitForTimeout(600);
   const d1 = await p.evaluate(() => { const o = document.querySelector(".rec-opts"); return o ? [...o.children].filter(x => x.offsetParent).map(x => Math.round(x.getBoundingClientRect().top)) : []; });
-  ok(d1.length >= 3 && new Set(d1).size === 1, "D1: record settings sit in one row " + JSON.stringify(d1));
+  ok(d1.length >= 3 && new Set(d1).size === d1.length, "D1 (reverted at the user's request): record settings are back to one per row " + JSON.stringify(d1));
   ok(await p.evaluate(() => !!document.getElementById("recBigTog")), "D2: big-number toggle exists on the record screen");
   await p.evaluate(() => document.getElementById("recBigTog").click());
   ok(await p.evaluate(() => document.body.classList.contains("rec-big") && localStorage.getItem("tt_rec_big") === "1"), "D2: big mode switches on and is remembered");
@@ -72,8 +99,17 @@ ok(/__bkToastAt/.test(src("js/me.js")), "A6: cloud-backup toast is throttled");
   const h = await p.evaluate(() => ({ q: (document.querySelector(".oq-n") || {}).textContent || "", ao: (document.querySelector("#btnAllOffline .ao-l") || {}).textContent || "" }));
   ok(/約可再存 \d+ 條步道/.test(h.q), `H: free quota says how many trails still fit (${h.q})`);
   ok(/全台完整|概覽/.test(h.ao), `H: Taiwan download button names what you get (${h.ao})`);
-  ok(/"全台完整離線地圖"/.test(src("js/premium.js")) && /10 MB（約 20 條步道）/.test(src("js/premium.js")), "H: upgrade popup sells full-Taiwan offline vs 10 MB (≈20 trails)");
+  ok(/"全台完整離線地圖"/.test(src("js/premium.js")) && /10 MB<small class=\\"pm-sub\\">約 20 條步道/.test(src("js/premium.js")), "H: upgrade popup sells full-Taiwan offline vs 10 MB (≈20 trails)");
   ok(/PREVIEW/.test(src("js/premium.js")), "H: upgrade popup has preview pictures");
+  // 比較表不能跑版：數值欄長字（「10 MB（約 20 條步道）」）以前把第一欄擠成一字一行；方案鈕在 iOS 變系統藍
+  await p.evaluate(() => Premium.openUpgrade("offline")); await p.waitForTimeout(700);
+  const tb = await p.evaluate(() => { const d = document.querySelector(".pm-more"); d.open = true; const card = document.querySelector(".premium-card").getBoundingClientRect(); const t = document.querySelector(".pm-compare").getBoundingClientRect();
+    const firsts = [...document.querySelectorAll(".pm-compare tbody tr:not(.pm-g) td:first-child")].map(b => Math.round(b.getBoundingClientRect().width));
+    const ink = getComputedStyle(document.documentElement).getPropertyValue("--ink").trim(); const plan = getComputedStyle(document.querySelector(".pm-plan b")).color;
+    return { fit: t.right <= card.right + 1, minFirst: Math.min(...firsts), plan, blue: /0, 122, 255|0, 0, 238/.test(plan) }; });
+  ok(tb.fit && tb.minFirst >= 140, "H: comparison table fits and feature names are not squeezed to one character per line " + JSON.stringify(tb));
+  ok(!tb.blue, "H: plan buttons use the app's ink color, not the system blue " + tb.plan);
+  await p.evaluate(() => { const m = document.querySelector(".premium-mask"); if (m) m.remove(); });
   await p.context().close();
   // F1：走過的路有縮圖；F2：速度趨勢少於 5 趟改文字
   const tr = (d, i) => ({ id: "r" + i, date: d, name: "自由路線", distanceKm: 2.1 + i * .3, distance3DKm: 2.1 + i * .3, elapsedMs: 3600e3, ascent: 120, descent: 100, steps: 3000, kcal: 120, track: [[24.1 + i * .01, 121.2], [24.11 + i * .01, 121.21], [24.12 + i * .01, 121.205]].map(([lat, lon], k) => ({ lat, lon, t: Date.parse(d) + k * 600000, alt: 300 + k * 40 })) });
@@ -86,6 +122,27 @@ ok(/__bkToastAt/.test(src("js/me.js")), "A6: cloud-backup toast is throttled");
   // H：每月 1～7 號有上個月回顧小卡
   const mr = await p.evaluate(() => ({ card: !!document.querySelector(".mrecap"), txt: (document.querySelector(".mrecap") || {}).textContent || "" }));
   ok(mr.card && /2/.test(mr.txt), `H: month recap card on Nov 3 for October (${mr.txt.slice(0, 40)})`);
+  // A2：拆出來的 anaProHtml／trackGains／trackHistoryLine／drawTrackMap 照常運作
+  const a2 = await p.evaluate(async () => {
+    await ensureScript("js/analytics.js"); if (typeof openTrackReview !== "function") await ensureScript("js/review.js");
+    openAnalytics(); await new Promise(r => setTimeout(r, 400));
+    const pro = { pb: document.querySelectorAll(".ana-pb").length, lock: !!document.querySelector(".ana-lock"), csv: !!document.querySelector("#anaCsv") };
+    document.querySelector('[data-ov="analytics"]').remove();
+    const t = TRAILS.find(x => x.source === "forestry"), base = realRecords()[0];
+    const r1 = Object.assign({}, base, { id: "h1", trailId: t.id, trailName: t.name, date: "2026-10-01T08:00:00" }), r2 = Object.assign({}, base, { id: "h2", trailId: t.id, trailName: t.name, date: "2026-10-08T08:00:00" });
+    Store.addRecord(r1); Store.addRecord(r2);
+    openTrackReview(r2, false); await new Promise(r => setTimeout(r, 900));
+    const old = { body: document.querySelector("#trackBody").textContent, tiles: document.querySelectorAll("#trackMap .leaflet-pane").length };
+    closeTrackReview(); openTrackReview(Object.assign({}, r2, { id: "h3" }), true); await new Promise(r => setTimeout(r, 600));
+    const fresh = document.querySelector("#trackBody").textContent; closeTrackReview();
+    window.TT_DEBUG_FREE = true; window.PERSONAL_MODE = false; openAnalytics(); await new Promise(r => setTimeout(r, 400));
+    const free = { pb: document.querySelectorAll(".ana-pb").length, lock: !!document.querySelector(".ana-lock") }; document.querySelector('[data-ov="analytics"]').remove();
+    return { pro, free, hist: /第 2 次走這條/.test(old.body), map: old.tiles > 0, gains: /夥伴再|到過|第一次|破紀錄/.test(fresh) };
+  });
+  ok(a2.pro.pb >= 2 && !a2.pro.lock && a2.pro.csv, "A2: PRO analytics still renders personal bests and export " + JSON.stringify(a2.pro));
+  ok(a2.free.pb === 0 && a2.free.lock, "A2: free analytics shows the lock instead " + JSON.stringify(a2.free));
+  ok(a2.hist && a2.map, `A2: old record's review says which time you walked it and draws the map (${a2.hist}/${a2.map})`);
+  ok(a2.gains, "A2: a fresh record's review lists what you gained");
   // H：免費用戶的登頂收集冊是上鎖版
   await p.evaluate(() => { localStorage.setItem("tt_debug_free", "1"); Peaks.open({ locked: true }); }); await p.waitForTimeout(600);
   ok(await p.evaluate(() => !!document.querySelector(".pk-lock")), "H: locked stamp book for free users");

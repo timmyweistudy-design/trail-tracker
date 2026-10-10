@@ -88,9 +88,9 @@ body:has(#view-record[data-state="idle"]) .map-fs .fs-hud { display: none; }
 html[data-theme="dark"] .leaflet-container:not(.sat-on) .leaflet-tile-pane { filter: invert(.9) hue-rotate(180deg) brightness(.85) contrast(.92) sepia(.12); }
 html[data-theme="dark"] .leaflet-container.sat-on .leaflet-tile-pane { filter: brightness(.72) sepia(.12); }
 html[data-theme="dark"] body::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: var(--z-screen-fx); background: rgba(255, 150, 60, .10); mix-blend-mode: multiply; }
-html[data-theme="dark"] .leaflet-bar a, html[data-theme="dark"] .leaflet-bar { background: #262b22 !important; color: #d8d2bf !important; border-color: #353c2e !important; }
-html[data-theme="dark"] .leaflet-control-scale-line { background: rgba(0,0,0,.5) !important; color: #d8d2bf !important; border-color: #8a8577 !important; }
-html[data-theme="dark"] .leaflet-control-attribution { background: rgba(0,0,0,.45) !important; color: #9a947f !important; }
+html[data-theme="dark"] .leaflet-bar a, html[data-theme="dark"] .leaflet-bar { background: #262b22; color: #d8d2bf; border-color: #353c2e; }   /* 選擇器權重已高過 leaflet.css，不用 !important（優化輪 4 A4） */
+html[data-theme="dark"] .leaflet-control-scale-line, html[data-theme="dark"] #recMap .leaflet-control-scale-line { background: rgba(0,0,0,.5); color: #d8d2bf; border-color: #8a8577; }   /* 記錄地圖自己有一條 #recMap 的白底，要一起列 */
+html[data-theme="dark"] .leaflet-control-attribution { background: rgba(0,0,0,.45); color: #9a947f; }
 
 /* ══ 記錄頁重新設計（2026-10-02）══ */
 /* 頁首 */
@@ -133,7 +133,7 @@ html[data-theme="dark"] .leaflet-control-attribution { background: rgba(0,0,0,.4
 .ro-t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .ro-t b { font-size: calc(14px * var(--fs, 1)); color: var(--ink); display: inline-flex; align-items: center; gap: 6px; }
 .ro-t small { font-size: calc(12px * var(--fs, 1)); color: var(--ink-faint); line-height: 1.4; }
-.ro-row input.tt-switch { width: 42px !important; height: 25px !important; }
+.ro-row input.tt-switch { width: 42px; height: 25px; }
 .ro-row input.tt-switch:disabled { opacity: .45; }
 /* 原路返回：記錄中控制鈕下方一整條 */
 .rec-safety .safe-btn { width: 100%; }
@@ -221,7 +221,6 @@ html[data-theme="dark"] .pk-stamp.got { color: #f2a593; border-color: #d56a52; }
 .mch-left b { font-family: var(--num); color: var(--ink); }
 .mch-note { font-size: calc(11.5px * var(--fs, 1)); color: var(--ink-faint); text-align: center; margin-top: 8px; text-wrap: balance; }
 
-.hat-cost.hat-quest .ic { width: 12px; height: 12px; margin: 0; transform: none; }
 /* 山頂天氣 */
 .smt { margin-top: 14px; border-top: 1px dashed var(--line); padding-top: 12px; }
 .smt-h { display: flex; align-items: center; gap: 6px; font-weight: 800; color: var(--ink); font-size: calc(14px * var(--fs, 1)); }
@@ -726,7 +725,7 @@ html[data-theme="dark"] .btn.auth-apple { background: #fff; color: #000; border-
 .tabpane .eco-nearby { display: block; }
 .tabpane .section-title { display: flex; align-items: center; gap: 6px; }
 .tabpane .section-title > .ic { flex: none; }
-.dv-comm .crowd-empty { display: none !important; }   /* 人氣還沒資料：併進山友回報那一行，不另外佔一塊 */
+.dv-comm .crowd-empty { display: none; }   /* 人氣還沒資料：併進山友回報那一行，不另外佔一塊 */
 /* 大字／英文：按鈕字不要被切成兩半；剖面數字列、基本資料標籤讓它換行 */
 .dv-acts { grid-template-columns: repeat(auto-fit, minmax(calc(58px * var(--fs, 1)), 1fr)); }
 .dv-act span { overflow-wrap: normal; word-break: keep-all; hyphens: auto; }
@@ -806,7 +805,6 @@ html[data-theme="dark"] .trk-weight .link-btn, html[data-theme="dark"] .trk-link
 .ach-rankrow { justify-content: center; }
 .ach-modal-h > span, .ach-modal-h { overflow-wrap: anywhere; }
 [data-fs-big] .ach-modal-h { font-size: calc(19px * min(var(--fs, 1), 1.25)); line-height: 1.2; }
-[data-fs-big] .hat-cost.hat-quest span { display: none; }
 
 [data-fs-big] .hat-grid .hat-lbl { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.15; font-size: calc(12px * min(var(--fs, 1), 1.3)); overflow-wrap: anywhere; }
 
@@ -846,13 +844,6 @@ html[data-theme="dark"] .trk-weight .link-btn, html[data-theme="dark"] .trk-link
 .dv-acts { display: flex; gap: 6px; }
 .dv-acts > .dv-act { flex: 1 1 0; min-width: 0; }
 .dv-acts > .dv-act[hidden] { display: none; }
-/* 記錄設定改成一排三格（優化輪 4 D1）：以前三列各 60px 高，準備出發畫面要一路往下捲；大字級（data-fs-big）維持一列一列，才放得下 */
-html:not([data-fs-big]) .rec-opts.rec-opts { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0; padding: 4px 6px; }
-html:not([data-fs-big]) .ro-row { flex-direction: column; align-items: center; text-align: center; gap: 5px; padding: 10px 4px; }
-html:not([data-fs-big]) .ro-row + .ro-row { border-top: none; border-left: 1px solid var(--line-soft); }
-html:not([data-fs-big]) .ro-t { align-items: center; }
-html:not([data-fs-big]) .ro-t b { font-size: calc(13px * var(--fs, 1)); }
-html:not([data-fs-big]) .ro-t small { font-size: calc(10.5px * var(--fs, 1)); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 /* 記錄大字模式（優化輪 4 D2）：只在記錄中顯示切換鈕；開了之後只留距離、時間、累積爬升 */
 .rec-bigtog { display: none; margin: 8px auto 0; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); border-radius: var(--r-pill); padding: 5px 14px; font-size: calc(12.5px * var(--fs, 1)); font-weight: 700; cursor: pointer; }
 #view-record:not([data-state="idle"]) .rec-bigtog { display: block; }

@@ -272,6 +272,14 @@ try {
   }
 }
 
+// L. !important 預算（優化輪 4 A4：59 → 37）：剩下的都是刻意的——減少動態、[hidden]、PRO／社群隱藏、離場動畫、
+//    暫停動畫（只有 !important 贏得過 keyframes）、假全螢幕地圖（要贏過各地圖的 #id 規則）。新寫的要贏就把選擇器寫具體，不要加 !important
+{
+  const IMP_MAX = 37;
+  let n = 0;
+  for (const f of fs.readdirSync(path.join(ROOT, "web/css")).filter(f => f.endsWith(".css"))) n += (fs.readFileSync(path.join(ROOT, "web/css", f), "utf8").replace(/\/\*[\s\S]*?\*\//g, "").match(/!important/g) || []).length;
+  if (n > IMP_MAX) err(`[CSS] !important 有 ${n} 個，超過預算 ${IMP_MAX}——把選擇器寫具體來贏，不要加 !important`);
+}
 // K. 頂層名稱不能重複（優化輪 4 A3）：所有頁面腳本共用同一個全域，兩支檔案各寫一個同名的 function／const，
 //    後載入的會靜靜蓋掉前一個（或 const 直接讓整支檔案載不進來）。全站有 560 多個頂層名稱，靠眼睛擋不住
 {
