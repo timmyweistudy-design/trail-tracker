@@ -481,27 +481,25 @@ function petHaptic(kind) {
   } catch (e) { /* 沒有觸覺就安靜 */ }
 }
 function petBuzz(p) { const t = (Array.isArray(p) ? p : [p]).reduce((a, b) => a + (+b || 0), 0); petHaptic(t >= 120 ? "big" : t >= 50 ? "soft" : "tap"); }   // 舊的毫秒寫法照收：換算成三級
-let _petAc = null;
+// 夥伴音效（pet-sound.js）：照現在這一階、選的近親物種挑真實錄音。還沒載好那一下就安靜——以前退回合成的「嗶」，是最機械的部分（2026-10-10 音效優化輪）
 function petSound(k) {
-  if (!petSoundOn()) return;
-  // 真實錄音（pet-sound.js）：照現在這一階、選的近親物種挑；還沒載好（第一次）就退回下面的合成音
-  if (typeof PetAudio !== "undefined") {
-    const i = petStageIndex(totalKm()), v = petTone();
-    if (PetAudio.cue(k, i, v) > 0) { if (k === "hop" && petAcc() === "bell") PetAudio.cue("bell", i, v); return; }
-    PetAudio.preload();
-  }
-  try {
-    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; _petAc = _petAc || new AC(); const c = _petAc; if (c.state === "suspended") c.resume().catch(() => { /* 沒有音訊裝置／系統不讓開：安靜 */ });
-    const tone = (f, t, d, type, v, f2) => { const o = c.createOscillator(), g = c.createGain(), t0 = c.currentTime + t; o.type = type || "sine"; o.frequency.setValueAtTime(f, t0); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t0 + d);
-      g.gain.setValueAtTime(.0001, t0); g.gain.exponentialRampToValueAtTime(v || .12, t0 + .015); g.gain.exponentialRampToValueAtTime(.0001, t0 + d); o.connect(g); g.connect(c.destination); o.start(t0); o.stop(t0 + d + .02); };
-    if (k === "bite") { tone(620, 0, .09, "sine", .1, 380); tone(480, .07, .08, "sine", .07, 300); }
-    else if (k === "hug") [523, 659, 784].forEach((f, i) => tone(f, i * .09, .35, "triangle", .07));
-    else if (k === "evolve") [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, i * .12, .5, "triangle", .08));
-    else if (k === "gift") { tone(880, 0, .25, "sine", .08); tone(1175, .12, .35, "sine", .07); }
-    else if (k === "hop") { if (petAcc() === "bell") { tone(1568, 0, .18, "sine", .05); tone(2093, .05, .22, "sine", .035); } }   // 戴著小鈴鐺跳：叮（2026-10-09 R8；音效預設關）
-  } catch (e) { /* 沒有音訊就安靜 */ }
+  if (!petSoundOn() || typeof PetAudio === "undefined") return;
+  const i = petStageIndex(totalKm()), v = petTone();
+  if (PetAudio.cue(k, i, v) > 0 && k === "hop" && petAcc() === "bell") PetAudio.cue("bell", i, v);
 }
 window.addEventListener("pet-fx", e => petSound(e.detail));
+// 環境音＋背景音樂（音效優化輪）：只在夥伴頁、App 在前景、沒在記錄時放；跟著舞台的時段、天氣、近親物種換。每 2 秒對一次（便宜：沒變就什麼都不做）
+const petAmbOn = () => petSoundOn() && localStorage.getItem("tt_pet_amb") !== "0", petMusicOn = () => petSoundOn() && localStorage.getItem("tt_pet_music") === "1";
+function petSoundScene() {
+  if (typeof PetAudio === "undefined") return;
+  const here = document.body.dataset.view === "pet" && !document.hidden && !document.body.classList.contains("rec-running") && !(typeof Recorder !== "undefined" && Recorder.getState && Recorder.getState() !== "idle");
+  const S = typeof PetStage !== "undefined" ? PetStage : null;
+  if (here && petAmbOn() && S) PetAudio.scene({ tod: (window.__ps && window.__ps.tod) || S.tod(), wx: (window.__ps && window.__ps.wx != null ? window.__ps.wx : S.cachedWx()), feel: S.cachedFeel ? S.cachedFeel() : "", v: petTone() });
+  else PetAudio.scene(null);
+  PetAudio.music(here && petMusicOn());
+}
+setInterval(petSoundScene, 2000);
+document.addEventListener("visibilitychange", petSoundScene);
 // 音效檔：音效開著時，第一次碰螢幕就開始載（iPhone 要在使用者手勢裡才能啟動音訊）
 document.addEventListener("pointerdown", function _petAudioWarm() { if (petSoundOn() && typeof PetAudio !== "undefined") { PetAudio.preload(); document.removeEventListener("pointerdown", _petAudioWarm, true); } }, true);
 // 好友送的果實（2026-10-07 寵物新一輪 #20）：從舞台上方一顆一顆飄下來，再化成「+N」飛進餵食鈕；不在夥伴頁就照舊跳提示
@@ -923,7 +921,11 @@ function renderPet() {
     // 2026-10-07 寵物新一輪 #8：親密的每一種來源列出來，旁邊是今天的進度（參考寶可夢 GO 夥伴：每種有上限、一看就知道還能做什麼）
     setTimeout(() => {   // 對話框開好之後才綁開關（#23）
       const so = document.getElementById("petSoundSw"), hp = document.getElementById("petHapticSw");
-      if (so) so.addEventListener("change", () => { localStorage.setItem("tt_pet_sound", so.checked ? "1" : "0"); if (so.checked) petSound("hug"); });
+      if (so) so.addEventListener("change", () => { localStorage.setItem("tt_pet_sound", so.checked ? "1" : "0"); if (so.checked) petSound("hug"); petSoundScene(); });
+      const am = document.getElementById("petAmbSw"), mu = document.getElementById("petMusicSw");
+      if (am) am.addEventListener("change", () => { localStorage.setItem("tt_pet_amb", am.checked ? "1" : "0"); petSoundScene(); });
+      if (mu) mu.addEventListener("change", () => { localStorage.setItem("tt_pet_music", mu.checked ? "1" : "0"); petSoundScene(); });
+      document.querySelectorAll(".ah-vol").forEach(r => r.addEventListener("input", () => { localStorage.setItem("tt_snd_vol_" + r.dataset.vol, String(r.value / 100)); if (typeof PetAudio !== "undefined") PetAudio.applyVol(); }));
       if (hp) hp.addEventListener("change", () => { localStorage.setItem("tt_pet_haptic", hp.checked ? "1" : "0"); if (hp.checked) petBuzz(20); });
       const s1 = document.getElementById("petSleepA"), s2 = document.getElementById("petSleepB"), nu = document.getElementById("petNudgeSel");
       const saveSleep = () => { localStorage.setItem("tt_pet_sleep", s1.value === "off" ? "off" : `${s1.value}-${s2.value}`); s2.disabled = s1.value === "off"; if (typeof PetStage !== "undefined" && PetStage.sync) PetStage.sync(); };
@@ -936,7 +938,7 @@ function renderPet() {
     const rows = petAffRows().map(([a, b, c]) => `<tr><td>${escHtml(ttT(a))}</td><td class="ah-v">${b}</td><td class="ah-t">${escHtml(c)}</td></tr>`).join("");
     if (typeof ttChoice === "function") ttChoice({ html: `<div class="aff-help"><h3 class="ah-title">${escHtml(ttT("活力和親密是什麼？"))}</h3><p class="ah-c">${escHtml(ttT("活力：出門走路就會補滿，太久沒出門會慢慢掉。"))}</p><p class="ah-h"><b>${escHtml(ttT("親密怎麼增加"))}</b></p><div class="ah-now"><div class="ah-hearts">${affHeartsHtml(affinity())}</div><div>${escHtml(affNextLine(affinity()))}</div></div><table>${rows}</table>
       <p class="ah-c">${escHtml(ttT("親密滿 5 顆心：餵食給的成長更多，牠也會自己出門帶小東西回來。"))}</p><p class="ah-n ah-c">${escHtml(ttT("兩個都不會讓夥伴退化，放心。"))}</p>
-      ${petCan.sound() ? `<label class="ah-sw"><span>${escHtml(ttT("夥伴音效（吃東西、抱抱、進化）"))}</span><input type="checkbox" class="tt-switch" id="petSoundSw"${petSoundOn() ? " checked" : ""}></label>` : ""}
+      ${petCan.sound() ? [["petSoundSw", "sfx", "夥伴音效（吃東西、抱抱、進化）", petSoundOn()], ["petAmbSw", "amb", "環境音（鳥叫、蟲鳴、風雨）", localStorage.getItem("tt_pet_amb") !== "0"], ["petMusicSw", "mus", "背景音樂", localStorage.getItem("tt_pet_music") === "1"]].map(([id, k, t, on]) => `<label class="ah-sw"><span>${escHtml(ttT(t))}</span><input type="range" class="ah-vol" min="0" max="100" step="5" data-vol="${k}" value="${Math.round((parseFloat(localStorage.getItem("tt_snd_vol_" + k)) >= 0 ? parseFloat(localStorage.getItem("tt_snd_vol_" + k)) : { sfx: 1, amb: .35, mus: .3 }[k]) * 100)}" aria-label="${escHtml(ttT("音量"))}"><input type="checkbox" class="tt-switch" id="${id}"${on ? " checked" : ""}></label>`).join("") : ""}
       ${petCan.haptic() ? `<label class="ah-sw"><span>${escHtml(ttT("夥伴震動"))}</span><input type="checkbox" class="tt-switch" id="petHapticSw"${petHapticOn() ? " checked" : ""}></label>` : ""}
       <label class="ah-sw"><span>${escHtml(ttT("夥伴睡覺時間"))}</span><span class="ah-sel">${petSleepSel()}</span></label>
       <label class="ah-sw"><span>${escHtml(ttT("夥伴想你的提醒"))}</span><select id="petNudgeSel" class="ah-select">${[["3", ttT("{n} 天沒出門").replace("{n}", 3)], ["7", ttT("{n} 天沒出門").replace("{n}", 7)], ["0", ttT("不要提醒")]].map(([v, t]) => `<option value="${v}"${petNudgeDays() === +v ? " selected" : ""}>${escHtml(t)}</option>`).join("")}</select></label>

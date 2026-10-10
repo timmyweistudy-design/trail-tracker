@@ -373,7 +373,7 @@ async function toggleDebugPanel() {
       ["🏕擺設全解鎖", () => { localStorage.setItem("tt_pet_gifts", JSON.stringify(Object.keys(PET_GIFTS).map(id => ({ id, t: new Date().toISOString() })))); window.__petPropsAll = true; renderPet(); return Object.keys(PET_GIFTS).length + " 個小東西都有了；四個里程碑小物照真實條件（加里程／測試行程可達成）"; }],
       ["😵搖手機頭暈", seePet(() => ttDebug.react("dizzy"))], ["🤲來回摸", seePet(() => ttDebug.react("rub"))],
       ["🔄心情過場", seePet(() => { localStorage.setItem("tt_pet_mood_last", "x"); window.__petLine = null; renderPet(); return ""; })],
-      ["🔊試聽音效（開發中）", () => { const on = localStorage.getItem("tt_pet_sound_dev") === "1"; if (on) localStorage.removeItem("tt_pet_sound_dev"); else { localStorage.setItem("tt_pet_sound_dev", "1"); localStorage.removeItem("tt_pet_sound"); } return "夥伴音效（開發中）：" + (on ? "關" : "開，只有這台聽得到"); }],
+      ["🎧音效試聽板", closeAnd(() => ensureScript("js/sound-board.js").then(() => SoundBoard.open()))], ["🔊試聽音效（開發中）", () => { const on = localStorage.getItem("tt_pet_sound_dev") === "1"; if (on) localStorage.removeItem("tt_pet_sound_dev"); else { localStorage.setItem("tt_pet_sound_dev", "1"); localStorage.removeItem("tt_pet_sound"); } return "夥伴音效（開發中）：" + (on ? "關" : "開，只有這台聽得到"); }],
       ["🧹清空夥伴日記", () => { localStorage.removeItem("tt_pet_diary"); return "日記清空了（相遇、第一次出門會從資料重新算）"; }],
     ].map(([l, f]) => [l, (...a) => { window.__petDbg = true; return f(...a); }])],   // 按過這一組＝在測試：之後寫的日記、拿到的小東西都標 dbg
     ["夥伴動畫（調動畫用）", [

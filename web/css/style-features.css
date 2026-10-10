@@ -2716,3 +2716,20 @@ input.tt-switch:focus-visible, #view-me .set-body .sim-toggle input[type="checkb
 .me-first-act { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 .me-first-act .btn { flex: 1 1 140px; max-width: 200px; margin: 0; }
 .me-first-act .ic { width: 16px; height: 16px; vertical-align: -3px; margin-right: 5px; }
+.ah-vol { flex: 0 1 96px; width: 96px; margin-left: auto; accent-color: var(--brand-mid); }   /* 音效／環境音／音樂各自的音量（音效優化輪） */
+/* 🎧 音效試聽板（測試面板用，音效優化輪） */
+.sb-card { max-height: 86vh; overflow-y: auto; text-align: left; }
+.sb-card h2 { text-align: center; }
+.sb-card h3 { font-size: calc(14px * var(--fs, 1)); margin: 16px 0 6px; color: var(--brand-deep); }
+.sb-hint { font-size: calc(12px * var(--fs, 1)); color: var(--ink-soft); line-height: 1.6; text-align: center; }
+.sb-row { padding: 7px 0; border-top: 1px solid var(--line-soft); }
+.sb-l { font-size: calc(13px * var(--fs, 1)); font-weight: 600; margin-bottom: 4px; }
+.sb-c { display: flex; flex-wrap: wrap; gap: 6px 10px; }
+.sb-it { display: inline-flex; align-items: center; gap: 3px; }
+.sb-play { white-space: nowrap; width: auto; min-width: 0; flex: none; border: 1px solid var(--line); background: var(--surface-2); border-radius: var(--r-pill); padding: 5px 11px; font-size: calc(12.5px * var(--fs, 1)); cursor: pointer; }
+.sb-play.on { background: var(--accent-soft); border-color: var(--accent); }
+.sb-demo { display: flex; flex-wrap: wrap; gap: 6px; }
+.sb-demo .btn { flex: 0 0 auto; width: auto; margin: 0; padding: 7px 12px; font-size: calc(12.5px * var(--fs, 1)); }
+.sb-foot { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+.sb-foot .btn { flex: 1 1 30%; margin: 0; }
+.sb-out { white-space: pre-wrap; word-break: break-all; font-size: 11px; background: var(--surface-2); padding: 8px; border-radius: 6px; user-select: text; -webkit-user-select: text; }

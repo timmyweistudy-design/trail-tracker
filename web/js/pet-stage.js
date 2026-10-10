@@ -309,7 +309,7 @@ window.PetStage = (function () {
     return "idle";
   }
   function emEl() { return box && box.querySelector("#petEmoji"); }
-  const FXK = { "pb-snap": "bite", "pb-hug": "hug", "pb-rub": "rub", "pb-hop": "hop", "pb-pat": "pat", "pb-tickle": "tickle", "pb-trick": "trick", "pb-yawn": "yawn", "pb-stretch": "stretch", "pb-shake": "shake", "pb-dizzy": "dizzy", "pb-wake": "wake" };
+  const FXK = { "pb-snap": "bite", "pb-hug": "hug", "pb-rub": "rub", "pb-hop": "hop", "pb-pat": "pat", "pb-tickle": "tickle", "pb-trick": "trick", "pb-yawn": "yawn", "pb-stretch": "stretch", "pb-shake": "shake", "pb-dizzy": "dizzy", "pb-wake": "wake", "pb-windy": "gust" };
   const fx = k => window.dispatchEvent(new CustomEvent("pet-fx", { detail: k }));
   // 加一個動作 class，播完拿掉。2026-10-09 修正案 R7-1：等「這個 class 觸發的 CSS 動畫」真的播完才拿掉——
   // 以前等寫死的毫秒數，但每一階的動畫長度不同（神龍的跳 1.6 秒、程式只等 0.9 秒），class 一拿掉角色就瞬間彈回原位＝頓一下（6 隻的跳、神龍伸懶腰、幼龍嚼都有）。
@@ -672,7 +672,12 @@ window.PetStage = (function () {
         const size = 26 + Math.round(Math.random() * 7), by = onCloud ? onCloud[k].by : egg ? 3 + Math.round(Math.random() * 5) : front ? 4 + Math.round(Math.random() * 3) : 10 + Math.round(Math.random() * 12);   // 狐虎：落在前掌前面（比腳底線靠鏡頭）
         b.style.cssText = `--bx:${x};--by:${by}px;--bs:${size}px;--br:${Math.round((Math.random() * 2 - 1) * 22)}deg;--bh:${-(200 + Math.round(Math.random() * 70))}px;animation-delay:${k * 170}ms;z-index:${by < 16 ? 4 : 3}`;
         actor.appendChild(b); berries.push({ b, x });
+        // 音效：每顆果實劃過空氣、落地（落地在動畫 78% 那一格＝0.65 秒 × 0.78），三顆錯開（音效優化輪）
+        setTimeout(() => fx("fall"), k * 170 + 60); setTimeout(() => fx("land"), k * 170 + 507);
       });
+      // 吞下去：果實被咬進嘴（.eaten）那一刻
+      const eatObs = new MutationObserver(ms => ms.forEach(m => { const c = m.target.classList; if (!c) return; if (stg === 2 && c.contains("sipped") && !m.target.__sip) { m.target.__sip = 1; fx("bite"); }   /* 蝶沒有咬的動作：口器碰到果實、開始吸那一下出聲 */ if (c.contains("eaten") && !m.target.__gulp) { m.target.__gulp = 1; setTimeout(() => fx("gulp"), 280); } }));
+      berries.forEach(o => eatObs.observe(o.b, { attributes: true, attributeFilter: ["class"] })); setTimeout(() => eatObs.disconnect(), 60000);
       if (onCloud) { const c0 = parseFloat(box.style.getPropertyValue("--wx")) || 0; box.__cloud = c0; box.__riders = berries.map(o => ({ el: o.b, bx: o.x, c0 })); berries.forEach(o => { o.b.__rx = o.x; }); }
       box.style.setProperty("--ex", "0"); box.style.setProperty("--ey", "1");   // 低頭看掉下來的果實
       await sleep(340 + 650);   // 等最後一顆落地（以前多等 0.12 秒；再早出發，第三顆還在彈就開始走）
