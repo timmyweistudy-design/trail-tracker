@@ -7,6 +7,9 @@
 //   5. 往哪走就先轉成 3/4 側面（rotateY），眼睛一路盯著果實
 // 每一格寫十幾個 CSS 變數在 .ps-box 上，style-features.css 的「走路」段把它們套到骨架（pet-art.js 的 pr-*）上。
 window.PetWalk = (function () {
+  // 音效精緻版：走路每一步落地、毛毛蟲每爬一節、翅膀拍動、趴下，都送 pet-fx 事件（聲音在 pet-sound.js 照物種挑）；左右聲道跟角色位置
+  const sndPan = box => Math.max(-1, Math.min(1, (parseFloat(box.style.getPropertyValue("--wx")) || 0) / ((box.clientWidth || 360) / 2))) * .7;
+  const sndFx = (box, k) => { if (box && box.closest && box.closest(".pet-card")) window.dispatchEvent(new CustomEvent("pet-fx", { detail: { k, pan: sndPan(box) } })); };
   const reduce = () => window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   // 各階的走法：D＝走一個完整步伐週期前進幾 px；v＝速度 px/s；duty＝支撐期比例；bob／roll／lift 單位是 SVG（viewBox 200）
@@ -98,6 +101,7 @@ window.PetWalk = (function () {
     await tween(340, e => { box.__lvFlat = f0 * (1 - e); lvFlatPose(box, box.__lvFlat); }); box.__lvFlat = null; lvFlatPose(box, 0);
   }
   function crawlField(box, ph, s, Du, rev) {
+    { const lp = box.__sndC; box.__sndC = ph; if (lp != null && s > .35 && ph < lp - .3) sndFx(box, "step"); }   // 毛毛蟲每爬一節出一次聲
     const LB = 90, q = ph < .5 ? ph / .5 : (ph - .5) / .5, e = q * q * (3 - 2 * q), sg = rev ? -1 : 1;
     let aR, aF;   // 尾端、前端這一個循環已經往前了多少（世界座標，相對循環開始）
     if (!rev) { if (ph < .5) { aR = Du * e; aF = 0; } else { aR = Du; aF = Du * e; } }
@@ -188,6 +192,7 @@ window.PetWalk = (function () {
   function wingMode(box, mode, ms) {   // 換狀態：從現在的角度接過去
     if (!box) return; const t = performance.now() / 1000, w = box.__wing || (box.__wing = { mode: "idle", from: null, ts: 0, B: 1, t0: 0 });
     if (w.mode === mode) return;
+    if (mode === "flap") sndFx(box, "flap"); else if (mode === "rest") sndFx(box, "fold");   // 翅膀拍動／收起的聲音
     w.from = wingNow(box, t); w.mode = mode; w.ts = t; w.B = Math.max(.001, (ms == null ? 300 : ms) / 1000); w.t0 = t;
   }
   function wingRender(box) {
@@ -390,6 +395,7 @@ window.PetWalk = (function () {
   function pose(box, g, p, s, dir) {   // p＝步伐相位（可以超過 1）、s＝走路的程度 0..1（起步／停下時漸變）、dir＝±1
     const TAU = Math.PI * 2, f = x => (x % 1 + 1) % 1, u = (1 / pxu(box));
     const contact = .5 + .5 * Math.cos(TAU * 2 * p);                      // 1＝著地下沉、0＝抬高（每週期兩次）
+    { const lp = box.__sndP; box.__sndP = p; if (lp != null && s > .35 && p > lp && p - lp < .5) for (const off of [0, .5]) if (Math.floor(p - off) > Math.floor(lp - off)) sndFx(box, "step"); }   // 每一步落地（兩組腳各一次）
     let by = (g.bob || 0) * contact * s, br = (g.roll || 0) * Math.sin(TAU * p) * s;
     // 腳：兩組相差半拍（四足的前後各一組也錯開 1/4，形成背上往前傳的起伏）
     const leg = (off, lift) => {
@@ -615,7 +621,7 @@ window.PetWalk = (function () {
   // 吃完一顆、下一顆之前：尾巴輕甩一下（不然三顆之間看起來很機械）
   function tailFlick(box) { const E = els(box); if (!E.tail || !E.tail.animate) return; const o = stage(box) === 4 ? "136px 186px" : "124px 172px";
     E.tail.animate([{ transformBox: "view-box", transformOrigin: o, transform: "rotate(0deg)" }, { transformBox: "view-box", transformOrigin: o, transform: "rotate(9deg)", offset: .35 }, { transformBox: "view-box", transformOrigin: o, transform: "rotate(-5deg)", offset: .7 }, { transformBox: "view-box", transformOrigin: o, transform: "rotate(0deg)" }], { duration: 560, easing: "ease-in-out" }); }
-  const frontLie = (box, e1, ms) => { const e0 = box.__lie || 0; return tween(ms || 700, e => frontLieSet(box, e0 + (e1 - e0) * e)); };
+  const frontLie = (box, e1, ms) => { const e0 = box.__lie || 0; if (e1 > e0 + .3) sndFx(box, "lie"); return tween(ms || 700, e => frontLieSet(box, e0 + (e1 - e0) * e)); };
   // 趴著時頭的姿勢：往下（低頭）、往左右（轉向那一顆）、微微轉、靠近鏡頭一點（變大）
   function frontHeadSet(box, h) {   // h＝相對「趴著時頭的位置」（趴下時頭本來就放低 16）
     const E = els(box); if (!E.head) return; E.head.style.transition = "none"; const L = (stage(box) === 4 ? 24 : 21) * (box.__lie || 0), q = h || [0, 0, 0];   // 趴下時頭放低到下巴靠在胸口上（第六輪：以前 16，頭懸空）

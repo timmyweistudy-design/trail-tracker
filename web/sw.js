@@ -1,5 +1,5 @@
 // 離線快取：app shell + 地圖圖磚
-const CACHE = "trail-tracker-v722";
+const CACHE = "trail-tracker-v723";
 const TILE_CACHE = "tt-tiles";
 const SAVED_CACHE = "tt-tiles-saved";   // 使用者下載的離線地圖（不隨版本清除、不受上限）   // 地圖圖磚（不隨版本清除，保留離線地圖）
 const ASSETS = [
@@ -66,7 +66,7 @@ self.addEventListener("fetch", e => {
   // 避免把動態資料快取成舊的（發文/刪除/路況即時反映）。
   if (e.request.method !== "GET" || !url.startsWith(self.location.origin)) return;
   // 背景音樂用 <audio> 串流（Range 請求）：不經過快取——快取回整檔 200 給 Range 請求，iPhone 會播不出來
-  if (url.includes("/sounds/music/")) return;
+  if (url.includes("/sounds/music/") || url.includes("/sounds/amb/")) return;   // 環境音也是 <audio> 串流
   // 自家同源檔案（app shell）：cache 優先
   e.respondWith(
     caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {

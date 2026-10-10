@@ -1,0 +1,994 @@
+{
+"sfx": {
+"bag": [
+"bag-1",
+"bag-2",
+"bag-3",
+"bag-4"
+],
+"fall_light": [
+"fall_light-1",
+"fall_light-2",
+"fall_light-3",
+"fall_light-4",
+"fall_light-5",
+"fall_light-6",
+"fall_light-7",
+"fall_light-8"
+],
+"fall_heavy": [
+"fall_heavy-1",
+"fall_heavy-2",
+"fall_heavy-3",
+"fall_heavy-4",
+"fall_heavy-5",
+"fall_heavy-6",
+"fall_heavy-7",
+"fall_heavy-8"
+],
+"land_grass": [
+"land_grass-1",
+"land_grass-2",
+"land_grass-3",
+"land_grass-4",
+"land_grass-5",
+"land_grass-6",
+"land_grass-7",
+"land_grass-8"
+],
+"land_leaf": [
+"land_leaf-1",
+"land_leaf-2",
+"land_leaf-3",
+"land_leaf-4",
+"land_leaf-5",
+"land_leaf-6",
+"land_leaf-7",
+"land_leaf-8"
+],
+"land_sand": [
+"land_sand-1",
+"land_sand-2",
+"land_sand-3",
+"land_sand-4",
+"land_sand-5",
+"land_sand-6",
+"land_sand-7",
+"land_sand-8"
+],
+"land_snow": [
+"land_snow-1",
+"land_snow-2",
+"land_snow-3",
+"land_snow-4",
+"land_snow-5",
+"land_snow-6",
+"land_snow-7",
+"land_snow-8"
+],
+"land_cloud": [
+"land_cloud-1",
+"land_cloud-2",
+"land_cloud-3",
+"land_cloud-4",
+"land_cloud-5",
+"land_cloud-6"
+],
+"bounce": [
+"bounce-1",
+"bounce-2",
+"bounce-3",
+"bounce-4",
+"bounce-5",
+"bounce-6",
+"bounce-7",
+"bounce-8"
+],
+"look": [
+"look-1",
+"look-2",
+"look-3",
+"look-4",
+"look-5"
+],
+"crawl": [
+"crawl-1",
+"crawl-2",
+"crawl-3",
+"crawl-4",
+"crawl-5",
+"crawl-6"
+],
+"paw_light": [
+"paw_light-1",
+"paw_light-2",
+"paw_light-3",
+"paw_light-4",
+"paw_light-5",
+"paw_light-6",
+"paw_light-7"
+],
+"paw_heavy": [
+"paw_heavy-1",
+"paw_heavy-2",
+"paw_heavy-3",
+"paw_heavy-4",
+"paw_heavy-5",
+"paw_heavy-6",
+"paw_heavy-7",
+"paw_heavy-8"
+],
+"claw": [
+"claw-1",
+"claw-2",
+"claw-3",
+"claw-4",
+"claw-5",
+"claw-6",
+"claw-7",
+"claw-8"
+],
+"float": [
+"float-1",
+"float-2",
+"float-3",
+"float-4",
+"float-5",
+"float-6",
+"float-7",
+"float-8"
+],
+"wing_flap": [
+"wing_flap-1",
+"wing_flap-2",
+"wing_flap-3",
+"wing_flap-4",
+"wing_flap-5",
+"wing_flap-6",
+"wing_flap-7"
+],
+"wing_fold": [
+"wing_fold-1",
+"wing_fold-2",
+"wing_fold-3",
+"wing_fold-4",
+"wing_fold-5",
+"wing_fold-6",
+"wing_fold-7"
+],
+"lie_down": [
+"lie_down-1",
+"lie_down-2",
+"lie_down-3",
+"lie_down-4",
+"lie_down-5",
+"lie_down-6",
+"lie_down-7",
+"lie_down-8"
+],
+"touch": [
+"touch-1",
+"touch-2",
+"touch-3",
+"touch-4",
+"touch-5",
+"touch-6",
+"touch-7"
+],
+"bite_straw": [
+"bite_straw-1",
+"bite_straw-2",
+"bite_straw-3",
+"bite_straw-4",
+"bite_straw-5",
+"bite_straw-6",
+"bite_straw-7",
+"bite_straw-8"
+],
+"bite_mango": [
+"bite_mango-1",
+"bite_mango-2",
+"bite_mango-3",
+"bite_mango-4",
+"bite_mango-5"
+],
+"bite_persim": [
+"bite_persim-1",
+"bite_persim-2",
+"bite_persim-3",
+"bite_persim-4",
+"bite_persim-5",
+"bite_persim-6",
+"bite_persim-7",
+"bite_persim-8"
+],
+"bite_orange": [
+"bite_orange-1",
+"bite_orange-2",
+"bite_orange-3",
+"bite_orange-4",
+"bite_orange-5",
+"bite_orange-6",
+"bite_orange-7",
+"bite_orange-8"
+],
+"peel": [
+"peel-1",
+"peel-2",
+"peel-3",
+"peel-4",
+"peel-5",
+"peel-6",
+"peel-7"
+],
+"nibble": [
+"nibble-1",
+"nibble-2",
+"nibble-3",
+"nibble-4",
+"nibble-5"
+],
+"sip": [
+"sip-1",
+"sip-2",
+"sip-3",
+"sip-4",
+"sip-5",
+"sip-6",
+"sip-7",
+"sip-8"
+],
+"chew_small": [
+"chew_small-1",
+"chew_small-2",
+"chew_small-3",
+"chew_small-4",
+"chew_small-5",
+"chew_small-6",
+"chew_small-7",
+"chew_small-8"
+],
+"chew_mid": [
+"chew_mid-1",
+"chew_mid-2",
+"chew_mid-3",
+"chew_mid-4",
+"chew_mid-5",
+"chew_mid-6",
+"chew_mid-7",
+"chew_mid-8"
+],
+"chew_big": [
+"chew_big-1",
+"chew_big-2",
+"chew_big-3",
+"chew_big-4",
+"chew_big-5",
+"chew_big-6",
+"chew_big-7",
+"chew_big-8"
+],
+"gulp_small": [
+"gulp_small-1",
+"gulp_small-2",
+"gulp_small-3",
+"gulp_small-4",
+"gulp_small-5",
+"gulp_small-6",
+"gulp_small-7",
+"gulp_small-8"
+],
+"gulp_big": [
+"gulp_big-1",
+"gulp_big-2",
+"gulp_big-3",
+"gulp_big-4",
+"gulp_big-5",
+"gulp_big-6",
+"gulp_big-7",
+"gulp_big-8"
+],
+"lick": [
+"lick-1",
+"lick-2",
+"lick-3",
+"lick-4",
+"lick-5",
+"lick-6",
+"lick-7"
+],
+"content": [
+"content-1",
+"content-2",
+"content-3",
+"content-4",
+"content-5",
+"content-6"
+],
+"purr": [
+"purr-1",
+"purr-2",
+"purr-3",
+"purr-4",
+"purr-5",
+"purr-6",
+"purr-7"
+],
+"egg_glow": [
+"egg_glow-1",
+"egg_glow-2",
+"egg_glow-3",
+"egg_glow-4",
+"egg_glow-5",
+"egg_glow-6",
+"egg_glow-7",
+"egg_glow-8"
+],
+"fur_short": [
+"fur_short-1",
+"fur_short-2",
+"fur_short-3",
+"fur_short-4",
+"fur_short-5"
+],
+"fur_thick": [
+"fur_thick-1",
+"fur_thick-2",
+"fur_thick-3",
+"fur_thick-4",
+"fur_thick-5"
+],
+"belly": [
+"belly-1",
+"belly-2",
+"belly-3",
+"belly-4",
+"belly-5",
+"belly-6",
+"belly-7",
+"belly-8"
+],
+"fox_call": [
+"fox_call-1",
+"fox_call-2",
+"fox_call-3",
+"fox_call-4",
+"fox_call-5",
+"fox_call-6",
+"fox_call-7",
+"fox_call-8"
+],
+"otter_squeak": [
+"otter_squeak-1",
+"otter_squeak-2",
+"otter_squeak-3",
+"otter_squeak-4",
+"otter_squeak-5",
+"otter_squeak-6",
+"otter_squeak-7",
+"otter_squeak-8"
+],
+"tiger_chuff": [
+"tiger_chuff-1",
+"tiger_chuff-2",
+"tiger_chuff-3",
+"tiger_chuff-4",
+"tiger_chuff-5",
+"tiger_chuff-6",
+"tiger_chuff-7",
+"tiger_chuff-8"
+],
+"dragon_rumble": [
+"dragon_rumble-1",
+"dragon_rumble-2",
+"dragon_rumble-3",
+"dragon_rumble-4"
+],
+"knock": [
+"knock-1",
+"knock-2",
+"knock-3",
+"knock-4",
+"knock-5",
+"knock-6",
+"knock-7"
+],
+"egg_answer": [
+"egg_answer-1",
+"egg_answer-2",
+"egg_answer-3",
+"egg_answer-4",
+"egg_answer-5",
+"egg_answer-6",
+"egg_answer-7"
+],
+"heart": [
+"heart-1",
+"heart-2",
+"heart-3",
+"heart-4",
+"heart-5",
+"heart-6",
+"heart-7",
+"heart-8"
+],
+"roll_leaf": [
+"roll_leaf-1",
+"roll_leaf-2",
+"roll_leaf-3",
+"roll_leaf-4",
+"roll_leaf-5",
+"roll_leaf-6",
+"roll_leaf-7",
+"roll_leaf-8"
+],
+"spin": [
+"spin-1",
+"spin-2",
+"spin-3",
+"spin-4",
+"spin-5",
+"spin-6",
+"spin-7",
+"spin-8"
+],
+"stomp": [
+"stomp-1",
+"stomp-2",
+"stomp-3",
+"stomp-4",
+"stomp-5",
+"stomp-6",
+"stomp-7",
+"stomp-8"
+],
+"puff": [
+"puff-1",
+"puff-2",
+"puff-3",
+"puff-4",
+"puff-5",
+"puff-6",
+"puff-7",
+"puff-8"
+],
+"bell": [
+"bell-1",
+"bell-2",
+"bell-3",
+"bell-4",
+"bell-5",
+"bell-6",
+"bell-7",
+"bell-8"
+],
+"dizzy": [
+"dizzy-1",
+"dizzy-2",
+"dizzy-3",
+"dizzy-4",
+"dizzy-5",
+"dizzy-6",
+"dizzy-7",
+"dizzy-8"
+],
+"rustle_small": [
+"rustle_small-1",
+"rustle_small-2",
+"rustle_small-3",
+"rustle_small-4",
+"rustle_small-5",
+"rustle_small-6",
+"rustle_small-7"
+],
+"sigh_small": [
+"sigh_small-1",
+"sigh_small-2",
+"sigh_small-3",
+"sigh_small-4",
+"sigh_small-5",
+"sigh_small-6",
+"sigh_small-7",
+"sigh_small-8"
+],
+"sigh_big": [
+"sigh_big-1",
+"sigh_big-2",
+"sigh_big-3",
+"sigh_big-4",
+"sigh_big-5"
+],
+"shiver": [
+"shiver-1",
+"shiver-2",
+"shiver-3",
+"shiver-4",
+"shiver-5",
+"shiver-6",
+"shiver-7",
+"shiver-8"
+],
+"breath_slow": [
+"breath_slow-1",
+"breath_slow-2",
+"breath_slow-3",
+"breath_slow-4",
+"breath_slow-5"
+],
+"stretch": [
+"stretch-1",
+"stretch-2",
+"stretch-3",
+"stretch-4",
+"stretch-5",
+"stretch-6",
+"stretch-7",
+"stretch-8"
+],
+"yawn_small": [
+"yawn_small-1",
+"yawn_small-2",
+"yawn_small-3",
+"yawn_small-4",
+"yawn_small-5",
+"yawn_small-6"
+],
+"yawn_big": [
+"yawn_big-1",
+"yawn_big-2",
+"yawn_big-3",
+"yawn_big-4",
+"yawn_big-5",
+"yawn_big-6",
+"yawn_big-7",
+"yawn_big-8"
+],
+"yawn_dragon": [
+"yawn_dragon-1",
+"yawn_dragon-2",
+"yawn_dragon-3",
+"yawn_dragon-4",
+"yawn_dragon-5",
+"yawn_dragon-6",
+"yawn_dragon-7",
+"yawn_dragon-8"
+],
+"splash": [
+"splash-1",
+"splash-2",
+"splash-3",
+"splash-4",
+"splash-5",
+"splash-6",
+"splash-7",
+"splash-8"
+],
+"gust": [
+"gust-1",
+"gust-2",
+"gust-3",
+"gust-4",
+"gust-5",
+"gust-6",
+"gust-7"
+],
+"pant": [
+"pant-1",
+"pant-2",
+"pant-3",
+"pant-4",
+"pant-5",
+"pant-6",
+"pant-7"
+],
+"egg_creak": [
+"egg_creak-1",
+"egg_creak-2",
+"egg_creak-3",
+"egg_creak-4",
+"egg_creak-5",
+"egg_creak-6",
+"egg_creak-7",
+"egg_creak-8"
+],
+"lick_paw": [
+"lick_paw-1",
+"lick_paw-2",
+"lick_paw-3",
+"lick_paw-4",
+"lick_paw-5",
+"lick_paw-6",
+"lick_paw-7",
+"lick_paw-8"
+],
+"smoke_puff": [
+"smoke_puff-1",
+"smoke_puff-2",
+"smoke_puff-3",
+"smoke_puff-4",
+"smoke_puff-5",
+"smoke_puff-6",
+"smoke_puff-7",
+"smoke_puff-8"
+],
+"snore": [
+"snore-1",
+"snore-2",
+"snore-3",
+"snore-4",
+"snore-5",
+"snore-6",
+"snore-7"
+],
+"pop": [
+"pop-1",
+"pop-2",
+"pop-3",
+"pop-4",
+"pop-5",
+"pop-6",
+"pop-7"
+],
+"drip": [
+"drip-1",
+"drip-2",
+"drip-3",
+"drip-4",
+"drip-5",
+"drip-6",
+"drip-7",
+"drip-8"
+],
+"thunder": [
+"thunder-1",
+"thunder-2",
+"thunder-3",
+"thunder-4",
+"thunder-5",
+"thunder-6",
+"thunder-7",
+"thunder-8"
+],
+"leaf_fall": [
+"leaf_fall-1",
+"leaf_fall-2",
+"leaf_fall-3",
+"leaf_fall-4",
+"leaf_fall-5",
+"leaf_fall-6",
+"leaf_fall-7",
+"leaf_fall-8"
+],
+"gull": [
+"gull-1",
+"gull-2",
+"gull-3",
+"gull-4",
+"gull-5",
+"gull-6",
+"gull-7"
+],
+"alpine_bird": [
+"alpine_bird-1",
+"alpine_bird-2",
+"alpine_bird-3",
+"alpine_bird-4",
+"alpine_bird-5",
+"alpine_bird-6",
+"alpine_bird-7",
+"alpine_bird-8"
+],
+"greet": [
+"greet-1",
+"greet-2",
+"greet-3",
+"greet-4",
+"greet-5",
+"greet-6",
+"greet-7",
+"greet-8"
+],
+"unwrap": [
+"unwrap-1",
+"unwrap-2",
+"unwrap-3",
+"unwrap-4",
+"unwrap-5",
+"unwrap-6",
+"unwrap-7",
+"unwrap-8"
+],
+"berry_soft": [
+"berry_soft-1",
+"berry_soft-2",
+"berry_soft-3",
+"berry_soft-4",
+"berry_soft-5",
+"berry_soft-6",
+"berry_soft-7",
+"berry_soft-8"
+],
+"shutter": [
+"shutter-1",
+"shutter-2",
+"shutter-3",
+"shutter-4",
+"shutter-5",
+"shutter-6",
+"shutter-7",
+"shutter-8"
+],
+"hatch_tap": [
+"hatch_tap-1",
+"hatch_tap-2",
+"hatch_tap-3",
+"hatch_tap-4",
+"hatch_tap-5",
+"hatch_tap-6",
+"hatch_tap-7",
+"hatch_tap-8"
+],
+"crack_small": [
+"crack_small-1",
+"crack_small-2",
+"crack_small-3",
+"crack_small-4",
+"crack_small-5",
+"crack_small-6",
+"crack_small-7",
+"crack_small-8"
+],
+"crack_big": [
+"crack_big-1",
+"crack_big-2",
+"crack_big-3",
+"crack_big-4",
+"crack_big-5",
+"crack_big-6",
+"crack_big-7",
+"crack_big-8"
+],
+"hatch_first": [
+"hatch_first-1",
+"hatch_first-2",
+"hatch_first-3",
+"hatch_first-4",
+"hatch_first-5",
+"hatch_first-6",
+"hatch_first-7",
+"hatch_first-8"
+],
+"evo_rise": [
+"evo_rise-1",
+"evo_rise-2",
+"evo_rise-3",
+"evo_rise-4",
+"evo_rise-5",
+"evo_rise-6",
+"evo_rise-7",
+"evo_rise-8"
+],
+"evo_swell": [
+"evo_swell-1",
+"evo_swell-2",
+"evo_swell-3",
+"evo_swell-4",
+"evo_swell-5",
+"evo_swell-6",
+"evo_swell-7",
+"evo_swell-8"
+],
+"evo_burst": [
+"evo_burst-1",
+"evo_burst-2",
+"evo_burst-3",
+"evo_burst-4",
+"evo_burst-5",
+"evo_burst-6",
+"evo_burst-7",
+"evo_burst-8"
+],
+"pouch": [
+"pouch-1",
+"pouch-2",
+"pouch-3",
+"pouch-4",
+"pouch-5",
+"pouch-6",
+"pouch-7"
+],
+"stamp": [
+"stamp-1",
+"stamp-2",
+"stamp-3",
+"stamp-4",
+"stamp-5",
+"stamp-6",
+"stamp-7",
+"stamp-8"
+],
+"paper": [
+"paper-1",
+"paper-2",
+"paper-3",
+"paper-4",
+"paper-5",
+"paper-6",
+"paper-7",
+"paper-8"
+],
+"page": [
+"page-1",
+"page-2",
+"page-3",
+"page-4",
+"page-5",
+"page-6",
+"page-7",
+"page-8"
+],
+"cloth": [
+"cloth-1",
+"cloth-2",
+"cloth-3",
+"cloth-4",
+"cloth-5",
+"cloth-6",
+"cloth-7"
+],
+"hat_on": [
+"hat_on-1",
+"hat_on-2",
+"hat_on-3",
+"hat_on-4",
+"hat_on-5",
+"hat_on-6",
+"hat_on-7",
+"hat_on-8"
+],
+"ui_tap": [
+"ui_tap-1",
+"ui_tap-2",
+"ui_tap-3",
+"ui_tap-4",
+"ui_tap-5",
+"ui_tap-6"
+]
+},
+"amb": {
+"dawn": [
+"dawn-1",
+"dawn-2",
+"dawn-3"
+],
+"day": [
+"day-1",
+"day-2",
+"day-3"
+],
+"cicada": [
+"cicada-1",
+"cicada-2",
+"cicada-3"
+],
+"dusk": [
+"dusk-1",
+"dusk-2",
+"dusk-3"
+],
+"night": [
+"night-1",
+"night-2",
+"night-3"
+],
+"frogs": [
+"frogs-1",
+"frogs-2",
+"frogs-3"
+],
+"rain": [
+"rain-1",
+"rain-2",
+"rain-3"
+],
+"storm": [
+"storm-1",
+"storm-2",
+"storm-3"
+],
+"wind": [
+"wind-1",
+"wind-2",
+"wind-3"
+],
+"snow": [
+"snow-1",
+"snow-2",
+"snow-3"
+],
+"waves": [
+"waves-1",
+"waves-2",
+"waves-3"
+],
+"gulls": [
+"gulls-1",
+"gulls-2",
+"gulls-3"
+],
+"alpine": [
+"alpine-1",
+"alpine-2",
+"alpine-3"
+],
+"sky": [
+"sky-1",
+"sky-2",
+"sky-3"
+],
+"brook": [
+"brook-1",
+"brook-2",
+"brook-3"
+]
+},
+"music": {
+"dawn": [
+"dawn-1",
+"dawn-2",
+"dawn-3"
+],
+"day": [
+"day-1",
+"day-2",
+"day-3"
+],
+"dusk": [
+"dusk-1",
+"dusk-2",
+"dusk-3"
+],
+"night": [
+"night-1",
+"night-2",
+"night-3"
+]
+},
+"sting": {
+"hatch": [
+"sting-1",
+"sting-2",
+"sting-3"
+],
+"evo3": [
+"sting-3",
+"sting-4",
+"sting-5"
+],
+"evo4": [
+"sting-5",
+"sting-6",
+"sting-7"
+],
+"evo5": [
+"sting-7",
+"sting-8",
+"sting-9"
+],
+"evo6": [
+"sting-9",
+"sting-10",
+"sting-11"
+],
+"evo7": [
+"sting-11",
+"sting-12",
+"sting-1"
+],
+"meet": [
+"sting-1",
+"sting-2",
+"sting-3"
+]
+}
+}
